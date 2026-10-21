@@ -1,0 +1,21 @@
+# 既定は LF に正規化する。Windows / macOS / Linux 間の差分事故を防ぐ。
+* text=auto eol=lf
+
+# Windows のコマンドプロンプト用スクリプトは CRLF を維持する。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# バイナリ資産は変換対象から外す。
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.pickle binary
