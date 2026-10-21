@@ -926,6 +926,91 @@ POST /api/v1/organizer/events/[id]/reminders
 → 200 { "sent": 2, "recorded": 0, "skippedGuests": 5, "subject": "...", "body": "..." }
 ```
 
+### 5.9. GET `/api/v1/organizer/revenue`（主催イベント横断の売上）
+
+対象画面は SCR-ORG-11。認可は `requireOrganizerAccount`。会員の幹事だけが使える。未ログインは 401、未登録のゲスト幹事（Cookie の幹事トークンだけで本人と分かる状態）は 403 `REGISTER_REQUIRED` を返す。ゲスト幹事には、複数のイベントをまたいだ金額を出さない。
+
+クエリは次のとおり。どれも省略できる。
+
+| 名前 | 既定 | 内容 |
+| :--- | :--- | :--- |
+| `from` | 指定なし | `events.sort_date` の下限（`YYYY-MM-DD`、含む） |
+| `to` | 指定なし | `events.sort_date` の上限（`YYYY-MM-DD`、含む） |
+| `status` | 指定なし | `DRAFT` / `PUBLISHED` / `CLOSED` のいずれか |
+
+絞り込みの基準は開催日であり、回答日時や領収書の発行日ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
+
+レスポンスは `period`、`totals`、`events` の 3 つである。
+
+```json
+{
+  "period": { "from": null, "to": null, "status": null },
+  "totals": {
+    "expectedRevenue": 8000,
+    "issuedRevenue": 3000,
+    "unreconciled": 5000,
+    "attendingCount": 4,
+    "paidAttendingCount": 3,
+    "unassignedPlanCount": 1,
+    "declinedCount": 1,
+    "receiptCount": 1,
+    "averagePerAttendee": 2667
+  },
+  "events": [
+    {
+      "id": "20ccffe6-...",
+      "title": "秋の音楽会",
+      "sortDate": "2026-11-14",
+      "status": "PUBLISHED",
+      "expectedRevenue": 8000,
+      "issuedRevenue": 3000,
+      "unreconciled": 5000,
+      "attendingCount": 4,
+      "paidAttendingCount": 3,
+      "unassignedPlanCount": 1,
+      "declinedCount": 1,
+      "receiptCount": 1,
+      "averagePerAttendee": 2667
+    }
+  ]
+}
+```
+
+- `period` は受け取った絞り込みをそのまま返す。`from` と `to` は `YYYY-MM-DD`、`status` は受け取った値か `null`。
+- `totals` は、返した `events` の参加者をまとめて集計した値である。合計は `events` の各行の単純和と一致する。
+- 金額は `participants.price_amount`（出欠確定時点のスナップショット）の合計である。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。
+- `issuedRevenue` は `receipts.amount` の合計であり、決済や入金の記録ではない。`unreconciled` は `expectedRevenue − issuedRevenue` で、負にもなる。未回収額ではない。
+- `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
+- 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
+- 並び順は `sort_date` の昇順（開催日が近い順）。過去の催しは後ろへ送る。
+- `events[].sortDate` は `YYYY-MM-DD` の文字列である。
+
+### 5.10. GET `/api/v1/organizer/events/[id]/revenue`（イベント1件の売上内訳）
+
+対象画面は SCR-ORG-12。認可は `assertRegisteredOrganizer`。未登録のゲスト幹事には 403 `REGISTER_REQUIRED`（名簿と同じ扱い）。
+
+レスポンスは `event`、`summary`、`byPlan`、`bySchedule` の 4 つである。`summary` の形は 5.9 の `totals` と同じ。
+
+```json
+{
+  "event": { "id": "20ccffe6-...", "title": "秋の音楽会", "sortDate": "2026-11-14", "status": "PUBLISHED" },
+  "summary": { "expectedRevenue": 8000, "issuedRevenue": 3000, "unreconciled": 5000, "attendingCount": 4, "paidAttendingCount": 3, "unassignedPlanCount": 1, "declinedCount": 1, "receiptCount": 1, "averagePerAttendee": 2667 },
+  "byPlan": [
+    { "name": "一般", "audience": "ANY", "amount": 3000, "attendingCount": 2, "subtotal": 6000 },
+    { "name": "学生", "audience": "MALE", "amount": 2000, "attendingCount": 1, "subtotal": 2000 }
+  ],
+  "bySchedule": [
+    { "scheduleId": "5c9c25cb-...", "label": "2026-11-14 19:00〜21:00", "attendingCount": 4, "subtotal": 8000 }
+  ]
+}
+```
+
+- `event.sortDate` は `YYYY-MM-DD` の文字列である。
+- `byPlan` は対象（`audience`）・プラン名・金額の 3 つをキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額を変えた場合）。その差は隠さずに別行で見せる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
+- `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。並びはラベルの昇順で、`日時なし` は最後へ送る。
+- 日程を選んでいない出席者を代表日に寄せることはしない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
+- 削除済みのイベントは 404。他幹事のイベントは 403。
+
 ---
 
 ## 6. 利用枠・Stripe決済系 API エンドポイント詳細仕様
