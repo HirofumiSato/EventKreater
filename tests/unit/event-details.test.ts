@@ -12,9 +12,12 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 import {
   createPricePlanDraft,
+  groupNamesDiffer,
+  groupPricePlanPairs,
   pricingModeOf,
   withCommonPricing,
   withGenderPricing,
+  withGroupName,
 } from "@/modules/events/types";
 
 describe("parseLegacyEventTime", () => {
@@ -154,6 +157,137 @@ describe("withGenderPricing", () => {
     ];
     expect(withGenderPricing(plans)).toHaveLength(2);
   });
+
+  it("組の途中では切らず、上限8件で打ち切る", () => {
+    const plans = Array.from({ length: 5 }, (_, index) =>
+      createPricePlanDraft({ name: `プラン${index}`, amount: "3000" }),
+    );
+    const result = withGenderPricing(plans);
+    expect(result).toHaveLength(8);
+    expect(result.map((row) => row.audience)).toEqual([
+      "MALE",
+      "FEMALE",
+      "MALE",
+      "FEMALE",
+      "MALE",
+      "FEMALE",
+      "MALE",
+      "FEMALE",
+    ]);
+  });
+
+  it("共通が混ざっていても共通の行だけをペアへ展開する", () => {
+    const plans = [
+      createPricePlanDraft({ audience: "ANY", name: "一般", amount: "3000" }),
+      createPricePlanDraft({ audience: "MALE", name: "学生", amount: "2000" }),
+    ];
+    const result = withGenderPricing(plans);
+    expect(result.map((row) => `${row.audience}:${row.name}`)).toEqual([
+      "MALE:一般",
+      "FEMALE:一般",
+      "MALE:学生",
+    ]);
+  });
+
+  it("同じ対象・同じプラン名になる組は落として一意制約に当てない", () => {
+    const plans = [
+      createPricePlanDraft({ audience: "ANY", name: "一般", amount: "3000" }),
+      createPricePlanDraft({ audience: "MALE", name: "一般", amount: "3000" }),
+      createPricePlanDraft({ audience: "FEMALE", name: "一般", amount: "3000" }),
+    ];
+    const result = withGenderPricing(plans);
+    expect(result.map((row) => `${row.audience}:${row.name}`)).toEqual([
+      "MALE:一般",
+      "FEMALE:一般",
+    ]);
+  });
+});
+
+describe("groupPricePlanPairs", () => {
+  it("隣り合う男性用と女性用を1組にする", () => {
+    const plans = [
+      { key: "a", audience: "MALE" as const },
+      { key: "b", audience: "FEMALE" as const },
+      { key: "c", audience: "MALE" as const },
+      { key: "d", audience: "FEMALE" as const },
+    ];
+    expect(groupPricePlanPairs(plans).map((group) => group.map((row) => row.key))).toEqual([
+      ["a", "b"],
+      ["c", "d"],
+    ]);
+  });
+
+  it("共通の行は1行で1組にする", () => {
+    const plans = [
+      { key: "a", audience: "ANY" as const },
+      { key: "b", audience: "ANY" as const },
+    ];
+    expect(groupPricePlanPairs(plans).map((group) => group.map((row) => row.key))).toEqual([
+      ["a"],
+      ["b"],
+    ]);
+  });
+
+  it("相手がいない行は1行で1組にする", () => {
+    const plans = [
+      { key: "a", audience: "MALE" as const },
+      { key: "b", audience: "MALE" as const },
+      { key: "c", audience: "FEMALE" as const },
+    ];
+    expect(groupPricePlanPairs(plans).map((group) => group.map((row) => row.key))).toEqual([
+      ["a"],
+      ["b", "c"],
+    ]);
+  });
+});
+
+describe("withGroupName", () => {
+  it("組の男女両方へ同じプラン名を入れる", () => {
+    const plans = [
+      createPricePlanDraft({ key: "male", audience: "MALE", name: "", amount: "3000" }),
+      createPricePlanDraft({ key: "female", audience: "FEMALE", name: "", amount: "2500" }),
+      createPricePlanDraft({ key: "other-male", audience: "MALE", name: "学生", amount: "2000" }),
+      createPricePlanDraft({ key: "other-female", audience: "FEMALE", name: "学生", amount: "1500" }),
+    ];
+    const group = groupPricePlanPairs(plans)[0];
+    const result = withGroupName(plans, group, "一般");
+    expect(result.map((row) => `${row.key}:${row.name}`)).toEqual([
+      "male:一般",
+      "female:一般",
+      "other-male:学生",
+      "other-female:学生",
+    ]);
+    // 金額は行ごとに残す。
+    expect(result.map((row) => row.amount)).toEqual(["3000", "2500", "2000", "1500"]);
+  });
+
+  it("元の配列を書き換えない", () => {
+    const plans = [createPricePlanDraft({ key: "male", audience: "MALE", name: "" })];
+    withGroupName(plans, plans, "一般");
+    expect(plans[0].name).toBe("");
+  });
+});
+
+describe("groupNamesDiffer", () => {
+  it("組の中でプラン名が揃っていれば false", () => {
+    const plans = [
+      createPricePlanDraft({ key: "male", audience: "MALE", name: "一般" }),
+      createPricePlanDraft({ key: "female", audience: "FEMALE", name: "一般" }),
+    ];
+    expect(groupNamesDiffer(plans)).toBe(false);
+  });
+
+  it("組の中でプラン名がずれていれば true", () => {
+    const plans = [
+      createPricePlanDraft({ key: "male", audience: "MALE", name: "一般" }),
+      createPricePlanDraft({ key: "female", audience: "FEMALE", name: "学生" }),
+    ];
+    expect(groupNamesDiffer(plans)).toBe(true);
+  });
+
+  it("1行だけの組は比較しない", () => {
+    expect(groupNamesDiffer([createPricePlanDraft({ audience: "ANY", name: "一般" })])).toBe(false);
+  });
 });
 
 describe("withCommonPricing", () => {
@@ -165,6 +299,16 @@ describe("withCommonPricing", () => {
     const result = withCommonPricing(plans);
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ id: "male-1", audience: "ANY", name: "一般" });
+  });
+
+  it("共通へ寄せて同名が重複するときは先の行を残す", () => {
+    const plans = [
+      createPricePlanDraft({ id: "any-1", audience: "ANY", name: "一般", amount: "3000" }),
+      createPricePlanDraft({ id: "male-1", audience: "MALE", name: "一般", amount: "3500" }),
+    ];
+    const result = withCommonPricing(plans);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: "any-1", audience: "ANY", amount: "3000" });
   });
 });
 

@@ -66,7 +66,7 @@
 
 自動実行の入口は、リポジトリ直下の ``npm run check`` です。中身は ``lint``、``tsc --noEmit``、Vitest です。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
 
-テストは 8 ファイル、``it`` は 43 件です。内訳は ``tests/unit/`` が 36、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、結合の 7 件が skip され、36 件が実行されます。``npm test`` は 2 秒弱、``npm run check`` は 20 秒前後で終わります。
+テストは 10 ファイル、``it`` は 74 件です。内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、結合の 7 件が skip され、67 件が実行されます。``npm test`` は 2 秒弱、``npm run check`` は 20 秒前後で終わります。
 
 PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は後から、手元と同じ ``npm run check`` を呼びます。
 

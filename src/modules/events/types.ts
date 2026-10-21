@@ -272,33 +272,100 @@ export function pricingModeOf(plans: { audience: PriceAudience }[]): PricingMode
 }
 
 /**
+ * 男女別モードの行を、追加した順のペアへまとめる。
+ * 「プランを追加」は常に男性用・女性用の順で足すため、隣り合う男性用と女性用を1組とみなす。
+ * 相手が見つからない行（移行前のデータや、片方だけ残った行）は1行だけの組になる。
+ * DB には保存しない、画面の削除単位を決めるためだけの関数である。
+ */
+export function groupPricePlanPairs<T extends { key: string; audience: PriceAudience }>(
+  plans: T[],
+): T[][] {
+  const groups: T[][] = [];
+  for (let index = 0; index < plans.length; index += 1) {
+    const row = plans[index];
+    const next = plans[index + 1];
+    if (row.audience === "MALE" && next?.audience === "FEMALE") {
+      groups.push([row, next]);
+      index += 1;
+      continue;
+    }
+    groups.push([row]);
+  }
+  return groups;
+}
+
+/**
+ * 組の全行へ同じプラン名を入れる。
+ * 男女別は1組＝1プランなので、画面の入力欄は組ごとに1つだけ出す。
+ * 行は増やさず名前だけを書き換えるため、(event_id, audience, name) の一意制約には当たらない。
+ */
+export function withGroupName<T extends { key: string; name: string }>(
+  plans: T[],
+  group: readonly T[],
+  name: string,
+): T[] {
+  const keys = new Set(group.map((row) => row.key));
+  return plans.map((row) => (keys.has(row.key) ? { ...row, name } : row));
+}
+
+/**
+ * 1組の中でプラン名が食い違っているか。
+ * 切り替え直後は揃うが、移行前のデータや、以前の画面で片方だけ直した組ではずれる。
+ */
+export function groupNamesDiffer(group: readonly { name: string }[]): boolean {
+  return group.length > 1 && group.some((row) => row.name !== group[0].name);
+}
+
+/**
  * 共通プランを男性用・女性用のペアへ展開する。
  * 元の行は id を保ったまま男性用にし、女性用は新しい行として足す
  * （(event_id, audience, name) の一意制約があるので同名で並べられる）。
+ * 上限は2件を1組として数え、組の途中で切らない。
  */
 export function withGenderPricing(plans: PricePlanDraft[]): PricePlanDraft[] {
-  const expanded = plans
-    .flatMap((row) =>
+  const expanded: PricePlanDraft[] = [];
+  const seen = new Set<string>();
+  for (const group of groupPricePlanPairs(plans)) {
+    const pair: PricePlanDraft[] = group.flatMap((row) =>
       row.audience !== "ANY"
         ? [row]
         : [
             { ...row, key: `${row.key}::male`, audience: "MALE" as const },
             { ...row, key: `${row.key}::female`, id: undefined, audience: "FEMALE" as const },
           ],
-    )
-    .slice(0, MAX_EVENT_OPTIONS);
+    );
+    if (expanded.length + pair.length > MAX_EVENT_OPTIONS) continue;
+    // 同じ対象・同じプラン名は DB の一意制約に当たるため、組ごと落とす。
+    const conflicts = pair.some((item) => {
+      const name = item.name.trim();
+      return name !== "" && seen.has(`${item.audience}\u0000${name}`);
+    });
+    if (conflicts) continue;
+    for (const item of pair) {
+      const name = item.name.trim();
+      if (name !== "") seen.add(`${item.audience}\u0000${name}`);
+      expanded.push(item);
+    }
+  }
   return expanded.length > 0 ? expanded : [createPricePlanDraft()];
 }
 
 /**
  * 男女別を共通へ戻す。男性用の行を ANY に変換し、女性用の行は落とす。
+ * ANY に寄せた結果プラン名が重複すると API と DB の一意制約に当たるため、先に現れた行を残す。
  * 女性用を選んでいた参加者の pricePlanId はサーバー側で NULL になるため、
  * 呼び出し側で確認ダイアログを出す。
  */
 export function withCommonPricing(plans: PricePlanDraft[]): PricePlanDraft[] {
-  const kept = plans
-    .filter((row) => row.audience !== "FEMALE")
-    .map((row) => ({ ...row, audience: "ANY" as const }));
+  const seen = new Set<string>();
+  const kept: PricePlanDraft[] = [];
+  for (const row of plans) {
+    if (row.audience === "FEMALE") continue;
+    const name = row.name.trim();
+    if (name !== "" && seen.has(name)) continue;
+    if (name !== "") seen.add(name);
+    kept.push({ ...row, audience: "ANY" as const });
+  }
   return kept.length > 0 ? kept : [createPricePlanDraft()];
 }
 

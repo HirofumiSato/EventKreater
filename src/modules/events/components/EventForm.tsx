@@ -3,14 +3,12 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
-import type {
-  EventFormValues,
-  PriceAudience,
-  RainPolicy,
-} from "@/modules/events/types";
+import type { EventFormValues, PricePlanDraft, RainPolicy } from "@/modules/events/types";
 import {
   createPricePlanDraft,
   createScheduleDraft,
+  groupNamesDiffer,
+  groupPricePlanPairs,
   MAX_EVENT_OPTIONS,
   pricingModeOf,
   PRICE_AUDIENCE_LABELS,
@@ -18,10 +16,9 @@ import {
   STATUS_LABELS,
   withCommonPricing,
   withGenderPricing,
+  withGroupName,
 } from "@/modules/events/types";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
-
-const AUDIENCES: PriceAudience[] = ["ANY", "MALE", "FEMALE"];
 
 interface EventFormProps {
   value: EventFormValues;
@@ -67,6 +64,84 @@ export function EventForm({
 
   const pricingMode = pricingModeOf(value.pricePlans);
   const genderLocked = locked || pricingModeLocked;
+  // 男女別では男性用・女性用が1組なので、プラン名の入力も削除も組単位で行う。
+  const planGroups = groupPricePlanPairs(value.pricePlans);
+  const canRemovePlan = planGroups.length > 1;
+  const hasLegacyCommonPlan =
+    pricingMode === "GENDER" && value.pricePlans.some((row) => row.audience === "ANY");
+
+  const updatePlan = (rowKey: string, patch: Partial<PricePlanDraft>) => {
+    set(
+      "pricePlans",
+      value.pricePlans.map((row) => (row.key === rowKey ? { ...row, ...patch } : row)),
+    );
+  };
+
+  /** 共通料金のプラン名。男女別では組の見出しに1つだけ出すので、行の中では使わない。 */
+  const planNameField = (row: PricePlanDraft) => (
+    <div className="field">
+      <label className="label" htmlFor={`plan-name-${row.key}`}>
+        プラン名
+      </label>
+      <input
+        id={`plan-name-${row.key}`}
+        required
+        maxLength={50}
+        value={row.name}
+        onChange={(event) => updatePlan(row.key, { name: event.target.value })}
+        placeholder="一般"
+        className="input"
+      />
+    </div>
+  );
+
+  /** 金額と補足は行ごとに持つ。男女別でも金額は分けたいので、組の中の行に残す。 */
+  const planAmountAndNoteFields = (row: PricePlanDraft) => (
+    <>
+      <div className="field">
+        <label className="label" htmlFor={`plan-amount-${row.key}`}>
+          金額（円）
+        </label>
+        <input
+          id={`plan-amount-${row.key}`}
+          required
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={9999999}
+          step={1}
+          value={row.amount}
+          onChange={(event) => updatePlan(row.key, { amount: event.target.value })}
+          placeholder="3000"
+          className="input"
+        />
+      </div>
+      <div className="field">
+        <label className="label" htmlFor={`plan-note-${row.key}`}>
+          補足（任意）
+        </label>
+        <input
+          id={`plan-note-${row.key}`}
+          maxLength={100}
+          value={row.note}
+          onChange={(event) => updatePlan(row.key, { note: event.target.value })}
+          placeholder="1ドリンク付"
+          className="input"
+        />
+      </div>
+      <p className="help repeat-row__note">
+        {row.amount === "" ? "金額を入れてください" : composePriceText({ amount: Number(row.amount), note: row.note })}
+      </p>
+    </>
+  );
+
+  /** 男女別では対象を選ばせない。固定表示だけを出す。 */
+  const planAudienceField = (row: PricePlanDraft) => (
+    <div className="field">
+      <span className="label">対象</span>
+      <p className="price-audience">{PRICE_AUDIENCE_LABELS[row.audience]}</p>
+    </div>
+  );
 
   const addPlan = () => {
     // 男女別モードでは新しいプランも男性用・女性用のペアで足す。
@@ -81,6 +156,15 @@ export function EventForm({
     }
     if (value.pricePlans.length >= MAX_EVENT_OPTIONS) return;
     set("pricePlans", [...value.pricePlans, createPricePlanDraft()]);
+  };
+
+  const removePlan = (rowKey: string) => {
+    const group = planGroups.find((rows) => rows.some((item) => item.key === rowKey));
+    const removing = new Set((group ?? []).map((item) => item.key));
+    const next = value.pricePlans.filter((item) => !removing.has(item.key));
+    // 費用プランは1件以上必要なので、最後の1組は消さない。
+    if (next.length === 0) return;
+    set("pricePlans", next);
   };
 
   return (
@@ -227,117 +311,83 @@ export function EventForm({
             </p>
           ) : pricingMode === "COMMON" ? (
             <p className="help">
-              チェックを入れると、各プランを男性用・女性用に分けて金額を設定できます。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
+              チェックを入れると、各プランを男性用・女性用に分けて金額を設定できます。プラン名は組で共通になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
             </p>
           ) : (
             <p className="help">
-              男性用・女性用で1組です。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
+              男性用・女性用で1組です。プラン名は組で共通、金額と補足は行ごとに設定します。対象は固定で、追加も削除も組単位になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
             </p>
           )}
-          {value.pricePlans.map((row, index) => (
-            <div
-              key={row.key}
-              className={`repeat-row ${pricingMode === "GENDER" ? "repeat-row--plan" : "repeat-row--plan-common"}`}
-            >
-              {pricingMode === "GENDER" && (
-                <div className="field">
-                  <label className="label" htmlFor={`plan-audience-${row.key}`}>
-                    対象
-                  </label>
-                  <select
-                    id={`plan-audience-${row.key}`}
-                    value={row.audience}
-                    onChange={(event) => {
-                      const pricePlans = value.pricePlans.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, audience: event.target.value as PriceAudience }
-                          : item,
-                      );
-                      set("pricePlans", pricePlans);
-                    }}
-                    className="select"
-                  >
-                    {AUDIENCES.map((audience) => (
-                      <option key={audience} value={audience}>
-                        {PRICE_AUDIENCE_LABELS[audience]}
-                      </option>
+          {hasLegacyCommonPlan && (
+            <p className="alert alert--warning">
+              対象が「共通」のまま残っている料金があります。対象は画面から変えられません。
+              {pricingModeLocked
+                ? "出席者がいるため、いまは共通料金へ戻せません。その料金を選んでいる出席者を選び直してから、共通料金へ戻して入れ直してください。"
+                : "チェックを外して共通料金に戻し、もう一度入れると、男性用・女性用の組に揃えられます。"}
+            </p>
+          )}
+          {pricingMode === "GENDER"
+            ? planGroups.map((group) => {
+                // 1組＝1プランなので、プラン名は組の見出しに1つだけ置く。
+                const head = group[0];
+                return (
+                  <div key={head.key} className="price-group">
+                    <div className="price-group__head">
+                      <div className="field">
+                        <label className="label" htmlFor={`plan-name-${head.key}`}>
+                          プラン名
+                        </label>
+                        <input
+                          id={`plan-name-${head.key}`}
+                          required
+                          maxLength={50}
+                          value={head.name}
+                          onChange={(event) =>
+                            set("pricePlans", withGroupName(value.pricePlans, group, event.target.value))
+                          }
+                          placeholder="一般"
+                          className="input"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        disabled={!canRemovePlan}
+                        aria-label="この組を削除"
+                        onClick={() => removePlan(head.key)}
+                      >
+                        組を削除
+                      </button>
+                    </div>
+                    {groupNamesDiffer(group) && (
+                      <p className="alert alert--warning">
+                        この組の中でプラン名が違います。上のプラン名を入れ直すと、男性用・女性用の両方に反映されます。
+                      </p>
+                    )}
+                    {group.map((row) => (
+                      <div key={row.key} className="repeat-row repeat-row--plan">
+                        {planAudienceField(row)}
+                        {planAmountAndNoteFields(row)}
+                      </div>
                     ))}
-                  </select>
+                  </div>
+                );
+              })
+            : value.pricePlans.map((row) => (
+                <div key={row.key} className="repeat-row repeat-row--plan-common">
+                  {planNameField(row)}
+                  {planAmountAndNoteFields(row)}
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    disabled={!canRemovePlan}
+                    aria-label="このプランを削除"
+                    onClick={() => removePlan(row.key)}
+                  >
+                    削除
+                  </button>
                 </div>
-              )}
-              <div className="field">
-                <label className="label" htmlFor={`plan-name-${row.key}`}>
-                  プラン名
-                </label>
-                <input
-                  id={`plan-name-${row.key}`}
-                  required
-                  maxLength={50}
-                  value={row.name}
-                  onChange={(event) => {
-                    const pricePlans = value.pricePlans.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, name: event.target.value } : item,
-                    );
-                    set("pricePlans", pricePlans);
-                  }}
-                  placeholder="一般"
-                  className="input"
-                />
-              </div>
-              <div className="field">
-                <label className="label" htmlFor={`plan-amount-${row.key}`}>
-                  金額（円）
-                </label>
-                <input
-                  id={`plan-amount-${row.key}`}
-                  required
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={9999999}
-                  step={1}
-                  value={row.amount}
-                  onChange={(event) => {
-                    const pricePlans = value.pricePlans.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, amount: event.target.value } : item,
-                    );
-                    set("pricePlans", pricePlans);
-                  }}
-                  placeholder="3000"
-                  className="input"
-                />
-              </div>
-              <div className="field">
-                <label className="label" htmlFor={`plan-note-${row.key}`}>
-                  補足（任意）
-                </label>
-                <input
-                  id={`plan-note-${row.key}`}
-                  maxLength={100}
-                  value={row.note}
-                  onChange={(event) => {
-                    const pricePlans = value.pricePlans.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, note: event.target.value } : item,
-                    );
-                    set("pricePlans", pricePlans);
-                  }}
-                  placeholder="1ドリンク付"
-                  className="input"
-                />
-              </div>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                disabled={value.pricePlans.length <= 1}
-                onClick={() => set("pricePlans", value.pricePlans.filter((item) => item.key !== row.key))}
-              >
-                削除
-              </button>
-              <p className="help repeat-row__note">
-                {row.amount === "" ? "金額を入れてください" : composePriceText({ amount: Number(row.amount), note: row.note })}
-              </p>
-            </div>
-          ))}
+              ))}
           <div className="btn-row">
             <button
               type="button"
@@ -355,7 +405,7 @@ export function EventForm({
           <p className="help">
             金額は整数の円です。0円は「無料」と表示します。
             {pricingMode === "GENDER"
-              ? "参加者は自分の性別に合うプラン（対象「男性」または「女性」、および「共通」）だけを選べます。"
+              ? "1つのプランが男性用・女性用の1組です。参加者は自分の性別のプランを選びます。"
               : "参加者は全員この金額から選びます。"}
           </p>
         </div>

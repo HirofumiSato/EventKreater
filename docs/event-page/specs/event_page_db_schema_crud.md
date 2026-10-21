@@ -444,7 +444,7 @@ model EventInvitation {
 | :---- | :---- | :---: | :---- | :---- | :---- |
 | `id` | UUID | NO | `gen_random_uuid()` | PK | プランID |
 | `event_id` | UUID | NO | - | FK | 対象イベントID（Cascade） |
-| `name` | VARCHAR(50) | NO | - | UNIQUE(event_id, audience) | プラン名 |
+| `name` | VARCHAR(50) | NO | - | UNIQUE(event_id, audience, name) | プラン名 |
 | `audience` | VARCHAR(10) | NO | 'ANY' | ENUM | ANY（共通）/ MALE / FEMALE |
 | `amount` | INTEGER | NO | 0 | CHECK(>=0) | 金額（円）。0は無料 |
 | `note` | VARCHAR(100) | YES | NULL | - | 「1ドリンク付」などの補足 |
