@@ -6,3 +6,5 @@ __pycache__/
 docs/_build/
 src/static/tmp/
 src/static/default_backgrounds/
+# 候補画像は TTL 1 時間のキャッシュ。実行時に作り直すのでリポジトリに置かない。
+src/static/candidates/
