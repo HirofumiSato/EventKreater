@@ -60,7 +60,7 @@
      - 手元での実行手順
    * - 11
      - :doc:`ci`
-     - CI に載せるときの接続。今は骨子だけ
+     - CI に載せるときの接続。ワークフローの中身と、緑になる条件
 
 .. rubric:: 今の到達点
 
@@ -68,7 +68,7 @@
 
 テストは 10 ファイル、``it`` は 74 件です。内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、結合の 7 件が skip され、67 件が実行されます。``npm test`` は 2 秒弱、``npm run check`` は 20 秒前後で終わります。
 
-PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は後から、手元と同じ ``npm run check`` を呼びます。
+PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は ``.github/workflows/ci.yml`` が、手元と同じ ``npm run check`` を呼びます。
 
 現在の ``package.json`` にある自動実行は ``npm run lint``、``npm run typecheck``、``npm test``、``npm run test:watch``、``npm run test:db``、``npm run check`` です。``npm test`` は ``tests/`` の ``.test.ts`` 全体を集めます。``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ中身が走り、無ければ skip されます。**skip は成功と同じ終了コードです。**
 
@@ -81,7 +81,7 @@ PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm 
 3. ``ref`` の永続化と hydrate の応答を ``tests/integration/`` に足す。
 4. ``jsdom`` と ``@testing-library/react`` を入れ、``include`` に ``**/*.test.tsx`` を足してから、勧誘カードと登録案内の 2 本を書く。
 5. Playwright を入れ、ローカル登録と、アカウントなしの出欠を各 1 本通す。
-6. CI で PostgreSQL を立て、``npm run test:db`` を ``check`` とは別のジョブで呼ぶ。
+6. CI の ``test-db`` ジョブで PostgreSQL を立て、``npm run test:db`` を ``check`` とは別に呼ぶ。手順は :doc:`ci` にある。
 
 .. rubric:: 次に読む
 
