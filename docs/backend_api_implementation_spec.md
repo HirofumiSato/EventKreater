@@ -516,7 +516,12 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | 出欠の変更・削除 | `PATCH` / `DELETE /api/v1/organizer/events/[id]/participants/[participantId]` |
 | 領収書 | `GET` / `POST /api/v1/organizer/events/[id]/participants/[participantId]/receipt` |
 | リマインド | `GET` / `POST /api/v1/organizer/events/[id]/reminders` |
+| 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
 | 共同幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（オーナーのみ） |
+
+名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。領収書の発行画面が使う既定額（`pricePlanAmount`）も同じ値になる。
+
+横断の売上（`GET /api/v1/organizer/revenue`）は会員の幹事だけが使える。ゲスト幹事の Cookie では 403 `REGISTER_REQUIRED`、未ログインは 401 を返す（`requireOrganizerAccount`）。
 
 編集（`PUT /api/v1/organizer/events/[id]`）とロック取得（`POST /api/v1/organizer/events/[id]/lock`）は、会員なら常に通り、ゲスト幹事は `events.created_at` から 24 時間以内だけ通る（`assertGuestEditWindow`）。ロックの解放と受付停止・削除は猶予の対象外で、ゲスト幹事でも常に実行できる。
 
@@ -742,6 +747,7 @@ export const SubmitRsvpSchema = z.object({
   4. 見つからなければ新規トークンを発行し INSERT する。ログイン中なら `userId` も入れる。
   5. 同じ会員の同時送信で一意制約に当たった場合は、1 回だけ更新としてやり直す。
   6. `Set-Cookie: rsvp_token_<id>=<token>; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure` をセット。会員の行を使い続ける場合は新しいトークンを発行しない。
+  7. 出席にしたときは、選んだ費用プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
 - **取消（DELETE）:** 申し込み期限後も取り消せる。対象行の決め方は POST と同じで、Cookie と `userId` の両方を受け付ける。削除後は Cookie を消す。
 
 ---

@@ -21,7 +21,7 @@ CI への接続
      - 見ているもの
    * - ``check``
      - ``npm ci`` のあと ``npm run check``
-     - ESLint、``tsc --noEmit``、``tests/unit/`` の 67 件
+     - ESLint、``tsc --noEmit``、``tests/unit/`` の 94 件
    * - ``flyer``
      - ``pip install -r requirements.txt`` のあと ``python -m pytest -q``
      - ``services/flyer/tests/`` の描画・API・候補の試験
@@ -42,7 +42,7 @@ check ジョブ
      JWT_SECRET: ci-only-placeholder-secret-value-not-used
      NEXT_PUBLIC_APP_URL: http://localhost:3012
 
-``tests/setup/db.ts`` は ``TEST_DATABASE_URL`` があるときだけ ``DATABASE_URL`` を差し替えます。``check`` は ``TEST_DATABASE_URL`` を渡さないので、``tests/integration/`` の 7 件は skip され、DB へは接続しません。``DATABASE_URL`` は Prisma Client の生成が参照するだけです。
+``tests/setup/db.ts`` は ``TEST_DATABASE_URL`` があるときだけ ``DATABASE_URL`` を差し替えます。``check`` は ``TEST_DATABASE_URL`` を渡さないので、``tests/integration/`` の 10 件は skip され、DB へは接続しません。``DATABASE_URL`` は Prisma Client の生成が参照するだけです。
 
 Stripe の秘密鍵、Webhook の署名鍵、Google のクライアント、OpenAI のキーは要りません。ジョブの秘密として登録する必要もありません。署名の試験は、テスト内のダミー鍵で完結します。
 

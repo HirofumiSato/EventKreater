@@ -5,7 +5,7 @@ import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
 import { assertCapacityAllows, keepPriceSnapshot, resolveAttendanceChoice } from "@/modules/events/lib/events";
-import { formatEventDate, pricePlanChoiceLabel } from "@/lib/serializers";
+import { formatEventDate, participantPriceDisplay } from "@/lib/serializers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +62,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         include: { schedule: true, pricePlan: true },
       });
     });
+    const price = participantPriceDisplay(updated);
     return NextResponse.json({
       participant: {
         id: updated.id,
@@ -74,8 +75,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         scheduleLabel: updated.schedule
           ? `${formatEventDate(updated.schedule.eventDate)} ${updated.schedule.eventTime}`
           : null,
-        pricePlanLabel: updated.pricePlan ? pricePlanChoiceLabel(updated.pricePlan) : null,
-        pricePlanAmount: updated.pricePlan?.amount ?? null,
+        pricePlanLabel: price.label,
+        pricePlanAmount: price.amount,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
       },

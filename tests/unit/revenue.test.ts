@@ -7,6 +7,7 @@ import {
   type RevenueParticipant,
 } from "@/modules/revenue/lib/revenue";
 import { keepPriceSnapshot } from "@/modules/events/lib/events";
+import { participantPriceDisplay } from "@/lib/serializers";
 
 function attending(priceAmount: number | null, extra?: Partial<RevenueParticipant>): RevenueParticipant {
   return {
@@ -158,6 +159,63 @@ describe("groupBySchedule", () => {  it("開催回ごとに人数と小計を出
   it("プラン未選択でも人数には数える", () => {
     const rows = groupBySchedule([attending(null, { scheduleId: "a" })]);
     expect(rows).toEqual([{ scheduleId: "a", attendingCount: 1, subtotal: 0 }]);
+  });
+});
+
+describe("participantPriceDisplay", () => {
+  it("申込時点の金額が残っていれば、現在のプラン金額ではなくそちらを出す", () => {
+    expect(
+      participantPriceDisplay({
+        priceAmount: 3000,
+        pricePlanName: "一般",
+        priceAudience: "ANY",
+        pricePlan: { name: "一般（改定）", audience: "ANY", amount: 5000 },
+      }),
+    ).toEqual({ label: "一般 3,000円", amount: 3000 });
+  });
+
+  it("男女別は対象を前に付ける", () => {
+    expect(
+      participantPriceDisplay({
+        priceAmount: 2000,
+        pricePlanName: "学生",
+        priceAudience: "MALE",
+        pricePlan: null,
+      }),
+    ).toEqual({ label: "男性 学生 2,000円", amount: 2000 });
+  });
+
+  it("スナップショットが無ければ現在のプランを出す", () => {
+    expect(
+      participantPriceDisplay({
+        priceAmount: null,
+        pricePlanName: null,
+        priceAudience: null,
+        pricePlan: { name: "一般", audience: "ANY", amount: 3000, note: "1ドリンク付" },
+      }),
+    ).toEqual({ label: "一般 3,000円（1ドリンク付）", amount: 3000 });
+  });
+
+  it("プランが無ければ null", () => {
+    expect(
+      participantPriceDisplay({
+        priceAmount: null,
+        pricePlanName: null,
+        priceAudience: null,
+        pricePlan: null,
+      }),
+    ).toEqual({ label: null, amount: null });
+  });
+
+  it("無料プランは0円として残す", () => {
+    expect(
+      participantPriceDisplay({
+        priceAmount: 0,
+        pricePlanName: "一般",
+        priceAudience: "ANY",
+        pricePlan: null,
+      }),
+    ).toEqual({ label: "一般 無料", amount: 0 });
   });
 });
 
