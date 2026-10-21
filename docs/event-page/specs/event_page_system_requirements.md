@@ -147,6 +147,12 @@
 | **SCR-ORG-07** | **共同幹事招待・受諾画面** | `/invitations/[token]` | 招待された共同幹事 | 招待トークン有効時 | ・イベント概要表示<br>・「共同幹事として参加する」受諾ボタン<br>・受諾後の幹事権限Cookie発行 / アカウント統合 |
 | **SCR-MOD-01** | **課金・プラン選択モーダル** | `Modal (全主催画面オーバーレイ)` | イベント主催者（無料枠消化者） | `canCreateEvent` = false時 | ・無料トライアル枠（2回）終了通知<br>・単発生成プラン（299円）購入ボタン<br>・月額使い放題プラン（980円/月）加入ボタン<br>・Stripe Checkout決済画面への遷移 |
 
+この表は画面の責務を定めるものであり、実装済みの範囲は {doc}`/overall_system_requirements_common` の第5節を正とする。いまの実装に無いものは次のとおりである。
+
+* `SCR-PUB-01` のカレンダー追加（Google カレンダー URL と `.ics`）。地図リンクと下部固定の出欠バーは実装済みである。
+* `SCR-ORG-04` の QR コード表示・ダウンロードと SNS（X/LINE）シェアリンク。共有リンクのコピーは実装済みである。
+* `SCR-PUB-02` の `/auth/login`、`SCR-PUB-03` の `/mypage`、`SCR-ORG-07` の `/invitations/[token]` というパス。現在は `/auth/register`、`/participant` または `/mypage`、`/invitations/[code]` を使う。
+
 ---
 
 ### 4.2. 各画面の機能・レイアウト詳細仕様
@@ -513,7 +519,7 @@ interface BillingQuotaService {
 
 ### 7.3. 主要APIスキーマ詳細
 
-#### ① イベント新規作成: `POST /api/v1/organizer/events`
+#### ① イベント新規作成: `POST /api/v1/public/events`
 ##### Request Body (JSON)
 ```json
 {
