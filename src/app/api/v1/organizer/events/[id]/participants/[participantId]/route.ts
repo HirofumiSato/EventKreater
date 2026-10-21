@@ -4,7 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
-import { assertCapacityAllows, resolveAttendanceChoice } from "@/modules/events/lib/events";
+import { assertCapacityAllows, keepPriceSnapshot, resolveAttendanceChoice } from "@/modules/events/lib/events";
 import { formatEventDate, pricePlanChoiceLabel } from "@/lib/serializers";
 
 export const runtime = "nodejs";
@@ -47,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const updated = await prisma.$transaction(async (tx) => {
       await assertCapacityAllows(tx, params.id, input.status, current.id);
       const choice = await resolveAttendanceChoice(tx, params.id, input);
+      const snapshot = keepPriceSnapshot(current, choice);
       return tx.participant.update({
         where: { id: current.id },
         data: {
@@ -56,6 +57,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           comment: input.comment ? input.comment : null,
           scheduleId: choice.scheduleId,
           pricePlanId: choice.pricePlanId,
+          ...snapshot,
         },
         include: { schedule: true, pricePlan: true },
       });

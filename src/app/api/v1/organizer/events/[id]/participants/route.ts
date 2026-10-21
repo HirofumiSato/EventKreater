@@ -11,6 +11,7 @@ import {
   summarizeStatuses,
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,11 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         pricePlans: serializePricePlans(event.pricePlans),
       },
       stats: summarizeStatuses(participants.map((row) => row.status)),
+      // 名簿を開いたついでに売上サマリも出す。内訳は /revenue で見る。
+      revenue: summarizeRevenue(
+        participants,
+        participants.flatMap((row) => (row.receipt ? [row.receipt] : [])),
+      ),
       participants: participants.map((row) => ({
         id: row.id,
         name: row.name,

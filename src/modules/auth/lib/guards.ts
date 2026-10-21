@@ -190,6 +190,30 @@ export async function assertRegisteredOwner(
   return ctx;
 }
 
+/**
+ * イベントを1つに絞らない主催者向け API（横断の売上集計など）の入口。
+ * ゲスト幹事の Cookie は本人は分かるが会員ではないので、名簿と同じく
+ * 403 REGISTER_REQUIRED にして会員登録へ送る。未ログインは 401。
+ */
+export async function requireOrganizerAccount(req: NextRequest): Promise<string> {
+  const userId = await resolveUserId(req);
+  if (userId) return userId;
+  if (collectGuestTokenHashes(req).length > 0) {
+    throw new ProblemDetailException({
+      status: 403,
+      title: "Forbidden",
+      type: "probs/register-required",
+      detail: "売上の管理には会員登録が必要です。",
+      error: "REGISTER_REQUIRED",
+    });
+  }
+  throw new ProblemDetailException({
+    status: 401,
+    title: "Unauthorized",
+    detail: "ログインが必要です。",
+  });
+}
+
 /** 未登録の幹事がイベントを作成後に、誤字直しだけできる猶予。 */export const GUEST_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**

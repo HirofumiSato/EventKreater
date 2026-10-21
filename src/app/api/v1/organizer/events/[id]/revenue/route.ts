@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { ProblemDetailException } from "@/lib/exceptions";
+import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
+import { toErrorResponse } from "@/lib/http";
+import { formatEventDate } from "@/lib/serializers";
+import { groupByPlan, groupBySchedule, summarizeRevenue } from "@/modules/revenue/lib/revenue";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+interface RouteContext {
+  params: { id: string };
+}
+
+/**
+ * イベント1件の売上内訳。
+ * 金額は出欠確定時点のスナップショットを使うので、費用プランを編集しても過去は動かない。
+ */
+export async function GET(req: NextRequest, { params }: RouteContext) {
+  try {
+    await assertRegisteredOrganizer(req, params.id);
+    const event = await prisma.event.findFirst({
+      where: { id: params.id, isDeleted: false },
+      select: {
+        id: true,
+        title: true,
+        sortDate: true,
+        status: true,
+        schedules: { orderBy: { sortOrder: "asc" } },
+        participants: {
+          select: {
+            status: true,
+            priceAmount: true,
+            pricePlanName: true,
+            priceAudience: true,
+            scheduleId: true,
+          },
+        },
+        receipts: { select: { amount: true } },
+      },
+    });
+    if (!event) {
+      throw new ProblemDetailException({
+        status: 404,
+        title: "Not Found",
+        detail: "イベントが見つかりません。",
+      });
+    }
+
+    const bySchedule = groupBySchedule(event.participants).map((row) => {
+      const schedule = event.schedules.find((item) => item.id === row.scheduleId);
+      return {
+        scheduleId: row.scheduleId,
+        label: schedule ? `${formatEventDate(schedule.eventDate)} ${schedule.eventTime}` : "日時なし",
+        attendingCount: row.attendingCount,
+        subtotal: row.subtotal,
+      };
+    });
+    // 開催日の順に並べ、日時が消えた行は最後へ送る。
+    bySchedule.sort((a, b) => {
+      if (a.scheduleId === null) return 1;
+      if (b.scheduleId === null) return -1;
+      return a.label.localeCompare(b.label);
+    });
+
+    return NextResponse.json({
+      event: {
+        id: event.id,
+        title: event.title,
+        sortDate: formatEventDate(event.sortDate),
+        status: event.status,
+      },
+      summary: summarizeRevenue(event.participants, event.receipts),
+      byPlan: groupByPlan(event.participants),
+      bySchedule,
+    });
+  } catch (error) {
+    return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/revenue`);
+  }
+}
