@@ -699,16 +699,72 @@ svg {
   color: var(--color-warning-deep);
 }
 
-/* 売上のサマリ。4枚を横に並べ、狭い画面では2枚ずつ折り返す。 */
-.revenue-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+/* 売上サマリ。カードではなく帳票の行として並べる。 */
+.revenue-ledger {
+  margin: 0;
+  border-top: 1px solid var(--color-border);
 }
 
-@media (min-width: 900px) {
-  .revenue-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.revenue-ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto; /* ラベル左・金額右 */
+  align-items: baseline;
+  gap: 0 1rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* dt と dd の既定の字下げを消す。 */
+.revenue-ledger__label,
+.revenue-ledger__value,
+.revenue-ledger__note {
+  margin: 0;
+}
+
+.revenue-ledger__label {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.revenue-ledger__value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums; /* 4 行の桁を揃える */
+  text-align: right;
+  white-space: nowrap;
+}
+
+.revenue-ledger__unit {
+  margin-left: 0.125rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.revenue-ledger__note {
+  grid-column: 1 / -1; /* 金額の下に回り込む */
+  margin-top: 0.125rem;
+  color: var(--color-text-faint);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.revenue-ledger__value--warning {
+  color: var(--color-warning-deep);
+}
+
+.revenue-ledger__foot {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-faint);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  .revenue-ledger {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2.5rem;
   }
 }
 

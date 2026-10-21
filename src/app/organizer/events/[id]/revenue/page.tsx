@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
+import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import {
   isRegisterRequired,
   problemMessage,
@@ -92,32 +93,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
         </div>
       </section>
 
-      <section className="revenue-grid">
-        <article className="stat">
-          <p className="stat__label">見込み売上</p>
-          <p className="stat__value">{yen(summary.expectedRevenue)}</p>
-          <p className="help">
-            出席 {summary.attendingCount} 人中 {summary.paidAttendingCount} 人がプラン選択済み
-          </p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">領収書発行額</p>
-          <p className="stat__value">{yen(summary.issuedRevenue)}</p>
-          <p className="help">{summary.receiptCount} 件を発行済み</p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">見込みとの差額</p>
-          <p className={`stat__value${summary.unreconciled < 0 ? " stat__value--warning" : ""}`}>
-            {yen(summary.unreconciled)}
-          </p>
-          <p className="help">未回収額ではありません。領収書と突き合わせるための差です。</p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">平均単価</p>
-          <p className="stat__value">{yen(summary.averagePerAttendee)}</p>
-          <p className="help">プラン選択済みの出席者1人あたり</p>
-        </article>
-      </section>
+      <RevenueSummaryLedger summary={summary} />
 
       {summary.unassignedPlanCount > 0 && (
         <section className="alert alert--warning">

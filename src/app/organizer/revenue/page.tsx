@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
+import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
 import { STATUS_LABELS } from "@/modules/events/types";
 import type { EventRevenueRow, RevenueSummary } from "@/modules/revenue/lib/revenue";
@@ -193,32 +194,7 @@ export default function OrganizerRevenuePage() {
 
       {!loading && !error && totals && (
         <>
-          <section className="revenue-grid">
-            <article className="stat">
-              <p className="stat__label">見込み売上</p>
-              <p className="stat__value">{yen(totals.expectedRevenue)}</p>
-              <p className="help">
-                出席 {totals.attendingCount} 人中 {totals.paidAttendingCount} 人がプラン選択済み
-              </p>
-            </article>
-            <article className="stat">
-              <p className="stat__label">領収書発行額</p>
-              <p className="stat__value">{yen(totals.issuedRevenue)}</p>
-              <p className="help">{totals.receiptCount} 件を発行済み</p>
-            </article>
-            <article className="stat">
-              <p className="stat__label">見込みとの差額</p>
-              <p className={`stat__value${totals.unreconciled < 0 ? " stat__value--warning" : ""}`}>
-                {yen(totals.unreconciled)}
-              </p>
-              <p className="help">未回収額ではありません。領収書と突き合わせるための差です。</p>
-            </article>
-            <article className="stat">
-              <p className="stat__label">平均単価</p>
-              <p className="stat__value">{yen(totals.averagePerAttendee)}</p>
-              <p className="help">プラン選択済みの出席者1人あたり</p>
-            </article>
-          </section>
+          <RevenueSummaryLedger summary={totals} />
 
           {totals.unassignedPlanCount > 0 && (
             <section className="alert alert--warning">

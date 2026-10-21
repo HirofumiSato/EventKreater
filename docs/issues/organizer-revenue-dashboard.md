@@ -121,7 +121,8 @@ model Participant {
 
 ### 5. UI（主催者画面）
 
-- `/organizer/revenue`（新規）: 上部カード（見込み / 発行済 / 差額 / 参加人数・平均単価）、期間フィルタ、イベント別テーブル
+- `/organizer/revenue`（新規）: 上部の帳票風サマリ（見込み / 発行済 / 差額 / 平均単価）、期間フィルタ、イベント別テーブル
+- サマリはカードを並べず、`RevenueSummaryLedger`（`src/modules/revenue/components/`）で罫線の行にする。ラベル左・金額右で桁を揃え、狭い幅でも折り返さない。差額の説明は行に混ぜず、脚注に1回だけ出す
 - `/organizer/events/[id]/participants` のヘッダに売上サマリと「プラン未選択が N 人」バナー
 - `OrganizerTabs`（主催一覧 / 売上）を両画面の冒頭に置く
 - ヘッダー（`Navbar.tsx`）と `SITE.nav` は変更しない
