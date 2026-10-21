@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+.env
+docs/_build/
+src/static/tmp/
+src/static/default_backgrounds/

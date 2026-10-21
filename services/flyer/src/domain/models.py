@@ -1,0 +1,246 @@
+"""業務エンティティ。実装仕様書 2.1 / 2.2 のデータ契約。"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class TemplateId(str, Enum):
+    """選択されたデザインテンプレート ID。"""
+
+    STYLE_1_BAR_STYLISH = "style_1_bar_stylish"
+    STYLE_2_WARM_EARTH = "style_2_warm_earth"
+    STYLE_3_VIBRANT_POP = "style_3_vibrant_pop"
+
+
+class RainPolicy(str, Enum):
+    """雨天時の対応。"""
+
+    RAIN_OR_SHINE = "雨天決行"
+    CANCEL_ON_RAIN = "雨天中止"
+    POSTPONE_ON_RAIN = "雨天順延"
+    INDOOR = "屋内開催"
+
+
+class TextLayout(str, Enum):
+    """文字ブロックの配置プリセット。座標は adapters/renderer/layouts.py が持つ。"""
+
+    CLASSIC = "classic"
+    TOP_STACK = "top_stack"
+    CENTER_STACK = "center_stack"
+    BOTTOM_STACK = "bottom_stack"
+
+
+class CandidateKind(str, Enum):
+    """ウィザードのどの段階の候補か。"""
+
+    TYPE = "type"
+    BACKGROUND = "background"
+    LAYOUT = "layout"
+    PALETTE = "palette"
+
+
+class FlyerStatus(str, Enum):
+    """生成パイプラインの完了状態。"""
+
+    SUCCESS = "success"
+    FALLBACK_USED = "fallback_used"
+
+
+def sanitize_user_text(value: str) -> str:
+    """前後空白を除き、改行を空白へ置換する。"""
+    return value.strip().replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+
+
+class FlyerGenerationRequest(BaseModel):
+    """チラシ生成リクエスト。文字数制限とタイトルのサニタイズを持つ。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = Field(..., min_length=2, max_length=40, description="催しの名称")
+    event_date: str = Field(
+        ...,
+        min_length=4,
+        max_length=30,
+        description="開催日（例: 2026年11月15日(日)）",
+    )
+    event_time: str = Field(
+        ...,
+        min_length=4,
+        max_length=30,
+        description="開催時間（例: 19:00〜22:00 (開場 18:30)）",
+    )
+    price: str = Field(
+        ...,
+        min_length=1,
+        max_length=30,
+        description="費用（例: 3,000円 (1ドリンク付)）",
+    )
+    location: str = Field(..., min_length=2, max_length=60, description="開催場所・店名")
+    rain_policy: RainPolicy = Field(
+        default=RainPolicy.RAIN_OR_SHINE,
+        description="雨天時の対応",
+    )
+    capacity: str | None = Field(
+        None,
+        max_length=20,
+        description="想定上限人数（例: 先着15名）",
+    )
+    template_id: TemplateId = Field(..., description="選択されたデザインテンプレートID")
+    layout_id: TextLayout = Field(
+        default=TextLayout.CLASSIC,
+        description="文字ブロックの配置プリセット",
+    )
+
+    @field_validator("title", "event_date", "event_time", "price", "location", mode="before")
+    @classmethod
+    def sanitize_required_text(cls, value: object) -> object:
+        if isinstance(value, str):
+            return sanitize_user_text(value)
+        return value
+
+    @field_validator("capacity", mode="before")
+    @classmethod
+    def sanitize_capacity(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            cleaned = sanitize_user_text(value)
+            return cleaned or None
+        return value
+
+
+class LLMGenerationContext(BaseModel):
+    """画像生成プロンプトと可読性向けスタイルパラメータ。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    image_prompt_en: str = Field(
+        ...,
+        min_length=1,
+        description="DALL-E 3/SDXL向けの英語画像生成プロンプト。背景の被写体、光、質感、カメラアングルを指定",
+    )
+    negative_prompt_en: str = Field(
+        ...,
+        min_length=1,
+        description="除外要素（text, letters, words, logos, human faces close-up 等）",
+    )
+    suggested_accent_color: str = Field(
+        ...,
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="日付や重要情報の強調文字色（HEX）",
+    )
+    suggested_overlay_alpha: float = Field(
+        ...,
+        ge=0.2,
+        le=0.7,
+        description="背景画像に重ねる遮光レイヤーの不透明度",
+    )
+
+
+class RenderMetadata(BaseModel):
+    """決定論的レンダラーが採用した幾何・コントラスト上の決定。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    canvas_width: int = Field(default=1080, ge=1)
+    canvas_height: int = Field(default=1920, ge=1)
+    template_id: TemplateId
+    layout_id: TextLayout = TextLayout.CLASSIC
+    accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
+    overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+    title_font_size: int = Field(..., ge=1)
+    title_line_count: int = Field(..., ge=1, le=3)
+    title_block_width: int = Field(..., ge=0)
+    title_block_height: int = Field(..., ge=0)
+    contrast_ratio: float = Field(..., ge=1.0)
+    backdrop_applied: bool
+    outline_applied: bool
+    letter_spacing_px: int = Field(default=0, ge=0)
+
+
+class FlyerAsset(BaseModel):
+    """一時保存された完成チラシ。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    flyer_id: str = Field(..., min_length=1)
+    status: FlyerStatus
+    image_url: str = Field(..., min_length=1)
+    content_type: Literal["image/jpeg", "image/png"] = "image/jpeg"
+    created_at: datetime
+    render_metadata: RenderMetadata | None = None
+
+
+class FlyerGenerationResponse(BaseModel):
+    """API がクライアントへ返す生成結果。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: FlyerStatus
+    generation_id: str = Field(..., min_length=1)
+    image_url: str = Field(..., min_length=1)
+
+
+class FlyerGenerateCommand(FlyerGenerationRequest):
+    """確定リクエスト。candidate_id があれば選択済みの画像を再利用する。"""
+
+    candidate_id: str | None = Field(
+        default=None,
+        description="ウィザードで選んだ候補の UUID",
+    )
+
+
+class CandidateProposalCommand(FlyerGenerationRequest):
+    """候補提案リクエスト。count はステップ 2 のタイル枚数。"""
+
+    count: int = Field(default=8, ge=1, le=16, description="候補背景の枚数")
+
+
+class CandidateItem(BaseModel):
+    """ウィザードのタイル 1 枚。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str = Field(..., min_length=1)
+    kind: CandidateKind
+    label: str = Field(..., min_length=1)
+    description: str = ""
+    image_url: str = Field(..., min_length=1)
+    template_id: TemplateId
+    layout_id: TextLayout
+    palette_id: str
+    accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
+    overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+
+
+class CandidateList(BaseModel):
+    """1 ステップ分のタイル一覧。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    candidates: list[CandidateItem]
+
+
+class CandidateMeta(BaseModel):
+    """候補画像と一緒に保存する、子候補を再描画するための材料。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str = Field(..., min_length=1)
+    kind: CandidateKind
+    template_id: TemplateId
+    layout_id: TextLayout
+    palette_id: str = Field(..., min_length=1)
+    accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
+    overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+    parent_id: str | None = None
+    label: str = Field(..., min_length=1)
+    description: str = ""
+    source: str = "placeholder"
+    request: FlyerGenerationRequest
+    context: LLMGenerationContext

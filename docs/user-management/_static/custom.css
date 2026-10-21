@@ -1,0 +1,134 @@
+div.sphinxsidebar h1.logo {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  text-align: left;
+}
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.sphinxsidebar h1,
+div.sphinxsidebar h3 {
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+div.body {
+  line-height: 1.75;
+}
+
+div.sphinxsidebar ul li.toctree-l1 > a {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+div.sphinxsidebar a {
+  border-bottom: none;
+}
+
+div.sphinxsidebar .search {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+div.sphinxsidebar .search > div {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+div.sphinxsidebar input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.25rem;
+}
+
+div.sphinxsidebar input[type="submit"] {
+  border-radius: 0.25rem;
+  border: 1px solid #b4332a;
+  background: #b4332a;
+  color: #fff;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+table.docutils,
+div.highlight {
+  box-shadow: none;
+}
+
+div.highlight,
+div.highlight pre,
+table.docutils {
+  border-radius: 0.25rem;
+}
+
+div.highlight {
+  overflow-x: auto;
+}
+
+table.docutils {
+  border-collapse: collapse;
+}
+
+@media screen and (max-width: 1080px) {
+  body {
+    padding: 0;
+    background: #f4f3ef;
+  }
+
+  div.document {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 0;
+  }
+
+  div.sphinxsidebar {
+    order: -1;
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 1rem 1.25rem 0.25rem;
+    position: static;
+    background: #fff;
+    color: #1a1916;
+    border-bottom: 1px solid #d5d0c6;
+  }
+
+  div.sphinxsidebar h1,
+  div.sphinxsidebar h3,
+  div.sphinxsidebar h4,
+  div.sphinxsidebar p,
+  div.sphinxsidebar h3 a,
+  div.sphinxsidebar a {
+    color: #1a1916;
+  }
+
+  div.sphinxsidebar h1.logo,
+  div.sphinxsidebar p.logo {
+    display: block;
+  }
+
+  div.documentwrapper,
+  div.bodywrapper {
+    float: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  div.body {
+    min-width: 0;
+    padding: 1.25rem 1.25rem 2.5rem;
+  }
+
+  div.footer {
+    display: block;
+    width: auto;
+    margin: 0;
+    padding: 0 1.25rem 1.5rem;
+    text-align: left;
+  }
+}

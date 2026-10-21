@@ -1,0 +1,417 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  isRegisterRequired,
+  isSessionExpired,
+  problemMessage,
+  readProblemBody,
+} from "@/lib/problem";
+import { FLYER_TEMPLATE_IDS } from "@/modules/events/types";
+import type { FlyerFormPayload } from "@/modules/flyers/lib/form";
+import type {
+  FlyerCandidate,
+  FlyerQuota,
+  FlyerWizardStep,
+} from "@/modules/flyers/types";
+
+const STEP_TITLES: Record<FlyerWizardStep, string> = {
+  1: "タイプ",
+  2: "背景",
+  3: "文字の配置",
+  4: "配色",
+};
+
+const STEP_HINTS: Record<FlyerWizardStep, string> = {
+  1: "デザインの方向性を選んでください。文字の見え方がテンプレートごとに変わります。",
+  2: "背景を選んでください。ここでは課金も回数消費もありません。",
+  3: "文字をどこにまとめるかを選んでください。背景はそのまま残ります。",
+  4: "最後に色を選んでください。選んだ内容でチラシを保存します。",
+};
+
+const BACKGROUND_COUNT = 8;
+
+const EMPTY_STEPS: Record<FlyerWizardStep, FlyerCandidate[]> = {
+  1: [],
+  2: [],
+  3: [],
+  4: [],
+};
+
+const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
+  1: null,
+  2: null,
+  3: null,
+  4: null,
+};
+
+interface FlyerCandidateModalProps {
+  open: boolean;
+  draftKey: string;
+  base: FlyerFormPayload;
+  onClose: () => void;
+  onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
+  onQuotaChange: (quota: FlyerQuota) => void;
+}
+
+interface CandidateResponse {
+  candidates?: FlyerCandidate[];
+  quota?: FlyerQuota;
+}
+
+export function FlyerCandidateModal({
+  open,
+  draftKey,
+  base,
+  onClose,
+  onGenerated,
+  onQuotaChange,
+}: FlyerCandidateModalProps) {
+  const [step, setStep] = useState<FlyerWizardStep>(1);
+  const [candidates, setCandidates] =
+    useState<Record<FlyerWizardStep, FlyerCandidate[]>>(EMPTY_STEPS);
+  const [selected, setSelected] =
+    useState<Record<FlyerWizardStep, FlyerCandidate | null>>(EMPTY_SELECTION);
+  const [quota, setQuota] = useState<FlyerQuota | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [registerRequired, setRegisterRequired] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const reset = useCallback(() => {
+    setStep(1);
+    setCandidates(EMPTY_STEPS);
+    setSelected(EMPTY_SELECTION);
+    setQuota(null);
+    setError(null);
+    setRegisterRequired(false);
+    setSessionExpired(false);
+    setSaving(false);
+  }, []);
+
+  /** 候補を 1 ステップ分取りに行く。呼び出し時点の選択を親にする。 */
+  const load = useCallback(
+    async (target: FlyerWizardStep, current: Record<FlyerWizardStep, FlyerCandidate | null>) => {
+      setLoading(true);
+      setError(null);
+      setSessionExpired(false);
+      try {
+        let url = "";
+        let body: Record<string, unknown> = {};
+        if (target === 1) {
+          url = "/api/v1/flyers/candidates/types";
+          body = {
+            ...base,
+            draftKey,
+            templateId: FLYER_TEMPLATE_IDS[0],
+            layoutId: "classic",
+          };
+        } else if (target === 2) {
+          const type = current[1];
+          if (!type) return;
+          url = "/api/v1/flyers/candidates";
+          body = {
+            ...base,
+            draftKey,
+            templateId: type.templateId,
+            layoutId: "classic",
+            count: BACKGROUND_COUNT,
+          };
+        } else if (target === 3) {
+          const background = current[2];
+          if (!background) return;
+          url = `/api/v1/flyers/candidates/${background.candidateId}/layouts`;
+        } else {
+          const layout = current[3];
+          if (!layout) return;
+          url = `/api/v1/flyers/candidates/${layout.candidateId}/palettes`;
+        }
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+          const problem = await readProblemBody(response);
+          if (isRegisterRequired(problem)) setRegisterRequired(true);
+          if (isSessionExpired(problem)) setSessionExpired(true);
+          throw new Error(problemMessage(problem, "候補を作れませんでした"));
+        }
+        const data = (await response.json()) as CandidateResponse;
+        const next = data.candidates ?? [];
+        if (next.length === 0) {
+          throw new Error("候補が返ってきませんでした。もう一度お試しください。");
+        }
+        setCandidates((prev) => ({ ...prev, [target]: next }));
+        setSelected((prev) => ({ ...prev, [target]: next[0] }));
+        setStep(target);
+        if (data.quota) {
+          setQuota(data.quota);
+          onQuotaChange(data.quota);
+        }
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "候補を作れませんでした");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [base, draftKey, onQuotaChange],
+  );
+
+  // 開いたら毎回ステップ 1 から。前回の選択を持ち越さない。
+  // `base` は親の再描画ごとに新しい object になるので、effect の依存に入れず ref で渡す。
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
+  useEffect(() => {
+    if (!open) return;
+    reset();
+    void loadRef.current(1, EMPTY_SELECTION);
+  }, [open, reset]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !saving) onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, saving, onClose]);
+
+  const choose = (target: FlyerWizardStep, candidate: FlyerCandidate) => {
+    setSelected((prev) => {
+      const next = { ...prev, [target]: candidate };
+      for (let later = target + 1; later <= 4; later += 1) {
+        next[later as FlyerWizardStep] = null;
+      }
+      return next;
+    });
+    // 後続ステップは親が変われば作り直す。残しておくと別の背景の候補が混ざる。
+    setCandidates((prev) => {
+      const next = { ...prev };
+      for (let later = target + 1; later <= 4; later += 1) {
+        next[later as FlyerWizardStep] = [];
+      }
+      return next;
+    });
+  };
+
+  const goNext = () => {
+    const current = selected[step];
+    if (!current) {
+      setError("候補を 1 つ選んでください。");
+      return;
+    }
+    if (step === 4) {
+      void confirm();
+      return;
+    }
+    const target = (step + 1) as FlyerWizardStep;
+    if (candidates[target].length > 0) {
+      setStep(target);
+      setError(null);
+      return;
+    }
+    void load(target, selected);
+  };
+
+  const goBack = () => {
+    if (step === 1) return;
+    setError(null);
+    setStep((step - 1) as FlyerWizardStep);
+  };
+
+  const confirm = async () => {
+    const chosen = selected[4];
+    if (!chosen || saving) return;
+    setSaving(true);
+    setError(null);
+    setSessionExpired(false);
+    try {
+      const response = await fetch("/api/v1/flyers/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...base,
+          draftKey,
+          candidateId: chosen.candidateId,
+          templateId: chosen.templateId,
+          layoutId: chosen.layoutId,
+          paletteId: chosen.paletteId,
+        }),
+      });
+      if (!response.ok) {
+        const problem = await readProblemBody(response);
+        if (isRegisterRequired(problem)) setRegisterRequired(true);
+        if (isSessionExpired(problem)) setSessionExpired(true);
+        throw new Error(problemMessage(problem, "チラシを保存できませんでした"));
+      }
+      const data = (await response.json()) as {
+        flyerAsset: { id: string; imageUrl: string };
+        generationStatus: string;
+        quota?: FlyerQuota;
+      };
+      if (data.quota) {
+        setQuota(data.quota);
+        onQuotaChange(data.quota);
+      }
+      onGenerated(data.flyerAsset, data.generationStatus);
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "チラシを保存できませんでした");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const busy = loading || saving;
+  const visible = useMemo(() => candidates[step], [candidates, step]);
+
+  if (!open) return null;
+
+  return (
+    <div className="modal modal--open" role="presentation">
+      <button
+        type="button"
+        className="modal__backdrop"
+        aria-label="閉じる"
+        onClick={() => {
+          if (!saving) onClose();
+        }}
+      />
+      <div
+        className="wizard"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="flyer-wizard-title"
+      >
+        <div className="wizard__head">
+          <div className="wizard__title-row">
+            <h2 id="flyer-wizard-title" className="wizard__title">
+              チラシを作る
+            </h2>
+            {quota && (
+              <p className="wizard__quota">
+                {quota.anonymous
+                  ? `未ログインで作れるのは残り ${quota.remaining} 回`
+                  : `この下書きは残り ${quota.remaining} 回 / ${quota.limit} 回`}
+              </p>
+            )}
+          </div>
+          <ol className="wizard__steps">
+            {([1, 2, 3, 4] as FlyerWizardStep[]).map((value) => (
+              <li
+                key={value}
+                className={[
+                  "wizard__step",
+                  value === step ? "wizard__step--active" : "",
+                  value < step ? "wizard__step--done" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-current={value === step ? "step" : undefined}
+              >
+                {value}. {STEP_TITLES[value]}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="wizard__body">
+          <p className="wizard__hint">{STEP_HINTS[step]}</p>
+
+          {loading ? (
+            <div className="candidate-grid" aria-busy="true" aria-label="候補を準備しています">
+              {Array.from({ length: step === 1 ? 3 : step === 2 ? BACKGROUND_COUNT : 4 }).map(
+                (_, index) => (
+                  <div key={index} className="candidate-skeleton" />
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="candidate-grid">
+              {visible.map((candidate) => {
+                const active = selected[step]?.candidateId === candidate.candidateId;
+                return (
+                  <button
+                    key={candidate.candidateId}
+                    type="button"
+                    className={`candidate-tile${active ? " candidate-tile--selected" : ""}`}
+                    aria-pressed={active}
+                    onClick={() => choose(step, candidate)}
+                  >
+                    <span className="candidate-tile__frame">
+                      <img
+                        src={candidate.imageUrl}
+                        alt={candidate.label}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {active && <span className="candidate-tile__check">選択中</span>}
+                    </span>
+                    <span className="candidate-tile__label">{candidate.label}</span>
+                    {candidate.description && (
+                      <span className="candidate-tile__desc">{candidate.description}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {error && <p className="alert alert--error">{error}</p>}
+          {sessionExpired && (
+            <p className="alert alert--warning">
+              ログインの有効期限が切れています。
+              <a href="/auth/login">ログインし直す</a>
+            </p>
+          )}
+          {registerRequired && (
+            <p className="alert alert--warning">
+              未ログインで作れるチラシは 1 回までです。
+              <a href="/auth/register?mode=register">会員登録して続ける</a>
+            </p>
+          )}
+        </div>
+
+        <div className="wizard__foot">
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => {
+              if (saving) return;
+              onClose();
+            }}
+          >
+            やめる
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            disabled={step === 1 || busy}
+            onClick={goBack}
+          >
+            戻る
+          </button>
+          <button
+            type="button"
+            className="btn btn--sm"
+            disabled={busy || !selected[step]}
+            onClick={() => void goNext()}
+          >
+            {saving
+              ? "保存しています..."
+              : loading
+                ? "準備しています..."
+                : step === 4
+                  ? "このデザインで保存"
+                  : "次へ"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

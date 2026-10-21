@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+dist
+.prisma
+coverage
+*.log
+.env
+.env.local
+storage/flyers
+.DS_Store
+tsconfig.tsbuildinfo
+.venv-docs
+docs/_build/
+docs/*/_build/
+
+logs/

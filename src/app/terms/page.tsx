@@ -1,0 +1,301 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { SITE } from "@/lib/site";
+import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+
+export const metadata: Metadata = {
+  title: `利用規約 | ${SITE.name}`,
+  description: "料金、期間限定の価格キャンペーン、0円プランの自動更新と終了前の通知について定めます。",
+};
+
+const UPDATED_AT = "2026年10月21日";
+
+const yen = (value: number) => `${value.toLocaleString("ja-JP")}円`;
+
+const sections = [
+  ["第1条（適用）", "applicability"],
+  ["第2条（アカウント）", "account"],
+  ["第3条（料金プラン）", "plans"],
+  ["第4条（価格キャンペーン）", "campaigns"],
+  ["第5条（0円の単発チケット）", "free-ticket"],
+  ["第6条（0円の月額プランと自動更新）", "free-subscription"],
+  ["第7条（終了前の通知）", "notices"],
+  ["第8条（解約）", "cancellation"],
+  ["第9条（支払いと返金）", "payment"],
+  ["第10条（禁止事項）", "prohibited"],
+  ["第11条（サービスの変更・停止）", "changes"],
+  ["第12条（免責）", "disclaimer"],
+  ["第13条（規約の変更）", "revision"],
+  ["第14条（準拠法・管轄）", "law"],
+] as const;
+
+export default function TermsPage() {
+  return (
+    <div className="stack">
+      <section className="panel">
+        <div>
+          <p className="eyebrow">利用規約</p>
+          <h1 className="page-title">{SITE.name} 利用規約</h1>
+          <p className="page-lead">
+            この規約は、{SITE.name}（以下「本サービス」）の利用条件、料金、期間限定の価格キャンペーン、
+            0円プランの自動更新と終了前の通知について定めるものです。
+          </p>
+          <p className="help">最終改定日: {UPDATED_AT}</p>
+        </div>
+      </section>
+
+      <nav className="panel" aria-label="目次">
+        <h2 className="panel__title">目次</h2>
+        <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0, gap: "0.25rem" }}>
+          {sections.map(([label, id]) => (
+            <li key={id}>
+              <a href={`#${id}`} className="text-link">
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section className="stack" id="applicability">
+        <h2 className="panel__title">第1条（適用）</h2>
+        <p className="card__body">
+          本規約は、本サービスの利用に関する利用者と運営者との間の一切の関係に適用されます。
+          利用者は、本規約に同意したうえで本サービスを利用するものとします。本サービス上で表示する料金、
+          キャンペーン条件、注意書きは、本規約の一部を構成します。
+        </p>
+      </section>
+
+      <section className="stack" id="account">
+        <h2 className="panel__title">第2条（アカウント）</h2>
+        <p className="card__body">
+          利用者は、正確な情報でアカウントを登録し、認証情報を自己の責任で管理するものとします。
+          無料枠および0円キャンペーンを利用するには、電話番号の確認が必要です。ひとりの利用者が複数のアカウントを作成して
+          特典を重複して受け取る行為は禁止します。
+        </p>
+      </section>
+
+      <section className="stack" id="plans">
+        <h2 className="panel__title">第3条（料金プラン）</h2>
+        <p className="card__body">
+          本サービスの料金は、次のとおりです。表示価格はすべて消費税込みです。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">
+            <strong>無料枠</strong>: イベントの公開を累計 {FREE_EVENT_LIMIT} 回まで利用できます。
+          </li>
+          <li className="card__body">
+            <strong>単発チケット</strong>: 1回分 {yen(ONE_TIME_PRICE_JPY)}。イベントを1回公開するごとに1回分を消費します。
+          </li>
+          <li className="card__body">
+            <strong>月額プラン</strong>: 月額 {yen(SUBSCRIPTION_PRICE_JPY)}。契約が有効なあいだ、イベント作成の回数は数えません。
+          </li>
+        </ul>
+        <p className="card__body">
+          月額プランは、利用者が解約しない限り、1か月ごとに自動で更新され、登録された支払い方法へ自動で請求されます。
+          請求日は加入日を基準とし、日割りでの精算は行いません。
+        </p>
+        <p className="card__body">
+          料金は、為替、決済事業者の手数料、社会情勢その他の事情により改定することがあります。改定する場合は、
+          適用開始日の前に本サービス上でお知らせします。
+        </p>
+      </section>
+
+      <section className="stack" id="campaigns">
+        <h2 className="panel__title">第4条（価格キャンペーン）</h2>
+        <p className="card__body">
+          運営者は、期間と対象を定めた価格キャンペーン（期間限定の割引、0円での販売を含みます）を実施することがあります。
+          キャンペーンの内容、対象、開始日時、終了日時、適用条件は、本サービス上の表示に従います。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">
+            割引率は、定価に対して適用します。割引後の請求額は10円単位で切り上げ、最低請求額は10円とします。
+            割引率が100%のときのみ、請求額は0円となります。
+          </li>
+          <li className="card__body">
+            複数のキャンペーンが重なった場合は、優先度が最も高いものを1つだけ適用します。優先度が同じ場合は、
+            より新しく作成されたものを適用します。複数の割引を重ねることはありません。
+          </li>
+          <li className="card__body">
+            キャンペーンは、新たに申し込む利用者に適用されます。すでに購入済みの単発チケットや、すでに加入済みの月額プランの
+            料金を、あとから遡って変更することはありません。
+          </li>
+          <li className="card__body">
+            運営者は、キャンペーンを予告なく終了または停止することがあります。停止した場合でも、すでに適用を受けた
+            利用者の割引期間は、第6条に定める期間の満了まで継続します。
+          </li>
+          <li className="card__body">
+            キャンペーンを利用した不正行為（アカウントの量産、決済情報の使い回し、転売を目的とした取得など）が
+            認められた場合、運営者は特典の取消しやアカウントの停止を行うことがあります。
+          </li>
+        </ul>
+      </section>
+
+      <section className="stack" id="free-ticket">
+        <h2 className="panel__title">第5条（0円の単発チケット）</h2>
+        <p className="card__body">
+          単発チケットを対象とする0円キャンペーンでは、決済事業者を通さず、本サービス内で1回分の利用権を付与します。
+          付与には電話番号の確認が必要です。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">
+            ひとりの利用者が受け取れる回数は、キャンペーンごとに定める回数（特に定めがない場合は1回）までです。
+            付与された利用権は、ほかの利用者へ譲渡できません。
+          </li>
+          <li className="card__body">
+            付与された時点で、0円の取引として利用履歴に記録します。利用権を使わなかった場合でも、
+            ほかの特典へ交換したり、現金へ換えたりすることはできません。
+          </li>
+          <li className="card__body">
+            0円で付与された利用権にも、第3条の無料枠とは別に、イベントを公開した時点で1回分を消費します。
+          </li>
+        </ul>
+      </section>
+
+      <section className="stack" id="free-subscription">
+        <h2 className="panel__title">第6条（0円の月額プランと自動更新）</h2>
+        <p className="card__body">
+          運営者は、月額プランを対象とする0円キャンペーンを実施することがあります。このキャンペーンでは、
+          無料期間の終了後、登録された支払い方法へ月額 {yen(SUBSCRIPTION_PRICE_JPY)}（税込）を自動で請求します。
+          利用者は、申込み時にクレジットカードを登録するものとします。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">
+            <strong>無料期間の終了と自動課金</strong>: 無料期間が終了すると、利用者による手続きを要さず、
+            ただちに通常の月額料金へ切り替わり、自動で請求されます。無料期間中に解約した場合は請求しません。
+          </li>
+          <li className="card__body">
+            <strong>適用期間</strong>: 割引は、加入した日から、キャンペーンの終了日時までの期間を1か月単位で数え、
+            端数は1か月として切り上げた月数ぶん適用します。キャンペーン終了日時を過ぎても、
+            その月数の満了までは割引価格が継続します。
+          </li>
+          <li className="card__body">
+            <strong>カード登録の維持</strong>: 無料期間中も支払い方法の登録が必要です。カードの有効期限切れなどで
+            請求できない場合、無料期間の終了後に月額プランの利用を停止することがあります。
+          </li>
+          <li className="card__body">
+            <strong>解約</strong>: 無料期間中も解約できます。解約しても、無料期間の終了日までは現在の条件で
+            本サービスを利用できます。解約後は次回の更新がなく、新たな請求は発生しません。
+          </li>
+        </ul>
+      </section>
+
+      <section className="stack" id="notices">
+        <h2 className="panel__title">第7条（終了前の通知）</h2>
+        <p className="card__body">
+          運営者は、0円の月額プラン（割引率100%のキャンペーンを含みます）について、無料期間の終了前に、
+          登録されたメールアドレスへ次の通知を送ります。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">無料期間の終了日の3日前を目安とした通知</li>
+          <li className="card__body">無料期間の終了日の1日前を目安とした通知</li>
+        </ul>
+        <p className="card__body">
+          通知には、無料期間の終了日時、終了後に請求する金額、解約の方法を記載します。通知は、本サービス上の
+          マイページおよび利用規約の表示とあわせて、利用者が終了日時を確認できるようにするために送るものです。
+          メールの不到達その他の事情により通知が届かなかった場合でも、第6条の自動課金は行われます。
+        </p>
+        <p className="card__body">
+          割引率が100%未満のキャンペーンについても、割引期間が終了する前に、同じ日程で通知することがあります。
+        </p>
+      </section>
+
+      <section className="stack" id="cancellation">
+        <h2 className="panel__title">第8条（解約）</h2>
+        <p className="card__body">
+          月額プランの解約は、マイページの「お支払い管理」から行えます。解約の手続きが完了した時点で、
+          次回以降の自動更新を停止します。無料期間中に解約した場合も、無料期間の終了日までは利用できます。
+        </p>
+        <p className="card__body">
+          解約を忘れたこと、通知を確認しなかったことを理由とする返金は、原則として行いません。
+          ただし、二重に請求された場合など、運営者に責めがある場合はこの限りではありません。
+        </p>
+      </section>
+
+      <section className="stack" id="payment">
+        <h2 className="panel__title">第9条（支払いと返金）</h2>
+        <p className="card__body">
+          決済は、決済事業者を通じてクレジットカードで行います。支払いに関する情報は決済事業者が管理し、
+          運営者はカード番号を保持しません。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">
+            単発チケットは購入時点で、月額プランは各更新時点で、それぞれ請求します。
+          </li>
+          <li className="card__body">
+            すでに購入した単発チケットおよび経過した月額料金は、原則として返金しません。
+          </li>
+          <li className="card__body">
+            決済の取消し、返金、チャージバックが発生した場合、運営者は該当する利用権を取り消し、
+            または月額プランを停止することがあります。
+          </li>
+        </ul>
+      </section>
+
+      <section className="stack" id="prohibited">
+        <h2 className="panel__title">第10条（禁止事項）</h2>
+        <p className="card__body">
+          利用者は、次の行為を行ってはなりません。
+        </p>
+        <ul className="stack" style={{ paddingLeft: "1.25rem" }}>
+          <li className="card__body">法令または公序良俗に違反する行為</li>
+          <li className="card__body">虚偽の情報で登録する行為、他人になりすます行為</li>
+          <li className="card__body">キャンペーンの特典を不正に取得する行為、転売する行為</li>
+          <li className="card__body">本サービスの運営を妨げる行為、不正アクセス、過度な負荷をかける行為</li>
+          <li className="card__body">第三者の著作権、肖像権、プライバシーその他の権利を侵害する行為</li>
+        </ul>
+      </section>
+
+      <section className="stack" id="changes">
+        <h2 className="panel__title">第11条（サービスの変更・停止）</h2>
+        <p className="card__body">
+          運営者は、利用者へ事前に通知することにより、本サービスの内容を変更し、または提供を終了することがあります。
+          緊急やむを得ない場合は、事前の通知を省略することがあります。この場合、運営者は、
+          すでに支払われた料金のうち未経過分について、合理的な方法で精算します。
+        </p>
+      </section>
+
+      <section className="stack" id="disclaimer">
+        <h2 className="panel__title">第12条（免責）</h2>
+        <p className="card__body">
+          運営者は、本サービスが利用者の特定の目的に適合すること、期待する結果が得られること、
+          および中断なく動作することを保証しません。通信環境、決済事業者、外部サービスに起因する障害について、
+          運営者は責任を負いません。ただし、運営者の故意または重大な過失による場合はこの限りではありません。
+        </p>
+      </section>
+
+      <section className="stack" id="revision">
+        <h2 className="panel__title">第13条（規約の変更）</h2>
+        <p className="card__body">
+          運営者は、必要と判断した場合に本規約を変更することがあります。変更後の規約は、本サービス上に掲載した
+          時点から効力を生じます。料金や自動更新に関する重要な変更は、適用開始日の前に本サービス上でお知らせします。
+        </p>
+      </section>
+
+      <section className="stack" id="law">
+        <h2 className="panel__title">第14条（準拠法・管轄）</h2>
+        <p className="card__body">
+          本規約は日本法に準拠します。本サービスに関して紛争が生じた場合、運営者の所在地を管轄する裁判所を
+          第一審の専属的合意管轄裁判所とします。
+        </p>
+      </section>
+
+      <section className="panel">
+        <h2 className="panel__title">お問い合わせ</h2>
+        <p className="card__body">
+          料金、キャンペーン、解約に関するお問い合わせは、マイページの「お支払い管理」または
+          運営者が別途案内する窓口からご連絡ください。
+        </p>
+        <p className="help">
+          <Link href="/service" className="text-link">
+            サービスと料金
+          </Link>
+          {" ・ "}
+          <Link href="/mypage" className="text-link">
+            マイページ
+          </Link>
+        </p>
+      </section>
+    </div>
+  );
+}

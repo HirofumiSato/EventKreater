@@ -1,0 +1,246 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { readProblem } from "@/lib/problem";
+import type { AccountProfile, ReauthChallenge } from "@/modules/account/types";
+
+interface Props {
+  profile: AccountProfile;
+  onChange: (next: Partial<AccountProfile>) => void;
+}
+
+type EmailStep = "idle" | "reauth" | "newEmail" | "sent";
+
+export function AccountInfoPanel({ profile, onChange }: Props) {
+  const [name, setName] = useState(profile.name);
+  const [nameStatus, setNameStatus] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
+
+  const [emailStep, setEmailStep] = useState<EmailStep>("idle");
+  const [emailChallenge, setEmailChallenge] = useState<ReauthChallenge | null>(null);
+  const [emailCode, setEmailCode] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+
+  const saveName = async (event: FormEvent) => {
+    event.preventDefault();
+    setSavingName(true);
+    setNameError(null);
+    setNameStatus(null);
+    try {
+      const res = await fetch("/api/v1/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error(await readProblem(res));
+      const body = (await res.json()) as { user: { id: string; email: string; name: string } };
+      onChange({ name: body.user.name });
+      setNameStatus("表示名を変更しました。");
+    } catch (cause) {
+      setNameError(cause instanceof Error ? cause.message : "変更に失敗しました");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const startEmailReauth = async (channel: "SMS" | "EMAIL") => {
+    setEmailBusy(true);
+    setEmailError(null);
+    setEmailNotice(null);
+    try {
+      const res = await fetch("/api/v1/user/reauth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel }),
+      });
+      if (!res.ok) throw new Error(await readProblem(res));
+      const body = (await res.json()) as ReauthChallenge;
+      setEmailChallenge(body);
+      setEmailStep("newEmail");
+      setEmailNotice(`確認番号を ${body.destinationMask} へ送りました。`);
+    } catch (cause) {
+      setEmailError(cause instanceof Error ? cause.message : "確認番号を送れませんでした");
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const submitEmail = async (event: FormEvent) => {
+    event.preventDefault();
+    setEmailBusy(true);
+    setEmailError(null);
+    setEmailNotice(null);
+    try {
+      const res = await fetch("/api/v1/user/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: emailCode, newEmail }),
+      });
+      if (!res.ok) throw new Error(await readProblem(res));
+      const body = (await res.json()) as { maskedEmail: string };
+      setEmailStep("sent");
+      setEmailNotice(
+        `${body.maskedEmail} へ確認リンクを送りました。メールのリンクを開くと変更が完了します。`,
+      );
+    } catch (cause) {
+      setEmailError(cause instanceof Error ? cause.message : "変更を開始できませんでした");
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const resetEmail = () => {
+    setEmailStep("idle");
+    setEmailChallenge(null);
+    setEmailCode("");
+    setNewEmail("");
+    setEmailError(null);
+    setEmailNotice(null);
+  };
+
+  return (
+    <section className="panel">
+      <h2 className="panel__title">アカウント情報</h2>
+      <p className="panel__note">
+        ここで変えられるのは会員としての情報です。イベントごとの参加者名は、各イベントの出欠フォームで変更してください。
+      </p>
+
+      <form className="stack" onSubmit={(event) => void saveName(event)}>
+        <div className="field">
+          <label className="label" htmlFor="account-name">
+            表示名
+          </label>
+          <input
+            id="account-name"
+            className="input"
+            value={name}
+            maxLength={50}
+            onChange={(event) => setName(event.target.value)}
+            disabled={savingName}
+          />
+          <p className="help">1〜50文字。領収書の発行者名など、これから作る書類に使われます。</p>
+        </div>
+        {nameError && <p className="alert alert--error">{nameError}</p>}
+        {nameStatus && <p className="alert alert--success">{nameStatus}</p>}
+        <div className="btn-row">
+          <button type="submit" className="btn btn--primary" disabled={savingName || !name.trim()}>
+            {savingName ? "保存しています..." : "表示名を保存"}
+          </button>
+        </div>
+      </form>
+
+      <div className="stack">
+        <div>
+          <p className="label">メールアドレス</p>
+          <p>{profile.email}</p>
+          <p className="help">ログインと確認メールの宛先に使います。変更すると確認リンクが届きます。</p>
+        </div>
+
+        {emailStep === "idle" && (
+          <div className="btn-row">
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => setEmailStep("reauth")}
+            >
+              メールアドレスを変更する
+            </button>
+          </div>
+        )}
+
+        {emailStep === "reauth" && (
+          <div className="stack">
+            <p className="label">本人確認</p>
+            <p className="help">
+              変更する前に、登録済みの連絡先へ確認番号を送ります。受け取れる方法を選んでください。
+            </p>
+            <div className="btn-row">
+              {profile.phoneVerified && profile.phoneMasked && (
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  disabled={emailBusy}
+                  onClick={() => void startEmailReauth("SMS")}
+                >
+                  SMS（{profile.phoneMasked}）
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn--outline btn--sm"
+                disabled={emailBusy}
+                onClick={() => void startEmailReauth("EMAIL")}
+              >
+                メール（{profile.email}）
+              </button>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={resetEmail}>
+                やめる
+              </button>
+            </div>
+          </div>
+        )}
+
+        {emailStep === "newEmail" && (
+          <form className="stack" onSubmit={(event) => void submitEmail(event)}>
+            <div className="field">
+              <label className="label" htmlFor="email-code">
+                確認番号
+              </label>
+              <input
+                id="email-code"
+                className="input"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                value={emailCode}
+                onChange={(event) => setEmailCode(event.target.value.replace(/\D/g, ""))}
+                disabled={emailBusy}
+                required
+              />
+              <p className="help">
+                {emailChallenge ? `${emailChallenge.destinationMask} へ6桁の番号を送りました。` : ""}
+              </p>
+            </div>
+            <div className="field">
+              <label className="label" htmlFor="new-email">
+                新しいメールアドレス
+              </label>
+              <input
+                id="new-email"
+                type="email"
+                className="input"
+                value={newEmail}
+                onChange={(event) => setNewEmail(event.target.value)}
+                disabled={emailBusy}
+                required
+              />
+            </div>
+            <div className="btn-row">
+              <button type="submit" className="btn btn--primary btn--sm" disabled={emailBusy}>
+                {emailBusy ? "送信しています..." : "確認リンクを送る"}
+              </button>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={resetEmail}>
+                やめる
+              </button>
+            </div>
+          </form>
+        )}
+
+        {emailStep === "sent" && (
+          <div className="btn-row">
+            <button type="button" className="btn btn--ghost btn--sm" onClick={resetEmail}>
+              閉じる
+            </button>
+          </div>
+        )}
+
+        {emailNotice && <p className="alert alert--info">{emailNotice}</p>}
+        {emailError && <p className="alert alert--error">{emailError}</p>}
+      </div>
+    </section>
+  );
+}

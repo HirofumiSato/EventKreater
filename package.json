@@ -1,0 +1,55 @@
+{
+  "name": "event-creater",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "next dev -p 3012",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "vitest run tests/integration",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:backfill": "node scripts/backfill-event-details.mjs",
+    "db:seed": "node scripts/seed-local-user.mjs",
+    "admin:promote": "node scripts/promote-admin.mjs",
+    "db:studio": "prisma studio",
+    "docs:install": "node scripts/build-docs.mjs install",
+    "docs": "node scripts/build-docs.mjs",
+    "billing:notices": "node scripts/billing-notices.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6",
+    "lucide-react": "^0.453.0",
+    "nanoid": "^5.0.9",
+    "next": "^14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stripe": "14.25.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.18",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.7"
+  },
+  "prisma": {
+    "seed": "node scripts/seed-local-user.mjs"
+  }
+}
