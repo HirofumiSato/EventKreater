@@ -48,7 +48,8 @@ const pricePlanInputSchema = z.object({
     .string()
     .trim()
     .max(100, "補足は100文字以内にしてください")
-    .optional()
+    // 空の補足はクライアントが null で送る。undefined だけを許すと保存が 400 になる。
+    .nullish()
     .transform((value) => (value ? value : null)),
 });
 
@@ -160,13 +161,14 @@ const optionalText = (max: number, message: string) =>
     .string()
     .trim()
     .max(max, message)
-    .optional()
+    // 空欄はクライアントが null で送ってくる（undefined だけでは弾かれる）。
+    .nullish()
     .transform((value) => (value ? value : null));
 
 const postalCodeSchema = z
   .string()
   .trim()
-  .optional()
+  .nullish()
   .transform((value) => (value ? normalizePostalCode(value) : null))
   .refine(
     (value) => value === null || /^\d{7}$/.test(value),
