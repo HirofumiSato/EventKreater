@@ -12,8 +12,8 @@ function amount(value: number): string {
  * 売上サマリ。カードをやめて帳票の行として並べる。
  * 狭い画面は1列。768px 以上では2列にして紙面の横幅を使う。
  *
- * 注記は短い名詞句に揃える（「参加 4 人」）。説明の文章は行に入れず脚注へ逃がすと、
- * 4 行の高さが揃って罫線のリズムが出る。差額の行だけは、何と何の差かを式で示す。
+ * 注記は短い名詞句に揃える（「参加 4 人」）。説明の文章は行に入れず脚注へ逃がす。
+ * 差額の行は、ラベルと金額だけで意味が通るので注記を持たない。
  */
 export function RevenueSummaryLedger({ summary }: { summary: RevenueSummary }) {
   return (
@@ -46,10 +46,6 @@ export function RevenueSummaryLedger({ summary }: { summary: RevenueSummary }) {
           >
             {amount(summary.unreconciled)}
             <span className="revenue-ledger__unit">円</span>
-          </dd>
-          {/* 式を出しておくと、差額が何と何の差かを行の中で読み切れる。 */}
-          <dd className="revenue-ledger__note">
-            見込み {amount(summary.expectedRevenue)} − 発行 {amount(summary.issuedRevenue)}
           </dd>
         </div>
 
