@@ -185,12 +185,12 @@ export async function assertLockHolder(req: NextRequest, eventId: string) {
 
 ## 3. エンドポイント実装コード
 
-### 3.1. イベント新規作成 (`POST /api/v1/events`)
+### 3.1. イベント新規作成 (`POST /api/v1/public/events`)
 
 会員登録スキップ時（ゲスト幹事）と会員ログイン時の双方に対応する。
 
 ```typescript
-// src/app/api/v1/events/route.ts
+// src/app/api/v1/public/events/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";

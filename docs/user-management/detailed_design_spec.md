@@ -50,7 +50,7 @@
   PUT    /api/v1/public/events/:id/my-rsvp       - 自身の出欠回答の変更
 
 [イベント作成]
-  POST   /api/v1/events                          - イベント新規作成（スキップ/会員対応）
+  POST   /api/v1/public/events                   - イベント新規作成（スキップ/会員対応）
 
 [幹事管理機能]
   GET    /api/v1/organizer/events/:id/participants - 参加者一覧取得（幹事専用）
@@ -188,7 +188,7 @@
 
 ### 3.2. イベント作成API
 
-#### `POST /api/v1/events`
+#### `POST /api/v1/public/events`
 イベントを新規作成する。未登録のまま作成（ゲスト幹事）またはログイン状態での作成（会員幹事）の双方を同一エンドポイントで処理する。
 
 * **Headers:**
