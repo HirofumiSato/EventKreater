@@ -577,14 +577,17 @@ model EventInvitation {
 
 #### `event_price_plans`（費用プラン）
 
-1イベントにつき 1〜8 件。プラン名はイベント内で一意。
+1イベントにつき 1〜8 件。プラン名は同じ対象の中で一意（`(event_id, audience, name)`）。男女別の費用では、男性用と女性用の2件で1組とし、2件として数える。1組の2件は同じプラン名を持ち、画面のプラン名入力は組で1回だけ行う。金額と補足は2件で別々に持てる。
 
 | カラム名 | 物理型 | NULL | 初期値 | 制約 | 説明 |
 | :---- | :---- | :---: | :---- | :---- | :---- |
 | `id` | UUID | NO | `gen_random_uuid()` | PK | 費用プランID |
 | `event_id` | UUID | NO | - | FK | 対象イベント（Cascade） |
-| `name` | VARCHAR(50) | NO | - | - | プラン名（例: プランA） |
-| `price` | VARCHAR(50) | NO | - | - | 費用文（例: 3,000円） |
+| `name` | VARCHAR(50) | NO | - | UNIQUE(event_id, audience, name) | プラン名（例: プランA） |
+| `audience` | VARCHAR(10) | NO | `ANY` | ENUM | `ANY`（共通）/ `MALE`（男性用）/ `FEMALE`（女性用） |
+| `amount` | INTEGER | NO | 0 | CHECK(>=0) | 金額（円）。0は無料 |
+| `note` | VARCHAR(100) | YES | NULL | - | 「1ドリンク付」などの補足 |
+| `price` | VARCHAR(50) | YES | NULL | - | 旧・費用文。移行の取りこぼし確認用で、新規・更新では書き込まない |
 | `sort_order` | INTEGER | NO | - | - | 表示順（0始まり） |
 
 #### `event_locks`（排他編集排他ロックテーブル）

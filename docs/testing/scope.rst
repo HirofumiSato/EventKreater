@@ -145,7 +145,7 @@
 現在のテスト
 ------------
 
-8 ファイル、``it`` は 43 件です。内訳は ``tests/unit/`` が 36、``tests/integration/`` が 7 です。結合の 7 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。
+10 ファイル、``it`` は 74 件です。内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。結合の 7 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。
 
 .. list-table::
    :header-rows: 1
@@ -172,12 +172,20 @@
      - 引き継いだ筆頭幹事の数だけ無料枠が増える。上限を超えない。不正な値は 0 として扱う
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/unit/problem.test.ts``
-     - 3
+     - 4
      - ``REGISTER_REQUIRED`` の判定、文言の優先順、イベント ID の UUID 判定
      - 403 の共通処理
+   * - ``tests/unit/flyer-quota.test.ts``
+     - 6
+     - チラシ生成の利用枠の判定。残数、上限、会員とゲストの扱い
+     - SCR-ORG-08
    * - ``tests/unit/event-details.test.ts``
-     - 18
-     - 日時の移行（チルダ・全角数字・1 桁のゼロ埋め・翌日またぎ）、料金の「無料」と補足、会場名と住所の結合、チラシ用の 30 文字以内の料金ラベル
+     - 40
+     - 日時の移行（チルダ・全角数字・1 桁のゼロ埋め・翌日またぎ）、料金の「無料」と補足、会場名と住所の結合、チラシ用の 30 文字以内の料金ラベル、男女別の組の判定・組単位のプラン名の反映と食い違いの検出・共通からの展開・組単位の上限・共通へ戻すときの同名の整理
+     - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/event-payload-schema.test.ts``
+     - 2
+     - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/integration/guest-limit.test.ts``
      - 4
@@ -188,7 +196,7 @@
      - 筆頭幹事の付け替え、二度呼んでも枠が増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
 
-件数の内訳は ``tests/unit/`` が 36、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 36 件を実行して 7 件を skip し、2 秒弱で終わります。
+件数の内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 67 件を実行して 7 件を skip します。
 
 これから書くテスト
 ------------------

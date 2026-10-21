@@ -59,7 +59,7 @@
 * **FR-CREATE-03（基本情報の入力・バリデーション）:** 以下を厳密に入力受付・検証する。開催日時と費用プランは複数件を持てる。
   1. `title`（催しの名前）: 必須、1〜100文字。
   2. `schedules`（開催日時）: 必須、1〜8件。各件は `eventDate`（YYYY-MM-DD の実在する日付）と `eventTime`（1〜50文字。例: `19:00〜22:00`）。同じ日付と時間の組は重複できない。
-  3. `pricePlans`（費用プラン）: 必須、1〜8件。各件は `name`（プラン名、1〜50文字。例: `プランA`、`学生`）と `price`（費用文、1〜50文字。例: `3,000円 (1ドリンク付)`、`無料`）。プラン名はイベント内で重複できない。
+  3. `pricePlans`（費用プラン）: 必須、1〜8件。各件は `name`（プラン名、1〜50文字。例: `プランA`、`学生`）、`audience`（対象。`ANY` / `MALE` / `FEMALE`。既定は `ANY`）、`amount`（整数の円。0〜9,999,999。0は無料）、`note`（補足、任意、1〜100文字。例: `1ドリンク付`）。同じ対象の中でプラン名は重複できない（`(audience, name)` の一意制約）。男女別の費用では、1プランを男性用・女性用の1組として扱い、対象は画面から選べない固定表示にする。プラン名は組で1つだけ入力し、1組の2件へ同じ名前を保存する。金額と補足は行ごとに持つ。追加と削除は組単位で行い、1組を2件として上限8件まで数える。
   4. `location`（場所）: 必須、1〜150文字。
   5. `rain_policy`（雨天時対応）: 必須、選択式（`雨天決行` / `雨天中止` / `雨天順延` / `屋内開催`）。
   6. `capacity`（想定上限人数）: 任意、正の整数値（定員なしの場合は `null` 許容）。
@@ -375,7 +375,7 @@ model Event {
   title           String       @db.VarChar(100)       // 催しの名前
   sortDate        DateTime     @db.Date               // 最も早い開催日
   schedules       EventSchedule[]                    // 開催日時 1〜8件
-  pricePlans      EventPricePlan[]                   // プラン名と費用 1〜8件
+  pricePlans      EventPricePlan[]                   // プラン名・対象・金額 1〜8件（男女別は2件で1組）
   location        String       @db.VarChar(150)       // 開催場所
   rainPolicy      RainPolicy   @default(RAIN_OR_SHINE)// 雨天時の対応
   capacity        Int?                                // 想定上限人数（null=定員なし）

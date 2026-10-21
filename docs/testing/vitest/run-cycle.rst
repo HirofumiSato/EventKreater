@@ -138,7 +138,7 @@ watch のサイクル
 所要時間の目安
 --------------
 
-手元の実測です。``tests/unit/`` の 36 件が実行され、``tests/integration/`` の 7 件は skip されて、``npm test`` は 2 秒弱で終わります。``npm run check`` は ESLint と ``tsc`` を含めて 20 秒前後です。
+手元の実測です。``tests/unit/`` の 67 件が実行され、``tests/integration/`` の 7 件は skip されて、``npm test`` は 2 秒弱で終わります。``npm run check`` は ESLint と ``tsc`` を含めて 20 秒前後です。
 
 結合テストを実行すると、1 件あたり数十ミリ秒から数百ミリ秒になります。テスト用 DB が遠い場所にあると、ここが支配的になります。
 

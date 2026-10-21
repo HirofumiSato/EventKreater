@@ -23,7 +23,7 @@
    * - 純粋関数
      - ``npm test``
      - ``isEligibleReferrer``、``assertGuestEditWindow``、``mergedFreeEventCount``、``resolveInitialAuthMode``、``isRegisterRequired``、``isEventId``、``composeEventTime``、``parseLegacyPrice``、``flyerPriceLabel``
-     - 36 件
+     - 67 件
    * - ルート
      - ``npm test``
      - Route Handler を直接呼ぶ。署名の無い Webhook は 400、未登録は 403 ``REGISTER_REQUIRED``、不正なボディは 422
