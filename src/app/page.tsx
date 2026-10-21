@@ -26,6 +26,10 @@ const capabilities = [
     "集計も、リマインドも、ここで",
     "出欠は自動で集計されます。開催が近づいたら、名簿から参加者へ案内を送れます。",
   ],
+  [
+    "いくら集まるか、先に分かる",
+    "費用プランと出欠から、見込みの売上を自動で計算します。何人集まれば赤字にならないかを、集金の前に確かめられます。会員登録した幹事から使えます。",
+  ],
 ];
 
 const steps = [
@@ -42,7 +46,7 @@ const steps = [
   [
     "3",
     "出欠が自動で揃う",
-    "参加者は名前と出欠だけで回答します。幹事は参加者名簿で集計を確認します。",
+    "参加者は名前と出欠だけで回答します。幹事は参加者名簿で集計を確認し、見込みの売上も同じ流れで確かめられます。",
   ],
 ];
 
@@ -74,8 +78,8 @@ export default function HomePage() {
 
       <section className="section">
         <div className="section__head">
-          <h2 className="section__title">幹事の手間を、3つに減らす</h2>
-          <p className="section__note">告知・出欠・集計を、1つのURLにまとめます。</p>
+          <h2 className="section__title">幹事の手間を、4つに減らす</h2>
+          <p className="section__note">告知・出欠・集計・お金を、1つのURLにまとめます。</p>
         </div>
         <ul className="feature-list">
           {capabilities.map(([title, body], index) => (

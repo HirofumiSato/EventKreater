@@ -4,7 +4,12 @@ import { generateSecureToken, sha256 } from "@/lib/crypto";
 import { isUniqueViolation, ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { SubmitRsvpSchema } from "@/lib/schemas";
-import { assertCapacityAllows, assertRsvpOpen, resolveAttendanceChoice } from "@/modules/events/lib/events";
+import {
+  assertCapacityAllows,
+  assertRsvpOpen,
+  keepPriceSnapshot,
+  resolveAttendanceChoice,
+} from "@/modules/events/lib/events";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { chooseRsvpTarget, findMyParticipant } from "@/modules/participants/lib/rsvp";
@@ -72,6 +77,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           const { participant: target, stale } = await chooseRsvpTarget(tx, found, userId);
           await assertCapacityAllows(tx, event.id, input.status, target.id);
           const choice = await resolveAttendanceChoice(tx, event.id, input);
+          const snapshot = keepPriceSnapshot(target, choice);
           const updated = await tx.participant.update({
             where: { id: target.id },
             data: {
@@ -81,6 +87,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
               comment: input.comment ? input.comment : null,
               scheduleId: choice.scheduleId,
               pricePlanId: choice.pricePlanId,
+              ...snapshot,
               ipHash,
               // 未ログインで答えた行も、ログイン中の会員に紐づける。
               ...(userId && !target.userId ? { userId } : {}),
@@ -106,6 +113,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             comment: input.comment ? input.comment : null,
             scheduleId: choice.scheduleId,
             pricePlanId: choice.pricePlanId,
+            priceAmount: choice.priceAmount,
+            pricePlanName: choice.pricePlanName,
+            priceAudience: choice.priceAudience,
             ipHash,
           },
         });

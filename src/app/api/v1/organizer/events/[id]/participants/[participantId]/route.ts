@@ -4,8 +4,8 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
-import { assertCapacityAllows, resolveAttendanceChoice } from "@/modules/events/lib/events";
-import { formatEventDate, pricePlanChoiceLabel } from "@/lib/serializers";
+import { assertCapacityAllows, keepPriceSnapshot, resolveAttendanceChoice } from "@/modules/events/lib/events";
+import { formatEventDate, participantPriceDisplay } from "@/lib/serializers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const updated = await prisma.$transaction(async (tx) => {
       await assertCapacityAllows(tx, params.id, input.status, current.id);
       const choice = await resolveAttendanceChoice(tx, params.id, input);
+      const snapshot = keepPriceSnapshot(current, choice);
       return tx.participant.update({
         where: { id: current.id },
         data: {
@@ -56,10 +57,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           comment: input.comment ? input.comment : null,
           scheduleId: choice.scheduleId,
           pricePlanId: choice.pricePlanId,
+          ...snapshot,
         },
         include: { schedule: true, pricePlan: true },
       });
     });
+    const price = participantPriceDisplay(updated);
     return NextResponse.json({
       participant: {
         id: updated.id,
@@ -72,8 +75,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         scheduleLabel: updated.schedule
           ? `${formatEventDate(updated.schedule.eventDate)} ${updated.schedule.eventTime}`
           : null,
-        pricePlanLabel: updated.pricePlan ? pricePlanChoiceLabel(updated.pricePlan) : null,
-        pricePlanAmount: updated.pricePlan?.amount ?? null,
+        pricePlanLabel: price.label,
+        pricePlanAmount: price.amount,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
       },

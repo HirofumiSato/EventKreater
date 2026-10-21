@@ -145,7 +145,7 @@
 現在のテスト
 ------------
 
-10 ファイル、``it`` は 74 件です。内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。結合の 7 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。
+12 ファイル、``it`` は 104 件です。内訳は ``tests/unit/`` が 94、``tests/integration/`` が 10 です。結合の 10 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。
 
 .. list-table::
    :header-rows: 1
@@ -187,6 +187,10 @@
      - 2
      - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/revenue.test.ts``
+     - 27
+     - 見込み売上・領収書発行額・差額・平均単価の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、名簿に出す申込時点の金額、同じプランの再保存で金額を保つこと
+     - SCR-ORG-06 / SCR-ORG-11 / SCR-ORG-12
    * - ``tests/integration/guest-limit.test.ts``
      - 4
      - 未登録は筆頭幹事として 1 件まで。共同幹事だけなら数えない。削除済みでも数える
@@ -195,8 +199,12 @@
      - 3
      - 筆頭幹事の付け替え、二度呼んでも枠が増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
+   * - ``tests/integration/revenue.test.ts``
+     - 3
+     - プラン金額を編集しても申込済みの見込み売上が変わらない。領収書発行額との差額。不参加は売上に含めない
+     - SCR-ORG-06 / SCR-ORG-12
 
-件数の内訳は ``tests/unit/`` が 67、``tests/integration/`` が 7 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 67 件を実行して 7 件を skip します。
+件数の内訳は ``tests/unit/`` が 94、``tests/integration/`` が 10 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 94 件を実行して 10 件を skip します。
 
 これから書くテスト
 ------------------

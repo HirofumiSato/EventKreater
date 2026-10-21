@@ -860,6 +860,10 @@ CREATE TABLE participants (
     comment TEXT NULL,
     schedule_id UUID NULL REFERENCES event_schedules(id) ON DELETE SET NULL,
     price_plan_id UUID NULL REFERENCES event_price_plans(id) ON DELETE SET NULL,
+    -- 出欠確定時点の費用プランの写し。プラン編集後も見込み売上を変えない。
+    price_amount INTEGER NULL,
+    price_plan_name VARCHAR(50) NULL,
+    price_audience price_audience_enum NULL,
     ip_hash VARCHAR(64) NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

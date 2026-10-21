@@ -8,6 +8,8 @@ import { ReceiptIssueModal } from "@/modules/receipts/components/ReceiptIssueMod
 import { Toast } from "@/components/common/Toast";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
 import type { EventPricePlanOption, EventScheduleOption, ParticipantRow } from "@/modules/events/types";
+import type { RevenueSummary } from "@/modules/revenue/lib/revenue";
+import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 
 interface ParticipantsResponse {
   event: {
@@ -18,6 +20,7 @@ interface ParticipantsResponse {
     pricePlans: EventPricePlanOption[];
   };
   stats: { attendingCount: number; declinedCount: number; totalResponses: number };
+  revenue: RevenueSummary;
   participants: ParticipantRow[];
 }
 
@@ -197,11 +200,20 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
           <button type="button" className="btn btn--outline" onClick={() => void copyShareLink()}>
             {copiedLink ? "コピーしました" : "共有リンクをコピー"}
           </button>
+          <Link href={`/organizer/events/${params.id}/revenue`} className="btn btn--ghost">
+            売上の内訳
+          </Link>
           <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--ghost">
             編集へ戻る
           </Link>
         </div>
       </section>
+      <RevenueSummaryLedger summary={data.revenue} />
+      {data.revenue.unassignedPlanCount > 0 && (
+        <p className="alert alert--warning">
+          出席しているのに費用プランが未選択の参加者が {data.revenue.unassignedPlanCount} 人います。表の「費用プラン」を選ぶと売上に入ります。
+        </p>
+      )}
       <ParticipantListTable
         rows={data.participants}
         schedules={data.event.schedules}

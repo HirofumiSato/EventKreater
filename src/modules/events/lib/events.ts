@@ -195,13 +195,19 @@ export async function resolveAttendanceChoice(
   },
 ) {
   if (input.status !== "ATTENDING") {
-    return { scheduleId: null, pricePlanId: null };
+    return {
+      scheduleId: null,
+      pricePlanId: null,
+      priceAmount: null,
+      pricePlanName: null,
+      priceAudience: null,
+    };
   }
   const [schedule, pricePlan] = await Promise.all([
     tx.eventSchedule.findFirst({ where: { id: input.scheduleId, eventId }, select: { id: true } }),
     tx.eventPricePlan.findFirst({
       where: { id: input.pricePlanId, eventId },
-      select: { id: true, audience: true },
+      select: { id: true, audience: true, amount: true, name: true },
     }),
   ]);
   if (!schedule || !pricePlan) {
@@ -228,7 +234,42 @@ export async function resolveAttendanceChoice(
       error: "PRICE_PLAN_GENDER_MISMATCH",
     });
   }
-  return { scheduleId: schedule.id, pricePlanId: pricePlan.id };
+  return {
+    scheduleId: schedule.id,
+    pricePlanId: pricePlan.id,
+    // 出欠確定時点の値を写す。プラン金額や名前を後から編集しても、この人の売上は動かない。
+    priceAmount: pricePlan.amount,
+    pricePlanName: pricePlan.name,
+    priceAudience: pricePlan.audience,
+  };
+}
+
+type PriceSnapshot = {
+  pricePlanId: string | null;
+  priceAmount: number | null;
+  pricePlanName: string | null;
+  priceAudience: "ANY" | "MALE" | "FEMALE" | null;
+};
+
+/**
+ * 出欠を入れ直したときの金額の決め方。
+ * 同じプランを選び直しているだけなら、申込時点の金額を保つ。
+ * 幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにする。
+ * プランが変わったとき（欠席から出席へ戻したときを含む）は、いまの金額を写す。
+ */
+export function keepPriceSnapshot(current: PriceSnapshot, choice: PriceSnapshot) {
+  if (choice.pricePlanId !== null && choice.pricePlanId === current.pricePlanId && current.priceAmount !== null) {
+    return {
+      priceAmount: current.priceAmount,
+      pricePlanName: current.pricePlanName,
+      priceAudience: current.priceAudience,
+    };
+  }
+  return {
+    priceAmount: choice.priceAmount,
+    pricePlanName: choice.pricePlanName,
+    priceAudience: choice.priceAudience,
+  };
 }
 
 export function deadlineOrThrow(value: string | null): Date | null {

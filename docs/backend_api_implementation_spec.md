@@ -53,7 +53,9 @@ flowchart TD
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催幹事（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
-| `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・領収書発行額・差額・平均単価と、プラン別・開催回別の小計。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間 |
 | `/api/v1/organizer/events/[id]/reminders` | GET | SCR-ORG-06 | 幹事（会員のみ） | リマインドの文面と宛先数を返す。アカウントのない参加者へ個別送信するときのコピー用。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/reminders` | POST | SCR-ORG-06 | 幹事（会員のみ） | 会員参加者へリマインドメールを送り、送信記録を残す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -514,7 +516,12 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | 出欠の変更・削除 | `PATCH` / `DELETE /api/v1/organizer/events/[id]/participants/[participantId]` |
 | 領収書 | `GET` / `POST /api/v1/organizer/events/[id]/participants/[participantId]/receipt` |
 | リマインド | `GET` / `POST /api/v1/organizer/events/[id]/reminders` |
+| 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
 | 共同幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（オーナーのみ） |
+
+名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。領収書の発行画面が使う既定額（`pricePlanAmount`）も同じ値になる。
+
+横断の売上（`GET /api/v1/organizer/revenue`）は会員の幹事だけが使える。ゲスト幹事の Cookie では 403 `REGISTER_REQUIRED`、未ログインは 401 を返す（`requireOrganizerAccount`）。
 
 編集（`PUT /api/v1/organizer/events/[id]`）とロック取得（`POST /api/v1/organizer/events/[id]/lock`）は、会員なら常に通り、ゲスト幹事は `events.created_at` から 24 時間以内だけ通る（`assertGuestEditWindow`）。ロックの解放と受付停止・削除は猶予の対象外で、ゲスト幹事でも常に実行できる。
 
@@ -740,6 +747,7 @@ export const SubmitRsvpSchema = z.object({
   4. 見つからなければ新規トークンを発行し INSERT する。ログイン中なら `userId` も入れる。
   5. 同じ会員の同時送信で一意制約に当たった場合は、1 回だけ更新としてやり直す。
   6. `Set-Cookie: rsvp_token_<id>=<token>; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure` をセット。会員の行を使い続ける場合は新しいトークンを発行しない。
+  7. 出席にしたときは、選んだ費用プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
 - **取消（DELETE）:** 申し込み期限後も取り消せる。対象行の決め方は POST と同じで、Cookie と `userId` の両方を受け付ける。削除後は Cookie を消す。
 
 ---
@@ -917,6 +925,91 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 POST /api/v1/organizer/events/[id]/reminders
 → 200 { "sent": 2, "recorded": 0, "skippedGuests": 5, "subject": "...", "body": "..." }
 ```
+
+### 5.9. GET `/api/v1/organizer/revenue`（主催イベント横断の売上）
+
+対象画面は SCR-ORG-11。認可は `requireOrganizerAccount`。会員の幹事だけが使える。未ログインは 401、未登録のゲスト幹事（Cookie の幹事トークンだけで本人と分かる状態）は 403 `REGISTER_REQUIRED` を返す。ゲスト幹事には、複数のイベントをまたいだ金額を出さない。
+
+クエリは次のとおり。どれも省略できる。
+
+| 名前 | 既定 | 内容 |
+| :--- | :--- | :--- |
+| `from` | 指定なし | `events.sort_date` の下限（`YYYY-MM-DD`、含む） |
+| `to` | 指定なし | `events.sort_date` の上限（`YYYY-MM-DD`、含む） |
+| `status` | 指定なし | `DRAFT` / `PUBLISHED` / `CLOSED` のいずれか |
+
+絞り込みの基準は開催日であり、回答日時や領収書の発行日ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
+
+レスポンスは `period`、`totals`、`events` の 3 つである。
+
+```json
+{
+  "period": { "from": null, "to": null, "status": null },
+  "totals": {
+    "expectedRevenue": 8000,
+    "issuedRevenue": 3000,
+    "unreconciled": 5000,
+    "attendingCount": 4,
+    "paidAttendingCount": 3,
+    "unassignedPlanCount": 1,
+    "declinedCount": 1,
+    "receiptCount": 1,
+    "averagePerAttendee": 2667
+  },
+  "events": [
+    {
+      "id": "20ccffe6-...",
+      "title": "秋の音楽会",
+      "sortDate": "2026-11-14",
+      "status": "PUBLISHED",
+      "expectedRevenue": 8000,
+      "issuedRevenue": 3000,
+      "unreconciled": 5000,
+      "attendingCount": 4,
+      "paidAttendingCount": 3,
+      "unassignedPlanCount": 1,
+      "declinedCount": 1,
+      "receiptCount": 1,
+      "averagePerAttendee": 2667
+    }
+  ]
+}
+```
+
+- `period` は受け取った絞り込みをそのまま返す。`from` と `to` は `YYYY-MM-DD`、`status` は受け取った値か `null`。
+- `totals` は、返した `events` の参加者をまとめて集計した値である。合計は `events` の各行の単純和と一致する。
+- 金額は `participants.price_amount`（出欠確定時点のスナップショット）の合計である。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。
+- `issuedRevenue` は `receipts.amount` の合計であり、決済や入金の記録ではない。`unreconciled` は `expectedRevenue − issuedRevenue` で、負にもなる。未回収額ではない。
+- `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
+- 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
+- 並び順は `sort_date` の昇順（開催日が近い順）。過去の催しは後ろへ送る。
+- `events[].sortDate` は `YYYY-MM-DD` の文字列である。
+
+### 5.10. GET `/api/v1/organizer/events/[id]/revenue`（イベント1件の売上内訳）
+
+対象画面は SCR-ORG-12。認可は `assertRegisteredOrganizer`。未登録のゲスト幹事には 403 `REGISTER_REQUIRED`（名簿と同じ扱い）。
+
+レスポンスは `event`、`summary`、`byPlan`、`bySchedule` の 4 つである。`summary` の形は 5.9 の `totals` と同じ。
+
+```json
+{
+  "event": { "id": "20ccffe6-...", "title": "秋の音楽会", "sortDate": "2026-11-14", "status": "PUBLISHED" },
+  "summary": { "expectedRevenue": 8000, "issuedRevenue": 3000, "unreconciled": 5000, "attendingCount": 4, "paidAttendingCount": 3, "unassignedPlanCount": 1, "declinedCount": 1, "receiptCount": 1, "averagePerAttendee": 2667 },
+  "byPlan": [
+    { "name": "一般", "audience": "ANY", "amount": 3000, "attendingCount": 2, "subtotal": 6000 },
+    { "name": "学生", "audience": "MALE", "amount": 2000, "attendingCount": 1, "subtotal": 2000 }
+  ],
+  "bySchedule": [
+    { "scheduleId": "5c9c25cb-...", "label": "2026-11-14 19:00〜21:00", "attendingCount": 4, "subtotal": 8000 }
+  ]
+}
+```
+
+- `event.sortDate` は `YYYY-MM-DD` の文字列である。
+- `byPlan` は対象（`audience`）・プラン名・金額の 3 つをキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額を変えた場合）。その差は隠さずに別行で見せる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
+- `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。並びはラベルの昇順で、`日時なし` は最後へ送る。
+- 日程を選んでいない出席者を代表日に寄せることはしない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
+- 削除済みのイベントは 404。他幹事のイベントは 403。
 
 ---
 

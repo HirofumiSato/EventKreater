@@ -312,7 +312,34 @@ export function pricePlanChoiceLabel(plan: {
   return `${prefix}${plan.name} ${price}`.trim();
 }
 
-/** チラシは 30 文字まで。入りきらないときは先頭の金額に「〜」を付ける。 */
+/**
+ * 名簿に出す、その人が申し込んだ費用プラン。
+ * 出欠確定時点の金額が残っていればそちらを優先する。費用プランを編集しても、
+ * 名簿の金額が売上と食い違わないようにするため。
+ */
+export function participantPriceDisplay(row: {
+  priceAmount: number | null;
+  pricePlanName: string | null;
+  priceAudience: PriceAudience | null;
+  pricePlan?: { name: string; price?: string | null; audience?: PriceAudience; amount?: number; note?: string | null } | null;
+}): { label: string | null; amount: number | null } {
+  if (row.priceAmount !== null) {
+    return {
+      label: pricePlanChoiceLabel({
+        name: row.pricePlanName ?? "プラン名なし",
+        audience: row.priceAudience ?? "ANY",
+        amount: row.priceAmount,
+      }),
+      amount: row.priceAmount,
+    };
+  }
+  return {
+    label: row.pricePlan ? pricePlanChoiceLabel(row.pricePlan) : null,
+    amount: row.pricePlan?.amount ?? null,
+  };
+}
+
+/** チラシの費用を 30 文字までに収める。入りきらないときは先頭の金額に「〜」を付ける。 */
 export function flyerPriceLabel(
   rows: { name: string; audience?: PriceAudience; amount: number; note?: string | null }[],
 ): string {

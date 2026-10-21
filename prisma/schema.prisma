@@ -642,6 +642,13 @@ model Participant {
   comment       String?    @db.Text
   scheduleId    String?    @map("schedule_id") @db.Uuid
   pricePlanId   String?    @map("price_plan_id") @db.Uuid
+  /// 出欠確定時点の費用プラン金額。null はプラン未選択、0 は無料プラン。
+  /// プラン金額を後から編集しても、過去の見込み売上が変わらないようにする。
+  priceAmount   Int?       @map("price_amount") @db.Integer
+  /// 出欠確定時点のプラン名。プラン名を変えても内訳を保つ。
+  pricePlanName String?    @map("price_plan_name") @db.VarChar(50)
+  /// 出欠確定時点のプラン対象。男女別の内訳を保つ。
+  priceAudience PriceAudience? @map("price_audience")
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz

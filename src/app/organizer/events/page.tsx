@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
+import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -92,6 +93,7 @@ export default function OrganizerEventsPage() {
 
   return (
     <div className="stack">
+      <OrganizerTabs />
       <section className="panel">
         <div>
           <h1 className="page-title">主催イベント一覧</h1>
@@ -99,6 +101,9 @@ export default function OrganizerEventsPage() {
         </div>
         <div className="panel__actions">
           <StripePortalButton />
+          <Link href="/organizer/revenue" className="btn btn--outline">
+            売上を見る
+          </Link>
           <Link href="/organizer/events/new" className="btn btn--primary">
             新規作成
           </Link>
