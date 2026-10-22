@@ -111,6 +111,9 @@ jobs:
   # フォントが無いと FontResolver が FontRenderError を投げて落ちる。
   flyer:
     runs-on: ubuntu-latest
+    # apt のミラーが遅い日に「日本語フォントを入れる」で止まり続けるのを、
+    # 6 時間ではなく 10 分で失敗として返す。
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: services/flyer
@@ -125,8 +128,14 @@ jobs:
 
       - name: 日本語フォントを入れる
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          # runner には apt のインデックスが用意済みなので、まず install だけを試す。
+          # apt-get update はミラーが遅い日に数分〜十数分待たされることがある。
+          if ! sudo apt-get install -y --no-install-recommends fonts-noto-cjk; then
+            echo "インデックスが古いので update してから入れ直す"
+            sudo timeout 180 apt-get update
+            sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          fi
+          fc-match "Noto Sans CJK JP"
 
       - run: pip install -r requirements.txt
 
