@@ -4,8 +4,9 @@
 # 開発は target=dev、本番相当は target=runner を使う。
 # services/flyer は別コンテキスト・別 Dockerfile でビルドする。
 
-# Node 20 は 2026-04 に EOL。Next 14.2 / Prisma 5.22 は Node 22 で動く。
-FROM node:22-bookworm-slim AS base
+# Node 24 は Active LTS（2028-04 まで）。Node 20 は 2026-04 に EOL。
+# Next 14.2 / Prisma 5.22 は Node 24 で動く（CI の check / db と next build で確認）。
+FROM node:24-bookworm-slim AS base
 WORKDIR /app
 # Prisma のクエリエンジンが openssl を要求する。slim には入っていない。
 RUN apt-get update \
