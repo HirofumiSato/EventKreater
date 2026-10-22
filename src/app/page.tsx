@@ -8,15 +8,15 @@ import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
  * 料金の比較は /service に任せ、ここでは主操作を1つに絞る。
  */
 
-const HERO_EYEBROW = "町内会・サークル・勉強会の幹事へ";
+const HERO_EYEBROW = "町内会・サークル・勉強会の案内づくりに";
 const HERO_LEAD =
-  "催し名・日時・場所を入れると、告知ページとチラシができます。あとはURLを送るだけで、参加者は登録なしで出欠を答えられ、集計も自動で揃います。";
+  "催し名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。";
 
 /** 幹事に起きること。機能名ではなく、手間がどう減るかで書く。 */
 const capabilities = [
   [
-    "チラシと告知ページが、同時にできる",
-    "開催情報を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載ります。",
+    "チラシと告知ページが、5分でできる",
+    "催し名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。",
   ],
   [
     "参加者は、名前と出欠だけ",
@@ -44,7 +44,7 @@ const steps = [
   [
     "1",
     "催しの情報を入れる",
-    "催し名・日時・場所・費用を入れて公開します。チラシはその場で生成されます。",
+    "催し名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。",
   ],
   [
     "2",
@@ -70,7 +70,7 @@ export default function HomePage() {
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">
               <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
-                無料でイベントを作る
+                {SITE.cta.createEventFree}
               </Link>
               <Link href={SITE.nav.service.href} className="text-link">
                 料金を見る
@@ -79,7 +79,7 @@ export default function HomePage() {
           </div>
           <figure className="hero__poster">
             <img src="/samples/flyer-autumn.jpg" alt="生成されたチラシの例（秋の芋煮会）" width={1080} height={1920} />
-            <figcaption>入力した内容から、このチラシができます。</figcaption>
+            <figcaption>入力した内容から、このチラシが5分でできます。</figcaption>
           </figure>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function HomePage() {
       <section className="section">
         <div className="section__head">
           <h2 className="section__title">幹事の手間を、6つに減らす</h2>
-          <p className="section__note">告知・出欠・集計・お金・運営・日程を、1つのURLにまとめます。</p>
+          <p className="section__note">案内ページづくりを5分に。出欠・集計・お金・運営・日程も、1つのURLにまとめます。</p>
         </div>
         <ul className="feature-list">
           {capabilities.map(([title, body], index) => (
@@ -105,7 +105,7 @@ export default function HomePage() {
       <section className="section">
         <div className="section__head">
           <h2 className="section__title">使い方</h2>
-          <p className="section__note">入力から共有まで、3ステップです。</p>
+          <p className="section__note">入力から共有まで、5分・3ステップです。</p>
         </div>
         <ol className="step-list">
           {steps.map(([, title, body]) => (
@@ -127,7 +127,7 @@ export default function HomePage() {
           </div>
           <div className="cta-band__actions">
             <Link href={SITE.nav.createEvent.href} className="btn btn--inverse">
-              無料でイベントを作る
+              {SITE.cta.createEventFree}
             </Link>
           </div>
         </div>

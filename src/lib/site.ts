@@ -3,15 +3,23 @@
  * 仮置きのサービス名と公開クロムの文言はここだけを変える。
  * ヘッダー、フッター、メタデータ、ホームとサービスページの CTA がこれを読む。
  */
+
+/**
+ * イベント作成画面への入口。このラベルを変えると、ヘッダー・フッター・
+ * 各画面の CTA・空状態の案内がまとめて変わる。直書きしない。
+ */
+const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知ページを作る" } as const;
+
 export const SITE = {
   name: "EventKreater",
-  tagline: "案内は、チラシ1枚。出欠は、名前だけ。",
+  // ホームの h1。何をどれだけの時間で作れるかを、最初の 1 文で言い切る。
+  tagline: "催し・イベントのチラシと告知WEBページを、5分で作る。",
   description:
-    "催し名・日時・場所を入れるだけで、告知ページとチラシができます。参加者は登録なしで出欠を答えられ、集計は自動で揃います。",
+    "催し名・日時・場所を入れるだけで、チラシと告知ページが5分でできます。参加者は登録なしで出欠を答えられ、集計は自動で揃います。",
   nav: {
     home: { href: "/", label: "トップ" },
     service: { href: "/service", label: "サービスと料金" },
-    createEvent: { href: "/organizer/events/new", label: "イベントを作る" },
+    createEvent: CREATE_EVENT,
     organizerList: { href: "/organizer/events", label: "主催一覧" },
     organizerLogin: { href: "/auth/register", label: "主催者ログイン" },
     participantLogin: { href: "/participant/login", label: "参加者ログイン" },
@@ -24,5 +32,12 @@ export const SITE = {
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。
     organizerSwitch: { href: "/organizer/events", label: "主催者として使う" },
     participantSwitch: { href: "/participant", label: "参加者として見る" },
+  },
+  // 作成画面への誘導文。ラベル側を変えれば、ここも追随する。
+  cta: {
+    /** ホームなどの主操作。ナビのラベルに「無料で」を足しただけ。 */
+    createEventFree: `無料で${CREATE_EVENT.label}`,
+    /** 主催イベントが 0 件のときの空状態。 */
+    createEventFirst: `最初の${CREATE_EVENT.label}`,
   },
 } as const;

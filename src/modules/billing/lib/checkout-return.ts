@@ -1,5 +1,7 @@
+import { SITE } from "@/lib/site";
+
 /** 購入後に戻る既定の画面。作成画面の入力を復元する起点でもある。 */
-export const DEFAULT_CHECKOUT_RETURN_TO = "/organizer/events/new";
+export const DEFAULT_CHECKOUT_RETURN_TO = SITE.nav.createEvent.href;
 
 const UUID_PATTERN = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 

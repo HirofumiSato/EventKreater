@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE } from "@/lib/site";
 import type { PublicEventViewer } from "@/modules/events/types";
 
 interface OrganizerInviteCardProps {
@@ -16,12 +17,12 @@ export function OrganizerInviteCard({ eventId, viewer }: OrganizerInviteCardProp
 
   return (
     <section className="card card--padded">
-      <h2 className="panel__title">あなたもイベントを作りませんか？</h2>
+      <h2 className="panel__title">あなたも{SITE.nav.createEvent.label}をしませんか？</h2>
       <Link
-        href={`/organizer/events/new?ref=${encodeURIComponent(eventId)}`}
+        href={`${SITE.nav.createEvent.href}?ref=${encodeURIComponent(eventId)}`}
         className="btn btn--outline btn--block"
       >
-        イベントを作る
+        {SITE.nav.createEvent.label}
       </Link>
     </section>
   );

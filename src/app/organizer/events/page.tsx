@@ -142,7 +142,7 @@ function OrganizerEventsScreen() {
           <Link href="/organizer/revenue" className="btn btn--outline">
             売上を見る
           </Link>
-          <Link href="/organizer/events/new" className="btn btn--primary">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
             新規作成
           </Link>
         </div>

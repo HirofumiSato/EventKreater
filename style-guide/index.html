@@ -15,10 +15,22 @@
   <header class="site-header">
     <div class="site-header__inner">
       <a class="site-brand" href="#top">イベント出欠</a>
-      <nav class="site-nav" aria-label="サイト">
-        <a class="site-nav__link" href="#layout">イベントを作る</a>
-        <a class="btn btn--primary btn--sm" href="#buttons">ログイン</a>
+      <nav id="sg-nav-top" class="site-nav" aria-label="サイト">
+        <div class="site-nav__action">
+          <a class="btn btn--outline btn--sm btn--block" href="#buttons">主催者ログイン</a>
+        </div>
+        <a class="site-nav__link" href="#layout">サービスと料金</a>
+        <a class="site-nav__link" href="#layout">参加者ログイン</a>
       </nav>
+      <div class="site-header__actions">
+        <a class="btn btn--outline btn--sm" href="#layout">イベント告知ページを作る</a>
+        <a class="btn btn--outline btn--sm site-header__action" href="#buttons">主催者ログイン</a>
+        <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="sg-nav-top" aria-label="メニュー">
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -58,7 +70,7 @@
                 <li><strong>並び</strong><span>縦一列。見出し、入力、出欠、朱のボタンの順。左右の余白は 1rem。</span></li>
                 <li><strong>進む操作</strong><span>ボタンは幅いっぱい。フォームの最後に置く。親指が届く位置を優先する。</span></li>
                 <li><strong>出欠</strong><span>出席、欠席、未定は横一列のまま。三つを見比べて選べるようにする。</span></li>
-                <li><strong>ヘッダー</strong><span>サービス名と、進む操作一つ。入りきらないリンクは折り返す。</span></li>
+                <li><strong>ヘッダー</strong><span>サービス名と「イベント告知ページを作る」。リンクはメニューに畳む。540px 以下では切り替えリンクもメニュー先頭へ移す。バーの高さは 64px 以内。</span></li>
                 <li><strong>表</strong><span>文字サイズはそのまま。狭いときは表の中だけ横にスクロールする。</span></li>
                 <li><strong>ダイアログ</strong><span>画面幅から左右 1rem を空けた面にする。確認のボタンは縦に積む。</span></li>
               </ul>
@@ -71,7 +83,7 @@
                 <li><strong>幅</strong><span>本文は最大 64rem。ログインは 28rem、イベント作成は 42rem。いずれも中央に置く。</span></li>
                 <li><strong>進む操作</strong><span>朱のボタンは画面につき一つ。幅が広がっても、進むボタンは一つです。</span></li>
                 <li><strong>出欠フォーム</strong><span>入力と出欠は縦一列のまま。説明カードと件数だけ横に並べてよい。</span></li>
-                <li><strong>ヘッダー</strong><span>サービス名、リンク、ログインを一段に並べる。</span></li>
+                <li><strong>ヘッダー</strong><span>サービス名、リンク、ログインを一段に並べる。768px 以下ではリンクを、540px 以下では切り替えリンクもメニューに畳む。</span></li>
                 <li><strong>表</strong><span>入る列はそのまま見せる。足りない分は横にスクロールする。</span></li>
                 <li><strong>ダイアログ</strong><span>幅 28rem で中央に置く。ウィンドウいっぱいに引き伸ばさない。</span></li>
               </ul>
@@ -210,10 +222,22 @@
               <header class="site-header">
                 <div class="site-header__inner">
                   <a class="site-brand" href="#layout">イベント出欠</a>
-                  <nav class="site-nav" aria-label="未ログインの例">
-                    <a class="site-nav__link" href="#layout">イベントを作る</a>
-                    <a class="btn btn--outline btn--sm" href="#buttons">ログイン</a>
+                  <nav id="sg-nav-guest" class="site-nav" aria-label="未ログインの例">
+                    <div class="site-nav__action">
+                      <a class="btn btn--outline btn--sm btn--block" href="#buttons">主催者ログイン</a>
+                    </div>
+                    <a class="site-nav__link" href="#layout">サービスと料金</a>
+                    <a class="site-nav__link" href="#layout">参加者ログイン</a>
                   </nav>
+                  <div class="site-header__actions">
+                    <a class="btn btn--outline btn--sm" href="#layout">イベント告知ページを作る</a>
+                    <a class="btn btn--outline btn--sm site-header__action" href="#buttons">主催者ログイン</a>
+                    <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="sg-nav-guest" aria-label="メニュー">
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                    </button>
+                  </div>
                 </div>
               </header>
             </div>
@@ -225,11 +249,23 @@
               <header class="site-header">
                 <div class="site-header__inner">
                   <a class="site-brand" href="#layout">イベント出欠</a>
-                  <nav class="site-nav" aria-label="ログイン中の例">
-                    <a class="site-nav__link" href="#layout">イベントを作る</a>
+                  <nav id="sg-nav-member" class="site-nav" aria-label="ログイン中の例">
+                    <div class="site-nav__action">
+                      <button class="btn btn--ghost btn--sm btn--block" type="button">ログアウト</button>
+                    </div>
+                    <a class="site-nav__link" href="#layout">主催一覧</a>
                     <a class="site-nav__link is-current" href="#layout">博文 のマイページ</a>
-                    <button class="btn btn--ghost btn--sm" type="button">ログアウト</button>
+                    <a class="site-nav__link" href="#layout">アカウント</a>
                   </nav>
+                  <div class="site-header__actions">
+                    <a class="btn btn--outline btn--sm" href="#layout">イベント告知ページを作る</a>
+                    <button class="btn btn--ghost btn--sm site-header__action" type="button">ログアウト</button>
+                    <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="sg-nav-member" aria-label="メニュー">
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                      <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+                    </button>
+                  </div>
                 </div>
               </header>
             </div>
@@ -243,7 +279,7 @@
                 <h3 class="hero__title">登録なしで出欠。あとから会員になれる。</h3>
                 <p class="hero__lead">参加者は名前と出欠だけで回答できます。幹事は参加者一覧を秘匿したまま共同編集します。</p>
                 <div class="hero__actions">
-                  <a class="btn btn--primary btn--lg" href="#inputs">イベントを作る</a>
+                  <a class="btn btn--primary btn--lg" href="#inputs">イベント告知ページを作る</a>
                   <a class="btn btn--outline btn--lg" href="#buttons">会員ログイン</a>
                 </div>
               </section>
@@ -272,19 +308,19 @@
               <section class="hero hero--stage">
                 <div class="hero__grid">
                   <div class="hero__copy">
-                    <p class="hero__eyebrow">町内会・サークル・勉強会の幹事へ</p>
-                    <h3 class="hero__title">案内は、チラシ1枚。出欠は、名前だけ。</h3>
+                    <p class="hero__eyebrow">町内会・サークル・勉強会の案内づくりに</p>
+                    <h3 class="hero__title">催し・イベントのチラシと告知WEBページを、5分で作る。</h3>
                     <p class="hero__lead">
-                      催し名・日時・場所を入れると、告知ページとチラシができます。あとはURLを送るだけで、参加者は登録なしで出欠を答えられ、集計も自動で揃います。
+                      催し名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。
                     </p>
                     <div class="hero__actions">
-                      <a class="btn btn--primary btn--lg" href="#buttons">無料でイベントを作る</a>
+                      <a class="btn btn--primary btn--lg" href="#buttons">無料でイベント告知ページを作る</a>
                       <a class="text-link" href="#buttons">料金を見る</a>
                     </div>
                   </div>
                   <figure class="hero__poster">
                     <div class="hero__poster-placeholder">チラシ 9:16</div>
-                    <figcaption>入力した内容から、このチラシができます。</figcaption>
+                    <figcaption>入力した内容から、このチラシが5分でできます。</figcaption>
                   </figure>
                 </div>
               </section>
@@ -299,8 +335,8 @@
               <ul class="feature-list">
                 <li class="feature-row">
                   <span class="feature-row__index" aria-hidden="true">01</span>
-                  <h3 class="feature-row__title">チラシと告知ページが、同時にできる</h3>
-                  <p class="feature-row__body">開催情報を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載ります。</p>
+                  <h3 class="feature-row__title">チラシと告知ページが、5分でできる</h3>
+                  <p class="feature-row__body">催し名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。</p>
                 </li>
                 <li class="feature-row">
                   <span class="feature-row__index" aria-hidden="true">02</span>
@@ -311,7 +347,7 @@
               <ol class="step-list" style="margin-top: 2rem">
                 <li class="step-row">
                   <h3 class="step-row__title">催しの情報を入れる</h3>
-                  <p class="step-row__body">催し名・日時・場所・費用を入れて公開します。チラシはその場で生成されます。</p>
+                  <p class="step-row__body">催し名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。</p>
                 </li>
                 <li class="step-row">
                   <h3 class="step-row__title">URLをLINEで送る</h3>
@@ -333,7 +369,7 @@
                     </p>
                   </div>
                   <div class="cta-band__actions">
-                    <a class="btn btn--inverse" href="#buttons">無料でイベントを作る</a>
+                    <a class="btn btn--inverse" href="#buttons">無料でイベント告知ページを作る</a>
                   </div>
                 </div>
               </section>
@@ -395,7 +431,7 @@
                   <p>イベント出欠</p>
                   <ul class="site-footer__links">
                     <li><a href="#top">トップ</a></li>
-                    <li><a href="#layout">イベントを作る</a></li>
+                    <li><a href="#layout">イベント告知ページを作る</a></li>
                     <li><a href="#buttons">ログイン</a></li>
                   </ul>
                 </div>
@@ -427,7 +463,7 @@
             <div class="sg-stage stack">
               <div class="sg-row">
                 <a class="btn btn--primary btn--sm" href="#buttons">ログイン</a>
-                <a class="btn btn--primary btn--lg" href="#buttons">イベントを作る</a>
+                <a class="btn btn--primary btn--lg" href="#buttons">イベント告知ページを作る</a>
                 <button class="btn btn--primary btn--pill" type="button">新しいイベント</button>
               </div>
               <button class="btn btn--primary btn--block" type="button">この内容で回答を送信</button>
@@ -728,5 +764,17 @@
       </ul>
     </div>
   </footer>
+
+  <script>
+    // 見本でも開閉が確かめられるようにする。実装は Navbar.tsx が状態を持つ。
+    for (const toggle of document.querySelectorAll(".site-menu-toggle")) {
+      toggle.addEventListener("click", () => {
+        const header = toggle.closest(".site-header");
+        const open = header.dataset.menuOpen !== "true";
+        header.dataset.menuOpen = String(open);
+        toggle.setAttribute("aria-expanded", String(open));
+      });
+    }
+  </script>
 </body>
 </html>

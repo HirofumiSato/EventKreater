@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Toast } from "@/components/common/Toast";
 import { readProblem } from "@/lib/problem";
 import { registerUrl } from "@/lib/auth-links";
+import { SITE } from "@/lib/site";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileContentFromDraft } from "@/modules/organizers/lib/profile";
 import {
@@ -137,7 +138,7 @@ export function OrganizerProfileForm() {
         <p className="panel__title">まだ主催イベントがありません</p>
         <p className="help">公開プロフィールは、主催イベントを持つ会員だけが使えます。</p>
         <div className="btn-row">
-          <Link href="/organizer/events/new" className="btn btn--primary">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
             催しをつくる
           </Link>
         </div>

@@ -9,6 +9,7 @@ import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
 import { loginUrl } from "@/lib/auth-links";
+import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import type { OrganizerEvent } from "@/modules/events/types";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
@@ -146,16 +147,16 @@ export default function MyPage() {
             <Link href="/organizer/events" className="btn btn--outline btn--sm">
               すべて見る
             </Link>
-            <Link href="/organizer/events/new" className="btn btn--primary btn--sm">
-              イベントを作る
+            <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+              {SITE.nav.createEvent.label}
             </Link>
           </div>
         </div>
         {events.length === 0 && (
           <p className="empty">
             まだ主催イベントはありません。{" "}
-            <Link href="/organizer/events/new" className="text-link">
-              最初のイベントを作る
+            <Link href={SITE.nav.createEvent.href} className="text-link">
+              {SITE.cta.createEventFirst}
             </Link>
           </p>
         )}

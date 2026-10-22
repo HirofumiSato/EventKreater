@@ -146,6 +146,8 @@ svg {
 /* 共通レイアウト */
 
 .site-header {
+  /* モバイルのメニューをヘッダー下端から出すための基準。 */
+  position: relative;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
@@ -171,6 +173,8 @@ svg {
   font-size: 1.125rem;
   font-weight: 500;
   text-decoration: none;
+  /* 折り返すと高さが変わる。ブランド名は 1 行に固定する。 */
+  white-space: nowrap;
 }
 
 .site-nav {
@@ -180,17 +184,167 @@ svg {
   justify-content: flex-end;
   gap: 0.75rem;
   font-size: 0.875rem;
+  /* ブランド以外を右端に寄せる。 */
+  margin-inline-start: auto;
 }
 
 .site-nav__link {
   color: var(--color-text-muted);
   font-weight: 400;
   text-decoration: none;
+  /* 「サービスと料金」が語中で割れないようにする。 */
+  white-space: nowrap;
 }
 
 .site-nav__link:hover,
 .site-nav__link.is-current {
   color: var(--color-text);
+}
+
+/* バーに常時出す切り替えリンクとメニューの開閉。 */
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 切り替えリンクは 1 行に保つ。折り返すとヘッダーの高さが変わる。 */
+.site-header__actions .btn {
+  white-space: nowrap;
+}
+
+/* メニュー側の受け皿。540px 以下でだけ出す。 */
+.site-nav__action {
+  display: none;
+}
+
+.site-menu-toggle {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  /* 枠は付けない。切り替えリンクの枠と競合してヘッダーが騒がしくなる。 */
+  border: 0;
+  background: none;
+  color: var(--color-text);
+}
+
+.site-menu-toggle__bar {
+  display: block;
+  width: 1.125rem;
+  height: 1px;
+  background: currentColor;
+}
+
+/* 768px 以下はリンク群をハンバーガーに畳む。切り替えリンクはバーに残す。 */
+@media (max-width: 768px) {
+  .site-header__inner {
+    /* height で固定しない。文字拡大や訳文の伸長で中身が切れないようにする。
+       4rem ではなく 3.75rem: 下辺の 1px 罫線を含めて 64px 以内に収める。 */
+    min-height: 3.75rem;
+    padding-block: 0.5rem;
+  }
+
+  .site-header__actions {
+    /* ナビが流れから外れるので、こちらで右端に寄せる。 */
+    margin-inline-start: auto;
+  }
+
+  .site-menu-toggle {
+    display: inline-flex;
+  }
+
+  .site-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    inset-inline: 0;
+    z-index: 50;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0.25rem 1rem 0.75rem;
+    background: var(--color-surface);
+    /* ヘッダーの下辺と同じ 1px。上辺の罫線が消えないよう自前で引く。 */
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9375rem;
+  }
+
+  .site-header[data-menu-open="true"] .site-nav {
+    display: flex;
+  }
+
+  .site-nav__link {
+    /* タップ領域を 44px 以上にする。 */
+    padding-block: 0.75rem;
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+/* 400px 級。ブランドと「イベント告知ページを作る」が 1 行に収まるよう、余白を詰める。 */
+@media (max-width: 400px) {
+  .site-header__inner {
+    padding-inline: 0.5rem;
+    column-gap: 0.25rem;
+  }
+
+  .site-brand {
+    font-size: 1rem;
+  }
+
+  .site-header__actions {
+    gap: 0.25rem;
+  }
+
+  .site-header__actions .btn--sm {
+    padding-inline: 0.5rem;
+  }
+
+  /* 「無料でイベント告知ページを作る」は 16px のままだと 320px で 2 行に割れる。
+     字を落とさず、左右の余白だけで 1 行に戻す。`.hero--stage .btn--primary` より
+     詳細度を上げないと、後方の宣言に負ける。 */
+  .hero--stage .hero__actions .btn--lg {
+    padding-inline: 1rem;
+  }
+}
+
+/* 360px 級。ラベルが 12 文字になり、16px のブランドと 14px のボタンでは収まらない。
+   文字を 1 段だけ落とし、タップ領域 2.5rem は保つ。 */
+@media (max-width: 360px) {
+  .site-header__inner {
+    padding-inline: 0.375rem;
+  }
+
+  .site-brand {
+    font-size: 0.875rem;
+  }
+
+  .site-header__actions .btn--sm {
+    font-size: 0.8125rem;
+    padding-inline: 0.4375rem;
+  }
+}
+
+/* 540px 以下はバーの幅が足りないので、切り替えリンクをメニュー先頭へ移す。
+   「イベント告知ページを作る」186px + 切り替えリンク最大 138px + ブランド 104px +
+   メニューボタン 40px + 余白 56px で約 524px 必要になり、390px には入らない。 */
+@media (max-width: 540px) {
+  /* .btn の display を上書きするため、要素と親の 2 段で指定する。 */
+  .site-header__actions .site-header__action {
+    display: none;
+  }
+
+  .site-nav__action {
+    display: block;
+    padding-block: 0.5rem;
+    border-top: 1px solid var(--color-line);
+  }
 }
 
 .page {

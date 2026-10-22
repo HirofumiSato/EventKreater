@@ -83,7 +83,7 @@ export function CalendarEventModal({ item, date, onClose }: CalendarEventModalPr
         <div className="dialog__actions">
           {item.href && (
             <Link href={item.href} className="btn btn--primary btn--block">
-              イベントページへ
+              イベント告知ページへ
             </Link>
           )}
           <button ref={closeRef} type="button" className="btn btn--ghost btn--block" onClick={onClose}>

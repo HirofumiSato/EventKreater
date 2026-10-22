@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState, type FormEvent } from "reac
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
+import { SITE } from "@/lib/site";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
@@ -35,8 +36,7 @@ const COPY: Record<
 > = {
   organizer: {
     title: { register: "主催者の会員登録", login: "主催者ログイン" },
-    lead:
-      "イベントを作る幹事の入口です。新規登録は、確認メールのリンクを開いたあと電話番号を確認します。同じ電話番号の会員が既にあるときは、新しいアカウントは作りません。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
+    lead: `${SITE.nav.createEvent.label}幹事の入口です。新規登録は、確認メールのリンクを開いたあと電話番号を確認します。同じ電話番号の会員が既にあるときは、新しいアカウントは作りません。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。`,
     submit: { register: "登録してはじめる", login: "ログイン" },
     switchToOther: { href: "/participant/login", label: "参加者としてログイン" },
     otherLabel: "参加したイベントの履歴を見たいだけなら",
@@ -47,7 +47,7 @@ const COPY: Record<
       "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠と領収書を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
     submit: { register: "登録して履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
-    otherLabel: "イベントを作る幹事なら",
+    otherLabel: `${SITE.nav.createEvent.label}幹事なら`,
   },
 };
 
