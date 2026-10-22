@@ -23,15 +23,15 @@
    * - 純粋関数
      - ``npm test``
      - ``isEligibleReferrer``、``assertGuestEditWindow``、``mergedFreeEventCount``、``resolveInitialAuthMode``、``isRegisterRequired``、``isEventId``、``composeEventTime``、``parseLegacyPrice``、``flyerPriceLabel``、``summarizeRevenue``、``averageRevenue``、``groupByPlan``、``groupBySchedule``、``participantPriceDisplay``、``keepPriceSnapshot``
-     - 94 件
+     - 289 件
    * - ルート
      - ``npm test``
      - Route Handler を直接呼ぶ。署名の無い Webhook は 400、未登録は 403 ``REGISTER_REQUIRED``、不正なボディは 422
      - これから
    * - DB 結合
      - ``npm run test:db``
-     - ``assertGuestCanCreate``、``migrateGuestOrganizers``、``consumeEventQuota``、``tryAcquireLock``、同じ ``stripeEventId`` の再送、プラン金額を変えても申込済みの売上が動かないこと
-     - 10 件
+     - ``assertGuestCanCreate``、``migrateGuestOrganizers``、``consumeEventQuota``、``tryAcquireLock``、同じ ``stripeEventId`` の再送、プラン金額を変えても申込済みの売上が動かないこと、認証の試行回数の窓と ``CODE_EXHAUSTED``
+     - 59 件
    * - 画面の振る舞い
      - ``npm test``
      - 勧誘カードの出し分け、登録案内の 3 状態、HTTP 402 で料金モーダルが出る

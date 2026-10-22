@@ -145,7 +145,7 @@
 現在のテスト
 ------------
 
-12 ファイル、``it`` は 104 件です。内訳は ``tests/unit/`` が 94、``tests/integration/`` が 10 です。結合の 10 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。
+31 ファイル、``it`` は 348 件です。内訳は ``tests/unit/`` が 22 ファイル 289 件、``tests/integration/`` が 9 ファイル 59 件です。結合の 59 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表は主なものを抜き出したものです。
 
 .. list-table::
    :header-rows: 1
@@ -203,8 +203,16 @@
      - 3
      - プラン金額を編集しても申込済みの見込み売上が変わらない。領収書発行額との差額。不参加は売上に含めない
      - SCR-ORG-06 / SCR-ORG-12
+   * - ``tests/unit/auth-rate-limits.test.ts``
+     - 18
+     - 上限の既定値と環境変数の上書き、全ルールの対象名、バケット接頭辞の互換、上限の案内文、429 のヘッダ
+     - SCR-PUB-02 / ``/console/login``
+   * - ``tests/integration/auth-attempts.test.ts``
+     - 9
+     - 窓の外を数えない、上限で 429、バケットの分離、成功時のリセット、厳しいほうの上限の選択、確認コードを使い切ったときの ``CODE_EXHAUSTED``
+     - SCR-PUB-02
 
-件数の内訳は ``tests/unit/`` が 94、``tests/integration/`` が 10 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 94 件を実行して 10 件を skip します。
+件数の内訳は ``tests/unit/`` が 289、``tests/integration/`` が 59 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 289 件を実行して 59 件を skip します。
 
 これから書くテスト
 ------------------

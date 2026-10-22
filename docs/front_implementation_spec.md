@@ -1455,7 +1455,7 @@ interface OrganizerInviteCardProps {
 
 * 単体: 会員登録画面の初期モード、24時間の編集猶予、参照元の適格判定、無料枠の合算、`REGISTER_REQUIRED` の判定、`isEventId`。
 * 結合: `tests/integration/*.test.ts`。環境変数 `TEST_DATABASE_URL` があるときだけ実行し、`tests/setup/db.ts` が `DATABASE_URL` をテスト用 DB に差し替える。無い環境ではスキップされる。
-* 結合テスト用 DB は `DATABASE_URL="<test-db>" npx prisma db push` で用意する。開発用 DB を指したまま実行しない。
+* 結合テスト用 DB は `DATABASE_URL="<test-db>" npx prisma migrate deploy` で用意する。`db push` は部分ユニーク索引と `CHECK` 制約を作らないため、テスト用には使わない。開発用 DB を指したまま実行しない。
 
 ---
 
