@@ -110,8 +110,9 @@ export function extractPathRefs(file, body) {
     for (const match of line.matchAll(pattern)) {
       const target = match[1].replace(TRAILING, "");
       const after = line.slice(match.index + match[0].length);
-      // ``../../src/lib/...`` のような省略表記は検査しない。
-      if (after.startsWith(".")) continue;
+      // ``../../src/lib/...`` のような省略表記と、``{uuid}`` のような実行時の値は検査しない。
+      // 後者は git 管理外の出力先（services/flyer/src/static/tmp など）を指すことが多い。
+      if (after.startsWith(".") || after.startsWith("{")) continue;
       if (!target || SKIP_FRAGMENTS.some((fragment) => target.includes(fragment))) continue;
       if (PLANNED.has(target)) continue;
       refs.push({

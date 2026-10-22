@@ -3051,10 +3051,6 @@
         {
           "path": "services/flyer/src/main.py",
           "exists": true
-        },
-        {
-          "path": "services/flyer/src/static/tmp",
-          "exists": true
         }
       ],
       "includedBy": [
