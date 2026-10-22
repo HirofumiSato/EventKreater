@@ -9,10 +9,12 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { signLocalToken } from "@/modules/auth/lib/auth";
 import {
   assertWithinAttemptLimit,
+  bucketOf,
   clearAttempts,
   countAttempts,
   recordAuthAttempt,
 } from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import {
   AUTH_MAX_AGE,
   LOGIN_CHALLENGE_MAX_AGE,
@@ -24,13 +26,9 @@ import {
 } from "@/modules/auth/lib/cookies";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
-/** 確認番号を間違えられる回数。到達するとアカウントをロックする。 */
-const MAX_ATTEMPTS = 10;
+const { codeMaxAttempts: MAX_ATTEMPTS, lockMs: LOCK_MS } = AUTH_RATE_LIMITS;
 /** この回数以上間違えたら、残り回数を画面に出す。 */
 const ATTEMPT_WARN_AFTER_FAILURES = 3;
-/** ロックが自動で解除されるまでの時間。 */
-const LOCK_MS = 15 * 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
 const INVALID_CODE = "確認番号が正しくないか、期限が切れています。";
 
 export type ChallengeUser = Pick<
@@ -103,7 +101,7 @@ function invalidCode(remaining?: number): ProblemDetailException {
 
 /** 確認番号の失敗回数を数えるバケット。チャレンジを発行し直しても引き継ぐ。 */
 function failureBucket(userId: string): string {
-  return `login-2fa:fail:user:${userId}`;
+  return bucketOf(AUTH_RATE_LIMITS.rules.loginChallengeFailure, userId);
 }
 
 /** アカウントのロック開始時刻を持つバケット。 */
@@ -297,15 +295,15 @@ async function issueChallenge(input: {
   await assertNotLocked(input.user.id);
   assertMemberPurposeAllowed(input.user, input.purpose);
   if (input.channel === "SMS") {
-    await assertWithinAttemptLimit(`login-2fa:sms:user:${input.user.id}`, 3, HOUR_MS);
-    await assertWithinAttemptLimit(`login-2fa:sms:ip:${input.ip}`, 8, HOUR_MS);
-    await recordAuthAttempt(`login-2fa:sms:user:${input.user.id}`);
-    await recordAuthAttempt(`login-2fa:sms:ip:${input.ip}`);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginSmsUser, input.user.id);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginSmsIp, input.ip);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginSmsUser, input.user.id);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginSmsIp, input.ip);
   } else {
-    await assertWithinAttemptLimit(`login-2fa:email:user:${input.user.id}`, 5, HOUR_MS);
-    await assertWithinAttemptLimit(`login-2fa:email:ip:${input.ip}`, 10, HOUR_MS);
-    await recordAuthAttempt(`login-2fa:email:user:${input.user.id}`);
-    await recordAuthAttempt(`login-2fa:email:ip:${input.ip}`);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginEmailChallengeUser, input.user.id);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginEmailChallengeIp, input.ip);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginEmailChallengeUser, input.user.id);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginEmailChallengeIp, input.ip);
   }
 
   await prisma.loginChallenge.updateMany({
@@ -405,7 +403,7 @@ async function verifyChallenge(input: {
   ip: string;
 }): Promise<{ user: ChallengeUser; challengeId: string; purpose: LoginChallengePurpose }> {
   if (!/^\d{6}$/.test(input.code)) throw invalidCode();
-  await assertWithinAttemptLimit(`login-2fa:confirm:ip:${input.ip}`, 20, HOUR_MS);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginConfirmIp, input.ip);
   const { challenge, user } = await readActiveChallenge(input.req);
   await assertNotLocked(user.id);
   assertMemberPurposeAllowed(user, challenge.purpose);
@@ -421,12 +419,12 @@ async function verifyChallenge(input: {
 
   if (!hashesEqual(row.codeHash, codeHash(row.id, input.code))) {
     const failed = failures + 1;
-    await recordAuthAttempt(failBucket);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginChallengeFailure, user.id);
     await prisma.loginChallenge.update({
       where: { id: row.id },
       data: { attempts: failed },
     });
-    await recordAuthAttempt(`login-2fa:confirm:ip:${input.ip}`);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.loginConfirmIp, input.ip);
     if (failed >= MAX_ATTEMPTS) {
       await clearAttempts(failBucket);
       throw lockedAccount(await lockAccount(user.id));

@@ -6,7 +6,15 @@ import { clearAuthCookies, clientIp, readAuthCookie } from "@/modules/auth/lib/c
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { AdminLoginSchema } from "@/lib/schemas";
-import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import {
+  assertWithinAttemptLimit,
+  attemptWindow,
+  clearRuleAttempts,
+  limitExtras,
+  recordAuthAttempt,
+  tighterLimit,
+} from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { challengeResponse, clearLoginChallengeCookies, startLoginChallenge } from "@/modules/auth/lib/login-challenge";
 
 export const runtime = "nodejs";
@@ -28,19 +36,26 @@ export async function POST(req: NextRequest) {
     const input = AdminLoginSchema.parse(await req.json());
     const email = input.email.toLowerCase();
     const ip = clientIp(req) ?? "local";
-    await assertWithinAttemptLimit(`admin-login:email:${email}`, 5, 15 * 60 * 1000);
-    await assertWithinAttemptLimit(`admin-login:ip:${ip}`, 20, 15 * 60 * 1000);
+    const { rules } = AUTH_RATE_LIMITS;
+    await assertWithinAttemptLimit(rules.adminLoginEmail, email);
+    await assertWithinAttemptLimit(rules.adminLoginIp, ip);
     const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
     const passwordOk = await passwordMatches(input.password, user?.passwordHash ?? null);
     if (!user || !passwordOk || !user.emailVerifiedAt || user.platformRole !== "ADMIN") {
-      await recordAuthAttempt(`admin-login:email:${email}`);
-      await recordAuthAttempt(`admin-login:ip:${ip}`);
+      await recordAuthAttempt(rules.adminLoginEmail, email);
+      await recordAuthAttempt(rules.adminLoginIp, ip);
+      const tight = tighterLimit([
+        [rules.adminLoginEmail, await attemptWindow(rules.adminLoginEmail, email)],
+        [rules.adminLoginIp, await attemptWindow(rules.adminLoginIp, ip)],
+      ]);
       throw new ProblemDetailException({
         status: 401,
         title: "Unauthorized",
         detail: LOGIN_FAILURE,
+        ...(tight ? limitExtras(tight[0], tight[1]) : {}),
       });
     }
+    await clearRuleAttempts(rules.adminLoginEmail, email);
     const challenge = await startLoginChallenge({ user, purpose: "ADMIN", ip });
     return challengeResponse(req, challenge.id, challenge.view);
   } catch (error) {

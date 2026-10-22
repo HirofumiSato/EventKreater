@@ -1727,6 +1727,7 @@ export interface ProblemDetails {
 | **409** | `probs/lock-conflict` | 他幹事による排他ロック保持中（編集中） |
 | **409** | `probs/conflict` | 別の Google アカウントに結び付いたメールアドレス、または別の会員が使う確認済み電話番号 |
 | **429** | `probs/rate-limited` | チラシ生成サービスの呼び出し上限 |
+| **429** | `probs/rate-limit` | 認証の試行回数の上限（`error: "RATE_LIMITED"`）。`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返し、`Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` を付ける |
 | **502** | `probs/flyer-unavailable` | チラシ生成サービスへの接続失敗、不正応答、JPEG 以外の画像 |
 | **500** | `probs/internal-error` | DB接続断などのサーバー内部障害 |
 
@@ -1734,7 +1735,7 @@ export interface ProblemDetails {
 
 ## 8. 会員認証 API（Google サインイン、ログアウト、プロフィール）
 
-ローカル登録とログインは `POST /api/v1/auth/local` である。登録時の `platformRole` は受け取らず、常に `MEMBER` を保存する。パスワードの新規登録は `signup_intents` を作り、確認メールを送ってセッションも会員行も発行しない。応答は、新規でも既登録でも「確認メールを送信しました」とする。ログインはメール確認済みの会員だけが第一段階を通る。成功時は JWT を出さず、`login_challenges` と Cookie を返す。電話番号が未確認でも確認番号（メール）は始められ、無料枠の消費だけを拒否する。会員がいないときもパスワード照合と同じ時間をかける。登録は IP あたり 1 時間に 5 回、ログイン失敗はメールあたり 15 分に 5 回かつ IP あたり 15 分に 20 回までである。漏えい済みパスワードは Have I Been Pwned の範囲 API で拒否する。照合先が応答しないときは登録を止めない。
+ローカル登録とログインは `POST /api/v1/auth/local` である。登録時の `platformRole` は受け取らず、常に `MEMBER` を保存する。パスワードの新規登録は `signup_intents` を作り、確認メールを送ってセッションも会員行も発行しない。応答は、新規でも既登録でも「確認メールを送信しました」とする。ログインはメール確認済みの会員だけが第一段階を通る。成功時は JWT を出さず、`login_challenges` と Cookie を返す。電話番号が未確認でも確認番号（メール）は始められ、無料枠の消費だけを拒否する。会員がいないときもパスワード照合と同じ時間をかける。登録は IP あたり 1 時間に 5 回、ログイン失敗はメールあたり 15 分に 10 回かつ IP あたり 15 分に 40 回までである。上限は `src/modules/auth/lib/rate-limits.ts` に集約し、環境変数（`AUTH_ATTEMPT_LIMIT` など）で調整できる。パスワード不一致の 401 には、厳しいほうの上限について `limitLabel`、`attemptLimit`、`remainingAttempts`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を載せる（画面が残り回数を出すため）。パスワードが一致したら、メールアドレス単位の失敗回数は消す。IP 単位は消さない。漏えい済みパスワードは Have I Been Pwned の範囲 API で拒否する。照合先が応答しないときは登録を止めない。
 
 この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 
@@ -1830,11 +1831,11 @@ export interface ProblemDetails {
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
-対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。番号あたり 1 時間に 3 回、IP あたり 1 時間に 8 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
+対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
 
 ### 8.6. POST `/api/v1/auth/phone/confirm`（電話番号確認）
 
-ボディは `{ "phone": "09012345678", "code": "123456" }`。コード不一致は試行回数を増やし、5 回で無効にする。成功時の決定順は次である。
+ボディは `{ "phone": "09012345678", "code": "123456" }`。コード不一致は試行回数を増やし、10 回で無効にする。残りがあるあいだの 400 には `limitLabel`、`attemptLimit`、`remainingAttempts`、`windowSeconds`（コードの有効期限 600 秒）、`retryAfterSeconds`、`retryAt`（コードの期限）を載せる。使い切ったら 400 `CODE_EXHAUSTED` と `remainingAttempts: 0` を返し、再送を促す。成功時の決定順は次である。
 
 1. 確認済みの `phone_e164` で会員を探す。
 2. 登録意向の `googleSub`、次にメールで会員を探す。
@@ -1862,7 +1863,7 @@ GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、
 }
 ```
 
-POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 3 回、メールは 5 回。`SMS_WEBHOOK_URL` が無いときはコードをサーバログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。
+POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が無いときはコードをサーバログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
 
 ### 8.8. POST `/api/v1/auth/login-challenge/confirm`（確認番号の照合）
 
@@ -1878,7 +1879,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 対象画面は SCR-PUB-11。メールアドレス変更、電話番号変更（パスワードを持たない会員）、パスワード設定、退会の前に使う。ボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。省略時は確認済みの電話があれば SMS、無ければメールである。
 
-会員セッションを要求し、`deleted_at` の立った会員には発行しない。`login_challenges` に `purpose = PARTICIPANT` で1件だけ作り、以前の未使用チャレンジは使用済みにする。応答はログイン第二段階の GET と同じ形（`challengeRequired`、`channel`、`destinationMask`、`canUseSms`、`canUseEmail`、`purpose`、`attemptsRemaining`、`attemptLimit`、`lockMinutes`）で、チャレンジ Cookie を付ける。**照合してもセッションは発行しない。** 確認番号は各操作のボディの `code` に入れる。SMS は会員あたり1時間に3回、メールは5回までである。
+会員セッションを要求し、`deleted_at` の立った会員には発行しない。`login_challenges` に `purpose = PARTICIPANT` で1件だけ作り、以前の未使用チャレンジは使用済みにする。応答はログイン第二段階の GET と同じ形（`challengeRequired`、`channel`、`destinationMask`、`canUseSms`、`canUseEmail`、`purpose`、`attemptsRemaining`、`attemptLimit`、`lockMinutes`）で、チャレンジ Cookie を付ける。**照合してもセッションは発行しない。** 確認番号は各操作のボディの `code` に入れる。SMS は会員あたり1時間に5回、メールは5回までである。
 
 ### 8.11. POST `/api/v1/user/password`（パスワードの変更・設定）
 
@@ -1914,13 +1915,13 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 1. 新しい番号を E.164 に正規化する。現在と同じ番号、または他の会員が使用中の番号は、SMS を送る前に 400 `PHONE_UNCHANGED` / 409 `PHONE_CONFLICT` で止める。
 2. パスワードを持つ会員は `password` を照合する。持たない会員は 8.10 の `code` を照合する。不一致は 400 `PASSWORD_INVALID`。
-3. `phone_verification_codes` に、その会員と新しい番号の組で1件だけ作る。6桁、有効期限10分、ハッシュだけを保存する。番号あたり1時間に3回、IP あたり1時間に8回まで。
+3. `phone_verification_codes` に、その会員と新しい番号の組で1件だけ作る。6桁、有効期限10分、ハッシュだけを保存する。番号あたり1時間に5回、IP あたり1時間に10回まで。
 
 成功時は `{ "sent": true, "maskedPhone": "090****1234", "detail": "..." }`。この時点では `users.phone_e164` を変えない。
 
 ### 8.15. POST `/api/v1/user/phone/confirm`（電話番号変更の確定）
 
-対象画面は SCR-PUB-11。ボディは `{ "phone": "09012345678", "code": "123456" }`。コード不一致は試行回数を増やし、5回で無効にする。成功したら `users.phone_e164` と `phone_verified_at` を更新し、`account_change_logs` に `PHONE` を下4桁で残す。
+対象画面は SCR-PUB-11。ボディは `{ "phone": "09012345678", "code": "123456" }`。コード不一致は試行回数を増やし、10回で無効にする。無効になったあとは 400 `CODE_EXHAUSTED` を返し、再送を促す。成功したら `users.phone_e164` と `phone_verified_at` を更新し、`account_change_logs` に `PHONE` を下4桁で残す。
 
 `auth_sessions` のうち、いま使っている `jti` 以外を失効させる。応答は `{ "success": true, "phoneMasked": "090****1234", "phoneVerified": true }`。同じ番号が他の会員に取られていたときは 409 `PHONE_CONFLICT`。
 

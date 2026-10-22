@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { readProblem } from "@/lib/problem";
+import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
@@ -108,9 +108,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
             : { action: "login", email, password, audience },
         ),
       });
-      const body = (await res.json().catch(() => ({}))) as {
-        detail?: string;
-        error?: string;
+      const body = (await res.json().catch(() => ({}))) as ProblemBody & {
         verificationRequired?: boolean;
         challengeRequired?: boolean;
         phoneVerified?: boolean;
@@ -118,7 +116,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
       if (!res.ok) {
         if (body.error === "EMAIL_UNVERIFIED") setUnverified(true);
         if (body.error === "ADMIN_CONSOLE_REQUIRED") setAdminConsoleRequired(true);
-        throw new Error(body.detail || "認証に失敗しました");
+        throw new Error(problemMessage(body, "認証に失敗しました"));
       }
       if (body.verificationRequired) {
         setNotice(body.detail || "確認メールを送信しました。メールのリンクを開いてください。");
@@ -284,6 +282,8 @@ function PhoneScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /** 確認コードの入力ミスを使い切った状態。再送を前に出す。 */
+  const [exhausted, setExhausted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -298,8 +298,8 @@ function PhoneScreen({
     };
   }, [onFinished]);
 
-  const start = async (event: FormEvent) => {
-    event.preventDefault();
+  /** 確認コードを送る。送り直しも同じ経路を通す。 */
+  const request = async (kind: "send" | "resend") => {
     setSubmitting(true);
     setError(null);
     setNotice(null);
@@ -309,19 +309,26 @@ function PhoneScreen({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
       });
-      const body = (await res.json().catch(() => ({}))) as { alreadyVerified?: boolean; detail?: string };
-      if (!res.ok) throw new Error(body.detail || "確認コードを送れませんでした");
+      const body = (await res.json().catch(() => ({}))) as ProblemBody & { alreadyVerified?: boolean };
+      if (!res.ok) throw new Error(problemMessage(body, "確認コードを送れませんでした"));
       if (body.alreadyVerified) {
         onFinished();
         return;
       }
       setSent(true);
-      setNotice(body.detail || "確認コードを送信しました。");
+      setExhausted(false);
+      setCode("");
+      setNotice(kind === "resend" ? "確認コードを送り直しました。" : body.detail || "確認コードを送信しました。");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "確認コードを送れませんでした");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const start = (event: FormEvent) => {
+    event.preventDefault();
+    void request("send");
   };
 
   const confirm = async (event: FormEvent) => {
@@ -334,7 +341,11 @@ function PhoneScreen({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, code }),
       });
-      if (!res.ok) throw new Error(await readProblem(res));
+      if (!res.ok) {
+        const problem = await readProblemBody(res);
+        setExhausted(problem.error === "CODE_EXHAUSTED");
+        throw new Error(problemMessage(problem, "電話番号の確認に失敗しました"));
+      }
       const body = (await res.json()) as { attachedExisting?: boolean; reactivated?: boolean };
       if (body.reactivated) {
         setNotice("以前のアカウントを引き継ぎました。利用枠は前回の続きからになります。");
@@ -400,6 +411,16 @@ function PhoneScreen({
           {submitting ? "処理中..." : sent ? "確認して続ける" : "確認コードを送る"}
         </button>
       </form>
+      {sent && (
+        <button
+          type="button"
+          disabled={submitting}
+          className={exhausted ? "btn btn--primary btn--block" : "btn btn--outline btn--block"}
+          onClick={() => void request("resend")}
+        >
+          確認コードを送り直す
+        </button>
+      )}
       <p className="help">
         <Link href={basePath} className="text-link">
           ログイン画面へ戻る

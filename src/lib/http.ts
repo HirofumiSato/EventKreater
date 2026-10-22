@@ -3,9 +3,23 @@ import { ZodError } from "zod";
 import { ProblemDetailException } from "@/lib/exceptions";
 
 export function problemResponse(error: ProblemDetailException, instance?: string): NextResponse {
+  const headers: Record<string, string> = { "Content-Type": "application/problem+json" };
+  const retryAfter = error.extras.retryAfterSeconds;
+  const retryAt = error.extras.retryAt;
+  const limit = error.extras.attemptLimit;
+  if (error.status === 429 && typeof retryAfter === "number") {
+    headers["Retry-After"] = String(retryAfter);
+    if (typeof limit === "number") {
+      headers["X-RateLimit-Limit"] = String(limit);
+      headers["X-RateLimit-Remaining"] = "0";
+    }
+    if (typeof retryAt === "string" && !Number.isNaN(Date.parse(retryAt))) {
+      headers["X-RateLimit-Reset"] = String(Math.floor(Date.parse(retryAt) / 1000));
+    }
+  }
   return NextResponse.json(error.toBody(instance), {
     status: error.status,
-    headers: { "Content-Type": "application/problem+json" },
+    headers,
   });
 }
 

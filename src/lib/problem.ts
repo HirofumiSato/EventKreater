@@ -4,14 +4,20 @@ export interface ProblemBody {
   status?: number;
   detail?: string;
   error?: string;
+  /** 上限の対象名（「確認番号のSMS送信」など）。 */
+  limitLabel?: string;
   /** ログイン確認番号で、あと何回まで入力できるか。 */
   remainingAttempts?: number;
-  /** ログイン確認番号の試行上限。 */
+  /** 試行上限。 */
   attemptLimit?: number;
-  /** ロックが解除されるまでの秒数。 */
+  /** 上限を数える窓の長さ（秒）。 */
+  windowSeconds?: number;
+  /** ロック・上限が解除されるまでの秒数。 */
   retryAfterSeconds?: number;
-  /** ロックが解除される時刻（ISO 8601）。 */
+  /** ロック・上限が解除される時刻（ISO 8601）。 */
   lockedUntil?: string;
+  /** 次に 1 回ぶん空く時刻（ISO 8601）。 */
+  retryAt?: string;
   [key: string]: unknown;
 }
 
@@ -23,8 +29,46 @@ export async function readProblemBody(response: Response): Promise<ProblemBody> 
   }
 }
 
-export function problemMessage(body: ProblemBody, fallback = "リクエストに失敗しました"): string {
+function windowText(seconds: number): string {
+  if (seconds % 3600 === 0) return `${seconds / 3600}時間`;
+  return `${Math.round(seconds / 60)}分`;
+}
+
+function clockText(iso: string): string | null {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return null;
+  return new Date(ms).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * 上限の案内。回数に上限のある操作では、失敗のたびに必ず出す。
+ * アカウントロック（ACCOUNT_LOCKED）は画面ごとの専用表示があるため対象外。
+ */
+export function limitNotice(body: ProblemBody): string | null {
+  if (body.error === "ACCOUNT_LOCKED") return null;
+  if (typeof body.attemptLimit !== "number" || typeof body.windowSeconds !== "number") return null;
+  const label = body.limitLabel ?? "この操作";
+  const window = windowText(body.windowSeconds);
+  const remaining = body.remainingAttempts;
+  if (typeof remaining === "number" && remaining > 0) {
+    return `${label}は${window}に${body.attemptLimit}回までです。あと${remaining}回できます。`;
+  }
+  const clock = body.retryAt ? clockText(body.retryAt) : null;
+  return clock
+    ? `${label}は${window}に${body.attemptLimit}回までです。${clock}ごろに再度お試しください。`
+    : `${label}は${window}に${body.attemptLimit}回までです。しばらく待ってから再度お試しください。`;
+}
+
+/** 本文の detail だけを返す。上限を別に描きたい画面が使う。 */
+export function problemDetail(body: ProblemBody, fallback = "リクエストに失敗しました"): string {
   return body.detail || body.error || fallback;
+}
+
+/** 失敗の本文に、上限の案内があれば添える。 */
+export function problemMessage(body: ProblemBody, fallback = "リクエストに失敗しました"): string {
+  const base = problemDetail(body, fallback);
+  const notice = limitNotice(body);
+  return notice ? `${base} ${notice}` : base;
 }
 
 export async function readProblem(response: Response): Promise<string> {

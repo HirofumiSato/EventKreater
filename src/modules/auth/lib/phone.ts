@@ -4,10 +4,11 @@ import { sha256 } from "@/lib/crypto";
 import { ProblemDetailException, isUniqueViolation } from "@/lib/exceptions";
 import { deliverSms } from "@/lib/sms";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-const HOUR_MS = 60 * 60 * 1000;
+const CODE_TTL_SECONDS = CODE_TTL_MS / 1000;
+const MAX_ATTEMPTS = AUTH_RATE_LIMITS.codeMaxAttempts;
 
 const INVALID_CODE = "確認コードが正しくないか、期限が切れています。";
 const PHONE_TAKEN = "この電話番号は別の会員に使われています。登録済みの方法でログインしてください。";
@@ -49,11 +50,37 @@ function invalidPhone(): ProblemDetailException {
   });
 }
 
-function invalidCode(): ProblemDetailException {
+function invalidCode(retryAt?: Date, remaining?: number): ProblemDetailException {
+  const attempts =
+    retryAt === undefined
+      ? {}
+      : {
+          limitLabel: "確認コードの照合",
+          attemptLimit: MAX_ATTEMPTS,
+          remainingAttempts: Math.max(0, remaining ?? 0),
+          // 時間の窓ではなく「このコード」に対して数えるため、コードの有効期限を窓として伝える。
+          windowSeconds: CODE_TTL_SECONDS,
+          retryAfterSeconds: Math.max(1, Math.ceil((retryAt.getTime() - Date.now()) / 1000)),
+          retryAt: retryAt.toISOString(),
+        };
   return new ProblemDetailException({
     status: 400,
     title: "Validation Error",
     detail: INVALID_CODE,
+    ...attempts,
+  });
+}
+
+/** 1 つのコードの入力ミスを使い切った状態。再送すればやり直せる。 */
+function codeExhausted(): ProblemDetailException {
+  return new ProblemDetailException({
+    status: 400,
+    title: "Validation Error",
+    detail: `確認コードを${MAX_ATTEMPTS}回間違えたため、このコードは無効になりました。もう一度送信してください。`,
+    error: "CODE_EXHAUSTED",
+    limitLabel: "確認コードの照合",
+    attemptLimit: MAX_ATTEMPTS,
+    remainingAttempts: 0,
   });
 }
 
@@ -104,10 +131,10 @@ export async function startPhoneVerification(input: PhoneSubject & { phoneRaw: s
     if (user?.phoneVerifiedAt) return { alreadyVerified: true };
   }
 
-  await assertWithinAttemptLimit(`phone:start:number:${phoneE164}`, 3, HOUR_MS);
-  await assertWithinAttemptLimit(`phone:start:ip:${input.ip}`, 8, HOUR_MS);
-  await recordAuthAttempt(`phone:start:number:${phoneE164}`);
-  await recordAuthAttempt(`phone:start:ip:${input.ip}`);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneStartNumber, phoneE164);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneStartIp, input.ip);
+  await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneStartNumber, phoneE164);
+  await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneStartIp, input.ip);
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
@@ -179,10 +206,10 @@ export async function startPhoneChangeVerification(input: {
 }): Promise<{ phoneE164: string }> {
   const phoneE164 = await assertPhoneChangeable(input.userId, input.phoneRaw);
 
-  await assertWithinAttemptLimit(`phone:change:number:${phoneE164}`, 3, HOUR_MS);
-  await assertWithinAttemptLimit(`phone:change:ip:${input.ip}`, 8, HOUR_MS);
-  await recordAuthAttempt(`phone:change:number:${phoneE164}`);
-  await recordAuthAttempt(`phone:change:ip:${input.ip}`);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneChangeNumber, phoneE164);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneChangeIp, input.ip);
+  await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneChangeNumber, phoneE164);
+  await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneChangeIp, input.ip);
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
@@ -210,20 +237,22 @@ export async function confirmPhoneChangeVerification(input: {
 }): Promise<{ id: string; email: string; name: string; phoneE164: string }> {
   const phoneE164 = toE164(input.phoneRaw);
   if (!phoneE164 || !/^\d{6}$/.test(input.code)) throw invalidCode();
-  await assertWithinAttemptLimit(`phone:change:confirm:ip:${input.ip}`, 20, HOUR_MS);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneChangeConfirmIp, input.ip);
 
   const codeRow = await prisma.phoneVerificationCode.findFirst({
     where: { phoneE164, usedAt: null, expiresAt: { gt: new Date() }, userId: input.userId },
     orderBy: { createdAt: "desc" },
   });
-  if (!codeRow || codeRow.attempts >= MAX_ATTEMPTS) throw invalidCode();
+  if (!codeRow) throw invalidCode();
+  if (codeRow.attempts >= MAX_ATTEMPTS) throw codeExhausted();
   if (!hashesEqual(codeRow.codeHash, codeHash(phoneE164, input.code))) {
+    const failed = codeRow.attempts + 1;
     await prisma.phoneVerificationCode.update({
       where: { id: codeRow.id },
-      data: { attempts: { increment: 1 } },
+      data: { attempts: failed },
     });
-    await recordAuthAttempt(`phone:change:confirm:ip:${input.ip}`);
-    throw invalidCode();
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneChangeConfirmIp, input.ip);
+    throw failed >= MAX_ATTEMPTS ? codeExhausted() : invalidCode(codeRow.expiresAt, MAX_ATTEMPTS - failed);
   }
   const user = await attachPhoneToUser(input.userId, phoneE164, codeRow.id);
   return { ...user, phoneE164 };
@@ -239,7 +268,7 @@ export async function confirmPhoneVerification(
   const phoneE164 = toE164(input.phoneRaw);
   if (!phoneE164 || !/^\d{6}$/.test(input.code)) throw invalidCode();
   await assertSubject(input);
-  await assertWithinAttemptLimit(`phone:confirm:ip:${input.ip}`, 20, HOUR_MS);
+  await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.phoneConfirmIp, input.ip);
 
   const codeRow = await prisma.phoneVerificationCode.findFirst({
     where: {
@@ -250,14 +279,16 @@ export async function confirmPhoneVerification(
     },
     orderBy: { createdAt: "desc" },
   });
-  if (!codeRow || codeRow.attempts >= MAX_ATTEMPTS) throw invalidCode();
+  if (!codeRow) throw invalidCode();
+  if (codeRow.attempts >= MAX_ATTEMPTS) throw codeExhausted();
   if (!hashesEqual(codeRow.codeHash, codeHash(phoneE164, input.code))) {
+    const failed = codeRow.attempts + 1;
     await prisma.phoneVerificationCode.update({
       where: { id: codeRow.id },
-      data: { attempts: { increment: 1 } },
+      data: { attempts: failed },
     });
-    await recordAuthAttempt(`phone:confirm:ip:${input.ip}`);
-    throw invalidCode();
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.phoneConfirmIp, input.ip);
+    throw failed >= MAX_ATTEMPTS ? codeExhausted() : invalidCode(codeRow.expiresAt, MAX_ATTEMPTS - failed);
   }
 
   if (input.userId) {
