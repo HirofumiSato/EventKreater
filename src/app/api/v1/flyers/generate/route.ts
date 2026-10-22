@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
     const owner = await resolveFlyerOwner(req);
     await assertFlyerQuota(input.draftKey, owner);
 
-    const generated = await generateFlyerImage(input, input.candidateId);
+    const generated = await generateFlyerImage(
+      input,
+      input.candidateId,
+      owner.ownerTokenHash,
+    );
     const id = randomUUID();
     await saveFlyerImage(id, generated.bytes);
     try {

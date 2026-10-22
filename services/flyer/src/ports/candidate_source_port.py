@@ -3,6 +3,9 @@
 いまはローカル合成のプレースホルダだけだが、将来「同梱画像パック」「ネット
 取得」「AI 生成」へ差し替えるための口をここに固定する。差し替えても
 `ProposeCandidatesUseCase` とレンダラーは変更しない。
+
+利用者が持ち込んだ写真は供給元ではなく入力なので、`ImageUploadPort` が
+正規化し、`ProposeCandidatesUseCase.create_uploaded_background` が候補にする。
 """
 
 from __future__ import annotations

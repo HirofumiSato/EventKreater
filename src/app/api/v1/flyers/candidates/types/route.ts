@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const input = ProposeCandidatesSchema.parse(await req.json());
     const owner = await resolveFlyerOwner(req);
-    const candidates = await proposeTypeCandidates(input);
+    const candidates = await proposeTypeCandidates(input, owner.ownerTokenHash);
     const quota = await readFlyerQuota(input.draftKey, owner);
     const response = NextResponse.json({ candidates, quota });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);

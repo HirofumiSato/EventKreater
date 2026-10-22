@@ -138,6 +138,11 @@ export const ProposeCandidatesSchema = GenerateFlyerSchema.extend({
   count: z.number().int().min(1).max(16).optional(),
 });
 
+/** ウィザードのステップ 2（自分の写真）。multipart のフォーム項目を検証する。 */
+export const UploadFlyerBackgroundSchema = GenerateFlyerSchema.extend({
+  draftKey: z.string().uuid("下書きIDが不正です"),
+});
+
 /** ウィザードの確定。選んだ候補と、記録用の配置・配色を受け取る。 */
 export const SelectFlyerCandidateSchema = GenerateFlyerSchema.extend({
   draftKey: z.string().uuid("下書きIDが不正です"),
@@ -415,6 +420,7 @@ export const PricingCampaignUpdateSchema = PricingCampaignSchema;
 
 export type GenerateFlyerInput = z.infer<typeof GenerateFlyerSchema>;
 export type ProposeCandidatesInput = z.infer<typeof ProposeCandidatesSchema>;
+export type UploadFlyerBackgroundInput = z.infer<typeof UploadFlyerBackgroundSchema>;
 export type SelectFlyerCandidateInput = z.infer<typeof SelectFlyerCandidateSchema>;
 export type CreateEventInput = z.infer<typeof CreateEventSchema>;
 export type UpdateEventInput = z.infer<typeof UpdateEventSchema>;

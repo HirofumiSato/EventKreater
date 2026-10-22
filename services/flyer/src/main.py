@@ -13,7 +13,12 @@ from src.adapters.image_generator.static_fallback_image_generator import (
     StaticFallbackImageGenerator,
 )
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
-from src.adapters.wiring import build_candidate_source, build_image_generator, build_prompt_engine
+from src.adapters.wiring import (
+    build_candidate_source,
+    build_image_generator,
+    build_image_upload,
+    build_prompt_engine,
+)
 from src.api.errors import register_exception_handlers
 from src.api.routes import router
 from src.infrastructure.config import Settings
@@ -83,6 +88,7 @@ def create_app(
     images = image_generator or build_image_generator(resolved, fallback=fallback)
     drawing = renderer or PillowFlyerRenderer()
     sources = candidate_source or build_candidate_source(resolved)
+    uploads = build_image_upload(resolved)
 
     app = FastAPI(title="AI Flyer Generator", lifespan=_lifespan)
     app.state.settings = resolved
@@ -100,6 +106,7 @@ def create_app(
         source=sources,
         renderer=drawing,
         store=candidate_store,
+        uploads=uploads,
     )
     register_exception_handlers(app)
     app.include_router(router)

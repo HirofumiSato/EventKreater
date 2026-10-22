@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EventFormValues } from "@/modules/events/types";
 import { buildFlyerFormPayload, validateFlyerForm } from "@/modules/flyers/lib/form";
 import { readFlyerDraftKey, resetFlyerDraftKey } from "@/modules/flyers/lib/draft";
+import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
 import type { FlyerQuota } from "@/modules/flyers/types";
 import { FlyerCandidateModal } from "./FlyerCandidateModal";
 
@@ -102,11 +103,7 @@ export function FlyerGeneratePanel({
       )}
 
       {quota && (
-        <p className="wizard__quota">
-          {quota.anonymous
-            ? `未ログインで作れるのは残り ${quota.remaining} 回`
-            : `この下書きは残り ${quota.remaining} 回 / ${quota.limit} 回`}
-        </p>
+        <p className="wizard__quota">{flyerQuotaLabel(quota)}</p>
       )}
 
       <div className="btn-row">

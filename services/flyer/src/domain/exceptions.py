@@ -32,15 +32,33 @@ class InputValidationError(FlyerAppException):
 
 
 class CandidateNotFoundError(FlyerAppException):
-    """候補画像が見つからない、または TTL 切れ。HTTP 404 / CANDIDATE_EXPIRED。
+    """候補画像が見つからない、TTL 切れ、または所有者が違う。
 
-    レート制限は BFF（Next.js）が下書き単位のクォータとして持つため、
-    このサービスは呼び出し回数を見ない。
+    HTTP 404 / CANDIDATE_EXPIRED。所有者が違うときも、候補の存在自体を
+    悟らせないために同じ応答にする。
     """
 
     error_code = "CANDIDATE_EXPIRED"
     http_status = 404
     default_user_message = "候補の有効期限が切れました。選び直してください。"
+
+
+class ImageUploadError(InputValidationError):
+    """アップロード画像の形式不正・破損。HTTP 422 / INVALID_IMAGE。"""
+
+    error_code = "INVALID_IMAGE"
+    http_status = 422
+    default_user_message = (
+        "画像を読み込めませんでした。JPEG / PNG / WebP の画像を選んでください。"
+    )
+
+
+class ImageTooLargeError(FlyerAppException):
+    """アップロード画像が上限を超える。HTTP 413 / UPLOAD_TOO_LARGE。"""
+
+    error_code = "UPLOAD_TOO_LARGE"
+    http_status = 413
+    default_user_message = "画像は8MB以下にしてください。"
 
 
 class LLMContextGenerationError(FlyerAppException):

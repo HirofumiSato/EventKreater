@@ -21,6 +21,7 @@ import {
   readFlyerQuota,
   recordFlyerGeneration,
 } from "@/modules/flyers/lib/quota";
+import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
 
 const DRAFT_KEY = "11111111-2222-4333-8444-555555555555";
 const TOKEN_HASH = "a".repeat(64);
@@ -106,5 +107,19 @@ describe("recordFlyerGeneration", () => {
         flyerAssetId: "asset-id",
       },
     });
+  });
+});
+
+describe("flyerQuotaLabel", () => {
+  it("何の回数かと上限が分かる日本語にする", () => {
+    expect(
+      flyerQuotaLabel({ limit: 3, used: 2, remaining: 1, anonymous: false }),
+    ).toBe("この下書きでチラシを保存できるのは、残り 1 回（最大 3 回）");
+  });
+
+  it("未ログインは端末通算であることを示す", () => {
+    expect(
+      flyerQuotaLabel({ limit: 1, used: 1, remaining: 0, anonymous: true }),
+    ).toBe("未ログインでチラシを保存できるのは、残り 0 回（最大 1 回）");
   });
 });
