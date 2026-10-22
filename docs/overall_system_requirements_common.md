@@ -195,7 +195,8 @@ RESTfulな階層関係およびディレクトリ構造に基づき、URLの欠�
 ├── /events/[id] (SCR-PUB-01: 公開告知・出欠登録画面)
 │   └── /receipt (SCR-PUB-04: 参加者向け領収書)
 │
-├── /organizers/[userId] (SCR-PUB-13: 主催者の催し。参加者のログイン必須。カレンダーと一覧)
+├── /organizers/[userId] (SCR-PUB-14: 主催者のプロフィール。誰でも開ける。非公開なら名前と催しへの導線だけ)
+│   └── /events (SCR-PUB-13: 主催者の催し。参加者のログイン必須。カレンダーと一覧)
 │
 ├── /auth/register (SCR-PUB-02: 主催者の会員登録・ログイン。電話番号確認は ?step=phone)
 ├── /auth/verify (SCR-PUB-05: パスワード登録のメール確認。成功後は電話番号確認へ進む)
@@ -526,9 +527,10 @@ RESTfulな階層関係およびディレクトリ構造に基づき、URLの欠�
 * **アクター:** 参加者（会員）
 * **目的:** 気になった主催者が、ほかにどんな催しを開いているかをカレンダーと一覧で確認する。
 * **基本フロー:**
-  1. SCR-PUB-01 の主催者欄、または SCR-PUB-08 の参加カードにある「主催者のほかの催し」から SCR-PUB-13 を開く。
-  2. SCR-PUB-13 でカレンダーと一覧を切り替える。カレンダーは JST の今月を初期表示にし、前月（今月より前は選べない）・次月・今月で移動する。月は `?month=YYYY-MM`、表示は `?view=calendar|list` に持つ。
-  3. 催しを選ぶと SCR-PUB-01 を開き、出欠は UC-02 と同じ画面で答える。
+  1. SCR-PUB-01 の主催者欄、または SCR-PUB-08 の参加カードから SCR-PUB-14（主催者のプロフィール）を開く。
+  2. SCR-PUB-14 の「催しを見る」から SCR-PUB-13 を開く。プロフィールが未作成・非公開のときは、名前と催しへの導線だけを出す。
+  3. SCR-PUB-13 でカレンダーと一覧を切り替える。カレンダーは JST の今月を初期表示にし、前月（今月より前は選べない）・次月・今月で移動する。月は `?month=YYYY-MM`、表示は `?view=calendar|list` に持つ。
+  4. 催しを選ぶと SCR-PUB-01 を開き、出欠は UC-02 と同じ画面で答える。
 * **代替フロー:**
   * 未ログインのときは、SCR-PUB-13 の中身を返さない。骨組みをぼかしたうえで「このページは参加者登録・ログイン後に閲覧できます」と出し、参加者ログイン（SCR-PUB-07）へ進める。URL と画面 ID は SCR-PUB-13 のままである。
   * 会員が存在しない、または退会済みのときは、SCR-PUB-13 で「主催者が見つかりません」と出す。
@@ -737,9 +739,11 @@ RESTfulな階層関係およびディレクトリ構造に基づき、URLの欠�
 | **SCR-PUB-08** | `/participant` | 参加者ホーム | 参加者（会員） | 認証済みセッション | これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には SCR-PUB-03 への切り替えを出す |
 | **SCR-PUB-12** | `/participant/calendar` | 参加カレンダー | 参加者（会員） | 認証済みセッション | 出欠を答えた催しを、選んだ日程の日付に置く（未選択なら代表日）。出席・欠席の両方を出し、欠席は控えめにする。月グリッドと選んだ日の一覧、前月・次月・今月の移動（`?month=YYYY-MM`）。一覧・検索は持たない |
 | **SCR-PUB-09** | `/participant/history` | 参加履歴 | 参加者（会員） | 認証済みセッション | 出欠の回答一覧、出欠・時期の絞り込み、ページ送り、領収書（SCR-PUB-04）へのリンク。主催イベントの情報は出さない |
-| **SCR-PUB-13** | `/organizers/[userId]` | **主催者の催し** | 参加者（会員） | 認証済みセッション（未ログインは 403 `LOGIN_REQUIRED` とぼかした骨組み） | 主催者名、カレンダーと一覧のタブ（`?view=calendar\|list`）、月グリッドと選んだ日の催し、前月（今月以降のみ）・次月・今月（`?month=YYYY-MM`）。掲載は `PUBLISHED`・未削除・申し込み期限内・今日以降の開催日がある催しだけ。満員は参加要望受付中として出す。筆頭幹事と共同主催の催しをまとめる。主催者は SCR-ORG-01 のプレビューで同じ内容を確認できる。`noindex, nofollow` |
+| **SCR-PUB-14** | `/organizers/[userId]` | **主催者のプロフィール** | 誰でも（未ログイン可） | なし（URL直開き） | 主催者名、頭文字のモノグラム、自己紹介、肩書き、活動エリア、活動ジャンル（3つまで）、X・Instagram・Webサイト・LINEへのリンク、任意で「主催 N回・YYYY年から」。催しへの導線は `/organizers/[userId]/events`。会員が無い・退会済み・催しが0件なら 404。プロフィール未作成・非公開のときは名前と催しへの導線だけを出し、自己紹介・リンク・実績は出さない。`noindex, nofollow` |
+| **SCR-PUB-13** | `/organizers/[userId]/events` | **主催者の催し** | 参加者（会員） | 認証済みセッション（未ログインは 403 `LOGIN_REQUIRED` とぼかした骨組み） | 主催者名、カレンダーと一覧のタブ（`?view=calendar\|list`）、月グリッドと選んだ日の催し、前月（今月以降のみ）・次月・今月（`?month=YYYY-MM`）。掲載は `PUBLISHED`・未削除・申し込み期限内・今日以降の開催日がある催しだけ。満員は参加要望受付中として出す。筆頭幹事と共同主催の催しをまとめる。プロフィール（SCR-PUB-14）から遷移する。主催者は SCR-ORG-01 のプレビューで同じ内容を確認できる。`noindex, nofollow` |
 | **SCR-PUB-11** | `/account`（メール確認は `/account/email/verify`） | **アカウント設定** | 主催者・参加者の会員 | 認証済みセッション（管理者は除く） | 表示名、メールアドレス（マスク表示）、電話番号（下4桁）、パスワード、退会を縦に並べる。それぞれの変更の前に、現在の連絡先へ確認番号を送る。メールは新しいアドレスへ確認リンクを送って確定する。電話は新しい番号へ6桁を送る。パスワード・メール・電話を変えたら、その端末以外のログインを切る。退会は論理削除で、確認済みの電話番号だけを残す |
-| **SCR-ORG-01** | `/organizer/events` | 主催イベント一覧 | 主催幹事 | 幹事トークン or 認証済 | 主催イベントカード、出欠集計、複製（編集画面へ）、削除・受付停止、Stripe Portal。本文冒頭のサブタブで SCR-ORG-13・SCR-ORG-11 と行き来する |
+| **SCR-ORG-01** | `/organizer/events` | 主催イベント一覧 | 主催幹事 | 幹事トークン or 認証済 | 主催イベントカード、出欠集計、複製（編集画面へ）、削除・受付停止、Stripe Portal。本文冒頭のサブタブで SCR-ORG-13・SCR-ORG-11・SCR-ORG-14 と行き来する。公開プロフィールと催しページのプレビュー・共有リンクもここに置く |
+| **SCR-ORG-14** | `/organizer/profile` | **公開プロフィール編集** | 主催幹事（会員） | 認証済みセッション ＋ 主催イベント1件以上（0件は 403 `NOT_ORGANIZER`、未登録の幹事は 403 `REGISTER_REQUIRED`） | 公開/非公開、肩書き（60文字）、自己紹介（400文字）、活動エリア（50文字）、活動ジャンル（固定リストから3つまで）、X・Instagram・Webサイト・LINEのURL、実績（主催回数と活動開始年）の表示可否。保存前の内容を SCR-PUB-14 と同じ見た目でプレビューできる。表示名は SCR-PUB-11 で変える |
 | **SCR-ORG-13** | `/organizer/calendar` | 主催者カレンダー | 主催幹事・共同主催者 | 幹事トークン or 認証済 | 日本時間の今月を初期表示にした日曜始まりの月グリッドと、選んだ日の予定一覧。開催日が複数ある催しは、すべての日付に1件ずつ出す。前月・次月・今月で移動し、月は `?month=YYYY-MM` に持つ。予定から下書きは SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。外部カレンダー連携（`.ics`・購読URL）は持たない |
 | **SCR-ORG-02** | `/organizer/events/new` | 新規イベント作成 | 主催幹事 | 認証済 or ゲスト幹事 | 7項目入力、申し込み期限、チラシ呼出、公開実行（`status = PUBLISHED`、`visibility = UNLISTED`）。男女別の費用では対象を固定表示し、プラン名は組で1つだけ入力し、組単位で追加・削除する。告知ページの勧誘から来たときは `?ref=<参照元イベントID>` を受け取り、作成時に `referrer_event_id` へ保存する。未登録のまま公開したら SCR-ORG-10 へ送る。2件目は 403 `REGISTER_REQUIRED` で止め、画面内に会員登録の案内を出す |
 | **SCR-ORG-03** | （モーダル） | チラシ選択モーダル | 主催幹事 | SCR-ORG-02 と SCR-ORG-05 上 | 過去の生成チラシ一覧、7項目の流し込み、論理削除 |
@@ -791,6 +795,8 @@ graph TD
     S_SHARE((●)):::initial
     S_REVISIT((●)):::initial
     S_RECEIPT((●)):::initial
+    S_VERIFY((●)):::initial
+    S_ACCOUNT((●)):::initial
 
     subgraph attendee["参加者"]
         direction TB
@@ -799,12 +805,15 @@ graph TD
         PUB10["SCR-PUB-10: 利用規約<br/>/terms"]:::public
         PUB01["SCR-PUB-01: イベント告知・出欠<br/>/events/[id]"]:::public
         PUB04["SCR-PUB-04: 参加者向け領収書<br/>/events/[id]/receipt"]:::public
+        PUB05["SCR-PUB-05: メール確認<br/>/auth/verify"]:::public
         PUB02["SCR-PUB-02: 主催者の会員登録・ログイン<br/>/auth/register"]:::organizer
         PUB07["SCR-PUB-07: 参加者の会員登録・ログイン<br/>/participant/login"]:::member
         PUB08["SCR-PUB-08: 参加者ホーム<br/>/participant"]:::member
         PUB12["SCR-PUB-12: 参加カレンダー<br/>/participant/calendar"]:::member
         PUB09["SCR-PUB-09: 参加履歴<br/>/participant/history"]:::member
-        PUB13["SCR-PUB-13: 主催者の催し<br/>/organizers/[userId]"]:::member
+        PUB11["SCR-PUB-11: アカウント設定<br/>/account"]:::member
+        PUB14["SCR-PUB-14: 主催者のプロフィール<br/>/organizers/[userId]"]:::public
+        PUB13["SCR-PUB-13: 主催者の催し<br/>/organizers/[userId]/events"]:::member
         PUB03["SCR-PUB-03: 主催者マイページ<br/>/mypage"]:::member
     end
 
@@ -813,28 +822,53 @@ graph TD
     PUB00 -->|利用規約| PUB10
     PUB06 -->|利用規約| PUB10
     PUB10 -->|ホームへ戻る| PUB00
+    PUB10 -->|サービスと料金| PUB06
     PUB00 -->|主催者ログイン| PUB02
+    PUB00 -->|参加者ログイン| PUB07
     S_SHARE -->|共有URL（LINE・SNS）| PUB01
     S_REVISIT -->|告知URL| PUB01
     S_REVISIT -->|未ログイン| PUB00
     S_REVISIT -->|ログイン済み| PUB03
-    S_RECEIPT -->|告知または申込一覧の領収書| PUB04
+    S_RECEIPT -->|告知または参加履歴の領収書| PUB04
+    S_VERIFY -->|確認メールのリンク| PUB05
+    S_ACCOUNT -->|ヘッダーのアカウント| PUB11
 
     PUB01 -->|出欠の登録・変更・取消| PUB01
     PUB01 -->|ホームへ戻る| PUB00
-    PUB01 -->|出欠履歴を会員に残す| PUB02
+    PUB01 -->|出欠履歴を会員に残す| PUB07
+    PUB01 -->|出席の履歴| PUB09
     PUB01 -->|自分の領収書| PUB04
-    PUB02 -->|申込一覧| PUB03
+    PUB02 -->|next なし: マイページ| PUB03
     PUB03 -->|告知を開く| PUB01
-    PUB03 -->|自分の領収書| PUB04
+    PUB03 -->|公開ページを開く| PUB14
     PUB03 -->|ログアウト| PUB00
-    PUB01 -->|主催者のほかの催し| PUB13
-    PUB08 -->|主催者のほかの催し| PUB13
+    PUB05 -->|確認後に電話番号確認へ| PUB07
+    PUB07 -->|着地: ?next があればそのパス| PUB08
+    PUB07 -.->|next=/events/[id]| PUB01
+    PUB08 -->|参加カレンダー| PUB12
+    PUB08 -->|参加履歴| PUB09
+    PUB08 -->|アカウント| PUB11
+    PUB08 -->|催しを開く| PUB01
+    PUB08 -->|主催者のページ| PUB14
+    PUB12 -->|催しを開く| PUB01
+    PUB12 -->|参加者ホームへ| PUB08
+    PUB09 -->|催しを開く| PUB01
+    PUB09 -->|自分の領収書| PUB04
+    PUB09 -->|参加者ホームへ| PUB08
+    PUB11 -->|主催者マイページ| PUB03
+    PUB11 -->|参加者ホーム| PUB08
+    PUB11 -->|退会: セッション失効| PUB00
+    PUB01 -->|主催者名| PUB14
+    PUB14 -->|催しを見る| PUB13
+    PUB13 -->|プロフィール| PUB14
     PUB13 -->|催しを開く| PUB01
     PUB13 -->|参加者ホームへ| PUB08
+    PUB13 -.->|未ログイン 403 LOGIN_REQUIRED| PUB07
 ```
 
-告知URLを持たない人はホームでサービスを知る。告知URLは主催者から受け取り、招待型はホームを経由しない。出欠の回答は SCR-PUB-01 で完了し、会員登録を要しない。ログアウトの着地はホームである。領収書は、告知または申込一覧にある自分のリンクから開く。
+告知URLを持たない人はホームでサービスを知る。告知URLは主催者から受け取り、招待型はホームを経由しない。出欠の回答は SCR-PUB-01 で完了し、会員登録を要しない。ログアウトの着地はホームである。領収書は、告知または参加履歴にある自分のリンクから開く。参加者の会員登録は SCR-PUB-07 から始め、着地は参加者ホーム（SCR-PUB-08）とする。参加カレンダー（SCR-PUB-12）と参加履歴（SCR-PUB-09）は参加者ホームから開く。アカウント（SCR-PUB-11）は共通ヘッダーから開き、退会するとセッションが消えてホームへ戻る。
+
+主催者の公開プロフィール（SCR-PUB-14）は、告知ページの主催者名と参加者ホームの参加カードから開く。プロフィールから催し（SCR-PUB-13）へ進み、催しからプロフィールへ戻れる。プロフィールは誰でも読めるが、催しの一覧は参加者のログインを要し、未ログインでは骨組みだけを出して SCR-PUB-07 へ送る。主催者が未作成・非公開のときと、催しが0件のときは、名前と催しへの導線だけを出す。会員が存在しない・退会済みのときだけ 404 とする。
 
 ### 6.2. 主催者
 
@@ -855,12 +889,17 @@ graph TD
     S_BACK((●)):::initial
     S_CO((●)):::initial
     S_MYPAGE((●)):::initial
+    S_ACCOUNT((●)):::initial
 
     PUB00["SCR-PUB-00: ホーム `/`"]:::public
     PUB06["SCR-PUB-06: サービス・プラン紹介<br/>/service"]:::public
+    PUB10["SCR-PUB-10: 利用規約<br/>/terms"]:::public
     PUB05["SCR-PUB-05: メール確認<br/>/auth/verify"]:::public
     PUB02["SCR-PUB-02: 会員登録・ログイン<br/>/auth/register"]:::organizer
     PUB01["SCR-PUB-01: 告知URL<br/>/events/[id]"]:::public
+    PUB11["SCR-PUB-11: アカウント設定<br/>/account"]:::member
+    PUB14["SCR-PUB-14: 主催者のプロフィール<br/>/organizers/[userId]"]:::public
+    PUB13["SCR-PUB-13: 主催者の催し<br/>/organizers/[userId]/events"]:::member
 
     subgraph organizer["主催者"]
         direction TB
@@ -869,10 +908,15 @@ graph TD
         ORG05["SCR-ORG-05: 排他編集<br/>/organizer/events/[id]/edit"]:::organizer
         ORG06["SCR-ORG-06: 参加者名簿<br/>/organizer/events/[id]/participants"]:::organizer
         ORG09["SCR-ORG-09: 幹事向け領収書"]:::organizer
+        ORG11["SCR-ORG-11: 売上<br/>/organizer/revenue"]:::organizer
+        ORG12["SCR-ORG-12: 売上の内訳<br/>/organizer/events/[id]/revenue"]:::organizer
+        ORG13["SCR-ORG-13: カレンダー<br/>/organizer/calendar"]:::organizer
         ORG07["SCR-ORG-07: 共同幹事受諾<br/>/invitations/[code]"]:::organizer
+        ORG10["SCR-ORG-10: 公開直後の会員登録案内<br/>/organizer/register-required"]:::organizer
         ORG03["SCR-ORG-03: チラシ選択"]:::modal
         ORG04["SCR-ORG-04: 公開完了"]:::modal
         ORG08["SCR-ORG-08: チラシ生成"]:::organizer
+        ORG14["SCR-ORG-14: 公開プロフィール編集<br/>/organizer/profile"]:::organizer
         MOD02["SCR-MOD-02: 排他ロック競合"]:::modal
         MOD03["SCR-MOD-03: 削除・受付停止"]:::modal
 
@@ -903,12 +947,16 @@ graph TD
     ORG07 -->|受諾| ORG01
     S_MYPAGE -->|主催一覧| ORG01
     S_MYPAGE -->|編集| ORG05
+    S_MYPAGE -->|プロフィール| ORG14
     S_MYPAGE -->|契約管理| ST_PORTAL
 
     ORG01 -->|新規作成| ORG02
     ORG01 -->|複製| ORG05
     ORG01 -->|会員でないため複製できない| PUB02
     ORG01 -->|複製: 枠不足 HTTP 402| MOD01
+    ORG01 -->|プロフィールを編集| ORG14
+    ORG14 -->|公開ページを開く| PUB14
+    PUB14 -->|催しを見る| PUB13
     MOD01 -->|閉じる（一覧へ）| ORG01
     ORG02 -->|チラシを生成| ORG08
     ORG05 -->|チラシを生成| ORG08
@@ -940,9 +988,33 @@ graph TD
     MOD03 -->|確定| ORG01
     ORG01 -->|契約管理| ST_PORTAL
     ST_PORTAL -->|終了後に復帰| ORG01
+
+    %% プロフィール・カレンダー・売上・未登録時の案内
+    PUB00 -->|利用規約| PUB10
+    PUB06 -->|利用規約| PUB10
+    PUB10 -->|ホームへ戻る| PUB00
+    S_ACCOUNT -->|ヘッダーのアカウント| PUB11
+    PUB11 -->|主催者マイページ| ORG01
+    ORG01 -->|カレンダー| ORG13
+    ORG01 -->|売上を見る| ORG11
+    ORG01 -->|公開プロフィール| PUB14
+    ORG01 -->|催しページを開く・プレビュー| PUB13
+    ORG13 -->|主催一覧へ| ORG01
+    ORG13 -->|予定を開く: 下書き| ORG05
+    ORG13 -->|予定を開く: それ以外| ORG06
+    ORG11 -->|イベントの内訳| ORG12
+    ORG11 -->|主催一覧へ| ORG01
+    ORG12 -->|名簿へ| ORG06
+    ORG12 -->|売上へ| ORG11
+    ORG02 -->|公開時: 未登録| ORG10
+    ORG05 -->|未登録 403 REGISTER_REQUIRED| ORG10
+    ORG10 -->|登録済みの幹事| ORG01
+    ORG10 -->|会員登録・ログイン| PUB02
 ```
 
 会員登録の主目的は幹事である。ホーム、サービス・プラン紹介、または主催一覧からログインした幹事は主催一覧へ進む。招待の途中で開いたときは受諾画面へ戻る。新規の公開で枠が足りるときは公開完了を開く。複製した下書きの公開は公開完了を開かず、編集画面の保存で主催一覧へ戻る。Checkout の成功とキャンセルは作成画面へ戻る。確認メールのリンクはメール確認へ着地し、成功後にログイン画面へ進む。
+
+主催一覧（SCR-ORG-01）・カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）は、本文冒頭の `OrganizerTabs` で行き来する。カレンダーの予定からは、下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。売上から SCR-ORG-12 を開き、SCR-ORG-12 から名簿と売上へ戻る。主催一覧からは、公開プロフィール（SCR-PUB-14）と催しページ（SCR-PUB-13）を開ける。未登録のまま公開したときと、未登録の幹事が名簿・売上・領収書を開いたときは SCR-ORG-10 へ送る。アカウント（SCR-PUB-11）は共通ヘッダーから開き、着地は主催者マイページである。
 
 招待URLを発行した幹事は受諾画面を開かない。受諾画面を開くのは、URLを受け取った人である。サービス・プラン紹介では支払わない。支払いが始まるのは、枠が足りないときの課金モーダルだけである。
 

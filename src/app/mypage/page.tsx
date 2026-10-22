@@ -9,6 +9,7 @@ import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import type { OrganizerEvent } from "@/modules/events/types";
+import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
 
 interface ProfileResponse {
   user: { id: string; email: string; name: string };
@@ -23,6 +24,7 @@ export default function MyPage() {
   const quotaState = useEventQuota();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
+  const [ownProfile, setOwnProfile] = useState<OrganizerProfileDraftResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,9 +42,13 @@ export default function MyPage() {
       const profileBody = (await profileRes.json()) as ProfileResponse;
       const eventsRes = await fetch("/api/v1/organizer/events");
       const eventsBody = eventsRes.ok ? ((await eventsRes.json()) as { events: OrganizerEvent[] }) : { events: [] };
+      // 主催者だけが公開プロフィールを持つ。まだ催しが無い会員は 403 なので、その場合は節を出さない。
+      const ownRes = profileBody.isOrganizer ? await fetch("/api/v1/organizer/profile") : null;
+      const ownBody = ownRes?.ok ? ((await ownRes.json()) as OrganizerProfileDraftResponse) : null;
       if (!active) return;
       setProfile(profileBody);
       setEvents(eventsBody.events);
+      setOwnProfile(ownBody);
       await fetch("/api/v1/user/hydrate", { method: "POST" });
     };
     void load().catch((cause: unknown) => {
@@ -93,6 +99,31 @@ export default function MyPage() {
       </section>
 
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={quotaState.openPricingModal} />
+
+      {ownProfile && (
+        <section className="panel">
+          <div>
+            <p className="eyebrow">公開プロフィール</p>
+            <h2 className="panel__title">{ownProfile.profile.isPublished ? "公開中" : "非公開"}</h2>
+            <p className="panel__note">
+              参加者が告知ページの主催者名から開くページです。自己紹介とリンクを書くと、初めて参加する人が申し込みやすくなります。
+            </p>
+          </div>
+          <div className="panel__actions">
+            <Link href="/organizer/profile" className="btn btn--outline btn--sm">
+              プロフィールを編集
+            </Link>
+            <a
+              href={ownProfile.homePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              公開ページを開く
+            </a>
+          </div>
+        </section>
+      )}
 
       <section className="stack">
         <div className="panel">

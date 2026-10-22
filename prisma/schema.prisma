@@ -179,6 +179,7 @@ model User {
   billingNotices          BillingNotice[]
   accountChangeLogs       AccountChangeLog[]
   emailChangeRequests     EmailChangeRequest[]
+  organizerProfile        OrganizerProfile?
 
   @@index([deletedAt])
   @@map("users")
@@ -802,4 +803,37 @@ model ReminderDelivery {
 
   @@index([eventId, createdAt])
   @@map("reminder_deliveries")
+}
+
+// =============================================================
+// 10. 主催者の公開プロフィール
+// =============================================================
+
+/// 会員の公開プロフィール。行が無い会員は「未作成」として扱う。
+/// ページ自体は誰でも開けるが、自己紹介・リンク・実績は isPublished が true のときだけ出す。
+model OrganizerProfile {
+  userId       String   @id @map("user_id") @db.Uuid
+  /// 自己紹介・リンク・実績を参加者に見せるか。既定は非公開。
+  isPublished  Boolean  @default(false) @map("is_published")
+  /// 肩書き・ひとこと。屋号をここに置ける（User.name は変えない）。
+  headline     String?  @db.VarChar(60)
+  /// 自己紹介。プレーンテキストで、改行は保持する。
+  bio          String?  @db.VarChar(400)
+  /// 活動エリア。「東京都渋谷区」など。
+  area         String?  @db.VarChar(50)
+  /// 活動ジャンル。固定リストから最大3つ。
+  tags         String[]
+  xUrl         String?  @map("x_url") @db.VarChar(200)
+  instagramUrl String?  @map("instagram_url") @db.VarChar(200)
+  websiteUrl   String?  @map("website_url") @db.VarChar(200)
+  /// LINE 公式アカウント・オープンチャット。lin.ee / line.me のみ許可する。
+  lineUrl      String?  @map("line_url") @db.VarChar(200)
+  /// 主催した回数と初回開催年を出すか。既定はオフ。
+  showStats    Boolean  @default(false) @map("show_stats")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("organizer_profiles")
 }

@@ -140,7 +140,12 @@ export function clampMonth(month: string | null | undefined, minMonth: string): 
   return month < minMonth ? minMonth : month;
 }
 
-/** 主催者の公開ページの URL。 */
+/** 主催者の公開プロフィールの URL。告知ページの主催者名はここへ送る。 */
 export function organizerProfilePath(userId: string): string {
   return `/organizers/${userId}`;
+}
+
+/** 主催者の催し（カレンダー・一覧）の URL。プロフィールの下の節に置く。 */
+export function organizerEventsPath(userId: string): string {
+  return `/organizers/${userId}/events`;
 }

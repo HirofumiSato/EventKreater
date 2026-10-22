@@ -12,6 +12,7 @@ const TABS = [
   { href: "/organizer/events", label: "主催一覧" },
   { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
+  { href: "/organizer/profile", label: "プロフィール" },
 ] as const;
 
 export function OrganizerTabs() {

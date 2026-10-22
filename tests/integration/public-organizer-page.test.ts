@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signLocalToken } from "@/modules/auth/lib/auth";
 import { todayInTokyo } from "@/lib/calendar";
-import { GET } from "@/app/api/v1/public/organizers/[userId]/route";
+import { GET } from "@/app/api/v1/public/organizers/[userId]/events/route";
 import { cleanup, seedEvent, uniqueEmail } from "./helpers";
 
 // JWT の署名鍵は本番と同じ長さを要求されるので、テスト用に満たしておく。
@@ -39,7 +39,7 @@ async function addSchedule(eventId: string, date: string, time = "10:00", sortOr
 }
 
 function request(userId: string, token?: string): NextRequest {
-  return new NextRequest(`http://localhost/api/v1/public/organizers/${userId}`, {
+  return new NextRequest(`http://localhost/api/v1/public/organizers/${userId}/events`, {
     headers: token ? { cookie: `auth_token=${token}` } : {},
   });
 }

@@ -45,6 +45,10 @@ flowchart TD
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/events/[id]/receipt` | GET | SCR-PUB-04 | 出欠 Cookie または会員 | 自分の参加費領収書 |
+| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績を空にする。会員が無い・退会済み・催しが0件は 404 |
+| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-13 | 参加者（会員） | 主催者の催し。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
+| `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページと催しページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | GET | SCR-ORG-09 | 幹事（会員のみ） | 発行済み領収書の取得。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
@@ -1085,6 +1089,88 @@ POST /api/v1/organizer/events/[id]/reminders
 | `REGISTER_REQUIRED` | 403 | 未登録の主催者 |
 
 計算規則は `src/modules/revenue/lib/allocation.ts` に閉じている。各人を切り捨て、余りは主催者（`OWNER`）へ寄せる。人数方式の分母は出席者数（費用プラン未選択の人も数える）。出席者が 0 人なら全員 0 円。
+
+---
+
+### 5.12. GET `/api/v1/public/organizers/[userId]`（主催者の公開プロフィール）
+
+対象画面は SCR-PUB-14。認証は要らない。`userId` が UUID でない場合は DB を触らず 404。
+
+- 会員が無い、`users.deleted_at` が立っている、`event_organizers` の先の催しがすべて削除済みのいずれかなら 404 `主催者が見つかりません。`
+- `organizer_profiles` の行が無い、または `is_published = false` のときも 200。ただし `profile` は `isPublished: false` と null・空配列だけにし、保存値は返さない。
+- `links` は X → Instagram → Webサイト → LINE の順。空文字の項目は飛ばす。
+- `tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）に無い値を落とす。
+- `stats` は `show_stats = true` のときだけ。開催済み（`status != DRAFT`・未削除・今日以前の開催日がある）催しの件数と、その最も早い開催日の年。共同主催も1件として数える。
+
+```json
+{
+  "userId": "uuid",
+  "name": "表示名",
+  "profile": {
+    "isPublished": true,
+    "headline": "渋谷で月いちの読書会",
+    "bio": "自己紹介",
+    "area": "東京都渋谷区",
+    "tags": ["LEARNING"],
+    "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
+    "stats": { "eventCount": 12, "sinceYear": 2019 }
+  },
+  "eventsPath": "/organizers/{userId}/events"
+}
+```
+
+### 5.13. GET `/api/v1/public/organizers/[userId]/events`（主催者の催し）
+
+対象画面は SCR-PUB-13。`resolveOptionalUserId` で Cookie を見る。Cookie が壊れていても 401 にはせず、未ログインとして 403 `LOGIN_REQUIRED` を返す。
+
+- 筆頭幹事（`OWNER`）と共同主催（`CO_HOST`）の両方の催しを集める。
+- 掲載条件は `isDeleted = false`、`status = PUBLISHED`、申し込み期限内、今日以降の開催日があること。満員でも返す（参加要望を受け付けるため）。
+- `attendingCount` は `ATTENDING` だけ。`WAITLISTED` は人数・残席に数えない。
+- 並びは次に開催される日が近い順、同日は催し名の五十音順、最後は `id`。
+- 会員が無い・退会済みは 404。詳細な項目は 5.2 のイベント表現に準ずる。
+
+### 5.14. GET / PUT `/api/v1/organizer/profile`（公開プロフィールの編集）
+
+対象画面は SCR-ORG-14。認可は `requireOrganizerAccount`（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`）と `assertOrganizerMember`（主催イベント0件は 403 `NOT_ORGANIZER`）。
+
+GET の応答:
+
+```json
+{
+  "name": "表示名",
+  "profile": {
+    "isPublished": false,
+    "headline": "",
+    "bio": "",
+    "area": "",
+    "tags": [],
+    "xUrl": "",
+    "instagramUrl": "",
+    "websiteUrl": "",
+    "lineUrl": "",
+    "showStats": false
+  },
+  "stats": { "eventCount": 3, "sinceYear": 2024 },
+  "homePath": "/organizers/{userId}",
+  "eventsPath": "/organizers/{userId}/events"
+}
+```
+
+PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `OrganizerProfileSchema` が `.strict()` で検証する。
+
+| 項目 | 規則 |
+| :---- | :---- |
+| `headline` | 前後の空白を落として60文字まで。空なら null |
+| `bio` | 400文字まで。`\r\n` は `\n` に揃える。空なら null |
+| `area` | 50文字まで。空なら null |
+| `tags` | 固定リストのみ。3つまで。重複は落とす |
+| `xUrl` | `https` のみ。ホストは `x.com` / `twitter.com` |
+| `instagramUrl` | `https` のみ。ホストは `instagram.com` |
+| `websiteUrl` | `https` のみ。ホストは問わない |
+| `lineUrl` | `https` のみ。ホストは `lin.ee` / `line.me` |
+| `isPublished` / `showStats` | 真偽値。既定は false |
+
+URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。
 
 ---
 

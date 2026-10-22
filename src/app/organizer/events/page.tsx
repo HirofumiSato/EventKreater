@@ -7,7 +7,7 @@ import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
-import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { organizerEventsPath, organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -83,7 +83,7 @@ export default function OrganizerEventsPage() {
   const copyPublicPageUrl = async () => {
     if (!viewer?.userId) return;
     await navigator.clipboard.writeText(`${window.location.origin}${organizerProfilePath(viewer.userId)}`);
-    setToast("公開ページのURLをコピーしました。参加者に配れます。");
+    setToast("プロフィールのURLをコピーしました。参加者に配れます。");
   };
 
   const runLifecycle = async (id: string, action: "close" | "delete") => {    setBusyId(id);
@@ -121,14 +121,11 @@ export default function OrganizerEventsPage() {
                 rel="noreferrer"
                 className="btn btn--outline"
               >
-                公開ページ
+                プロフィール
               </Link>
-              <button type="button" className="btn btn--outline" onClick={() => void copyPublicPageUrl()}>
-                URLをコピー
-              </button>
-              <button type="button" className="btn btn--outline" onClick={() => setPreviewOpen(true)}>
-                プレビュー
-              </button>
+              <Link href="/organizer/profile" className="btn btn--outline">
+                プロフィールを編集
+              </Link>
             </>
           )}
           <StripePortalButton />
@@ -141,6 +138,33 @@ export default function OrganizerEventsPage() {
         </div>
       </section>
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={quotaState.openPricingModal} />
+      {viewer?.userId && (
+        <section className="panel">
+          <div>
+            <p className="eyebrow">参加者に見えるページ</p>
+            <h2 className="panel__title">主催者ページの確認と共有</h2>
+            <p className="panel__note">
+              告知ページの主催者名から、プロフィールと催しのページへ移動できます。URLを配って集客にも使えます。
+            </p>
+          </div>
+          <div className="panel__actions">
+            <Link
+              href={organizerEventsPath(viewer.userId)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              催しページを開く
+            </Link>
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setPreviewOpen(true)}>
+              プレビュー
+            </button>
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicPageUrl()}>
+              URLをコピー
+            </button>
+          </div>
+        </section>
+      )}
       {loading && (
         <p className="loading">
           <span className="spinner" aria-hidden="true" />
