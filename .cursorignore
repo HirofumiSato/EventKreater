@@ -1,0 +1,22 @@
+# AI エージェントの索引から外すもの。
+# .gitignore は git 用、こちらは Cursor の索引とコンテキスト用。
+
+# 生成物
+.next/
+node_modules/
+.venv-docs/
+docs/_build/
+docs/*/_build/
+storage/
+logs/
+*.log
+
+# ビルドキャッシュ
+tsconfig.tsbuildinfo
+
+# UI レビュー用の画像。原稿ではない。
+docs/ui-review/**/*.png
+
+# 秘密情報。代わりに .env.example を読む
+.env
+.env.local

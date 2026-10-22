@@ -14,6 +14,10 @@
 
    * - 目的
      - 先に開くページ
+   * - 全体を 90 分で掴む
+     - :doc:`onboarding` 。人間と AI が同じ順路を使う
+   * - どの文書が正か知る
+     - :doc:`README` 。派生・検証マップと既知の乖離
    * - 初めて起動する
      - :doc:`local` → :doc:`database`
    * - 決済を手元で試す
@@ -45,6 +49,8 @@
       Root --> CommonDoc["共通ドキュメント"]
       Root --> Features["機能別"]
 
+      Guide --> Onboard["onboarding 90 分の順路"]
+      Guide --> DocMap["README 派生・検証マップ"]
       Guide --> Map["sitemap このページ"]
       Guide --> Local["local 起動と画面"]
       Guide --> Stripe["stripe テスト決済"]
@@ -78,6 +84,10 @@
 
    * - ページ
      - 中身
+   * - :doc:`onboarding`
+     - 全体を掴む 90 分の順路。各段階に読むファイルと確認コマンドを置く
+   * - :doc:`README`
+     - 派生・検証マップ。どの文書が何を説明するか、既知の乖離、実装前の設計の一覧
    * - :doc:`index`
      - 表紙と左メニューの目次
    * - このページ
@@ -244,3 +254,4 @@ AI チラシ自動生成
 
 リポジトリ直下で ``npm run docs`` です。初回だけ ``npm run docs:install`` が要ります。
 生成物は ``docs/_build/html/index.html`` です。ページを足したら、このページの表と親の ``toctree`` の両方を更新します。
+原稿に書いたリポジトリ内のパスは ``npm run docs:links`` で検査します。
