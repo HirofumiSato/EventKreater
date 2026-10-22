@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatRsvpDeadlineLabel } from "@/lib/serializers";
 import { PRICE_AUDIENCE_LABELS, RAIN_POLICY_LABELS, type PublicEvent } from "@/modules/events/types";
 
@@ -13,6 +14,7 @@ interface EventMetaCardProps {
     | "rainPolicy"
     | "capacity"
     | "attendingCount"
+    | "waitlistCount"
     | "status"
     | "rsvpDeadline"
     | "rsvpOpen"
@@ -41,13 +43,35 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
         {owner && (
           <div>
             <dt>主催</dt>
-            <dd>{owner.name}</dd>
+            <dd>
+              {owner.userId ? (
+                <Link href={`/organizers/${owner.userId}`} className="text-link">
+                  {owner.name}
+                </Link>
+              ) : (
+                owner.name
+              )}
+              {owner.userId && <span className="help"> さんの催しを見る</span>}
+            </dd>
           </div>
         )}
         {coHosts.length > 0 && (
           <div>
             <dt>共同主催</dt>
-            <dd>{coHosts.map((row) => row.name).join("、")}</dd>
+            <dd>
+              {coHosts.map((row, index) => (
+                <span key={`${row.name}-${index}`}>
+                  {index > 0 && "、"}
+                  {row.userId ? (
+                    <Link href={`/organizers/${row.userId}`} className="text-link">
+                      {row.name}
+                    </Link>
+                  ) : (
+                    row.name
+                  )}
+                </span>
+              ))}
+            </dd>
           </div>
         )}
         <div>
@@ -101,9 +125,19 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           <dd>
             {event.attendingCount}名
             {event.capacity !== null && ` / 定員 ${event.capacity}名`}
-            {remaining !== null && `（残り ${remaining}名）`}
+            {remaining !== null && remaining > 0 && `（残り ${remaining}名）`}
+            {remaining === 0 && "（満員）"}
           </dd>
         </div>
+        {event.waitlistCount > 0 && (
+          <div>
+            <dt>参加要望</dt>
+            <dd>
+              {event.waitlistCount}名
+              {remaining === 0 && event.rsvpOpen && "（空きが出たら幹事が順番に承認します）"}
+            </dd>
+          </div>
+        )}
       </dl>
       {ratio !== null && (
         <div className="meter" aria-hidden="true">

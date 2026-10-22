@@ -62,14 +62,16 @@ describe("serializeOrganizerList", () => {
     expect(list.coHosts).toHaveLength(1);
   });
 
-  it("公開用は名前だけを返し、IDを持たせない", () => {
+  it("公開用は名前と会員IDだけを返し、幹事行のIDは持たせない", () => {
     const publicList = serializePublicOrganizerList(rows);
     expect(publicList).toEqual({
-      owner: { name: "佐藤" },
-      coHosts: [{ name: "田中" }, { name: "鈴木" }],
+      owner: { name: "佐藤", userId: "u1" },
+      coHosts: [
+        { name: "田中", userId: "u2" },
+        { name: "鈴木", userId: null },
+      ],
     });
     const serialized = JSON.stringify(publicList);
     expect(serialized).not.toContain("co-1");
-    expect(serialized).not.toContain("u1");
   });
 });

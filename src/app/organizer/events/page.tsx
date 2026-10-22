@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
+import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
+import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -24,6 +26,8 @@ export default function OrganizerEventsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [managingId, setManagingId] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ userId: string | null; name: string | null } | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events");
@@ -36,8 +40,12 @@ export default function OrganizerEventsPage() {
       setError(await readProblem(res));
       return;
     }
-    const data = (await res.json()) as { events: OrganizerEvent[] };
+    const data = (await res.json()) as {
+      events: OrganizerEvent[];
+      viewer?: { userId: string | null; name: string | null };
+    };
     setEvents(data.events);
+    setViewer(data.viewer ?? null);
     setError(null);
   }, []);
 
@@ -72,8 +80,13 @@ export default function OrganizerEventsPage() {
     }
   };
 
-  const runLifecycle = async (id: string, action: "close" | "delete") => {
-    setBusyId(id);
+  const copyPublicPageUrl = async () => {
+    if (!viewer?.userId) return;
+    await navigator.clipboard.writeText(`${window.location.origin}${organizerProfilePath(viewer.userId)}`);
+    setToast("公開ページのURLをコピーしました。参加者に配れます。");
+  };
+
+  const runLifecycle = async (id: string, action: "close" | "delete") => {    setBusyId(id);
     try {
       const res = await fetch(`/api/v1/organizer/events/${id}/lifecycle`, {
         method: "POST",
@@ -100,6 +113,24 @@ export default function OrganizerEventsPage() {
           <p className="page-lead">出欠の集計、編集、複製、プラン管理をここから行います。</p>
         </div>
         <div className="panel__actions">
+          {viewer?.userId && (
+            <>
+              <Link
+                href={organizerProfilePath(viewer.userId)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn--outline"
+              >
+                公開ページ
+              </Link>
+              <button type="button" className="btn btn--outline" onClick={() => void copyPublicPageUrl()}>
+                URLをコピー
+              </button>
+              <button type="button" className="btn btn--outline" onClick={() => setPreviewOpen(true)}>
+                プレビュー
+              </button>
+            </>
+          )}
           <StripePortalButton />
           <Link href="/organizer/revenue" className="btn btn--outline">
             売上を見る
@@ -153,6 +184,13 @@ export default function OrganizerEventsPage() {
           onClose={() => setManagingId(null)}
           onStop={() => void runLifecycle(managingId, "close")}
           onDelete={() => void runLifecycle(managingId, "delete")}
+        />
+      )}
+      {previewOpen && viewer?.userId && (
+        <OrganizerPagePreviewModal
+          userId={viewer.userId}
+          organizerName={viewer.name ?? "主催者"}
+          onClose={() => setPreviewOpen(false)}
         />
       )}
       {toast && (

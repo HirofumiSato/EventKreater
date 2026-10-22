@@ -63,11 +63,15 @@ export async function GET(req: NextRequest) {
           organizer.role,
           summarizeStatuses(organizer.event.participants.map((row) => row.status)),
           owner ? organizerLabel(owner) : "主催者",
+          owner?.userId ?? null,
         ),
       );
     }
 
-    return NextResponse.json({ events });
+    // 自分の公開ページ（/organizers/[userId]）の導線に使う。ゲスト幹事は null。
+    const viewer = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }) : null;
+
+    return NextResponse.json({ events, viewer: { userId, name: viewer?.name ?? null } });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/organizer/events");
   }
