@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { normalizePostalCode } from "@/lib/postal-code";
+import { clientIp } from "@/modules/auth/lib/cookies";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,7 +53,7 @@ function writeCache(code: string, results: PostalCodeResult[]): void {
 
 /** 郵便番号の列挙を防ぐための、プロセス内の簡易レート制限。 */
 function assertRateLimit(req: NextRequest): void {
-  const key = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const key = clientIp(req) ?? "local";
   const now = Date.now();
   const recent = (attempts.get(key) ?? []).filter((at) => now - at < RATE_WINDOW_MS);
   if (recent.length >= RATE_LIMIT) {

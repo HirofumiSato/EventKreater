@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isIP } from "node:net";
 
 export const AUTH_COOKIE = "auth_token";
 export const AUTH_COOKIE_HOST = "__Host-auth_token";
@@ -80,11 +81,48 @@ export function clearCookie(response: NextResponse, req: NextRequest, name: stri
   });
 }
 
+/**
+ * 前段が付けるクライアント IP のヘッダ。左ほど優先する。
+ *
+ * 本番は Cloudflare → Fly.io → アプリ の順に通る。Cloudflare は
+ * `cf-connecting-ip` を必ず上書きするので、これが最も信頼できる。
+ */
+const TRUSTED_CLIENT_IP_HEADERS = ["cf-connecting-ip", "fly-client-ip", "x-real-ip"] as const;
+
+/** ヘッダの値を IP として通す。`1.2.3.4:5678` や `[::1]` の形も受ける。 */
+function normalizeIp(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const value = raw.trim().replace(/^\[/, "").replace(/\]$/, "");
+  if (!value) return null;
+  if (isIP(value)) return value;
+  // IPv4 のポート付き。IPv6 は上で通っているので、ここで削ると壊れる。
+  const withoutPort = value.replace(/:\d+$/, "");
+  return isIP(withoutPort) ? withoutPort : null;
+}
+
+/**
+ * クライアント IP。認証のレート制限の鍵に使う。
+ *
+ * `x-forwarded-for` の先頭はブラウザが自由に書ける。先頭を採ると、値を
+ * 変えるだけで IP 単位の上限を素通りできる。前段が上書きするヘッダを先に
+ * 見て、無いときだけ `x-forwarded-for` の末尾（直前のプロキシが付けた値）
+ * を採る。
+ *
+ * 前段を挟まずオリジンを直接公開すると、どのヘッダも名乗り放題になる。
+ * Cloudflare 以外からの接続は塞いでおくこと。
+ */
 export function clientIp(req: NextRequest): string | null {
+  for (const name of TRUSTED_CLIENT_IP_HEADERS) {
+    const ip = normalizeIp(req.headers.get(name));
+    if (ip) return ip;
+  }
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
+    const values = forwarded.split(",");
+    for (let index = values.length - 1; index >= 0; index -= 1) {
+      const ip = normalizeIp(values[index]);
+      if (ip) return ip;
+    }
   }
-  return req.headers.get("x-real-ip");
+  return null;
 }
