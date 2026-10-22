@@ -72,6 +72,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             visibility: "UNLISTED",
             rsvpDeadline: source.rsvpDeadline,
             status: "DRAFT",
+            // 複製は作成時に枠を消費する。公開時の二重消費を避けるため、消費済みを残す。
+            quotaChargedAt: new Date(),
             schedules: {
               create: source.schedules.map((row) => ({
                 eventDate: row.eventDate,
@@ -106,7 +108,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json(
         {
           event: serializeEvent(event),
-          publicUrl: `/events/${event.id}`,
+          // 複製は下書きなので告知ページはまだ無い。
+          publicUrl: null,
           manageUrl: `/organizer/events/${event.id}/edit`,
         },
         { status: 201 },

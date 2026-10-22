@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Toast } from "@/components/common/Toast";
 import { readProblem } from "@/lib/problem";
+import { registerUrl } from "@/lib/auth-links";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileContentFromDraft } from "@/modules/organizers/lib/profile";
 import {
@@ -119,7 +120,7 @@ export function OrganizerProfileForm() {
         <p className="panel__title">公開プロフィールには会員登録が必要です</p>
         <p className="help">{error ?? "ゲスト幹事のままでは、プロフィールを保存できません。"}</p>
         <div className="btn-row">
-          <Link href="/auth/register?next=/organizer/profile" className="btn btn--primary">
+          <Link href={registerUrl("/organizer/profile")} className="btn btn--primary">
             会員登録して続ける
           </Link>
           <Link href="/organizer/events" className="btn btn--outline">

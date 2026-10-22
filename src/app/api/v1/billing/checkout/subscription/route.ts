@@ -9,6 +9,12 @@ import { getStripe, checkoutIdempotencyKey } from "@/modules/billing/lib/stripe"
 import { ensureCampaignCoupon, loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { discountMonths, quoteFor } from "@/modules/billing/lib/pricing";
 import { isSubscriptionActive } from "@/modules/billing/lib/quota";
+import { CheckoutIntentSchema } from "@/lib/schemas";
+import {
+  DEFAULT_CHECKOUT_RETURN_TO,
+  assertOwnDraft,
+  checkoutReturnUrls,
+} from "@/modules/billing/lib/checkout-intent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +65,10 @@ export async function POST(req: NextRequest) {
     const customerId = await ensureStripeCustomer(userId);
     const appUrl = appBaseUrl();
     const idempotencyKey = checkoutIdempotencyKey(req, userId, "subscription");
+    const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+    const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
+    if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
+    const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
     const session = await stripe.checkout.sessions.create(
       {
         payment_method_types: ["card"],
@@ -68,12 +78,14 @@ export async function POST(req: NextRequest) {
         // 0円の無料期間でもカードを登録しておき、期間終了後は自動で請求する。
         payment_method_collection: "always",
         ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
-        success_url: `${appUrl}/organizer/events/new?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/organizer/events/new`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         client_reference_id: userId,
         metadata: {
           userId,
           paymentType: "SUBSCRIPTION",
+          ...(intent.draftId ? { draftId: intent.draftId } : {}),
+          ...(intent.returnTo ? { returnTo } : {}),
           ...(campaign
             ? { campaignId: campaign.id, appliedPercent: String(quote.discountPercent) }
             : {}),

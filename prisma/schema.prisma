@@ -558,6 +558,9 @@ model Event {
   /// この日時（日本時間で入力）になると出欠の新規登録と変更を止める。空なら期限なし。
   rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz
   isDeleted    Boolean         @default(false) @map("is_deleted")
+  /// 利用枠を消費した時刻。複製は下書きの作成時に消費するため、この列で「支払い済みの下書き」を表す。
+  /// 新規作成の 402 から作った下書きは NULL のまま残し、公開時に消費する。
+  quotaChargedAt DateTime?     @map("quota_charged_at") @db.Timestamptz
   /// 告知ページの「あなたもイベントを作りませんか？」から作ったときの参照元。
   /// 紹介の連鎖は数えず、直接の参照元だけを持つ。消えたイベントは NULL に戻す。
   referrerEventId String?      @map("referrer_event_id") @db.Uuid

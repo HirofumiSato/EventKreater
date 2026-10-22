@@ -158,7 +158,13 @@ export default function AdminEventsPage() {
                 events.map((event) => (
                   <tr key={event.id}>
                     <td>
-                      {event.publicPath ? <Link href={event.publicPath}>{event.title}</Link> : event.title}
+                      {event.publicPath ? (
+                        <Link href={event.publicPath} target="_blank" rel="noopener noreferrer">
+                          {event.title}
+                        </Link>
+                      ) : (
+                        event.title
+                      )}
                       {event.isDeleted ? <div className="data__muted">削除済み</div> : null}
                     </td>
                     <td>{event.location}</td>

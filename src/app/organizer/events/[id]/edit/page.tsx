@@ -10,7 +10,11 @@ import { CoHostPanel } from "@/modules/organizers/components/CoHostPanel";
 import { LockConflictModal } from "@/modules/organizers/components/LockConflictModal";
 import { Toast } from "@/components/common/Toast";
 import { useEditLock } from "@/modules/organizers/hooks/useEditLock";
-import { readProblem } from "@/lib/problem";
+import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
+import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
+import { PricingModal } from "@/modules/billing/components/PricingModal";
+import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { readProblem, RequestProblemError } from "@/lib/problem";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
 import {
   applyFlyerToForm,
@@ -51,6 +55,8 @@ interface DetailResponse {
 
 export default function EditEventPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const quotaState = useEventQuota();
+  const returnTo = `/organizer/events/${params.id}/edit`;
   const [form, setForm] = useState<EventFormValues>(EMPTY_EVENT_FORM);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
   const [holderName, setHolderName] = useState("");
@@ -126,6 +132,12 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       await lock.releaseAwait();
       router.push("/organizer/events");
     } catch (cause) {
+      // 下書きの公開で枠が足りない。編集内容は画面に残したまま、購入へ誘う。
+      if (cause instanceof RequestProblemError && cause.status === 402) {
+        setSaving(false);
+        quotaState.openPricingModal({ draftId: params.id, returnTo });
+        return;
+      }
       setToast(cause instanceof Error ? cause.message : "保存に失敗しました");
       setSaving(false);
     }
@@ -157,6 +169,14 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           一覧へ戻る
         </Link>
       </section>
+      <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
+      {form.status === "DRAFT" && (
+        <QuotaStatusBanner
+          quota={quotaState.quota}
+          onOpenPricing={() => quotaState.openPricingModal({ draftId: params.id, returnTo })}
+          nextPath={returnTo}
+        />
+      )}
       {lock.status === "acquiring" && (
         <p className="loading">
           <span className="spinner" aria-hidden="true" />
@@ -210,6 +230,19 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           } finally {
             setTakingOver(false);
           }
+        }}
+      />
+      <PricingModal
+        isOpen={quotaState.isPricingModalOpen}
+        onClose={quotaState.closePricingModal}
+        onSelectOneTime={quotaState.startOneTimeCheckout}
+        onSelectSubscription={quotaState.startSubscriptionCheckout}
+        quotes={quotaState.quota?.pricing ?? null}
+        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
+        context="edit"
+        onGranted={() => {
+          void quotaState.refreshQuota();
+          setToast("0円チケットを1回分受け取りました。「保存して一覧へ戻る」をもう一度押してください。");
         }}
       />
       {toast && <Toast message={toast} tone={toast === "保存しました" ? "success" : "error"} onClose={() => setToast(null)} />}

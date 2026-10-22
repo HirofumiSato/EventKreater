@@ -31,6 +31,26 @@ export async function readProblem(response: Response): Promise<string> {
   return problemMessage(await readProblemBody(response), `リクエストに失敗しました (${response.status})`);
 }
 
+/**
+ * 画面側で分岐したい失敗（402 の課金導線など）。
+ * 文言だけを投げると状態コードを見失うため、ステータスと本文を添えて運ぶ。
+ */
+export class RequestProblemError extends Error {
+  readonly status: number;
+  readonly body: ProblemBody;
+
+  constructor(status: number, body: ProblemBody, fallback?: string) {
+    super(problemMessage(body, fallback ?? `リクエストに失敗しました (${status})`));
+    this.name = "RequestProblemError";
+    this.status = status;
+    this.body = body;
+  }
+
+  static async fromResponse(response: Response, fallback?: string): Promise<RequestProblemError> {
+    return new RequestProblemError(response.status, await readProblemBody(response), fallback);
+  }
+}
+
 /** 未登録の幹事が、会員登録の要る操作に触れたときのエラーコード。 */
 export const REGISTER_REQUIRED = "REGISTER_REQUIRED";
 

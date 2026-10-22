@@ -4,6 +4,7 @@ import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
 import { profileUrlProblem } from "@/modules/organizers/lib/profile";
 import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
+import { isAllowedCheckoutReturnTo } from "@/modules/billing/lib/checkout-return";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -270,6 +271,11 @@ export const CreateEventSchema = eventBodySchema
       .max(50, "主催者名は50文字以内です")
       .nullish()
       .transform((value) => (value ? value : null)),
+    /**
+     * 作成時の公開状態。枠が無いときに下書きとして保存し、購入後に公開する。
+     * 未指定は従来どおり即公開。Zod は未定義キーを捨てるため、ここで明示する。
+     */
+    status: z.enum(["DRAFT", "PUBLISHED"]).default("PUBLISHED"),
   })
   .superRefine(refineEventAddress)
   .superRefine(refineEventOptions);
@@ -326,6 +332,21 @@ export const HydrateSchema = z.object({}).strip();
 export const VerifySessionSchema = z.object({
   sessionId: z.string().min(1),
 });
+
+/**
+ * Checkout を開いた画面と、復元する下書き。
+ * `returnTo` は購入後に戻るパスで、許可した画面だけを受け付ける。
+ */
+export const CheckoutIntentSchema = z.object({
+  draftId: z.string().uuid("下書き ID の形式が不正です").optional(),
+  returnTo: z
+    .string()
+    .max(200)
+    .refine(isAllowedCheckoutReturnTo, "戻り先の指定が不正です")
+    .optional(),
+});
+
+export type CheckoutIntent = z.infer<typeof CheckoutIntentSchema>;
 
 export const AdminLoginSchema = z.object({
   email: z.string().trim().email("メールアドレスの形式が不正です").max(255),

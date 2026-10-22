@@ -5,6 +5,7 @@ import Link from "next/link";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
+import { registerUrl } from "@/lib/auth-links";
 import { STATUS_LABELS } from "@/modules/events/types";
 import type { EventRevenueRow, RevenueSummary } from "@/modules/revenue/lib/revenue";
 
@@ -180,7 +181,7 @@ export default function OrganizerRevenuePage() {
           <p>{error}</p>
           {registerRequired ? (
             <p style={{ marginTop: "0.5rem" }}>
-              <Link href="/auth/register?next=/organizer/revenue" className="btn btn--primary btn--sm">
+              <Link href={registerUrl("/organizer/revenue")} className="btn btn--primary btn--sm">
                 会員登録して売上を見る
               </Link>
             </p>
