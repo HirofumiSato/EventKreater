@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { toErrorResponse } from "@/lib/http";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { VERIFICATION_NOTICE, sendIntentVerification, sendVerificationEmail } from "@/modules/auth/lib/verification";
 
 export const runtime = "nodejs";
@@ -18,10 +19,10 @@ export async function POST(req: NextRequest) {
     const input = BodySchema.parse(await req.json());
     const email = input.email.toLowerCase();
     const ip = clientIp(req) ?? "local";
-    await assertWithinAttemptLimit(`verify:email:${email}`, 3, 60 * 60 * 1000);
-    await assertWithinAttemptLimit(`verify:ip:${ip}`, 10, 60 * 60 * 1000);
-    await recordAuthAttempt(`verify:email:${email}`);
-    await recordAuthAttempt(`verify:ip:${ip}`);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.verifyEmail, email);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.verifyIp, ip);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.verifyEmail, email);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.verifyIp, ip);
 
     const user = await prisma.user.findFirst({
       where: { email, deletedAt: null },

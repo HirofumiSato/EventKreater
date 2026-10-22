@@ -17,3 +17,4 @@
    organizer-event-calendar
    participant-calendar
    waitlist
+   auth-attempt-limits

@@ -7,7 +7,15 @@ import { AuthSchema } from "@/lib/schemas";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { challengeResponse, purposeForAudience, startLoginChallenge } from "@/modules/auth/lib/login-challenge";
 import { assertPasswordNotBreached } from "@/modules/auth/lib/pwned";
-import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import {
+  assertWithinAttemptLimit,
+  attemptWindow,
+  clearRuleAttempts,
+  limitExtras,
+  recordAuthAttempt,
+  tighterLimit,
+} from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import {
   VERIFICATION_NOTICE,
   beginSignupIntent,
@@ -19,12 +27,28 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const REGISTER_WINDOW_MS = 60 * 60 * 1000;
 const LOGIN_FAILURE = "メールアドレスまたはパスワードが正しくありません。";
 
 function attemptIp(req: NextRequest): string {
   return clientIp(req) ?? "local";
+}
+
+/**
+ * パスワード不一致の応答。メールの有無は明かさず、厳しいほうの上限だけを添える。
+ * 回数は画面に出す必要があるため、失敗のたびに残りを返す。
+ */
+async function loginFailure(email: string, ip: string): Promise<ProblemDetailException> {
+  const { rules } = AUTH_RATE_LIMITS;
+  const tight = tighterLimit([
+    [rules.loginEmail, await attemptWindow(rules.loginEmail, email)],
+    [rules.loginIp, await attemptWindow(rules.loginIp, ip)],
+  ]);
+  return new ProblemDetailException({
+    status: 401,
+    title: "Unauthorized",
+    detail: LOGIN_FAILURE,
+    ...(tight ? limitExtras(tight[0], tight[1]) : {}),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,8 +58,8 @@ export async function POST(req: NextRequest) {
     const ip = attemptIp(req);
 
     if (input.action === "register") {
-      await assertWithinAttemptLimit(`register:ip:${ip}`, 5, REGISTER_WINDOW_MS);
-      await recordAuthAttempt(`register:ip:${ip}`);
+      await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.registerIp, ip);
+      await recordAuthAttempt(AUTH_RATE_LIMITS.rules.registerIp, ip);
       await assertPasswordNotBreached(input.password);
 
       const existing = await prisma.user.findFirst({
@@ -61,19 +85,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });
     }
 
-    await assertWithinAttemptLimit(`login:email:${email}`, 5, LOGIN_WINDOW_MS);
-    await assertWithinAttemptLimit(`login:ip:${ip}`, 20, LOGIN_WINDOW_MS);
+    const { rules } = AUTH_RATE_LIMITS;
+    await assertWithinAttemptLimit(rules.loginEmail, email);
+    await assertWithinAttemptLimit(rules.loginIp, ip);
     const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
     const passwordOk = await passwordMatches(input.password, user?.passwordHash ?? null);
     if (!user || !passwordOk) {
-      await recordAuthAttempt(`login:email:${email}`);
-      await recordAuthAttempt(`login:ip:${ip}`);
-      throw new ProblemDetailException({
-        status: 401,
-        title: "Unauthorized",
-        detail: LOGIN_FAILURE,
-      });
+      await recordAuthAttempt(rules.loginEmail, email);
+      await recordAuthAttempt(rules.loginIp, ip);
+      throw await loginFailure(email, ip);
     }
+    // パスワードが合ったら、メール単位の失敗は数え直す。
+    // IP 単位は、同じ回線を使う別の利用者の失敗を 1 人の成功で帳消しにしないため残す。
+    await clearRuleAttempts(rules.loginEmail, email);
     if (!user.emailVerifiedAt) {
       throw new ProblemDetailException({
         status: 403,

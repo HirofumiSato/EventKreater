@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { SIGNUP_INTENT_COOKIE, SIGNUP_INTENT_MAX_AGE, clientIp, writeCookie } from "@/modules/auth/lib/cookies";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { confirmEmailToken } from "@/modules/auth/lib/verification";
 
 export const runtime = "nodejs";
@@ -17,8 +18,8 @@ export async function POST(req: NextRequest) {
   try {
     const input = BodySchema.parse(await req.json());
     const ip = clientIp(req) ?? "local";
-    await assertWithinAttemptLimit(`verify-token:ip:${ip}`, 10, 60 * 60 * 1000);
-    await recordAuthAttempt(`verify-token:ip:${ip}`);
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.verifyTokenIp, ip);
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.verifyTokenIp, ip);
     const confirmed = await confirmEmailToken(input.token);
     if (!confirmed.ok) {
       throw new ProblemDetailException({
