@@ -40,7 +40,7 @@ flowchart TD
 
 | エンドポイント | メソッド | 対象画面ID | 認証・認可 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/api/v1/public/events` | POST | SCR-ORG-02 | 任意（会員/ゲスト） | イベント新規作成（課金認可チェック・枠消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存 |
+| `/api/v1/public/events` | POST | SCR-ORG-02 | 任意（会員/ゲスト） | イベント新規作成（課金認可チェック・枠消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存し、未登録のゲストは 403 `REGISTER_REQUIRED` |
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
@@ -53,7 +53,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
-| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点で枠を1つ消費する。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催幹事（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
@@ -65,7 +65,8 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/reminders` | POST | SCR-ORG-06 | 幹事（会員のみ） | 会員参加者へリマインドメールを送り、送信記録を残す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
-| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成 |
+| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、この時点で枠を1つ消費して `quota_charged_at` を入れる。`publicUrl` は `null` |
+| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-05 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
@@ -112,9 +113,9 @@ flowchart TD
 | `/api/v1/flyers/generate` | POST | SCR-ORG-03 | 不要 | 選んだ候補を確定し、JPEG と `flyer_assets` を保存 |
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシ JPEG の取得 |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
-| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
-| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける |
-| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・枠反映 |
+| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
+| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
+| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・枠反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
 | `/api/v1/billing/portal` | POST | SCR-ORG-01 | 会員必須 | Stripe Customer Portal（解約・カード変更）遷移URL発行 |
 | `/api/v1/webhooks/stripe` | POST | - | Stripe署名検証 | Stripe Webhook 受信ハンドラー（二重処理遮断） |
 
@@ -134,6 +135,7 @@ sequenceDiagram
     participant Route as Route Handler (/api/v1/public/events)
     participant Guard as Billing & Auth Guard
     participant DB as PostgreSQL (Prisma)
+    participant Stripe as Stripe Checkout
     Organizer->>Client: 基本7項目入力 + チラシ選択<br/>「公開する」ボタン押下
     Client->>Route: POST /api/v1/public/events<br/>(Body, Header: auth_token / guestToken)
     Route->>Guard: assertCanCreateEvent(userId)
@@ -148,7 +150,17 @@ sequenceDiagram
         else 上限超過 (すべて未達)
             Guard-->>Route: QuotaExceededError (HTTP 402)
             Route-->>Client: HTTP 402 Payment Required<br/>{ error: "QUOTA_EXCEEDED", pricingOptions: [...] }
+            Client->>Route: POST /api/v1/public/events { status: "DRAFT" }
+            Route->>DB: INSERT INTO events (7項目, status: DRAFT, quota_charged_at: NULL)
+            Route-->>Client: HTTP 201 Created<br/>{ event, publicUrl: null, manageUrl }
             Client->>Organizer: 課金モーダル表示 (SCR-MOD-01: 299円 / 980円)
+            Organizer->>Client: Stripe Checkout で支払う
+            Stripe-->>Client: /organizer/events/new?session_id=..&draftId=..
+            Client->>Route: POST /api/v1/billing/checkout/verify { sessionId }
+            Route-->>Client: { quota, draftId, returnTo }
+            Client->>Route: POST /api/v1/organizer/events/[id]/publish
+            Route->>DB: BEGIN: 枠を1消費 + quota_charged_at を設定 + status: PUBLISHED
+            Route-->>Client: HTTP 200 { event, publicUrl, manageUrl }
         end
     end
     opt 認可OKの場合
@@ -615,9 +627,10 @@ export async function assertCanCreateEvent(userId: string) {
 
 ### 5.1. POST `/api/v1/public/events`（イベント新規作成）
 
-主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は `PUBLISHED` である。
+主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は既定で `PUBLISHED` である。
 
 - **認可:** 認証済み会員 または ゲスト幹事（未ログイン時はゲスト幹事トークン発行）
+- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。枠は消費しない。未登録のゲストは `DRAFT` を作れず、403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。ゲスト幹事トークンは発行しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
 - **リクエストスキーマ (Zod):**
 
 ```ts
@@ -640,6 +653,8 @@ export const CreateEventSchema = z.object({
   rsvpDeadline: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
   /** 告知ページの勧誘カードから来たときの参照元。存在しない・削除済み・下書きなら NULL として保存する。 */
   referrerEventId: z.string().uuid().nullish(),
+  /** 未指定は公開。DRAFT は枠不足で入力を退避するときだけ使う。 */
+  status: z.enum(['DRAFT', 'PUBLISHED']).default('PUBLISHED'),
 });
 ```
 
@@ -680,6 +695,24 @@ export const CreateEventSchema = z.object({
   "manageUrl": "/organizer/events/e8a93b4c-9f82-4c28-9721-6b8c4d29a581"
 }
 ```
+
+`status` が `DRAFT` のときは、`publicUrl` が `null` になる。告知ページが無いため、カードや管理画面はリンクを出さない。`guestOrganizerToken` も `null` である（ゲストは下書きを作れない）。
+
+---
+
+### 5.1.1. POST `/api/v1/organizer/events/[id]/publish`（下書きの公開）
+
+SCR-ORG-02 の購入後の復元と、SCR-ORG-05 の「公開する」から呼ぶ。編集ロックを要求しないのは、作成画面がロックを持たないまま公開するためである。処理は 1 トランザクションで行う。
+
+1. `assertOrganizer` で幹事権限を確認し、`role` が `OWNER` であること。`CO_HOST` と未登録のゲスト幹事は 403、未ログインは 401。
+2. 本文は任意。付けるときは `UpdateEventSchema`（編集の保存と同じ形）で検証する。付いていれば `syncEventOptions` と `eventUpdateData` で公開と同時に保存する。
+3. `events` の行を `SELECT ... FOR UPDATE` で取る。無い、または削除済みは 404。`status` が `DRAFT` でなければ 409（`error: "ALREADY_PUBLISHED"`）。
+4. `quota_charged_at` が `NULL` のとき、`consumeEventQuota(userId, tx)` で枠を1つ消費し、`quota_charged_at = NOW()` にする。すでに入っているとき（複製した下書き）は消費しない。
+5. `status = PUBLISHED` にして、`{ event, publicUrl, manageUrl }` を返す。
+
+- **枠が無いとき:** 例外でトランザクションが巻き戻り、402 を返す。`status` と `quota_charged_at` は変わらないので、下書きはそのまま残る。
+- **二重実行:** 同じ `id` で 2 回目を呼ぶと 409 になる。枠は 1 回しか引かれない。
+- **`PUT /api/v1/organizer/events/[id]` との関係:** 編集画面の保存で `DRAFT → PUBLISHED` にするときも、同じ規則（`quota_charged_at` が未設定なら消費）を通す。ロックは PUT 側の要件のままである。
 
 ---
 
@@ -1245,12 +1278,24 @@ export async function GET(req: NextRequest) {
 主催者が単発でイベントを1回作成するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
-- **リクエスト Body:** `{}`
+- **リクエスト Body（任意）:**
+
+```json
+{
+  "draftId": "e8a93b4c-9f82-4c28-9721-6b8c4d29a581",
+  "returnTo": "/organizer/events/new"
+}
+```
+
+- **`draftId` / `returnTo` の扱い (`CheckoutIntentSchema`):** `draftId` は UUID。渡されたら `assertOwnDraft(userId, draftId)` で、その会員が筆頭幹事である未公開の下書きだけを通す（他人の下書き 403、公開済み 409、無い 404）。`returnTo` は `isAllowedCheckoutReturnTo` を通し、許可外は `/organizer/events/new` に落とす。許可するのは `/mypage`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit` だけである。
+- **成功・キャンセルの URL:** `checkoutReturnUrls(appUrl, returnTo, draftId)` が組み立てる。`session_id={CHECKOUT_SESSION_ID}` と `draftId` をクエリに足し、`{CHECKOUT_SESSION_ID}` はエンコードしない。`draftId` が無ければ `returnTo` のままである。
+- **`metadata`:** `userId`、`paymentType` に加え、`draftId` と `returnTo` を入れる（値があるときだけ）。`verify` はここから戻す。
 - **レスポンス (200 OK):**
 
 ```json
 {
-  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]"
+  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]",
+  "pricing": { "target": "ONE_TIME", "chargedPrice": 299, "listPrice": 299, "discountPercent": 0 }
 }
 ```
 
@@ -1261,6 +1306,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { resolveAuthContext } from '@/lib/guards';
+import { CheckoutIntentSchema } from '@/lib/schemas';
+import { DEFAULT_CHECKOUT_RETURN_TO, assertOwnDraft, checkoutReturnUrls } from '@/modules/billing/lib/checkout-intent';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -1272,6 +1319,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+  const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
+  if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
+  const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
@@ -1288,11 +1339,13 @@ export async function POST(req: NextRequest) {
       },
     ],
     mode: 'payment',
-    success_url: `${appUrl}/organizer/events/new?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/organizer/events/new`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       userId,
       paymentType: 'ONE_TIME',
+      ...(intent.draftId ? { draftId: intent.draftId } : {}),
+      ...(intent.returnTo ? { returnTo } : {}),
     },
   });
   // 決済トランザクションログを PENDING で事前作成
@@ -1317,7 +1370,7 @@ export async function POST(req: NextRequest) {
 主催者が使い放題プラン（月額980円）に加入するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
-- **リクエスト Body:** `{}`
+- **リクエスト Body（任意）:** 単発と同じ `CheckoutIntentSchema`（`draftId` / `returnTo`）。扱いも同じで、`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。
 - **レスポンス (200 OK):**
 
 ```json
@@ -1333,6 +1386,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { resolveAuthContext } from '@/lib/guards';
+import { CheckoutIntentSchema } from '@/lib/schemas';
+import { DEFAULT_CHECKOUT_RETURN_TO, assertOwnDraft, checkoutReturnUrls } from '@/modules/billing/lib/checkout-intent';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -1347,6 +1402,10 @@ export async function POST(req: NextRequest) {
     where: { userId },
   });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+  const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
+  if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
+  const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     customer: quota.stripeCustomerId || undefined,
@@ -1357,11 +1416,13 @@ export async function POST(req: NextRequest) {
       },
     ],
     mode: 'subscription',
-    success_url: `${appUrl}/organizer/events/new?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/organizer/events/new`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       userId,
       paymentType: 'SUBSCRIPTION',
+      ...(intent.draftId ? { draftId: intent.draftId } : {}),
+      ...(intent.returnTo ? { returnTo } : {}),
     },
   });
   return NextResponse.json({ checkoutUrl: session.url });
@@ -1389,6 +1450,8 @@ export const VerifySessionSchema = z.object({
 {
   "success": true,
   "paymentType": "ONE_TIME",
+  "draftId": "e8a93b4c-9f82-4c28-9721-6b8c4d29a581",
+  "returnTo": "/organizer/events/new",
   "quota": {
     "freeEventCount": 2,
     "paidCredits": 1,
@@ -1396,6 +1459,8 @@ export const VerifySessionSchema = z.object({
   }
 }
 ```
+
+`draftId` と `returnTo` は、検証済みセッションの `metadata` にあるときだけ返す（無ければ `null`）。画面はこれを使って `?draftId=` を保ち、作成画面で下書きを復元する。値は Stripe から来るため、`returnTo` は `isAllowedCheckoutReturnTo` で再確認してから返す。
 
 - **実装ハンドラー (`src/app/api/v1/billing/checkout/verify/route.ts`):**
 
