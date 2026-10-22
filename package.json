@@ -17,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "db:backfill": "node scripts/backfill-event-details.mjs",
     "db:seed": "node scripts/seed-local-user.mjs",
+    "db:seed:participant": "node scripts/seed-demo-participant.mjs",
     "admin:promote": "node scripts/promote-admin.mjs",
     "db:studio": "prisma studio",
     "docs:install": "node scripts/build-docs.mjs install",
