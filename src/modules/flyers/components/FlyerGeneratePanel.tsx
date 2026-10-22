@@ -14,6 +14,8 @@ interface FlyerGeneratePanelProps {
   previewUrl: string | null;
   /** 下書きの単位。新規は "new"、編集はイベント ID。 */
   draftScope: string;
+  /** 保存済みイベントの ID。共同主催者と同じ回数枠を数えるために送る。 */
+  eventId?: string | null;
   onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
   onClear: () => void;
 }
@@ -23,6 +25,7 @@ export function FlyerGeneratePanel({
   disabled = false,
   previewUrl,
   draftScope,
+  eventId = null,
   onGenerated,
   onClear,
 }: FlyerGeneratePanelProps) {
@@ -41,9 +44,9 @@ export function FlyerGeneratePanel({
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch(
-          `/api/v1/flyers/quota?draftKey=${encodeURIComponent(draftKey)}`,
-        );
+        const query = new URLSearchParams({ draftKey });
+        if (eventId) query.set("eventId", eventId);
+        const response = await fetch(`/api/v1/flyers/quota?${query.toString()}`);
         if (!response.ok) return;
         const data = (await response.json()) as { quota: FlyerQuota };
         if (!cancelled) setQuota(data.quota);
@@ -54,7 +57,7 @@ export function FlyerGeneratePanel({
     return () => {
       cancelled = true;
     };
-  }, [draftKey]);
+  }, [draftKey, eventId]);
 
   const base = useMemo(() => buildFlyerFormPayload(value), [value]);
   const exhausted = quota !== null && quota.remaining <= 0;
@@ -103,7 +106,9 @@ export function FlyerGeneratePanel({
       )}
 
       {quota && (
-        <p className="wizard__quota">{flyerQuotaLabel(quota)}</p>
+        <p className="wizard__quota">
+          {flyerQuotaLabel(quota, { eventScoped: Boolean(eventId) })}
+        </p>
       )}
 
       <div className="btn-row">
@@ -137,6 +142,10 @@ export function FlyerGeneratePanel({
               未ログインで作れるチラシは 1 回までです。
               <a href="/auth/register?mode=register">会員登録して続ける</a>
             </p>
+          ) : eventId ? (
+            <p>
+              このイベントで作れるチラシは {quota?.limit} 回までです。共同主催者を含めた回数です。
+            </p>
           ) : (
             <>
               <p>この下書きで作れるチラシは {quota?.limit} 回までです。</p>
@@ -154,6 +163,7 @@ export function FlyerGeneratePanel({
         <FlyerCandidateModal
           open={open}
           draftKey={draftKey}
+          eventId={eventId}
           base={base}
           onClose={() => setOpen(false)}
           onGenerated={handleGenerated}

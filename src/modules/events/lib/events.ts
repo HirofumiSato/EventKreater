@@ -13,6 +13,7 @@ import {
 } from "@/lib/serializers";
 import type { CreateEventInput } from "@/lib/schemas";
 import { isEligibleReferrer } from "@/modules/events/lib/referrer";
+import { attributeFlyerLogsToEvent } from "@/modules/flyers/lib/quota";
 
 export { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 
@@ -340,6 +341,10 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           role: "OWNER",
         },
       });
+      // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。
+      if (input.flyerDraftKey) {
+        await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
+      }
       return { event, planType, guestOrganizerToken: null as string | null };
     });
   } catch (error) {
@@ -375,6 +380,10 @@ export async function createEventForGuest(input: CreateEventInput, guestTokenHas
           displayName: input.organizerDisplayName ?? null,
         },
       });
+      // 未登録の幹事も、作成中の 1 回を公開後のイベントの枠へ引き継ぐ。
+      if (input.flyerDraftKey) {
+        await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
+      }
       return event;
     });
   } catch (error) {

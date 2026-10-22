@@ -4,6 +4,7 @@ import { ProposeCandidatesSchema } from "@/lib/schemas";
 import { proposeTypeCandidates } from "@/modules/flyers/lib/flyer";
 import { readFlyerQuota } from "@/modules/flyers/lib/quota";
 import { resolveFlyerOwner, writeFlyerOwnerCookie } from "@/modules/flyers/lib/ownership";
+import { resolveFlyerQuotaScope } from "@/modules/flyers/lib/scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,8 +13,9 @@ export async function POST(req: NextRequest) {
   try {
     const input = ProposeCandidatesSchema.parse(await req.json());
     const owner = await resolveFlyerOwner(req);
+    const scope = await resolveFlyerQuotaScope(req, input.draftKey, input.eventId);
     const candidates = await proposeTypeCandidates(input, owner.ownerTokenHash);
-    const quota = await readFlyerQuota(input.draftKey, owner);
+    const quota = await readFlyerQuota(scope, owner);
     const response = NextResponse.json({ candidates, quota });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);
     return response;

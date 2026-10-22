@@ -13,6 +13,7 @@ import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
+import { readFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { applyFlyerToForm, EMPTY_EVENT_FORM, toEventRequest, type EventFormValues } from "@/modules/events/types";
 
 function NewEventScreen() {
@@ -49,7 +50,11 @@ function NewEventScreen() {
       const res = await fetch("/api/v1/public/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toEventRequest(form, referrerEventId)),
+        body: JSON.stringify({
+          ...toEventRequest(form, referrerEventId),
+          // 作成中に使ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。
+          flyerDraftKey: readFlyerDraftKey("new"),
+        }),
       });
       if (res.status === 402) {
         quotaState.openPricingModal();

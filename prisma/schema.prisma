@@ -499,12 +499,15 @@ model FlyerAsset {
   @@map("flyer_assets")
 }
 
-/// チラシ生成 1 回分の記録。下書き単位の回数制限と監査に使う。
+/// チラシ生成 1 回分の記録。回数制限と監査に使う。
 /// 候補画像そのものは保存しない（使い捨てのため、サービス側の TTL で消える）。
 model FlyerGenerationLog {
   id             String   @id @default(uuid()) @db.Uuid
   /// フォーム 1 つ分の識別子。ブラウザが localStorage に保持する。
   draftKey       String   @map("draft_key") @db.Uuid
+  /// 回数を数えるイベント。共同主催者が共有する単位。
+  /// 公開前の新規作成では NULL で、公開時にこの列へ付け替える。
+  eventId        String?  @map("event_id") @db.Uuid
   userId         String?  @map("user_id") @db.Uuid
   ownerTokenHash String?  @map("owner_token_hash") @db.VarChar(64)
   templateId     String   @map("template_id") @db.VarChar(40)
@@ -513,7 +516,10 @@ model FlyerGenerationLog {
   flyerAssetId   String?  @map("flyer_asset_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
   @@index([draftKey, createdAt])
+  @@index([eventId, createdAt])
   @@index([ownerTokenHash, createdAt])
   @@index([userId, createdAt])
   @@map("flyer_generation_logs")
@@ -568,6 +574,7 @@ model Event {
   reminders      ReminderDelivery[]
   revenueSetting EventRevenueSetting?
   revenueShares  EventRevenueShare[]
+  flyerGenerationLogs FlyerGenerationLog[]
 
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])

@@ -50,6 +50,8 @@ const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
 interface FlyerCandidateModalProps {
   open: boolean;
   draftKey: string;
+  /** 保存済みイベントの ID。共同主催者と回数枠を共有する。 */
+  eventId?: string | null;
   base: FlyerFormPayload;
   onClose: () => void;
   onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
@@ -64,6 +66,7 @@ interface CandidateResponse {
 export function FlyerCandidateModal({
   open,
   draftKey,
+  eventId = null,
   base,
   onClose,
   onGenerated,
@@ -114,6 +117,7 @@ export function FlyerCandidateModal({
           body = {
             ...base,
             draftKey,
+            eventId,
             templateId: FLYER_TEMPLATE_IDS[0],
             layoutId: "classic",
           };
@@ -124,6 +128,7 @@ export function FlyerCandidateModal({
           body = {
             ...base,
             draftKey,
+            eventId,
             templateId: type.templateId,
             layoutId: "classic",
             count: BACKGROUND_COUNT,
@@ -166,7 +171,7 @@ export function FlyerCandidateModal({
         setLoading(false);
       }
     },
-    [base, draftKey, onQuotaChange],
+    [base, draftKey, eventId, onQuotaChange],
   );
 
   /** 自分の写真を 1 枚だけ背景候補にする。成功したらその 1 枚を選択状態にする。 */
@@ -181,6 +186,7 @@ export function FlyerCandidateModal({
     const form = new FormData();
     form.append("file", file);
     form.append("draftKey", draftKey);
+    if (eventId) form.append("eventId", eventId);
     form.append("title", base.title);
     form.append("eventDate", base.eventDate);
     form.append("eventTime", base.eventTime);
@@ -312,6 +318,7 @@ export function FlyerCandidateModal({
         body: JSON.stringify({
           ...base,
           draftKey,
+          eventId,
           candidateId: chosen.candidateId,
           templateId: chosen.templateId,
           layoutId: chosen.layoutId,
@@ -372,7 +379,9 @@ export function FlyerCandidateModal({
               チラシを作る
             </h2>
             {quota && (
-              <p className="wizard__quota">{flyerQuotaLabel(quota)}</p>
+              <p className="wizard__quota">
+                {flyerQuotaLabel(quota, { eventScoped: Boolean(eventId) })}
+              </p>
             )}
           </div>
           <ol className="wizard__steps">

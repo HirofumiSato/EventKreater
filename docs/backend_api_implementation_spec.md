@@ -32,7 +32,7 @@ flowchart TD
 5. **RFC 7807 準拠のエラーレスポンス:**
    - すべてのエラーレスポンスを `application/problem+json` 構造に統一。
 6. **チラシ生成は外部サービスへ委譲し、結果だけを自前で保存する:**
-   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` でタイプ・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。回数は `flyer_generation_logs` で下書き単位に数え、候補の作り直しでは減らさない。
+   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` でタイプ・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
 
 ---
 
@@ -98,7 +98,7 @@ flowchart TD
 | `/api/v1/admin/pricing-campaigns/[id]/stop` | POST | SCR-ADM-05 | 管理者必須 | 新規申込の停止。既存購入者の割引は継続 |
 | `/api/v1/public/pricing` | GET | SCR-PUB-06 | 不要 | 現在の販売価格と実施中キャンペーン |
 | `/api/v1/internal/billing/notices` | POST | - | `BILLING_NOTICE_SECRET` | 0円月額の 3 日前・1 日前の通知バッチ |
-| `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | 下書きの残り作成回数。未ログインは端末通算 |
+| `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | イベント（公開前は下書き）の残り作成回数。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 テンプレートの完成イメージ |
 | `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 8 枚返す |
 | `/api/v1/flyers/uploads` | POST | SCR-ORG-03 | 不要 | ステップ 2。自分の写真を背景候補 1 枚にする |
@@ -1830,7 +1830,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 | パス | メソッド | 認証 | 内容 |
 | :---- | :---- | :---- | :---- |
-| `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。未ログインは端末通算 |
+| `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。公開前は下書き、`eventId` を添えたときはイベント単位。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | 不要 | ステップ 1。3 テンプレートの完成イメージ |
 | `/api/v1/flyers/candidates` | POST | 不要 | ステップ 2。背景タイル 8 枚 |
 | `/api/v1/flyers/uploads` | POST | 不要 | ステップ 2。自分の写真 1 枚を背景候補にする（multipart） |
@@ -1838,18 +1838,20 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
 | `/api/v1/flyers/candidates/[id]` | GET | 不要 | 候補 JPEG の中継 |
 
-ボディはステップ 1・2 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、ステップ 2 はさらに `count`（1〜16、既定 8）を足す。ステップ 3・4 は本文不要で、親候補の ID だけをパスに置く。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。
+ボディはステップ 1・2 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、ステップ 2 はさらに `count`（1〜16、既定 8）を足す。保存済みイベントの編集では `eventId` も添える。ステップ 3・4 は本文不要で、親候補の ID だけをパスに置く。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。
 
-アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、9:16 の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
+アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、9:16 の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
 
 候補の参照範囲は端末で絞る。BFF は候補 API と画像取得に `X-Flyer-Owner`（`owner_token_hash`）を付け、サービスは候補メタに記録した値と照合する。一致しない候補は、期限切れと同じ 404 `CANDIDATE_EXPIRED` にする。ログイン済みでも未ログインでも、Cookie `flyer_owner` の端末トークンが単位である。
 
 残り回数は次の規則で数える。
 
-- **ログイン済み。** `flyer_generation_logs.draft_key` が同じ行を数え、3 回で打ち止め。
-- **未ログイン。** `owner_token_hash` が同じ行を数え、1 回で打ち止め。2 回目は 403 `REGISTER_REQUIRED`。
-- 下書き ID はブラウザの `localStorage`（`flyer:draft:{scope}`）に置く。`scope` は新規が `new`、編集が `event:{id}`。
-- 上限に達したら、ログイン済みは「新しい下書きで作り直す」でキーを差し替える。未ログインは会員登録へ送る。
+- **保存済みイベント。** `flyer_generation_logs.event_id` が同じ行を数え、3 回で打ち止め。誰が保存したかは問わないため、筆頭幹事・共同主催者・ゲスト幹事の全員で 1 つの枠を共有する。`eventId` を送れるのはそのイベントの幹事だけである。
+- **新規作成（公開前）。** イベント行がまだ無いため、ログイン済みは `draft_key` が同じで `event_id` が NULL の行を数え、3 回で打ち止め。公開時に `event_id` を埋め、公開後の編集はイベントの枠へ引き継ぐ。
+- **未ログイン。** 新規作成では `owner_token_hash` が同じ行を数え、1 回で打ち止め。2 回目は 403 `REGISTER_REQUIRED`。ゲスト幹事として保存済みイベントを編集するときはイベントの枠（3 回）を使う。
+- 下書き ID はブラウザの `localStorage`（`flyer:draft:{scope}`）に置く。`scope` は新規が `new`、編集が `event:{id}`。編集画面は `draftKey` に加えて `eventId` を送る。
+- 上限に達したら、新規作成中は「新しい下書きで作り直す」でキーを差し替える。未ログインは会員登録へ送る。保存済みイベントは新しいイベントを作る以外に枠を増やせない。
+- 共同主催者の同時保存で 4 回目が通らないよう、回数の数え直しとログの作成は直列化可能トランザクションで行う。
 
 ### 9.3. POST `/api/v1/flyers/generate`（本アプリ）
 
@@ -1857,7 +1859,8 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 | フィールド | 制約 |
 | :---- | :---- |
-| `draftKey` | UUID。回数を数える単位 |
+| `draftKey` | UUID。下書きの識別子 |
+| `eventId` | UUID（任意）。保存済みイベントを編集するときの対象。付けた場合はそのイベントの幹事だけが使える |
 | `candidateId` | UUID。ウィザードで選んだ候補 |
 | `paletteId` | 1〜32 文字。記録用 |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack` |
@@ -1888,7 +1891,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 3. 新しい UUID を `flyer_assets.id` とファイル名に使う。
 4. `storage/flyers/{id}.jpg` に JPEG を書く。
 5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `9:16`。
-6. `flyer_generation_logs` に 1 行足す。`draft_key`、`user_id`、`owner_token_hash`、`template_id`、`layout_id`、`palette_id`、`flyer_asset_id`。
+6. `flyer_generation_logs` に 1 行足す。`draft_key`、`event_id`（保存済みイベントを編集しているとき。新規作成は NULL）、`user_id`、`owner_token_hash`、`template_id`、`layout_id`、`palette_id`、`flyer_asset_id`。
 7. 行の作成に失敗したら、書いたファイルを削除する。
 
 回数は確定したときだけ数える。候補の作り直しでは減らない。
