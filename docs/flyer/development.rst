@@ -16,12 +16,12 @@ Python 3.11 以上です。依存の導入と API の起動手順は :doc:`local
 ドキュメント
 ------------
 
-HTML を生成します。
+HTML を生成します。リポジトリ直下で実行します。
 
 .. code-block:: powershell
 
-   python -m sphinx -b html docs docs/_build/html
+   python -m sphinx -b html docs/flyer docs/flyer/_build/html
 
-``docs/make.bat html`` も同じビルドです。成果物は ``docs/_build/html/index.html`` です。ビルドは ``src`` を import するため、実行時の依存が入っている必要があります。
+``docs/flyer/make.bat html`` も同じビルドです。成果物は ``docs/flyer/_build/html/index.html`` です。ビルドは ``src`` を import するため、実行時の依存が入っている必要があります。
 
-モジュールを追加したら、``docs/reference/`` の ``automodule`` にパスを足すと、クラスのドキュメンテーション文字列がリファレンスへ載ります。
+モジュールを追加したら、``docs/flyer/reference/`` の ``automodule`` にパスを足すと、クラスのドキュメンテーション文字列がリファレンスへ載ります。

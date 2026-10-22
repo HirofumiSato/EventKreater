@@ -1,5 +1,7 @@
 # システム要件定義書
 
+> **実装前の設計文書です。** 現在の正は `prisma/schema.prisma` と `src/` のコードです。実装と差分があればコードを優先してください。
+
 ## チラシファースト型 イベント紹介・告知ページ生成＆出欠管理基盤
 
 ### （Flyer-Embedded Event Page & Frictionless RSVP System Requirements）

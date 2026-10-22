@@ -1,5 +1,7 @@
 # データベース物理設計・CRUD仕様書
 
+> **実装前の設計文書です。** 現在の正は `prisma/schema.prisma` と `src/` のコードです。実装と差分があればコードを優先してください。
+
 ## チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Flyer-Driven Event Page & Frictionless RSVP）
 
 ## 1. 全体アーキテクチャ・設計方針
