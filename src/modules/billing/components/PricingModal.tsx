@@ -152,7 +152,7 @@ export function PricingModal({
             <h4 className="card__title">月額使い放題</h4>
             <PriceBlock quote={subscription} fallback={SUBSCRIPTION_PRICE_JPY} />
             <p className="card__body">
-              生成無制限、共同幹事、複製。
+              生成無制限、共同主催者の招待、複製。
               {subscription?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}

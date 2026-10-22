@@ -5,6 +5,7 @@ import { collectGuestTokenHashes, resolveUserId } from "@/modules/auth/lib/guard
 import { toErrorResponse } from "@/lib/http";
 import { serializeOrganizerListItem, summarizeStatuses } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { organizerLabel } from "@/modules/organizers/lib/names";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +32,20 @@ export async function GET(req: NextRequest) {
       },
       include: {
         event: {
-          include: { flyerAsset: true, ...eventOptionsInclude, participants: { select: { status: true } } },
+          include: {
+            flyerAsset: true,
+            ...eventOptionsInclude,
+            participants: { select: { status: true } },
+            organizers: {
+              select: {
+                id: true,
+                role: true,
+                userId: true,
+                displayName: true,
+                user: { select: { name: true } },
+              },
+            },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -42,11 +56,13 @@ export async function GET(req: NextRequest) {
     for (const organizer of organizers) {
       if (seen.has(organizer.eventId)) continue;
       seen.add(organizer.eventId);
+      const owner = organizer.event.organizers.find((row) => row.role === "OWNER");
       events.push(
         serializeOrganizerListItem(
           organizer.event,
           organizer.role,
           summarizeStatuses(organizer.event.participants.map((row) => row.status)),
+          owner ? organizerLabel(owner) : "主催者",
         ),
       );
     }

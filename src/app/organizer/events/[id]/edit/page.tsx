@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { EventForm } from "@/modules/events/components/EventForm";
 import { FlyerGeneratePanel } from "@/modules/flyers/components/FlyerGeneratePanel";
 import { FlyerSelectModal, type SelectableFlyer } from "@/modules/flyers/components/FlyerSelectModal";
-import { InviteOrganizerButton } from "@/modules/organizers/components/InviteOrganizerButton";
+import { CoHostPanel } from "@/modules/organizers/components/CoHostPanel";
 import { LockConflictModal } from "@/modules/organizers/components/LockConflictModal";
 import { Toast } from "@/components/common/Toast";
 import { useEditLock } from "@/modules/organizers/hooks/useEditLock";
@@ -91,6 +91,8 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       );
       setForm({
         title: detail.event.title,
+        // 会員の表示名はサーバーが解決するので、編集では使わない。
+        organizerDisplayName: "",
         ...draftsFromOptions(detail.event),
         location: detail.event.location,
         postalCode: detail.event.postalCode ?? "",
@@ -162,7 +164,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         </p>
       )}
       {lock.error && <p className="alert alert--error">{lock.error}</p>}
-      {role === "OWNER" && <InviteOrganizerButton eventId={params.id} />}
+      {role === "OWNER" && <CoHostPanel eventId={params.id} />}
       <EventForm
         value={form}
         onChange={setForm}

@@ -30,6 +30,8 @@ interface EventFormProps {
   showStatus?: boolean;
   /** 出席者がいるため、共通／男女別の切り替えを止める。 */
   pricingModeLocked?: boolean;
+  /** 未登録の幹事にだけ、公開ページへ出す主催者名を聞く。 */
+  showOrganizerName?: boolean;
   flyerSlot?: ReactNode;
 }
 
@@ -44,6 +46,7 @@ export function EventForm({
   submitLabel,
   showStatus = false,
   pricingModeLocked = false,
+  showOrganizerName = false,
   flyerSlot,
 }: EventFormProps) {
   const locked = disabled || submitting;
@@ -188,6 +191,25 @@ export function EventForm({
           className="input"
         />
       </div>
+      {showOrganizerName && (
+        <div className="field">
+          <label className="label" htmlFor="event-organizer-name">
+            主催者名（公開されます）
+          </label>
+          <input
+            id="event-organizer-name"
+            maxLength={50}
+            disabled={locked}
+            value={value.organizerDisplayName}
+            onChange={(event) => set("organizerDisplayName", event.target.value)}
+            placeholder="例: 山田 太郎"
+            className="input"
+          />
+          <p className="help">
+            公開ページの「主催」に出る名前です。未登録のまま作成しているため、アカウント名がありません。空欄なら「主催者」と表示されます。あとから会員登録すると、この名前はアカウントの表示名に切り替わります。
+          </p>
+        </div>
+      )}
       <fieldset className="field" disabled={locked}>
         <legend className="label">
           開催日時 <span className="req">*</span>

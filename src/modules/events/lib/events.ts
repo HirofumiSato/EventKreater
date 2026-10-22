@@ -372,6 +372,7 @@ export async function createEventForGuest(input: CreateEventInput, guestTokenHas
           eventId: event.id,
           guestTokenHash,
           role: "OWNER",
+          displayName: input.organizerDisplayName ?? null,
         },
       });
       return event;

@@ -452,12 +452,79 @@ model EventOrganizer {
   userId         String?       @map("user_id") @db.Uuid
   guestTokenHash String?       @unique @map("guest_token_hash") @db.VarChar(64)
   role           OrganizerRole @default(CO_HOST)
+  /// ゲスト幹事の公開表示名。会員は User.name を都度参照するため NULL。
+  displayName    String?       @map("display_name") @db.VarChar(50)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([eventId, userId])
   @@index([userId])
   @@map("event_organizers")
+}
+
+/*
+ * 1イベント1オーナーの保証
+ * -------------------------
+ * `@@unique([eventId, userId])` は userId が NULL のゲスト行に効かないため、
+ * 部分ユニーク索引で OWNER を1行に固定する（Prisma では表現できず migration の生SQL）。
+ *
+ *   CREATE UNIQUE INDEX event_organizers_one_owner
+ *     ON event_organizers(event_id) WHERE role = 'OWNER';
+ *
+ * 移行時の修復:
+ *   1. 複数 OWNER のイベントは created_at が最も早い1行だけ OWNER に残す。
+ *   2. OWNER が居ないイベントは created_at が最も早い幹事行を OWNER に上げる。
+ *
+ * 表示名の取得元（src/modules/organizers/lib/names.ts）:
+ *   会員（userId あり） → User.name を都度参照（改名が公開ページへ反映される）
+ *   ゲスト（userId なし） → EventOrganizer.displayName
+ *   どちらも空 → 「主催者」「共同主催者」の役割名だけを表示
+ *
+ * 共同主催は会員のみ:
+ *   招待の受諾は userId を必須にし、未登録の端末は 403 REGISTER_REQUIRED を返す。
+ *   既存のゲスト共同幹事行は削除せず、表示だけ「共同主催者」にする。
+ */
+
+// -------------------------------------------------------------
+// 5-2. 共同主催の売上按分
+// -------------------------------------------------------------
+/// イベントごとの按分の設定。行が無いときは RATIO / OWN_ONLY として扱う。
+model EventRevenueSetting {
+  eventId         String                 @id @map("event_id") @db.Uuid
+  mode            RevenueSplitMode       @default(RATIO)
+  visibility      RevenueShareVisibility @default(OWN_ONLY)
+  updatedByUserId String?                @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_revenue_settings")
+}
+
+/// 主催者1人ぶんの配分。割合方式は shareBps、人数方式は headcount を使う。
+/// 主催者が外れると Cascade で消え、残った主催者だけで再計算する。
+model EventRevenueShare {
+  organizerId String   @id @map("organizer_id") @db.Uuid
+  eventId     String   @map("event_id") @db.Uuid
+  shareBps    Int?     @map("share_bps") @db.Integer
+  headcount   Int?     @map("headcount") @db.Integer
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  organizer EventOrganizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_revenue_shares")
+}
+
+enum RevenueSplitMode {
+  RATIO
+  HEADCOUNT
+}
+
+enum RevenueShareVisibility {
+  ALL
+  OWN_ONLY
 }
 
 // -------------------------------------------------------------
@@ -610,7 +677,8 @@ model EventInvitation {
 | エンティティ | アクター | C (作成) | R (参照) | U (更新) | D (削除) | 認可・条件規則 |
 | :---- | :---- | :---: | :---: | :---: | :---: | :---- |
 | **`events`** | 主催幹事 | ○ | ○ | ○ | ○ | `canCreateEvent` 認可、更新時は有効なロック必須 |
-|  | 共同幹事 | × | ○ | ○ | × | 編集可能だが削除・複製権限は制限 |
+|  | 共同幹事 | × | ○ | ○ | × | 編集可能。削除は不可。複製は現状の実装では可能（権限見直しは別issue） |
+|  | 共同幹事（招待・解除） | ○ | ○ | × | ○ | 招待の発行と解除は登録済みの主催幹事（OWNER）のみ。解除は `DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]` |
 |  | 参加者 | × | ○ | × | × | 公開情報＋参加確定数集計のみ閲覧可 |
 | **`participants`** | 参加者 | ○ | ○ | ○ | ○ | 登録ゼロ可。Cookieの `rsvp_token` 一致で自回答のみ照会・変更 |
 |  | 幹事（全員） | × | ○ | × | × | 専用管理画面にて全員の氏名・ステータス・コメントを閲覧 |
@@ -702,6 +770,19 @@ const result = await prisma.$transaction(async (tx) => {
 #### 【Delete】イベントの削除
 
 * **削除ポリシー:** 誤操作防止および出欠履歴保護のため、原則 **論理削除（`is_deleted = true`）** を適用。
+
+#### 【Update】売上按分の設定（主催幹事のみ）
+
+* **アクター:** 主催幹事（`OWNER`）で、会員登録済みの幹事。
+* **認可条件:** `assertRegisteredOwner(eventId)`。共同幹事は 403、未登録の幹事は 403 `REGISTER_REQUIRED`。
+* **テーブル:** `event_revenue_settings`（方式と公開範囲）と `event_revenue_shares`（主催者ごとの配分）。主催者が1人なら行を作らない。
+* **処理仕様:**
+  1. `rows` がそのイベントの主催者全員を1回ずつ含むことを検証する（過不足は 400 `ORGANIZER_SET_MISMATCH`）。
+  2. 割合方式は `share_bps` の合計が 10000 であること（400 `SHARE_TOTAL_NOT_100`）。人数方式は合計が出席者数以下であること（超えたら 409 `HEADCOUNT_EXCEEDS_ATTENDING`、不足は未割当として許す）。
+  3. 設定行を upsert し、配分行を upsert、主催者から外れた行を delete する。1トランザクション。
+  4. 使用しない列（割合方式の `headcount`、人数方式の `share_bps`）は `NULL` にする。
+* **計算:** `src/modules/revenue/lib/allocation.ts`。各人を切り捨て、余りは主催者へ寄せる。読み取り時に毎回計算し、按分結果は保存しない（金額は `participants.price_amount` のスナップショットで固定済み）。
+* **閲覧範囲:** `visibility = OWN_ONLY` のとき、共同主催者の API 応答は自分の行だけにする。主催者は常に全員分。絞り込みはサーバーで行う。
 
 ---
 

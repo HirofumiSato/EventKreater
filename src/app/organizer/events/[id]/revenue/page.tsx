@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
+import { RevenueAllocationSection } from "@/modules/revenue/components/RevenueAllocationSection";
 import {
   isRegisterRequired,
   problemMessage,
@@ -16,12 +17,14 @@ import type {
   PlanRevenueRow,
   ScheduleRevenueView,
 } from "@/modules/revenue/lib/revenue";
+import type { RevenueAllocationView } from "@/modules/revenue/types";
 
 interface EventRevenueResponse {
   event: { id: string; title: string; sortDate: string; status: "DRAFT" | "PUBLISHED" | "CLOSED" };
   summary: RevenueSummary;
   byPlan: PlanRevenueRow[];
   bySchedule: ScheduleRevenueView[];
+  allocation: RevenueAllocationView;
 }
 
 function yen(amount: number): string {
@@ -70,7 +73,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
     );
   }
 
-  const { event, summary, byPlan, bySchedule } = data;
+  const { event, summary, byPlan, bySchedule, allocation } = data;
 
   return (
     <div className="stack">
@@ -106,6 +109,17 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
             </Link>
           </p>
         </section>
+      )}
+
+      {allocation.organizerCount > 1 && (
+        <RevenueAllocationSection
+          eventId={params.id}
+          allocation={allocation}
+          attendingCount={summary.attendingCount}
+          onUpdated={(next) =>
+            setData((previous) => (previous ? { ...previous, allocation: next } : previous))
+          }
+        />
       )}
 
       <section className="table-card">

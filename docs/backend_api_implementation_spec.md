@@ -54,8 +54,9 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
 | `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・領収書発行額・差額・平均単価と、プラン別・開催回別の小計。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間 |
+| `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・領収書発行額・差額・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催幹事（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
 | `/api/v1/organizer/events/[id]/reminders` | GET | SCR-ORG-06 | 幹事（会員のみ） | リマインドの文面と宛先数を返す。アカウントのない参加者へ個別送信するときのコピー用。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/reminders` | POST | SCR-ORG-06 | 幹事（会員のみ） | 会員参加者へリマインドメールを送り、送信記録を残す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -940,11 +941,12 @@ POST /api/v1/organizer/events/[id]/reminders
 
 絞り込みの基準は開催日であり、回答日時や領収書の発行日ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
 
-レスポンスは `period`、`totals`、`events` の 3 つである。
+レスポンスは `period`、`totals`、`myShare`、`events` の 4 つである。
 
 ```json
 {
   "period": { "from": null, "to": null, "status": null },
+  "myShare": { "expectedRevenue": 4000 },
   "totals": {
     "expectedRevenue": 8000,
     "issuedRevenue": 3000,
@@ -970,7 +972,8 @@ POST /api/v1/organizer/events/[id]/reminders
       "unassignedPlanCount": 1,
       "declinedCount": 1,
       "receiptCount": 1,
-      "averagePerAttendee": 2667
+      "averagePerAttendee": 2667,
+      "myShare": { "expectedRevenue": 4000 }
     }
   ]
 }
@@ -984,12 +987,13 @@ POST /api/v1/organizer/events/[id]/reminders
 - 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
 - 並び順は `sort_date` の昇順（開催日が近い順）。過去の催しは後ろへ送る。
 - `events[].sortDate` は `YYYY-MM-DD` の文字列である。
+- `myShare.expectedRevenue` は、各イベントの按分（5.11）で閲覧者自身の行になった見込み売上の合算である。未割当は含めない。`events[].myShare` と同じ値の合計になる。按分の設定が無いイベントは均等割で計算する。
 
 ### 5.10. GET `/api/v1/organizer/events/[id]/revenue`（イベント1件の売上内訳）
 
 対象画面は SCR-ORG-12。認可は `assertRegisteredOrganizer`。未登録のゲスト幹事には 403 `REGISTER_REQUIRED`（名簿と同じ扱い）。
 
-レスポンスは `event`、`summary`、`byPlan`、`bySchedule` の 4 つである。`summary` の形は 5.9 の `totals` と同じ。
+レスポンスは `event`、`summary`、`byPlan`、`bySchedule`、`allocation` の 5 つである。`summary` の形は 5.9 の `totals` と同じ。`allocation` は 5.11 で説明する。
 
 ```json
 {
@@ -1008,8 +1012,78 @@ POST /api/v1/organizer/events/[id]/reminders
 - `event.sortDate` は `YYYY-MM-DD` の文字列である。
 - `byPlan` は対象（`audience`）・プラン名・金額の 3 つをキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額を変えた場合）。その差は隠さずに別行で見せる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
 - `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。並びはラベルの昇順で、`日時なし` は最後へ送る。
-- 日程を選んでいない出席者を代表日に寄せることはしない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
+- 日程を選んでいない出席者を代表日に寄せることはない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
 - 削除済みのイベントは 404。他幹事のイベントは 403。
+
+#### `allocation`（主催者別の按分）
+
+```json
+"allocation": {
+  "configured": false,
+  "mode": "RATIO",
+  "visibility": "OWN_ONLY",
+  "canEdit": true,
+  "organizerCount": 3,
+  "rows": [
+    {
+      "organizerId": "b1f0...",
+      "name": "佐藤 博文",
+      "role": "OWNER",
+      "isGuest": false,
+      "isYou": true,
+      "shareBps": 3334,
+      "headcount": null,
+      "expectedRevenue": 2667,
+      "issuedRevenue": 1000
+    }
+  ],
+  "unallocated": { "headcount": 0, "expectedRevenue": 0, "issuedRevenue": 0 },
+  "hiddenRows": 2
+}
+```
+
+- `configured` は保存済みの設定が揃っているか。`false` のときは均等割（`RATIO`）と `OWN_ONLY` で計算した結果を返す。
+- `mode` は `RATIO` か `HEADCOUNT`。`RATIO` の `shareBps` は basis points（10000 = 100.00%）、`HEADCOUNT` の `headcount` は人。
+- `rows` は閲覧範囲で絞る。主催者は常に全行。共同主催者は `visibility = ALL` なら全行、`OWN_ONLY` なら自分の行だけ。`hiddenRows` は絞った結果として見えない行数。
+- `isYou` は閲覧者自身の行か。`isGuest` は未登録の幹事か。
+- メールアドレスと `userId` は返さない。
+- `unallocated` は人数方式で配り切れなかった人数と金額。割合方式は常に 0。
+
+### 5.11. PUT `/api/v1/organizer/events/[id]/revenue/allocation`（按分の保存）
+
+対象画面は SCR-ORG-12。認可は `assertRegisteredOwner`。主催者以外は 403、未登録のゲスト幹事は 403 `REGISTER_REQUIRED`。
+
+ボディ:
+
+```json
+{
+  "mode": "RATIO",
+  "visibility": "OWN_ONLY",
+  "rows": [
+    { "organizerId": "b1f0...", "shareBps": 5000 },
+    { "organizerId": "c2e1...", "shareBps": 3000 },
+    { "organizerId": "d3a2...", "shareBps": 2000 }
+  ]
+}
+```
+
+- `mode = HEADCOUNT` のときは `rows[].headcount` を使う。使わない側の値は保存時に `NULL` にする（方式を切り替えても古い値が残らない）。
+- `rows` はそのイベントの主催者全員を1回ずつ含む。過不足や他イベントの `organizerId` は 400 `ORGANIZER_SET_MISMATCH`。
+- 割合方式で合計が 10000（100.00%）でない場合は 400 `SHARE_TOTAL_NOT_100`。
+- 人数方式で合計が出席者数を超える場合は 409 `HEADCOUNT_EXCEEDS_ATTENDING`。不足は許し、未割当として残す。
+- 負数・非整数は 400 `INVALID_ALLOCATION_VALUE`。
+- 保存は1トランザクション。設定行を upsert し、配分行を upsert、主催者から外れた行を delete する。
+- 成功時は `{ "allocation": ... }` を返す。形は 5.10 の `allocation` と同じ。
+
+| コード | HTTP | 意味 |
+| :---- | :--- | :---- |
+| `ORGANIZER_SET_MISMATCH` | 400 | 主催者の過不足、他イベントの `organizerId` |
+| `SHARE_TOTAL_NOT_100` | 400 | 割合の合計が 100% でない |
+| `INVALID_ALLOCATION_VALUE` | 400 | 負数・非整数・数値でない値 |
+| `HEADCOUNT_EXCEEDS_ATTENDING` | 409 | 人数の合計が出席者数を超える |
+| `REGISTER_REQUIRED` | 403 | 未登録の主催者 |
+
+計算規則は `src/modules/revenue/lib/allocation.ts` に閉じている。各人を切り捨て、余りは主催者（`OWNER`）へ寄せる。人数方式の分母は出席者数（費用プラン未選択の人も数える）。出席者が 0 人なら全員 0 円。
 
 ---
 

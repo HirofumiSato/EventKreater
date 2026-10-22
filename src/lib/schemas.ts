@@ -247,6 +247,13 @@ export const CreateEventSchema = eventBodySchema
   .extend({
     /** 告知ページの勧誘から来たときの参照元。存在しない・削除済みなら保存時に捨てる。 */
     referrerEventId: z.string().uuid().nullish(),
+    /** 未登録の幹事が公開ページに出す名前。会員のときは無視する。 */
+    organizerDisplayName: z
+      .string()
+      .trim()
+      .max(50, "主催者名は50文字以内です")
+      .nullish()
+      .transform((value) => (value ? value : null)),
   })
   .superRefine(refineEventAddress)
   .superRefine(refineEventOptions);

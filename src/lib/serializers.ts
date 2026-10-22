@@ -7,6 +7,7 @@ import type {
   RainPolicy,
   RsvpStatus,
 } from "@prisma/client";
+import { isGuestOrganizer, organizerLabel } from "@/modules/organizers/lib/names";
 
 export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -426,11 +427,57 @@ export function serializeOrganizerListItem(
   event: EventRecordShape,
   role: OrganizerRole,
   stats: ParticipantStats,
+  ownerName: string,
 ) {
   return {
     ...serializeEvent(event),
     role,
+    ownerName,
     stats,
     flyerThumbnailUrl: event.flyerAsset?.imageUrl ?? null,
+  };
+}
+
+export interface OrganizerSummarySource {
+  id: string;
+  role: OrganizerRole;
+  userId?: string | null;
+  displayName?: string | null;
+  user?: { name?: string | null } | null;
+}
+
+/** 公開ページ用。メールやユーザーIDは出さず、表示名だけを返す。 */
+export function serializeOrganizerSummary(row: OrganizerSummarySource) {
+  return {
+    id: row.id,
+    role: row.role,
+    name: organizerLabel(row),
+    isGuest: isGuestOrganizer(row),
+  };
+}
+
+/** 幹事行を「筆頭幹事1名 + 共同主催者」に分ける。作成順を保つ。 */
+export function serializeOrganizerList(rows: OrganizerSummarySource[]) {
+  const sorted = [...rows].sort((left, right) => {
+    if (left.role !== right.role) return left.role === "OWNER" ? -1 : 1;
+    return 0;
+  });
+  const owner = sorted.find((row) => row.role === "OWNER") ?? null;
+  const coHosts = sorted.filter((row) => row.role === "CO_HOST");
+  return {
+    owner: owner ? serializeOrganizerSummary(owner) : null,
+    coHosts: coHosts.map(serializeOrganizerSummary),
+  };
+}
+
+/**
+ * 公開告知ページ用。名前だけを返し、主催者行の ID・メール・ユーザー ID は出さない。
+ * 並びは作成順。
+ */
+export function serializePublicOrganizerList(rows: OrganizerSummarySource[]) {
+  const { owner, coHosts } = serializeOrganizerList(rows);
+  return {
+    owner: owner ? { name: owner.name } : null,
+    coHosts: coHosts.map((row) => ({ name: row.name })),
   };
 }

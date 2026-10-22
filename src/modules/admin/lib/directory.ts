@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEventDate } from "@/lib/serializers";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { maskPhone } from "@/modules/auth/lib/login-challenge";
+import { organizerLabel } from "@/modules/organizers/lib/names";
 
 export const ADMIN_PAGE_SIZE = 30;
 
@@ -116,6 +117,12 @@ export async function searchAdminEvents(q: string, offset: number) {
               },
             },
           },
+          // 未登録の筆頭幹事は、公開ページに出している名前で検索できるようにする。
+          {
+            organizers: {
+              some: { displayName: { contains: q, mode: "insensitive" as const } },
+            },
+          },
         ],
       }
     : {};
@@ -137,11 +144,13 @@ export async function searchAdminEvents(q: string, offset: number) {
         createdAt: true,
         _count: { select: { participants: true, organizers: true } },
         organizers: {
-          where: { role: "OWNER" },
-          take: 1,
           select: {
+            role: true,
+            userId: true,
+            displayName: true,
             user: { select: { id: true, name: true, email: true } },
           },
+          orderBy: { createdAt: "asc" },
         },
       },
     }),
@@ -149,7 +158,15 @@ export async function searchAdminEvents(q: string, offset: number) {
   return {
     total,
     events: rows.map((row) => {
-      const owner = row.organizers[0]?.user ?? null;
+      const ownerRow = row.organizers.find((organizer) => organizer.role === "OWNER") ?? null;
+      const owner = ownerRow
+        ? {
+            id: ownerRow.user?.id ?? null,
+            name: organizerLabel(ownerRow),
+            email: ownerRow.user?.email ?? null,
+            isGuest: !ownerRow.userId,
+          }
+        : null;
       return {
         id: row.id,
         title: row.title,
@@ -161,6 +178,10 @@ export async function searchAdminEvents(q: string, offset: number) {
         createdAt: row.createdAt.toISOString(),
         participantCount: row._count.participants,
         organizerCount: row._count.organizers,
+        coHostCount: row.organizers.filter((organizer) => organizer.role === "CO_HOST").length,
+        coHostNames: row.organizers
+          .filter((organizer) => organizer.role === "CO_HOST")
+          .map((organizer) => organizerLabel(organizer)),
         owner,
         publicPath: !row.isDeleted && row.status !== "DRAFT" ? `/events/${row.id}` : null,
       };

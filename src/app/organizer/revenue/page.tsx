@@ -11,6 +11,8 @@ import type { EventRevenueRow, RevenueSummary } from "@/modules/revenue/lib/reve
 interface RevenueResponse {
   period: { from: string | null; to: string | null; status: string | null };
   totals: RevenueSummary;
+  /** 按分後の自分の見込み取り分（全イベントの合算）。 */
+  myShare: { expectedRevenue: number };
   events: EventRevenueRow[];
 }
 
@@ -194,7 +196,7 @@ export default function OrganizerRevenuePage() {
 
       {!loading && !error && totals && (
         <>
-          <RevenueSummaryLedger summary={totals} />
+          <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
 
           {totals.unassignedPlanCount > 0 && (
             <section className="alert alert--warning">
@@ -231,6 +233,7 @@ export default function OrganizerRevenuePage() {
                     <th scope="col">状態</th>
                     <th scope="col">出席 / 欠席</th>
                     <th scope="col">見込み</th>
+                    <th scope="col">あなたの取り分</th>
                     <th scope="col">発行済み</th>
                     <th scope="col">差額</th>
                   </tr>
@@ -238,7 +241,7 @@ export default function OrganizerRevenuePage() {
                 <tbody>
                   {data.events.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="data__empty">
+                      <td colSpan={8} className="data__empty">
                         この期間に主催イベントはありません。
                       </td>
                     </tr>
@@ -249,6 +252,9 @@ export default function OrganizerRevenuePage() {
                         <Link href={`/organizer/events/${event.id}/revenue`} className="text-link">
                           {event.title}
                         </Link>
+                        {event.role === "CO_HOST" ? (
+                          <div className="data__muted">共同主催</div>
+                        ) : null}
                       </td>
                       <td>{event.sortDate}</td>
                       <td className="data__muted">{STATUS_LABELS[event.status]}</td>
@@ -259,6 +265,7 @@ export default function OrganizerRevenuePage() {
                         )}
                       </td>
                       <td>{yen(event.expectedRevenue)}</td>
+                      <td className="num">{yen(event.myShare.expectedRevenue)}</td>
                       <td>{yen(event.issuedRevenue)}</td>
                       <td className={event.unreconciled < 0 ? "stat__value--warning" : undefined}>
                         {yen(event.unreconciled)}

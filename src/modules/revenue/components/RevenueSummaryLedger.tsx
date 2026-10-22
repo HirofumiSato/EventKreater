@@ -15,7 +15,14 @@ function amount(value: number): string {
  * 注記は短い名詞句に揃える（「参加 4 人」）。説明の文章は行に入れず脚注へ逃がす。
  * 差額の行は、ラベルと金額だけで意味が通るので注記を持たない。
  */
-export function RevenueSummaryLedger({ summary }: { summary: RevenueSummary }) {
+export function RevenueSummaryLedger({
+  summary,
+  myShare,
+}: {
+  summary: RevenueSummary;
+  /** 按分後の自分の見込み取り分。渡されたときだけ行を足す。 */
+  myShare?: { expectedRevenue: number };
+}) {
   return (
     <div>
       <dl className="revenue-ledger">
@@ -57,6 +64,17 @@ export function RevenueSummaryLedger({ summary }: { summary: RevenueSummary }) {
           </dd>
           <dd className="revenue-ledger__note">プラン選択済み 1 人あたり</dd>
         </div>
+
+        {myShare && (
+          <div className="revenue-ledger__row">
+            <dt className="revenue-ledger__label">あなたの取り分</dt>
+            <dd className="revenue-ledger__value">
+              {amount(myShare.expectedRevenue)}
+              <span className="revenue-ledger__unit">円</span>
+            </dd>
+            <dd className="revenue-ledger__note">按分後・見込み</dd>
+          </div>
+        )}
       </dl>
       <p className="revenue-ledger__foot">
         ※差額は、領収書と突き合わせるためのものです。未回収額ではありません。

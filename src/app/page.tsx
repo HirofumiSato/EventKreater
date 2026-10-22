@@ -30,6 +30,10 @@ const capabilities = [
     "いくら集まるか、先に分かる",
     "費用プランと出欠から、見込みの売上を自動で計算します。何人集まれば赤字にならないかを、集金の前に確かめられます。会員登録した幹事から使えます。",
   ],
+  [
+    "幹事が何人いても、誰の催しか分かる",
+    "主催者と共同主催者を分けて、告知ページに名前を出します。招待できるのは会員の幹事で、利用枠を消費するのはイベントを公開した主催者だけです。",
+  ],
 ];
 
 const steps = [
@@ -78,8 +82,8 @@ export default function HomePage() {
 
       <section className="section">
         <div className="section__head">
-          <h2 className="section__title">幹事の手間を、4つに減らす</h2>
-          <p className="section__note">告知・出欠・集計・お金を、1つのURLにまとめます。</p>
+          <h2 className="section__title">幹事の手間を、5つに減らす</h2>
+          <p className="section__note">告知・出欠・集計・お金・運営を、1つのURLにまとめます。</p>
         </div>
         <ul className="feature-list">
           {capabilities.map(([title, body], index) => (

@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { appBaseUrl } from "@/lib/http";
 import { serializePricePlans, serializeSchedules } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { organizerLabel } from "@/modules/organizers/lib/names";
 import type { AuthContext } from "@/modules/auth/lib/guards";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -57,6 +58,15 @@ async function findActiveInvitation(code: string) {
 
 export async function previewInvitation(code: string) {
   const invitation = await findActiveInvitation(code);
+  const [owner, coHostCount] = await Promise.all([
+    prisma.eventOrganizer.findFirst({
+      where: { eventId: invitation.eventId, role: "OWNER" },
+      select: { displayName: true, user: { select: { name: true } } },
+    }),
+    prisma.eventOrganizer.count({
+      where: { eventId: invitation.eventId, role: "CO_HOST" },
+    }),
+  ]);
   return {
     valid: true,
     invitation: { expiresAt: invitation.expiresAt.toISOString() },
@@ -67,37 +77,40 @@ export async function previewInvitation(code: string) {
       pricePlans: serializePricePlans(invitation.event.pricePlans),
       location: invitation.event.location,
       rainPolicy: invitation.event.rainPolicy,
+      organizer: {
+        ownerName: owner ? organizerLabel({ role: "OWNER", ...owner }) : null,
+        coHostCount,
+      },
     },
   };
 }
 
+/**
+ * 共同主催は会員だけが受諾できる。
+ *
+ * 未登録のまま共同主催になれると、名簿・領収書・売上を持たない権限だけの行が増え、
+ * 「誰が主催者か」を公開ページに出せない。未登録の端末は会員登録へ送る。
+ */
 export async function acceptInvitation(code: string, identity: AuthContext) {
+  if (!identity.userId) {
+    throw new ProblemDetailException({
+      status: 403,
+      title: "Forbidden",
+      type: "probs/register-required",
+      detail: "共同主催への参加には会員登録が必要です。",
+      error: "REGISTER_REQUIRED",
+    });
+  }
   const invitation = await findActiveInvitation(code);
-  const guestOrganizerToken = identity.userId ? null : generateSecureToken(32);
+  const userId = identity.userId;
 
   await prisma.$transaction(async (tx) => {
-    if (identity.userId) {
-      const existing = await tx.eventOrganizer.findFirst({
-        where: { eventId: invitation.eventId, userId: identity.userId },
-      });
-      if (!existing) {
-        await tx.eventOrganizer.create({
-          data: {
-            eventId: invitation.eventId,
-            userId: identity.userId,
-            role: "CO_HOST",
-          },
-        });
-      }
-    } else if (guestOrganizerToken) {
-      await tx.eventOrganizer.create({
-        data: {
-          eventId: invitation.eventId,
-          guestTokenHash: sha256(guestOrganizerToken),
-          role: "CO_HOST",
-        },
-      });
-    }
+    // 既に幹事（OWNER を含む）なら何もしない。同時受諾で競合しても
+    // @@unique([eventId, userId]) に任せて重複行を作らない。
+    await tx.eventOrganizer.createMany({
+      data: [{ eventId: invitation.eventId, userId, role: "CO_HOST" }],
+      skipDuplicates: true,
+    });
 
     await tx.eventInvitation.update({
       where: { id: invitation.id },
@@ -109,7 +122,6 @@ export async function acceptInvitation(code: string, identity: AuthContext) {
     success: true,
     eventId: invitation.event.id,
     role: "CO_HOST" as const,
-    guestOrganizerToken,
     manageUrl: `/organizer/events/${invitation.event.id}/edit`,
   };
 }
