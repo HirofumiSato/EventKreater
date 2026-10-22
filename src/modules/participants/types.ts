@@ -21,6 +21,8 @@ export interface ParticipationItem {
     location: string;
     status: EventStatus;
     flyerThumbnailUrl: string | null;
+    /** 主催者の公開ページに使う会員ID。ゲスト幹事の催しは null。 */
+    ownerUserId: string | null;
   };
 }
 
@@ -52,6 +54,8 @@ export interface ParticipantCalendarResponse {
 export interface ParticipationSummary {
   attending: number;
   declined: number;
+  /** 参加要望中。参加人数にも欠席にも数えない。 */
+  waitlisted: number;
   upcoming: number;
   past: number;
 }
@@ -68,4 +72,5 @@ export interface ParticipationListResponse {
 export const RSVP_LABELS: Record<RsvpStatus, string> = {
   ATTENDING: "出席",
   DECLINED: "欠席",
+  WAITLISTED: "参加要望中",
 };

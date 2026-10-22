@@ -189,7 +189,7 @@ export async function resolveAttendanceChoice(
   tx: Prisma.TransactionClient,
   eventId: string,
   input: {
-    status: "ATTENDING" | "DECLINED";
+    status: "ATTENDING" | "DECLINED" | "WAITLISTED";
     gender?: "MALE" | "FEMALE";
     scheduleId?: string;
     pricePlanId?: string;
@@ -403,10 +403,22 @@ export function createdEventBody(
   };
 }
 
+/**
+ * 定員の判定を1つのトランザクションに閉じるための行ロック。
+ * 件数を数えてから作るまでの間に他の送信が割り込むと定員を超えるため、
+ * 出欠の送信と幹事の承認の両方で、判定の前にイベント行をロックする。
+ */
+export async function lockEventForCapacity(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+): Promise<void> {
+  await tx.$queryRaw`SELECT "id" FROM "events" WHERE "id" = ${eventId}::uuid FOR UPDATE`;
+}
+
 export async function assertCapacityAllows(
   tx: Prisma.TransactionClient,
   eventId: string,
-  status: "ATTENDING" | "DECLINED",
+  status: "ATTENDING" | "DECLINED" | "WAITLISTED",
   ignoreParticipantId?: string,
 ): Promise<void> {
   if (status !== "ATTENDING") return;
@@ -431,4 +443,33 @@ export async function assertCapacityAllows(
       error: "CAPACITY_REACHED",
     });
   }
+}
+
+/**
+ * 定員に達していたら「出席」を「参加要望」へ読み替える。
+ *
+ * 参加者側は満員なら最初から参加要望を出すが、画面を開いた直後に最後の1席が
+ * 埋まる競合がある。そこで断らずに要望として受ける。競合を防ぐため、
+ * `lockEventForCapacity` でイベント行をロックした後に呼ぶこと。
+ */
+export async function resolveStatusForCapacity(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+  status: "ATTENDING" | "DECLINED" | "WAITLISTED",
+  ignoreParticipantId?: string,
+): Promise<"ATTENDING" | "DECLINED" | "WAITLISTED"> {
+  if (status !== "ATTENDING") return status;
+  const event = await tx.event.findUnique({
+    where: { id: eventId },
+    select: { capacity: true },
+  });
+  if (!event?.capacity) return status;
+  const attendingCount = await tx.participant.count({
+    where: {
+      eventId,
+      status: "ATTENDING",
+      ...(ignoreParticipantId ? { id: { not: ignoreParticipantId } } : {}),
+    },
+  });
+  return attendingCount >= event.capacity ? "WAITLISTED" : status;
 }

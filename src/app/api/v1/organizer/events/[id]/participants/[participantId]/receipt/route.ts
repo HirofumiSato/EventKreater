@@ -25,7 +25,7 @@ async function loadParticipant(eventId: string, participantId: string) {
     throw new ProblemDetailException({
       status: 404,
       title: "Not Found",
-      detail: "????????????",
+      detail: "参加者が見つかりません。",
     });
   }
   return participant;
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 404,
         title: "Not Found",
-        detail: "????????????????",
+        detail: "この参加者の領収書はまだ発行されていません。",
       });
     }
     return NextResponse.json({
@@ -59,11 +59,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 400,
         title: "Validation Error",
-        detail: "???????????????????",
+        detail:
+          participant.status === "WAITLISTED"
+            ? "参加要望中の参加者には領収書を発行できません。先に参加を承認してください。"
+            : "欠席の参加者には領収書を発行できません。",
       });
     }
 
-    let issuerName = "?????";
+    let issuerName = "主催者";
     if (ctx.userId) {
       const user = await prisma.user.findUnique({
         where: { id: ctx.userId },

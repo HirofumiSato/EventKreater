@@ -51,6 +51,9 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         schedules={event.schedules}
         pricePlans={event.pricePlans}
         initialRsvp={event.myRsvp}
+        capacity={event.capacity}
+        attendingCount={event.attendingCount}
+        waitlistCount={event.waitlistCount}
         closed={!event.rsvpOpen}
         closedMessage={
           event.status === "PUBLISHED"
@@ -58,6 +61,9 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
             : "このイベントは出欠を受け付けていません。"
         }
         onCountChange={(count) => setEvent((current) => (current ? { ...current, attendingCount: count } : current))}
+        onWaitlistCountChange={(count) =>
+          setEvent((current) => (current ? { ...current, waitlistCount: count } : current))
+        }
       />
       <OrganizerInviteCard eventId={event.id} viewer={event.viewer} />
       {event.myReceipt && (
@@ -78,7 +84,13 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           </Link>
         )}
       </p>
-      <StickyRsvpBar attendingCount={event.attendingCount} answered={Boolean(event.myRsvp)} closed={!event.rsvpOpen} />
+      <StickyRsvpBar
+        attendingCount={event.attendingCount}
+        waitlistCount={event.waitlistCount}
+        capacity={event.capacity}
+        answered={Boolean(event.myRsvp)}
+        closed={!event.rsvpOpen}
+      />
     </div>
   );
 }

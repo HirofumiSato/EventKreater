@@ -33,13 +33,14 @@ export function sortParticipantDayEntries(
 
 /**
  * セルに出す短冊と、タップしたときのモーダルの中身。
- * 出席は通常の色、欠席は控えめな色にし、どちらも催しページへ進めるようにする。
+ * 出席は通常の色、欠席は控えめ、参加要望はアンバーにし、どれも催しページへ進めるようにする。
  */
 export function toParticipantCellItem(entry: ParticipantCalendarEntry): CalendarCellItem {
   return {
     key: entry.participantId,
     title: entry.event.title,
-    tone: entry.status === "DECLINED" ? "muted" : "default",
+    tone:
+      entry.status === "DECLINED" ? "muted" : entry.status === "WAITLISTED" ? "waitlist" : "default",
     detail: [
       entry.eventTime || "時刻未定",
       entry.statusLabel,

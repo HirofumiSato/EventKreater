@@ -1,4 +1,5 @@
 import type { PriceAudience } from "@prisma/client";
+import type { RsvpStatus } from "@/modules/events/types";
 
 /**
  * 売上の集計だけを持つ純粋関数。
@@ -9,7 +10,7 @@ import type { PriceAudience } from "@prisma/client";
  */
 
 export interface RevenueParticipant {
-  status: "ATTENDING" | "DECLINED";
+  status: RsvpStatus;
   /** 出欠確定時点のプラン金額。null はプラン未選択、0 は無料プラン。 */
   priceAmount: number | null;
   pricePlanName: string | null;
@@ -51,6 +52,8 @@ export function summarizeRevenue(
   let declinedCount = 0;
 
   for (const row of participants) {
+    // 参加要望はまだ席を持っていない。売上にも欠席数にも入れない。
+    if (row.status === "WAITLISTED") continue;
     if (row.status !== "ATTENDING") {
       declinedCount += 1;
       continue;

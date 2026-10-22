@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { readProblem } from "@/lib/problem";
+import { rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import type { ParticipationItem, ParticipationListResponse } from "@/modules/participants/types";
 
-type StatusFilter = "all" | "ATTENDING" | "DECLINED";
+type StatusFilter = "all" | "ATTENDING" | "WAITLISTED" | "DECLINED";
 type ScopeFilter = "all" | "upcoming" | "past";
 
 const PAGE_SIZE = 10;
@@ -13,6 +14,7 @@ const PAGE_SIZE = 10;
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "すべて" },
   { value: "ATTENDING", label: "出席" },
+  { value: "WAITLISTED", label: "参加要望" },
   { value: "DECLINED", label: "欠席" },
 ];
 
@@ -40,7 +42,7 @@ function HistoryRow({ row }: { row: ParticipationItem }) {
         <Link href={`/events/${row.event.id}`} className="card__title">
           {row.event.title}
         </Link>
-        <span className={`badge badge--sm badge--${row.status === "ATTENDING" ? "attending" : "declined"}`}>
+        <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
           {row.statusLabel}
         </span>
       </div>
@@ -136,6 +138,10 @@ export default function ParticipantHistoryPage() {
           <article className="stat">
             <p className="stat__label">出席</p>
             <p className="stat__value">{summary.attending} 件</p>
+          </article>
+          <article className="stat">
+            <p className="stat__label">参加要望</p>
+            <p className="stat__value">{summary.waitlisted} 件</p>
           </article>
           <article className="stat">
             <p className="stat__label">欠席</p>

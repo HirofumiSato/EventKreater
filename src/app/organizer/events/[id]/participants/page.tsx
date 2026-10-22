@@ -19,7 +19,7 @@ interface ParticipantsResponse {
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
   };
-  stats: { attendingCount: number; declinedCount: number; totalResponses: number };
+  stats: { attendingCount: number; declinedCount: number; waitlistedCount: number; totalResponses: number };
   revenue: RevenueSummary;
   participants: ParticipantRow[];
 }
@@ -183,7 +183,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         <div>
           <h1 className="page-title">参加者名簿</h1>
           <p className="page-lead">
-            {data.event.title}。参加 {data.stats.attendingCount} / 不参加 {data.stats.declinedCount}
+            {data.event.title}。参加 {data.stats.attendingCount} / 参加要望 {data.stats.waitlistedCount} / 不参加 {data.stats.declinedCount}
             {data.event.capacity !== null && ` / 定員 ${data.event.capacity}`}
           </p>
         </div>
@@ -220,6 +220,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         pricePlans={data.event.pricePlans}
         attendingCount={data.stats.attendingCount}
         declinedCount={data.stats.declinedCount}
+        waitlistedCount={data.stats.waitlistedCount}
         onSave={saveRow}
         onDelete={deleteRow}
         onIssueReceipt={(row) => {

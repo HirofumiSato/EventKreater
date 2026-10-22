@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const QuerySchema = z.object({
-  status: z.enum(["ATTENDING", "DECLINED"]).optional(),
+  status: z.enum(["ATTENDING", "DECLINED", "WAITLISTED"]).optional(),
   scope: z.enum(["all", "upcoming", "past"]).default("all"),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const where = participationWhere(userId, query, today);
     const skip = (query.page - 1) * query.limit;
 
-    const [rows, total, attending, declined, upcoming, past] = await Promise.all([
+    const [rows, total, attending, declined, waitlisted, upcoming, past] = await Promise.all([
       prisma.participant.findMany({
         where,
         include: participationInclude,
@@ -52,6 +52,8 @@ export async function GET(req: NextRequest) {
       prisma.participant.count({ where }),
       prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "ATTENDING" } }),
       prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "DECLINED" } }),
+      // 参加要望は参加人数にも欠席にも数えない。待ち順で承認されるまで別枠で持つ。
+      prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "WAITLISTED" } }),
       prisma.participant.count({
         where: participationWhere(userId, { scope: "upcoming" }, today),
       }),
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
       limit: query.limit,
       total,
       hasMore: skip + rows.length < total,
-      summary: { attending, declined, upcoming, past },
+      summary: { attending, declined, waitlisted, upcoming, past },
     });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/user/participations");

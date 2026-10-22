@@ -4,7 +4,13 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
-import { assertCapacityAllows, keepPriceSnapshot, resolveAttendanceChoice } from "@/modules/events/lib/events";
+import {
+  assertCapacityAllows,
+  keepPriceSnapshot,
+  lockEventForCapacity,
+  resolveAttendanceChoice,
+} from "@/modules/events/lib/events";
+import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { formatEventDate, participantPriceDisplay } from "@/lib/serializers";
 
 export const runtime = "nodejs";
@@ -23,7 +29,7 @@ async function loadParticipant(eventId: string, participantId: string) {
     throw new ProblemDetailException({
       status: 404,
       title: "Not Found",
-      detail: "?????????????",
+      detail: "イベントが見つかりません。",
     });
   }
   const participant = await prisma.participant.findFirst({
@@ -33,7 +39,7 @@ async function loadParticipant(eventId: string, participantId: string) {
     throw new ProblemDetailException({
       status: 404,
       title: "Not Found",
-      detail: "????????????",
+      detail: "参加者が見つかりません。",
     });
   }
   return participant;
@@ -45,6 +51,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const input = OrganizerParticipantSchema.parse(await req.json());
     const current = await loadParticipant(params.id, params.participantId);
     const updated = await prisma.$transaction(async (tx) => {
+      // 承認は席を1つ使う。数えてから書くまでを閉じ、他の承認と競合させない。
+      await lockEventForCapacity(tx, params.id);
       await assertCapacityAllows(tx, params.id, input.status, current.id);
       const choice = await resolveAttendanceChoice(tx, params.id, input);
       const snapshot = keepPriceSnapshot(current, choice);
@@ -57,10 +65,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           comment: input.comment ? input.comment : null,
           scheduleId: choice.scheduleId,
           pricePlanId: choice.pricePlanId,
+          // 承認・辞退で要望ではなくなったら、待ち順の時刻を落とす。
+          waitlistedAt:
+            input.status === "WAITLISTED" ? (current.waitlistedAt ?? new Date()) : null,
           ...snapshot,
         },
         include: { schedule: true, pricePlan: true },
       });
+    });
+    const waitlistRows = await prisma.participant.findMany({
+      where: { eventId: params.id, status: "WAITLISTED" },
+      select: { id: true, status: true, waitlistedAt: true, createdAt: true },
     });
     const price = participantPriceDisplay(updated);
     return NextResponse.json({
@@ -79,6 +94,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         pricePlanAmount: price.amount,
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
+        waitlistedAt: updated.waitlistedAt ? updated.waitlistedAt.toISOString() : null,
+        waitlistPosition: waitlistPosition(waitlistRows, updated.id),
       },
     });
   } catch (error) {

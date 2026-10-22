@@ -127,7 +127,9 @@ export function CalendarMonthGrid({
                       <button
                         key={item.key}
                         type="button"
-                        className={`calendar__event${item.tone === "muted" ? " is-muted" : ""}`}
+                        className={`calendar__event${
+                          item.tone === "muted" ? " is-muted" : item.tone === "waitlist" ? " is-waitlist" : ""
+                        }`}
                         title={item.title}
                         aria-haspopup="dialog"
                         onClick={() => openItem(item, cell.date)}

@@ -1,5 +1,5 @@
 import { ProblemDetailException } from "@/lib/exceptions";
-import { pricingModeOf } from "@/modules/events/types";
+import { pricingModeOf, type RsvpStatus } from "@/modules/events/types";
 
 type Audience = "ANY" | "MALE" | "FEMALE";
 
@@ -12,7 +12,7 @@ type Audience = "ANY" | "MALE" | "FEMALE";
 export function assertPricingEditable(
   existing: {
     status: "DRAFT" | "PUBLISHED" | "CLOSED";
-    participants: { status: "ATTENDING" | "DECLINED"; pricePlanId: string | null }[];
+    participants: { status: RsvpStatus; pricePlanId: string | null }[];
     pricePlans: { id: string; audience: Audience }[];
   },
   input: { pricePlans: { id?: string; audience: Audience }[] },

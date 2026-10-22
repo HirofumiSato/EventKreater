@@ -8,6 +8,7 @@ import { collectGuestTokenHashes, resolveOptionalUserId } from "@/modules/auth/l
 import { findMyParticipant } from "@/modules/participants/lib/rsvp";
 import { serializeEvent, serializePublicOrganizerList } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { isFull as isFullOf, remainingSeats, waitlistPosition } from "@/modules/events/lib/rsvp-status";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,15 +51,24 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const attendingCount = await prisma.participant.count({
       where: { eventId: event.id, status: "ATTENDING" },
     });
+    const waitlistRows = await prisma.participant.findMany({
+      where: { eventId: event.id, status: "WAITLISTED" },
+      select: { id: true, status: true, waitlistedAt: true, createdAt: true },
+      orderBy: [{ waitlistedAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+    });
+    const waitlistCount = waitlistRows.length;
+    const seatsLeft = remainingSeats(event.capacity, attendingCount);
+    const eventIsFull = isFullOf(event.capacity, attendingCount);
 
     let myRsvp: {
       id: string;
       name: string;
-      status: "ATTENDING" | "DECLINED";
+      status: "ATTENDING" | "DECLINED" | "WAITLISTED";
       gender: "MALE" | "FEMALE" | null;
       comment: string | null;
       scheduleId: string | null;
       pricePlanId: string | null;
+      waitlistPosition: number | null;
     } | null = null;
     let myReceipt: {
       id: string;
@@ -122,6 +132,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         comment: participant.comment,
         scheduleId: participant.scheduleId,
         pricePlanId: participant.pricePlanId,
+        waitlistPosition: waitlistPosition(waitlistRows, participant.id),
       };
       if (participant.receipt) {
         myReceipt = {
@@ -150,6 +161,11 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       rsvpDeadline: serialized.rsvpDeadline,
       rsvpOpen: serialized.rsvpOpen,
       attendingCount,
+      waitlistCount,
+      remainingSeats: seatsLeft,
+      isFull: eventIsFull,
+      // 満員でも、出欠を受け付けている間は参加要望を受け付ける。
+      acceptsWaitlist: eventIsFull && serialized.rsvpOpen,
       loggedIn: Boolean(userId),
       /**
        * 勧誘カードの出し分け用。主催者本人（ゲスト幹事の Cookie を含む）と、

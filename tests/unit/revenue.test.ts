@@ -30,6 +30,16 @@ function declined(): RevenueParticipant {
   };
 }
 
+function waitlisted(): RevenueParticipant {
+  return {
+    status: "WAITLISTED",
+    priceAmount: null,
+    pricePlanName: null,
+    priceAudience: null,
+    scheduleId: null,
+  };
+}
+
 describe("summarizeRevenue", () => {
   it("出席者のプラン金額を足す", () => {
     const summary = summarizeRevenue([attending(3000), attending(2500)]);
@@ -44,6 +54,16 @@ describe("summarizeRevenue", () => {
     expect(summary.expectedRevenue).toBe(3000);
     expect(summary.attendingCount).toBe(1);
     expect(summary.declinedCount).toBe(2);
+  });
+
+  it("参加要望は売上にも出席・欠席の人数にも含めない", () => {
+    const summary = summarizeRevenue([attending(3000), waitlisted(), waitlisted()]);
+    expect(summary.expectedRevenue).toBe(3000);
+    expect(summary.attendingCount).toBe(1);
+    expect(summary.declinedCount).toBe(0);
+    expect(summary.averagePerAttendee).toBe(3000);
+    expect(groupByPlan([attending(3000), waitlisted()])).toHaveLength(1);
+    expect(groupBySchedule([attending(3000), waitlisted()])).toHaveLength(1);
   });
 
   it("プラン未選択の出席者は人数だけ数え、売上には足さない", () => {

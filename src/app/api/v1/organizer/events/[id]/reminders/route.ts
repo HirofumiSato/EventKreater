@@ -24,14 +24,14 @@ interface ReminderSource {
 
 function buildReminder(event: ReminderSource) {
   const origin = appBaseUrl();
-  const subject = `${event.title} ??????`.slice(0, 200);
+  const subject = `${event.title} 出欠のお願い`.slice(0, 200);
   const body = [
-    `${event.title} ????????????`,
+    `${event.title} の出欠をお願いします。`,
     scheduleLabel(serializeSchedules(event.schedules)),
     priceLabel(serializePricePlans(event.pricePlans)),
     event.location,
-    `?????: ${origin}/events/${event.id}`,
-    `?????: ${origin}/mypage`,
+    `出欠の回答: ${origin}/events/${event.id}`,
+    `参加履歴: ${origin}/mypage`,
   ].join("\n");
   return { subject, body };
 }
@@ -51,7 +51,7 @@ async function loadEvent(eventId: string) {
     throw new ProblemDetailException({
       status: 404,
       title: "Not Found",
-      detail: "?????????????",
+      detail: "イベントが見つかりません。",
     });
   }
   return event;
@@ -67,7 +67,7 @@ function memberEmails(event: Awaited<ReturnType<typeof loadEvent>>): string[] {
   ];
 }
 
-/** ?????????????????????????????????????????????? */
+/** 登録済みの参加者へ、出欠の変更をお願いする文面を返す。メール配送は別の口で行う。 */
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     await assertRegisteredOrganizer(req, params.id);

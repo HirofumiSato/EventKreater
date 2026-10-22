@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRsvp } from "@/modules/attendance/hooks/useRsvp";
+import { nextRsvpChoices } from "@/modules/events/lib/rsvp-status";
 import {
   GENDER_LABELS,
   PRICE_AUDIENCE_LABELS,
@@ -17,9 +18,13 @@ interface DynamicRsvpBoxProps {
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
   initialRsvp: MyRsvp | null;
+  capacity: number | null;
+  attendingCount: number;
+  waitlistCount: number;
   closed: boolean;
   closedMessage?: string;
   onCountChange: (count: number) => void;
+  onWaitlistCountChange?: (count: number) => void;
 }
 
 const GENDERS: Gender[] = ["MALE", "FEMALE"];
@@ -29,13 +34,32 @@ export function DynamicRsvpBox({
   schedules,
   pricePlans,
   initialRsvp,
+  capacity,
+  attendingCount,
+  waitlistCount,
   closed,
   closedMessage = "このイベントは出欠を受け付けていません。",
   onCountChange,
+  onWaitlistCountChange,
 }: DynamicRsvpBoxProps) {
   const { myRsvp, submit, cancel, isSubmitting, error } = useRsvp(eventId, initialRsvp);
+  /**
+   * 満員なら「出席」の代わりに「参加要望」を出す。
+   * 席を確保済みの出席者は、満員になっても出席のまま変更できる。
+   */
+  const choices = useMemo(
+    () => nextRsvpChoices({ capacity, attendingCount, myStatus: myRsvp?.status ?? null }),
+    [capacity, attendingCount, myRsvp?.status],
+  );
+  /** 「出席」の位置に入る値。満員なら参加要望になる。 */
+  const attendValue: RsvpStatus = choices.attend ? "ATTENDING" : "WAITLISTED";
   const [name, setName] = useState(initialRsvp?.name ?? "");
-  const [status, setStatus] = useState<RsvpStatus>(initialRsvp?.status ?? "ATTENDING");
+  const [status, setStatus] = useState<RsvpStatus>(
+    initialRsvp?.status ??
+      (nextRsvpChoices({ capacity, attendingCount, myStatus: null }).attend
+        ? "ATTENDING"
+        : "WAITLISTED"),
+  );
   const [gender, setGender] = useState<Gender | "">(initialRsvp?.gender ?? "");
   const [comment, setComment] = useState(initialRsvp?.comment ?? "");
   const [scheduleId, setScheduleId] = useState(
@@ -54,6 +78,12 @@ export function DynamicRsvpBox({
     );
     setPricePlanId(initialRsvp?.pricePlanId ?? "");
   }, [initialRsvp, schedules]);
+
+  // 満員と空きありが入れ替わったとき、選んでいる「出席」を参加要望（またはその逆）へ合わせる。
+  // マウント直後にも走るので、未回答の初期値もここで決まる。
+  useEffect(() => {
+    setStatus((current) => (current === "DECLINED" ? current : attendValue));
+  }, [attendValue]);
 
   /** 性別に合うプランだけ選べる。未選択のうちは共通プランだけ出す。 */
   const availablePlans = useMemo(() => {
@@ -78,15 +108,17 @@ export function DynamicRsvpBox({
       pricePlanId: selectedPlanId,
     });
     if (typeof result.attendingCount === "number") onCountChange(result.attendingCount);
+    if (typeof result.waitlistCount === "number") onWaitlistCountChange?.(result.waitlistCount);
     setSaved(true);
   };
 
   const onCancel = async () => {
     const result = await cancel();
     if (typeof result.attendingCount === "number") onCountChange(result.attendingCount);
+    if (typeof result.waitlistCount === "number") onWaitlistCountChange?.(result.waitlistCount);
     setName("");
     setComment("");
-    setStatus("ATTENDING");
+    setStatus(attendValue);
     setGender("");
     setScheduleId(schedules[0]?.id ?? "");
     setPricePlanId("");
@@ -96,21 +128,38 @@ export function DynamicRsvpBox({
   return (
     <section id="rsvp" className="card card--padded">
       <p className="eyebrow">出欠</p>
-      <h2 className="panel__title">{myRsvp ? "回答済み・変更できます" : "3秒で出欠を回答"}</h2>
-      <p className="panel__note">アカウントは不要です。この端末に回答を覚えておきます。</p>
+      <h2 className="panel__title">
+        {myRsvp
+          ? "回答済み・変更できます"
+          : choices.mode === "full"
+            ? "定員に達しました"
+            : "3秒で出欠を回答"}
+      </h2>
+      <p className="panel__note">
+        {choices.mode === "full" && !myRsvp
+          ? "空きが出たら、幹事が順番に承認します。参加要望として受け付けます。"
+          : "アカウントは不要です。この端末に回答を覚えておきます。"}
+      </p>
+      {myRsvp?.status === "WAITLISTED" && (
+        <p className="alert alert--warning">
+          参加要望中です。
+          {myRsvp.waitlistPosition !== null && ` 現在 ${myRsvp.waitlistPosition} 番目です。`}
+          {choices.mode === "open" && " 空きが出ました。出席に変更できます。"}
+        </p>
+      )}
       <form onSubmit={onSubmit} className="form form--spaced">
         <fieldset className="field">
           <legend className="label">出欠</legend>
           <div className="choice-group" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <label className="choice choice--attending">
+            <label className={choices.attend ? "choice choice--attending" : "choice choice--waitlist"}>
               <input
                 type="radio"
                 name="rsvp"
-                checked={status === "ATTENDING"}
+                checked={status === attendValue}
                 disabled={closed || isSubmitting}
-                onChange={() => setStatus("ATTENDING")}
+                onChange={() => setStatus(attendValue)}
               />
-              出席
+              {choices.attend ? "出席" : "参加要望"}
             </label>
             <label className="choice choice--declined">
               <input
@@ -123,6 +172,11 @@ export function DynamicRsvpBox({
               欠席
             </label>
           </div>
+          {!choices.attend && (
+            <p className="help">
+              定員 {capacity}名に達しています。参加要望は参加人数に含まれず、空きが出たときに幹事が承認します。
+            </p>
+          )}
         </fieldset>
         {status === "ATTENDING" && (
           <>
@@ -223,13 +277,29 @@ export function DynamicRsvpBox({
           />
         </div>
         {error && <p className="alert alert--error">{error}</p>}
-        {saved && !error && <p className="alert alert--success">回答を保存しました。</p>}
+        {saved && !error && (
+          <p className="alert alert--success">
+            {status === "WAITLISTED"
+              ? `参加要望を受け付けました。空きが出たら幹事が承認します。${
+                  myRsvp?.waitlistPosition !== null && myRsvp?.waitlistPosition !== undefined
+                    ? `（${myRsvp.waitlistPosition}番目）`
+                    : ""
+                }`
+              : "回答を保存しました。"}
+          </p>
+        )}
         <button
           type="submit"
           disabled={closed || isSubmitting || (status === "ATTENDING" && availablePlans.length === 0)}
           className="btn btn--primary btn--block"
         >
-          {isSubmitting ? "送信中..." : myRsvp ? "回答を更新する" : "この内容で回答を送信"}
+          {isSubmitting
+            ? "送信中..."
+            : myRsvp
+              ? "回答を更新する"
+              : status === "WAITLISTED"
+                ? "参加要望を送る"
+                : "この内容で回答を送信"}
         </button>
         {myRsvp && (
           <button type="button" onClick={() => void onCancel()} disabled={isSubmitting} className="btn btn--ghost btn--block">

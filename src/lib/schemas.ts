@@ -90,7 +90,7 @@ function refineEventOptions(
 
 function refineAttendanceChoice(
   value: {
-    status: "ATTENDING" | "DECLINED";
+    status: "ATTENDING" | "DECLINED" | "WAITLISTED";
     gender?: "MALE" | "FEMALE";
     scheduleId?: string;
     pricePlanId?: string;
@@ -282,7 +282,7 @@ export const UpdateEventSchema = eventBodySchema
 export const OrganizerParticipantSchema = z
   .object({
     name: z.string().trim().min(1, "名前を入力してください").max(50),
-    status: z.enum(["ATTENDING", "DECLINED"]),
+    status: z.enum(["ATTENDING", "DECLINED", "WAITLISTED"]),
     gender: z.enum(["MALE", "FEMALE"]).optional(),
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
@@ -303,7 +303,7 @@ export const IssueReceiptSchema = z.object({
 export const SubmitRsvpSchema = z
   .object({
     name: z.string().trim().min(1, "名前を入力してください").max(50),
-    status: z.enum(["ATTENDING", "DECLINED"]),
+    status: z.enum(["ATTENDING", "DECLINED", "WAITLISTED"]),
     gender: z.enum(["MALE", "FEMALE"]).optional(),
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
