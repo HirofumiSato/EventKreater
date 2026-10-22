@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { EventForm } from "@/modules/events/components/EventForm";
+import { EventStepForm } from "@/modules/events/components/EventStepForm";
 import { FlyerGeneratePanel } from "@/modules/flyers/components/FlyerGeneratePanel";
 import { FlyerSelectModal, type SelectableFlyer } from "@/modules/flyers/components/FlyerSelectModal";
 import { PublishSuccessModal } from "@/modules/organizers/components/PublishSuccessModal";
@@ -231,12 +231,14 @@ function NewEventScreen() {
     <div className="page--form stack">
       <div>
         <h1 className="page-title">新規イベント作成</h1>
-        <p className="page-lead">日時と費用プランは複数登録できます。ログイン時は利用枠を消費します。</p>
+        <p className="page-lead">
+          5つのステップで入力します。日時と費用プランは複数登録できます。ログイン時は利用枠を消費します。
+        </p>
       </div>
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {draftId && !restoring && (
         <p className="alert alert--success">
-          下書きを復元しました。内容を確認して「公開する」を押してください。
+          下書きを復元しました。内容を確認して、最後のステップで公開してください。
         </p>
       )}
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
@@ -256,13 +258,15 @@ function NewEventScreen() {
           </Link>
         </section>
       )}
-      <EventForm
+      <EventStepForm
         value={form}
         onChange={setForm}
         onSubmit={() => void publish()}
-        submitting={submitting || restoring}
-        submitLabel="公開する"
+        submitting={submitting}
+        disabled={restoring}
         showOrganizerName={!quotaState.isLoading && !quotaState.quota}
+        seedKey={draftId ?? "new"}
+        ready={!restoring}
         flyerSlot={
           <>
             <FlyerGeneratePanel
