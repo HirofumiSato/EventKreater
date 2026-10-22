@@ -24,6 +24,7 @@
 ## 手順
 
 - [ローカルでの操作](docs/local.rst): 手元で動かすために、次を用意します。
+- [本番デプロイ](docs/deploy.rst): このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。
 - [Stripe のローカルテストと操作](docs/stripe.rst): このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、利用枠の確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。
 - [データベース操作](docs/database.rst): このアプリのデータベースは PostgreSQL です。スキーマの正は prisma/schema.prisma で、適用済みの SQL は prisma/migrations/ にあります。 初期マイグレーションは 20261018171707_init_schema_with_billing です。
 

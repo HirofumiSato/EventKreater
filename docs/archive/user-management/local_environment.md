@@ -1,5 +1,7 @@
 # ローカル環境の起動と停止
 
+> **実装前の設計文書です。** 現在の正は `src/` のコードと [local.rst](../../local.rst) の手順です。URL は当時の `localhost:3000` のままで、現在は 3012 です。
+
 この PC の開発環境は、ホストに置いた PostgreSQL 16 と、プロジェクト直下で動かす Next.js で構成しています。PostgreSQL は Windows サービスにも Docker にも登録していません。データディレクトリは `C:\Users\hisat\local-pgsql\data`、実行ファイルは `C:\Users\hisat\local-pgsql\pgsql\bin` です。
 
 | 役割 | 場所 | 確認先 |

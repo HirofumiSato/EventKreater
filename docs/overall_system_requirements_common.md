@@ -42,8 +42,8 @@
 機能別文書のうち、次の 4 つを上位の根拠にする。実装の細部は共通ドキュメント（`DBschema`、`backend_api_implementation_spec`、`front_implementation_spec`）を見る。
 
 * チラシ生成: {doc}`flyer/specs/system_requirements`
-* イベント告知・出欠: {doc}`event-page/specs/event_page_system_requirements`
-* 会員・権限: {doc}`user-management/detailed_design_spec`
+* イベント告知・出欠: {doc}`archive/event-page/specs/event_page_system_requirements`
+* 会員・権限: {doc}`archive/user-management/detailed_design_spec`
 * 利用枠・課金: {doc}`billing_and_quota_system_requirements`
 
 食い違いを見つけたときは、上の表で「共通編が上書きする」に入る範囲だけ共通編を直し、それ以外は機能別文書を直す。同じ内容が両方にある場合は、機能別文書に寄せて共通編からは消す。この取り決めが無いあいだは、正本が 2 つある。

@@ -37,6 +37,7 @@ const SECTIONS = [
     heading: "手順",
     entries: [
       ["docs/local.rst", null],
+      ["docs/deploy.rst", null],
       ["docs/stripe.rst", null],
       ["docs/database.rst", null],
     ],

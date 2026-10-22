@@ -25,7 +25,7 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 | チラシ描画 | `services/flyer/src/**` |
 
 - `docs/README.md` に既知の乖離をまとめてあります。まずそこを見てください。
-- `docs/user-management/` と `docs/event-page/specs/` は実装前の設計です。正として扱わないでください。
+- `docs/archive/` は実装前の設計です。正として扱わないでください。
 - 仕様の更新が要る変更なら、コードと docs を同じ PR に入れてください。
 
 ## コードの探し方

@@ -32,6 +32,8 @@ npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの
 | 全体を 90 分で掴む | [docs/onboarding.md](docs/onboarding.md) |
 | ドキュメントの地図 | [docs/sitemap.rst](docs/sitemap.rst) |
 | どの文書が正か、既知の乖離 | [docs/README.md](docs/README.md) |
+| 本番へ出す手順 | [docs/deploy.rst](docs/deploy.rst) |
+| 以前の要件と設計（現在の正ではない） | [docs/archive/index.rst](docs/archive/index.rst) |
 | AI エージェント向けの探索規則 | [AGENTS.md](AGENTS.md) |
 
 Sphinx の HTML は `npm run docs` のあと `start docs\_build\html\index.html` で開きます。
