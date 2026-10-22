@@ -264,7 +264,7 @@ type AllocationInput = {
 - `docs/backend_api_implementation_spec.md`: 按分の取得・更新 API、エラーコード、閲覧範囲の絞り込みを追記。
 - `docs/front_implementation_spec.md` 第13節: 「13.7 按分」を追加し、表・パネル・文言・端数規則を書く。`13.2` の指標表に「あなたの取り分」を追加。
 - `docs/overall_system_requirements_common.md`: 第4.6節の売上に、按分の目的（集金の分担であり送金ではない）と、閲覧範囲の設定を追記。
-- `docs/event-page/specs/event_page_data_model_and_crud.md`: 主催者別の按分設定を追記。
+- `docs/archive/event-page/specs/event_page_data_model_and_crud.md`: 主催者別の按分設定を追記。
 
 ## スコープ外
 

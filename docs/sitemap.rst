@@ -20,6 +20,8 @@
      - :doc:`README` 。派生・検証マップと既知の乖離
    * - 初めて起動する
      - :doc:`local` → :doc:`database`
+   * - 本番へ出す
+     - :doc:`deploy` 。Cloudflare → Fly.io → Neon / R2 の順
    * - 決済を手元で試す
      - :doc:`stripe` 。鍵は ``sk_test_`` だけ。管理画面からは返金しない
    * - 自動テストの範囲を知る
@@ -34,8 +36,8 @@
      - :doc:`event-page/index`
    * - チラシ生成 API
      - :doc:`flyer/index` 。章の地図は :doc:`flyer/sphinx_structure`
-   * - 会員登録と認証
-     - :doc:`user-management/index`
+   * - 以前の要件と設計
+     - :doc:`archive/index` 。**現在の正ではない**。コードが正
 
 サイトマップ
 ------------
@@ -53,6 +55,7 @@
       Guide --> DocMap["README 派生・検証マップ"]
       Guide --> Map["sitemap このページ"]
       Guide --> Local["local 起動と画面"]
+      Guide --> Deploy["deploy 本番デプロイ"]
       Guide --> Stripe["stripe テスト決済"]
       Guide --> Db["database PostgreSQL"]
 
@@ -68,7 +71,7 @@
       Features --> Billing["利用枠・課金の要件"]
       Features --> Event["event-page"]
       Features --> Flyer["flyer"]
-      Features --> User["user-management"]
+      Root --> Archive["archive 実装前の設計"]
 
       Root --> Gen["索引（生成物）"]
       Gen --> ApiRoutes["api-routes API と仕様の差分"]
@@ -98,6 +101,8 @@
      - 全体の見取り図とサイトマップ
    * - :doc:`local`
      - ローカル起動、環境変数、画面パス、利用枠の優先順
+   * - :doc:`deploy`
+     - 本番デプロイ。Cloudflare、Fly.io、Neon、R2 の順に設定する。ローリング更新と切り戻し
    * - :doc:`stripe`
      - Stripe テストモード、課金の境界、Webhook、確認 SQL への案内
    * - :doc:`database`
@@ -188,18 +193,8 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
      - 中身
    * - :doc:`event-page/local-operations`
      - イベントページ機能のローカル起動と操作
-   * - :doc:`event-page/specs/event_page_planning_requirements`
-     - 企画要件
-   * - :doc:`event-page/specs/event_page_system_requirements`
-     - システム要件
-   * - :doc:`event-page/specs/event_page_data_model_and_crud`
-     - データモデルと CRUD
-   * - :doc:`event-page/specs/event_page_db_schema_crud`
-     - DB スキーマと CRUD
-   * - :doc:`event-page/specs/backend_api_implementation_spec`
-     - バックエンド API 実装仕様
-   * - :doc:`event-page/specs/event_page_frontend_implementation_spec`
-     - フロントエンド実装仕様
+
+要件と設計はアーカイブに移しました。現在の正はコードです。
 
 AI チラシ自動生成
 ^^^^^^^^^^^^^^^^^^
@@ -225,10 +220,11 @@ AI チラシ自動生成
    * - ルートの詳細設計
      - :doc:`detailed_design_spec` 。チラシ生成のシステム詳細設計。flyer 配下の詳細設計と対になる
 
-会員登録管理
-^^^^^^^^^^^^
+アーカイブ（実装前の設計）
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-入口は :doc:`user-management/index` です。
+入口は :doc:`archive/index` です。**現在の正ではありません。** 実装と食い違う箇所があり、直す予定もありません。
+食い違ったときは、:doc:`README` の表にある「現在の正」を読んでください。
 
 .. list-table::
    :header-rows: 1
@@ -236,22 +232,36 @@ AI チラシ自動生成
 
    * - ページ
      - 中身
-   * - :doc:`user-management/planning_requirements`
-     - 企画要件
-   * - :doc:`user-management/system_requirements`
-     - システム要件
-   * - :doc:`user-management/DBschema`
-     - データベース設計
-   * - :doc:`user-management/detailed_design_spec`
-     - 詳細設計
-   * - :doc:`user-management/backend_api_implementation_spec`
-     - バックエンド API 実装仕様
-   * - :doc:`user-management/front_implementation_spec`
-     - フロントエンド実装仕様
-   * - :doc:`user-management/local_development_setup`
-     - ローカル開発のセットアップ
-   * - :doc:`user-management/local_environment`
-     - ローカル環境
+   * - :doc:`archive/user-management/index`
+     - 会員登録管理。企画要件からこの PC での起動まで
+   * - :doc:`archive/user-management/planning_requirements`
+     - 会員登録の企画要件
+   * - :doc:`archive/user-management/system_requirements`
+     - 会員登録のシステム要件
+   * - :doc:`archive/user-management/DBschema`
+     - 会員登録のデータベース設計
+   * - :doc:`archive/user-management/detailed_design_spec`
+     - 会員登録の詳細設計
+   * - :doc:`archive/user-management/backend_api_implementation_spec`
+     - 会員登録のバックエンド API 実装仕様
+   * - :doc:`archive/user-management/front_implementation_spec`
+     - 会員登録のフロントエンド実装仕様
+   * - :doc:`archive/user-management/local_development_setup`
+     - 当時のローカル開発セットアップ。現在は :doc:`local`
+   * - :doc:`archive/user-management/local_environment`
+     - 当時のローカル環境。URL は 3000 で、現在の 3012 と違う
+   * - :doc:`archive/event-page/specs/event_page_planning_requirements`
+     - イベントページの企画要件
+   * - :doc:`archive/event-page/specs/event_page_system_requirements`
+     - イベントページのシステム要件
+   * - :doc:`archive/event-page/specs/event_page_data_model_and_crud`
+     - データモデルと CRUD
+   * - :doc:`archive/event-page/specs/event_page_db_schema_crud`
+     - DB スキーマと CRUD
+   * - :doc:`archive/event-page/specs/backend_api_implementation_spec`
+     - イベントページのバックエンド API 実装仕様
+   * - :doc:`archive/event-page/specs/event_page_frontend_implementation_spec`
+     - イベントページのフロントエンド実装仕様
 
 UI 監査と生成された索引
 ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -14,7 +14,7 @@
 ### データ
 
 - `EventOrganizer` は `role` を持つが、表示名の列がない（`prisma/schema.prisma:613-627`）。ゲスト幹事は `guestTokenHash` だけで、公開できる名前を持たない。
-- 一意制約は `@@unique([eventId, userId])` のみ（`prisma/schema.prisma:624`）。`userId` が NULL のゲスト行には効かないため、複数 `OWNER` やオーナー不在を防げない。要件は「OWNER は単一」（`docs/event-page/specs/event_page_data_model_and_crud.md:235`）。
+- 一意制約は `@@unique([eventId, userId])` のみ（`prisma/schema.prisma:624`）。`userId` が NULL のゲスト行には効かないため、複数 `OWNER` やオーナー不在を防げない。要件は「OWNER は単一」（`docs/archive/event-page/specs/event_page_data_model_and_crud.md:235`）。
 - 未登録でも共同主催を受諾できる（`src/modules/organizers/lib/invitations.ts:95-99`）。UC-10 はログイン・登録を経て受諾する前提（`docs/overall_system_requirements_common.md:413-422`）で、食い違っている。
 - 会員登録時の引き継ぎで、同一イベントに会員行があるとゲスト行を削除する（`src/modules/auth/lib/hydrate.ts:46-52`）。ゲスト行が `OWNER`、会員行が `CO_HOST` だと、削除後にオーナーが不在になる。
 - 退会時は `OWNER` のイベントを論理削除し、`CO_HOST` 行を削除する（`src/modules/account/lib/account.ts:333-338`）。オーナー譲渡の手段はない。
@@ -22,7 +22,7 @@
 
 ### 表示
 
-- 公開告知ページは主催者情報を返していない（`src/app/api/v1/public/events/[id]/route.ts:126-151`、`EventPageClient.tsx`、`EventMetaCard.tsx`）。要件のワイヤーフレームにはヘッダーの「主催者名」がある（`docs/event-page/specs/event_page_system_requirements.md:292`）が未実装。
+- 公開告知ページは主催者情報を返していない（`src/app/api/v1/public/events/[id]/route.ts:126-151`、`EventPageClient.tsx`、`EventMetaCard.tsx`）。要件のワイヤーフレームにはヘッダーの「主催者名」がある（`docs/archive/event-page/specs/event_page_system_requirements.md:292`）が未実装。
 - 主催一覧は閲覧者自身のロールしか出さない（`src/modules/events/components/EventCard.tsx:23`、`src/lib/serializers.ts:425`）。イベントのオーナー名は分からない。
 - 管理コンソールは `role = OWNER` の1行だけを出し（`src/modules/admin/lib/directory.ts:139-152`）、ゲストは「ゲスト幹事」と表示する（`src/app/console/events/page.tsx:172`）。共同主催の内訳は見えない。
 - 共同主催の一覧・解除の API と UI がない。招待は `POST .../invitations` だけで、受諾時に `isRevoked` にする一方通行（`src/modules/organizers/lib/invitations.ts:100-103`）。
@@ -32,7 +32,7 @@
 ### 権限
 
 - 招待・削除は `OWNER`、編集・名簿・領収書は全幹事（`src/modules/auth/lib/guards.ts:140-191`、`src/app/api/v1/organizer/events/[id]/route.ts:130`）。
-- 複製は全幹事ができる（`src/app/api/v1/organizer/events/[id]/clone/route.ts:20-27`）。仕様の「共同幹事は複製権限を制限」（`docs/event-page/specs/event_page_data_model_and_crud.md:613`）と食い違う。
+- 複製は全幹事ができる（`src/app/api/v1/organizer/events/[id]/clone/route.ts:20-27`）。仕様の「共同幹事は複製権限を制限」（`docs/archive/event-page/specs/event_page_data_model_and_crud.md:613`）と食い違う。
 - 領収書の発行者は「発行した幹事」の名前になる（`src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts:66-73`）。オーナー固定かは未定義。
 
 ## 今回の決定
@@ -192,8 +192,8 @@ const capabilities = [
 ### 7. ドキュメント
 
 - `docs/DBschema.md`: `event_organizers.display_name` と部分ユニーク索引を追記。
-- `docs/event-page/specs/event_page_data_model_and_crud.md`: OWNER 単一の保証方法、表示名の取得元、共同主催は会員のみを追記。
-- `docs/event-page/specs/event_page_system_requirements.md`: ワイヤーフレームのヘッダー「主催者名」を、基本情報の「主催 / 共同主催」行に読み替える。
+- `docs/archive/event-page/specs/event_page_data_model_and_crud.md`: OWNER 単一の保証方法、表示名の取得元、共同主催は会員のみを追記。
+- `docs/archive/event-page/specs/event_page_system_requirements.md`: ワイヤーフレームのヘッダー「主催者名」を、基本情報の「主催 / 共同主催」行に読み替える。
 - `docs/overall_system_requirements_common.md`: UC-10 の受諾を会員必須に合わせる。共同主催一覧・解除の操作を追記。
 - `docs/front_implementation_spec.md`: 編集画面の共同主催パネル、公開ページの主催表示、ホームの5項目（第287行の「4つ」を「5つ」に直す）を追記。
 
@@ -260,5 +260,5 @@ const capabilities = [
 - `src/modules/admin/lib/directory.ts` — 管理コンソールのイベント検索
 - `src/app/api/v1/organizer/revenue/route.ts` — 横断の売上集計
 - `src/app/page.tsx` / `src/app/service/page.tsx` — ホームとサービス紹介
-- `docs/event-page/specs/event_page_data_model_and_crud.md` — OWNER 単一の記述
+- `docs/archive/event-page/specs/event_page_data_model_and_crud.md` — OWNER 単一の記述
 - `docs/overall_system_requirements_common.md` — UC-10

@@ -2,13 +2,2029 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 104,
-    "preImplementation": 13,
+    "docs": 106,
+    "preImplementation": 15,
     "markdown": 42,
-    "rst": 62,
+    "rst": 64,
     "orphan": 1
   },
   "docs": [
+    {
+      "path": "docs/archive/event-page/specs/backend_api_implementation_spec.md",
+      "sphinxDoc": "archive/event-page/specs/backend_api_implementation_spec",
+      "format": "markdown",
+      "title": "バックエンドAPI実装仕様書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 734,
+      "headings": [
+        {
+          "level": 1,
+          "text": "バックエンドAPI実装仕様書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Next.js App Router & PostgreSQL）"
+        },
+        {
+          "level": 2,
+          "text": "1. 全体アーキテクチャ・設計方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 基本方針"
+        },
+        {
+          "level": 2,
+          "text": "2. エンドポイント一覧カタログ"
+        },
+        {
+          "level": 2,
+          "text": "3. 主要処理シーケンス図（Mermaid）"
+        },
+        {
+          "level": 3,
+          "text": "3.1. イベント作成＆課金認可ゲート（canCreateEvent）"
+        },
+        {
+          "level": 3,
+          "text": "3.2. 参加者：登録ゼロ出欠登録＆Cookie発行"
+        },
+        {
+          "level": 3,
+          "text": "3.3. 参加者：端末Cookie再訪による出欠自動照会"
+        },
+        {
+          "level": 3,
+          "text": "3.4. 共同幹事：排他編集排他ロック取得・再確認・Takeover競合"
+        },
+        {
+          "level": 3,
+          "text": "3.5. 会員昇格・データ統合トランザクション（Hydration）"
+        },
+        {
+          "level": 2,
+          "text": "4. 共通ミドルウェア・認可ガード仕様"
+        },
+        {
+          "level": 3,
+          "text": "4.1. 暗号化ユーティリティ (src/lib/crypto.ts)"
+        },
+        {
+          "level": 3,
+          "text": "4.2. 認可ガード (src/lib/guards.ts)"
+        },
+        {
+          "level": 2,
+          "text": "5. APIエンドポイント詳細仕様"
+        },
+        {
+          "level": 3,
+          "text": "5.1. POST /api/v1/public/events（イベント新規作成）"
+        },
+        {
+          "level": 4,
+          "text": "リクエストスキーマ (Zod)"
+        },
+        {
+          "level": 4,
+          "text": "レスポンス仕様"
+        },
+        {
+          "level": 3,
+          "text": "5.2. GET /api/v1/public/events/[id]（公開情報取得・Cookie自動照会）"
+        },
+        {
+          "level": 3,
+          "text": "5.3. POST /api/v1/public/events/[id]/rsvp（未登録出欠登録・変更）"
+        },
+        {
+          "level": 4,
+          "text": "リクエストスキーマ (Zod)"
+        },
+        {
+          "level": 4,
+          "text": "処理フロー"
+        },
+        {
+          "level": 3,
+          "text": "5.3b. GET /api/v1/geo/postal-codes/[code]（郵便番号検索）"
+        },
+        {
+          "level": 3,
+          "text": "5.4. GET /api/v1/organizer/events（主催イベント一覧）"
+        },
+        {
+          "level": 3,
+          "text": "5.5. POST /api/v1/organizer/events/[id]/lock（排他ロック取得・延長・引き継ぎ）"
+        },
+        {
+          "level": 4,
+          "text": "リクエストスキーマ (Zod)"
+        },
+        {
+          "level": 4,
+          "text": "SQLアトミック実行ロジック"
+        },
+        {
+          "level": 3,
+          "text": "5.6. PUT /api/v1/organizer/events/[id]（イベント編集・保存）"
+        },
+        {
+          "level": 3,
+          "text": "5.7. GET /api/v1/organizer/events/[id]/participants（参加者詳細一覧）"
+        },
+        {
+          "level": 3,
+          "text": "5.8. POST /api/v1/organizer/events/[id]/clone（イベント複製）"
+        },
+        {
+          "level": 3,
+          "text": "5.9. POST /api/v1/user/hydrate（アカウント統合・昇格）"
+        },
+        {
+          "level": 4,
+          "text": "リクエストスキーマ (Zod)"
+        },
+        {
+          "level": 4,
+          "text": "処理トランザクション"
+        },
+        {
+          "level": 2,
+          "text": "6. RFC 7807 準拠エラーハンドリング仕様"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/lib/crypto.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/guards.ts",
+          "exists": false
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/event-page/specs/event_page_data_model_and_crud.md",
+      "sphinxDoc": "archive/event-page/specs/event_page_data_model_and_crud",
+      "format": "markdown",
+      "title": "データモデル設計書＆CRUD仕様書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 951,
+      "headings": [
+        {
+          "level": 1,
+          "text": "データモデル設計書＆CRUD仕様書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（概念・論理・物理・CRUD統合）"
+        },
+        {
+          "level": 2,
+          "text": "1. 全体アーキテクチャ・設計方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 4大設計基本方針"
+        },
+        {
+          "level": 2,
+          "text": "2. 概念データモデル（Conceptual Data Model）"
+        },
+        {
+          "level": 3,
+          "text": "2.1. コア概念（Entities）の抽出と役割"
+        },
+        {
+          "level": 3,
+          "text": "2.2. 概念ER図（Conceptual ER Diagram）"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 主要な概念境界とビジネスルール"
+        },
+        {
+          "level": 2,
+          "text": "3. 論理データモデル（Logical Data Model）"
+        },
+        {
+          "level": 3,
+          "text": "3.1. 正規化プロセス（第1〜第3正規形の検証）"
+        },
+        {
+          "level": 4,
+          "text": "第1正規形（1NF）の達成"
+        },
+        {
+          "level": 4,
+          "text": "第2正規形（2NF）の達成"
+        },
+        {
+          "level": 4,
+          "text": "第3正規形（3NF）の達成"
+        },
+        {
+          "level": 3,
+          "text": "3.2. 論理エンティティ定義とリレーションシップ"
+        },
+        {
+          "level": 3,
+          "text": "3.3. ドメイン定義・論理整合性制約マトリクス"
+        },
+        {
+          "level": 2,
+          "text": "4. 物理データモデル（Physical Data Model）"
+        },
+        {
+          "level": 3,
+          "text": "4.1. 物理ER図（Entity-Relationship Diagram）"
+        },
+        {
+          "level": 3,
+          "text": "4.2. Prisma スキーマ完全定義 (schema.prisma)"
+        },
+        {
+          "level": 3,
+          "text": "4.3. 物理テーブル詳細設計表"
+        },
+        {
+          "level": 4,
+          "text": "events（イベント本体テーブル）"
+        },
+        {
+          "level": 4,
+          "text": "participants（参加者・出欠テーブル）"
+        },
+        {
+          "level": 4,
+          "text": "receipts（参加費の領収書）"
+        },
+        {
+          "level": 4,
+          "text": "event_schedules（開催日時）"
+        },
+        {
+          "level": 4,
+          "text": "event_price_plans（費用プラン）"
+        },
+        {
+          "level": 4,
+          "text": "event_locks（排他編集排他ロックテーブル）"
+        },
+        {
+          "level": 2,
+          "text": "5. CRUD操作詳細仕様（マトリクス＆トランザクション）"
+        },
+        {
+          "level": 3,
+          "text": "5.1. CRUDマトリクス（アクター × 操作権限 × エンティティ）"
+        },
+        {
+          "level": 3,
+          "text": "5.2. Events（イベント本体）CRUD 詳細仕様"
+        },
+        {
+          "level": 4,
+          "text": "【Create】イベント新規作成（課金認可ゲート連携）"
+        },
+        {
+          "level": 4,
+          "text": "【Read】イベント情報の参照（一般公開 vs 主催者一覧）"
+        },
+        {
+          "level": 4,
+          "text": "【Update】イベント情報の変更（排他ロック保護）"
+        },
+        {
+          "level": 4,
+          "text": "【Delete】イベントの削除"
+        },
+        {
+          "level": 4,
+          "text": "【Update】売上按分の設定（主催幹事のみ）"
+        },
+        {
+          "level": 3,
+          "text": "5.3. Participants（出欠・参加者）CRUD 詳細仕様"
+        },
+        {
+          "level": 4,
+          "text": "【Create】未登録出欠登録（Zero-Friction RSVP）"
+        },
+        {
+          "level": 4,
+          "text": "【Read】端末再訪時の出欠自動照会"
+        },
+        {
+          "level": 4,
+          "text": "【Update】出欠回答の変更"
+        },
+        {
+          "level": 3,
+          "text": "5.4. EventLocks（排他編集排他ロック）CRUD 詳細仕様"
+        },
+        {
+          "level": 4,
+          "text": "【Create / Update】排他ロックの取得・再確認"
+        },
+        {
+          "level": 4,
+          "text": "【Update (Takeover)】緊急時の強制引き継ぎ"
+        },
+        {
+          "level": 4,
+          "text": "【Delete】ロックの明示的解放"
+        },
+        {
+          "level": 3,
+          "text": "5.5. アカウント統合（Account Merging / Hydration）トランザクション"
+        },
+        {
+          "level": 3,
+          "text": "5.6. イベント複製（Clone）トランザクション"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/names.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/revenue/lib/allocation.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/event-page/specs/event_page_db_schema_crud.md",
+      "sphinxDoc": "archive/event-page/specs/event_page_db_schema_crud",
+      "format": "markdown",
+      "title": "データベース物理設計・CRUD仕様書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 849,
+      "headings": [
+        {
+          "level": 1,
+          "text": "データベース物理設計・CRUD仕様書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Flyer-Driven Event Page & Frictionless RSVP）"
+        },
+        {
+          "level": 2,
+          "text": "1. 全体アーキテクチャ・設計方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 基本方針"
+        },
+        {
+          "level": 2,
+          "text": "2. ER図（Entity-Relationship Diagram）"
+        },
+        {
+          "level": 2,
+          "text": "3. Prisma スキーマ完全定義 (schema.prisma)"
+        },
+        {
+          "level": 2,
+          "text": "4. テーブル物理設計書"
+        },
+        {
+          "level": 3,
+          "text": "4.1. users（会員テーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.2. user_usage_quotas（利用枠・課金管理テーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.3. flyer_assets（チラシ画像アセットテーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.4. events（イベント本体テーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.4b. event_schedules（開催日時。1〜8件）"
+        },
+        {
+          "level": 3,
+          "text": "4.4c. event_price_plans（費用プラン。1〜8件）"
+        },
+        {
+          "level": 3,
+          "text": "4.5. event_organizers（幹事権限テーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.6. participants（参加者・出欠テーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.7. event_locks（排他編集排他ロックテーブル）"
+        },
+        {
+          "level": 3,
+          "text": "4.8. event_invitations（共同幹事招待テーブル）"
+        },
+        {
+          "level": 2,
+          "text": "5. CRUD操作詳細仕様（マトリクス＆トランザクション）"
+        },
+        {
+          "level": 3,
+          "text": "5.1. Events（イベント本体）CRUD"
+        },
+        {
+          "level": 4,
+          "text": "【Create】イベント新規作成（課金認可チェック連携）"
+        },
+        {
+          "level": 4,
+          "text": "【Read】イベント情報の参照（一般公開用 vs 主催者一覧用）"
+        },
+        {
+          "level": 4,
+          "text": "【Update】イベント情報の変更（排他ロック保護）"
+        },
+        {
+          "level": 4,
+          "text": "【Delete】イベントの削除"
+        },
+        {
+          "level": 3,
+          "text": "5.2. Participants（出欠・参加者）CRUD"
+        },
+        {
+          "level": 4,
+          "text": "【Create】未登録出欠登録（Zero-Friction RSVP）"
+        },
+        {
+          "level": 4,
+          "text": "【Read】端末再訪時の出欠自動照会"
+        },
+        {
+          "level": 4,
+          "text": "【Update】出欠回答の変更"
+        },
+        {
+          "level": 4,
+          "text": "【Delete】出欠の取り消し・キャンセル"
+        },
+        {
+          "level": 3,
+          "text": "5.3. EventLocks（排他編集制御）CRUD"
+        },
+        {
+          "level": 4,
+          "text": "【Create / Update】排他ロックの取得・再確認"
+        },
+        {
+          "level": 4,
+          "text": "【Update (Takeover)】緊急時の強制引き継ぎ"
+        },
+        {
+          "level": 4,
+          "text": "【Delete】ロックの明示的解放"
+        },
+        {
+          "level": 3,
+          "text": "5.4. アカウント統合（Account Merging / Hydration）トランザクション"
+        },
+        {
+          "level": 3,
+          "text": "5.5. イベント複製（Clone）トランザクション"
+        },
+        {
+          "level": 2,
+          "text": "6. インデックス戦略と整合性制約"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/event-page/specs/event_page_frontend_implementation_spec.md",
+      "sphinxDoc": "archive/event-page/specs/event_page_frontend_implementation_spec",
+      "format": "markdown",
+      "title": "フロントエンド画面・コンポーネント実装設計書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 814,
+      "headings": [
+        {
+          "level": 1,
+          "text": "フロントエンド画面・コンポーネント実装設計書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Next.js App Router / React / Tailwind CSS）"
+        },
+        {
+          "level": 2,
+          "text": "1. 全体アーキテクチャ・設計方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 4大設計原則"
+        },
+        {
+          "level": 2,
+          "text": "2. 画面ルーティング＆画面遷移図（Mermaid）"
+        },
+        {
+          "level": 3,
+          "text": "2.1. ルーティングテーブル"
+        },
+        {
+          "level": 3,
+          "text": "2.2. 全体画面遷移シーケンス図（Mermaid）"
+        },
+        {
+          "level": 2,
+          "text": "3. コンポーネント階層ツリー＆ディレクトリ構成"
+        },
+        {
+          "level": 2,
+          "text": "4. 主要UIコンポーネント詳細実装（React / Tailwind CSS）"
+        },
+        {
+          "level": 3,
+          "text": "4.1. PosterHero.tsx（ポスター埋め込み型FV・LQIPブラー・Peek UI）"
+        },
+        {
+          "level": 3,
+          "text": "4.2. EventMetaCard.tsx（基本7項目の実用アクション表示）"
+        },
+        {
+          "level": 3,
+          "text": "4.3. DynamicRsvpBox.tsx（未登録出欠フォーム 兼 再訪自動照会）"
+        },
+        {
+          "level": 3,
+          "text": "4.4. LockConflictModal.tsx（他幹事編集中ブロッカー＆強制引き継ぎ）"
+        },
+        {
+          "level": 3,
+          "text": "4.5. PricingModal.tsx（SCR-MOD-01: 課金プラン選択モーダル）"
+        },
+        {
+          "level": 2,
+          "text": "5. カスタムフック詳細実装（React Hooks）"
+        },
+        {
+          "level": 3,
+          "text": "5.1. useEditLock.ts（排他ロック・再確認・Takeover管理）"
+        },
+        {
+          "level": 3,
+          "text": "5.2. useRsvp.ts（出欠登録・Cookie照会・楽観的更新）"
+        },
+        {
+          "level": 2,
+          "text": "6. アクセシビリティ・レスポンシブ・パフォーマンス設計"
+        },
+        {
+          "level": 3,
+          "text": "6.1. Thumb Zone（親指操作領域）最適化"
+        },
+        {
+          "level": 3,
+          "text": "6.2. Core Web Vitals（LCP 1.5秒以内）担保"
+        },
+        {
+          "level": 2,
+          "text": "7. フロントエンド検証マトリクス＆テスト計画表"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/event-page/specs/event_page_planning_requirements.md",
+      "sphinxDoc": "archive/event-page/specs/event_page_planning_requirements",
+      "format": "markdown",
+      "title": "機能別企画要件定義書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 187,
+      "headings": [
+        {
+          "level": 1,
+          "text": "機能別企画要件定義書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介・告知ページ生成＆出欠管理基盤（Flyer-Driven Event Page & Frictionless RSVP）"
+        },
+        {
+          "level": 2,
+          "text": "1. 目的と位置づけ（階層構造）"
+        },
+        {
+          "level": 2,
+          "text": "2. 企画要件コア5項目"
+        },
+        {
+          "level": 3,
+          "text": "2.1. ターゲットの解像度と現状の代替手段"
+        },
+        {
+          "level": 4,
+          "text": "ペルソナA（イベント主催者／個人店舗オーナー・コミュニティ幹事）"
+        },
+        {
+          "level": 4,
+          "text": "ペルソナB（参加者）"
+        },
+        {
+          "level": 4,
+          "text": "現状の代替手段（As-Is）とペインポイント"
+        },
+        {
+          "level": 3,
+          "text": "2.2. 独自の提供価値（Core Value Proposition）"
+        },
+        {
+          "level": 4,
+          "text": "1. チラシ主導型ファーストビュー（Flyer-First Visual Experience）"
+        },
+        {
+          "level": 4,
+          "text": "2. FVから直結する極小摩擦の出欠登録（Zero-Friction Sticky RSVP）"
+        },
+        {
+          "level": 4,
+          "text": "3. 主催者ダッシュボード（イベント一覧＆リアルタイム出欠集計）"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 成功指標（KPI / ガードレール指標）"
+        },
+        {
+          "level": 3,
+          "text": "2.4. メディア・データ連携コスト＆境界設計"
+        },
+        {
+          "level": 4,
+          "text": "チラシ生成機能との疎結合アーキテクチャ"
+        },
+        {
+          "level": 4,
+          "text": "画像最適化配信とインフラ原価抑止"
+        },
+        {
+          "level": 4,
+          "text": "課金決済基盤との認可ゲート"
+        },
+        {
+          "level": 3,
+          "text": "2.5. やらないことリスト（Non-Goals）"
+        },
+        {
+          "level": 2,
+          "text": "3. 想定される3つの自己反証と構造的批判"
+        },
+        {
+          "level": 3,
+          "text": "批判1: チラシ画像による「出欠アクション（CTA）」のスクロール埋没リスク（The Below-the-Fold Friction）"
+        },
+        {
+          "level": 3,
+          "text": "批判2: 高解像度AI生成画像による表示速度低下と初期離脱（The LCP Penalty）"
+        },
+        {
+          "level": 3,
+          "text": "批判3: チラシ内の文字とWebテキスト情報の重複による認知的ノイズ（The Visual Redundancy Paradox）"
+        },
+        {
+          "level": 2,
+          "text": "4. 【参考】難易度順の参照フレームワーク"
+        },
+        {
+          "level": 2,
+          "text": "5. 次工程（要件定義書）に向けた確認・ヒアリング事項"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/event-page/specs/event_page_system_requirements.md",
+      "sphinxDoc": "archive/event-page/specs/event_page_system_requirements",
+      "format": "markdown",
+      "title": "システム要件定義書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 702,
+      "headings": [
+        {
+          "level": 1,
+          "text": "システム要件定義書"
+        },
+        {
+          "level": 2,
+          "text": "チラシファースト型 イベント紹介・告知ページ生成＆出欠管理基盤"
+        },
+        {
+          "level": 3,
+          "text": "（Flyer-Embedded Event Page & Frictionless RSVP System Requirements）"
+        },
+        {
+          "level": 2,
+          "text": "1. システム概要とアーキテクチャ境界"
+        },
+        {
+          "level": 3,
+          "text": "1.1. システムの位置づけ"
+        },
+        {
+          "level": 3,
+          "text": "1.2. コア設計方針"
+        },
+        {
+          "level": 2,
+          "text": "2. 機能要件（Functional Requirements）"
+        },
+        {
+          "level": 3,
+          "text": "2.1. イベント作成・編集機能（FR-CREATE / FR-EDIT）"
+        },
+        {
+          "level": 3,
+          "text": "2.2. 主催者イベント一覧ダッシュボード（FR-DASHBOARD）"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 一般公開のイベント告知ページ（FR-PUBLIC-PAGE）"
+        },
+        {
+          "level": 3,
+          "text": "2.4. 参加者 出欠管理機能（FR-RSVP）"
+        },
+        {
+          "level": 2,
+          "text": "3. 非機能要件（Non-Functional Requirements）"
+        },
+        {
+          "level": 2,
+          "text": "4. 画面一覧（Screen Catalog）"
+        },
+        {
+          "level": 3,
+          "text": "4.1. 画面一覧マトリクス"
+        },
+        {
+          "level": 3,
+          "text": "4.2. 各画面の機能・レイアウト詳細仕様"
+        },
+        {
+          "level": 4,
+          "text": "① SCR-PUB-01: 一般公開イベント告知ページ 兼 出欠登録画面"
+        },
+        {
+          "level": 4,
+          "text": "② SCR-ORG-01: 主催者イベント一覧ダッシュボード"
+        },
+        {
+          "level": 4,
+          "text": "③ SCR-ORG-02 & SCR-ORG-03: 新規イベント作成画面 & チラシ選択モーダル"
+        },
+        {
+          "level": 4,
+          "text": "④ SCR-MOD-01: 課金・プラン選択モーダル"
+        },
+        {
+          "level": 2,
+          "text": "5. 画面遷移設計（UI & Screen Flow）"
+        },
+        {
+          "level": 3,
+          "text": "5.1. 主催者画面フロー（Organizer Flow）"
+        },
+        {
+          "level": 3,
+          "text": "5.2. 参加者画面フロー（Participant Flow）"
+        },
+        {
+          "level": 3,
+          "text": "5.3. 公開告知ページ（SCR-PUB-01）のワイヤーフレームレイアウト"
+        },
+        {
+          "level": 2,
+          "text": "6. データモデル設計（Data Schema）"
+        },
+        {
+          "level": 3,
+          "text": "6.1. Prisma スキーマ定義"
+        },
+        {
+          "level": 2,
+          "text": "7. API境界・インターフェース仕様（API Boundary）"
+        },
+        {
+          "level": 3,
+          "text": "7.1. 課金認可ゲート インターフェース（外部呼び出し契約）"
+        },
+        {
+          "level": 3,
+          "text": "7.2. エンドポイント一覧"
+        },
+        {
+          "level": 3,
+          "text": "7.3. 主要APIスキーマ詳細"
+        },
+        {
+          "level": 4,
+          "text": "① イベント新規作成: POST /api/v1/public/events"
+        },
+        {
+          "level": 5,
+          "text": "Request Body (JSON)"
+        },
+        {
+          "level": 5,
+          "text": "Response (201 Created)"
+        },
+        {
+          "level": 5,
+          "text": "Error Response (402 Payment Required: 無料枠枯渇時)"
+        },
+        {
+          "level": 4,
+          "text": "② 主催者イベント一覧取得: GET /api/v1/organizer/events"
+        },
+        {
+          "level": 5,
+          "text": "Response (200 OK)"
+        },
+        {
+          "level": 4,
+          "text": "③ 公開告知ページ取得: GET /api/v1/public/events/:id"
+        },
+        {
+          "level": 5,
+          "text": "Response (200 OK)"
+        },
+        {
+          "level": 4,
+          "text": "④ 一般出欠登録・更新: POST /api/v1/public/events/:id/rsvp"
+        },
+        {
+          "level": 5,
+          "text": "Request Body (JSON)"
+        },
+        {
+          "level": 5,
+          "text": "Response (200 OK)"
+        },
+        {
+          "level": 4,
+          "text": "⑤ 自身の出欠再訪照会: GET /api/v1/public/events/:id/rsvp/me"
+        },
+        {
+          "level": 5,
+          "text": "Response (200 OK: 登録済みの場合)"
+        },
+        {
+          "level": 4,
+          "text": "⑥ 主催者向け参加者一覧閲覧: GET /api/v1/organizer/events/:id/participants"
+        },
+        {
+          "level": 5,
+          "text": "Response (200 OK)"
+        },
+        {
+          "level": 2,
+          "text": "8. 【参考】難易度順の参照フレームワーク"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/index.rst",
+      "sphinxDoc": "archive/index",
+      "format": "rst",
+      "title": "アーカイブ（実装前の設計）",
+      "summary": "この章は、実装に入る前に書いた企画要件・システム要件・詳細設計を、履歴として残したものです。 現在の正ではありません。 実装と食い違う箇所があり、直す予定もありません。",
+      "preImplementation": false,
+      "lineCount": 55,
+      "headings": [
+        {
+          "level": 1,
+          "text": "アーカイブ（実装前の設計）"
+        }
+      ],
+      "toctree": [
+        "docs/archive/user-management/index.rst",
+        "docs/archive/event-page/specs/event_page_planning_requirements.md",
+        "docs/archive/event-page/specs/event_page_system_requirements.md",
+        "docs/archive/event-page/specs/event_page_data_model_and_crud.md",
+        "docs/archive/event-page/specs/event_page_db_schema_crud.md",
+        "docs/archive/event-page/specs/backend_api_implementation_spec.md",
+        "docs/archive/event-page/specs/event_page_frontend_implementation_spec.md"
+      ],
+      "codePaths": [
+        {
+          "path": "docs/doc-index.json",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src",
+          "exists": true
+        },
+        {
+          "path": "src/app",
+          "exists": true
+        },
+        {
+          "path": "src/app/api",
+          "exists": true
+        },
+        {
+          "path": "src/app/events/[id]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/backend_api_implementation_spec.md",
+      "sphinxDoc": "archive/user-management/backend_api_implementation_spec",
+      "format": "markdown",
+      "title": "バックエンドAPI実装仕様・サーバーコード設計書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 1002,
+      "headings": [
+        {
+          "level": 1,
+          "text": "バックエンドAPI実装仕様・サーバーコード設計書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Next.js App Router / Prisma / TypeScript）"
+        },
+        {
+          "level": 2,
+          "text": "1. サーバーアーキテクチャ・ディレクトリ構造"
+        },
+        {
+          "level": 2,
+          "text": "2. 共通基盤モジュール実装"
+        },
+        {
+          "level": 3,
+          "text": "2.1. 暗号・トークンユーティリティ (src/lib/crypto.ts)"
+        },
+        {
+          "level": 3,
+          "text": "2.2. RFC 7807 準拠エラーハンドラー (src/lib/response.ts)"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 認可・ロック検証ガード (src/lib/guards.ts)"
+        },
+        {
+          "level": 2,
+          "text": "3. エンドポイント実装コード"
+        },
+        {
+          "level": 3,
+          "text": "3.1. イベント新規作成 (POST /api/v1/public/events)"
+        },
+        {
+          "level": 3,
+          "text": "3.2. ゼロフリクション出欠登録・照会API"
+        },
+        {
+          "level": 4,
+          "text": "出欠登録 (POST /api/v1/public/events/[id]/rsvp)"
+        },
+        {
+          "level": 4,
+          "text": "端末自動照会・変更 (GET & PUT /api/v1/public/events/[id]/my-rsvp)"
+        },
+        {
+          "level": 3,
+          "text": "3.3. 幹事専用・参加者一覧取得API (GET /api/v1/organizer/events/[id]/participants)"
+        },
+        {
+          "level": 3,
+          "text": "3.4. 排他リースロック制御API"
+        },
+        {
+          "level": 4,
+          "text": "ロック取得・ハートビート・解放 (src/app/api/v1/organizer/events/[id]/lock/route.ts)"
+        },
+        {
+          "level": 4,
+          "text": "ロック強制引き継ぎ (POST /api/v1/organizer/events/[id]/lock/takeover)"
+        },
+        {
+          "level": 3,
+          "text": "3.5. ロック保護付きイベント更新API (PUT /api/v1/organizer/events/[id])"
+        },
+        {
+          "level": 3,
+          "text": "3.6. 会員マイページ・アカウント統合（Hydration）＆ワンクリック複製API"
+        },
+        {
+          "level": 4,
+          "text": "アカウント統合 (POST /api/v1/member/hydrate)"
+        },
+        {
+          "level": 4,
+          "text": "イベントワンクリック複製 (POST /api/v1/member/organized-events/[id]/clone)"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/member/hydrate/route.ts",
+          "exists": false
+        },
+        {
+          "path": "src/app/api/v1/member/organized-events/[id]/clone/route.ts",
+          "exists": false
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/lock/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/lock/takeover/route.ts",
+          "exists": false
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/participants/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/public/events/[id]/my-rsvp/route.ts",
+          "exists": false
+        },
+        {
+          "path": "src/app/api/v1/public/events/[id]/rsvp/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/public/events/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/crypto.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/guards.ts",
+          "exists": false
+        },
+        {
+          "path": "src/lib/response.ts",
+          "exists": false
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/DBschema.md",
+      "sphinxDoc": "archive/user-management/DBschema",
+      "format": "markdown",
+      "title": "データベース物理設計・スキーマ定義書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 599,
+      "headings": [
+        {
+          "level": 1,
+          "text": "データベース物理設計・スキーマ定義書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（PostgreSQL / Prisma 対応）"
+        },
+        {
+          "level": 2,
+          "text": "1. 概要と物理設計方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 採用技術・設計方針"
+        },
+        {
+          "level": 2,
+          "text": "2. エンティティ関連図（ERD）"
+        },
+        {
+          "level": 2,
+          "text": "3. テーブル定義詳細（DDL）"
+        },
+        {
+          "level": 3,
+          "text": "3.1. DDLスクリプト（PostgreSQL準拠）"
+        },
+        {
+          "level": 2,
+          "text": "4. インデックス設計とクエリ最適化"
+        },
+        {
+          "level": 2,
+          "text": "5. Prisma ORM スキーマ定義 (schema.prisma)"
+        },
+        {
+          "level": 2,
+          "text": "6. 主要トランザクション・整合性クエリ設計"
+        },
+        {
+          "level": 3,
+          "text": "6.1. 排他的リースロック制御（同時編集不可・引き継ぎ）"
+        },
+        {
+          "level": 4,
+          "text": "A. ロックの獲得試行（新規または期限切れ上書き）"
+        },
+        {
+          "level": 4,
+          "text": "B. ハートビート（ロック延長）"
+        },
+        {
+          "level": 4,
+          "text": "C. 強制引き継ぎ（Force Takeover）"
+        },
+        {
+          "level": 3,
+          "text": "6.2. アカウント昇格（Account Hydration: ゲスト履歴の統合）"
+        },
+        {
+          "level": 3,
+          "text": "6.3. イベント複製（ワンクリックClone）"
+        },
+        {
+          "level": 2,
+          "text": "7. アカウント自己管理・退会（追加マイグレーション）"
+        },
+        {
+          "level": 3,
+          "text": "7.1. 追加する列と表"
+        },
+        {
+          "level": 3,
+          "text": "7.2. Prisma モデル（抜粋）"
+        },
+        {
+          "level": 3,
+          "text": "7.3. 退会と復帰の整合性"
+        },
+        {
+          "level": 3,
+          "text": "7.4. インデックスの追加"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/detailed_design_spec.md",
+      "sphinxDoc": "archive/user-management/detailed_design_spec",
+      "format": "markdown",
+      "title": "API設計・実装仕様書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 616,
+      "headings": [
+        {
+          "level": 1,
+          "text": "API設計・実装仕様書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（RESTful / TypeScript準拠）"
+        },
+        {
+          "level": 2,
+          "text": "1. 共通アーキテクチャ・設計規約"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 通信プロトコル・Base URL"
+        },
+        {
+          "level": 3,
+          "text": "1.2. 認証・認可方式（ハイブリッド・ケイパビリティ認証）"
+        },
+        {
+          "level": 3,
+          "text": "1.3. エラーレスポンス規約 (RFC 7807 準拠)"
+        },
+        {
+          "level": 2,
+          "text": "2. エンドポイント一覧（API Summary）"
+        },
+        {
+          "level": 2,
+          "text": "3. 詳細API仕様書"
+        },
+        {
+          "level": 3,
+          "text": "3.1. 公開・参加者向けAPI"
+        },
+        {
+          "level": 4,
+          "text": "GET /api/v1/public/events/:id"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/public/events/:id/rsvp"
+        },
+        {
+          "level": 4,
+          "text": "GET /api/v1/public/events/:id/my-rsvp"
+        },
+        {
+          "level": 4,
+          "text": "PUT /api/v1/public/events/:id/my-rsvp"
+        },
+        {
+          "level": 3,
+          "text": "3.2. イベント作成API"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/public/events"
+        },
+        {
+          "level": 3,
+          "text": "3.3. 幹事専用・管理API"
+        },
+        {
+          "level": 4,
+          "text": "GET /api/v1/organizer/events/:id/participants"
+        },
+        {
+          "level": 4,
+          "text": "PUT /api/v1/organizer/events/:id"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/organizer/events/:id/invite"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/organizer/events/join-by-invite"
+        },
+        {
+          "level": 3,
+          "text": "3.4. 排他リースロックAPI（同時編集不可）"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/organizer/events/:id/lock"
+        },
+        {
+          "level": 4,
+          "text": "PUT /api/v1/organizer/events/:id/lock"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/organizer/events/:id/lock/takeover"
+        },
+        {
+          "level": 4,
+          "text": "DELETE /api/v1/organizer/events/:id/lock"
+        },
+        {
+          "level": 3,
+          "text": "3.5. 会員・マイページAPI"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/member/hydrate"
+        },
+        {
+          "level": 4,
+          "text": "GET /api/v1/member/organized-events"
+        },
+        {
+          "level": 4,
+          "text": "POST /api/v1/member/organized-events/:id/clone"
+        },
+        {
+          "level": 4,
+          "text": "GET /api/v1/member/attended-events"
+        },
+        {
+          "level": 2,
+          "text": "4. ミドルウェア・ガード実装仕様"
+        },
+        {
+          "level": 3,
+          "text": "4.1. トークンハッシュ化ユーティリティ (hashUtils.ts)"
+        },
+        {
+          "level": 3,
+          "text": "4.2. 幹事認可ガード (assertOrganizerGuard)"
+        },
+        {
+          "level": 3,
+          "text": "4.3. 排他ロック検証ガード (assertLockGuard)"
+        },
+        {
+          "level": 2,
+          "text": "5. 実装プロンプト用指示テンプレート（AI自動実装用）"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/front_implementation_spec.md",
+      "sphinxDoc": "archive/user-management/front_implementation_spec",
+      "format": "markdown",
+      "title": "フロントエンド画面・コンポーネント実装設計書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 812,
+      "headings": [
+        {
+          "level": 1,
+          "text": "フロントエンド画面・コンポーネント実装設計書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（React / Next.js App Router / Tailwind CSS）"
+        },
+        {
+          "level": 2,
+          "text": "1. フロントエンド全体アーキテクチャ方針"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 技術スタック・選定基準"
+        },
+        {
+          "level": 3,
+          "text": "1.2. 画面一覧・ルーティング規約"
+        },
+        {
+          "level": 2,
+          "text": "2. 画面遷移図（Screen Transition Diagrams）"
+        },
+        {
+          "level": 3,
+          "text": "2.1. 全体画面遷移俯瞰マップ"
+        },
+        {
+          "level": 3,
+          "text": "2.2. アクター別詳細遷移フロー"
+        },
+        {
+          "level": 4,
+          "text": "A. 参加者（ゲスト参加者）の遷移"
+        },
+        {
+          "level": 4,
+          "text": "B. 幹事（主催者）の作成・共同管理・複製遷移"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 排他リースロックの画面状態遷移（State Machine）"
+        },
+        {
+          "level": 2,
+          "text": "3. 状態管理＆カスタムフック設計"
+        },
+        {
+          "level": 3,
+          "text": "3.1. 排他リースロック制御フック (useEditLock)"
+        },
+        {
+          "level": 4,
+          "text": "TypeScriptインターフェース定義"
+        },
+        {
+          "level": 3,
+          "text": "3.2. ゲスト端末トークン永続化フック (useGuestTokens)"
+        },
+        {
+          "level": 2,
+          "text": "4. 画面別UI・コンポーネント詳細設計"
+        },
+        {
+          "level": 3,
+          "text": "4.1. イベント公開・出欠画面 (/events/[id])"
+        },
+        {
+          "level": 4,
+          "text": "コンポーネントツリー"
+        },
+        {
+          "level": 4,
+          "text": "状態遷移フロー"
+        },
+        {
+          "level": 3,
+          "text": "4.2. 幹事管理ダッシュボード (/manage/events/[id])"
+        },
+        {
+          "level": 4,
+          "text": "コンポーネントツリー"
+        },
+        {
+          "level": 4,
+          "text": "主なコンポーネント責務"
+        },
+        {
+          "level": 3,
+          "text": "4.3. イベント編集画面・排他リースロック (/manage/events/[id]/edit)"
+        },
+        {
+          "level": 4,
+          "text": "コンポーネントツリー"
+        },
+        {
+          "level": 4,
+          "text": "排他制御のUI動作仕様"
+        },
+        {
+          "level": 3,
+          "text": "4.4. 会員マイページ (/mypage)"
+        },
+        {
+          "level": 4,
+          "text": "コンポーネントツリー"
+        },
+        {
+          "level": 4,
+          "text": "ワンクリック複製のUI仕様"
+        },
+        {
+          "level": 2,
+          "text": "5. 主要コンポーネント＆カスタムフック実装コード"
+        },
+        {
+          "level": 3,
+          "text": "5.1. 排他ロック制御フック (hooks/useEditLock.ts)"
+        },
+        {
+          "level": 3,
+          "text": "5.2. ゼロフリクション出欠登録コンポーネント (components/rsvp/DynamicRsvpBox.tsx)"
+        },
+        {
+          "level": 3,
+          "text": "5.3. 排他編集ブロッカーモーダル (components/organizer/LockConflictModal.tsx)"
+        },
+        {
+          "level": 2,
+          "text": "6. UI動作確認・シナリオテスト計画"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/index.rst",
+      "sphinxDoc": "archive/user-management/index",
+      "format": "rst",
+      "title": "イベントユーザー登録管理",
+      "summary": "> 実装前の設計文書です。 現在の正は src/modules/auth/ と src/app/api/v1/auth/ のコード、手順は ../../local です。",
+      "preImplementation": true,
+      "lineCount": 19,
+      "headings": [
+        {
+          "level": 1,
+          "text": "イベントユーザー登録管理"
+        }
+      ],
+      "toctree": [
+        "docs/archive/user-management/planning_requirements.md",
+        "docs/archive/user-management/system_requirements.md",
+        "docs/archive/user-management/DBschema.md",
+        "docs/archive/user-management/detailed_design_spec.md",
+        "docs/archive/user-management/backend_api_implementation_spec.md",
+        "docs/archive/user-management/front_implementation_spec.md",
+        "docs/archive/user-management/local_development_setup.md",
+        "docs/archive/user-management/local_environment.md"
+      ],
+      "codePaths": [
+        {
+          "path": "src/app/api/v1/auth",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/local_development_setup.md",
+      "sphinxDoc": "archive/user-management/local_development_setup",
+      "format": "markdown",
+      "title": "ローカル開発環境構築・自動セットアップ仕様書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。現在の手順は [local.rst](../../local.rst) にあります。",
+      "preImplementation": true,
+      "lineCount": 200,
+      "headings": [
+        {
+          "level": 1,
+          "text": "ローカル開発環境構築・自動セットアップ仕様書"
+        },
+        {
+          "level": 2,
+          "text": "外部サービス完全非依存・コンテナ＋ローカル実行構成"
+        },
+        {
+          "level": 2,
+          "text": "1. 環境構築の全体概要"
+        },
+        {
+          "level": 2,
+          "text": "2. 前提要件（Prerequisites）"
+        },
+        {
+          "level": 2,
+          "text": "3. 設定ファイル構成（Root配置資材）"
+        },
+        {
+          "level": 3,
+          "text": "3.1. docker-compose.yml（ローカルDB定義）"
+        },
+        {
+          "level": 3,
+          "text": "3.2. .env.example（環境変数テンプレート）"
+        },
+        {
+          "level": 1,
+          "text": "=========================================="
+        },
+        {
+          "level": 1,
+          "text": "ローカル開発環境変数（本番利用禁止）"
+        },
+        {
+          "level": 1,
+          "text": "=========================================="
+        },
+        {
+          "level": 1,
+          "text": "PostgreSQL 接続文字列 (Dockerコンテナ)"
+        },
+        {
+          "level": 1,
+          "text": "ローカルJWT秘密鍵 (HS256 / 32文字以上のランダム文字列)"
+        },
+        {
+          "level": 1,
+          "text": "ゲスト幹事トークン・照会トークンのハッシュ用ソルト"
+        },
+        {
+          "level": 1,
+          "text": "アプリケーションベースURL"
+        },
+        {
+          "level": 1,
+          "text": "Node環境"
+        },
+        {
+          "level": 3,
+          "text": "3.3. package.json（依存パッケージ定義）"
+        },
+        {
+          "level": 3,
+          "text": "3.4. setup.sh（自動セットアップ・ワンショットスクリプト）"
+        },
+        {
+          "level": 2,
+          "text": "4. AIコーディングツールへの指示プロンプト（Cursor / Claude Code 用）"
+        },
+        {
+          "level": 2,
+          "text": "5. トラブルシューティング（AI・開発者共通）"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/local_environment.md",
+      "sphinxDoc": "archive/user-management/local_environment",
+      "format": "markdown",
+      "title": "ローカル環境の起動と停止",
+      "summary": "> 実装前の設計文書です。 現在の正は src/ のコードと [local.rst](../../local.rst) の手順です。URL は当時の localhost:3000 のままで、現在は 3012 です。",
+      "preImplementation": true,
+      "lineCount": 126,
+      "headings": [
+        {
+          "level": 1,
+          "text": "ローカル環境の起動と停止"
+        },
+        {
+          "level": 2,
+          "text": "PostgreSQL を起動する"
+        },
+        {
+          "level": 2,
+          "text": "PostgreSQL を確認する"
+        },
+        {
+          "level": 2,
+          "text": "アプリを起動する"
+        },
+        {
+          "level": 2,
+          "text": "アプリを確認する"
+        },
+        {
+          "level": 2,
+          "text": "アプリを停止する"
+        },
+        {
+          "level": 2,
+          "text": "PostgreSQL を停止する"
+        },
+        {
+          "level": 2,
+          "text": "起動と停止の順"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/planning_requirements.md",
+      "sphinxDoc": "archive/user-management/planning_requirements",
+      "format": "markdown",
+      "title": "プロジェクト企画要件定義書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 154,
+      "headings": [
+        {
+          "level": 1,
+          "text": "プロジェクト企画要件定義書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Progressive Membership & Lean RBAC）"
+        },
+        {
+          "level": 2,
+          "text": "1. 目的と位置づけ（階層構造）"
+        },
+        {
+          "level": 2,
+          "text": "2. 企画要件コア5項目"
+        },
+        {
+          "level": 3,
+          "text": "2.1. ターゲットの解像度と現状の代替手段"
+        },
+        {
+          "level": 4,
+          "text": "ペルソナと行動コンテキスト"
+        },
+        {
+          "level": 4,
+          "text": "現状の代替手段（As-Is）と課題"
+        },
+        {
+          "level": 3,
+          "text": "2.2. 独自の提供価値（Core Value Proposition）"
+        },
+        {
+          "level": 4,
+          "text": "1. 段階的アイデンティティ（Progressive Identity / Zero-Friction RSVP）"
+        },
+        {
+          "level": 4,
+          "text": "2. 軽量かつ堅牢な幹事ガバナンス（Lean Co-Organizing & Concurrency Safety）"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 成功指標（KPI / ガードレール指標）"
+        },
+        {
+          "level": 3,
+          "text": "2.4. 認証・データ保持のコスト＆ライフサイクル設計"
+        },
+        {
+          "level": 4,
+          "text": "ユーザー状態の二層構造と保持ポリシー"
+        },
+        {
+          "level": 3,
+          "text": "2.5. やらないことリスト（Non-Goals）"
+        },
+        {
+          "level": 2,
+          "text": "3. 想定される3つの自己反証と構造的批判"
+        },
+        {
+          "level": 3,
+          "text": "批判1: ケイパビリティURL紛失と他者なりすまし改ざん（Identity Hijacking vs. Zero-Friction）"
+        },
+        {
+          "level": 3,
+          "text": "批判2: 排他編集ロックの放置によるワークフロー死滅（The Abandoned Lock Risk）"
+        },
+        {
+          "level": 3,
+          "text": "批判3: 会員化インセンティブの希薄化トラップ（The Frictionless Utility Trap）"
+        },
+        {
+          "level": 2,
+          "text": "4. 難易度順の参照フレームワーク"
+        },
+        {
+          "level": 2,
+          "text": "5. 次工程（要件定義書）に向けた確認・ヒアリング事項"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
+    {
+      "path": "docs/archive/user-management/system_requirements.md",
+      "sphinxDoc": "archive/user-management/system_requirements",
+      "format": "markdown",
+      "title": "システム要件定義書",
+      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
+      "preImplementation": true,
+      "lineCount": 297,
+      "headings": [
+        {
+          "level": 1,
+          "text": "システム要件定義書"
+        },
+        {
+          "level": 2,
+          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Progressive Membership & Lean RBAC）"
+        },
+        {
+          "level": 2,
+          "text": "1. システム概要と認可マトリクス"
+        },
+        {
+          "level": 3,
+          "text": "1.1. システムの位置づけ"
+        },
+        {
+          "level": 3,
+          "text": "1.2. アクター定義"
+        },
+        {
+          "level": 3,
+          "text": "1.3. 権限マトリクス（Role-Based Access Control）"
+        },
+        {
+          "level": 2,
+          "text": "2. 画面遷移とユーザーフロー"
+        },
+        {
+          "level": 3,
+          "text": "2.1. イベント作成・プログレッシブ幹事登録フロー"
+        },
+        {
+          "level": 3,
+          "text": "2.2. ゼロフリクション参加＆自端末照会フロー"
+        },
+        {
+          "level": 3,
+          "text": "2.3. 悲観的リースロック（同時編集不可・引き継ぎ）フロー"
+        },
+        {
+          "level": 2,
+          "text": "3. 機能要件詳細（Functional Requirements）"
+        },
+        {
+          "level": 3,
+          "text": "FR-01: イベント作成とプログレッシブ幹事登録"
+        },
+        {
+          "level": 3,
+          "text": "FR-02: ゲスト参加登録と端末自動照会（連絡先入力なし）"
+        },
+        {
+          "level": 3,
+          "text": "FR-03: 参加者一覧の厳格な秘匿制御"
+        },
+        {
+          "level": 3,
+          "text": "FR-04: 共同幹事の招待方式"
+        },
+        {
+          "level": 3,
+          "text": "FR-05: 悲観的リースロック（同時編集不可・引き継ぎUX）"
+        },
+        {
+          "level": 3,
+          "text": "FR-06: 過去イベント一覧とワンクリック複製"
+        },
+        {
+          "level": 3,
+          "text": "FR-07: 会員登録とアカウント昇格（Account Hydration）"
+        },
+        {
+          "level": 2,
+          "text": "4. 非機能要件（Non-Functional Requirements）"
+        },
+        {
+          "level": 3,
+          "text": "4.1. セキュリティ要件"
+        },
+        {
+          "level": 3,
+          "text": "4.2. データ整合性と可用性"
+        },
+        {
+          "level": 2,
+          "text": "5. 論理データモデル（ER定義）"
+        },
+        {
+          "level": 3,
+          "text": "5.1. エンティティ関連図（Conceptual ERD）"
+        },
+        {
+          "level": 3,
+          "text": "5.2. スキーマ定義"
+        },
+        {
+          "level": 4,
+          "text": "Users（会員マスター）"
+        },
+        {
+          "level": 4,
+          "text": "Events（イベント）"
+        },
+        {
+          "level": 4,
+          "text": "EventOrganizers（幹事・共同幹事紐付け）"
+        },
+        {
+          "level": 4,
+          "text": "Participants（出欠登録レコード）"
+        },
+        {
+          "level": 4,
+          "text": "EditLocks（排他的リースロック）"
+        },
+        {
+          "level": 2,
+          "text": "6. APIインターフェース仕様（REST/JSON）"
+        },
+        {
+          "level": 3,
+          "text": "6.1. 公開・参加者向けエンドポイント"
+        },
+        {
+          "level": 3,
+          "text": "6.2. 幹事専用エンドポイント"
+        },
+        {
+          "level": 3,
+          "text": "6.3. 会員・マイページエンドポイント"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/overall_system_requirements_common.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/archive/user-management/index.rst"
+      ]
+    },
     {
       "path": "docs/backend_api_implementation_spec.md",
       "sphinxDoc": "backend_api_implementation_spec",
@@ -865,6 +2881,87 @@
       ]
     },
     {
+      "path": "docs/deploy.rst",
+      "sphinxDoc": "deploy",
+      "format": "rst",
+      "title": "本番デプロイ",
+      "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
+      "preImplementation": false,
+      "lineCount": 440,
+      "headings": [
+        {
+          "level": 1,
+          "text": "本番デプロイ"
+        },
+        {
+          "level": 2,
+          "text": "0. 前提"
+        },
+        {
+          "level": 2,
+          "text": "1. Neon に DB を作る"
+        },
+        {
+          "level": 2,
+          "text": "2. Fly.io にアプリを 2 つ作る"
+        },
+        {
+          "level": 3,
+          "text": "2.1 flyer を先に作る"
+        },
+        {
+          "level": 3,
+          "text": "2.2 web を作る"
+        },
+        {
+          "level": 2,
+          "text": "3. Cloudflare を向ける"
+        },
+        {
+          "level": 2,
+          "text": "4. Stripe を本番に向ける"
+        },
+        {
+          "level": 2,
+          "text": "5. デプロイ後の確認"
+        },
+        {
+          "level": 2,
+          "text": "6. 更新と切り戻し"
+        },
+        {
+          "level": 2,
+          "text": "7. いまの制約"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/cookies.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limits.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/flyer.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/upload-limit.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
       "path": "docs/detailed_design_spec.md",
       "sphinxDoc": "detailed_design_spec",
       "format": "markdown",
@@ -975,7 +3072,7 @@
       "title": "イベント紹介ページ生成・出欠管理",
       "summary": "チラシファースト型のイベント紹介ページと出欠管理について、ローカル環境の操作手順と仕様書をまとめています。",
       "preImplementation": false,
-      "lineCount": 22,
+      "lineCount": 14,
       "headings": [
         {
           "level": 1,
@@ -983,15 +3080,18 @@
         }
       ],
       "toctree": [
-        "docs/event-page/local-operations.md",
-        "docs/event-page/specs/event_page_planning_requirements.md",
-        "docs/event-page/specs/event_page_system_requirements.md",
-        "docs/event-page/specs/event_page_data_model_and_crud.md",
-        "docs/event-page/specs/event_page_db_schema_crud.md",
-        "docs/event-page/specs/backend_api_implementation_spec.md",
-        "docs/event-page/specs/event_page_frontend_implementation_spec.md"
+        "docs/event-page/local-operations.md"
       ],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "src/app",
+          "exists": true
+        },
+        {
+          "path": "src/app/api",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/index.rst"
       ]
@@ -1066,956 +3166,6 @@
       "codePaths": [
         {
           "path": "docs/requirements.txt",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/backend_api_implementation_spec.md",
-      "sphinxDoc": "event-page/specs/backend_api_implementation_spec",
-      "format": "markdown",
-      "title": "バックエンドAPI実装仕様書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 734,
-      "headings": [
-        {
-          "level": 1,
-          "text": "バックエンドAPI実装仕様書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Next.js App Router & PostgreSQL）"
-        },
-        {
-          "level": 2,
-          "text": "1. 全体アーキテクチャ・設計方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 基本方針"
-        },
-        {
-          "level": 2,
-          "text": "2. エンドポイント一覧カタログ"
-        },
-        {
-          "level": 2,
-          "text": "3. 主要処理シーケンス図（Mermaid）"
-        },
-        {
-          "level": 3,
-          "text": "3.1. イベント作成＆課金認可ゲート（canCreateEvent）"
-        },
-        {
-          "level": 3,
-          "text": "3.2. 参加者：登録ゼロ出欠登録＆Cookie発行"
-        },
-        {
-          "level": 3,
-          "text": "3.3. 参加者：端末Cookie再訪による出欠自動照会"
-        },
-        {
-          "level": 3,
-          "text": "3.4. 共同幹事：排他編集排他ロック取得・再確認・Takeover競合"
-        },
-        {
-          "level": 3,
-          "text": "3.5. 会員昇格・データ統合トランザクション（Hydration）"
-        },
-        {
-          "level": 2,
-          "text": "4. 共通ミドルウェア・認可ガード仕様"
-        },
-        {
-          "level": 3,
-          "text": "4.1. 暗号化ユーティリティ (src/lib/crypto.ts)"
-        },
-        {
-          "level": 3,
-          "text": "4.2. 認可ガード (src/lib/guards.ts)"
-        },
-        {
-          "level": 2,
-          "text": "5. APIエンドポイント詳細仕様"
-        },
-        {
-          "level": 3,
-          "text": "5.1. POST /api/v1/public/events（イベント新規作成）"
-        },
-        {
-          "level": 4,
-          "text": "リクエストスキーマ (Zod)"
-        },
-        {
-          "level": 4,
-          "text": "レスポンス仕様"
-        },
-        {
-          "level": 3,
-          "text": "5.2. GET /api/v1/public/events/[id]（公開情報取得・Cookie自動照会）"
-        },
-        {
-          "level": 3,
-          "text": "5.3. POST /api/v1/public/events/[id]/rsvp（未登録出欠登録・変更）"
-        },
-        {
-          "level": 4,
-          "text": "リクエストスキーマ (Zod)"
-        },
-        {
-          "level": 4,
-          "text": "処理フロー"
-        },
-        {
-          "level": 3,
-          "text": "5.3b. GET /api/v1/geo/postal-codes/[code]（郵便番号検索）"
-        },
-        {
-          "level": 3,
-          "text": "5.4. GET /api/v1/organizer/events（主催イベント一覧）"
-        },
-        {
-          "level": 3,
-          "text": "5.5. POST /api/v1/organizer/events/[id]/lock（排他ロック取得・延長・引き継ぎ）"
-        },
-        {
-          "level": 4,
-          "text": "リクエストスキーマ (Zod)"
-        },
-        {
-          "level": 4,
-          "text": "SQLアトミック実行ロジック"
-        },
-        {
-          "level": 3,
-          "text": "5.6. PUT /api/v1/organizer/events/[id]（イベント編集・保存）"
-        },
-        {
-          "level": 3,
-          "text": "5.7. GET /api/v1/organizer/events/[id]/participants（参加者詳細一覧）"
-        },
-        {
-          "level": 3,
-          "text": "5.8. POST /api/v1/organizer/events/[id]/clone（イベント複製）"
-        },
-        {
-          "level": 3,
-          "text": "5.9. POST /api/v1/user/hydrate（アカウント統合・昇格）"
-        },
-        {
-          "level": 4,
-          "text": "リクエストスキーマ (Zod)"
-        },
-        {
-          "level": 4,
-          "text": "処理トランザクション"
-        },
-        {
-          "level": 2,
-          "text": "6. RFC 7807 準拠エラーハンドリング仕様"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        },
-        {
-          "path": "src/lib/crypto.ts",
-          "exists": true
-        },
-        {
-          "path": "src/lib/guards.ts",
-          "exists": false
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/event_page_data_model_and_crud.md",
-      "sphinxDoc": "event-page/specs/event_page_data_model_and_crud",
-      "format": "markdown",
-      "title": "データモデル設計書＆CRUD仕様書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 951,
-      "headings": [
-        {
-          "level": 1,
-          "text": "データモデル設計書＆CRUD仕様書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（概念・論理・物理・CRUD統合）"
-        },
-        {
-          "level": 2,
-          "text": "1. 全体アーキテクチャ・設計方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 4大設計基本方針"
-        },
-        {
-          "level": 2,
-          "text": "2. 概念データモデル（Conceptual Data Model）"
-        },
-        {
-          "level": 3,
-          "text": "2.1. コア概念（Entities）の抽出と役割"
-        },
-        {
-          "level": 3,
-          "text": "2.2. 概念ER図（Conceptual ER Diagram）"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 主要な概念境界とビジネスルール"
-        },
-        {
-          "level": 2,
-          "text": "3. 論理データモデル（Logical Data Model）"
-        },
-        {
-          "level": 3,
-          "text": "3.1. 正規化プロセス（第1〜第3正規形の検証）"
-        },
-        {
-          "level": 4,
-          "text": "第1正規形（1NF）の達成"
-        },
-        {
-          "level": 4,
-          "text": "第2正規形（2NF）の達成"
-        },
-        {
-          "level": 4,
-          "text": "第3正規形（3NF）の達成"
-        },
-        {
-          "level": 3,
-          "text": "3.2. 論理エンティティ定義とリレーションシップ"
-        },
-        {
-          "level": 3,
-          "text": "3.3. ドメイン定義・論理整合性制約マトリクス"
-        },
-        {
-          "level": 2,
-          "text": "4. 物理データモデル（Physical Data Model）"
-        },
-        {
-          "level": 3,
-          "text": "4.1. 物理ER図（Entity-Relationship Diagram）"
-        },
-        {
-          "level": 3,
-          "text": "4.2. Prisma スキーマ完全定義 (schema.prisma)"
-        },
-        {
-          "level": 3,
-          "text": "4.3. 物理テーブル詳細設計表"
-        },
-        {
-          "level": 4,
-          "text": "events（イベント本体テーブル）"
-        },
-        {
-          "level": 4,
-          "text": "participants（参加者・出欠テーブル）"
-        },
-        {
-          "level": 4,
-          "text": "receipts（参加費の領収書）"
-        },
-        {
-          "level": 4,
-          "text": "event_schedules（開催日時）"
-        },
-        {
-          "level": 4,
-          "text": "event_price_plans（費用プラン）"
-        },
-        {
-          "level": 4,
-          "text": "event_locks（排他編集排他ロックテーブル）"
-        },
-        {
-          "level": 2,
-          "text": "5. CRUD操作詳細仕様（マトリクス＆トランザクション）"
-        },
-        {
-          "level": 3,
-          "text": "5.1. CRUDマトリクス（アクター × 操作権限 × エンティティ）"
-        },
-        {
-          "level": 3,
-          "text": "5.2. Events（イベント本体）CRUD 詳細仕様"
-        },
-        {
-          "level": 4,
-          "text": "【Create】イベント新規作成（課金認可ゲート連携）"
-        },
-        {
-          "level": 4,
-          "text": "【Read】イベント情報の参照（一般公開 vs 主催者一覧）"
-        },
-        {
-          "level": 4,
-          "text": "【Update】イベント情報の変更（排他ロック保護）"
-        },
-        {
-          "level": 4,
-          "text": "【Delete】イベントの削除"
-        },
-        {
-          "level": 4,
-          "text": "【Update】売上按分の設定（主催幹事のみ）"
-        },
-        {
-          "level": 3,
-          "text": "5.3. Participants（出欠・参加者）CRUD 詳細仕様"
-        },
-        {
-          "level": 4,
-          "text": "【Create】未登録出欠登録（Zero-Friction RSVP）"
-        },
-        {
-          "level": 4,
-          "text": "【Read】端末再訪時の出欠自動照会"
-        },
-        {
-          "level": 4,
-          "text": "【Update】出欠回答の変更"
-        },
-        {
-          "level": 3,
-          "text": "5.4. EventLocks（排他編集排他ロック）CRUD 詳細仕様"
-        },
-        {
-          "level": 4,
-          "text": "【Create / Update】排他ロックの取得・再確認"
-        },
-        {
-          "level": 4,
-          "text": "【Update (Takeover)】緊急時の強制引き継ぎ"
-        },
-        {
-          "level": 4,
-          "text": "【Delete】ロックの明示的解放"
-        },
-        {
-          "level": 3,
-          "text": "5.5. アカウント統合（Account Merging / Hydration）トランザクション"
-        },
-        {
-          "level": 3,
-          "text": "5.6. イベント複製（Clone）トランザクション"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        },
-        {
-          "path": "src/modules/organizers/lib/names.ts",
-          "exists": true
-        },
-        {
-          "path": "src/modules/revenue/lib/allocation.ts",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/event_page_db_schema_crud.md",
-      "sphinxDoc": "event-page/specs/event_page_db_schema_crud",
-      "format": "markdown",
-      "title": "データベース物理設計・CRUD仕様書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 849,
-      "headings": [
-        {
-          "level": 1,
-          "text": "データベース物理設計・CRUD仕様書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Flyer-Driven Event Page & Frictionless RSVP）"
-        },
-        {
-          "level": 2,
-          "text": "1. 全体アーキテクチャ・設計方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 基本方針"
-        },
-        {
-          "level": 2,
-          "text": "2. ER図（Entity-Relationship Diagram）"
-        },
-        {
-          "level": 2,
-          "text": "3. Prisma スキーマ完全定義 (schema.prisma)"
-        },
-        {
-          "level": 2,
-          "text": "4. テーブル物理設計書"
-        },
-        {
-          "level": 3,
-          "text": "4.1. users（会員テーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.2. user_usage_quotas（利用枠・課金管理テーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.3. flyer_assets（チラシ画像アセットテーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.4. events（イベント本体テーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.4b. event_schedules（開催日時。1〜8件）"
-        },
-        {
-          "level": 3,
-          "text": "4.4c. event_price_plans（費用プラン。1〜8件）"
-        },
-        {
-          "level": 3,
-          "text": "4.5. event_organizers（幹事権限テーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.6. participants（参加者・出欠テーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.7. event_locks（排他編集排他ロックテーブル）"
-        },
-        {
-          "level": 3,
-          "text": "4.8. event_invitations（共同幹事招待テーブル）"
-        },
-        {
-          "level": 2,
-          "text": "5. CRUD操作詳細仕様（マトリクス＆トランザクション）"
-        },
-        {
-          "level": 3,
-          "text": "5.1. Events（イベント本体）CRUD"
-        },
-        {
-          "level": 4,
-          "text": "【Create】イベント新規作成（課金認可チェック連携）"
-        },
-        {
-          "level": 4,
-          "text": "【Read】イベント情報の参照（一般公開用 vs 主催者一覧用）"
-        },
-        {
-          "level": 4,
-          "text": "【Update】イベント情報の変更（排他ロック保護）"
-        },
-        {
-          "level": 4,
-          "text": "【Delete】イベントの削除"
-        },
-        {
-          "level": 3,
-          "text": "5.2. Participants（出欠・参加者）CRUD"
-        },
-        {
-          "level": 4,
-          "text": "【Create】未登録出欠登録（Zero-Friction RSVP）"
-        },
-        {
-          "level": 4,
-          "text": "【Read】端末再訪時の出欠自動照会"
-        },
-        {
-          "level": 4,
-          "text": "【Update】出欠回答の変更"
-        },
-        {
-          "level": 4,
-          "text": "【Delete】出欠の取り消し・キャンセル"
-        },
-        {
-          "level": 3,
-          "text": "5.3. EventLocks（排他編集制御）CRUD"
-        },
-        {
-          "level": 4,
-          "text": "【Create / Update】排他ロックの取得・再確認"
-        },
-        {
-          "level": 4,
-          "text": "【Update (Takeover)】緊急時の強制引き継ぎ"
-        },
-        {
-          "level": 4,
-          "text": "【Delete】ロックの明示的解放"
-        },
-        {
-          "level": 3,
-          "text": "5.4. アカウント統合（Account Merging / Hydration）トランザクション"
-        },
-        {
-          "level": 3,
-          "text": "5.5. イベント複製（Clone）トランザクション"
-        },
-        {
-          "level": 2,
-          "text": "6. インデックス戦略と整合性制約"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/event_page_frontend_implementation_spec.md",
-      "sphinxDoc": "event-page/specs/event_page_frontend_implementation_spec",
-      "format": "markdown",
-      "title": "フロントエンド画面・コンポーネント実装設計書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 814,
-      "headings": [
-        {
-          "level": 1,
-          "text": "フロントエンド画面・コンポーネント実装設計書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成＆出欠管理基盤（Next.js App Router / React / Tailwind CSS）"
-        },
-        {
-          "level": 2,
-          "text": "1. 全体アーキテクチャ・設計方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 4大設計原則"
-        },
-        {
-          "level": 2,
-          "text": "2. 画面ルーティング＆画面遷移図（Mermaid）"
-        },
-        {
-          "level": 3,
-          "text": "2.1. ルーティングテーブル"
-        },
-        {
-          "level": 3,
-          "text": "2.2. 全体画面遷移シーケンス図（Mermaid）"
-        },
-        {
-          "level": 2,
-          "text": "3. コンポーネント階層ツリー＆ディレクトリ構成"
-        },
-        {
-          "level": 2,
-          "text": "4. 主要UIコンポーネント詳細実装（React / Tailwind CSS）"
-        },
-        {
-          "level": 3,
-          "text": "4.1. PosterHero.tsx（ポスター埋め込み型FV・LQIPブラー・Peek UI）"
-        },
-        {
-          "level": 3,
-          "text": "4.2. EventMetaCard.tsx（基本7項目の実用アクション表示）"
-        },
-        {
-          "level": 3,
-          "text": "4.3. DynamicRsvpBox.tsx（未登録出欠フォーム 兼 再訪自動照会）"
-        },
-        {
-          "level": 3,
-          "text": "4.4. LockConflictModal.tsx（他幹事編集中ブロッカー＆強制引き継ぎ）"
-        },
-        {
-          "level": 3,
-          "text": "4.5. PricingModal.tsx（SCR-MOD-01: 課金プラン選択モーダル）"
-        },
-        {
-          "level": 2,
-          "text": "5. カスタムフック詳細実装（React Hooks）"
-        },
-        {
-          "level": 3,
-          "text": "5.1. useEditLock.ts（排他ロック・再確認・Takeover管理）"
-        },
-        {
-          "level": 3,
-          "text": "5.2. useRsvp.ts（出欠登録・Cookie照会・楽観的更新）"
-        },
-        {
-          "level": 2,
-          "text": "6. アクセシビリティ・レスポンシブ・パフォーマンス設計"
-        },
-        {
-          "level": 3,
-          "text": "6.1. Thumb Zone（親指操作領域）最適化"
-        },
-        {
-          "level": 3,
-          "text": "6.2. Core Web Vitals（LCP 1.5秒以内）担保"
-        },
-        {
-          "level": 2,
-          "text": "7. フロントエンド検証マトリクス＆テスト計画表"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/event_page_planning_requirements.md",
-      "sphinxDoc": "event-page/specs/event_page_planning_requirements",
-      "format": "markdown",
-      "title": "機能別企画要件定義書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 187,
-      "headings": [
-        {
-          "level": 1,
-          "text": "機能別企画要件定義書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介・告知ページ生成＆出欠管理基盤（Flyer-Driven Event Page & Frictionless RSVP）"
-        },
-        {
-          "level": 2,
-          "text": "1. 目的と位置づけ（階層構造）"
-        },
-        {
-          "level": 2,
-          "text": "2. 企画要件コア5項目"
-        },
-        {
-          "level": 3,
-          "text": "2.1. ターゲットの解像度と現状の代替手段"
-        },
-        {
-          "level": 4,
-          "text": "ペルソナA（イベント主催者／個人店舗オーナー・コミュニティ幹事）"
-        },
-        {
-          "level": 4,
-          "text": "ペルソナB（参加者）"
-        },
-        {
-          "level": 4,
-          "text": "現状の代替手段（As-Is）とペインポイント"
-        },
-        {
-          "level": 3,
-          "text": "2.2. 独自の提供価値（Core Value Proposition）"
-        },
-        {
-          "level": 4,
-          "text": "1. チラシ主導型ファーストビュー（Flyer-First Visual Experience）"
-        },
-        {
-          "level": 4,
-          "text": "2. FVから直結する極小摩擦の出欠登録（Zero-Friction Sticky RSVP）"
-        },
-        {
-          "level": 4,
-          "text": "3. 主催者ダッシュボード（イベント一覧＆リアルタイム出欠集計）"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 成功指標（KPI / ガードレール指標）"
-        },
-        {
-          "level": 3,
-          "text": "2.4. メディア・データ連携コスト＆境界設計"
-        },
-        {
-          "level": 4,
-          "text": "チラシ生成機能との疎結合アーキテクチャ"
-        },
-        {
-          "level": 4,
-          "text": "画像最適化配信とインフラ原価抑止"
-        },
-        {
-          "level": 4,
-          "text": "課金決済基盤との認可ゲート"
-        },
-        {
-          "level": 3,
-          "text": "2.5. やらないことリスト（Non-Goals）"
-        },
-        {
-          "level": 2,
-          "text": "3. 想定される3つの自己反証と構造的批判"
-        },
-        {
-          "level": 3,
-          "text": "批判1: チラシ画像による「出欠アクション（CTA）」のスクロール埋没リスク（The Below-the-Fold Friction）"
-        },
-        {
-          "level": 3,
-          "text": "批判2: 高解像度AI生成画像による表示速度低下と初期離脱（The LCP Penalty）"
-        },
-        {
-          "level": 3,
-          "text": "批判3: チラシ内の文字とWebテキスト情報の重複による認知的ノイズ（The Visual Redundancy Paradox）"
-        },
-        {
-          "level": 2,
-          "text": "4. 【参考】難易度順の参照フレームワーク"
-        },
-        {
-          "level": 2,
-          "text": "5. 次工程（要件定義書）に向けた確認・ヒアリング事項"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/event-page/index.rst"
-      ]
-    },
-    {
-      "path": "docs/event-page/specs/event_page_system_requirements.md",
-      "sphinxDoc": "event-page/specs/event_page_system_requirements",
-      "format": "markdown",
-      "title": "システム要件定義書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 702,
-      "headings": [
-        {
-          "level": 1,
-          "text": "システム要件定義書"
-        },
-        {
-          "level": 2,
-          "text": "チラシファースト型 イベント紹介・告知ページ生成＆出欠管理基盤"
-        },
-        {
-          "level": 3,
-          "text": "（Flyer-Embedded Event Page & Frictionless RSVP System Requirements）"
-        },
-        {
-          "level": 2,
-          "text": "1. システム概要とアーキテクチャ境界"
-        },
-        {
-          "level": 3,
-          "text": "1.1. システムの位置づけ"
-        },
-        {
-          "level": 3,
-          "text": "1.2. コア設計方針"
-        },
-        {
-          "level": 2,
-          "text": "2. 機能要件（Functional Requirements）"
-        },
-        {
-          "level": 3,
-          "text": "2.1. イベント作成・編集機能（FR-CREATE / FR-EDIT）"
-        },
-        {
-          "level": 3,
-          "text": "2.2. 主催者イベント一覧ダッシュボード（FR-DASHBOARD）"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 一般公開のイベント告知ページ（FR-PUBLIC-PAGE）"
-        },
-        {
-          "level": 3,
-          "text": "2.4. 参加者 出欠管理機能（FR-RSVP）"
-        },
-        {
-          "level": 2,
-          "text": "3. 非機能要件（Non-Functional Requirements）"
-        },
-        {
-          "level": 2,
-          "text": "4. 画面一覧（Screen Catalog）"
-        },
-        {
-          "level": 3,
-          "text": "4.1. 画面一覧マトリクス"
-        },
-        {
-          "level": 3,
-          "text": "4.2. 各画面の機能・レイアウト詳細仕様"
-        },
-        {
-          "level": 4,
-          "text": "① SCR-PUB-01: 一般公開イベント告知ページ 兼 出欠登録画面"
-        },
-        {
-          "level": 4,
-          "text": "② SCR-ORG-01: 主催者イベント一覧ダッシュボード"
-        },
-        {
-          "level": 4,
-          "text": "③ SCR-ORG-02 & SCR-ORG-03: 新規イベント作成画面 & チラシ選択モーダル"
-        },
-        {
-          "level": 4,
-          "text": "④ SCR-MOD-01: 課金・プラン選択モーダル"
-        },
-        {
-          "level": 2,
-          "text": "5. 画面遷移設計（UI & Screen Flow）"
-        },
-        {
-          "level": 3,
-          "text": "5.1. 主催者画面フロー（Organizer Flow）"
-        },
-        {
-          "level": 3,
-          "text": "5.2. 参加者画面フロー（Participant Flow）"
-        },
-        {
-          "level": 3,
-          "text": "5.3. 公開告知ページ（SCR-PUB-01）のワイヤーフレームレイアウト"
-        },
-        {
-          "level": 2,
-          "text": "6. データモデル設計（Data Schema）"
-        },
-        {
-          "level": 3,
-          "text": "6.1. Prisma スキーマ定義"
-        },
-        {
-          "level": 2,
-          "text": "7. API境界・インターフェース仕様（API Boundary）"
-        },
-        {
-          "level": 3,
-          "text": "7.1. 課金認可ゲート インターフェース（外部呼び出し契約）"
-        },
-        {
-          "level": 3,
-          "text": "7.2. エンドポイント一覧"
-        },
-        {
-          "level": 3,
-          "text": "7.3. 主要APIスキーマ詳細"
-        },
-        {
-          "level": 4,
-          "text": "① イベント新規作成: POST /api/v1/public/events"
-        },
-        {
-          "level": 5,
-          "text": "Request Body (JSON)"
-        },
-        {
-          "level": 5,
-          "text": "Response (201 Created)"
-        },
-        {
-          "level": 5,
-          "text": "Error Response (402 Payment Required: 無料枠枯渇時)"
-        },
-        {
-          "level": 4,
-          "text": "② 主催者イベント一覧取得: GET /api/v1/organizer/events"
-        },
-        {
-          "level": 5,
-          "text": "Response (200 OK)"
-        },
-        {
-          "level": 4,
-          "text": "③ 公開告知ページ取得: GET /api/v1/public/events/:id"
-        },
-        {
-          "level": 5,
-          "text": "Response (200 OK)"
-        },
-        {
-          "level": 4,
-          "text": "④ 一般出欠登録・更新: POST /api/v1/public/events/:id/rsvp"
-        },
-        {
-          "level": 5,
-          "text": "Request Body (JSON)"
-        },
-        {
-          "level": 5,
-          "text": "Response (200 OK)"
-        },
-        {
-          "level": 4,
-          "text": "⑤ 自身の出欠再訪照会: GET /api/v1/public/events/:id/rsvp/me"
-        },
-        {
-          "level": 5,
-          "text": "Response (200 OK: 登録済みの場合)"
-        },
-        {
-          "level": 4,
-          "text": "⑥ 主催者向け参加者一覧閲覧: GET /api/v1/organizer/events/:id/participants"
-        },
-        {
-          "level": 5,
-          "text": "Response (200 OK)"
-        },
-        {
-          "level": 2,
-          "text": "8. 【参考】難易度順の参照フレームワーク"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
           "exists": true
         }
       ],
@@ -4540,7 +5690,7 @@
       "title": "利用枠管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 159,
+      "lineCount": 167,
       "headings": [
         {
           "level": 1,
@@ -4556,6 +5706,7 @@
         "docs/README.md",
         "docs/sitemap.rst",
         "docs/local.rst",
+        "docs/deploy.rst",
         "docs/stripe.rst",
         "docs/database.rst",
         "docs/testing/index.rst",
@@ -4570,7 +5721,7 @@
         "docs/detailed_design_spec.md",
         "docs/event-page/index.rst",
         "docs/flyer/index.rst",
-        "docs/user-management/index.rst",
+        "docs/archive/index.rst",
         "docs/issues/index.rst",
         "docs/ui-review/home-audit.md",
         "docs/api-routes.md",
@@ -4579,6 +5730,10 @@
       "codePaths": [
         {
           "path": "docs/api-routes.md",
+          "exists": true
+        },
+        {
+          "path": "docs/archive",
           "exists": true
         },
         {
@@ -4603,6 +5758,10 @@
         },
         {
           "path": "docs/DBschema.md",
+          "exists": true
+        },
+        {
+          "path": "docs/deploy.rst",
           "exists": true
         },
         {
@@ -4675,10 +5834,6 @@
         },
         {
           "path": "docs/traceability.md",
-          "exists": true
-        },
-        {
-          "path": "docs/user-management",
           "exists": true
         },
         {
@@ -5122,15 +6277,15 @@
       "toctree": [],
       "codePaths": [
         {
+          "path": "docs/archive/event-page/specs/event_page_data_model_and_crud.md",
+          "exists": true
+        },
+        {
           "path": "docs/backend_api_implementation_spec.md",
           "exists": true
         },
         {
           "path": "docs/DBschema.md",
-          "exists": true
-        },
-        {
-          "path": "docs/event-page/specs/event_page_data_model_and_crud.md",
           "exists": true
         },
         {
@@ -5444,15 +6599,15 @@
       "toctree": [],
       "codePaths": [
         {
+          "path": "docs/archive/event-page/specs/event_page_data_model_and_crud.md",
+          "exists": true
+        },
+        {
+          "path": "docs/archive/event-page/specs/event_page_system_requirements.md",
+          "exists": true
+        },
+        {
           "path": "docs/DBschema.md",
-          "exists": true
-        },
-        {
-          "path": "docs/event-page/specs/event_page_data_model_and_crud.md",
-          "exists": true
-        },
-        {
-          "path": "docs/event-page/specs/event_page_system_requirements.md",
           "exists": true
         },
         {
@@ -6714,7 +7869,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 251,
+      "lineCount": 283,
       "headings": [
         {
           "level": 1,
@@ -6735,6 +7890,10 @@
         {
           "level": 2,
           "text": "開発サーバー"
+        },
+        {
+          "level": 3,
+          "text": "Docker で動かす"
         },
         {
           "level": 2,
@@ -6779,7 +7938,7 @@
       "title": "全体を掴む 90 分",
       "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。",
       "preImplementation": false,
-      "lineCount": 111,
+      "lineCount": 113,
       "headings": [
         {
           "level": 1,
@@ -7455,7 +8614,7 @@
       "title": "ドキュメントの派生・検証マップ",
       "summary": "正はコードです。このディレクトリの文書はコードの検証面であり、差分を見つけたら同じ PR で文書も直します。",
       "preImplementation": false,
-      "lineCount": 62,
+      "lineCount": 64,
       "headings": [
         {
           "level": 1,
@@ -7488,6 +8647,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/archive",
+          "exists": true
+        },
         {
           "path": "prisma/schema.prisma",
           "exists": true
@@ -7552,7 +8715,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 281,
+      "lineCount": 291,
       "headings": [
         {
           "level": 1,
@@ -7596,7 +8759,7 @@
         },
         {
           "level": 3,
-          "text": "会員登録管理"
+          "text": "アーカイブ（実装前の設計）"
         },
         {
           "level": 3,
@@ -8648,1006 +9811,6 @@
       ],
       "includedBy": [
         "docs/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/backend_api_implementation_spec.md",
-      "sphinxDoc": "user-management/backend_api_implementation_spec",
-      "format": "markdown",
-      "title": "バックエンドAPI実装仕様・サーバーコード設計書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 1002,
-      "headings": [
-        {
-          "level": 1,
-          "text": "バックエンドAPI実装仕様・サーバーコード設計書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Next.js App Router / Prisma / TypeScript）"
-        },
-        {
-          "level": 2,
-          "text": "1. サーバーアーキテクチャ・ディレクトリ構造"
-        },
-        {
-          "level": 2,
-          "text": "2. 共通基盤モジュール実装"
-        },
-        {
-          "level": 3,
-          "text": "2.1. 暗号・トークンユーティリティ (src/lib/crypto.ts)"
-        },
-        {
-          "level": 3,
-          "text": "2.2. RFC 7807 準拠エラーハンドラー (src/lib/response.ts)"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 認可・ロック検証ガード (src/lib/guards.ts)"
-        },
-        {
-          "level": 2,
-          "text": "3. エンドポイント実装コード"
-        },
-        {
-          "level": 3,
-          "text": "3.1. イベント新規作成 (POST /api/v1/public/events)"
-        },
-        {
-          "level": 3,
-          "text": "3.2. ゼロフリクション出欠登録・照会API"
-        },
-        {
-          "level": 4,
-          "text": "出欠登録 (POST /api/v1/public/events/[id]/rsvp)"
-        },
-        {
-          "level": 4,
-          "text": "端末自動照会・変更 (GET & PUT /api/v1/public/events/[id]/my-rsvp)"
-        },
-        {
-          "level": 3,
-          "text": "3.3. 幹事専用・参加者一覧取得API (GET /api/v1/organizer/events/[id]/participants)"
-        },
-        {
-          "level": 3,
-          "text": "3.4. 排他リースロック制御API"
-        },
-        {
-          "level": 4,
-          "text": "ロック取得・ハートビート・解放 (src/app/api/v1/organizer/events/[id]/lock/route.ts)"
-        },
-        {
-          "level": 4,
-          "text": "ロック強制引き継ぎ (POST /api/v1/organizer/events/[id]/lock/takeover)"
-        },
-        {
-          "level": 3,
-          "text": "3.5. ロック保護付きイベント更新API (PUT /api/v1/organizer/events/[id])"
-        },
-        {
-          "level": 3,
-          "text": "3.6. 会員マイページ・アカウント統合（Hydration）＆ワンクリック複製API"
-        },
-        {
-          "level": 4,
-          "text": "アカウント統合 (POST /api/v1/member/hydrate)"
-        },
-        {
-          "level": 4,
-          "text": "イベントワンクリック複製 (POST /api/v1/member/organized-events/[id]/clone)"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        },
-        {
-          "path": "src/app/api/v1/member/hydrate/route.ts",
-          "exists": false
-        },
-        {
-          "path": "src/app/api/v1/member/organized-events/[id]/clone/route.ts",
-          "exists": false
-        },
-        {
-          "path": "src/app/api/v1/organizer/events/[id]/lock/route.ts",
-          "exists": true
-        },
-        {
-          "path": "src/app/api/v1/organizer/events/[id]/lock/takeover/route.ts",
-          "exists": false
-        },
-        {
-          "path": "src/app/api/v1/organizer/events/[id]/participants/route.ts",
-          "exists": true
-        },
-        {
-          "path": "src/app/api/v1/organizer/events/[id]/route.ts",
-          "exists": true
-        },
-        {
-          "path": "src/app/api/v1/public/events/[id]/my-rsvp/route.ts",
-          "exists": false
-        },
-        {
-          "path": "src/app/api/v1/public/events/[id]/rsvp/route.ts",
-          "exists": true
-        },
-        {
-          "path": "src/app/api/v1/public/events/route.ts",
-          "exists": true
-        },
-        {
-          "path": "src/lib/crypto.ts",
-          "exists": true
-        },
-        {
-          "path": "src/lib/guards.ts",
-          "exists": false
-        },
-        {
-          "path": "src/lib/response.ts",
-          "exists": false
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/DBschema.md",
-      "sphinxDoc": "user-management/DBschema",
-      "format": "markdown",
-      "title": "データベース物理設計・スキーマ定義書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 599,
-      "headings": [
-        {
-          "level": 1,
-          "text": "データベース物理設計・スキーマ定義書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（PostgreSQL / Prisma 対応）"
-        },
-        {
-          "level": 2,
-          "text": "1. 概要と物理設計方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 採用技術・設計方針"
-        },
-        {
-          "level": 2,
-          "text": "2. エンティティ関連図（ERD）"
-        },
-        {
-          "level": 2,
-          "text": "3. テーブル定義詳細（DDL）"
-        },
-        {
-          "level": 3,
-          "text": "3.1. DDLスクリプト（PostgreSQL準拠）"
-        },
-        {
-          "level": 2,
-          "text": "4. インデックス設計とクエリ最適化"
-        },
-        {
-          "level": 2,
-          "text": "5. Prisma ORM スキーマ定義 (schema.prisma)"
-        },
-        {
-          "level": 2,
-          "text": "6. 主要トランザクション・整合性クエリ設計"
-        },
-        {
-          "level": 3,
-          "text": "6.1. 排他的リースロック制御（同時編集不可・引き継ぎ）"
-        },
-        {
-          "level": 4,
-          "text": "A. ロックの獲得試行（新規または期限切れ上書き）"
-        },
-        {
-          "level": 4,
-          "text": "B. ハートビート（ロック延長）"
-        },
-        {
-          "level": 4,
-          "text": "C. 強制引き継ぎ（Force Takeover）"
-        },
-        {
-          "level": 3,
-          "text": "6.2. アカウント昇格（Account Hydration: ゲスト履歴の統合）"
-        },
-        {
-          "level": 3,
-          "text": "6.3. イベント複製（ワンクリックClone）"
-        },
-        {
-          "level": 2,
-          "text": "7. アカウント自己管理・退会（追加マイグレーション）"
-        },
-        {
-          "level": 3,
-          "text": "7.1. 追加する列と表"
-        },
-        {
-          "level": 3,
-          "text": "7.2. Prisma モデル（抜粋）"
-        },
-        {
-          "level": 3,
-          "text": "7.3. 退会と復帰の整合性"
-        },
-        {
-          "level": 3,
-          "text": "7.4. インデックスの追加"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/detailed_design_spec.md",
-      "sphinxDoc": "user-management/detailed_design_spec",
-      "format": "markdown",
-      "title": "API設計・実装仕様書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 616,
-      "headings": [
-        {
-          "level": 1,
-          "text": "API設計・実装仕様書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（RESTful / TypeScript準拠）"
-        },
-        {
-          "level": 2,
-          "text": "1. 共通アーキテクチャ・設計規約"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 通信プロトコル・Base URL"
-        },
-        {
-          "level": 3,
-          "text": "1.2. 認証・認可方式（ハイブリッド・ケイパビリティ認証）"
-        },
-        {
-          "level": 3,
-          "text": "1.3. エラーレスポンス規約 (RFC 7807 準拠)"
-        },
-        {
-          "level": 2,
-          "text": "2. エンドポイント一覧（API Summary）"
-        },
-        {
-          "level": 2,
-          "text": "3. 詳細API仕様書"
-        },
-        {
-          "level": 3,
-          "text": "3.1. 公開・参加者向けAPI"
-        },
-        {
-          "level": 4,
-          "text": "GET /api/v1/public/events/:id"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/public/events/:id/rsvp"
-        },
-        {
-          "level": 4,
-          "text": "GET /api/v1/public/events/:id/my-rsvp"
-        },
-        {
-          "level": 4,
-          "text": "PUT /api/v1/public/events/:id/my-rsvp"
-        },
-        {
-          "level": 3,
-          "text": "3.2. イベント作成API"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/public/events"
-        },
-        {
-          "level": 3,
-          "text": "3.3. 幹事専用・管理API"
-        },
-        {
-          "level": 4,
-          "text": "GET /api/v1/organizer/events/:id/participants"
-        },
-        {
-          "level": 4,
-          "text": "PUT /api/v1/organizer/events/:id"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/organizer/events/:id/invite"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/organizer/events/join-by-invite"
-        },
-        {
-          "level": 3,
-          "text": "3.4. 排他リースロックAPI（同時編集不可）"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/organizer/events/:id/lock"
-        },
-        {
-          "level": 4,
-          "text": "PUT /api/v1/organizer/events/:id/lock"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/organizer/events/:id/lock/takeover"
-        },
-        {
-          "level": 4,
-          "text": "DELETE /api/v1/organizer/events/:id/lock"
-        },
-        {
-          "level": 3,
-          "text": "3.5. 会員・マイページAPI"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/member/hydrate"
-        },
-        {
-          "level": 4,
-          "text": "GET /api/v1/member/organized-events"
-        },
-        {
-          "level": 4,
-          "text": "POST /api/v1/member/organized-events/:id/clone"
-        },
-        {
-          "level": 4,
-          "text": "GET /api/v1/member/attended-events"
-        },
-        {
-          "level": 2,
-          "text": "4. ミドルウェア・ガード実装仕様"
-        },
-        {
-          "level": 3,
-          "text": "4.1. トークンハッシュ化ユーティリティ (hashUtils.ts)"
-        },
-        {
-          "level": 3,
-          "text": "4.2. 幹事認可ガード (assertOrganizerGuard)"
-        },
-        {
-          "level": 3,
-          "text": "4.3. 排他ロック検証ガード (assertLockGuard)"
-        },
-        {
-          "level": 2,
-          "text": "5. 実装プロンプト用指示テンプレート（AI自動実装用）"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/front_implementation_spec.md",
-      "sphinxDoc": "user-management/front_implementation_spec",
-      "format": "markdown",
-      "title": "フロントエンド画面・コンポーネント実装設計書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 812,
-      "headings": [
-        {
-          "level": 1,
-          "text": "フロントエンド画面・コンポーネント実装設計書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（React / Next.js App Router / Tailwind CSS）"
-        },
-        {
-          "level": 2,
-          "text": "1. フロントエンド全体アーキテクチャ方針"
-        },
-        {
-          "level": 3,
-          "text": "1.1. 技術スタック・選定基準"
-        },
-        {
-          "level": 3,
-          "text": "1.2. 画面一覧・ルーティング規約"
-        },
-        {
-          "level": 2,
-          "text": "2. 画面遷移図（Screen Transition Diagrams）"
-        },
-        {
-          "level": 3,
-          "text": "2.1. 全体画面遷移俯瞰マップ"
-        },
-        {
-          "level": 3,
-          "text": "2.2. アクター別詳細遷移フロー"
-        },
-        {
-          "level": 4,
-          "text": "A. 参加者（ゲスト参加者）の遷移"
-        },
-        {
-          "level": 4,
-          "text": "B. 幹事（主催者）の作成・共同管理・複製遷移"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 排他リースロックの画面状態遷移（State Machine）"
-        },
-        {
-          "level": 2,
-          "text": "3. 状態管理＆カスタムフック設計"
-        },
-        {
-          "level": 3,
-          "text": "3.1. 排他リースロック制御フック (useEditLock)"
-        },
-        {
-          "level": 4,
-          "text": "TypeScriptインターフェース定義"
-        },
-        {
-          "level": 3,
-          "text": "3.2. ゲスト端末トークン永続化フック (useGuestTokens)"
-        },
-        {
-          "level": 2,
-          "text": "4. 画面別UI・コンポーネント詳細設計"
-        },
-        {
-          "level": 3,
-          "text": "4.1. イベント公開・出欠画面 (/events/[id])"
-        },
-        {
-          "level": 4,
-          "text": "コンポーネントツリー"
-        },
-        {
-          "level": 4,
-          "text": "状態遷移フロー"
-        },
-        {
-          "level": 3,
-          "text": "4.2. 幹事管理ダッシュボード (/manage/events/[id])"
-        },
-        {
-          "level": 4,
-          "text": "コンポーネントツリー"
-        },
-        {
-          "level": 4,
-          "text": "主なコンポーネント責務"
-        },
-        {
-          "level": 3,
-          "text": "4.3. イベント編集画面・排他リースロック (/manage/events/[id]/edit)"
-        },
-        {
-          "level": 4,
-          "text": "コンポーネントツリー"
-        },
-        {
-          "level": 4,
-          "text": "排他制御のUI動作仕様"
-        },
-        {
-          "level": 3,
-          "text": "4.4. 会員マイページ (/mypage)"
-        },
-        {
-          "level": 4,
-          "text": "コンポーネントツリー"
-        },
-        {
-          "level": 4,
-          "text": "ワンクリック複製のUI仕様"
-        },
-        {
-          "level": 2,
-          "text": "5. 主要コンポーネント＆カスタムフック実装コード"
-        },
-        {
-          "level": 3,
-          "text": "5.1. 排他ロック制御フック (hooks/useEditLock.ts)"
-        },
-        {
-          "level": 3,
-          "text": "5.2. ゼロフリクション出欠登録コンポーネント (components/rsvp/DynamicRsvpBox.tsx)"
-        },
-        {
-          "level": 3,
-          "text": "5.3. 排他編集ブロッカーモーダル (components/organizer/LockConflictModal.tsx)"
-        },
-        {
-          "level": 2,
-          "text": "6. UI動作確認・シナリオテスト計画"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/index.rst",
-      "sphinxDoc": "user-management/index",
-      "format": "rst",
-      "title": "イベントユーザー登録管理",
-      "summary": "企画から実装、この PC での起動までを一冊にまとめています。",
-      "preImplementation": false,
-      "lineCount": 17,
-      "headings": [
-        {
-          "level": 1,
-          "text": "イベントユーザー登録管理"
-        }
-      ],
-      "toctree": [
-        "docs/user-management/planning_requirements.md",
-        "docs/user-management/system_requirements.md",
-        "docs/user-management/DBschema.md",
-        "docs/user-management/detailed_design_spec.md",
-        "docs/user-management/backend_api_implementation_spec.md",
-        "docs/user-management/front_implementation_spec.md",
-        "docs/user-management/local_development_setup.md",
-        "docs/user-management/local_environment.md"
-      ],
-      "codePaths": [],
-      "includedBy": [
-        "docs/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/local_development_setup.md",
-      "sphinxDoc": "user-management/local_development_setup",
-      "format": "markdown",
-      "title": "ローカル開発環境構築・自動セットアップ仕様書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。現在の手順は [local.rst](../local.rst) にあります。",
-      "preImplementation": true,
-      "lineCount": 200,
-      "headings": [
-        {
-          "level": 1,
-          "text": "ローカル開発環境構築・自動セットアップ仕様書"
-        },
-        {
-          "level": 2,
-          "text": "外部サービス完全非依存・コンテナ＋ローカル実行構成"
-        },
-        {
-          "level": 2,
-          "text": "1. 環境構築の全体概要"
-        },
-        {
-          "level": 2,
-          "text": "2. 前提要件（Prerequisites）"
-        },
-        {
-          "level": 2,
-          "text": "3. 設定ファイル構成（Root配置資材）"
-        },
-        {
-          "level": 3,
-          "text": "3.1. docker-compose.yml（ローカルDB定義）"
-        },
-        {
-          "level": 3,
-          "text": "3.2. .env.example（環境変数テンプレート）"
-        },
-        {
-          "level": 1,
-          "text": "=========================================="
-        },
-        {
-          "level": 1,
-          "text": "ローカル開発環境変数（本番利用禁止）"
-        },
-        {
-          "level": 1,
-          "text": "=========================================="
-        },
-        {
-          "level": 1,
-          "text": "PostgreSQL 接続文字列 (Dockerコンテナ)"
-        },
-        {
-          "level": 1,
-          "text": "ローカルJWT秘密鍵 (HS256 / 32文字以上のランダム文字列)"
-        },
-        {
-          "level": 1,
-          "text": "ゲスト幹事トークン・照会トークンのハッシュ用ソルト"
-        },
-        {
-          "level": 1,
-          "text": "アプリケーションベースURL"
-        },
-        {
-          "level": 1,
-          "text": "Node環境"
-        },
-        {
-          "level": 3,
-          "text": "3.3. package.json（依存パッケージ定義）"
-        },
-        {
-          "level": 3,
-          "text": "3.4. setup.sh（自動セットアップ・ワンショットスクリプト）"
-        },
-        {
-          "level": 2,
-          "text": "4. AIコーディングツールへの指示プロンプト（Cursor / Claude Code 用）"
-        },
-        {
-          "level": 2,
-          "text": "5. トラブルシューティング（AI・開発者共通）"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/local_environment.md",
-      "sphinxDoc": "user-management/local_environment",
-      "format": "markdown",
-      "title": "ローカル環境の起動と停止",
-      "summary": "この PC の開発環境は、ホストに置いた PostgreSQL 16 と、プロジェクト直下で動かす Next.js で構成しています。PostgreSQL は Windows サービスにも Docker にも登録していません。データディレクトリは C:\\Users\\hisat\\local-pgsql\\data、実行ファイルは C:\\Users\\hisat\\local-pgsql\\pgsql\\bin です。",
-      "preImplementation": false,
-      "lineCount": 124,
-      "headings": [
-        {
-          "level": 1,
-          "text": "ローカル環境の起動と停止"
-        },
-        {
-          "level": 2,
-          "text": "PostgreSQL を起動する"
-        },
-        {
-          "level": 2,
-          "text": "PostgreSQL を確認する"
-        },
-        {
-          "level": 2,
-          "text": "アプリを起動する"
-        },
-        {
-          "level": 2,
-          "text": "アプリを確認する"
-        },
-        {
-          "level": 2,
-          "text": "アプリを停止する"
-        },
-        {
-          "level": 2,
-          "text": "PostgreSQL を停止する"
-        },
-        {
-          "level": 2,
-          "text": "起動と停止の順"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/planning_requirements.md",
-      "sphinxDoc": "user-management/planning_requirements",
-      "format": "markdown",
-      "title": "プロジェクト企画要件定義書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 154,
-      "headings": [
-        {
-          "level": 1,
-          "text": "プロジェクト企画要件定義書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Progressive Membership & Lean RBAC）"
-        },
-        {
-          "level": 2,
-          "text": "1. 目的と位置づけ（階層構造）"
-        },
-        {
-          "level": 2,
-          "text": "2. 企画要件コア5項目"
-        },
-        {
-          "level": 3,
-          "text": "2.1. ターゲットの解像度と現状の代替手段"
-        },
-        {
-          "level": 4,
-          "text": "ペルソナと行動コンテキスト"
-        },
-        {
-          "level": 4,
-          "text": "現状の代替手段（As-Is）と課題"
-        },
-        {
-          "level": 3,
-          "text": "2.2. 独自の提供価値（Core Value Proposition）"
-        },
-        {
-          "level": 4,
-          "text": "1. 段階的アイデンティティ（Progressive Identity / Zero-Friction RSVP）"
-        },
-        {
-          "level": 4,
-          "text": "2. 軽量かつ堅牢な幹事ガバナンス（Lean Co-Organizing & Concurrency Safety）"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 成功指標（KPI / ガードレール指標）"
-        },
-        {
-          "level": 3,
-          "text": "2.4. 認証・データ保持のコスト＆ライフサイクル設計"
-        },
-        {
-          "level": 4,
-          "text": "ユーザー状態の二層構造と保持ポリシー"
-        },
-        {
-          "level": 3,
-          "text": "2.5. やらないことリスト（Non-Goals）"
-        },
-        {
-          "level": 2,
-          "text": "3. 想定される3つの自己反証と構造的批判"
-        },
-        {
-          "level": 3,
-          "text": "批判1: ケイパビリティURL紛失と他者なりすまし改ざん（Identity Hijacking vs. Zero-Friction）"
-        },
-        {
-          "level": 3,
-          "text": "批判2: 排他編集ロックの放置によるワークフロー死滅（The Abandoned Lock Risk）"
-        },
-        {
-          "level": 3,
-          "text": "批判3: 会員化インセンティブの希薄化トラップ（The Frictionless Utility Trap）"
-        },
-        {
-          "level": 2,
-          "text": "4. 難易度順の参照フレームワーク"
-        },
-        {
-          "level": 2,
-          "text": "5. 次工程（要件定義書）に向けた確認・ヒアリング事項"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
-      ]
-    },
-    {
-      "path": "docs/user-management/system_requirements.md",
-      "sphinxDoc": "user-management/system_requirements",
-      "format": "markdown",
-      "title": "システム要件定義書",
-      "summary": "> 実装前の設計文書です。 現在の正は prisma/schema.prisma と src/ のコードです。実装と差分があればコードを優先してください。",
-      "preImplementation": true,
-      "lineCount": 297,
-      "headings": [
-        {
-          "level": 1,
-          "text": "システム要件定義書"
-        },
-        {
-          "level": 2,
-          "text": "イベント主催者・参加者向け 権限管理＆段階的会員基盤（Progressive Membership & Lean RBAC）"
-        },
-        {
-          "level": 2,
-          "text": "1. システム概要と認可マトリクス"
-        },
-        {
-          "level": 3,
-          "text": "1.1. システムの位置づけ"
-        },
-        {
-          "level": 3,
-          "text": "1.2. アクター定義"
-        },
-        {
-          "level": 3,
-          "text": "1.3. 権限マトリクス（Role-Based Access Control）"
-        },
-        {
-          "level": 2,
-          "text": "2. 画面遷移とユーザーフロー"
-        },
-        {
-          "level": 3,
-          "text": "2.1. イベント作成・プログレッシブ幹事登録フロー"
-        },
-        {
-          "level": 3,
-          "text": "2.2. ゼロフリクション参加＆自端末照会フロー"
-        },
-        {
-          "level": 3,
-          "text": "2.3. 悲観的リースロック（同時編集不可・引き継ぎ）フロー"
-        },
-        {
-          "level": 2,
-          "text": "3. 機能要件詳細（Functional Requirements）"
-        },
-        {
-          "level": 3,
-          "text": "FR-01: イベント作成とプログレッシブ幹事登録"
-        },
-        {
-          "level": 3,
-          "text": "FR-02: ゲスト参加登録と端末自動照会（連絡先入力なし）"
-        },
-        {
-          "level": 3,
-          "text": "FR-03: 参加者一覧の厳格な秘匿制御"
-        },
-        {
-          "level": 3,
-          "text": "FR-04: 共同幹事の招待方式"
-        },
-        {
-          "level": 3,
-          "text": "FR-05: 悲観的リースロック（同時編集不可・引き継ぎUX）"
-        },
-        {
-          "level": 3,
-          "text": "FR-06: 過去イベント一覧とワンクリック複製"
-        },
-        {
-          "level": 3,
-          "text": "FR-07: 会員登録とアカウント昇格（Account Hydration）"
-        },
-        {
-          "level": 2,
-          "text": "4. 非機能要件（Non-Functional Requirements）"
-        },
-        {
-          "level": 3,
-          "text": "4.1. セキュリティ要件"
-        },
-        {
-          "level": 3,
-          "text": "4.2. データ整合性と可用性"
-        },
-        {
-          "level": 2,
-          "text": "5. 論理データモデル（ER定義）"
-        },
-        {
-          "level": 3,
-          "text": "5.1. エンティティ関連図（Conceptual ERD）"
-        },
-        {
-          "level": 3,
-          "text": "5.2. スキーマ定義"
-        },
-        {
-          "level": 4,
-          "text": "Users（会員マスター）"
-        },
-        {
-          "level": 4,
-          "text": "Events（イベント）"
-        },
-        {
-          "level": 4,
-          "text": "EventOrganizers（幹事・共同幹事紐付け）"
-        },
-        {
-          "level": 4,
-          "text": "Participants（出欠登録レコード）"
-        },
-        {
-          "level": 4,
-          "text": "EditLocks（排他的リースロック）"
-        },
-        {
-          "level": 2,
-          "text": "6. APIインターフェース仕様（REST/JSON）"
-        },
-        {
-          "level": 3,
-          "text": "6.1. 公開・参加者向けエンドポイント"
-        },
-        {
-          "level": 3,
-          "text": "6.2. 幹事専用エンドポイント"
-        },
-        {
-          "level": 3,
-          "text": "6.3. 会員・マイページエンドポイント"
-        }
-      ],
-      "toctree": [],
-      "codePaths": [
-        {
-          "path": "docs/overall_system_requirements_common.md",
-          "exists": true
-        },
-        {
-          "path": "prisma/schema.prisma",
-          "exists": true
-        }
-      ],
-      "includedBy": [
-        "docs/user-management/index.rst"
       ]
     }
   ]

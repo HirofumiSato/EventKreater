@@ -23,7 +23,7 @@
 | API | 7 | 仕様書に無い実装。`POST /api/v1/organizer/events/[id]/lifecycle`、`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
 | DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
 | パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
-| 手順 | 1 | `user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い |
+| 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
 
 テスト件数は [testing/scope.rst](testing/scope.rst) の記載（348 件）と実測が一致しています。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
 
@@ -36,19 +36,21 @@
 | [doc-index.json](doc-index.json) | 全原稿のタイトル・要約・見出し・toctree・参照コード。AI が最初に引く |
 | [api-routes.md](api-routes.md) | `src/app/api/**/route.ts` の一覧と、API 仕様との差分 |
 | [traceability.md](traceability.md) | コードから文書への逆引きと、文書が指す実在しないパス |
-| [../llms.txt](../llms.txt) | llms.txt 形式の入口。最初に読む 21 リンクだけを置く |
+| [../llms.txt](../llms.txt) | llms.txt 形式の入口。最初に読む 22 リンクだけを置く |
 
 ## 実装前の設計（現在の正ではない）
 
-次の 2 つは企画段階の上流設計書です。現在の実装と一致しない箇所があるため、正として扱わないでください。13 ファイルの冒頭にも同じ注意を書いてあります。
+[docs/archive/](archive/index.rst) に、企画段階の上流設計書をまとめてあります。現在の実装と一致しない箇所があるため、正として扱わないでください。各原稿の冒頭にも同じ注意を書いてあります。
 
-- `user-management/` — 会員登録管理。ルート直下の同名文書に統合済み（`local_environment.md` だけは現在の手順書）
-- `event-page/specs/` — イベント告知ページ。ルート直下の同名文書に統合済み
+- `archive/user-management/` — 会員登録管理。ルート直下の同名文書に統合済み（当時の手順書もここに移した。現在の手順は [local.rst](local.rst)）
+- `archive/event-page/specs/` — イベント告知ページ。ルート直下の同名文書に統合済み
+
+原稿の冒頭に実装前の設計である旨の注意書きがあるものは、`npm run docs:gen` の索引と `npm run docs:links` の検査から外れます。Sphinx では読めるので、履歴を追うときだけ開いてください。現在の正は上の表の「正」の列です。
 
 ## 単独ビルド用の設定
 
 ルートビルドで有効な Sphinx の設定は [conf.py](conf.py) だけです。
-`{event-page,flyer,user-management}/conf.py` はその章だけを単独でビルドするときの設定で、ルートの `toctree` からは使われません。
+`{event-page,flyer}/conf.py` はその章だけを単独でビルドするときの設定で、ルートの `toctree` からは使われません。`archive/` はルートビルドだけで読むので、単独ビルド用の設定は置いていません。
 
 ## 検査
 

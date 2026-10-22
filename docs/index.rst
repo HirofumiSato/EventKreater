@@ -22,6 +22,7 @@
    :caption: 手順
 
    local
+   deploy
    stripe
    database
 
@@ -56,7 +57,12 @@
    detailed_design_spec
    event-page/index
    flyer/index
-   user-management/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: アーカイブ（実装前の設計）
+
+   archive/index
 
 .. toctree::
    :maxdepth: 2
@@ -114,6 +120,8 @@
      - ドキュメント全体の見取り図とサイトマップ
    * - ``docs/local.rst``
      - ローカル起動、環境変数、画面確認
+   * - ``docs/deploy.rst``
+     - 本番デプロイ。Cloudflare・Fly.io・Neon・R2 の順に設定する
    * - ``docs/stripe.rst``
      - Stripe のテストモード、課金の境界、Webhook
    * - ``docs/database.rst``
@@ -143,11 +151,11 @@
    * - ``docs/detailed_design_spec.md``
      - チラシ生成のシステム詳細設計
    * - ``docs/event-page/``
-     - イベント告知ページと出欠管理。サービス紹介の LP とは別である。``specs/`` は実装前の設計
+     - イベント告知ページと出欠管理。サービス紹介の LP とは別である。要件と設計は ``docs/archive/``
    * - ``docs/flyer/``
      - AI チラシ自動生成
-   * - ``docs/user-management/``
-     - イベントユーザー登録管理。実装前の設計が中心。現在の手順は ``docs/local.rst``
+   * - ``docs/archive/``
+     - 実装前の企画要件・システム要件・詳細設計。**現在の正ではない**。索引とリンク検査の対象外
    * - ``docs/issues/``
      - 画面遷移・課金・運営まわりの課題。1 課題 1 ファイルで、受け入れ条件まで書く
    * - ``docs/api-routes.md``

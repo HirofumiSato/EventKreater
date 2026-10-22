@@ -1,0 +1,144 @@
+# ローカル開発用の構成。`docker compose up` で web / flyer / db が起動する。
+# 初回だけ `docker compose --profile setup run --rm migrate` でスキーマとシードを入れる。
+# 本番相当の確認は docker-compose.prod.yml を重ねる。
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# ディレクトリ名に日本語が入っているため、プロジェクト名を明示する。
+name: event-creater
+
+# web と migrate で共有する環境変数。
+x-web-env: &web-env
+  # コンテナ内からは db サービスの 5432 へ繋ぐ。ホストの .env（localhost:5432）は使わない。
+  DATABASE_URL: postgresql://postgres:postgres@db:5432/event_platform_billing?schema=public
+  # 32 文字以上必須。.env の値があればそれを使う。
+  JWT_SECRET: ${JWT_SECRET:-docker-development-secret-placeholder-32}
+  # ブラウザから見た URL。コンテナ名ではなくホストの localhost を指す。
+  NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3012}
+  # コンテナ間はサービス名で解決する。.env の 127.0.0.1:8000 では自分自身を指してしまう。
+  FLYER_API_URL: http://flyer:8000
+  MAIL_WEBHOOK_URL: ${MAIL_WEBHOOK_URL:-}
+  SMS_WEBHOOK_URL: ${SMS_WEBHOOK_URL:-}
+  POSTAL_CODE_API_URL: ${POSTAL_CODE_API_URL:-https://zipcloud.ibsnet.co.jp/api/search}
+  BILLING_NOTICE_SECRET: ${BILLING_NOTICE_SECRET:-}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_PRICE_ID_MONTHLY_980: ${STRIPE_PRICE_ID_MONTHLY_980:-}
+  STRIPE_PRICE_ID_ONE_TIME: ${STRIPE_PRICE_ID_ONE_TIME:-}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: event_platform_billing
+      TZ: Asia/Tokyo
+    # ホストで動いている Postgres（5432）と衝突させない。
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d event_platform_billing"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  flyer:
+    # 本番相当（docker-compose.prod.yml）とタグを分ける。同じ名前にすると
+    # 後から build した側が上書きし、切り替えたときに CMD が食い違う。
+    image: event-creater-flyer:dev
+    build:
+      context: ./services/flyer
+      target: dev
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      STORAGE_DIR: /data/tmp
+      CANDIDATE_DIR: /data/candidates
+      FALLBACK_DIR: /data/backgrounds
+      TZ: Asia/Tokyo
+    volumes:
+      - ./services/flyer:/app
+      - flyer_data:/data
+    ports:
+      - "8000:8000"
+    init: true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    image: event-creater-web:dev
+    build:
+      context: .
+      target: dev
+    environment:
+      <<: *web-env
+      NODE_ENV: development
+      # Windows の bind mount では inotify が飛ばないのでポーリングさせる。
+      WATCHPACK_POLLING: "true"
+      TZ: Asia/Tokyo
+    volumes:
+      # ソースはホストから。node_modules と .next は Linux 版をボリュームで持つ。
+      # ホストの node_modules（Windows バイナリ）を混ぜないための分離。
+      - ./:/app
+      - web_node_modules:/app/node_modules
+      - web_next:/app/.next
+    ports:
+      - "3012:3012"
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+      flyer:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3012/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      # 初回のコンパイルが Windows の bind mount で遅いため長めに取る。
+      start_period: 120s
+
+  # マイグレーションとシード。`up` では起動しない。
+  #   docker compose --profile setup run --rm migrate
+  migrate:
+    profiles: ["setup"]
+    image: event-creater-web:dev
+    build:
+      context: .
+      target: dev
+    environment:
+      <<: *web-env
+    volumes:
+      - ./:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - npx prisma migrate deploy && npx prisma db seed
+
+volumes:
+  db_data:
+  flyer_data:
+  web_node_modules:
+  web_next:
+  # 生成済みチラシの保存先（本番相当の確認で使う）。
+  web_storage:

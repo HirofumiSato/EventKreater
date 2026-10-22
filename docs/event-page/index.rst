@@ -9,13 +9,5 @@
 
    local-operations
 
-.. toctree::
-   :maxdepth: 1
-   :caption: 仕様書
-
-   specs/event_page_planning_requirements
-   specs/event_page_system_requirements
-   specs/event_page_data_model_and_crud
-   specs/event_page_db_schema_crud
-   specs/backend_api_implementation_spec
-   specs/event_page_frontend_implementation_spec
+実装前の企画要件・システム要件・詳細設計は :doc:`../archive/index` に移しました。
+現在の正はコード（``src/app/**/page.tsx`` と ``src/app/api/**/route.ts``）です。

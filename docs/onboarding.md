@@ -106,5 +106,7 @@ CI は `check`・`db`・`flyer`・`docs`・`typecheck` の 5 ジョブです（[
 | --- | --- |
 | ドキュメントの地図 | [sitemap.rst](sitemap.rst) |
 | どの文書が正か、既知の乖離 | [README.md](README.md) |
+| 本番へ出す手順 | [deploy.rst](deploy.rst)（Cloudflare → Fly.io → Neon / R2） |
+| 以前の要件と設計 | [archive/index.rst](archive/index.rst)（**現在の正ではない**） |
 | AI エージェント向けの探索規則 | `AGENTS.md`（リポジトリ直下） |
 | 画面と API の仕様 | [front_implementation_spec.md](front_implementation_spec.md) / [backend_api_implementation_spec.md](backend_api_implementation_spec.md) |

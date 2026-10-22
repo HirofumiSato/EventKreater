@@ -1,0 +1,36 @@
+# 本番相当のローカル確認用オーバーレイ。
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# 差分だけを書く（環境変数の共通分は docker-compose.yml の x-web-env を継承する）。
+# YAML のアンカーはファイルを跨げないため、ここでは再定義しない。
+# `!reset`（値を既定に戻す）と `!override`（配列を置き換える）は Compose 2.24 以降。
+# 配列に値を残したいときは `!override` を使う。`!reset` に値を併記すると捨てられる。
+
+services:
+  web:
+    image: event-creater-web:prod
+    build:
+      context: .
+      target: runner
+      args:
+        # NEXT_PUBLIC_* はビルド時に焼き込まれるので build args で渡す。
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3012}
+    environment:
+      NODE_ENV: production
+      WATCHPACK_POLLING: !reset null
+    # ソースの bind mount を外し、生成済みチラシの保存先だけ名前付きボリュームで
+    # 残す。`!reset` に値を併記すると値ごと捨てられるので `!override` を使う。
+    volumes: !override
+      - web_storage:/app/storage
+
+  flyer:
+    image: event-creater-flyer:prod
+    build:
+      context: ./services/flyer
+      target: runtime
+    # ソースの bind mount は外し、保存先のボリュームだけ残す。
+    volumes: !override
+      - flyer_data:/data
+    # 本番では flyer を外へ出さない。web からサービス名で届けば足りる。
+    ports: !reset []

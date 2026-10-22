@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 96（実装前の設計 13 件は除外）
-- 文書から参照されているコードパス: 212
+- 対象文書: 96（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 216
 - API ルート: 73（どの文書にも URL が無いもの 1）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -19,7 +19,7 @@
 | `prisma/migrations/20261021150000_pricing_campaigns/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `prisma/migrations/20261022140000_participant_waitlist/migration.sql` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `prisma/migrations/20261022160000_organizer_profile/migration.sql` | [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
-| `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/database.rst](database.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / `llms.txt` |
+| `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / `llms.txt` |
 | `public/samples` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
@@ -28,7 +28,7 @@
 | `services/flyer/mypy.ini` | `services/flyer/AGENTS.md` |
 | `services/flyer/README.md` | [docs/README.md](README.md) |
 | `services/flyer/requirements.txt` | [docs/testing/ci.rst](testing/ci.rst) |
-| `services/flyer/src` | `AGENTS.md` / [docs/README.md](README.md) |
+| `services/flyer/src` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) |
 | `services/flyer/src/adapters/image_generator/dalle_image_generator.py` | [docs/flyer/libraries/httpx.rst](flyer/libraries/httpx.rst) / [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) |
 | `services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) |
 | `services/flyer/src/adapters/renderer` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pillow.rst](flyer/libraries/pillow.rst) / `services/flyer/README.md` |
@@ -47,10 +47,10 @@
 | `services/flyer/tests/test_api_integration.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_domain.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_renderer.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
-| `src/app` | `AGENTS.md` / [docs/README.md](README.md) |
+| `src/app` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) |
 | `src/app/account/email/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/account/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/api` | `AGENTS.md` / [docs/README.md](README.md) / [docs/index.rst](index.rst) / [docs/sitemap.rst](sitemap.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
+| `src/app/api` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) / [docs/index.rst](index.rst) / [docs/sitemap.rst](sitemap.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/app/api/v1` | `AGENTS.md` |
 | `src/app/api/v1/admin/pricing-campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/api/v1/admin/session/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
@@ -94,7 +94,7 @@
 | `src/app/console/pricing/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/console/users/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/events/[id]/EventPageClient.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/onboarding.md](onboarding.md) |
-| `src/app/events/[id]/page.tsx` | [docs/onboarding.md](onboarding.md) |
+| `src/app/events/[id]/page.tsx` | [docs/archive/index.rst](archive/index.rst) / [docs/onboarding.md](onboarding.md) |
 | `src/app/invitations/[code]/page.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/app/mypage/page.tsx` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
@@ -140,16 +140,18 @@
 | `src/modules/admin/lib/directory.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/modules/attendance/components/DynamicRsvpBox.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/modules/attendance/components/ParticipantListTable.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
+| `src/modules/auth` | [docs/archive/index.rst](archive/index.rst) |
 | `src/modules/auth/components/AuthEntryScreen.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/components/LoginChallengeForm.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/auth-mode.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/auth/lib/auth.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/auth/lib/guards.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/auth/lib/hydrate.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/modules/auth/lib/login-challenge.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/phone.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/rate-limit.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/billing` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/billing/components/PricingModal.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/components/VerifyPaymentBanner.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) |
@@ -172,6 +174,8 @@
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/types.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
+| `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
+| `src/modules/flyers/lib/upload-limit.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/media/lib/listings.ts` | [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/organizers/components/CalendarView.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/modules/organizers/components/OrganizerPageView.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |

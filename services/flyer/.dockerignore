@@ -1,0 +1,19 @@
+# Python のキャッシュと仮想環境はイメージに要らない。
+__pycache__
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.venv
+
+# 秘密情報。
+.env
+.env.*
+
+# 実行時に作られるキャッシュ。イメージには入れず、/data のボリュームへ書く。
+src/static/tmp
+src/static/candidates
+src/static/default_backgrounds
+
+# ドキュメントと作業指示の履歴。
+docs/_build
+automation
