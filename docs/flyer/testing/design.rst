@@ -66,7 +66,7 @@
 アダプター
 ----------
 
-ファイルは ``tests/test_adapters.py`` です。OpenAI のクライアントはテスト内の偽物です。システムプロンプトは ``docs/specs/implementation_spec.md`` の 2.2 と全文比較します。
+ファイルは ``tests/test_adapters.py`` です。OpenAI のクライアントはテスト内の偽物です。システムプロンプトは ``docs/flyer/specs/implementation_spec.md`` の 2.2 と全文比較します。
 
 .. list-table::
    :header-rows: 1

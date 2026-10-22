@@ -6,12 +6,15 @@
 
 このアプリは PostgreSQL を Prisma 経由で使います。画面確認の前に、データベースの作成とマイグレーションが必要です。
 
+全体を 90 分で掴む順路は :doc:`onboarding`、どの文書が正かは :doc:`README` です。
 全体の見取り図は :doc:`sitemap`、Stripe の手元確認は :doc:`stripe`、自動テストの読む順は :doc:`testing/index` です。
 
 .. toctree::
    :maxdepth: 2
    :caption: 案内
 
+   onboarding
+   README
    sitemap
 
 .. toctree::
@@ -74,6 +77,8 @@
 生成した HTML は ``docs/_build/html/`` に出力します。``docs/_build/`` は ``.gitignore`` の対象なので、リポジトリには含めません。入口は ``docs/_build/html/index.html`` です。
 再ビルドは ``npm run docs`` だけで足ります。原稿を直したら、この HTML も作り直して内容を確認してください。
 
+原稿に書いたリポジトリ内のパスが実在するかは、``npm run docs:links`` で確認します。失敗が 1 件でもあれば終了コードは 1 です。``scripts/check-doc-links.mjs`` が担当し、冒頭で「実装前の設計」と断っている文書は対象外にします。
+
 編集するファイルは次のとおりです。
 
 .. list-table::
@@ -82,6 +87,12 @@
 
    * - ファイル
      - 内容
+   * - ``docs/onboarding.md``
+     - 全体を掴む 90 分の順路。初見の開発者と AI が同じものを読む
+   * - ``docs/README.md``
+     - ドキュメントの派生・検証マップ。既知の乖離と、実装前の設計の一覧
+   * - ``AGENTS.md``
+     - AI エージェント向けの探索規則。正はコードであること、コマンド、規約
    * - ``docs/index.rst``
      - この目次
    * - ``docs/sitemap.rst``
@@ -117,10 +128,10 @@
    * - ``docs/detailed_design_spec.md``
      - チラシ生成のシステム詳細設計
    * - ``docs/event-page/``
-     - イベント告知ページと出欠管理。サービス紹介の LP とは別である
+     - イベント告知ページと出欠管理。サービス紹介の LP とは別である。``specs/`` は実装前の設計
    * - ``docs/flyer/``
      - AI チラシ自動生成
    * - ``docs/user-management/``
-     - イベントユーザー登録管理
+     - イベントユーザー登録管理。実装前の設計が中心。現在の手順は ``docs/local.rst``
    * - ``docs/issues/``
      - 画面遷移・課金・運営まわりの課題。1 課題 1 ファイルで、受け入れ条件まで書く

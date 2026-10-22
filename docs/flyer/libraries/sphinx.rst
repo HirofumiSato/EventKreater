@@ -24,6 +24,6 @@ Tips
 * ``sphinx-build`` が PATH に無いときは ``python -m sphinx`` を使います。
 * ビルドは ``src`` を import します。先に ``requirements.txt`` をインストールしてください。
 * 警告を見逃さないときは ``python -m sphinx -b html -W -E docs docs/_build/html`` です。``-E`` はキャッシュを使わず読み直します。
-* FastAPI を autodoc で import すると、現行の Pydantic との組み合わせで失敗します。HTTP の公開関数は ``docs/reference/http.rst`` に手書きしています。FastAPI を import しないモジュールは ``automodule`` のままです。
+* FastAPI を autodoc で import すると、現行の Pydantic との組み合わせで失敗します。HTTP の公開関数は ``docs/flyer/reference/http.rst`` に手書きしています。FastAPI を import しないモジュールは ``automodule`` のままです。
 * ページを足したら ``docs/index.rst`` か、配下の ``index.rst`` の ``toctree`` にファイル名を追加します。一覧に無い RST は HTML に出ません。
 * 生成物の ``docs/_build/`` はコミットしません。
