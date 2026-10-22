@@ -13,6 +13,7 @@ import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
+import { SITE } from "@/lib/site";
 import { loginUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
 import { readFlyerDraftKey } from "@/modules/flyers/lib/draft";
@@ -71,8 +72,8 @@ function NewEventScreen() {
 
   // 参照元を保ったまま、この作成画面へ戻るパス。購入後の戻り先にも使う。
   const nextPath = referrerEventId
-    ? `/organizer/events/new?ref=${encodeURIComponent(referrerEventId)}`
-    : "/organizer/events/new";
+    ? `${SITE.nav.createEvent.href}?ref=${encodeURIComponent(referrerEventId)}`
+    : SITE.nav.createEvent.href;
 
   // 購入後に戻ってきたとき、下書きの内容をフォームへ戻す。
   useEffect(() => {

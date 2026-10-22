@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
 import { problemMessage, readProblemBody } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
+import { SITE } from "@/lib/site";
 
 export type OneTimeCheckoutResult = "GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED";
 
@@ -13,7 +14,7 @@ export interface CheckoutIntent {
   returnTo?: string;
 }
 
-const DEFAULT_RETURN_TO = "/organizer/events/new";
+const DEFAULT_RETURN_TO = SITE.nav.createEvent.href;
 
 function checkoutBody(intent?: CheckoutIntent): string {
   return JSON.stringify(intent ?? {});

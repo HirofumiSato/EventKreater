@@ -6,6 +6,7 @@ import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
 import { registerUrl } from "@/lib/auth-links";
+import { SITE } from "@/lib/site";
 import { STATUS_LABELS } from "@/modules/events/types";
 import type { EventRevenueRow, RevenueSummary } from "@/modules/revenue/lib/revenue";
 
@@ -115,7 +116,7 @@ export default function OrganizerRevenuePage() {
           <Link href="/organizer/events" className="btn btn--outline">
             主催一覧へ
           </Link>
-          <Link href="/organizer/events/new" className="btn btn--primary">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
             新規作成
           </Link>
         </div>

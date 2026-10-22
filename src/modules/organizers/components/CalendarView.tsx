@@ -90,7 +90,7 @@ export function CalendarView() {
           <Link href="/organizer/events" className="btn btn--outline">
             主催一覧へ
           </Link>
-          <Link href="/organizer/events/new" className="btn btn--primary">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
             新規作成
           </Link>
         </div>
@@ -122,7 +122,7 @@ export function CalendarView() {
       {!error && !loading && monthEntryCount === 0 && (
         <section className="card calendar-empty">
           <p>この月に予定はありません。</p>
-          <Link href="/organizer/events/new" className="btn btn--outline btn--sm">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--outline btn--sm">
             新規作成
           </Link>
         </section>
