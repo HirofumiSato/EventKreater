@@ -3,39 +3,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CalendarMonthGrid, CalendarToolbar } from "@/components/common/CalendarMonth";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import {
-  WEEKDAY_LABELS,
   buildMonthGrid,
   countMonthEntries,
   currentMonth,
+  defaultSelectedDate,
   entriesForDate,
-  formatCellLabel,
   formatDayHeading,
   groupSchedulesByDate,
   isMonthKey,
+  organizerEventHref,
   shiftMonth,
+  toOrganizerCellItem,
   todayInTokyo,
 } from "@/modules/organizers/lib/calendar";
 import { readProblem } from "@/lib/problem";
 import { SITE } from "@/lib/site";
-
-function weekdayClass(index: number): string {
-  if (index === 0) return "calendar__weekday calendar__weekday--sunday";
-  if (index === 6) return "calendar__weekday calendar__weekday--saturday";
-  return "calendar__weekday";
-}
-
-/** 月の選択を変えたとき、今日がその月なら今日を、そうでなければ1日を選ぶ。 */
-function defaultSelection(month: string): string {
-  const today = todayInTokyo();
-  return today.slice(0, 7) === month ? today : `${month}-01`;
-}
-
-function monthTitle(month: string): string {
-  return `${Number(month.slice(0, 4))}年${Number(month.slice(5, 7))}月`;
-}
 
 export function CalendarView() {
   const router = useRouter();
@@ -43,7 +29,7 @@ export function CalendarView() {
   const queryMonth = searchParams.get("month");
 
   const [month, setMonth] = useState(() => (isMonthKey(queryMonth) ? queryMonth : currentMonth()));
-  const [selectedDate, setSelectedDate] = useState(() => defaultSelection(month));
+  const [selectedDate, setSelectedDate] = useState(() => defaultSelectedDate(month));
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +61,7 @@ export function CalendarView() {
     if (!isMonthKey(queryMonth) || queryMonth === month) return;
     setMonth(queryMonth);
     setSelectedDate((current) =>
-      current.slice(0, 7) === queryMonth ? current : defaultSelection(queryMonth),
+      current.slice(0, 7) === queryMonth ? current : defaultSelectedDate(queryMonth),
     );
   }, [queryMonth, month]);
 
@@ -87,7 +73,7 @@ export function CalendarView() {
 
   const goToMonth = (next: string) => {
     setMonth(next);
-    setSelectedDate(defaultSelection(next));
+    setSelectedDate(defaultSelectedDate(next));
     router.replace(`/organizer/calendar?month=${next}`, { scroll: false });
   };
 
@@ -110,24 +96,12 @@ export function CalendarView() {
         </div>
       </section>
 
-      <section className="panel calendar-toolbar">
-        <div className="calendar-toolbar__nav">
-          <button type="button" className="btn btn--outline btn--sm" onClick={() => goToMonth(shiftMonth(month, -1))}>
-            前月
-          </button>
-          <button type="button" className="btn btn--outline btn--sm" onClick={() => goToMonth(shiftMonth(month, 1))}>
-            次月
-          </button>
-          {month !== todayMonth && (
-            <button type="button" className="btn btn--sm" onClick={() => goToMonth(todayMonth)}>
-              今月
-            </button>
-          )}
-        </div>
-        <p className="calendar-toolbar__month" aria-live="polite">
-          {monthTitle(month)}
-        </p>
-      </section>
+      <CalendarToolbar
+        month={month}
+        todayMonth={todayMonth}
+        onShift={(delta) => goToMonth(shiftMonth(month, delta))}
+        onToday={() => goToMonth(todayMonth)}
+      />
 
       {error && (
         <p className="alert alert--warning">
@@ -156,46 +130,16 @@ export function CalendarView() {
 
       {!error && (
         <div className="calendar-layout">
-          <section className="card calendar" aria-label={`${monthTitle(month)}のカレンダー`}>
-            <div className="calendar__weekdays" aria-hidden="true">
-              {WEEKDAY_LABELS.map((label, index) => (
-                <span key={label} className={weekdayClass(index)}>
-                  {label}
-                </span>
-              ))}
-            </div>
-            <div className="calendar__grid">
-              {cells.map((cell) => {
-                const count = cell.isOutside ? 0 : entriesForDate(grouped, cell.date).length;
-                const classes = ["calendar__cell"];
-                if (cell.isOutside) classes.push("is-outside");
-                if (cell.date === today) classes.push("is-today");
-                if (cell.date === selectedDate) classes.push("is-selected");
-                return (
-                  <button
-                    key={cell.date}
-                    type="button"
-                    className={classes.join(" ")}
-                    aria-label={cell.isOutside ? undefined : formatCellLabel(cell.date, count)}
-                    aria-hidden={cell.isOutside || undefined}
-                    aria-pressed={cell.date === selectedDate}
-                    disabled={cell.isOutside}
-                    onClick={() => setSelectedDate(cell.date)}
-                  >
-                    <span className="calendar__day">{Number(cell.date.slice(8, 10))}</span>
-                    {count > 0 && (
-                      <span className="calendar__dots" aria-hidden="true">
-                        {Array.from({ length: Math.min(3, count) }, (_, index) => (
-                          <span key={index} className="calendar__dot" />
-                        ))}
-                        {count > 3 && <span className="calendar__dot-more">+{count - 3}</span>}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <CalendarMonthGrid
+            month={month}
+            cells={cells}
+            today={today}
+            selectedDate={selectedDate}
+            itemsForDate={(date) =>
+              entriesForDate(grouped, date).map(toOrganizerCellItem)
+            }
+            onSelect={setSelectedDate}
+          />
 
           <section className="card calendar-day" aria-labelledby="calendar-day-heading">
             <div className="calendar-day__head">
@@ -211,11 +155,7 @@ export function CalendarView() {
                 {dayEntries.map(({ event, schedule }) => (
                   <li key={`${event.id}-${schedule.id}`} className="calendar-day__item">
                     <Link
-                      href={
-                        event.status === "DRAFT"
-                          ? `/organizer/events/${event.id}/edit`
-                          : `/organizer/events/${event.id}/participants`
-                      }
+                      href={organizerEventHref(event)}
                       className="calendar-day__link"
                     >
                       <span className="calendar-day__time">{schedule.eventTime || "時刻未定"}</span>

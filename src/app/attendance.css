@@ -1588,6 +1588,21 @@ fieldset.field {
   margin-inline: auto;
 }
 
+/* カレンダーの短冊から開くモーダル。催し名が長いので左揃えにする。 */
+.dialog--calendar-event .eyebrow,
+.dialog--calendar-event .dialog__title,
+.dialog--calendar-event .dialog__body {
+  text-align: left;
+}
+
+.dialog--calendar-event .dialog__title {
+  margin-top: 0.25rem;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  /* 長い催し名も折り返して全文を出す。 */
+  overflow-wrap: anywhere;
+}
+
 .dialog .alert {
   margin-top: 1rem;
 }
@@ -2529,7 +2544,7 @@ a.card,
 }
 
 .calendar {
-  padding: 0.75rem;
+  padding: 0.375rem;
 }
 
 .calendar__weekdays,
@@ -2539,8 +2554,8 @@ a.card,
 }
 
 .calendar__weekdays {
-  gap: 0.25rem;
-  margin-bottom: 0.375rem;
+  gap: 0.125rem;
+  margin-bottom: 0.25rem;
 }
 
 .calendar__weekday {
@@ -2555,29 +2570,49 @@ a.card,
 }
 
 .calendar__grid {
-  gap: 0.25rem;
+  /* 短冊の数でセルの高さが変わらないよう、6週の行を揃える。 */
+  grid-auto-rows: 1fr;
+  gap: 0.125rem;
 }
 
 .calendar__cell {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 2.75rem;
-  padding: 0.3125rem 0.125rem;
+  align-items: stretch;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: 4.25rem;
+  padding: 0.25rem 0.1875rem;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
   background: transparent;
   color: var(--color-text);
-  line-height: 1;
+  line-height: 1.25;
+  text-align: left;
 }
 
-.calendar__cell:hover:not(:disabled) {
-  background: var(--color-bg);
+/* セル全体を押せる透明なボタン。日番号と短冊は、この上に重ねて置く。 */
+.calendar__cell-select {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
 }
 
-.calendar__cell:disabled {
+.calendar__cell-select:disabled {
   cursor: default;
+}
+
+.calendar__cell-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.calendar__cell:not(.is-outside):hover:not(.is-selected) {
+  background: var(--color-bg);
 }
 
 .calendar__cell.is-outside {
@@ -2585,43 +2620,121 @@ a.card,
   opacity: 0.45;
 }
 
-.calendar__cell.is-today {
-  border-color: var(--color-border-strong);
+/* 枠線は付けない。面の色と日番号の強調だけで今日と選択中を示す。 */
+.calendar__cell.is-today .calendar__day,
+.calendar__cell.is-selected .calendar__day {
+  color: var(--color-primary-text);
+  font-weight: 700;
 }
 
 .calendar__cell.is-selected {
-  background: var(--color-text);
-  color: #fff;
+  /* 墨地で塗りつぶすと予定の帯が読めなくなるので、淡い面で示す。 */
+  background: var(--color-primary-soft);
 }
 
 .calendar__day {
-  font-size: 0.875rem;
+  position: relative;
+  z-index: 1;
+  /* 日番号の上のタップは、下のセル選択ボタンへ通す。 */
+  pointer-events: none;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.calendar__dots {
+/* セル内の催し名。狭いので1行に切り、入りきらない分は「+N」にまとめる。 */
+.calendar__events {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 0.125rem;
-  min-height: 0.375rem;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-width: 0;
+  pointer-events: none;
 }
 
-.calendar__dot {
-  width: 0.25rem;
-  height: 0.25rem;
-  border-radius: 999px;
-  background: var(--color-primary);
-}
-
-.calendar__cell.is-selected .calendar__dot {
-  background: #fff;
-}
-
-.calendar__dot-more {
-  color: inherit;
-  font-size: 0.625rem;
-  line-height: 1;
+.calendar__event {
+  display: block;
+  width: 100%;
+  padding: 0.1875rem;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  /* 短冊はモーダルを開くので、セル選択より手前で受ける。 */
+  pointer-events: auto;
+}
+
+.calendar__event:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.calendar__event:focus-visible,
+.calendar__more:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.calendar__event.is-muted {
+  background: var(--color-slate-100);
+  color: var(--color-text-muted);
+}
+
+.calendar__event.is-muted:hover {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+/* 選択中のセルは下地が淡い赤になるので、帯は白地にして読めるようにする。 */
+.calendar__cell.is-selected .calendar__event {
+  background: var(--color-surface);
+}
+
+.calendar__cell.is-selected .calendar__event.is-muted {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+/* 選択中のセルでも、短冊を押せることが分かるようにホバーで色を返す。 */
+.calendar__cell.is-selected .calendar__event:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.calendar__cell.is-selected .calendar__event.is-muted:hover {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.calendar__more {
+  width: 100%;
+  padding: 0 0 0 0.1875rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-size: 0.5625rem;
+  line-height: 1.3;
+  text-align: left;
+  white-space: nowrap;
+  /* セル選択ではなく「この日の全件」を選ぶボタンとして、セルより手前で受ける。 */
+  pointer-events: auto;
+}
+
+.calendar__more:hover {
+  color: var(--color-primary-text);
+  text-decoration: underline;
+}
+
+.calendar__cell.is-selected .calendar__more {
+  color: var(--color-primary-text);
 }
 
 .calendar-empty {
@@ -2685,8 +2798,76 @@ a.card,
   font-size: 0.75rem;
 }
 
+/* 参加者カレンダー。欠席の回答も予定として残しつつ、出席より控えめにする。 */
+.calendar-day__item.is-declined .calendar-day__title {
+  color: var(--color-text-muted);
+}
+
+.calendar-day__meta--declined {
+  color: var(--color-danger-text);
+}
+
+@media (max-width: 420px) {
+  .calendar {
+    padding: 0.125rem;
+  }
+
+  .calendar__grid,
+  .calendar__weekdays {
+    gap: 1px;
+  }
+
+  .calendar__cell {
+    padding: 0.25rem 0.125rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .calendar {
+    padding: 0.5rem;
+  }
+
+  .calendar__grid,
+  .calendar__weekdays {
+    gap: 0.1875rem;
+  }
+
+  .calendar__cell {
+    min-height: 4.75rem;
+    padding: 0.3125rem 0.25rem;
+  }
+
+  .calendar__day {
+    font-size: 0.875rem;
+  }
+
+  .calendar__event,
+  .calendar__more {
+    font-size: 0.625rem;
+  }
+}
+
 @media (min-width: 900px) {
   .calendar-layout {
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+
+  .calendar__grid,
+  .calendar__weekdays {
+    gap: 0.25rem;
+  }
+
+  .calendar__cell {
+    min-height: 5.5rem;
+    padding: 0.375rem 0.375rem;
+  }
+
+  .calendar__event,
+  .calendar__more {
+    font-size: 0.6875rem;
+  }
+
+  .calendar__event {
+    padding: 0.25rem 0.3125rem;
   }
 }

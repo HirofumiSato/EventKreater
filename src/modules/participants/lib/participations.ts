@@ -7,6 +7,7 @@ import {
   serializeSchedules,
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import type { ParticipantCalendarEntry } from "@/modules/participants/types";
 
 export type ParticipationScope = "all" | "upcoming" | "past";
 
@@ -97,3 +98,32 @@ export const participationInclude = {
     include: { flyerAsset: true, ...eventOptionsInclude },
   },
 } as const;
+
+/** カレンダーに置く日付。選んだ日程を優先し、無ければイベントの代表日を使う。 */
+export function participationCalendarDate(row: {
+  schedule: { eventDate: Date } | null;
+  event: { sortDate: Date };
+}): string {
+  return formatEventDate(row.schedule?.eventDate ?? row.event.sortDate);
+}
+
+/** 参加者カレンダーの 1 件。日付の軸に置く項目だけを返す。 */
+export function serializeCalendarEntry(
+  row: Parameters<typeof serializeParticipation>[0],
+): ParticipantCalendarEntry {
+  const base = serializeParticipation(row);
+  return {
+    participantId: base.id,
+    date: participationCalendarDate(row),
+    eventTime: row.schedule?.eventTime ?? "",
+    status: base.status,
+    statusLabel: base.statusLabel,
+    event: {
+      id: base.event.id,
+      title: base.event.title,
+      location: base.event.location,
+      status: base.event.status,
+      flyerThumbnailUrl: base.event.flyerThumbnailUrl,
+    },
+  };
+}

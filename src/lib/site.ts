@@ -16,6 +16,7 @@ export const SITE = {
     organizerLogin: { href: "/auth/register", label: "主催者ログイン" },
     participantLogin: { href: "/participant/login", label: "参加者ログイン" },
     participantHome: { href: "/participant", label: "参加者ホーム" },
+    participantCalendar: { href: "/participant/calendar", label: "参加カレンダー" },
     participantHistory: { href: "/participant/history", label: "参加履歴" },
     mypage: { href: "/mypage", label: "主催者マイページ" },
     account: { href: "/account", label: "アカウント" },

@@ -24,6 +24,31 @@ export interface ParticipationItem {
   };
 }
 
+/** 参加者カレンダーの 1 件。API の /api/v1/user/calendar と対応する。 */
+export interface ParticipantCalendarEntry {
+  participantId: string;
+  /**
+   * 出欠で選んだ日程の日付。日程を選んでいなければイベントの代表日。
+   * `YYYY-MM-DD`。
+   */
+  date: string;
+  /** 選んだ日程の表示用時刻。「18:00〜翌2:00」を含む。空なら時刻未定。 */
+  eventTime: string;
+  status: RsvpStatus;
+  statusLabel: string;
+  event: {
+    id: string;
+    title: string;
+    location: string;
+    status: EventStatus;
+    flyerThumbnailUrl: string | null;
+  };
+}
+
+export interface ParticipantCalendarResponse {
+  items: ParticipantCalendarEntry[];
+}
+
 export interface ParticipationSummary {
   attending: number;
   declined: number;
