@@ -11,7 +11,7 @@
 | DB 物理設計 | `prisma/schema.prisma` | [DBschema.md](DBschema.md) | 30 テーブルの照合 |
 | API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 73 ルートの照合 |
 | 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 35 ページの照合 |
-| チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 52 件 |
+| チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 66 件 + `mypy`（src の strict） |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` 348 件の照合 |
 
 ## 既知の乖離（2026-10-22 時点）

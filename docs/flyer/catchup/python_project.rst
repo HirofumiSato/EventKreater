@@ -45,7 +45,7 @@ Python プロジェクトの読み方
      - API を起動する。``--reload`` はファイル保存のたびに再起動する開発向けの指定
    * - ``python -m pytest tests/ -v``
      - テストを実行する。外部の有料 API は呼ばない
-   * - ``python -m mypy --strict src``
+   * - ``python -m mypy``
      - 本体の型の書き漏れを検査する
    * - ``python -m sphinx -b html docs docs/_build/html``
      - このマニュアルの HTML を作る

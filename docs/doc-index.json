@@ -2677,7 +2677,7 @@
       "title": "mypy",
       "summary": "src の関数とメソッドが、厳密モードの型ヒントを満たすことを確認します。外部 API の戻り値や Pillow の座標を、暗黙の Any のまま下流へ流さないためです。",
       "preImplementation": false,
-      "lineCount": 26,
+      "lineCount": 29,
       "headings": [
         {
           "level": 1,
@@ -3264,7 +3264,7 @@
       "title": "ポート",
       "summary": ":no-undoc-members:",
       "preImplementation": false,
-      "lineCount": 15,
+      "lineCount": 18,
       "headings": [
         {
           "level": 1,
@@ -7702,7 +7702,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 134,
+      "lineCount": 144,
       "headings": [
         {
           "level": 1,
@@ -7719,6 +7719,10 @@
         {
           "level": 2,
           "text": "flyer ジョブ"
+        },
+        {
+          "level": 2,
+          "text": "typecheck ジョブ"
         },
         {
           "level": 2,

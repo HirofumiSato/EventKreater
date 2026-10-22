@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import ValidationError
@@ -23,7 +25,8 @@ router = APIRouter()
 
 
 def _candidates(request: Request) -> ProposeCandidatesUseCase:
-    return request.app.state.candidates
+    # app.state は Any。型を落とさないよう、ここで組み立て時の型へ戻す。
+    return cast(ProposeCandidatesUseCase, request.app.state.candidates)
 
 
 def _owner(request: Request) -> str | None:

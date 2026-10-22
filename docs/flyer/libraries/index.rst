@@ -36,7 +36,7 @@
      - プロジェクトルートで ``python -m pytest tests/ -v`` を実行する
    * - :doc:`mypy <mypy>`
      - ``src`` の型ヒントを厳密に検査する
-     - ``python -m mypy --strict src`` を実行する。テストは対象外
+     - ``python -m mypy`` を実行する（``mypy.ini`` が strict 設定）。テストは対象外
    * - :doc:`Sphinx <sphinx>`
      - ガイドと API リファレンスを HTML にする
      - ``python -m sphinx -b html docs docs/_build/html`` のあと ``docs/_build/html/index.html`` を開く

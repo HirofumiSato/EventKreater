@@ -12,3 +12,6 @@
 
 .. automodule:: src.ports.storage_port
    :no-undoc-members:
+
+.. automodule:: src.ports.candidate_store_port
+   :no-undoc-members:

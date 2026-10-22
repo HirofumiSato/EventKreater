@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 96（実装前の設計 13 件は除外）
-- 文書から参照されているコードパス: 210
+- 文書から参照されているコードパス: 212
 - API ルート: 73（どの文書にも URL が無いもの 1）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -25,6 +25,7 @@
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
+| `services/flyer/mypy.ini` | `services/flyer/AGENTS.md` |
 | `services/flyer/README.md` | [docs/README.md](README.md) |
 | `services/flyer/requirements.txt` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/src` | `AGENTS.md` / [docs/README.md](README.md) |
@@ -37,8 +38,9 @@
 | `services/flyer/src/api/routes.py` | [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
 | `services/flyer/src/domain/exceptions.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/domain/models.py` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pydantic.rst](flyer/libraries/pydantic.rst) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
+| `services/flyer/src/infrastructure/storage/local_candidate_store.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/main.py` | [docs/flyer/architecture.rst](flyer/architecture.rst) / [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/local_run.rst](flyer/local_run.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / `llms.txt` / `services/flyer/AGENTS.md` |
-| `services/flyer/src/usecases/propose_candidates_usecase.py` | `services/flyer/AGENTS.md` |
+| `services/flyer/src/ports` | `services/flyer/AGENTS.md` |
 | `services/flyer/tests` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/tests/support.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) / `services/flyer/AGENTS.md` |
 | `services/flyer/tests/test_adapters.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |

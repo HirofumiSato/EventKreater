@@ -22,13 +22,14 @@ Next.js 本体から HTTP で呼ばれる独立サービスで、DB には触れ
 - 依存の向きは `adapters` / `infrastructure` → `ports` → `domain` の一方向です。`domain` と `ports` から外部 SDK・HTTP クライアント・ファイルシステムを import しません。
 - 組み立ては `src/adapters/wiring.py` と `src/main.py` だけで行います。
 - 決定論的な描画（Pillow）に外部 API 通信を混ぜません。LLM・画像生成と文字合成は直列パイプラインで疎結合にします。
-- 既知の逸脱: `src/usecases/propose_candidates_usecase.py:34,62` が具象 `LocalCandidateStore` を直接受け取っています。`CandidateStorePort` を切るまでの暫定なので、触るときに逸脱を広げないでください。
+- ユースケースは `src/ports/` の抽象だけを受け取ります。候補の保存先は `CandidateStorePort` で、実装は `src/infrastructure/storage/local_candidate_store.py` です。
 
 ## 言語・型
 
 - Python 3.11 以上（CI は 3.12）。
 - すべての関数・メソッドに型ヒントを付けます。`Any` の安易な使用と `# type: ignore` を禁止します（`src` は現在 0 件。`tests` の 8 件は許容）。
-- `mypy --strict` に通る設計を目標とします。ただし設定ファイルも CI ジョブも未導入なので、変更時は手元で `python -m mypy --strict src` を試してください。
+- 型検査は `services/flyer/mypy.ini` の strict 設定です。対象は `src` だけで、CI の `typecheck` ジョブが `python -m mypy` を実行します。
+- `app.state` のように型が `Any` になる境界では、`typing.cast` で組み立て時の型に戻します。`# type: ignore` で黙らせません。
 
 ## エラー処理
 
@@ -60,6 +61,7 @@ Next.js 本体から HTTP で呼ばれる独立サービスで、DB には触れ
 python -m pip install -r requirements.txt
 python -m uvicorn src.main:app --reload
 python -m pytest -q
+python -m mypy
 ```
 
 `OPENAI_API_KEY` が空のときはモックのプロンプトとグラデーション背景で生成します。

@@ -22,13 +22,14 @@ from uuid import uuid4
 
 from src.domain.exceptions import CandidateNotFoundError, InputValidationError
 from src.domain.models import CandidateMeta
+from src.ports.candidate_store_port import CandidateStorePort
 
 _FILE_ID = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 
 
-class LocalCandidateStore:
+class LocalCandidateStore(CandidateStorePort):
     """ディレクトリ 1 つに候補一式を置く。`cleanup_expired` は mtime で消す。"""
 
     def __init__(

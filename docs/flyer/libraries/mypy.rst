@@ -9,11 +9,13 @@ mypy
 使い方
 ------
 
+``services/flyer`` で実行します。設定は ``mypy.ini`` にあり、対象は ``src`` だけです。
+
 .. code-block:: powershell
 
-   python -m mypy --strict src
+   python -m mypy
 
-対象は ``src`` だけです。テストはモックを多く含むため、チェック対象にしていません。
+``--strict`` 相当の設定を ``mypy.ini`` に書いてあるので、引数は要りません。CI の ``typecheck`` ジョブも同じコマンドを呼びます。テストはモックを多く含むため、チェック対象にしていません。
 
 Tips
 ----
@@ -22,4 +24,5 @@ Tips
 * Pillow の ``textbbox`` は float を返します。幅を ``int`` で宣言している変数へ足す前に変換します。
 * 注釈で ``ImageFont`` を使うモジュールは、実行時に名前を参照しなくても import が必要です。mypy は注釈を解決します。
 * プロトコルのメソッド本体は ``...`` にします。ドキュメンテーション文字列だけのメソッドは、mypy が戻り値なしとみなします。
+* ``app.state`` のように型が ``Any`` になる境界は、``typing.cast`` で組み立て時の型に戻します。``# type: ignore`` で黙らせません。
 * 新しい公開関数には戻り値の注釈を付けてください。``disallow_untyped_defs`` が有効です。
