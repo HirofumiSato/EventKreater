@@ -5,10 +5,13 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 
 ## 最初に読む順
 
+0. `llms.txt` — AI 向けの入口。最初に読む 21 リンクだけを置く
 1. `docs/onboarding.md` — 全体を 90 分で掴む順路。人間と AI が同じものを使う
 2. `docs/README.md` — どの文書が何から派生し、何で検証されるか。既知の乖離もここにある
 3. `docs/sitemap.rst` — ドキュメント全体の見取り図。`toctree` に無いページは検索にも出ない
 4. `docs/backend_api_implementation_spec.md` / `docs/front_implementation_spec.md` — API と画面の仕様
+
+全文書の一覧は `docs/doc-index.json` で引けます。タイトル・要約・見出し・toctree・参照コードが入っています。
 
 ## 正しさの基準
 
@@ -46,6 +49,7 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 npm run check        # lint + tsc --noEmit + Vitest
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
+npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
 cd services/flyer; python -m pytest -q
 ```
@@ -53,6 +57,7 @@ cd services/flyer; python -m pytest -q
 ## 規約
 
 - コメント・文書・コミットメッセージは日本語で書きます。
+- `docs/doc-index.json`、`docs/api-routes.md`、`docs/traceability.md`、`llms.txt` は `npm run docs:gen` の生成物です。手で編集せず、原稿かコードを直してから再生成してください。
 - ルートビルドで有効な Sphinx の設定は `docs/conf.py` だけです。`docs/{event-page,flyer,user-management}/conf.py` は単独ビルド用です。
 - `.env` は読みません。`.env.example` を見てください。
 - 生成物と巨大な依存は読みません: `docs/_build`, `.next`, `node_modules`, `.venv-docs`, `storage`, `logs`。

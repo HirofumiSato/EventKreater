@@ -20,12 +20,23 @@
 
 | 種別 | 件数 | 内容 |
 | --- | --- | --- |
-| API | 3 | `POST /api/v1/organizer/events/[id]/lifecycle`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`GET /api/v1/user/calendar` |
+| API | 7 | 仕様書に無い実装。`POST /api/v1/organizer/events/[id]/lifecycle`、`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
 | DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
 | パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
 | 手順 | 1 | `user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い |
 
-テスト件数は [testing/scope.rst](testing/scope.rst) の記載（348 件）と実測が一致しています。パスの乖離は [../scripts/check-doc-links.mjs](../scripts/check-doc-links.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
+テスト件数は [testing/scope.rst](testing/scope.rst) の記載（348 件）と実測が一致しています。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
+
+## 生成された索引
+
+`npm run docs:gen` が次の 4 つを作ります。手で編集しないでください。CI は生成後に差分が出ないことを確かめます。
+
+| ファイル | 内容 |
+| --- | --- |
+| [doc-index.json](doc-index.json) | 全原稿のタイトル・要約・見出し・toctree・参照コード。AI が最初に引く |
+| [api-routes.md](api-routes.md) | `src/app/api/**/route.ts` の一覧と、API 仕様との差分 |
+| [traceability.md](traceability.md) | コードから文書への逆引きと、文書が指す実在しないパス |
+| [../llms.txt](../llms.txt) | llms.txt 形式の入口。最初に読む 21 リンクだけを置く |
 
 ## 実装前の設計（現在の正ではない）
 
@@ -42,8 +53,9 @@
 ## 検査
 
 ```powershell
+npm run docs:gen     # 索引 4 点を再生成。差分が出たらコミットする
 npm run docs:links   # 本文中の src/ tests/ prisma/ などのパスの実在を確認
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 ```
 
-`docs:links` は [../scripts/check-doc-links.mjs](../scripts/check-doc-links.mjs) が担当します。`docs/**` に加えて、`AGENTS.md`、`README.md`、`services/flyer/AGENTS.md`、`services/flyer/README.md` も検査します。
+`docs:links` は [../scripts/check-doc-links.mjs](../scripts/check-doc-links.mjs) が担当します。`docs/**` に加えて、`AGENTS.md`、`README.md`、`llms.txt`、`services/flyer/AGENTS.md`、`services/flyer/README.md` も検査します。パスの拾い方と免除リストは [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) に共通化しています。
