@@ -10,7 +10,7 @@ CI への接続
 
 権限は ``contents: read`` だけです。CI からリポジトリへ書く操作はしません。
 
-ジョブは 2 つです。
+ジョブは 3 つです。
 
 .. list-table::
    :header-rows: 1
@@ -21,7 +21,10 @@ CI への接続
      - 見ているもの
    * - ``check``
      - ``npm ci`` のあと ``npm run check``
-     - ESLint、``tsc --noEmit``、``tests/unit/`` の 94 件
+     - ESLint、``tsc --noEmit``、``tests/unit/`` の 289 件
+   * - ``db``
+     - ``npm ci``、``prisma migrate deploy``、``npm run test:db``
+     - ``tests/integration/`` の 59 件。テスト専用の PostgreSQL をサービスとして立てる
    * - ``flyer``
      - ``pip install -r requirements.txt`` のあと ``python -m pytest -q``
      - ``services/flyer/tests/`` の描画・API・候補の試験
@@ -42,7 +45,7 @@ check ジョブ
      JWT_SECRET: ci-only-placeholder-secret-value-not-used
      NEXT_PUBLIC_APP_URL: http://localhost:3012
 
-``tests/setup/db.ts`` は ``TEST_DATABASE_URL`` があるときだけ ``DATABASE_URL`` を差し替えます。``check`` は ``TEST_DATABASE_URL`` を渡さないので、``tests/integration/`` の 10 件は skip され、DB へは接続しません。``DATABASE_URL`` は Prisma Client の生成が参照するだけです。
+``tests/setup/db.ts`` は ``TEST_DATABASE_URL`` があるときだけ ``DATABASE_URL`` を差し替えます。``check`` は ``TEST_DATABASE_URL`` を渡さないので、``tests/integration/`` の 59 件は skip され、DB へは接続しません。``DATABASE_URL`` は Prisma Client の生成が参照するだけです。
 
 Stripe の秘密鍵、Webhook の署名鍵、Google のクライアント、OpenAI のキーは要りません。ジョブの秘密として登録する必要もありません。署名の試験は、テスト内のダミー鍵で完結します。
 
@@ -56,24 +59,25 @@ flyer ジョブ
 落とし穴
 --------
 
-* **``TEST_DATABASE_URL`` を渡し忘れると、``tests/integration/`` は skip され、ジョブは緑になります。** ``check`` はあえて渡していません。DB の試験を緑の条件に入れるときは、下の「後で足すもの」の手順で別ジョブにします。
+* **``check`` は ``TEST_DATABASE_URL`` を渡していません。** DB を見る試験は ``db`` ジョブに分けています。``check`` を速いまま保つためで、``check`` が緑でも DB の試験は走っていません。
 * ``npm ci`` は ``package-lock.json`` と ``package.json`` がずれていると落ちます。依存を足したら、lock も同じコミットに入れます。
 * ``next lint`` は初回に ``.eslintrc.json`` を探します。設定ファイルを消したり移動したりすると、CI だけ落ちます。
 * ``docs/_build/`` は ``.gitignore`` にあるので、Sphinx のビルドはジョブに入れていません。ドキュメントの検証は手元の ``npm run docs`` です。
 
-後で足すもの
-------------
+db ジョブ
+---------
 
-``npm run test:db`` を足すときは、``check`` とは別のジョブにします。``check`` は 20 秒前後で終わる速い確認なので、PostgreSQL の起動待ちを混ぜません。
+``check`` とは別のジョブにしています。``check`` は 30 秒前後で終わる速い確認なので、PostgreSQL の起動待ちを混ぜません。
 
 .. code-block:: yaml
 
-   test-db:
+   db:
      runs-on: ubuntu-latest
      services:
        postgres:
          image: postgres:16
          env:
+           POSTGRES_USER: postgres
            POSTGRES_PASSWORD: postgres
            POSTGRES_DB: event_platform_billing_test
          ports:
@@ -90,23 +94,28 @@ flyer ジョブ
            node-version: 20
            cache: npm
        - run: npm ci
-       - run: npx prisma db push
+       - run: npx prisma migrate deploy
          env:
-           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/event_platform_billing_test
+           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
        - run: npm run test:db
          env:
-           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/event_platform_billing_test
+           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
+           TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
+           JWT_SECRET: ci-only-placeholder-secret-value-not-used
+           NEXT_PUBLIC_APP_URL: http://localhost:3012
 
-``services`` の ``options`` に ``pg_isready`` の healthcheck を付けます。これが無いと、PostgreSQL が接続を受け付ける前に ``prisma db push`` が走って落ちます。
+``services`` の ``options`` に ``pg_isready`` の healthcheck を付けます。これが無いと、PostgreSQL が接続を受け付ける前に ``prisma migrate deploy`` が走って落ちます。
 
 ``TEST_DATABASE_URL`` と ``DATABASE_URL`` には同じ値を入れます。片方だけだと ``tests/setup/db.ts`` が差し替えず、開発用の接続先を見に行きます。
+
+スキーマは ``prisma db push`` ではなく ``prisma migrate deploy`` で作ります。``db push`` は Prisma スキーマに書けない制約を作りません。部分ユニーク索引 ``event_organizers_one_owner`` と、``phone_verification_codes`` などの ``CHECK`` 制約がこれにあたります。``db push`` で作った DB では ``tests/integration/hydrate.test.ts`` の「1 イベントに OWNER を 2 行は作れない」が落ちます。
 
 ``npm run test:e2e`` を足すときは、``npm run build`` のあと Playwright を呼びます。行程はローカル登録と、アカウントなしの出欠の二本です。
 
 マージ前のゲートにする
 ----------------------
 
-GitHub のブランチ保護で ``check`` と ``flyer`` を必須にすると、落ちたままの ``main`` が防げます。個人開発でも、触っていない領域の破壊（とくに ``services/flyer``）を検出できるのが利点です。
+GitHub のブランチ保護で ``check``、``db``、``flyer`` を必須にすると、落ちたままの ``main`` が防げます。個人開発でも、触っていない領域の破壊（とくに ``services/flyer``）を検出できるのが利点です。
 
 この節の先頭
 ------------

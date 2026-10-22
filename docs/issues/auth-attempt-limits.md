@@ -331,7 +331,7 @@ throw new ProblemDetailException({
 
 `.env.example` に追記する。すべてサーバ専用。
 
-```dotenv
+```ini
 # 認証の試行回数。未設定なら既定値（コメント内の値）を使う。
 # 15分あたり、メールアドレス単位の照合回数。
 AUTH_ATTEMPT_LIMIT=10
@@ -593,7 +593,7 @@ IP 単位は消さない。同じ IP を共有する別の利用者の失敗を�
 | `docs/overall_system_requirements_common.md:633,635` | SMS 3→5回、電話番号 3→5回、確認メール再送 3→5回、ログイン 5→10回/15分、IP 20→40回/15分、コード入力ミス 5→10回。あわせて「上限のある操作は失敗時に上限・残り回数・再試行時刻を必ず表示する」を追記 |
 | `docs/backend_api_implementation_spec.md:1737,1833,1837,1869,1881,1917,1923` | 数値の更新、429 / 400 / 401 の応答項目（`limitLabel` / `attemptLimit` / `remainingAttempts` / `windowSeconds` / `retryAfterSeconds` / `retryAt`）、`error: "RATE_LIMITED"` / `"CODE_EXHAUSTED"`、`Retry-After` ヘッダ |
 | `docs/front_implementation_spec.md:1192-1198` | 受け入れ条件を追加（下記 FE-AUTH-08〜12） |
-| `docs/DBschema.md:29,775` | ロック 10 回・15 分は据え置き。電話コードの入力ミスを 5→10 回に更新 |
+| `docs/DBschema.md` | 変更なし。`phone_verification_codes.attempts` の上限値は DDL ではなく実装（`rate-limits.ts`）が持つ。ロック 10 回・15 分は据え置き |
 | `docs/issues/auth-attempt-limits.md` | 本文書（設計の記録） |
 
 追加する受け入れ条件:
@@ -641,6 +641,46 @@ IP 単位は消さない。同じ IP を共有する別の利用者の失敗を�
 - [ ] `tests/unit/auth-rate-limits.test.ts` と `tests/integration/auth-attempts.test.ts` が通る
 - [ ] `npm test` / lint / typecheck が通る
 - [ ] 5 つのドキュメントの数値と受け入れ条件が実装と一致する
+
+## 実装の記録
+
+PR [#26](https://github.com/HirofumiSato/EventKreater/pull/26) で実装した。単体 18 件と結合 9 件はすべて通り、`npm run check` も通る。
+
+### 実装中に見つけて直したもの
+
+**1. `retryAfterSeconds` が窓の長さを超えることがあった**
+
+`attemptWindow` は「一番古い行の時刻 + 窓の長さ」を解除時刻にする。DB の `now()` と Node の `Date.now()` にはミリ秒単位の差があり、`Math.ceil` の切り上げで 15 分の窓が 901 秒になることがあった。`Retry-After` が `X-RateLimit-Limit` と食い違って見えるため、窓の長さでクランプした。
+
+**2. マイグレーションが空の DB に通らなかった**
+
+`20261021044506_account_self_service` は、自分より後に作られる `login_challenges`（`20261021055000`）と `pricing_campaigns` の索引（`20261021150000`）を参照していた。フォルダ名の順に並べると存在しないテーブルを触ることになり、`prisma migrate deploy` が `42P01 relation "login_challenges" does not exist` で止まる。新しい環境を用意できない状態だった。
+
+実際に適用されていた順序（開発 DB の `_prisma_migrations`）に合わせ、`20261021160000_account_self_service` へ改名した。内容は変えていない。**すでに適用済みの環境では、`_prisma_migrations.migration_name` を 1 行だけ更新する必要がある。**
+
+```sql
+UPDATE _prisma_migrations
+SET migration_name = '20261021160000_account_self_service'
+WHERE migration_name = '20261021044506_account_self_service';
+```
+
+**3. テスト用 DB の作り方を `db push` から `migrate deploy` へ変えた**
+
+`prisma db push` は Prisma スキーマに表現できない制約を作らない。部分ユニーク索引 `event_organizers_one_owner` と `CHECK` 制約がこれにあたり、`tests/integration/hydrate.test.ts` の「1 イベントに OWNER を 2 行は作れない」が手元でだけ落ちていた。`docs/testing/local-run.rst` と `docs/front_implementation_spec.md` の手順も直した。
+
+**4. CI に `db` ジョブを足した**
+
+`check` は速いまま保ち、PostgreSQL をサービスとして立てる `db` ジョブで `prisma migrate deploy` と `npm run test:db` を実行する。
+
+### 実行した確認
+
+| コマンド | 結果 |
+| :--- | :--- |
+| `npm run test:db`（PostgreSQL 16.4、`event_platform_billing_test`） | 9 ファイル 59 件 すべて成功 |
+| `npm test` | 22 ファイル 289 件 すべて成功 |
+| `npm run check` | lint・型検査・テストすべて成功 |
+| `npm run build` | 成功 |
+| `npm run docs` | 成功 |
 
 ## セキュリティ上の判断
 

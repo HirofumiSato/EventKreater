@@ -37,12 +37,22 @@ Vitest だけを一度実行するときは ``npm test``、型だけ見るとき
    createdb event_platform_billing_test
 
    $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/event_platform_billing_test"
-   npx prisma db push
+   npx prisma migrate deploy
 
    $env:TEST_DATABASE_URL = $env:DATABASE_URL
    npm run test:db
 
 ``TEST_DATABASE_URL`` は ``tests/setup/db.ts`` が ``DATABASE_URL`` に上書きします。**開発用のデータベースを指すと、開発用の行がそのまま消えます。** ``event_platform_billing`` は指定しないでください。必ずテスト用のデータベースを指定します。
+
+テスト用 DB は ``prisma db push`` ではなく ``prisma migrate deploy`` で作ります。``db push`` は Prisma スキーマに書けない制約、たとえば部分ユニーク索引 ``event_organizers_one_owner`` や ``CHECK`` 制約を作りません。それらを見ている結合テストが、手元だけ落ちます。
+
+``20261021044506_account_self_service`` を適用済みの DB を使っている場合は、後続のテーブルを参照する順序の誤りを直すために ``20261021160000_account_self_service`` へ改名しています。移行は 1 行だけです。
+
+.. code-block:: sql
+
+   UPDATE _prisma_migrations
+   SET migration_name = '20261021160000_account_self_service'
+   WHERE migration_name = '20261021044506_account_self_service';
 
 ``npm run test:db`` を省いた場合、``tests/integration/`` は skip されます。エラーにはなりません。
 

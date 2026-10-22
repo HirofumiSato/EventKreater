@@ -35,6 +35,47 @@ jobs:
           JWT_SECRET: ci-only-placeholder-secret-value-not-used
           NEXT_PUBLIC_APP_URL: http://localhost:3012
 
+  # 結合テスト。テスト専用の PostgreSQL をサービスとして立て、本物の DB で確かめる。
+  # スキーマは `prisma db push` ではなく `migrate deploy` で作る。db push は
+  # 部分ユニーク索引（event_organizers_one_owner など）や CHECK 制約を作らないため、
+  # それらを見ている結合テストが落ちる。
+  db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: event_platform_billing_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
+
+      - run: npm run test:db
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
+          JWT_SECRET: ci-only-placeholder-secret-value-not-used
+          NEXT_PUBLIC_APP_URL: http://localhost:3012
+
   # チラシ生成 API の pytest。描画に日本語フォントを使うので、apt で入れる。
   # フォントが無いと FontResolver が FontRenderError を投げて落ちる。
   flyer:

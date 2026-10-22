@@ -48,12 +48,15 @@ export async function attemptWindow(rule: RateLimitRule, key: string): Promise<A
       select: { createdAt: true },
     }),
   ]);
+  const windowSeconds = Math.round(rule.windowMs / 1000);
   const resetAt = (oldest?.createdAt.getTime() ?? now) + rule.windowMs;
+  // DB と Node の時計がずれても、Retry-After が窓の長さを超えないようにする。
+  const retryAfterSeconds = Math.min(windowSeconds, Math.max(1, Math.ceil((resetAt - now) / 1000)));
   return {
     limit: rule.limit,
-    windowSeconds: Math.round(rule.windowMs / 1000),
+    windowSeconds,
     remainingAttempts: Math.max(0, rule.limit - used),
-    retryAfterSeconds: Math.max(1, Math.ceil((resetAt - now) / 1000)),
+    retryAfterSeconds,
     retryAt: new Date(resetAt).toISOString(),
   };
 }
