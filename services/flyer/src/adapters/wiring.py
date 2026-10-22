@@ -10,11 +10,13 @@ from src.adapters.image_generator.mock_image_generator import MockImageGenerator
 from src.adapters.image_generator.static_fallback_image_generator import (
     StaticFallbackImageGenerator,
 )
+from src.adapters.image_upload.pillow_upload_normalizer import PillowUploadNormalizer
 from src.adapters.prompt_engine.mock_prompt_engine import MockPromptEngine
 from src.adapters.prompt_engine.openai_prompt_engine import OpenAIPromptEngine
 from src.infrastructure.config import Settings
 from src.ports.candidate_source_port import CandidateSourcePort
 from src.ports.image_generator_port import ImageGeneratorPort
+from src.ports.image_upload_port import ImageUploadPort
 from src.ports.prompt_engine_port import PromptEnginePort
 
 
@@ -50,4 +52,12 @@ def build_image_generator(
         timeout_seconds=settings.image_generation_timeout_seconds,
         max_attempts=settings.image_generation_max_attempts,
         model=settings.openai_image_model,
+    )
+
+
+def build_image_upload(settings: Settings) -> ImageUploadPort:
+    """利用者の写真を背景用の PNG に揃える。"""
+    return PillowUploadNormalizer(
+        max_bytes=settings.upload_max_bytes,
+        max_pixels=settings.upload_max_pixels,
     )

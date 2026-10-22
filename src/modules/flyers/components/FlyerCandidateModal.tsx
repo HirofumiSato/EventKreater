@@ -9,6 +9,8 @@ import {
 } from "@/lib/problem";
 import { FLYER_TEMPLATE_IDS } from "@/modules/events/types";
 import type { FlyerFormPayload } from "@/modules/flyers/lib/form";
+import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
+import { MAX_IMAGE_BYTES, UPLOAD_ACCEPT } from "@/modules/flyers/lib/upload";
 import type {
   FlyerCandidate,
   FlyerQuota,
@@ -75,9 +77,13 @@ export function FlyerCandidateModal({
   const [quota, setQuota] = useState<FlyerQuota | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState<FlyerCandidate | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [registerRequired, setRegisterRequired] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reset = useCallback(() => {
     setStep(1);
@@ -88,6 +94,10 @@ export function FlyerCandidateModal({
     setRegisterRequired(false);
     setSessionExpired(false);
     setSaving(false);
+    setUploading(false);
+    setUploaded(null);
+    setUploadError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   /** 候補を 1 ステップ分取りに行く。呼び出し時点の選択を親にする。 */
@@ -159,6 +169,66 @@ export function FlyerCandidateModal({
     [base, draftKey, onQuotaChange],
   );
 
+  /** 自分の写真を 1 枚だけ背景候補にする。成功したらその 1 枚を選択状態にする。 */
+  const uploadPhoto = async (file: File) => {
+    if (uploading) return;
+    setUploadError(null);
+    if (file.size > MAX_IMAGE_BYTES) {
+      setUploadError("画像は8MB以下にしてください。");
+      return;
+    }
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("draftKey", draftKey);
+    form.append("title", base.title);
+    form.append("eventDate", base.eventDate);
+    form.append("eventTime", base.eventTime);
+    form.append("price", base.price);
+    form.append("location", base.location);
+    form.append("rainPolicy", base.rainPolicy);
+    if (base.capacity != null) form.append("capacity", String(base.capacity));
+    form.append("templateId", selected[1]?.templateId ?? FLYER_TEMPLATE_IDS[0]);
+    form.append("layoutId", "classic");
+
+    setUploading(true);
+    try {
+      const response = await fetch("/api/v1/flyers/uploads", {
+        method: "POST",
+        body: form,
+      });
+      if (!response.ok) {
+        const problem = await readProblemBody(response);
+        if (isRegisterRequired(problem)) setRegisterRequired(true);
+        if (isSessionExpired(problem)) setSessionExpired(true);
+        throw new Error(problemMessage(problem, "写真を読み込めませんでした"));
+      }
+      const data = (await response.json()) as {
+        candidate: FlyerCandidate;
+        quota?: FlyerQuota;
+      };
+      setUploaded(data.candidate);
+      setSelected((prev) => ({
+        ...prev,
+        2: data.candidate,
+        3: null,
+        4: null,
+      }));
+      setCandidates((prev) => ({ ...prev, 3: [], 4: [] }));
+      setStep(2);
+      setError(null);
+      if (data.quota) {
+        setQuota(data.quota);
+        onQuotaChange(data.quota);
+      }
+    } catch (cause) {
+      setUploadError(cause instanceof Error ? cause.message : "写真を読み込めませんでした");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   // 開いたら毎回ステップ 1 から。前回の選択を持ち越さない。
   // `base` は親の再描画ごとに新しい object になるので、effect の依存に入れず ref で渡す。
   const loadRef = useRef(load);
@@ -182,6 +252,11 @@ export function FlyerCandidateModal({
   }, [open, saving, onClose]);
 
   const choose = (target: FlyerWizardStep, candidate: FlyerCandidate) => {
+    // タイプを変えると、前のタイプで作ったアップロード背景は使えない。
+    if (target === 1) {
+      setUploaded(null);
+      setUploadError(null);
+    }
     setSelected((prev) => {
       const next = { ...prev, [target]: candidate };
       for (let later = target + 1; later <= 4; later += 1) {
@@ -267,8 +342,11 @@ export function FlyerCandidateModal({
     }
   };
 
-  const busy = loading || saving;
+  const busy = loading || saving || uploading;
   const visible = useMemo(() => candidates[step], [candidates, step]);
+  const uploadSelected = Boolean(
+    uploaded && selected[2]?.candidateId === uploaded.candidateId,
+  );
 
   if (!open) return null;
 
@@ -294,11 +372,7 @@ export function FlyerCandidateModal({
               チラシを作る
             </h2>
             {quota && (
-              <p className="wizard__quota">
-                {quota.anonymous
-                  ? `未ログインで作れるのは残り ${quota.remaining} 回`
-                  : `この下書きは残り ${quota.remaining} 回 / ${quota.limit} 回`}
-              </p>
+              <p className="wizard__quota">{flyerQuotaLabel(quota)}</p>
             )}
           </div>
           <ol className="wizard__steps">
@@ -322,6 +396,69 @@ export function FlyerCandidateModal({
 
         <div className="wizard__body">
           <p className="wizard__hint">{STEP_HINTS[step]}</p>
+
+          {step === 2 && (
+            <section
+              className={`candidate-upload${uploadSelected ? " candidate-upload--selected" : ""}`}
+              aria-label="自分の写真を背景にする"
+            >
+              <div className="candidate-upload__preview">
+                {uploaded ? (
+                  <img src={uploaded.imageUrl} alt={uploaded.label} />
+                ) : (
+                  <span className="candidate-upload__empty" aria-hidden="true">
+                    9:16
+                  </span>
+                )}
+              </div>
+              <div className="candidate-upload__body">
+                <p className="candidate-upload__title">自分の写真</p>
+                <p className="candidate-upload__hint">
+                  {uploaded
+                    ? "中央を9:16で切り抜いた範囲が、そのまま背景になります。"
+                    : "JPEG / PNG / WebP、8MBまで。中央を9:16で切り抜きます。"}
+                </p>
+                <div className="candidate-upload__actions">
+                  {uploaded && !uploadSelected && (
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      disabled={busy}
+                      onClick={() => choose(2, uploaded)}
+                    >
+                      この写真を選ぶ
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    disabled={busy}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading
+                      ? "読み込んでいます..."
+                      : uploaded
+                        ? "別の写真に差し替える"
+                        : "自分の写真を使う"}
+                  </button>
+                  {uploadSelected && (
+                    <span className="candidate-upload__badge">選択中</span>
+                  )}
+                </div>
+                {uploadError && <p className="alert alert--error">{uploadError}</p>}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={UPLOAD_ACCEPT}
+                className="visually-hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadPhoto(file);
+                }}
+              />
+            </section>
+          )}
 
           {loading ? (
             <div className="candidate-grid" aria-busy="true" aria-label="候補を準備しています">

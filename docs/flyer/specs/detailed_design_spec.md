@@ -299,6 +299,8 @@ static/candidates/
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
 *   **課金・回数:** 候補の生成では消費しない。回数は Next.js の BFF が `flyer_generation_logs` で数える。
+*   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1920 の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
+*   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・配置・配色・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 
 ### 5.4. 文字配置プリセット
 
@@ -326,7 +328,9 @@ static/candidates/
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `RequestValidationError` | 入力文字数超過、型不一致 | `422` | `INVALID_INPUT` | エラーフィールドをログ出力 | 入力内容を確認してください（文字数超過など） |
 | `RateLimitExceeded` | ~~同一IPから短時間の連続リクエスト~~ **廃止** | ~~`429`~~ | ~~`RATE_LIMIT`~~ | 回数制限は BFF が下書き単位で持つ | — |
-| `CandidateNotFoundError` | 候補が無い、または TTL 切れ | `404` | `CANDIDATE_EXPIRED` | 候補ファイルの存在確認 | 候補の有効期限が切れました。選び直してください。 |
+| `CandidateNotFoundError` | 候補が無い、TTL 切れ、または所有者の不一致 | `404` | `CANDIDATE_EXPIRED` | 候補ファイルと所有者の照合 | 候補の有効期限が切れました。選び直してください。 |
+| `ImageUploadError` | 未対応形式、破損、アニメーション画像 | `422` | `INVALID_IMAGE` | 形式と画素数の確認 | 画像を読み込めませんでした。JPEG / PNG / WebP の画像を選んでください。 |
+| `ImageTooLargeError` | アップロード画像が 8 MiB 超 | `413` | `UPLOAD_TOO_LARGE` | 受信バイト数の確認 | 画像は8MB以下にしてください。 |
 | `LLMContextGenerationError` | OpenAI API障害・JSONパース失敗 | `503` | `LLM_SERVICE_UNAVAILABLE` | エラーログ記録＋監視アラート | システム混雑のため処理を開始できませんでした。再試行してください |
 | `ImageGenerationTimeoutError`| 画像生成APIの応答遅延（25秒超過） | `200` (※) | `FALLBACK_APPLIED` | 静的デフォルト背景に切り替えて合成 | （正常表示：ステータスのみ fallback_used を返却） |
 | `FontRenderError` | フォントファイル読み込み破損 | `500` | `RENDER_FAILURE` | デフォルトシステムフォントへ退避 | 画像の文字合成に失敗しました。管理者に問い合わせてください |

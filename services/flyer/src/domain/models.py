@@ -242,5 +242,9 @@ class CandidateMeta(BaseModel):
     label: str = Field(..., min_length=1)
     description: str = ""
     source: str = "placeholder"
+    owner_token_hash: str | None = Field(
+        default=None,
+        description="BFF が発行した端末トークンの SHA-256。候補を参照できる相手を絞る。",
+    )
     request: FlyerGenerationRequest
     context: LLMGenerationContext

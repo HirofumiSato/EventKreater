@@ -4,10 +4,16 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import type { GenerateFlyerInput } from "@/lib/schemas";
 import { RAIN_POLICY_LABELS } from "@/modules/events/types";
 import type { FlyerCandidate, FlyerCandidateKind } from "@/modules/flyers/types";
+import { MAX_IMAGE_BYTES, detectImageKind } from "@/modules/flyers/lib/upload";
 
 const FLYER_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+export { MAX_IMAGE_BYTES };
+
+/** 候補 API に付ける所有者ヘッダー。flyer サービスが参照範囲を照合する。 */
+export function flyerOwnerHeaders(ownerTokenHash: string): Record<string, string> {
+  return { "X-Flyer-Owner": ownerTokenHash };
+}
 
 export function flyerApiBase(): string {
   return (process.env.FLYER_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
@@ -108,7 +114,7 @@ function problemFromService(status: number, detail: string): ProblemDetailExcept
 }
 
 function isJpeg(bytes: Buffer): boolean {
-  return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  return detectImageKind(bytes) === "jpeg";
 }
 
 export interface FlyerCandidateDto {
@@ -139,13 +145,20 @@ function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
   };
 }
 
-async function postCandidateRequest(path: string, body: unknown): Promise<FlyerCandidate[]> {
+async function postCandidateRequest(
+  path: string,
+  body: unknown,
+  ownerTokenHash?: string,
+): Promise<FlyerCandidate[]> {
   const base = flyerApiBase();
   let response: Response;
   try {
     response = await fetch(`${base}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(ownerTokenHash ? flyerOwnerHeaders(ownerTokenHash) : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(60_000),
     });
@@ -171,40 +184,121 @@ async function postCandidateRequest(path: string, body: unknown): Promise<FlyerC
 }
 
 /** ステップ 1。3 テンプレートの完成イメージ。 */
-export async function proposeTypeCandidates(input: GenerateFlyerInput): Promise<FlyerCandidate[]> {
-  return postCandidateRequest("/api/v1/flyers/candidates/types", toFlyerPayload(input));
+export async function proposeTypeCandidates(
+  input: GenerateFlyerInput,
+  ownerTokenHash?: string,
+): Promise<FlyerCandidate[]> {
+  return postCandidateRequest(
+    "/api/v1/flyers/candidates/types",
+    toFlyerPayload(input),
+    ownerTokenHash,
+  );
 }
 
 /** ステップ 2。選んだタイプの背景タイル。 */
 export async function proposeBackgroundCandidates(
   input: GenerateFlyerInput,
   count: number,
+  ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
-  return postCandidateRequest("/api/v1/flyers/candidates", {
-    ...toFlyerPayload(input),
-    count,
-  });
+  return postCandidateRequest(
+    "/api/v1/flyers/candidates",
+    {
+      ...toFlyerPayload(input),
+      count,
+    },
+    ownerTokenHash,
+  );
 }
 
 /** ステップ 3。同じ背景で 4 通りの文字配置。 */
-export async function proposeLayoutCandidates(candidateId: string): Promise<FlyerCandidate[]> {
+export async function proposeLayoutCandidates(
+  candidateId: string,
+  ownerTokenHash?: string,
+): Promise<FlyerCandidate[]> {
   assertFlyerAssetId(candidateId);
-  return postCandidateRequest(`/api/v1/flyers/candidates/${candidateId}/layouts`, {});
+  return postCandidateRequest(
+    `/api/v1/flyers/candidates/${candidateId}/layouts`,
+    {},
+    ownerTokenHash,
+  );
 }
 
 /** ステップ 4。選んだ配置のまま 4 通りの配色。 */
-export async function proposePaletteCandidates(candidateId: string): Promise<FlyerCandidate[]> {
+export async function proposePaletteCandidates(
+  candidateId: string,
+  ownerTokenHash?: string,
+): Promise<FlyerCandidate[]> {
   assertFlyerAssetId(candidateId);
-  return postCandidateRequest(`/api/v1/flyers/candidates/${candidateId}/palettes`, {});
+  return postCandidateRequest(
+    `/api/v1/flyers/candidates/${candidateId}/palettes`,
+    {},
+    ownerTokenHash,
+  );
+}
+
+/**
+ * ステップ 2。持ち込まれた写真を 1 枚の背景候補にする。
+ * multipart で送り、flyer サービスが EXIF 除去と 9:16 の中央クロップを行う。
+ */
+export async function uploadBackgroundCandidate(input: {
+  bytes: Buffer;
+  contentType: string;
+  payload: GenerateFlyerInput;
+  ownerTokenHash: string;
+}): Promise<FlyerCandidate> {
+  const base = flyerApiBase();
+  const form = new FormData();
+  form.append(
+    "file",
+    new Blob([new Uint8Array(input.bytes)], { type: input.contentType }),
+    "background",
+  );
+  form.append("payload", JSON.stringify(toFlyerPayload(input.payload)));
+
+  let response: Response;
+  try {
+    response = await fetch(`${base}/api/v1/backgrounds`, {
+      method: "POST",
+      headers: flyerOwnerHeaders(input.ownerTokenHash),
+      body: form,
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch {
+    throw new ProblemDetailException({
+      status: 502,
+      title: "Flyer Unavailable",
+      detail: "チラシ生成サービスに接続できません。flyer を起動しているか確認してください。",
+    });
+  }
+  if (!response.ok) {
+    throw problemFromService(response.status, await readFlyerMessage(response));
+  }
+  const payload = (await response.json()) as Partial<FlyerCandidateDto>;
+  if (
+    typeof payload.candidate_id !== "string" ||
+    typeof payload.image_url !== "string"
+  ) {
+    throw new ProblemDetailException({
+      status: 502,
+      title: "Flyer Unavailable",
+      detail: "チラシ生成サービスの応答が不正です。",
+    });
+  }
+  return serializeCandidate(payload as FlyerCandidateDto);
 }
 
 /** 候補画像をブラウザへ中継するために、サービスの JPEG を取得する。 */
-export async function readCandidateImage(candidateId: string): Promise<Buffer> {
+export async function readCandidateImage(
+  candidateId: string,
+  ownerTokenHash?: string,
+): Promise<Buffer> {
   const id = assertFlyerAssetId(candidateId);
   const base = flyerApiBase();
   let response: Response;
   try {
     response = await fetch(`${base}/api/v1/flyers/candidates/${id}`, {
+      headers: ownerTokenHash ? flyerOwnerHeaders(ownerTokenHash) : undefined,
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
@@ -231,6 +325,7 @@ export async function readCandidateImage(candidateId: string): Promise<Buffer> {
 export async function generateFlyerImage(
   input: GenerateFlyerInput,
   candidateId?: string,
+  ownerTokenHash?: string,
 ): Promise<{
   generationId: string;
   bytes: Buffer;
@@ -241,7 +336,10 @@ export async function generateFlyerImage(
   try {
     generated = await fetch(`${base}/api/v1/flyers/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(ownerTokenHash ? flyerOwnerHeaders(ownerTokenHash) : {}),
+      },
       body: JSON.stringify({
         ...toFlyerPayload(input),
         ...(candidateId ? { candidate_id: candidateId } : {}),

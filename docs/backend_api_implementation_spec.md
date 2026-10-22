@@ -101,6 +101,7 @@ flowchart TD
 | `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | 下書きの残り作成回数。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 テンプレートの完成イメージ |
 | `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 8 枚返す |
+| `/api/v1/flyers/uploads` | POST | SCR-ORG-03 | 不要 | ステップ 2。自分の写真を背景候補 1 枚にする |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | SCR-ORG-03 | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | SCR-ORG-03 | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
 | `/api/v1/flyers/candidates/[id]` | GET | SCR-ORG-03 | 不要 | 候補 JPEG の中継 |
@@ -1832,11 +1833,16 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | 不要 | ステップ 1。3 テンプレートの完成イメージ |
 | `/api/v1/flyers/candidates` | POST | 不要 | ステップ 2。背景タイル 8 枚 |
+| `/api/v1/flyers/uploads` | POST | 不要 | ステップ 2。自分の写真 1 枚を背景候補にする（multipart） |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
 | `/api/v1/flyers/candidates/[id]` | GET | 不要 | 候補 JPEG の中継 |
 
 ボディはステップ 1・2 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、ステップ 2 はさらに `count`（1〜16、既定 8）を足す。ステップ 3・4 は本文不要で、親候補の ID だけをパスに置く。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。
+
+アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、9:16 の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
+
+候補の参照範囲は端末で絞る。BFF は候補 API と画像取得に `X-Flyer-Owner`（`owner_token_hash`）を付け、サービスは候補メタに記録した値と照合する。一致しない候補は、期限切れと同じ 404 `CANDIDATE_EXPIRED` にする。ログイン済みでも未ログインでも、Cookie `flyer_owner` の端末トークンが単位である。
 
 残り回数は次の規則で数える。
 
