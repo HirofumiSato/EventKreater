@@ -64,6 +64,19 @@
 
    issues/index
 
+.. toctree::
+   :maxdepth: 2
+   :caption: UI 監査
+
+   ui-review/home-audit
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 索引（生成物）
+
+   api-routes
+   traceability
+
 ドキュメントのビルド
 --------------------
 
@@ -78,6 +91,8 @@
 再ビルドは ``npm run docs`` だけで足ります。原稿を直したら、この HTML も作り直して内容を確認してください。
 
 原稿に書いたリポジトリ内のパスが実在するかは、``npm run docs:links`` で確認します。失敗が 1 件でもあれば終了コードは 1 です。``scripts/check-doc-links.mjs`` が担当し、冒頭で「実装前の設計」と断っている文書は対象外にします。
+
+索引は ``npm run docs:gen`` で作り直します。全原稿の一覧 ``docs/doc-index.json``、API と仕様の突き合わせ ``docs/api-routes.md``、コードから文書への逆引き ``docs/traceability.md``、AI 向けの入口 ``llms.txt`` の 4 つを生成します。生成物は手で編集せず、CI が最新かを検査します。
 
 編集するファイルは次のとおりです。
 
@@ -135,3 +150,9 @@
      - イベントユーザー登録管理。実装前の設計が中心。現在の手順は ``docs/local.rst``
    * - ``docs/issues/``
      - 画面遷移・課金・運営まわりの課題。1 課題 1 ファイルで、受け入れ条件まで書く
+   * - ``docs/api-routes.md``
+     - 生成物。``src/app/api/**/route.ts`` と API 仕様の突き合わせ。``npm run docs:gen`` で作り直す
+   * - ``docs/traceability.md``
+     - 生成物。コードから文書への逆引きと、実在しないパス。``npm run docs:gen`` で作り直す
+   * - ``docs/doc-index.json`` と ``llms.txt``
+     - 生成物。AI が最初に引く索引。原稿を足したら ``npm run docs:gen``

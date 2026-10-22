@@ -10,7 +10,7 @@ CI への接続
 
 権限は ``contents: read`` だけです。CI からリポジトリへ書く操作はしません。
 
-ジョブは 3 つです。
+ジョブは 4 つです。
 
 .. list-table::
    :header-rows: 1
@@ -28,6 +28,9 @@ CI への接続
    * - ``flyer``
      - ``pip install -r requirements.txt`` のあと ``python -m pytest -q``
      - ``services/flyer/tests/`` の描画・API・候補の試験
+   * - ``docs``
+     - ``npm run docs:gen``、``git diff --exit-code``、``npm run docs:links``、``npm run docs``
+     - 索引 4 点が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるか
 
 ``check`` は手元と同じコマンドです。CI のためだけの別エントリは作りません。
 
@@ -62,7 +65,8 @@ flyer ジョブ
 * **``check`` は ``TEST_DATABASE_URL`` を渡していません。** DB を見る試験は ``db`` ジョブに分けています。``check`` を速いまま保つためで、``check`` が緑でも DB の試験は走っていません。
 * ``npm ci`` は ``package-lock.json`` と ``package.json`` がずれていると落ちます。依存を足したら、lock も同じコミットに入れます。
 * ``next lint`` は初回に ``.eslintrc.json`` を探します。設定ファイルを消したり移動したりすると、CI だけ落ちます。
-* ``docs/_build/`` は ``.gitignore`` にあるので、Sphinx のビルドはジョブに入れていません。ドキュメントの検証は手元の ``npm run docs`` です。
+* 索引は ``docs:gen`` の生成物です。原稿を足して再生成を忘れると、``docs`` ジョブの ``git diff --exit-code`` が落ちます。手元で ``npm run docs:gen`` を実行し、差分ごとコミットします。
+* ``docs`` ジョブは Sphinx もビルドします。``docs/_build/`` は ``.gitignore`` にあるので、HTML は成果物として残しません。
 
 db ジョブ
 ---------
@@ -115,7 +119,7 @@ db ジョブ
 マージ前のゲートにする
 ----------------------
 
-GitHub のブランチ保護で ``check``、``db``、``flyer`` の 3 つを必須にしています（2026-10-22 に設定）。落ちたままの ``main`` が防げ、触っていない領域の破壊（とくに ``services/flyer``）を検出できます。
+GitHub のブランチ保護で ``check``、``db``、``flyer`` の 3 つを必須にしています（2026-10-22 に設定）。``docs`` ジョブは同じ日に足しましたが、必須への登録は別操作なので、まだ保護には入っていません。落ちたままの ``main`` が防げ、触っていない領域の破壊（とくに ``services/flyer``）を検出できます。
 
 必須にするのは、そのリポジトリで実際に走ったことのあるジョブ名だけです。``db`` を足す前は ``check`` と ``flyer`` の 2 つでした。**ジョブ名を変えると必須チェックは「待ち続けている」状態になり、いつまでもマージできなくなります。** 名前を変えるときは、同じ PR でブランチ保護も直します。
 

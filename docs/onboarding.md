@@ -89,7 +89,7 @@ npm run docs:links   # docs に書かれたパスの実在確認
 cd services/flyer; python -m pytest -q
 ```
 
-CI は `check`・`db`・`flyer` の 3 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。
+CI は `check`・`db`・`flyer`・`docs` の 4 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。`docs` は `npm run docs:gen` の生成物が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるかを見ます。
 読む順の詳細は [testing/index.rst](testing/index.rst) にあります。
 
 ## 掴めたかの確認

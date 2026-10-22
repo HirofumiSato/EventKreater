@@ -1,0 +1,47 @@
+# event-creater
+
+> イベント告知・出欠管理と、主催者の利用枠・Stripe 決済を扱う Next.js 14 アプリケーション。
+> チラシ生成だけが Python の独立サービス（services/flyer、FastAPI + Pillow + OpenAI）。
+> 仕様の正はコードと prisma/schema.prisma で、docs はその検証面。
+
+このファイルは `npm run docs:gen` が生成します。手で編集しないでください。
+パスはリポジトリ直下からの相対パスです。全文書の一覧は docs/doc-index.json にあります。
+
+## 最初に読む
+
+- [全体を掴む 90 分](docs/onboarding.md): 全体を 90 分で掴む順路。人間と AI が同じものを使う
+- [ドキュメントの派生・検証マップ](docs/README.md): どの文書が何から派生し、何で検証されるか。既知の乖離もここ
+- [ドキュメントの見取り図](docs/sitemap.rst): ドキュメント全体の見取り図
+- [AGENTS.md](AGENTS.md): AI エージェント向けの探索規則。正はコードであること、コマンド、規約
+
+## 仕様（正はコード）
+
+- [バックエンドAPI実装仕様書](docs/backend_api_implementation_spec.md): 本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様…
+- [フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）](docs/front_implementation_spec.md): 本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カ…
+- [データベース物理設計書（DBschema.md）](docs/DBschema.md): 本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理…
+- [システム詳細設計書](docs/detailed_design_spec.md): 本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。
+
+## 手順
+
+- [ローカルでの操作](docs/local.rst): 手元で動かすために、次を用意します。
+- [Stripe のローカルテストと操作](docs/stripe.rst): このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、利用枠の確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。
+- [データベース操作](docs/database.rst): このアプリのデータベースは PostgreSQL です。スキーマの正は prisma/schema.prisma で、適用済みの SQL は prisma/migrations/ にあります。 初期マイグレーションは 20261018171707_init_schema_with_billing です。
+
+## 検証
+
+- [自動テスト](docs/testing/index.rst): この節は、利用枠・課金決済の Next.js アプリを手元で自動実行するときの文書です。読む順は 11 ページで、このページが 1 番です。
+- [テスト範囲のフロー](docs/testing/scope.rst): 読む順の 8 番です。前は vitest/practice、次は first-cases です。
+- [CI への接続](docs/testing/ci.rst): 読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。
+
+## チラシ生成（Python マイクロサービス）
+
+- [AIチラシ自動生成](docs/flyer/index.rst): 小規模店舗やイベント主催者が、催しの事実情報とデザインの型を渡すだけで、縦長（9:16）の告知画像を受け取れる Web API です。
+- [アーキテクチャ](docs/flyer/architecture.rst): 依存の向きは Ports & Adapters です。ユースケースはポート（抽象）だけを知り、OpenAI や Pillow の具象は src/main.py の組み立て時に注入します。
+- [仕様書](docs/flyer/specs/index.rst): 企画から詳細設計までの上流文書です。ガイドはこれらを読みやすく言い換えたもので、数式・座標・クラス契約が衝突したときは、ここに置いた原文を正とします。とくに implementation_spec と detailed_design_spec が実装の真実の源です。
+- [AGENTS.md](services/flyer/AGENTS.md): Python 側の設計規約（Ports & Adapters、例外、描画境界、pytest）
+
+## 生成された索引
+
+- [doc-index.json](docs/doc-index.json): 全原稿のタイトル・要約・見出し・toctree・参照コードの JSON
+- [api-routes.md](docs/api-routes.md): route.ts と API 仕様の突き合わせ
+- [traceability.md](docs/traceability.md): コードから文書への逆引き

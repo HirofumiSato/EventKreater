@@ -70,6 +70,10 @@
       Features --> Flyer["flyer"]
       Features --> User["user-management"]
 
+      Root --> Gen["索引（生成物）"]
+      Gen --> ApiRoutes["api-routes API と仕様の差分"]
+      Gen --> Trace["traceability コードから文書へ"]
+
       Flyer --> FlyerMap["flyer/sphinx_structure"]
 
 ページ一覧
@@ -131,7 +135,7 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - :doc:`testing/local-run`
      - 手元での実行。テストカードは含めない
    * - :doc:`testing/ci`
-     - CI の接続。``check`` と ``flyer`` の 2 ジョブ。Stripe の秘密鍵は登録しない
+     - CI の接続。``check``・``db``・``flyer``・``docs`` の 4 ジョブ。Stripe の秘密鍵は登録しない
 
 全体要件と共通ドキュメント
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -249,9 +253,28 @@ AI チラシ自動生成
    * - :doc:`user-management/local_environment`
      - ローカル環境
 
+UI 監査と生成された索引
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - ページ
+     - 中身
+   * - :doc:`ui-review/home-audit`
+     - ホーム画面（SCR-PUB-00）の UI/UX 監査
+   * - :doc:`api-routes`
+     - 生成物。``src/app/api/**/route.ts`` と API 仕様の突き合わせ
+   * - :doc:`traceability`
+     - 生成物。コードから文書への逆引きと、文書が指す実在しないパス
+
+``docs/doc-index.json`` と ``llms.txt`` も ``npm run docs:gen`` の生成物ですが、Sphinx のページではありません。
+
 ビルド
 ------
 
 リポジトリ直下で ``npm run docs`` です。初回だけ ``npm run docs:install`` が要ります。
 生成物は ``docs/_build/html/index.html`` です。ページを足したら、このページの表と親の ``toctree`` の両方を更新します。
 原稿に書いたリポジトリ内のパスは ``npm run docs:links`` で検査します。
+索引は ``npm run docs:gen`` で作り直します。生成物に差分が出たら、原稿かコードを直してから再生成し、差分ごとコミットします。
