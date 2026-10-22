@@ -55,6 +55,12 @@
    flyer/index
    user-management/index
 
+.. toctree::
+   :maxdepth: 2
+   :caption: 課題
+
+   issues/index
+
 ドキュメントのビルド
 --------------------
 
@@ -65,8 +71,8 @@
    npm run docs:install
    npm run docs
 
-生成した HTML は ``docs/_build/html/`` にあり、リポジトリに含めます。入口は ``docs/_build/html/index.html`` です。
-再ビルドは ``npm run docs`` だけで足ります。ビルドし直した HTML も、あわせてコミットしてください。
+生成した HTML は ``docs/_build/html/`` に出力します。``docs/_build/`` は ``.gitignore`` の対象なので、リポジトリには含めません。入口は ``docs/_build/html/index.html`` です。
+再ビルドは ``npm run docs`` だけで足ります。原稿を直したら、この HTML も作り直して内容を確認してください。
 
 編集するファイルは次のとおりです。
 
@@ -116,3 +122,5 @@
      - AI チラシ自動生成
    * - ``docs/user-management/``
      - イベントユーザー登録管理
+   * - ``docs/issues/``
+     - 画面遷移・課金・運営まわりの課題。1 課題 1 ファイルで、受け入れ条件まで書く
