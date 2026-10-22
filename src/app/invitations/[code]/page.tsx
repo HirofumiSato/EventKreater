@@ -14,8 +14,10 @@ interface Preview {
     pricePlans: { id: string; name: string; price: string }[];
     location: string;
     rainPolicy: RainPolicy;
+    organizer: { ownerName: string | null; coHostCount: number };
   };
   invitation: { expiresAt: string };
+  loggedIn: boolean;
 }
 
 export default function InvitationPage({ params }: { params: { code: string } }) {
@@ -59,7 +61,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
   if (error && !preview) {
     return (
       <div className="page--form stack">
-        <h1 className="page-title">共同幹事受諾</h1>
+        <h1 className="page-title">共同主催者の招待</h1>
         <p className="page-lead">招待を表示できません。</p>
         <p className="alert alert--error">{error}</p>
       </div>
@@ -77,10 +79,14 @@ export default function InvitationPage({ params }: { params: { code: string } })
   return (
     <div className="page--form stack">
       <div>
-        <h1 className="page-title">共同幹事受諾</h1>
+        <h1 className="page-title">共同主催者の招待</h1>
         <p className="page-lead">{preview.event.title}</p>
       </div>
       <dl className="meta-list">
+        <div>
+          <dt>主催</dt>
+          <dd>{preview.event.organizer.ownerName ?? "主催者"}</dd>
+        </div>
         <div>
           <dt>開催</dt>
           <dd>
@@ -102,14 +108,26 @@ export default function InvitationPage({ params }: { params: { code: string } })
       </dl>
       <p className="help">有効期限 {new Date(preview.invitation.expiresAt).toLocaleString("ja-JP")}</p>
       {error && <p className="alert alert--error">{error}</p>}
-      <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
-        {pending ? "参加処理中..." : "共同幹事として参加する"}
-      </button>
-      <p className="help" style={{ textAlign: "center" }}>
-        <Link href={loginHref} className="text-link">
-          ログインしてから受諾する
-        </Link>
-      </p>
+      {preview.loggedIn ? (
+        <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
+          {pending ? "参加処理中..." : "共同主催者として参加する"}
+        </button>
+      ) : (
+        <div className="stack">
+          <p className="help">
+            共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
+          </p>
+          <Link href={loginHref} className="btn btn--primary btn--block">
+            会員登録して受諾する
+          </Link>
+          <Link
+            href={`/auth/register?mode=login&next=${encodeURIComponent(`/invitations/${params.code}`)}`}
+            className="btn btn--outline btn--block"
+          >
+            すでに会員の方はログイン
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

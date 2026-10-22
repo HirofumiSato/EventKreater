@@ -4,7 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertGuestEditWindow, assertLockHolder, assertOrganizer, assertOwner } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { UpdateEventSchema } from "@/lib/schemas";
-import { serializeEvent, summarizeStatuses } from "@/lib/serializers";
+import { serializeEvent, serializeOrganizerList, summarizeStatuses } from "@/lib/serializers";
 import {
   assertPricingEditable,
   deadlineOrThrow,
@@ -27,6 +27,16 @@ async function loadManagedEvent(eventId: string) {
       flyerAsset: true,
       ...eventOptionsInclude,
       participants: { select: { status: true, pricePlanId: true } },
+      organizers: {
+        select: {
+          id: true,
+          role: true,
+          userId: true,
+          displayName: true,
+          user: { select: { name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      },
       lock: true,
     },
   });
@@ -46,6 +56,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const event = await loadManagedEvent(params.id);
     return NextResponse.json({
       event: serializeEvent(event),
+      organizers: serializeOrganizerList(event.organizers),
       role: ctx.role,
       // 未登録のゲスト幹事かどうか。公開直後の案内ページが、登録済みの幹事を管理画面へ返すために使う。
       registered: Boolean(ctx.userId),

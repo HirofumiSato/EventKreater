@@ -20,9 +20,13 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
       <div className="summary">
         <div>
           <p className="eyebrow eyebrow--muted">
-            {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "筆頭幹事" : "共同幹事"}
+            {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
           </p>
           <h3 className="summary__name">{event.title}</h3>
+          <p className="help">
+            主催: {event.ownerName}
+            {event.role === "CO_HOST" && "（あなたは共同主催）"}
+          </p>
           <p className="help">
             {scheduleLabel(event.schedules)} / {priceLabel(event.pricePlans)} / {event.location}
           </p>

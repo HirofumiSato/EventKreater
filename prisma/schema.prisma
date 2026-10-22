@@ -79,6 +79,18 @@ enum RsvpStatus {
   DECLINED
 }
 
+/// 売上の按分方式。RATIO は割合（basis points）、HEADCOUNT は連れてきた人数。
+enum RevenueSplitMode {
+  RATIO
+  HEADCOUNT
+}
+
+/// 按分の閲覧範囲。OWN_ONLY は共同主催者に自分の行だけを見せる。
+enum RevenueShareVisibility {
+  ALL
+  OWN_ONLY
+}
+
 /// 費用プランの対象。ANY は男女共通。
 enum PriceAudience {
   ANY
@@ -554,6 +566,8 @@ model Event {
   lock           EventLock?
   invitations    EventInvitation[]
   reminders      ReminderDelivery[]
+  revenueSetting EventRevenueSetting?
+  revenueShares  EventRevenueShare[]
 
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
@@ -616,14 +630,50 @@ model EventOrganizer {
   userId         String?       @map("user_id") @db.Uuid
   guestTokenHash String?       @unique @map("guest_token_hash") @db.VarChar(64)
   role           OrganizerRole @default(CO_HOST)
+  /// ゲスト幹事の公開表示名。会員は User.name を都度参照するため NULL。
+  displayName    String?       @map("display_name") @db.VarChar(50)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revenueShare EventRevenueShare?
 
   @@unique([eventId, userId])
   @@index([userId])
   @@map("event_organizers")
+}
+
+// =============================================================
+// 5-2. 共同主催の売上按分
+// =============================================================
+
+/// イベントごとの按分の設定。行が無いときは RATIO / OWN_ONLY として扱う。
+model EventRevenueSetting {
+  eventId         String                @id @map("event_id") @db.Uuid
+  mode            RevenueSplitMode      @default(RATIO)
+  visibility      RevenueShareVisibility @default(OWN_ONLY)
+  updatedByUserId String?               @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_revenue_settings")
+}
+
+/// 主催者1人ぶんの配分。割合方式は shareBps、人数方式は headcount を使う。
+/// 主催者が外れると Cascade で消え、残った主催者だけで再計算する。
+model EventRevenueShare {
+  organizerId String   @id @map("organizer_id") @db.Uuid
+  eventId     String   @map("event_id") @db.Uuid
+  shareBps    Int?     @map("share_bps") @db.Integer
+  headcount   Int?     @map("headcount") @db.Integer
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  organizer EventOrganizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_revenue_shares")
 }
 
 // =============================================================

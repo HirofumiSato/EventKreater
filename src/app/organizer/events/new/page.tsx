@@ -126,6 +126,7 @@ function NewEventScreen() {
         onSubmit={() => void publish()}
         submitting={submitting}
         submitLabel="公開する"
+        showOrganizerName={!quotaState.isLoading && !quotaState.quota}
         flyerSlot={
           <>
             <FlyerGeneratePanel

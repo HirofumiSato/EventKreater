@@ -16,7 +16,9 @@ interface AdminEventRow {
   createdAt: string;
   participantCount: number;
   organizerCount: number;
-  owner: { id: string; name: string; email: string } | null;
+  coHostCount: number;
+  coHostNames: string[];
+  owner: { id: string | null; name: string; email: string | null; isGuest: boolean } | null;
   publicPath: string | null;
 }
 
@@ -135,7 +137,7 @@ export default function AdminEventsPage() {
                 <th>場所</th>
                 <th>状態</th>
                 <th>開催日</th>
-                <th>筆頭幹事</th>
+                <th>主催者</th>
                 <th>出欠</th>
               </tr>
             </thead>
@@ -166,10 +168,20 @@ export default function AdminEventsPage() {
                       {event.owner ? (
                         <>
                           {event.owner.name}
-                          <div className="data__muted">{event.owner.email}</div>
+                          {event.owner.email ? (
+                            <div className="data__muted">{event.owner.email}</div>
+                          ) : (
+                            <div className="data__muted">未登録の幹事</div>
+                          )}
+                          {event.coHostCount > 0 ? (
+                            <div className="data__muted">
+                              共同主催 {event.coHostCount}名
+                              {event.coHostNames.length > 0 ? `（${event.coHostNames.join("、")}）` : ""}
+                            </div>
+                          ) : null}
                         </>
                       ) : (
-                        <span className="data__muted">ゲスト幹事</span>
+                        <span className="data__muted">幹事なし</span>
                       )}
                     </td>
                     <td>{event.participantCount}</td>

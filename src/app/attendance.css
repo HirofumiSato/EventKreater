@@ -1534,6 +1534,12 @@ fieldset.field {
   color: var(--color-text-subtle);
 }
 
+/* 金額・割合・人数。360px でも折り返さず、桁を揃える。 */
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .data__empty {
   padding: 2rem 1.25rem;
   color: var(--color-text-subtle);

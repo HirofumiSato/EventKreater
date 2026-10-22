@@ -156,6 +156,10 @@ export interface EventRevenueRow extends RevenueSummary {
   /** YYYY-MM-DD。 */
   sortDate: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
+  /** 自分が筆頭幹事か共同主催者か。 */
+  role: "OWNER" | "CO_HOST";
+  /** 按分後の自分の見込み取り分。主催者が1人のイベントは全額。 */
+  myShare: { expectedRevenue: number };
 }
 
 /** 開催回別の内訳。表示用のラベルはサーバーで合成する。 */

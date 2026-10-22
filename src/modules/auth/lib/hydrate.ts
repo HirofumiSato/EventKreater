@@ -48,6 +48,20 @@ export async function migrateGuestOrganizers(
       where: { eventId: organizer.eventId, userId },
     });
     if (already) {
+      // 同じイベントに会員として既に入っている場合、端末側の行は重複なので消す。
+      // ただし端末側が OWNER で会員側が CO_HOST のときは、オーナーを失わないよう
+      // 会員側の行を消してから、端末側の行を会員へ付け替える。
+      // 逆順（付け替えてから削除）だと「1イベント1オーナー」の一意索引に触れる。
+      if (organizer.role === "OWNER" && already.role !== "OWNER") {
+        await tx.eventOrganizer.delete({ where: { id: already.id } });
+        await tx.eventOrganizer.update({
+          where: { id: organizer.id },
+          data: { userId, guestTokenHash: null },
+        });
+        result.migratedOrganizers += 1;
+        result.promotedOwners += 1;
+        continue;
+      }
       await tx.eventOrganizer.delete({ where: { id: organizer.id } });
       continue;
     }

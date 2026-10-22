@@ -71,7 +71,7 @@ export function WithdrawPanel({ profile }: Props) {
       <h2 className="panel__title">退会</h2>
       <p className="panel__note panel__note--warning">
         退会するとログインできなくなります。あなたが筆頭幹事のイベントは閉じられ、公開中のページも見られなくなります。
-        共同幹事として参加しているイベントは、あなたの幹事権限だけが外れます。
+        共同主催として参加しているイベントは、あなたの幹事権限だけが外れます。
       </p>
       <p className="panel__note">
         電話番号は再登録の確認のために残します。同じ電話番号で登録し直すと、以前のアカウントと利用枠を引き継ぎます。

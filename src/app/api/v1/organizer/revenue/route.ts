@@ -6,6 +6,7 @@ import { requireOrganizerAccount } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { formatEventDate, parseEventDate } from "@/lib/serializers";
 import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
+import { allocateRevenue } from "@/modules/revenue/lib/allocation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,13 +65,20 @@ export async function GET(req: NextRequest) {
     const organizers = await prisma.eventOrganizer.findMany({
       where: { userId, event: eventWhere },
       select: {
+        id: true,
         eventId: true,
+        role: true,
         event: {
           select: {
             id: true,
             title: true,
             sortDate: true,
             status: true,
+            organizers: { select: { id: true, role: true, userId: true } },
+            revenueSetting: { select: { mode: true, visibility: true } },
+            revenueShares: {
+              select: { organizerId: true, shareBps: true, headcount: true },
+            },
             participants: {
               select: {
                 status: true,
@@ -87,12 +95,19 @@ export async function GET(req: NextRequest) {
     });
 
     // 同じイベントに共同幹事として複数行あっても1件に畳む。
-    const seen = new Set<string>();
+    const seen = new Map<string, { role: "OWNER" | "CO_HOST"; organizerId: string }>();
     const events = [];
     for (const organizer of organizers) {
       const event = organizer.event;
-      if (seen.has(event.id)) continue;
-      seen.add(event.id);
+      const previous = seen.get(event.id);
+      if (previous) {
+        // 念のため、共同主催として先に出ても、筆頭幹事の行があればそちらを優先する。
+        if (previous.role === "CO_HOST" && organizer.role === "OWNER") {
+          seen.set(event.id, { role: "OWNER", organizerId: organizer.id });
+        }
+        continue;
+      }
+      seen.set(event.id, { role: organizer.role, organizerId: organizer.id });
       events.push(event);
     }
     // 開催日が近い順に並べる。過去のイベントは下へ送る。
@@ -101,6 +116,37 @@ export async function GET(req: NextRequest) {
     const participants = events.flatMap((event) => event.participants);
     const receipts = events.flatMap((event) => event.receipts);
 
+    let totalMyShare = 0;
+    const rows = events.map((event) => {
+      const summary = summarizeRevenue(event.participants, event.receipts);
+      const membership = seen.get(event.id);
+      const allocation = allocateRevenue({
+        mode: event.revenueSetting?.mode ?? "RATIO",
+        organizers: event.organizers.map((row) => ({
+          organizerId: row.id,
+          role: row.role,
+        })),
+        shares: event.revenueShares,
+        expectedRevenue: summary.expectedRevenue,
+        issuedRevenue: summary.issuedRevenue,
+        attendingCount: summary.attendingCount,
+      });
+      const myRow = allocation.rows.find(
+        (row) => row.organizerId === membership?.organizerId,
+      );
+      const myShare = { expectedRevenue: myRow?.expectedRevenue ?? 0 };
+      totalMyShare += myShare.expectedRevenue;
+      return {
+        id: event.id,
+        title: event.title,
+        sortDate: formatEventDate(event.sortDate),
+        status: event.status,
+        role: membership?.role ?? "CO_HOST",
+        ...summary,
+        myShare,
+      };
+    });
+
     return NextResponse.json({
       period: {
         from: from ? formatEventDate(from) : null,
@@ -108,13 +154,8 @@ export async function GET(req: NextRequest) {
         status,
       },
       totals: summarizeRevenue(participants, receipts),
-      events: events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        sortDate: formatEventDate(event.sortDate),
-        status: event.status,
-        ...summarizeRevenue(event.participants, event.receipts),
-      })),
+      myShare: { expectedRevenue: totalMyShare },
+      events: rows,
     });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/organizer/revenue");

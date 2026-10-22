@@ -43,7 +43,7 @@ flowchart TD
 
 | パス | 画面ID | 対象アクター | 認可・アクセス条件 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`。未ログイン時のボタンは「主催者ログイン」。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上の4つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
+| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`。未ログイン時のボタンは「主催者ログイン」。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）の5つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
 | `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円月額の自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない |
@@ -52,7 +52,7 @@ flowchart TD
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
 | `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。公開状態は `PUBLISHED`、`visibility` は常に `UNLISTED`。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る |
 | `/organizer/register-required` | SCR-ORG-10 | 未登録の幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・リマインド・領収書・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
-| `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る |
+| `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る。冒頭に筆頭幹事だけ表示する幹事パネル（`CoHostPanel`）を置き、主催 / 共同主催の一覧、招待URLの発行、共同主催者の解除を行う。解除はその場で確認を出し、実行後に一覧を読み直す |
 | `/events/[id]/receipt` | SCR-PUB-04 | 参加者本人 | 出欠 Cookie または会員 | 自分の参加費領収書 |
 | `/organizer/events/[id]/receipts/[participantId]` | SCR-ORG-09 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 幹事向け領収書。印刷しない冒頭 `h1` は画面名。催し名と宛名はリード。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/organizer/events/[id]/participants` | SCR-ORG-06 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 参加者名簿。冒頭 `h1` は画面名。催し名はリード。出欠の集計、CSV、参加者へのリマインドと文面コピー、参加者ページのプレビューと共有リンクのコピー、領収書発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -284,7 +284,7 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 サービス・プラン紹介（SCR-PUB-06）は `src/app/service/page.tsx` である。金額は `src/modules/billing/lib/plans.ts` の定数を表示する。ボタンは作成画面とホームへ進む。Checkout は呼ばない。見込み客の着地は、検索広告、比較記事、知人の紹介、およびホームと公開ナビとフッターの「サービスと料金」である。確認メール、Checkout の戻り、Portal の終了、領収書のリンクは、共通編第3.1節の流入経路を正とする。
 
-ホーム（SCR-PUB-00）の機能紹介は、告知・出欠・集計・売上の4つである。売上は会員登録した幹事の機能なので、紹介文にその旨を1文添える。ホームの主操作は「無料でイベントを作る」の1つに絞り、売上への直接のCTAは置かない。売上（SCR-ORG-11）と主催一覧（SCR-ORG-01）の行き来は、本文冒頭の `OrganizerTabs` だけで行う。ヘッダーのナビ（`Navbar.tsx` と `SITE.nav`）には売上を足さない（FE-PUB-03 の並びを変えないため）。
+ホーム（SCR-PUB-00）の機能紹介は、告知・出欠・集計・売上・運営（主催者と共同主催）の5つである。売上と共同主催の招待は会員登録した幹事の機能なので、それぞれの紹介文にその旨を1文添える。ホームの主操作は「無料でイベントを作る」の1つに絞り、売上への直接のCTAは置かない。売上（SCR-ORG-11）と主催一覧（SCR-ORG-01）の行き来は、本文冒頭の `OrganizerTabs` だけで行う。ヘッダーのナビ（`Navbar.tsx` と `SITE.nav`）には売上を足さない（FE-PUB-03 の並びを変えないため）。
 
 ---
 
@@ -336,6 +336,7 @@ src/
 │   │   ├── ParticipantListTable.tsx           # SCR-ORG-06 (出欠テーブル・フィルタ)
 │   │   ├── OrganizerTabs.tsx                  # 主催一覧 / 売上の本文内サブタブ（ヘッダーには足さない）
 │   │   ├── RevenueSummaryLedger.tsx           # SCR-ORG-06/11/12 (売上サマリ。帳票風の行。3画面で共用)
+│   │   ├── RevenueAllocationSection.tsx       # SCR-ORG-12 (主催者別の按分。表と設定パネル)
 │   │   └── InviteOrganizerModal.tsx           # SCR-ORG-07 (招待URL発行)
 │   ├── common/
 │   │   ├── LockConflictModal.tsx              # 排他ロック競合・Takeover
@@ -1011,7 +1012,9 @@ export interface PricingOption {
 
 ログイン後の共通バーは `src/modules/admin/components/AdminChrome.tsx` である。「管理コンソール」と、ホーム、会員、イベント、決済、料金のナビだけを出す。画面名は各ページの `h1` である。ログアウトは `DELETE /api/v1/admin/session` のあと `/console/login` へ戻す。ログアウト時はセッション行を失効させる。
 
-幹事ページの冒頭 `h1` も画面名である。SCR-ORG-01 は「主催イベント一覧」、SCR-ORG-02 は「新規イベント作成」、SCR-ORG-05 は「イベント編集」、SCR-ORG-06 は「参加者名簿」、SCR-ORG-09 は「幹事向け領収書」（印刷しない）、SCR-ORG-07 は「共同幹事受諾」。催し名はリードに置く。モーダルの見出しは「チラシ選択」「公開完了」「編集中のイベントです」「課金プラン選択」「イベント削除・停止確認」である。
+幹事ページの冒頭 `h1` も画面名である。SCR-ORG-01 は「主催イベント一覧」、SCR-ORG-02 は「新規イベント作成」、SCR-ORG-05 は「イベント編集」、SCR-ORG-06 は「参加者名簿」、SCR-ORG-09 は「幹事向け領収書」（印刷しない）、SCR-ORG-07 は「共同主催者の招待」。催し名はリードに置く。モーダルの見出しは「チラシ選択」「公開完了」「編集中のイベントです」「課金プラン選択」「イベント削除・停止確認」である。
+
+公開告知ページ（SCR-PUB-01）は、基本情報カード（`EventMetaCard`）の先頭に「主催」と「共同主催」の行を置く。公開 API の `organizers.owner` と `organizers.coHosts` をそのまま表示し、共同主催が0人のときは行を出さない。名前が未設定のゲスト幹事は「主催者」「共同主催者」とだけ出す。メールアドレスとユーザーIDは公開 API に含めない。
 
 ## 9. 会員登録（SCR-PUB-02 / SCR-PUB-05）
 
@@ -1248,7 +1251,7 @@ interface OrganizerInviteCardProps {
 | 画面 | ルート | 認可 | 内容 |
 | :--- | :--- | :--- | :--- |
 | SCR-ORG-11 売上 | `/organizer/revenue` | `requireOrganizerAccount`。未ログインは 401、ゲスト幹事は 403 `REGISTER_REQUIRED` | 期間の絞り込み、サマリ、イベント別の一覧 |
-| SCR-ORG-12 売上の内訳 | `/organizer/events/[id]/revenue` | `assertRegisteredOrganizer`（名簿と同じ） | サマリ、プラン別、開催回別 |
+| SCR-ORG-12 売上の内訳 | `/organizer/events/[id]/revenue` | `assertRegisteredOrganizer`（名簿と同じ） | サマリ、主催者別（按分）、プラン別、開催回別 |
 | SCR-ORG-06 参加者名簿 | `/organizer/events/[id]/participants` | `assertRegisteredOrganizer` | サマリ、プラン未選択の案内、名簿 |
 
 403 の遷移は第12.6節と同じである。`/organizer/register-required?eventId=<id>` へ送る。売上は会員の幹事だけの機能であり、ゲスト幹事の Cookie では集計を返さない。
@@ -1267,6 +1270,7 @@ interface OrganizerInviteCardProps {
 | 平均単価 `averagePerAttendee` | `round(expectedRevenue ÷ paidAttendingCount)` | 分母はプラン選択済みの出席者。0 人なら 0 |
 | 出席 `attendingCount` | `ATTENDING` の人数 | — |
 | プラン未選択 `unassignedPlanCount` | `ATTENDING` かつ `price_amount IS NULL` の人数 | 売上にも平均単価の分母にも入れない |
+| あなたの取り分 `myShare` | 各イベントの按分で閲覧者自身の行になった見込み売上の合算 | SCR-ORG-11 だけ。未割当は含めない |
 
 金額はすべて出欠確定時点のスナップショット（`participants.price_amount` / `price_plan_name` / `price_audience`）を読む。費用プランの金額や名前を後から編集しても、申込済みの売上は動かない。同じプランを選び直しているだけの更新では、`keepPriceSnapshot` が以前の金額を保つ。欠席にすると 3 列とも `NULL` に戻る。
 
@@ -1274,10 +1278,10 @@ interface OrganizerInviteCardProps {
 
 ### 13.3. `RevenueSummaryLedger`（サマリの表示）
 
-3画面で同じ markup をコピーしないよう、`src/modules/revenue/components/RevenueSummaryLedger.tsx` に集約する。props は `RevenueSummary` だけである。
+3画面で同じ markup をコピーしないよう、`src/modules/revenue/components/RevenueSummaryLedger.tsx` に集約する。props は `RevenueSummary` と、任意の `myShare` である。
 
 ```tsx
-<RevenueSummaryLedger summary={totals} />
+<RevenueSummaryLedger summary={totals} myShare={data.myShare} />
 ```
 
 **構造。** `dl.revenue-ledger` の下に `div.revenue-ledger__row` を 4 つ置き、各行は `dt.revenue-ledger__label`、`dd.revenue-ledger__value`、`dd.revenue-ledger__note` で組む。`div` の直下に置けるのは `dt` と `dd` だけなので、注記を `<p>` にしてはならない。
@@ -1303,6 +1307,7 @@ interface OrganizerInviteCardProps {
 | 領収書発行額 | `発行 1 件` |
 | 見込みとの差額 | 注記を持たない（ラベルと金額だけで意味が通る） |
 | 平均単価 | `プラン選択済み 1 人あたり` |
+| あなたの取り分（`myShare` があるときだけ） | `按分後・見込み` |
 
 差額の行に `見込み 8,000 − 発行 9,000` のような式は出さない。差額は脚注で 1 回だけ説明する。
 
@@ -1331,13 +1336,38 @@ SCR-ORG-12 の `プラン別` と `開催回別` は `table.data` を使う。
 * プラン別: プラン名、対象（`PRICE_AUDIENCE_LABELS`）、金額、人数、小計。金額はスナップショットなので「申込時点のもの」とヘッダに書く。同じプラン名でも金額が違えば別行になる。
 * 開催回別: 日時、出席、小計。日時が消えた参加者は `日時なし` として最後の行に出す。日程を選んでいない出席者を代表日に寄せることはしない。
 
-SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 / 欠席（未選択の人数を添える）、見込み、発行済み、差額を出す。行から SCR-ORG-12 へ進む。並びは開催日の昇順で、過去の催しは後ろへ送る。
+SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 / 欠席（未選択の人数を添える）、見込み、あなたの取り分、発行済み、差額を出す。行から SCR-ORG-12 へ進む。並びは開催日の昇順で、過去の催しは後ろへ送る。金額のセルは `td.num`（`font-variant-numeric: tabular-nums` / `white-space: nowrap`）にして、360px でも折り返さない。
 
 ### 13.6. テスト
 
 * 単体（`tests/unit/revenue.test.ts`、27 件）: 4 指標の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、`participantPriceDisplay`、`keepPriceSnapshot`。
-* 結合（`tests/integration/revenue.test.ts`、3 件）: プラン金額の編集後も申込済みの見込みが動かないこと、差額、不参加の除外。`TEST_DATABASE_URL` があるときだけ走る。
+* 単体（`tests/unit/allocation.test.ts`、25 件）: 均等割の bps、端数の寄せ先、割合方式・人数方式、未割当、0 除算、領収書、設定の過不足とエラーコード。
+* 結合（`tests/integration/revenue.test.ts`、6 件）: プラン金額の編集後も申込済みの見込みが動かないこと、差額、不参加の除外、按分の保存と閲覧範囲、共同主催の解除。`TEST_DATABASE_URL` があるときだけ走る。
 * 表示の確認は第7節 FE-ORG-08 / 09 / 10 に従う。
+
+### 13.7. 按分（SCR-ORG-12）
+
+共同主催がいるイベントでは、サマリの下に `RevenueAllocationSection` を置く。主催者が1人だけのイベントでは節ごと出さない（全額がその1人に入るため）。
+
+**表。** `table.data` に、名前、立場、割合または人数、見込み、発行済みを出す。立場は `主催者` / `共同主催者`、未登録の幹事には `（未登録）` を添える。自分の行には `（あなた）` を付ける。金額と割合のセルは `td.num` にする。
+
+**設定パネル。** 主催者（`canEdit`）には「配分を設定」ボタンを出す。モーダルは増やさず、その場でパネルを開く。
+
+* 方式のラジオ: `割合で分ける` / `人数で分ける`。
+* 各主催者の入力欄。割合は % 表示（小数第2位まで、内部は basis points）、人数は人。
+* 合計の表示。割合は `合計 33.33%`、人数は `合計 12 / 18 人（未割当 6 人）`。入力中に即時で更新する。
+* 公開範囲のラジオ: `全員に公開` / `各自の分だけ`。主催者は設定にかかわらず全員分を見られる旨を1文添える。
+* 保存は `PUT /api/v1/organizer/events/[id]/revenue/allocation`。成功したら返った `allocation` で表を差し替える。409 は人数の合計が出席者数を超えたときで、本文の `detail` をそのまま出す。
+
+**共同主催者の見え方。** `visibility = OWN_ONLY` のときは自分の行だけを出し、`他の N 人分は非表示です。` を添える。`ALL` のときは全員分を出す。絞り込みは API が行い、画面は返された `rows` をそのまま描く。
+
+**未割当。** 人数方式で `unallocated.headcount > 0` のとき、表の下に `未割当 6 人・12,000円。売上から消えたわけではありません。` を出す。
+
+**脚注。** `按分は集金の分担を決めるための表示です。送金や決済は行いません。` を1回だけ置く。
+
+**端数。** 各人を切り捨て、余りは主催者へ寄せる。計算は `src/modules/revenue/lib/allocation.ts` に閉じ、画面では計算しない。出席者 0 人でも 0 除算せず全員 0 円にする。
+
+**SCR-ORG-11。** `RevenueSummaryLedger` に `myShare` を渡し、「あなたの取り分」行を足す。`イベント別` の表にも「あなたの取り分」列を足す（見込みベース）。合計行は各イベントの按分の合算で、未割当は含めない。既存の4行の見た目は変えない。
 
 
 

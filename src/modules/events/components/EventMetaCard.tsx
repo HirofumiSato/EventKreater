@@ -16,6 +16,7 @@ interface EventMetaCardProps {
     | "status"
     | "rsvpDeadline"
     | "rsvpOpen"
+    | "organizers"
   >;
 }
 
@@ -23,6 +24,8 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
   const remaining = event.capacity === null ? null : Math.max(0, event.capacity - event.attendingCount);
   const ratio = event.capacity ? Math.min(100, Math.round((event.attendingCount / event.capacity) * 100)) : null;
+  const owner = event.organizers.owner;
+  const coHosts = event.organizers.coHosts;
 
   return (
     <section className="card card--padded">
@@ -35,6 +38,18 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
       </div>
       <h1 className="panel__title">{event.title}</h1>
       <dl className="meta-list">
+        {owner && (
+          <div>
+            <dt>主催</dt>
+            <dd>{owner.name}</dd>
+          </div>
+        )}
+        {coHosts.length > 0 && (
+          <div>
+            <dt>共同主催</dt>
+            <dd>{coHosts.map((row) => row.name).join("、")}</dd>
+          </div>
+        )}
         <div>
           <dt>開催日時</dt>
           <dd>

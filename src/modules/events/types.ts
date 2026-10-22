@@ -123,6 +123,8 @@ export interface EventFormValues {
   title: string;
   schedules: ScheduleDraft[];
   pricePlans: PricePlanDraft[];
+  /** ゲスト幹事の公開表示名。会員として作るときはサーバーが無視する。 */
+  organizerDisplayName: string;
   /** 構造化住所が無いときだけ使う旧・自由入力の開催場所。 */
   location: string;
   postalCode: string;
@@ -147,6 +149,34 @@ export interface PublicEventViewer {
   hasOrganizerRole: boolean;
 }
 
+/** 公開ページに出す幹事。名前だけを持ち、ID・メールは含めない。 */
+export interface PublicOrganizerName {
+  name: string;
+}
+
+/** 公開ページの「主催 / 共同主催」。 */
+export interface PublicEventOrganizers {
+  owner: PublicOrganizerName | null;
+  coHosts: PublicOrganizerName[];
+}
+
+/** 管理画面に出す幹事。メールやユーザーIDは含めない。 */
+export interface EventOrganizerSummary {
+  id: string;
+  role: OrganizerRole;
+  /** 解決済みの表示名。会員はアカウント名、ゲストは入力された名前、無ければ役割名。 */
+  name: string;
+  /** 未登録の幹事（ゲスト）か。 */
+  isGuest: boolean;
+}
+
+export interface EventOrganizerList {
+  /** 筆頭幹事。必ず1名。 */
+  owner: EventOrganizerSummary | null;
+  /** 共同主催者。作成順。 */
+  coHosts: EventOrganizerSummary[];
+}
+
 export interface PublicEvent {
   id: string;
   title: string;
@@ -164,6 +194,8 @@ export interface PublicEvent {
   /** このブラウザが会員としてログインしているか。履歴保存の案内を出し分ける。 */
   loggedIn: boolean;
   viewer: PublicEventViewer;
+  /** 筆頭幹事と共同主催者。 */
+  organizers: PublicEventOrganizers;
   flyerAsset: FlyerAsset | null;
   myRsvp: MyRsvp | null;
   myReceipt: {
@@ -202,6 +234,8 @@ export interface OrganizerEvent {
   createdAt: string;
   flyerAssetId: string | null;
   role: OrganizerRole;
+  /** このイベントの筆頭幹事の表示名。一覧カードで「主催: 名前」に出す。 */
+  ownerName: string;
   stats: {
     attendingCount: number;
     declinedCount: number;
@@ -416,6 +450,9 @@ export function toEventRequest(form: EventFormValues, referrerEventId?: string |
   );
   return {
     title: form.title,
+    ...(form.organizerDisplayName.trim()
+      ? { organizerDisplayName: form.organizerDisplayName.trim() }
+      : {}),
     schedules: form.schedules.map(({ id, eventDate, startTime, endTime }) => ({
       ...(id ? { id } : {}),
       eventDate,
@@ -565,6 +602,7 @@ export { GENDER_LABELS, PRICE_AUDIENCE_LABELS } from "@/lib/serializers";
 
 export const EMPTY_EVENT_FORM: EventFormValues = {
   title: "",
+  organizerDisplayName: "",
   schedules: [createScheduleDraft({ key: "schedule-initial" })],
   pricePlans: [createPricePlanDraft({ key: "plan-initial" })],
   location: "",

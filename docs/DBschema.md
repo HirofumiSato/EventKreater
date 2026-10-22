@@ -34,10 +34,10 @@
 * **Event (イベント本体):** 主催者が告知・出欠を集めるイベントの実体（基本7項目＋ステータス＋掲載フラグ＋任意の申し込み期限）。`visibility` は将来のメディアサイト用の予約列であり、いまのアプリは一覧を持たないため常に `UNLISTED`（紹介制）。
 * **Receipt (参加費の領収書):** 幹事が出席者へ発行する文書。1参加者につき1件。金額は幹事が入力し、参加費の決済は持たない。
 * **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した 9:16 の JPEG。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは `storage/flyers/{id}.jpg` に置く。`externalFlyerId` は生成サービスが払い出した `generation_id`。チラシなしのイベントも許容する。
-* **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（作成者）とCO_HOST（共同幹事）を識別。
+* **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（筆頭幹事。1イベント1行）とCO_HOST（共同主催者）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
 * **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。
-* **EventLock (排他編集ロック):** 共同幹事間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
-* **EventInvitation (共同幹事招待):** 既存幹事が他メンバーを共同幹事として迎えるためのワンタイム招待実体。
+* **EventLock (排他編集ロック):** 共同主催者間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
+* **EventInvitation (共同主催者の招待):** 既存幹事が他の会員を共同主催者として迎えるためのワンタイム招待実体。受諾は会員のみ。
 
 ### 2.2. 概念ER図
 
@@ -110,6 +110,8 @@ erDiagram
 | **EventStatus** | `DRAFT`, `PUBLISHED`, `CLOSED` | イベント公開状態 |
 | **EventVisibility** | `PUBLIC`, `UNLISTED` | 将来のメディアサイト向けの掲載フラグ。`PUBLIC` は一覧掲載、`UNLISTED` は紹介制。いまのアプリは常に `UNLISTED` |
 | **OrganizerRole** | `OWNER`, `CO_HOST` | 幹事ロール（筆頭作成者 / 共同幹事）。イベント単位 |
+| **RevenueSplitMode** | `RATIO`, `HEADCOUNT` | 売上の按分方式。割合（basis points）か、連れてきた人数か |
+| **RevenueShareVisibility** | `ALL`, `OWN_ONLY` | 按分の閲覧範囲。`OWN_ONLY` は共同主催者に自分の行だけを見せる |
 | **PlatformRole** | `MEMBER`, `ADMIN` | プラットフォーム権限。会員行に1つ。既定は `MEMBER` |
 | **LoginChallengeChannel** | `SMS`, `EMAIL` | ログイン確認番号の届け方。既定はSMS |
 | **LoginChallengePurpose** | `MEMBER`, `ADMIN`, `PARTICIPANT` | 主催者入口か管理者入口か参加者入口か。`PARTICIPANT` は管理者も通り抜けられる |
@@ -442,6 +444,8 @@ model Event {
   invitations  EventInvitation[]
   schedules    EventSchedule[]
   pricePlans   EventPricePlan[]
+  revenueSetting EventRevenueSetting?
+  revenueShares  EventRevenueShare[]
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
   @@index([referrerEventId])
@@ -493,12 +497,51 @@ model EventOrganizer {
   userId         String?       @map("user_id") @db.Uuid
   guestTokenHash String?       @unique @map("guest_token_hash") @db.VarChar(64)
   role           OrganizerRole @default(CO_HOST)
+  /// ゲスト幹事の公開表示名。会員は User.name を都度参照するため NULL。
+  displayName    String?       @map("display_name") @db.VarChar(50)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revenueShare EventRevenueShare?
   @@unique([eventId, userId])
   @@index([userId])
   @@map("event_organizers")
+}
+
+-- 1イベント1オーナーは、Prisma で表現できない部分ユニーク索引で保証する（migration の生SQL）。
+-- CREATE UNIQUE INDEX "event_organizers_one_owner"
+--   ON "event_organizers" ("event_id") WHERE "role" = 'OWNER';
+
+// =============================================================
+// 5-2. 共同主催の売上按分
+// =============================================================
+/// イベントごとの按分の設定。行が無いときは RATIO / OWN_ONLY として扱う。
+model EventRevenueSetting {
+  eventId         String                @id @map("event_id") @db.Uuid
+  mode            RevenueSplitMode      @default(RATIO)
+  visibility      RevenueShareVisibility @default(OWN_ONLY)
+  updatedByUserId String?               @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_revenue_settings")
+}
+
+/// 主催者1人ぶんの配分。割合方式は shareBps、人数方式は headcount を使う。
+/// 主催者が外れると Cascade で消え、残った主催者だけで再計算する。
+model EventRevenueShare {
+  organizerId String   @id @map("organizer_id") @db.Uuid
+  eventId     String   @map("event_id") @db.Uuid
+  shareBps    Int?     @map("share_bps") @db.Integer
+  headcount   Int?     @map("headcount") @db.Integer
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  organizer EventOrganizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_revenue_shares")
 }
 
 // =============================================================
@@ -842,13 +885,38 @@ CREATE TABLE event_organizers (
     user_id UUID NULL REFERENCES users(id) ON DELETE CASCADE,
     guest_token_hash VARCHAR(64) UNIQUE NULL,
     role organizer_role_enum NOT NULL DEFAULT 'CO_HOST',
+    display_name VARCHAR(50) NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_event_user UNIQUE (event_id, user_id)
 );
 
 CREATE INDEX idx_organizers_user ON event_organizers(user_id);
 
--- 8. 参加者・出欠テーブル
+-- 1イベント1オーナー（筆頭幹事）を保証する部分ユニーク索引。
+CREATE UNIQUE INDEX event_organizers_one_owner
+    ON event_organizers(event_id)
+    WHERE role = 'OWNER';
+
+-- 8. 共同主催の売上按分
+CREATE TABLE event_revenue_settings (
+    event_id UUID PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+    mode revenue_split_mode_enum NOT NULL DEFAULT 'RATIO',
+    visibility revenue_share_visibility_enum NOT NULL DEFAULT 'OWN_ONLY',
+    updated_by_user_id UUID NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE event_revenue_shares (
+    organizer_id UUID PRIMARY KEY REFERENCES event_organizers(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    share_bps INTEGER NULL,
+    headcount INTEGER NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_revenue_shares_event ON event_revenue_shares(event_id);
+
+-- 9. 参加者・出欠テーブル
 CREATE TABLE participants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,

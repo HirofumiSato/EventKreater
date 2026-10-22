@@ -5,6 +5,7 @@ import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { formatEventDate } from "@/lib/serializers";
 import { groupByPlan, groupBySchedule, summarizeRevenue } from "@/modules/revenue/lib/revenue";
+import { buildAllocationView } from "@/modules/revenue/lib/allocation-view";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ interface RouteContext {
  */
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    await assertRegisteredOrganizer(req, params.id);
+    const ctx = await assertRegisteredOrganizer(req, params.id);
     const event = await prisma.event.findFirst({
       where: { id: params.id, isDeleted: false },
       select: {
@@ -27,6 +28,18 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         title: true,
         sortDate: true,
         status: true,
+        organizers: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            role: true,
+            userId: true,
+            displayName: true,
+            user: { select: { name: true } },
+          },
+        },
+        revenueSetting: { select: { mode: true, visibility: true } },
+        revenueShares: { select: { organizerId: true, shareBps: true, headcount: true } },
         schedules: { orderBy: { sortOrder: "asc" } },
         participants: {
           select: {
@@ -64,6 +77,18 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       return a.label.localeCompare(b.label);
     });
 
+    const summary = summarizeRevenue(event.participants, event.receipts);
+    const allocation = buildAllocationView({
+      organizers: event.organizers,
+      setting: event.revenueSetting,
+      shares: event.revenueShares,
+      viewerUserId: ctx.userId,
+      viewerRole: ctx.role ?? "CO_HOST",
+      expectedRevenue: summary.expectedRevenue,
+      issuedRevenue: summary.issuedRevenue,
+      attendingCount: summary.attendingCount,
+    });
+
     return NextResponse.json({
       event: {
         id: event.id,
@@ -71,9 +96,10 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         sortDate: formatEventDate(event.sortDate),
         status: event.status,
       },
-      summary: summarizeRevenue(event.participants, event.receipts),
+      summary,
       byPlan: groupByPlan(event.participants),
       bySchedule,
+      allocation,
     });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/revenue`);

@@ -6,7 +6,7 @@ import { toErrorResponse } from "@/lib/http";
 import { rsvpCookieName } from "@/modules/auth/lib/cookies";
 import { collectGuestTokenHashes, resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { findMyParticipant } from "@/modules/participants/lib/rsvp";
-import { serializeEvent } from "@/lib/serializers";
+import { serializeEvent, serializePublicOrganizerList } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 
 export const runtime = "nodejs";
@@ -24,7 +24,20 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         isDeleted: false,
         status: { in: ["PUBLISHED", "CLOSED"] },
       },
-      include: { flyerAsset: true, ...eventOptionsInclude },
+      include: {
+        flyerAsset: true,
+        ...eventOptionsInclude,
+        organizers: {
+          select: {
+            id: true,
+            role: true,
+            userId: true,
+            displayName: true,
+            user: { select: { name: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
     if (!event) {
       throw new ProblemDetailException({
@@ -147,6 +160,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         isThisEventsOrganizer: Boolean(myOrganizerRow),
         hasOrganizerRole: memberOrganizerCount > 0 || guestOwnerCount > 0,
       },
+      organizers: serializePublicOrganizerList(event.organizers),
       flyerAsset: serialized.flyerAsset,
       myRsvp,
       myReceipt,

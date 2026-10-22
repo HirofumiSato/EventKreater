@@ -85,4 +85,37 @@ describeDb("migrateGuestOrganizers（結合）", () => {
     const quota = await prisma.userUsageQuota.findUniqueOrThrow({ where: { userId: user.id } });
     expect(quota.freeEventCount).toBe(FREE_EVENT_LIMIT);
   });
+
+  it("ゲスト OWNER と会員 CO_HOST が同じイベントに居ても、オーナーを失わない", async () => {
+    const user = await createUser(0);
+    userIds.push(user.id);
+
+    const token = "token-owner-and-cohost";
+    // 同じイベントに、端末の OWNER 行と会員の CO_HOST 行が並ぶ状態を作る。
+    const event = await seedEvent({ guestTokenHash: sha256(token), role: "OWNER" });
+    eventIds.push(event.id);
+    await prisma.eventOrganizer.create({
+      data: { eventId: event.id, userId: user.id, role: "CO_HOST" },
+    });
+
+    const result = await prisma.$transaction((tx) => migrateGuestOrganizers(tx, user.id, [token]));
+
+    expect(result.promotedOwners).toBe(1);
+    const organizers = await prisma.eventOrganizer.findMany({ where: { eventId: event.id } });
+    expect(organizers).toHaveLength(1);
+    expect(organizers[0].role).toBe("OWNER");
+    expect(organizers[0].userId).toBe(user.id);
+    expect(organizers[0].guestTokenHash).toBeNull();
+  });
+
+  it("1イベントに OWNER を2行は作れない（部分ユニーク索引）", async () => {
+    const user = await createUser(0);
+    userIds.push(user.id);
+    const event = await seedEvent({ guestTokenHash: sha256("token-single-owner"), role: "OWNER" });
+    eventIds.push(event.id);
+
+    await expect(
+      prisma.eventOrganizer.create({ data: { eventId: event.id, userId: user.id, role: "OWNER" } }),
+    ).rejects.toThrow();
+  });
 });
