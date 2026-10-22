@@ -2,23 +2,15 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
-import type { EventFormValues, PricePlanDraft, RainPolicy } from "@/modules/events/types";
+import type { EventFormValues } from "@/modules/events/types";
+import { capacitySelectionOf, type CapacitySelection } from "@/modules/events/lib/capacity";
 import {
-  createPricePlanDraft,
-  createScheduleDraft,
-  groupNamesDiffer,
-  groupPricePlanPairs,
-  MAX_EVENT_OPTIONS,
-  pricingModeOf,
-  PRICE_AUDIENCE_LABELS,
-  RAIN_POLICY_LABELS,
-  STATUS_LABELS,
-  withCommonPricing,
-  withGenderPricing,
-  withGroupName,
-} from "@/modules/events/types";
-import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
+  BasicSection,
+  CapacitySection,
+  LocationSection,
+  PricePlansSection,
+  StatusSection,
+} from "@/modules/events/components/EventFormSections";
 
 interface EventFormProps {
   value: EventFormValues;
@@ -35,8 +27,10 @@ interface EventFormProps {
   flyerSlot?: ReactNode;
 }
 
-const RAIN_POLICIES = Object.keys(RAIN_POLICY_LABELS) as RainPolicy[];
-
+/**
+ * 編集画面の一括フォーム。すべての入力を 1 枚に並べる。
+ * 新規作成は `EventStepForm` を使い、同じセクションをステップに分けて出す。
+ */
 export function EventForm({
   value,
   onChange,
@@ -50,125 +44,11 @@ export function EventForm({
   flyerSlot,
 }: EventFormProps) {
   const locked = disabled || submitting;
-  const [confirmCommonOpen, setConfirmCommonOpen] = useState(false);
-  const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
-    onChange({ ...value, [key]: next });
-  };
-
-  const hasStructuredAddress = Boolean(
-    value.postalCode ||
-      value.prefecture ||
-      value.city ||
-      value.town ||
-      value.addressLine ||
-      value.building,
-  );
-  const locationPreview = composeLocation(value);
-
-  const pricingMode = pricingModeOf(value.pricePlans);
-  const genderLocked = locked || pricingModeLocked;
-  // 男女別では男性用・女性用が1組なので、プラン名の入力も削除も組単位で行う。
-  const planGroups = groupPricePlanPairs(value.pricePlans);
-  const canRemovePlan = planGroups.length > 1;
-  const hasLegacyCommonPlan =
-    pricingMode === "GENDER" && value.pricePlans.some((row) => row.audience === "ANY");
-
-  const updatePlan = (rowKey: string, patch: Partial<PricePlanDraft>) => {
-    set(
-      "pricePlans",
-      value.pricePlans.map((row) => (row.key === rowKey ? { ...row, ...patch } : row)),
-    );
-  };
-
-  /** 共通料金のプラン名。男女別では組の見出しに1つだけ出すので、行の中では使わない。 */
-  const planNameField = (row: PricePlanDraft) => (
-    <div className="field">
-      <label className="label" htmlFor={`plan-name-${row.key}`}>
-        プラン名
-      </label>
-      <input
-        id={`plan-name-${row.key}`}
-        required
-        maxLength={50}
-        value={row.name}
-        onChange={(event) => updatePlan(row.key, { name: event.target.value })}
-        placeholder="一般"
-        className="input"
-      />
-    </div>
-  );
-
-  /** 金額と補足は行ごとに持つ。男女別でも金額は分けたいので、組の中の行に残す。 */
-  const planAmountAndNoteFields = (row: PricePlanDraft) => (
-    <>
-      <div className="field">
-        <label className="label" htmlFor={`plan-amount-${row.key}`}>
-          金額（円）
-        </label>
-        <input
-          id={`plan-amount-${row.key}`}
-          required
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={9999999}
-          step={1}
-          value={row.amount}
-          onChange={(event) => updatePlan(row.key, { amount: event.target.value })}
-          placeholder="3000"
-          className="input"
-        />
-      </div>
-      <div className="field">
-        <label className="label" htmlFor={`plan-note-${row.key}`}>
-          補足（任意）
-        </label>
-        <input
-          id={`plan-note-${row.key}`}
-          maxLength={100}
-          value={row.note}
-          onChange={(event) => updatePlan(row.key, { note: event.target.value })}
-          placeholder="1ドリンク付"
-          className="input"
-        />
-      </div>
-      <p className="help repeat-row__note">
-        {row.amount === "" ? "金額を入れてください" : composePriceText({ amount: Number(row.amount), note: row.note })}
-      </p>
-    </>
-  );
-
-  /** 男女別では対象を選ばせない。固定表示だけを出す。 */
-  const planAudienceField = (row: PricePlanDraft) => (
-    <div className="field">
-      <span className="label">対象</span>
-      <p className="price-audience">{PRICE_AUDIENCE_LABELS[row.audience]}</p>
-    </div>
-  );
-
-  const addPlan = () => {
-    // 男女別モードでは新しいプランも男性用・女性用のペアで足す。
-    if (pricingMode === "GENDER") {
-      if (value.pricePlans.length + 2 > MAX_EVENT_OPTIONS) return;
-      set("pricePlans", [
-        ...value.pricePlans,
-        createPricePlanDraft({ audience: "MALE" }),
-        createPricePlanDraft({ audience: "FEMALE" }),
-      ]);
-      return;
-    }
-    if (value.pricePlans.length >= MAX_EVENT_OPTIONS) return;
-    set("pricePlans", [...value.pricePlans, createPricePlanDraft()]);
-  };
-
-  const removePlan = (rowKey: string) => {
-    const group = planGroups.find((rows) => rows.some((item) => item.key === rowKey));
-    const removing = new Set((group ?? []).map((item) => item.key));
-    const next = value.pricePlans.filter((item) => !removing.has(item.key));
-    // 費用プランは1件以上必要なので、最後の1組は消さない。
-    if (next.length === 0) return;
-    set("pricePlans", next);
-  };
+  // 「51以上」を選んだことは保存値から分からない（空にすると無制限と同じになる）ので、画面側で覚える。
+  const [customCapacity, setCustomCapacity] = useState(false);
+  const capacitySelection: CapacitySelection = customCapacity
+    ? "custom"
+    : capacitySelectionOf(value.capacity);
 
   return (
     <form
@@ -178,487 +58,31 @@ export function EventForm({
         onSubmit();
       }}
     >
-      <div className="field">
-        <label className="label">
-          催しの名前 <span className="req">*</span>
-        </label>
-        <input
-          required
-          maxLength={100}
-          disabled={locked}
-          value={value.title}
-          onChange={(event) => set("title", event.target.value)}
-          className="input"
-        />
-      </div>
-      {showOrganizerName && (
-        <div className="field">
-          <label className="label" htmlFor="event-organizer-name">
-            主催者名（公開されます）
-          </label>
-          <input
-            id="event-organizer-name"
-            maxLength={50}
-            disabled={locked}
-            value={value.organizerDisplayName}
-            onChange={(event) => set("organizerDisplayName", event.target.value)}
-            placeholder="例: 山田 太郎"
-            className="input"
-          />
-          <p className="help">
-            公開ページの「主催」に出る名前です。未登録のまま作成しているため、アカウント名がありません。空欄なら「主催者」と表示されます。あとから会員登録すると、この名前はアカウントの表示名に切り替わります。
-          </p>
-        </div>
-      )}
-      <fieldset className="field" disabled={locked}>
-        <legend className="label">
-          開催日時 <span className="req">*</span>
-        </legend>
-        <div className="repeat-block">
-          {value.schedules.map((row, index) => {
-            const overnight = Boolean(row.startTime && row.endTime && row.endTime < row.startTime);
-            const preview = composeEventTime(row.startTime, row.endTime);
-            return (
-              <div key={row.key} className="repeat-row repeat-row--schedule">
-                <div className="field">
-                  <label className="label" htmlFor={`schedule-date-${row.key}`}>
-                    開催日
-                  </label>
-                  <input
-                    id={`schedule-date-${row.key}`}
-                    required
-                    type="date"
-                    value={row.eventDate}
-                    onChange={(event) => {
-                      const schedules = value.schedules.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, eventDate: event.target.value } : item,
-                      );
-                      set("schedules", schedules);
-                    }}
-                    className="input"
-                  />
-                </div>
-                <div className="field">
-                  <label className="label" htmlFor={`schedule-start-${row.key}`}>
-                    開始
-                  </label>
-                  <input
-                    id={`schedule-start-${row.key}`}
-                    required
-                    type="time"
-                    step={60}
-                    value={row.startTime}
-                    onChange={(event) => {
-                      const schedules = value.schedules.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, startTime: event.target.value } : item,
-                      );
-                      set("schedules", schedules);
-                    }}
-                    className="input"
-                  />
-                </div>
-                <div className="field">
-                  <label className="label" htmlFor={`schedule-end-${row.key}`}>
-                    終了
-                  </label>
-                  <input
-                    id={`schedule-end-${row.key}`}
-                    required
-                    type="time"
-                    step={60}
-                    value={row.endTime}
-                    onChange={(event) => {
-                      const schedules = value.schedules.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, endTime: event.target.value } : item,
-                      );
-                      set("schedules", schedules);
-                    }}
-                    className="input"
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  disabled={value.schedules.length <= 1}
-                  onClick={() => set("schedules", value.schedules.filter((item) => item.key !== row.key))}
-                >
-                  削除
-                </button>
-                {(preview || overnight) && (
-                  <p className="help repeat-row__note">
-                    {preview}
-                    {overnight ? "（終了が開始より前なので翌日として扱います）" : ""}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            disabled={value.schedules.length >= MAX_EVENT_OPTIONS}
-            onClick={() => set("schedules", [...value.schedules, createScheduleDraft()])}
-          >
-            日時を追加
-          </button>
-          <p className="help">
-            開始と終了は両方必須です。1件以上、{MAX_EVENT_OPTIONS}件まで。参加者は出席するときに1つ選びます。
-          </p>
-        </div>
-      </fieldset>
-      <fieldset className="field" disabled={locked}>
-        <legend className="label">
-          費用プラン <span className="req">*</span>
-        </legend>
-        <div className="repeat-block">
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={pricingMode === "GENDER"}
-              disabled={genderLocked}
-              onChange={(event) => {
-                if (event.target.checked) {
-                  set("pricePlans", withGenderPricing(value.pricePlans));
-                  return;
-                }
-                // 女性用の行を消すと、選んでいた参加者のプランが外れるため確認する。
-                setConfirmCommonOpen(true);
-              }}
-            />
-            男女別の費用を設定する
-          </label>
-          {pricingModeLocked ? (
-            <p className="help">
-              出席者がいるため、共通料金と男女別料金の切り替えはできません。金額・プラン名・補足は変更できます。
-            </p>
-          ) : pricingMode === "COMMON" ? (
-            <p className="help">
-              チェックを入れると、各プランを男性用・女性用に分けて金額を設定できます。プラン名は組で共通になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
-            </p>
-          ) : (
-            <p className="help">
-              男性用・女性用で1組です。プラン名は組で共通、金額と補足は行ごとに設定します。対象は固定で、追加も削除も組単位になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
-            </p>
-          )}
-          {hasLegacyCommonPlan && (
-            <p className="alert alert--warning">
-              対象が「共通」のまま残っている料金があります。対象は画面から変えられません。
-              {pricingModeLocked
-                ? "出席者がいるため、いまは共通料金へ戻せません。その料金を選んでいる出席者を選び直してから、共通料金へ戻して入れ直してください。"
-                : "チェックを外して共通料金に戻し、もう一度入れると、男性用・女性用の組に揃えられます。"}
-            </p>
-          )}
-          {pricingMode === "GENDER"
-            ? planGroups.map((group) => {
-                // 1組＝1プランなので、プラン名は組の見出しに1つだけ置く。
-                const head = group[0];
-                return (
-                  <div key={head.key} className="price-group">
-                    <div className="price-group__head">
-                      <div className="field">
-                        <label className="label" htmlFor={`plan-name-${head.key}`}>
-                          プラン名
-                        </label>
-                        <input
-                          id={`plan-name-${head.key}`}
-                          required
-                          maxLength={50}
-                          value={head.name}
-                          onChange={(event) =>
-                            set("pricePlans", withGroupName(value.pricePlans, group, event.target.value))
-                          }
-                          placeholder="一般"
-                          className="input"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn--ghost btn--sm"
-                        disabled={!canRemovePlan}
-                        aria-label="この組を削除"
-                        onClick={() => removePlan(head.key)}
-                      >
-                        組を削除
-                      </button>
-                    </div>
-                    {groupNamesDiffer(group) && (
-                      <p className="alert alert--warning">
-                        この組の中でプラン名が違います。上のプラン名を入れ直すと、男性用・女性用の両方に反映されます。
-                      </p>
-                    )}
-                    {group.map((row) => (
-                      <div key={row.key} className="repeat-row repeat-row--plan">
-                        {planAudienceField(row)}
-                        {planAmountAndNoteFields(row)}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })
-            : value.pricePlans.map((row) => (
-                <div key={row.key} className="repeat-row repeat-row--plan-common">
-                  {planNameField(row)}
-                  {planAmountAndNoteFields(row)}
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    disabled={!canRemovePlan}
-                    aria-label="このプランを削除"
-                    onClick={() => removePlan(row.key)}
-                  >
-                    削除
-                  </button>
-                </div>
-              ))}
-          <div className="btn-row">
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              disabled={
-                pricingMode === "GENDER"
-                  ? value.pricePlans.length + 2 > MAX_EVENT_OPTIONS
-                  : value.pricePlans.length >= MAX_EVENT_OPTIONS
-              }
-              onClick={addPlan}
-            >
-              プランを追加
-            </button>
-          </div>
-          <p className="help">
-            金額は整数の円です。0円は「無料」と表示します。
-            {pricingMode === "GENDER"
-              ? "1つのプランが男性用・女性用の1組です。参加者は自分の性別のプランを選びます。"
-              : "参加者は全員この金額から選びます。"}
-          </p>
-        </div>
-      </fieldset>
-      <fieldset className="field" disabled={locked}>
-        <legend className="label">
-          開催場所 <span className="req">*</span>
-        </legend>
-        <div className="field">
-          <label className="label" htmlFor="event-venue-name">
-            会場名
-          </label>
-          <input
-            id="event-venue-name"
-            maxLength={150}
-            value={value.venueName}
-            onChange={(event) => set("venueName", event.target.value)}
-            placeholder="○○ホール"
-            className="input"
-          />
-        </div>
-        <PostalCodeField
-          value={value.postalCode}
-          disabled={locked}
-          onChange={(postalCode) => set("postalCode", postalCode)}
-          onSelect={(result) => {
-            onChange({
-              ...value,
-              postalCode: result.postalCode,
-              prefecture: result.prefecture,
-              city: result.city,
-              town: result.town,
-            });
-          }}
-        />
-        <div className="repeat-row repeat-row--address">
-          <div className="field">
-            <label className="label" htmlFor="event-prefecture">
-              都道府県
-            </label>
-            <input
-              id="event-prefecture"
-              maxLength={20}
-              value={value.prefecture}
-              onChange={(event) => set("prefecture", event.target.value)}
-              placeholder="東京都"
-              className="input"
-            />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="event-city">
-              市区町村
-            </label>
-            <input
-              id="event-city"
-              maxLength={100}
-              value={value.city}
-              onChange={(event) => set("city", event.target.value)}
-              placeholder="渋谷区"
-              className="input"
-            />
-          </div>
-        </div>
-        <div className="repeat-row repeat-row--address">
-          <div className="field">
-            <label className="label" htmlFor="event-town">
-              町域
-            </label>
-            <input
-              id="event-town"
-              maxLength={100}
-              value={value.town}
-              onChange={(event) => set("town", event.target.value)}
-              placeholder="神宮前"
-              className="input"
-            />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="event-address-line">
-              番地
-            </label>
-            <input
-              id="event-address-line"
-              maxLength={200}
-              value={value.addressLine}
-              onChange={(event) => set("addressLine", event.target.value)}
-              placeholder="1-2-3"
-              className="input"
-            />
-          </div>
-        </div>
-        <div className="field">
-          <label className="label" htmlFor="event-building">
-            建物名・階数（任意）
-          </label>
-          <input
-            id="event-building"
-            maxLength={150}
-            value={value.building}
-            onChange={(event) => set("building", event.target.value)}
-            placeholder="○○ビル3F"
-            className="input"
-          />
-        </div>
-        {locationPreview && <p className="help">公開ページの表示: {locationPreview}</p>}
-        {!hasStructuredAddress && !value.venueName && value.location ? (
-          <p className="alert alert--warning">
-            このイベントは旧形式の場所「{value.location}」で登録されています。郵便番号から住所を入れると表示が新しくなります。空のまま保存すると旧形式のまま残ります。
-          </p>
-        ) : (
-          <p className="help">
-            郵便番号から入れると都道府県・市区町村・町域が自動で入ります。オンライン開催など場所が決まっていないときは、会場名だけでも保存できます。
-          </p>
-        )}
-      </fieldset>
-      <div className="field">
-        <label className="label">雨天時の方針</label>
-        <select
-          disabled={locked}
-          value={value.rainPolicy}
-          onChange={(event) => set("rainPolicy", event.target.value as RainPolicy)}
-          className="select"
-        >
-          {RAIN_POLICIES.map((policy) => (
-            <option key={policy} value={policy}>
-              {RAIN_POLICY_LABELS[policy]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
-        <label className="label">定員（空欄で無制限）</label>
-        <input
-          type="number"
-          min={1}
-          disabled={locked}
-          value={value.capacity ?? ""}
-          onChange={(event) => {
-            const raw = event.target.value;
-            set("capacity", raw === "" ? null : Number(raw));
-          }}
-          className="input"
-        />
-      </div>
-      <div className="field">
-        <label className="label" htmlFor="rsvp-deadline">
-          申し込み期限
-        </label>
-        <input
-          id="rsvp-deadline"
-          type="datetime-local"
-          step={60}
-          disabled={locked}
-          value={value.rsvpDeadline}
-          onChange={(event) => set("rsvpDeadline", event.target.value)}
-          className="input"
-        />
-        <p className="help">
-          空欄なら期限はありません。この日時（日本時間）になると、新しい申し込みと回答の変更を止めます。取消はできます。告知URLは開いたままです。
-        </p>
-      </div>
+      <BasicSection
+        value={value}
+        onChange={onChange}
+        disabled={locked}
+        showOrganizerName={showOrganizerName}
+      />
+      <PricePlansSection
+        value={value}
+        onChange={onChange}
+        disabled={locked}
+        pricingModeLocked={pricingModeLocked}
+      />
+      <LocationSection value={value} onChange={onChange} disabled={locked} />
+      <CapacitySection
+        value={value}
+        onChange={onChange}
+        disabled={locked}
+        selection={capacitySelection}
+        onSelectionChange={(next) => setCustomCapacity(next === "custom")}
+      />
       {flyerSlot}
-      {showStatus && (
-        <div className="field">
-          <label className="label" htmlFor="event-status">
-            公開状態
-          </label>
-          {value.status === "DRAFT" ? (
-            <>
-              <select
-                id="event-status"
-                disabled={locked}
-                value={value.status}
-                onChange={(event) => set("status", event.target.value as "DRAFT" | "PUBLISHED")}
-                className="select"
-              >
-                <option value="DRAFT">{STATUS_LABELS.DRAFT}</option>
-                <option value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</option>
-              </select>
-              <p className="help">下書きのままでは告知URLを開けません。公開すると出欠を受け付けます。</p>
-            </>
-          ) : (
-            <>
-              <p>{value.status ? STATUS_LABELS[value.status] : ""}</p>
-              <p className="help">
-                公開状態はここでは変えられません。受付を止めるときは主催一覧の「削除・停止」から行います。
-              </p>
-            </>
-          )}
-        </div>
-      )}
+      {showStatus && <StatusSection value={value} onChange={onChange} disabled={locked} />}
       <button type="submit" disabled={locked} className="btn btn--primary btn--block">
         {submitting ? "送信中..." : submitLabel}
       </button>
-      {confirmCommonOpen && (
-        <div className="modal" style={{ display: "flex" }}>
-          <button
-            type="button"
-            className="modal__backdrop"
-            aria-label="閉じる"
-            onClick={() => setConfirmCommonOpen(false)}
-          />
-          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="pricing-mode-title">
-            <h3 id="pricing-mode-title" className="dialog__title">
-              共通料金に戻しますか？
-            </h3>
-            <p className="dialog__body">
-              男性用の料金を共通の料金に戻し、女性用の料金を削除します。女性用の料金を選んでいた参加者は、保存後に費用プランが未設定になります。名簿から選び直してください。
-            </p>
-            <div className="dialog__actions">
-              <button
-                type="button"
-                className="btn btn--danger btn--block"
-                onClick={() => {
-                  set("pricePlans", withCommonPricing(value.pricePlans));
-                  setConfirmCommonOpen(false);
-                }}
-              >
-                共通料金に戻す
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--block"
-                onClick={() => setConfirmCommonOpen(false)}
-              >
-                やめる
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </form>
   );
 }

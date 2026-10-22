@@ -1172,6 +1172,148 @@ fieldset.field {
   gap: 0.25rem;
 }
 
+/* 新規イベント作成のステップ入力。開いているステップの入力欄だけを出す。 */
+.event-steps__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-step {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.event-step--open {
+  border-color: var(--color-border-strong);
+}
+
+.event-step__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.event-step__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.event-step__toggle:hover .event-step__title {
+  color: var(--color-primary-text);
+}
+
+.event-step__toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.event-step__number {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-step--done .event-step__number {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.event-step--open .event-step__number {
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+
+.event-step--open.event-step--done .event-step__number {
+  color: #fff;
+}
+
+.event-step__labels {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.event-step__title {
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.event-step__summary {
+  overflow-wrap: anywhere;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.event-step__state {
+  flex: 0 0 auto;
+  color: var(--color-text-faint);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.event-step--done .event-step__state {
+  color: var(--color-primary-text);
+}
+
+.event-step__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.event-step__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .event-step__toggle {
+    padding: 0.875rem 1rem;
+  }
+
+  .event-step__body {
+    padding: 1rem;
+  }
+
+  .event-step__state {
+    display: none;
+  }
+}
+
 .repeat-block {
   display: flex;
   flex-direction: column;

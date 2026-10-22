@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 96（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 216
+- 文書から参照されているコードパス: 222
 - API ルート: 73（どの文書にも URL が無いもの 1）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -165,13 +165,17 @@
 | `src/modules/billing/lib/stripe.ts` | [docs/stripe.rst](stripe.rst) |
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
+| `src/modules/events/components/EventFormSections.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/EventMetaCard.tsx` | [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
+| `src/modules/events/components/EventStepForm.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/OrganizerInviteCard.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/modules/events/lib/capacity.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/events.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/guest-limit.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/pricing-mode.ts` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
+| `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/types.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
@@ -216,8 +220,10 @@
 | `tests/unit/auth-mode.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-rate-limits.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) |
+| `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/guest-draft.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `tests/unit/guest-edit-window.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |

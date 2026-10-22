@@ -53,7 +53,7 @@ flowchart TD
 | `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram・Webサイト・LINE、実績の表示可否。保存前に SCR-PUB-14 と同じ見た目でプレビューする。保存後は `PUT /api/v1/organizer/profile`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。本文冒頭のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
-| `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。公開状態は `PUBLISHED`、`visibility` は常に `UNLISTED`。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る |
+| `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。公開状態は `PUBLISHED`、`visibility` は常に `UNLISTED`。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る |
 | `/organizer/register-required` | SCR-ORG-10 | 未登録の幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・リマインド・領収書・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
 | `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る。冒頭に筆頭幹事だけ表示する幹事パネル（`CoHostPanel`）を置き、主催 / 共同主催の一覧、招待URLの発行、共同主催者の解除を行う。解除はその場で確認を出し、実行後に一覧を読み直す |
 | `/events/[id]/receipt` | SCR-PUB-04 | 参加者本人 | 出欠 Cookie または会員 | 自分の参加費領収書 |
@@ -105,7 +105,7 @@ flowchart TD
 | 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
 | 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、肩書き、自己紹介、エリア、ジャンル、SNS・Web・LINE、実績の表示可否。保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、選んだ日の予定一覧。複数の開催日をすべて出す。前月・次月・今月で移動する |
-| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。公開状態は `PUBLISHED`。枠が無いときは `DRAFT` で退避し、`?draftId=` で復元して公開する。`?ref=` を参照元として送る |
+| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。公開状態は `PUBLISHED`。枠が無いときは `DRAFT` で退避し、`?draftId=` で復元して公開する。`?ref=` を参照元として送る |
 | 主催 | SCR-ORG-10 | 公開直後の会員登録案内 | `/organizer/register-required` | 共有 URL のコピーと、会員登録・ログイン。名簿・リマインド・領収書・招待は登録後であることを伝える |
 | 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。未登録の幹事は作成から24時間以内 |
 | 公開 | SCR-PUB-04 | 参加者向け領収書 | `/events/[id]/receipt` | 自分の参加費領収書。印刷できる |
@@ -1378,6 +1378,26 @@ interface OrganizerInviteCardProps {
 ### 12.3. 新規作成画面の `ref` と公開後の分岐
 
 `src/app/organizer/events/new/page.tsx`。`useSearchParams()` で `ref` を読むため `Suspense` の内側に置く。
+
+入力は `src/modules/events/components/EventStepForm.tsx` の5ステップで出す。入力項目は編集画面（SCR-ORG-05）の一括フォームと同じで、部品は `src/modules/events/components/EventFormSections.tsx` を共有する。**一度に見せる入力欄を減らし、着手前の「入力が多い」という認知を下げる**のが目的である。
+
+| # | ステップ | 入力 | 必須 | 完了の条件（`src/modules/events/lib/steps.ts`） |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 催しの名前と開催日時 | `title`、`schedules`、未登録の幹事だけ `organizerDisplayName` | 必須 | 名前が入り、全行の日付・開始・終了が埋まっている |
+| 2 | 費用プラン | `pricePlans`（男女別の切り替えを含む） | 必須 | 全行にプラン名と 0 以上の整数の金額がある |
+| 3 | 開催場所 | `venueName`・住所・`rainPolicy` | 必須 | `refineEventAddress` と同じ条件。住所を入れ始めたら都道府県・市区町村・番地まで、入れていなければ会場名か旧形式の場所 |
+| 4 | 定員と申し込み期限 | `capacity`、`rsvpDeadline` | 任意 | 「51以上」を選んだときだけ人数が入っている |
+| 5 | チラシ生成 | SCR-ORG-08 と SCR-ORG-03 | 任意 | チラシがあるか、「チラシなしで公開する」で送信した |
+
+* 開閉は `<ol>` とボタン（`aria-expanded` / `aria-controls`）で行い、閉じたステップの入力欄は描画しない。開いた見出しへフォーカスを移し、自動展開は `aria-live="polite"` で知らせる。
+* 必須ステップが**新たに**埋まったときだけ、次の必須ステップを開いて今のステップを畳む（`isForward`）。過去のステップを開き直して編集しても、後ろのステップは開閉しない。
+* 任意のステップ（4・5）は自動で開かない。「次へ」で明示的に進む。
+* 各ステップに「次へ」「戻る」を置く。完了していない必須ステップがある間は「次へ」を押せない。
+* 「51以上」を選んだことは保存値から分からない（空にすると無制限と同じになる）ため、選択の状態は画面が持つ（`src/modules/events/lib/capacity.ts`）。`?draftId=` の復元値が 51 以上なら「51以上」＋数値入力を初期表示する。
+* `?draftId=` を復元したら、`resumeStepKey` で最初の未完了の必須ステップを開く。全部済んでいればステップ4を開く。
+* 公開はステップ5の送信ボタンだけ。必須が残っていれば、そのステップを開いてエラーを出す。送信本文は `toEventRequest` で、API は変えない。
+
+続いて `ref` の扱い。
 
 1. `ref` があれば `toEventRequest(form, referrerEventId)` で `referrerEventId` を本文に載せる。
 2. 電話番号の確認へ回るときは `next=/organizer/events/new?ref=<id>` を組み立て、`/auth/register?step=phone&next=...` に載せる。`QuotaStatusBanner` の `nextPath` にも同じ値を使う。
