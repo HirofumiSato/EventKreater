@@ -10,6 +10,7 @@ import {
   type ParticipantRow,
   type RsvpStatus,
 } from "@/modules/events/types";
+import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 
 interface ParticipantListTableProps {
   rows: ParticipantRow[];
@@ -17,6 +18,7 @@ interface ParticipantListTableProps {
   pricePlans: EventPricePlanOption[];
   attendingCount: number;
   declinedCount: number;
+  waitlistedCount: number;
   onSave?: (
     row: Pick<
       ParticipantRow,
@@ -40,7 +42,7 @@ function downloadCsv(rows: ParticipantRow[]) {
     [
       csvCell(row.name),
       row.gender ? GENDER_LABELS[row.gender] : "未設定",
-      row.status === "ATTENDING" ? "出席" : "欠席",
+      row.status === "ATTENDING" ? "出席" : row.status === "WAITLISTED" ? "参加要望" : "欠席",
       csvCell(row.scheduleLabel ?? ""),
       csvCell(row.pricePlanLabel ?? ""),
       csvCell(row.comment ?? ""),
@@ -62,6 +64,7 @@ export function ParticipantListTable({
   pricePlans,
   attendingCount,
   declinedCount,
+  waitlistedCount,
   onSave,
   onDelete,
   onIssueReceipt,
@@ -82,18 +85,42 @@ export function ParticipantListTable({
     return pricePlans.filter((plan) => plan.audience === "ANY" || plan.audience === draftGender);
   }, [draftGender, pricePlans]);
   const visible = useMemo(() => {
-    return rows.filter((row) => {
+    const filtered = rows.filter((row) => {
       if (filter !== "ALL" && row.status !== filter) return false;
       if (query && !row.name.includes(query) && !(row.comment ?? "").includes(query)) return false;
       return true;
+    });
+    // 参加要望どうしは待ち順で並べる。sort は安定なので他の状態の並びは変えない。
+    return filtered.sort((left, right) => {
+      if (left.status !== "WAITLISTED" || right.status !== "WAITLISTED") return 0;
+      return (left.waitlistPosition ?? 0) - (right.waitlistPosition ?? 0);
     });
   }, [filter, query, rows]);
 
   const filters = [
     ["ALL", `すべて ${rows.length}`],
     ["ATTENDING", `参加 ${attendingCount}`],
+    ["WAITLISTED", `参加要望 ${waitlistedCount}`],
     ["DECLINED", `不参加 ${declinedCount}`],
   ] as const;
+
+  /** 行を編集モードにする。参加要望の承認は status を出席に上げて同じフォームで行う。 */
+  const startEdit = (row: ParticipantRow, nextStatus?: RsvpStatus) => {
+    setEditingId(row.id);
+    setDraftName(row.name);
+    setDraftComment(row.comment ?? "");
+    setDraftStatus(nextStatus ?? row.status);
+    setDraftGender(row.gender ?? "");
+    setDraftScheduleId(row.scheduleId ?? schedules[0]?.id ?? "");
+    const allowed = pricePlans.filter(
+      (plan) => plan.audience === "ANY" || (row.gender !== null && plan.audience === row.gender),
+    );
+    setDraftPricePlanId(
+      row.pricePlanId && allowed.some((plan) => plan.id === row.pricePlanId)
+        ? row.pricePlanId
+        : (allowed[0]?.id ?? ""),
+    );
+  };
 
   return (
     <div className="table-card">
@@ -144,7 +171,14 @@ export function ParticipantListTable({
                     {editing ? (
                       <input className="input" value={draftName} onChange={(event) => setDraftName(event.target.value)} />
                     ) : (
-                      row.name
+                      <>
+                        {row.name}
+                        {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
+                          <span className="badge badge--sm badge--waitlist" style={{ marginLeft: "0.375rem" }}>
+                            待ち {row.waitlistPosition}番目
+                          </span>
+                        )}
+                      </>
                     )}
                   </td>
                   <td className="data__muted">
@@ -177,11 +211,12 @@ export function ParticipantListTable({
                     {editing ? (
                       <select className="select" value={draftStatus} onChange={(event) => setDraftStatus(event.target.value as RsvpStatus)}>
                         <option value="ATTENDING">出席</option>
+                        <option value="WAITLISTED">参加要望</option>
                         <option value="DECLINED">欠席</option>
                       </select>
                     ) : (
-                      <span className={`badge badge--sm ${row.status === "ATTENDING" ? "badge--attending" : "badge--declined"}`}>
-                        {row.status === "ATTENDING" ? "出席" : "欠席"}
+                      <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
+                        {rsvpStatusLabel(row.status)}
                       </span>
                     )}
                   </td>
@@ -219,7 +254,11 @@ export function ParticipantListTable({
                       row.comment || "—"
                     )}
                   </td>
-                  <td className="data__muted">{new Date(row.createdAt).toLocaleString("ja-JP")}</td>
+                  <td className="data__muted">
+                    {row.status === "WAITLISTED" && row.waitlistedAt
+                      ? `要望 ${new Date(row.waitlistedAt).toLocaleString("ja-JP")}`
+                      : new Date(row.createdAt).toLocaleString("ja-JP")}
+                  </td>
                   {onSave && (
                     <td>
                       <div className="btn-row">
@@ -232,7 +271,7 @@ export function ParticipantListTable({
                                 id: row.id,
                                 name: draftName,
                                 status: draftStatus,
-                                gender: draftStatus === "ATTENDING" ? draftGender || null : row.gender,
+                                gender: draftStatus === "DECLINED" ? row.gender : draftGender || null,
                                 comment: draftComment,
                                 scheduleId: draftStatus === "ATTENDING" ? draftScheduleId : null,
                                 pricePlanId: draftStatus === "ATTENDING" ? draftPricePlanId : null,
@@ -244,30 +283,20 @@ export function ParticipantListTable({
                             保存
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            className="btn btn--sm"
-                            onClick={() => {
-                              setEditingId(row.id);
-                              setDraftName(row.name);
-                              setDraftComment(row.comment ?? "");
-                              setDraftStatus(row.status);
-                              setDraftGender(row.gender ?? "");
-                              setDraftScheduleId(row.scheduleId ?? schedules[0]?.id ?? "");
-                              const allowed = pricePlans.filter(
-                                (plan) =>
-                                  plan.audience === "ANY" ||
-                                  (row.gender !== null && plan.audience === row.gender),
-                              );
-                              setDraftPricePlanId(
-                                row.pricePlanId && allowed.some((plan) => plan.id === row.pricePlanId)
-                                  ? row.pricePlanId
-                                  : (allowed[0]?.id ?? ""),
-                              );
-                            }}
-                          >
-                            変更
-                          </button>
+                          <>
+                            {row.status === "WAITLISTED" && (
+                              <button
+                                type="button"
+                                className="btn btn--primary btn--sm"
+                                onClick={() => startEdit(row, "ATTENDING")}
+                              >
+                                承認
+                              </button>
+                            )}
+                            <button type="button" className="btn btn--sm" onClick={() => startEdit(row)}>
+                              変更
+                            </button>
+                          </>
                         )}
                         {onDelete && (
                           <button type="button" className="btn btn--danger btn--sm" onClick={() => void onDelete(row.id)}>

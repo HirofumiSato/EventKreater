@@ -77,6 +77,8 @@ enum OrganizerRole {
 enum RsvpStatus {
   ATTENDING
   DECLINED
+  /// 定員に達した催しへの参加要望。幹事が承認すると ATTENDING になる。
+  WAITLISTED
 }
 
 /// 売上の按分方式。RATIO は割合（basis points）、HEADCOUNT は連れてきた人数。
@@ -707,6 +709,8 @@ model Participant {
   /// 出欠確定時点のプラン対象。男女別の内訳を保つ。
   priceAudience PriceAudience? @map("price_audience")
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
+  /// 参加要望を出した日時。承認順に使う。出席・欠席に戻すと NULL。
+  waitlistedAt  DateTime?  @map("waitlisted_at") @db.Timestamptz
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -718,6 +722,7 @@ model Participant {
 
   @@unique([eventId, userId])
   @@index([eventId, status])
+  @@index([eventId, status, waitlistedAt])
   @@index([userId, updatedAt])
   @@index([scheduleId])
   @@index([pricePlanId])

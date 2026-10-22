@@ -18,6 +18,7 @@ import {
   withCommonPricing,
   withGenderPricing,
   withGroupName,
+  type RsvpStatus,
 } from "@/modules/events/types";
 
 describe("parseLegacyEventTime", () => {
@@ -314,7 +315,7 @@ describe("withCommonPricing", () => {
 
 describe("assertPricingEditable", () => {
   const published = (
-    participants: { status: "ATTENDING" | "DECLINED"; pricePlanId: string | null }[],
+    participants: { status: RsvpStatus; pricePlanId: string | null }[],
   ) => ({
     status: "PUBLISHED" as const,
     participants,

@@ -11,6 +11,7 @@ import {
   summarizeStatuses,
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const participants = [...event.participants].sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
+    const waitlistRows = participants.filter((row) => row.status === "WAITLISTED");
     return NextResponse.json({
       event: {
         id: event.id,
@@ -70,6 +72,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           pricePlanAmount: price.amount,
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
+          waitlistedAt: row.waitlistedAt ? row.waitlistedAt.toISOString() : null,
+          waitlistPosition: waitlistPosition(waitlistRows, row.id),
           receipt: row.receipt ? { id: row.receipt.id, issuedAt: row.receipt.issuedAt.toISOString() } : null,
         };
       }),

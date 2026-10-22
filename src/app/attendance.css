@@ -1267,7 +1267,8 @@ fieldset.field {
   color: var(--color-danger-text);
 }
 
-.choice--tentative:has(input:checked) {
+.choice--tentative:has(input:checked),
+.choice--waitlist:has(input:checked) {
   border-color: var(--color-warning-line);
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
@@ -1308,7 +1309,8 @@ fieldset.field {
   color: var(--color-danger-text);
 }
 
-.badge--tentative {
+.badge--tentative,
+.badge--waitlist {
   border-color: var(--color-warning-border);
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
@@ -1586,6 +1588,21 @@ fieldset.field {
 .dialog--sample {
   width: min(100%, var(--width-form));
   margin-inline: auto;
+}
+
+/* ???????????????????????????????????????? */
+.dialog--preview {
+  width: min(100%, 52rem);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.organizer-preview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 /* カレンダーの短冊から開くモーダル。催し名が長いので左揃えにする。 */
@@ -2693,6 +2710,17 @@ a.card,
   color: #fff;
 }
 
+/* 参加要望を受け付けている満員の催し。参加（青）とも欠席（灰）とも分ける。 */
+.calendar__event.is-waitlist {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.calendar__event.is-waitlist:hover {
+  background: var(--color-warning-text);
+  color: #fff;
+}
+
 /* 選択中のセルは下地が淡い赤になるので、帯は白地にして読めるようにする。 */
 .calendar__cell.is-selected .calendar__event {
   background: var(--color-surface);
@@ -2711,6 +2739,16 @@ a.card,
 
 .calendar__cell.is-selected .calendar__event.is-muted:hover {
   background: var(--color-text-muted);
+  color: #fff;
+}
+
+.calendar__cell.is-selected .calendar__event.is-waitlist {
+  background: var(--color-surface);
+  color: var(--color-warning-text);
+}
+
+.calendar__cell.is-selected .calendar__event.is-waitlist:hover {
+  background: var(--color-warning-text);
   color: #fff;
 }
 
@@ -2807,6 +2845,16 @@ a.card,
   color: var(--color-danger-text);
 }
 
+/* 参加要望は、参加とも欠席とも違う色で置く。 */
+.calendar-day__item.is-waitlist {
+  border-left: 3px solid var(--color-warning-line);
+}
+
+.calendar-day__meta--waitlist {
+  color: var(--color-warning-text);
+  font-weight: 600;
+}
+
 @media (max-width: 420px) {
   .calendar {
     padding: 0.125rem;
@@ -2870,4 +2918,36 @@ a.card,
   .calendar__event {
     padding: 0.25rem 0.3125rem;
   }
+}
+
+/* Organizer public page: blurred skeleton while logged out. */
+.organizer-locked {
+  position: relative;
+  min-height: 18rem;
+}
+
+.organizer-locked__ghost {
+  display: grid;
+  gap: 1rem;
+  filter: blur(10px);
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.organizer-locked__card {
+  min-height: 9rem;
+}
+
+.organizer-locked__notice {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.96));
 }

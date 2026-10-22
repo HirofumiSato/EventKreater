@@ -17,6 +17,7 @@ interface SubmitResponse {
   success: boolean;
   myRsvp: MyRsvp | null;
   attendingCount?: number;
+  waitlistCount?: number;
 }
 
 export function useRsvp(eventId: string, initial: MyRsvp | null) {
@@ -35,6 +36,7 @@ export function useRsvp(eventId: string, initial: MyRsvp | null) {
         comment: draft.comment || null,
         scheduleId: draft.status === "ATTENDING" ? draft.scheduleId ?? null : null,
         pricePlanId: draft.status === "ATTENDING" ? draft.pricePlanId ?? null : null,
+        waitlistPosition: previous?.waitlistPosition ?? null,
       };
       setMyRsvp(optimistic);
       setIsSubmitting(true);

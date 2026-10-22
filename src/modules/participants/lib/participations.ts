@@ -7,6 +7,7 @@ import {
   serializeSchedules,
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { rsvpStatusLabel } from "@/modules/events/lib/rsvp-status";
 import type { ParticipantCalendarEntry } from "@/modules/participants/types";
 
 export type ParticipationScope = "all" | "upcoming" | "past";
@@ -61,9 +62,13 @@ export function serializeParticipation(row: {
   schedule: { eventDate: Date; eventTime: string } | null;
   pricePlan: { name: string; audience: PriceAudience; amount: number; note: string | null } | null;
   receipt: { id: string; issuedAt: Date } | null;
-  event: Parameters<typeof serializeEvent>[0];
+  event: Parameters<typeof serializeEvent>[0] & {
+    organizers?: { role: string; userId: string | null }[];
+  };
 }) {
   const event = serializeEvent(row.event);
+  // 参加者ホームから主催者の公開ページへ進むための会員ID。ゲスト幹事なら null。
+  const ownerUserId = row.event.organizers?.find((organizer) => organizer.role === "OWNER")?.userId ?? null;
   return {
     id: row.id,
     name: row.name,
@@ -73,7 +78,7 @@ export function serializeParticipation(row: {
       ? `${formatEventDate(row.schedule.eventDate)} ${row.schedule.eventTime}`
       : null,
     pricePlanLabel: row.pricePlan ? pricePlanChoiceLabel(row.pricePlan) : null,
-    statusLabel: row.status === "ATTENDING" ? "出席" : "欠席",
+    statusLabel: rsvpStatusLabel(row.status),
     receiptId: row.receipt?.id ?? null,
     receiptIssuedAt: row.receipt?.issuedAt.toISOString() ?? null,
     answeredAt: row.updatedAt.toISOString(),
@@ -86,6 +91,8 @@ export function serializeParticipation(row: {
       location: event.location,
       status: event.status,
       flyerThumbnailUrl: event.flyerAsset?.imageUrl ?? null,
+      /** 主催者の公開ページ。ゲスト幹事の催しは null。 */
+      ownerUserId,
     },
   };
 }
@@ -95,7 +102,11 @@ export const participationInclude = {
   pricePlan: true,
   receipt: { select: { id: true, issuedAt: true } },
   event: {
-    include: { flyerAsset: true, ...eventOptionsInclude },
+    include: {
+      flyerAsset: true,
+      ...eventOptionsInclude,
+      organizers: { select: { role: true, userId: true } },
+    },
   },
 } as const;
 

@@ -402,24 +402,28 @@ export function serializeEvent(event: EventRecordShape) {
 export interface ParticipantStats {
   attendingCount: number;
   declinedCount: number;
+  waitlistedCount: number;
   totalResponses: number;
 }
 
 export function emptyStats(): ParticipantStats {
-  return { attendingCount: 0, declinedCount: 0, totalResponses: 0 };
+  return { attendingCount: 0, declinedCount: 0, waitlistedCount: 0, totalResponses: 0 };
 }
 
 export function summarizeStatuses(statuses: RsvpStatus[]): ParticipantStats {
   let attendingCount = 0;
   let declinedCount = 0;
+  let waitlistedCount = 0;
   for (const status of statuses) {
     if (status === "ATTENDING") attendingCount += 1;
     if (status === "DECLINED") declinedCount += 1;
+    if (status === "WAITLISTED") waitlistedCount += 1;
   }
   return {
     attendingCount,
     declinedCount,
-    totalResponses: attendingCount + declinedCount,
+    waitlistedCount,
+    totalResponses: attendingCount + declinedCount + waitlistedCount,
   };
 }
 
@@ -428,11 +432,13 @@ export function serializeOrganizerListItem(
   role: OrganizerRole,
   stats: ParticipantStats,
   ownerName: string,
+  ownerUserId: string | null = null,
 ) {
   return {
     ...serializeEvent(event),
     role,
     ownerName,
+    ownerUserId,
     stats,
     flyerThumbnailUrl: event.flyerAsset?.imageUrl ?? null,
   };
@@ -471,13 +477,22 @@ export function serializeOrganizerList(rows: OrganizerSummarySource[]) {
 }
 
 /**
- * 公開告知ページ用。名前だけを返し、主催者行の ID・メール・ユーザー ID は出さない。
+ * 公開告知ページ用。名前と、公開ページの URL に使う会員 ID だけを返す。
+ * 主催者行の ID・メールは出さない。ゲスト幹事は `userId: null` で、公開ページを持たない。
  * 並びは作成順。
  */
 export function serializePublicOrganizerList(rows: OrganizerSummarySource[]) {
-  const { owner, coHosts } = serializeOrganizerList(rows);
+  const sorted = [...rows].sort((left, right) => {
+    if (left.role !== right.role) return left.role === "OWNER" ? -1 : 1;
+    return 0;
+  });
+  const toPublic = (row: OrganizerSummarySource) => ({
+    name: organizerLabel(row),
+    userId: row.userId ?? null,
+  });
+  const owner = sorted.find((row) => row.role === "OWNER");
   return {
-    owner: owner ? { name: owner.name } : null,
-    coHosts: coHosts.map((row) => ({ name: row.name })),
+    owner: owner ? toPublic(owner) : null,
+    coHosts: sorted.filter((row) => row.role === "CO_HOST").map(toPublic),
   };
 }

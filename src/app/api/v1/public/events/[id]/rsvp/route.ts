@@ -5,11 +5,13 @@ import { isUniqueViolation, ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { SubmitRsvpSchema } from "@/lib/schemas";
 import {
-  assertCapacityAllows,
   assertRsvpOpen,
   keepPriceSnapshot,
+  lockEventForCapacity,
   resolveAttendanceChoice,
+  resolveStatusForCapacity,
 } from "@/modules/events/lib/events";
+import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { chooseRsvpTarget, findMyParticipant } from "@/modules/participants/lib/rsvp";
@@ -36,15 +38,18 @@ async function loadOpenEvent(eventId: string) {
   return event;
 }
 
-function serializeRsvp(participant: {
-  id: string;
-  name: string;
-  status: "ATTENDING" | "DECLINED";
-  gender: "MALE" | "FEMALE" | null;
-  comment: string | null;
-  scheduleId: string | null;
-  pricePlanId: string | null;
-}) {
+function serializeRsvp(
+  participant: {
+    id: string;
+    name: string;
+    status: "ATTENDING" | "DECLINED" | "WAITLISTED";
+    gender: "MALE" | "FEMALE" | null;
+    comment: string | null;
+    scheduleId: string | null;
+    pricePlanId: string | null;
+  },
+  position: number | null,
+) {
   return {
     id: participant.id,
     name: participant.name,
@@ -53,6 +58,7 @@ function serializeRsvp(participant: {
     comment: participant.comment,
     scheduleId: participant.scheduleId,
     pricePlanId: participant.pricePlanId,
+    waitlistPosition: position,
   };
 }
 
@@ -71,22 +77,27 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const submit = () =>
       prisma.$transaction(async (tx) => {
+        // 数えてから作るまでの競合で定員を超えないよう、判定の前にイベント行をロックする。
+        await lockEventForCapacity(tx, event.id);
         const found = await findMyParticipant(tx, { eventId: event.id, tokenHash, userId });
 
         if (found) {
           const { participant: target, stale } = await chooseRsvpTarget(tx, found, userId);
-          await assertCapacityAllows(tx, event.id, input.status, target.id);
-          const choice = await resolveAttendanceChoice(tx, event.id, input);
+          // 満員なら「出席」ではなく「参加要望」として受ける。
+          const status = await resolveStatusForCapacity(tx, event.id, input.status, target.id);
+          const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
           const snapshot = keepPriceSnapshot(target, choice);
           const updated = await tx.participant.update({
             where: { id: target.id },
             data: {
               name: input.name,
-              status: input.status,
+              status,
               gender: input.gender ?? null,
               comment: input.comment ? input.comment : null,
               scheduleId: choice.scheduleId,
               pricePlanId: choice.pricePlanId,
+              // 要望は最初に出した時刻を保つ。出席・欠席に戻すと順番を失う。
+              waitlistedAt: status === "WAITLISTED" ? (target.waitlistedAt ?? new Date()) : null,
               ...snapshot,
               ipHash,
               // 未ログインで答えた行も、ログイン中の会員に紐づける。
@@ -99,8 +110,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           return { participant: updated, rawToken: keepCookie ? existingRaw : null, created: false };
         }
 
-        await assertCapacityAllows(tx, event.id, input.status);
-        const choice = await resolveAttendanceChoice(tx, event.id, input);
+        const status = await resolveStatusForCapacity(tx, event.id, input.status);
+        const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
         const rawToken = generateSecureToken(32);
         const created = await tx.participant.create({
           data: {
@@ -108,7 +119,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             userId,
             rsvpTokenHash: sha256(rawToken),
             name: input.name,
-            status: input.status,
+            status,
             gender: input.gender ?? null,
             comment: input.comment ? input.comment : null,
             scheduleId: choice.scheduleId,
@@ -117,6 +128,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             pricePlanName: choice.pricePlanName,
             priceAudience: choice.priceAudience,
             ipHash,
+            waitlistedAt: status === "WAITLISTED" ? new Date() : null,
           },
         });
         return { participant: created, rawToken, created: true };
@@ -131,11 +143,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const attendingCount = await prisma.participant.count({
       where: { eventId: event.id, status: "ATTENDING" },
     });
+    const waitlistRows = await prisma.participant.findMany({
+      where: { eventId: event.id, status: "WAITLISTED" },
+      select: { id: true, status: true, waitlistedAt: true, createdAt: true },
+    });
     const response = NextResponse.json(
       {
         success: true,
-        myRsvp: serializeRsvp(result.participant),
+        myRsvp: serializeRsvp(result.participant, waitlistPosition(waitlistRows, result.participant.id)),
         attendingCount,
+        waitlistCount: waitlistRows.length,
       },
       { status: result.created ? 201 : 200 },
     );
@@ -190,7 +207,10 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     const attendingCount = await prisma.participant.count({
       where: { eventId: event.id, status: "ATTENDING" },
     });
-    const response = NextResponse.json({ success: true, myRsvp: null, attendingCount });
+    const waitlistCount = await prisma.participant.count({
+      where: { eventId: event.id, status: "WAITLISTED" },
+    });
+    const response = NextResponse.json({ success: true, myRsvp: null, attendingCount, waitlistCount });
     clearCookie(response, req, cookieName);
     return response;
   } catch (error) {

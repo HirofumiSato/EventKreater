@@ -28,8 +28,8 @@ export interface MonthCell {
 export interface CalendarCellItem {
   key: string;
   title: string;
-  /** `muted` は欠席や下書きなど、控えめに出す予定。 */
-  tone: "default" | "muted";
+  /** `muted` は欠席や下書きなど控えめに、`waitlist` は参加要望の色で出す。 */
+  tone: "default" | "muted" | "waitlist";
   /** タップしたときのモーダルに出す補足（時刻・出欠・場所）。 */
   detail?: string;
   /** 催しページの URL。無ければモーダルにリンクを出さない。 */

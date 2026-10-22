@@ -147,10 +147,11 @@ export function ParticipantCalendarView() {
               <ul className="calendar-day__list">
                 {dayEntries.map((entry) => {
                   const declined = entry.status === "DECLINED";
+                  const waitlisted = entry.status === "WAITLISTED";
                   return (
                     <li
                       key={entry.participantId}
-                      className={`calendar-day__item${declined ? " is-declined" : ""}`}
+                      className={`calendar-day__item${declined ? " is-declined" : waitlisted ? " is-waitlist" : ""}`}
                     >
                       <Link href={`/events/${entry.event.id}`} className="calendar-day__link">
                         <span className="calendar-day__time">
@@ -158,7 +159,13 @@ export function ParticipantCalendarView() {
                         </span>
                         <span className="calendar-day__title">{entry.event.title}</span>
                         <span
-                          className={`calendar-day__meta${declined ? " calendar-day__meta--declined" : ""}`}
+                          className={`calendar-day__meta${
+                            declined
+                              ? " calendar-day__meta--declined"
+                              : waitlisted
+                                ? " calendar-day__meta--waitlist"
+                                : ""
+                          }`}
                         >
                           {entry.statusLabel}
                           {entry.event.location ? ` · ${entry.event.location}` : ""}

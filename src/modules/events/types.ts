@@ -4,7 +4,7 @@ export type SubscriptionStatus = "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "
 export type RainPolicy = "RAIN_OR_SHINE" | "CANCEL_ON_RAIN" | "POSTPONE_ON_RAIN" | "INDOOR";
 export type EventStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
 export type EventVisibility = "PUBLIC" | "UNLISTED";
-export type RsvpStatus = "ATTENDING" | "DECLINED";
+export type RsvpStatus = "ATTENDING" | "DECLINED" | "WAITLISTED";
 export type OrganizerRole = "OWNER" | "CO_HOST";
 /** 費用プランの対象。ANY は男女共通。 */
 export type PriceAudience = "ANY" | "MALE" | "FEMALE";
@@ -149,9 +149,11 @@ export interface PublicEventViewer {
   hasOrganizerRole: boolean;
 }
 
-/** 公開ページに出す幹事。名前だけを持ち、ID・メールは含めない。 */
+/** 公開ページに出す幹事。名前と、公開ページのURLに使う会員IDだけを持つ。 */
 export interface PublicOrganizerName {
   name: string;
+  /** 会員の幹事だけが持つ。ゲスト幹事は null で、公開ページを持たない。 */
+  userId: string | null;
 }
 
 /** 公開ページの「主催 / 共同主催」。 */
@@ -191,6 +193,14 @@ export interface PublicEvent {
   rsvpDeadline: string | null;
   rsvpOpen: boolean;
   attendingCount: number;
+  /** 参加要望の人数。参加人数には含めない。 */
+  waitlistCount: number;
+  /** 定員までの残り。定員が無ければ null。 */
+  remainingSeats: number | null;
+  /** 定員に達しているか。 */
+  isFull: boolean;
+  /** 参加要望を受け付けているか（満員かつ出欠受付中）。 */
+  acceptsWaitlist: boolean;
   /** このブラウザが会員としてログインしているか。履歴保存の案内を出し分ける。 */
   loggedIn: boolean;
   viewer: PublicEventViewer;
@@ -216,6 +226,41 @@ export interface MyRsvp {
   comment: string | null;
   scheduleId: string | null;
   pricePlanId: string | null;
+  /** 参加要望のときの待ち順（1始まり）。要望でなければ null。 */
+  waitlistPosition: number | null;
+}
+
+/**
+ * 主催者の公開ページ（`/organizers/[userId]`）に出す催し。
+ * 告知ページの全項目は要らないので、カードとカレンダーに使う分だけを持つ。
+ */
+export interface PublicOrganizerEvent {
+  id: string;
+  title: string;
+  /** 代表日。一覧の並びとカードの見出しに使う。 */
+  sortDate: string;
+  schedules: EventScheduleOption[];
+  pricePlans: EventPricePlanOption[];
+  location: string;
+  capacity: number | null;
+  attendingCount: number;
+  remainingSeats: number | null;
+  isFull: boolean;
+  /** 満員で参加要望を受け付けているか。 */
+  acceptsWaitlist: boolean;
+  rsvpOpen: boolean;
+  status: EventStatus;
+  flyerAsset: FlyerAsset | null;
+  /** カードのサムネイル。無ければ null。 */
+  flyerThumbnailUrl: string | null;
+}
+
+export interface PublicOrganizerPage {
+  organizer: {
+    userId: string;
+    name: string;
+  };
+  events: PublicOrganizerEvent[];
 }
 
 export interface OrganizerEvent {
@@ -236,9 +281,12 @@ export interface OrganizerEvent {
   role: OrganizerRole;
   /** このイベントの筆頭幹事の表示名。一覧カードで「主催: 名前」に出す。 */
   ownerName: string;
+  /** 筆頭幹事の会員ID。ゲスト幹事なら null で、公開ページを持たない。 */
+  ownerUserId: string | null;
   stats: {
     attendingCount: number;
     declinedCount: number;
+    waitlistedCount: number;
     totalResponses: number;
   };
   flyerThumbnailUrl: string | null;
@@ -259,6 +307,10 @@ export interface ParticipantRow {
   pricePlanAmount: number | null;
   createdAt: string;
   updatedAt: string;
+  /** 参加要望を出した日時。要望でなければ null。 */
+  waitlistedAt: string | null;
+  /** 参加要望の待ち順（1始まり）。要望でなければ null。 */
+  waitlistPosition: number | null;
   receipt: { id: string; issuedAt: string } | null;
 }
 

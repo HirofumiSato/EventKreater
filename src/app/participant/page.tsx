@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { readProblem } from "@/lib/problem";
+import { rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import type { ParticipationListResponse } from "@/modules/participants/types";
 
 interface ProfileResponse {
@@ -94,6 +95,10 @@ export default function ParticipantHomePage() {
           <p className="stat__value">{summary ? `${summary.attending} 件` : "-"}</p>
         </article>
         <article className="stat">
+          <p className="stat__label">参加要望を出しているイベント</p>
+          <p className="stat__value">{summary ? `${summary.waitlisted} 件` : "-"}</p>
+        </article>
+        <article className="stat">
           <p className="stat__label">欠席と回答したイベント</p>
           <p className="stat__value">{summary ? `${summary.declined} 件` : "-"}</p>
         </article>
@@ -117,7 +122,7 @@ export default function ParticipantHomePage() {
                 <Link href={`/events/${row.event.id}`} className="card__title">
                   {row.event.title}
                 </Link>
-                <span className={`badge badge--sm badge--${row.status === "ATTENDING" ? "attending" : "declined"}`}>
+                <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
                   {row.statusLabel}
                 </span>
               </div>
@@ -134,6 +139,14 @@ export default function ParticipantHomePage() {
                 {row.receiptId && (
                   <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
                     領収書を見る
+                  </Link>
+                )}
+                {row.event.ownerUserId && (
+                  <Link
+                    href={`/organizers/${row.event.ownerUserId}`}
+                    className="btn btn--ghost btn--sm"
+                  >
+                    主催者のほかの催し
                   </Link>
                 )}
               </div>
