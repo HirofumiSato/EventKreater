@@ -53,7 +53,7 @@
      - ``sk_live_`` と Webhook の署名シークレット。テストは :doc:`stripe`
    * - OpenAI の API キー
      - チラシ生成サービスだけが使います
-   * - Node.js 20 以上
+   * - Node.js 24 以上
      - マイグレーションを手元から流すので、リポジトリで ``npm ci`` 済みにしておきます
 
 1. Neon に DB を作る

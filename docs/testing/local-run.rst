@@ -6,7 +6,7 @@
 前提
 ----
 
-Node.js 20、npm、リポジトリ直下で ``npm install`` が終わっていることです。``package.json`` には :doc:`vitest/index` の ``typecheck``、``test``、``test:watch``、``test:db``、``check`` が入っています。
+Node.js 24、npm、リポジトリ直下で ``npm install`` が終わっていることです。``package.json`` には :doc:`vitest/index` の ``typecheck``、``test``、``test:watch``、``test:db``、``check`` が入っています。
 
 開始条件は、依存のインストールが終わり、``@/*`` が ``src/`` を指せることです。終了条件は、収集されたテストがすべて成功し、:doc:`ideas` の数値を変えて通していないことです。
 

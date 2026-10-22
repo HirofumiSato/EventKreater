@@ -6,14 +6,14 @@
 
 手元で動かすために、次を用意します。
 
-* Node.js 20
+* Node.js 24
 * npm
 * PostgreSQL 14 以降（ローカルの ``localhost:5432``）
 * Python 3.11 以降（このドキュメントのビルドに使う）
 * Stripe のテストモード用 API キー（決済を試す場合）
 * Stripe CLI（Webhook をローカルに転送する場合。任意）
 
-コマンドはリポジトリ直下で実行します。
+コマンドはリポジトリ直下で実行します。Node の版はリポジトリ直下の ``.nvmrc``（24）に合わせます。``nvm use`` か ``fnm use`` で切り替わり、``package.json`` の ``engines.node`` が下限を宣言しています。
 
 初回セットアップ
 ----------------
@@ -154,7 +154,7 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
    * - データの削除
      - ``docker compose down -v`` は DB とチラシ画像のボリュームも消します
 
-イメージは Node 22 と Python 3.12 です。チラシの描画に要る日本語フォント（ ``fonts-noto-cjk`` ）は flyer イメージに入れてあります。
+イメージは Node 24 と Python 3.12 です。チラシの描画に要る日本語フォント（ ``fonts-noto-cjk`` ）は flyer イメージに入れてあります。
 
 画面の確認
 ----------
