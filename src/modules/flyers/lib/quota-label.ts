@@ -8,7 +8,14 @@ import type { FlyerQuota } from "@/modules/flyers/types";
  * 上限も必ず添える。クライアントからも呼べるよう、prisma を触る
  * `quota.ts` とは分けている。
  */
-export function flyerQuotaLabel(quota: FlyerQuota): string {
-  const scope = quota.anonymous ? "未ログインで" : "この下書きで";
+export function flyerQuotaLabel(
+  quota: FlyerQuota,
+  options?: { eventScoped?: boolean },
+): string {
+  const scope = quota.anonymous
+    ? "未ログインで"
+    : options?.eventScoped
+      ? "このイベントで"
+      : "この下書きで";
   return `${scope}チラシを作成・変更できるのは、残り ${quota.remaining} 回（最大 ${quota.limit} 回）`;
 }

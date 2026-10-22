@@ -384,11 +384,14 @@ model FlyerAsset {
   @@map("flyer_assets")
 }
 
-/// チラシ生成 1 回分の記録。下書き単位の回数制限と監査に使う。
+/// チラシ生成 1 回分の記録。回数制限と監査に使う。
+/// 保存済みイベントは event_id で数え、共同主催者も同じ枠を共有する。
+/// 公開前の新規作成は event_id を NULL にし、公開時に付け替える。
 /// 候補画像そのものは保存しない（使い捨てのため、サービス側の TTL で消える）。
 model FlyerGenerationLog {
   id             String   @id @default(uuid()) @db.Uuid
   draftKey       String   @map("draft_key") @db.Uuid
+  eventId        String?  @map("event_id") @db.Uuid
   userId         String?  @map("user_id") @db.Uuid
   ownerTokenHash String?  @map("owner_token_hash") @db.VarChar(64)
   templateId     String   @map("template_id") @db.VarChar(40)
@@ -397,6 +400,7 @@ model FlyerGenerationLog {
   flyerAssetId   String?  @map("flyer_asset_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   @@index([draftKey, createdAt])
+  @@index([eventId, createdAt])
   @@index([ownerTokenHash, createdAt])
   @@index([userId, createdAt])
   @@map("flyer_generation_logs")
@@ -799,11 +803,13 @@ CREATE TABLE flyer_assets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 5-2. チラシ生成履歴（下書き単位の回数制限）
+-- 5-2. チラシ生成履歴（イベント単位の回数制限）
 -- 候補の作り直しでは増やさない。確定したときだけ 1 行足す。
+-- event_id が NULL の行は公開前の新規作成で、公開時にイベントへ付け替える。
 CREATE TABLE flyer_generation_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     draft_key UUID NOT NULL,
+    event_id UUID NULL, -- events(id) を参照（ON DELETE SET NULL）
     user_id UUID NULL,
     owner_token_hash VARCHAR(64) NULL,
     template_id VARCHAR(40) NOT NULL,
@@ -815,6 +821,8 @@ CREATE TABLE flyer_generation_logs (
 
 CREATE INDEX flyer_generation_logs_draft_key_created_at_idx
     ON flyer_generation_logs (draft_key, created_at);
+CREATE INDEX flyer_generation_logs_event_id_created_at_idx
+    ON flyer_generation_logs (event_id, created_at);
 CREATE INDEX flyer_generation_logs_owner_token_hash_created_at_idx
     ON flyer_generation_logs (owner_token_hash, created_at);
 CREATE INDEX flyer_generation_logs_user_id_created_at_idx

@@ -5,6 +5,7 @@ import { UploadFlyerBackgroundSchema } from "@/lib/schemas";
 import { uploadBackgroundCandidate } from "@/modules/flyers/lib/flyer";
 import { resolveFlyerOwner, writeFlyerOwnerCookie } from "@/modules/flyers/lib/ownership";
 import { readFlyerQuota } from "@/modules/flyers/lib/quota";
+import { resolveFlyerQuotaScope } from "@/modules/flyers/lib/scope";
 import {
   MAX_IMAGE_BYTES,
   detectImageKind,
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       capacity: capacityText ? Number(capacityText) : null,
       templateId: field(form, "templateId"),
       layoutId: field(form, "layoutId") || "classic",
+      eventId: field(form, "eventId") || null,
     });
 
     const bytes = Buffer.from(await file.arrayBuffer());
@@ -85,13 +87,14 @@ export async function POST(req: NextRequest) {
     }
 
     consumeUploadAttempt(owner.ownerTokenHash);
+    const scope = await resolveFlyerQuotaScope(req, input.draftKey, input.eventId);
     const candidate = await uploadBackgroundCandidate({
       bytes,
       contentType: imageContentType(kind),
       payload: input,
       ownerTokenHash: owner.ownerTokenHash,
     });
-    const quota = await readFlyerQuota(input.draftKey, owner);
+    const quota = await readFlyerQuota(scope, owner);
     const response = NextResponse.json({ candidate, quota }, { status: 201 });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);
     return response;

@@ -327,7 +327,7 @@ static/candidates/
 | 例外クラス | 発生契機 | HTTP Status | エラーコード | システム側アクション | クライアント向け通知文言 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `RequestValidationError` | 入力文字数超過、型不一致 | `422` | `INVALID_INPUT` | エラーフィールドをログ出力 | 入力内容を確認してください（文字数超過など） |
-| `RateLimitExceeded` | ~~同一IPから短時間の連続リクエスト~~ **廃止** | ~~`429`~~ | ~~`RATE_LIMIT`~~ | 回数制限は BFF が下書き単位で持つ | — |
+| `RateLimitExceeded` | ~~同一IPから短時間の連続リクエスト~~ **廃止** | ~~`429`~~ | ~~`RATE_LIMIT`~~ | 回数制限は BFF がイベント単位（公開前は下書き）で持つ | — |
 | `CandidateNotFoundError` | 候補が無い、TTL 切れ、または所有者の不一致 | `404` | `CANDIDATE_EXPIRED` | 候補ファイルと所有者の照合 | 候補の有効期限が切れました。選び直してください。 |
 | `ImageUploadError` | 未対応形式、破損、アニメーション画像 | `422` | `INVALID_IMAGE` | 形式と画素数の確認 | 画像を読み込めませんでした。JPEG / PNG / WebP の画像を選んでください。 |
 | `ImageTooLargeError` | アップロード画像が 8 MiB 超 | `413` | `UPLOAD_TOO_LARGE` | 受信バイト数の確認 | 画像は8MB以下にしてください。 |

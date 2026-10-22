@@ -181,6 +181,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
               disabled={!lock.hasLock || saving}
               previewUrl={flyerPreview}
               draftScope={`event:${params.id}`}
+              eventId={params.id}
               onGenerated={(asset) => {
                 setForm((current) => ({ ...current, flyerAssetId: asset.id }));
                 setFlyerPreview(asset.imageUrl);

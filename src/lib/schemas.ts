@@ -135,17 +135,21 @@ export const GenerateFlyerSchema = z.object({
 /** ウィザードのステップ 1・2。下書き ID はブラウザが localStorage に持つ。 */
 export const ProposeCandidatesSchema = GenerateFlyerSchema.extend({
   draftKey: z.string().uuid("下書きIDが不正です"),
+  /** 保存済みイベントを編集しているときの対象。新規作成では省略する。 */
+  eventId: z.string().uuid("イベントIDが不正です").nullish(),
   count: z.number().int().min(1).max(16).optional(),
 });
 
 /** ウィザードのステップ 2（自分の写真）。multipart のフォーム項目を検証する。 */
 export const UploadFlyerBackgroundSchema = GenerateFlyerSchema.extend({
   draftKey: z.string().uuid("下書きIDが不正です"),
+  eventId: z.string().uuid("イベントIDが不正です").nullish(),
 });
 
 /** ウィザードの確定。選んだ候補と、記録用の配置・配色を受け取る。 */
 export const SelectFlyerCandidateSchema = GenerateFlyerSchema.extend({
   draftKey: z.string().uuid("下書きIDが不正です"),
+  eventId: z.string().uuid("イベントIDが不正です").nullish(),
   candidateId: z.string().uuid("候補IDが不正です"),
   paletteId: z.string().trim().min(1).max(32),
 });
@@ -252,6 +256,11 @@ export const CreateEventSchema = eventBodySchema
   .extend({
     /** 告知ページの勧誘から来たときの参照元。存在しない・削除済みなら保存時に捨てる。 */
     referrerEventId: z.string().uuid().nullish(),
+    /**
+     * 作成中に使ったチラシ回数の下書き ID。公開時にイベントへ付け替え、
+     * 共同主催者を含めた 3 回の枠に引き継ぐ。保存はしない。
+     */
+    flyerDraftKey: z.string().uuid().nullish(),
     /** 未登録の幹事が公開ページに出す名前。会員のときは無視する。 */
     organizerDisplayName: z
       .string()
