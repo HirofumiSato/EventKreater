@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 
 /**
  * 主催者画面の本文内サブタブ。
- * ヘッダーの行き先（FE-PUB-03）は変えず、主催一覧と売上のあいだだけを行き来させる。
+ * ヘッダーの行き先（FE-PUB-03）は変えず、主催一覧・カレンダー・売上のあいだだけを行き来させる。
  * ヘッダーに同じ行き先を重ねないため、ここは「節」の切り替えとして置く。
  */
 const TABS = [
   { href: "/organizer/events", label: "主催一覧" },
+  { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
 ] as const;
 

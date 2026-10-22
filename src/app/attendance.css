@@ -2418,3 +2418,191 @@ a.card,
     animation: none;
   }
 }
+
+/* 主催者カレンダー。月の俯瞰と、選んだ日の予定一覧。 */
+
+.calendar-toolbar {
+  align-items: center;
+}
+
+.calendar-toolbar__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.calendar-toolbar__month {
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.calendar {
+  padding: 0.75rem;
+}
+
+.calendar__weekdays,
+.calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar__weekdays {
+  gap: 0.25rem;
+  margin-bottom: 0.375rem;
+}
+
+.calendar__weekday {
+  padding: 0.25rem 0;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.calendar__weekday--sunday {
+  color: var(--color-primary-text);
+}
+
+.calendar__grid {
+  gap: 0.25rem;
+}
+
+.calendar__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  padding: 0.3125rem 0.125rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.calendar__cell:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.calendar__cell:disabled {
+  cursor: default;
+}
+
+.calendar__cell.is-outside {
+  color: var(--color-text-faint);
+  opacity: 0.45;
+}
+
+.calendar__cell.is-today {
+  border-color: var(--color-border-strong);
+}
+
+.calendar__cell.is-selected {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.calendar__day {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__dots {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  min-height: 0.375rem;
+}
+
+.calendar__dot {
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.calendar__cell.is-selected .calendar__dot {
+  background: #fff;
+}
+
+.calendar__dot-more {
+  color: inherit;
+  font-size: 0.625rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.calendar-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.calendar-day {
+  padding: 1rem 1.25rem;
+}
+
+.calendar-day__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.calendar-day__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-day__item + .calendar-day__item {
+  border-top: 1px solid var(--color-line);
+}
+
+.calendar-day__link {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  padding: 0.75rem 0;
+  text-decoration: none;
+}
+
+.calendar-day__link:hover .calendar-day__title {
+  text-decoration: underline;
+}
+
+.calendar-day__time {
+  grid-row: span 2;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-day__title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.calendar-day__meta {
+  grid-column: 2;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+}
