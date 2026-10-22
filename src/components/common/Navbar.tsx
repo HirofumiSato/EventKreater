@@ -88,6 +88,7 @@ export function Navbar() {
   const renderParticipantNav = (isOrganizer: boolean) => (
     <>
       {item(SITE.nav.participantHome)}
+      {item(SITE.nav.participantCalendar)}
       {item(SITE.nav.participantHistory)}
       {item(SITE.nav.account)}
       {isOrganizer ? (
