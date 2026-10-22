@@ -124,6 +124,38 @@ Web だけを起動するときは ``npm run dev:web`` です。ポートを 300
 
 ``JWT_SECRET`` や ``DATABASE_URL`` を変えたあとは、開発サーバーを止めて再起動します。
 
+Docker で動かす
+~~~~~~~~~~~~~~~
+
+Node・Python・PostgreSQL をホストに入れずに起動できます。初回だけ ``migrate`` を回します。
+
+.. code-block:: powershell
+
+   docker compose build
+   docker compose --profile setup run --rm migrate
+   docker compose up
+
+``db``（5433）・``flyer``（8000）・``web``（3012）が起動します。``migrate`` は profile ``setup`` なので ``up`` では動きません。初回とスキーマ変更時だけ実行してください。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - 項目
+     - 内容
+   * - ``DATABASE_URL``
+     - コンテナ内は ``postgres:postgres@db:5432`` を使います。``.env`` の ``localhost:5432`` は使いません。ホストからは ``localhost:5433`` で繋がります
+   * - ``FLYER_API_URL``
+     - ``http://flyer:8000`` に上書きされます。``.env`` の ``127.0.0.1:8000`` はコンテナ自身を指すためです
+   * - ``node_modules`` / ``.next``
+     - 名前付きボリュームに置きます。ホストの Windows 版バイナリを混ぜないためです。``package.json`` を変えたら ``docker compose exec web npm install`` を実行します
+   * - 本番相当
+     - ``docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build`` 。standalone ビルドを ``node server.js`` で起動し、ソースの bind mount を外します
+   * - データの削除
+     - ``docker compose down -v`` は DB とチラシ画像のボリュームも消します
+
+イメージは Node 22 と Python 3.12 です。チラシの描画に要る日本語フォント（ ``fonts-noto-cjk`` ）は flyer イメージに入れてあります。
+
 画面の確認
 ----------
 

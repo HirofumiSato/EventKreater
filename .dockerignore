@@ -1,0 +1,31 @@
+# 依存とビルド成果物はイメージの中で作り直す。
+node_modules
+.next
+out
+dist
+coverage
+
+# 秘密情報はイメージに焼き込まない。実行時に environment で渡す。
+.env
+.env.*
+!.env.example
+
+# ローカル生成物。
+storage
+logs
+*.log
+.dev-server.log
+dev-server.log
+tsconfig.tsbuildinfo
+
+# Python 側は services/flyer を別コンテキストでビルドする。
+services/flyer
+
+# ビルドに要らないもの。
+docs
+style-guide
+automation
+.github
+.cursor
+.venv-docs
+.git
