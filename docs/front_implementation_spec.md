@@ -60,7 +60,7 @@ flowchart TD
 | `/organizer/events/[id]/receipts/[participantId]` | SCR-ORG-09 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 幹事向け領収書。印刷しない冒頭 `h1` は画面名。催し名と宛名はリード。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/organizer/events/[id]/participants` | SCR-ORG-06 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 参加者名簿。冒頭 `h1` は画面名。催し名はリード。出欠の集計（参加・参加要望・不参加）、CSV、参加者へのリマインドと文面コピー、参加者ページのプレビューと共有リンクのコピー、領収書発行。参加要望は待ち順に並べ、承認で出席日時と費用プランを選ぶ。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/invitations/[code]` | SCR-ORG-07 | 招待されたメンバー | 招待コード有効期限内 | 共同幹事受諾。冒頭 `h1` は画面名。催し名はリード |
-| `/mypage` | SCR-PUB-03 | 主催幹事（ログイン会員） | 会員JWT必須 | 主催者マイページ。主催イベント一覧、クォータ残数、筆頭幹事の契約管理、公開プロフィールの状態と編集・閲覧の導線を出す。他の幹事のイベントへの参加履歴は出さない（`GET /api/v1/organizer/events`）。参加履歴は SCR-PUB-09 へ分離。ログアウト（`POST /api/v1/auth/logout`） |
+| `/mypage` | SCR-PUB-03 | 主催幹事（ログイン会員） | 会員JWT必須 | 主催者マイページ。主催イベントの要約（直近3件）と「すべて見る」→ `/organizer/events`、クォータ残数、筆頭幹事の契約管理、公開プロフィールの状態と編集・閲覧の導線を出す。他の幹事のイベントへの参加履歴は出さない（`GET /api/v1/organizer/events`）。参加履歴は SCR-PUB-09 へ分離。ログアウト（`POST /api/v1/auth/logout`） |
 | `/participant/login` | SCR-PUB-07 | 参加者（履歴を残したい人） | 未ログイン、または電話未確認の会員。管理者も可（purpose `PARTICIPANT`） | 参加者の会員登録・ログイン。`/auth/register` と同じ部品を使い、文言と着地だけを参加者向けにする。`?step=phone` が電話番号確認、`?step=login-code` がログイン確認番号。着地は `/participant`（`next` があればそのパス） |
 | `/participant` | SCR-PUB-08 | 参加者（ログイン会員） | 会員JWT必須 | 参加者ホーム。これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には `/mypage` への切り替えを出す |
 | `/participant/calendar` | SCR-PUB-12 | 参加者（ログイン会員） | 会員JWT必須 | 参加カレンダー（`GET /api/v1/user/calendar`）。出欠を答えた催しを、選んだ日程の日付に置く（未選択ならイベントの代表日）。出席・欠席・参加要望を出し、欠席は控えめに、参加要望はアンバーで表示する。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。一覧・検索は持たない |
@@ -95,17 +95,17 @@ flowchart TD
 | 会員 | SCR-PUB-02 | 主催者の会員登録・ログイン | `/auth/register` | 幹事の入口。パスワード登録は確認メールのあと電話番号を確認する。ログインは確認番号（既定はSMS、予備はメール）。同じ確認済み電話番号なら既存会員へ結びつける。Google は確認済みメールだけ |
 | 会員 | SCR-PUB-07 | 参加者の会員登録・ログイン | `/participant/login` | 履歴を残す参加者の入口。部品は SCR-PUB-02 と同じで、文言と着地だけを参加者向けにする。管理者も参加者としては入れる |
 | 会員 | SCR-PUB-05 | メール確認 | `/auth/verify` | 確認メールのリンク。確認後は電話番号確認へ進む |
-| 会員 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベント一覧とログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。参加履歴は出さない |
 | 会員 | SCR-PUB-08 | 参加者ホーム | `/participant` | これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線 |
 | 会員 | SCR-PUB-12 | 参加カレンダー | `/participant/calendar` | 出欠を答えた催しを月グリッドに置く。出席・欠席・参加要望。日付を選ぶとその日の催しが出る |
 | 会員 | SCR-PUB-09 | 参加履歴 | `/participant/history` | 出欠と領収書の一覧。出欠・時期で絞り込み、ページ送りする |
 | 誰でも | SCR-PUB-14 | 主催者のプロフィール | `/organizers/[userId]` | 主催者の自己紹介・ジャンル・リンク・実績。非公開なら名前と催しへの導線だけを出す |
 | 会員 | SCR-PUB-13 | 主催者の催し | `/organizers/[userId]/events` | 主催者の催しをカレンダーと一覧で見る。未ログインではぼかした骨組みだけを出す。満員は参加要望受付中 |
 | 会員 | SCR-PUB-11 | アカウント設定 | `/account`（メール確認は `/account/email/verify`） | 表示名、メールアドレス、電話番号、パスワード、退会。変更の前に確認番号を出し、メールは新しいアドレスへのリンクで確定する。管理者は対象外 |
-| 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待、ポータル導線 |
+| 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待、ポータル導線。`?registered=1` で登録完了トーストを出す |
+| 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
 | 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、肩書き、自己紹介、エリア、ジャンル、SNS・Web・LINE、実績の表示可否。保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、選んだ日の予定一覧。複数の開催日をすべて出す。前月・次月・今月で移動する |
-| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。公開状態は `PUBLISHED`。`?ref=` を参照元として送る |
+| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。公開状態は `PUBLISHED`。枠が無いときは `DRAFT` で退避し、`?draftId=` で復元して公開する。`?ref=` を参照元として送る |
 | 主催 | SCR-ORG-10 | 公開直後の会員登録案内 | `/organizer/register-required` | 共有 URL のコピーと、会員登録・ログイン。名簿・リマインド・領収書・招待は登録後であることを伝える |
 | 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。未登録の幹事は作成から24時間以内 |
 | 公開 | SCR-PUB-04 | 参加者向け領収書 | `/events/[id]/receipt` | 自分の参加費領収書。印刷できる |
@@ -119,7 +119,7 @@ flowchart TD
 | モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰 |
 | モーダル | SCR-MOD-02 | 排他ロック競合モーダル | SCR-ORG-05 上（HTTP 409） | 他幹事の編集中通知と、強制引き継ぎ（Takeover） |
 | モーダル | SCR-MOD-03 | 削除・受付停止モーダル | SCR-ORG-01 上（筆頭幹事のみ） | 完全削除（`isDeleted`）または出欠受付停止（`CLOSED`）の確認 |
-| モーダル | SCR-MOD-01 | 課金プランモーダル | 公開時 HTTP 402 | 単発299円 / 月額980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する |
+| モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月額980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ |
 | 外部 | — | Stripe Hosted Checkout | Stripe ホスト画面 | カード決済とサブスク加入。成功時は `session_id` 付きで SCR-ORG-02 へ戻る |
 | 外部 | — | Stripe Customer Portal | Stripe ホスト画面 | 筆頭幹事の解約とカード変更。SCR-ORG-01 と SCR-PUB-03 から開き、完了後は SCR-ORG-01 へ戻る。参加者の出欠では開かない |
 | 管理者 | SCR-ADM-00 | 管理者ログイン | `/console/login` | 公開ナビに出さない。パスワードのあと確認番号。確認済み電話が必須 |
@@ -174,12 +174,12 @@ graph TD
         PUB12["SCR-PUB-12: 参加カレンダー<br/>/participant/calendar"]:::member
         PUB09["SCR-PUB-09: 参加履歴<br/>/participant/history"]:::member
         PUB11["SCR-PUB-11: アカウント設定<br/>/account"]:::member
-        PUB03["SCR-PUB-03: 主催者マイページ<br/>/mypage"]:::member
     end
     subgraph org["主催者"]
         direction TB
         PUB02["SCR-PUB-02: 主催者の会員登録・ログイン<br/>/auth/register"]:::organizer
         PUB05["SCR-PUB-05: メール確認<br/>/auth/verify"]:::member
+        PUB03["SCR-PUB-03: 主催者マイページ<br/>/mypage"]:::organizer
         ORG01["SCR-ORG-01: 主催イベント一覧<br/>/organizer/events"]:::organizer
         ORG02["SCR-ORG-02: 新規イベント作成<br/>/organizer/events/new"]:::organizer
         ORG05["SCR-ORG-05: イベント編集<br/>/organizer/events/[id]/edit"]:::organizer
@@ -246,7 +246,7 @@ graph TD
     PUB06 -->|利用規約| PUB10
     PUB06 -->|ホームへ| PUB00
     PUB10 -->|サービスと料金| PUB06
-    PUB10 -->|マイページ| PUB03
+    PUB10 -->|主催者マイページ| PUB03
     PUB10 -->|ホームへ| PUB00
     PUB01 -->|出欠の登録・変更・取消| PUB01
     PUB01 -->|自分の領収書| PUB04
@@ -286,8 +286,9 @@ graph TD
     PUB13 -.->|未ログイン 403 LOGIN_REQUIRED| PUB07
 
     %% 主催者
+    PUB03 -->|イベントをすべて見る| ORG01
     PUB03 -->|イベントを作る| ORG02
-    PUB03 -->|主催イベントの編集| ORG05
+    PUB03 -->|イベントを編集| ORG05
     PUB03 -->|プロフィールを編集| ORG14
     PUB03 -->|公開ページを開く| PUB14
     PUB03 -->|契約管理| ST_PORTAL
@@ -324,7 +325,9 @@ graph TD
     ORG03 -->|編集へ戻る| ORG05
     ORG02 -->|公開できる| ORG04
     ORG02 -->|公開時: 未登録| ORG10
-    ORG02 -->|公開時: 上限到達 HTTP 402| MOD01
+    ORG02 -->|公開時: 上限到達 HTTP 402（下書きを保存）| MOD01
+    ORG02 -->|下書きを公開: 枠あり| ORG04
+    ORG02 -->|下書きを公開: 枠なし 402| MOD01
     ORG10 -->|登録済みの幹事| ORG01
     ORG10 -->|会員登録（?mode=register&next=）| PUB02
     ORG10 -->|ログイン（?mode=login&next=）| PUB02
@@ -378,7 +381,7 @@ graph TD
     ADM05 -->|ログアウト| ADM00
 ```
 
-会員登録の主目的は幹事である。主催者の入口（SCR-PUB-02）の着地は `next` で決まり、指定が無ければマイページ（SCR-PUB-03）である。電話番号が未確認のまま主催一覧や作成を使おうとしたときは、`next=/organizer/events` または `next=/organizer/events/new` で元の画面へ戻る。招待の途中なら `next=/invitations/[code]` で受諾画面へ戻る。参加者の入口（SCR-PUB-07）は別で、着地は参加者ホーム（SCR-PUB-08）とし、`next` があればそのパスへ進む。出欠の回答に会員登録は要らない。完全な遷移は共通編第6節を正とする。
+会員登録の主目的は幹事である。主催者の入口（SCR-PUB-02）の着地は `next` で決まり、指定が無ければ主催者マイページ（SCR-PUB-03）である。SCR-ORG-10 から登録またはログインした幹事は `next=/organizer/events?registered=1` で主催一覧へ戻り、登録完了のトーストを受け取る。電話番号が未確認のまま主催一覧や作成を使おうとしたときは、`next=/organizer/events` または `next=/organizer/events/new` で元の画面へ戻る。招待の途中なら `next=/invitations/[code]` で受諾画面へ戻る。参加者の入口（SCR-PUB-07）は別で、着地は参加者ホーム（SCR-PUB-08）とし、`next` があればそのパスへ進む。出欠の回答に会員登録は要らない。完全な遷移は共通編第6節を正とする。
 
 SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資格情報を送ると HTTP 403（`ADMIN_CONSOLE_REQUIRED`）で拒否し、画面には管理者ログイン（SCR-ADM-00）へのリンクだけを出す。管理者は SCR-ADM-00 からしか入れない。Google のコールバックも管理者を SCR-ADM-00 へ戻す。管理者の着地は常に SCR-ADM-04 である。
 
@@ -392,7 +395,7 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 `/events` と `/organizer/events/[id]` は独立した画面ではない。前者は `/` へ、後者は `/organizer/events/[id]/edit`（SCR-ORG-05）へリダイレクトする。
 
-課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。SCR-PUB-03 からポータルを開く線は、参加の支払いではなく、同じアカウントの主催者契約を開く。復帰先は SCR-ORG-01 である。Checkout のあと作成画面へ戻り、枠がある状態で公開すると公開完了モーダルへ進む。複製の着地は編集画面である。0円の単発は Stripe へ行かず、その場で枠を付与して元の画面に留まる。
+課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。作成時の 402 では、入力を `status=DRAFT` で保存して `draftId` を Checkout の `metadata` に載せる。戻り先は `/organizer/events/new` で、`draftId` をクエリに保つ。Checkout の成功とキャンセルのどちらでも同じ画面へ戻り、`draftId` があればフォームを復元する。復元したフォームからの公開は `POST /api/v1/organizer/events/[id]/publish` を呼び、枠を1つ消費して `PUBLISHED` にする。そのあと公開完了モーダルへ進む。SCR-PUB-03 からポータルを開く線は、参加の支払いではなく、同じアカウントの主催者契約を開く。復帰先は SCR-ORG-01 である。複製の着地は編集画面であり、複製の時点で枠を消費済みなので公開では二重に引かない。0円の単発は Stripe へ行かず、その場で枠を付与して元の画面に留まる。
 
 主催一覧（SCR-ORG-01）・カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）は、本文冒頭の `OrganizerTabs` で行き来する。カレンダーの予定からは、下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。売上から SCR-ORG-12 を開き、SCR-ORG-12 から名簿と売上へ戻る。未登録の幹事が名簿・売上・領収書を開くと SCR-ORG-10 へ送る。削除と受付停止は SCR-MOD-03 で確認し、完了後は SCR-ORG-01 へ戻る。
 
@@ -436,7 +439,7 @@ src/
 │   ├── participant/calendar/page.tsx         # SCR-PUB-12 (参加カレンダー。出欠を選んだ日程に並べる)
 │   ├── participant/history/page.tsx          # SCR-PUB-09 (参加履歴。出欠・時期の絞り込み)
 │   ├── participant/login/page.tsx            # SCR-PUB-07 (参加者の会員登録・ログイン)
-│   ├── mypage/page.tsx                       # SCR-PUB-03 (主催イベント一覧・クォータ・契約管理・公開プロフィールの状態)
+│   ├── mypage/page.tsx                       # SCR-PUB-03 (主催イベントの要約・クォータ・契約管理・公開プロフィールの状態)
 │   ├── account/page.tsx                      # SCR-PUB-11 (表示名・メール・電話・パスワード・退会)
 │   ├── account/email/verify/page.tsx         # SCR-PUB-11 (新しいメールアドレスの確認リンクの着地)
 │   ├── auth/register/page.tsx                # SCR-PUB-02 (ローカル登録・Googleサインイン・ログイン確認番号・電話番号確認・Hydration)
@@ -534,7 +537,16 @@ interface PricingModalProps {
   quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
+  /** 開いた画面。キャンセル時の文言を合わせる。 */
+  context?: "create" | "edit" | "list" | "mypage";
 }
+
+const CANCEL_LABEL: Record<NonNullable<PricingModalProps["context"]>, string> = {
+  create: "キャンセルして作成に戻る",
+  edit: "キャンセルして編集に戻る",
+  list: "閉じる",
+  mypage: "閉じる",
+};
 
 function endsAtLabel(iso: string | null): string | null {
   if (!iso) return null;
@@ -594,6 +606,7 @@ export function PricingModal({
   quotes,
   freeGrantRemaining,
   onGranted,
+  context = "create",
 }: PricingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | "SUB" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -701,7 +714,7 @@ export function PricingModal({
         </p>
         <div className="dialog__actions">
           <button type="button" onClick={onClose} disabled={loadingPlan !== null} className="btn btn--ghost btn--block">
-            キャンセルして下書きに戻る
+            {CANCEL_LABEL[context]}
           </button>
         </div>
       </div>
@@ -716,18 +729,30 @@ export function PricingModal({
 
 Stripe Checkout 完了後にリダイレクトされた際（URLに `?session_id=...` が存在）、バックエンドの `POST /api/v1/billing/checkout/verify` を即時呼び出し、画面をリロードすることなく枠を即時反映させます。
 
+応答の `draftId` と `returnTo` は `onVerified` に渡します。3秒後に `session_id` を落として、開いていた画面のまま留まります。`draftId` があれば `?draftId=` を残すので、作成画面（SCR-ORG-02）は下書きを復元できます。復帰先をこの部品で固定しないのは、作成画面と編集画面の両方に置くためです。
+
 ```tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+/** `POST /api/v1/billing/checkout/verify` の応答のうち、画面が使う部分。 */
+export interface VerifyPaymentResult {
+  draftId?: string | null;
+  returnTo?: string | null;
+  paymentType?: string;
+}
+
 interface VerifyPaymentBannerProps {
-  onVerified: () => void;
+  onVerified?: (result: VerifyPaymentResult) => void;
 }
 export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVerified }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const sessionId = searchParams.get("session_id");
+  const draftIdParam = searchParams.get("draftId");
   const [status, setStatus] = useState<"IDLE" | "VERIFYING" | "SUCCESS" | "ERROR">("IDLE");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   useEffect(() => {
@@ -744,11 +769,13 @@ export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVeri
           const errData = await res.json();
           throw new Error(errData.detail || "決済の確認に失敗しました。");
         }
+        const data = (await res.json()) as VerifyPaymentResult;
         setStatus("SUCCESS");
-        onVerified();
-        // 3秒後にクエリパラメータをURLから除去
+        onVerified?.(data);
+        // 3秒後に session_id を落とし、復元する下書きだけを残す。戻り先は開いていた画面。
         setTimeout(() => {
-          router.replace("/organizer/events/new");
+          const draftId = data.draftId ?? draftIdParam;
+          router.replace(draftId ? `${pathname}?draftId=${draftId}` : pathname);
         }, 3000);
       } catch (err: any) {
         console.error("Session verification failed", err);
@@ -757,7 +784,7 @@ export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVeri
       }
     };
     verify();
-  }, [sessionId, status, onVerified, router]);
+  }, [sessionId, status, onVerified, router, pathname, draftIdParam]);
   if (status === "IDLE" || !sessionId) return null;
   return (
     <div className="mb-6 rounded-2xl p-4 transition-all">
@@ -948,19 +975,36 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
 
 クォータ情報の取得、Stripe Hosted Checkout の呼び出し、および Customer Portal へのリダイレクトを一元管理する。料金モーダルを開くたびに `GET /api/v1/billing/quota` を取り直し、最新の販売価格と0円チケットの残り回数を反映する。0円の単発は付与結果を受けて枠を読み直し、呼び出し元が公開を再試行できるようにする。
 
+課金を開いた画面の文脈は `CheckoutIntent` として持ち回る。`draftId` と `returnTo` を `openPricingModal(intent)` で預かり、`POST /api/v1/billing/checkout/one-time` と `POST /api/v1/billing/checkout/subscription` の本文に載せる。`returnTo` の既定は `/organizer/events/new` である。電話番号が要るときの戻り先も同じ値を使う。
+
 ```tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
 import { problemMessage, readProblemBody } from "@/lib/problem";
+import { phoneVerifyUrl } from "@/lib/auth-links";
 
 export type OneTimeCheckoutResult = "GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED";
+
+/** 課金を開いた画面と、購入後に復元する下書き。 */
+export interface CheckoutIntent {
+  draftId?: string;
+  returnTo?: string;
+}
+
+const DEFAULT_RETURN_TO = "/organizer/events/new";
+
+function checkoutBody(intent?: CheckoutIntent): string {
+  return JSON.stringify(intent ?? {});
+}
 
 export function useEventQuota() {
   const [quota, setQuota] = useState<UserQuota | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  // モーダルを開いた画面の文脈。購入後の戻り先と、復元する下書きを引き継ぐ。
+  const intentRef = useRef<CheckoutIntent | undefined>(undefined);
 
   const fetchQuota = useCallback(async () => {
     try {
@@ -982,27 +1026,37 @@ export function useEventQuota() {
     void fetchQuota();
   }, [fetchQuota]);
 
-  const openPricingModal = useCallback(() => {
-    // 開くたびに最新の販売価格を取り直す。
-    void fetchQuota();
-    setIsPricingModalOpen(true);
-  }, [fetchQuota]);
+  const openPricingModal = useCallback(
+    (intent?: CheckoutIntent) => {
+      intentRef.current = intent;
+      // 開くたびに最新の販売価格を取り直す。
+      void fetchQuota();
+      setIsPricingModalOpen(true);
+    },
+    [fetchQuota],
+  );
 
   /**
    * 0円キャンペーン中は Stripe へ行かず、その場で1回分が付与される。
    * 付与されたら枠を読み直して、作成画面がそのまま再試行できるようにする。
    */
-  const startOneTimeCheckout = useCallback(async (): Promise<OneTimeCheckoutResult> => {
-    const res = await fetch("/api/v1/billing/checkout/one-time", {
-      method: "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
-    if (!res.ok) {
-      const problem = await readProblemBody(res);
-      if (problem.error === "PHONE_REQUIRED") {
-        window.location.href = "/auth/register?step=phone&next=/organizer/events/new";
-        return "PHONE_REQUIRED";
-      }
+  const startOneTimeCheckout = useCallback(
+    async (override?: CheckoutIntent): Promise<OneTimeCheckoutResult> => {
+      const intent = override ?? intentRef.current;
+      const res = await fetch("/api/v1/billing/checkout/one-time", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: checkoutBody(intent),
+      });
+      if (!res.ok) {
+        const problem = await readProblemBody(res);
+        if (problem.error === "PHONE_REQUIRED") {
+          window.location.href = phoneVerifyUrl(intent?.returnTo ?? DEFAULT_RETURN_TO);
+          return "PHONE_REQUIRED";
+        }
       throw new Error(problemMessage(problem, "単発決済セッション作成に失敗しました"));
     }
     const data = (await res.json()) as {
@@ -1025,10 +1079,15 @@ export function useEventQuota() {
     throw new Error("単発決済セッション作成に失敗しました");
   }, [fetchQuota]);
 
-  const startSubscriptionCheckout = useCallback(async () => {
+  const startSubscriptionCheckout = useCallback(async (override?: CheckoutIntent) => {
+    const intent = override ?? intentRef.current;
     const res = await fetch("/api/v1/billing/checkout/subscription", {
       method: "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      body: checkoutBody(intent),
     });
     if (!res.ok) {
       throw new Error(problemMessage(await readProblemBody(res), "サブスクセッション作成に失敗しました"));
@@ -1096,9 +1155,13 @@ export interface PricingOption {
 | **FE-BILL-01** | **課金モーダル起動** | 2回無料枠消化済みの主催者が新規作成で「公開」をクリック | HTTP 402を検知し、`PricingModal` が画面遷移なしで即座にポップアップすること |
 | **FE-BILL-02** | **単発購入Checkout遷移** | `PricingModal` で「単発で購入する (299円)」をクリック | ローディング表示後、Stripe Hosted Checkout 画面へ正常にリダイレクトされること |
 | **FE-BILL-03** | **サブスクCheckout遷移** | `PricingModal` で「定期購入で使い放題 (980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ正常にリダイレクトされること |
-| **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、枠加算を確認して作成が認可されること |
+| **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、枠加算を確認して作成が認可されること。応答の `draftId` が URL に残り、開いていた画面から動かないこと |
 | **FE-BILL-05** | **Customer Portal遷移** | 主催一覧、またはマイページで「プラン・カード管理」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
 | **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
+| **FE-BILL-07** | **枠不足の下書き退避と復元** | 無料枠を使い切った会員が新規作成で「公開」を押し、Checkout を完了して戻る | HTTP 402 の時点で `status=DRAFT` のイベントが1件だけできていること。`draftId` が Checkout に渡り、戻ると `/organizer/events/new?draftId=...` でフォームが復元されること。復元後に公開すると `PUBLISHED` になり、枠が1つだけ減ること |
+| **FE-BILL-08** | **複製下書きの二重課金防止** | 複製した下書きを編集画面から公開する | 公開時には枠が減らないこと（複製時に消費済み）。`POST /api/v1/organizer/events/[id]/publish` を二度呼んでも枠が減らないこと |
+| **FE-BILL-09** | **ゲストは下書きを作れない** | 未ログインのゲスト幹事が枠不足の公開を行う | `DRAFT` は作られず、403 `REGISTER_REQUIRED` で SCR-ORG-10 へ送られること。料金モーダルだけを出して下書きを残さないこと |
+| **FE-BILL-10** | **Checkout の戻り先の制限** | `returnTo` に外部 URL を渡して Checkout を作る | 400 で拒否され、Stripe のセッションが作られないこと |
 | **FE-ADM-01** | **秘匿ログイン** | 公開ナビとフッターに管理コンソールのリンクが無い状態で `/console/login` を直接開く | 公開ヘッダーを出さず、管理者ログインだけを表示すること |
 | **FE-ADM-02** | **非管理者の拒否** | 一般会員のメールとパスワードでログインする | 同じ失敗メッセージのまま `/console/login` に留まること |
 | **FE-ADM-03** | **会員検索と権限変更** | 管理者ホームから会員を開き、名前またはメールで検索して他会員を管理者にする | 一覧が絞り込まれ、保存後に権限表示が変わること。自分の行は保存できないこと |
@@ -1115,6 +1178,9 @@ export interface PricingOption {
 | **FE-ORG-09** | **売上の金額の固定** | 出席者がいるイベントで費用プランの金額を編集し、売上を開く直す | 申込済み参加者の見込み売上が編集前の金額のままで、平均単価と差額が再計算されること |
 | **FE-ORG-10** | **売上サマリの読みやすさ** | `/organizer/revenue`、`/organizer/events/[id]/revenue`、`/organizer/events/[id]/participants` を 360px と 1024px で開く | 3画面のサマリが同じ見た目であること。金額が右揃えで折り返さず、注記が 1 行に収まること。差額の行に式を出さず、`※` の脚注が 1 回だけ出ること。負の差額が `−1,000円` と表示されること |
 | **FE-ORG-13** | **主催者カレンダー** | `/organizer/calendar` を開き、前月・次月・今月で移動してから日付を選ぶ | 初期表示が JST の今月で今日が選ばれていること。`h1` が「カレンダー」であること。開催日が複数ある催しがすべての日付に出ること。月外の日は押せず予定も出ないこと。`?month=YYYY-MM` が URL に残り、再読み込みしても同じ月が開くこと。予定の行から下書きは編集、それ以外は出欠確認へ進めること。900px 未満では予定一覧が月の下に来ること |
+| **FE-ORG-14** | **公開直後の登録の着地** | SCR-ORG-10 で「会員登録」または「ログイン」を押して完了する | `/organizer/events?registered=1` へ戻り、「登録が完了しました」のトーストが1回だけ出ること。`registered` は表示後に URL から消えること |
+| **FE-ORG-15** | **主催者マイページの要約** | 主催イベントを5件持つ会員で `/mypage` を開く | 主催イベントが直近3件だけ出て、「すべて見る」が `/organizer/events` を指すこと。利用枠の残数と公開プロフィールの状態が出ること。参加履歴（`/participant/history`）への導線が無いこと |
+| **FE-ORG-16** | **下書きの公開ボタン** | 下書きの編集画面と主催一覧を開く | 編集画面では「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、枠が無ければ `PricingModal` が出ること。一覧の下書きカードには「公開ページ」を出さないこと |
 | **FE-PUB-00** | **サービス名** | 公開画面のヘッダーとフッター | 表示が `SITE.name`（いまは `EventKreater`）であること |
 | **FE-PUB-01** | **未ログインのヘッダー** | 未ログインでホーム、ヘッダー、フッターを見る | ヘッダーに「参加者ログイン」（`/participant/login`）と「主催者ログイン」（`/auth/register`）があること。管理者ログインへのリンクは無いこと |
 | **FE-PUB-02** | **参加者のヘッダー** | 主催イベントを持たない会員でログインし、`/participant` を開く | ヘッダーが「参加者ホーム」「参加カレンダー」「参加履歴」「主催者として使う」だけで、「イベントを作る」「主催一覧」「イベントを探す」が無いこと。「主催者として使う」の着地が `/organizer/events` であること |
@@ -1154,7 +1220,7 @@ export interface PricingOption {
 
 ## 9. 会員登録（SCR-PUB-02 / SCR-PUB-05）
 
-`src/app/auth/register/page.tsx` は登録とログインを同じページに置く。パスワード登録の成功ではセッションを作らず、確認メールを送った旨だけを出す。既に登録済みのメールでも同じ文面にする。未確認のままログインしたときは、確認メールの再送を出せる。再送 API は `POST /api/v1/auth/verification` で、メールの有無にかかわらず同じ文面を返す。パスワードまたは Google のログイン成功では `?step=login-code` を開き、`LoginChallengeForm` で確認番号を入れる。確認 API は `POST /api/v1/auth/login-challenge/confirm` である。初期モードは `?mode=register` / `?mode=login` を優先し、指定が無ければ `next` の有無で決める（12.5）。SCR-ORG-10 からは `mode=register` と `next=/organizer/events/<id>` を付けて開く。
+`src/app/auth/register/page.tsx` は登録とログインを同じページに置く。パスワード登録の成功ではセッションを作らず、確認メールを送った旨だけを出す。既に登録済みのメールでも同じ文面にする。未確認のままログインしたときは、確認メールの再送を出せる。再送 API は `POST /api/v1/auth/verification` で、メールの有無にかかわらず同じ文面を返す。パスワードまたは Google のログイン成功では `?step=login-code` を開き、`LoginChallengeForm` で確認番号を入れる。確認 API は `POST /api/v1/auth/login-challenge/confirm` である。初期モードは `?mode=register` / `?mode=login` を優先し、指定が無ければ `next` の有無で決める（12.5）。SCR-ORG-10 からは `mode=register` と `next=/organizer/events?registered=1` を付けて開く。
 
 確認ページは `src/app/auth/verify/page.tsx` である。クエリ `token` を `POST /api/v1/auth/verify` へ送り、成功したらアドレスバーからトークンを消し、新規は `/auth/register?step=phone` へ進む。
 
@@ -1190,16 +1256,20 @@ interface PricingModalProps {
   quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
+  /** 開いた画面。キャンセル時の文言を合わせる。 */
+  context?: "create" | "edit" | "list" | "mypage";
 }
 ```
 
 `onSelectOneTime` は `"GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED"` を返す。`GRANTED` のときは `onGranted()` を呼んでモーダルを閉じ、呼び出し元がトーストを出して利用枠を取り直す。`LIMITED` は「このキャンペーンは受け取り済みです」、`PHONE_REQUIRED` は電話番号確認への導線を出す。
 
+`context` はキャンセルボタンの文言だけに使う。`create` は「キャンセルして作成に戻る」、`edit` は「キャンセルして編集に戻る」、`list` と `mypage` は「閉じる」。作成画面の 402 では下書きが既に保存されているので、閉じても入力は失われない。
+
 ### 10.3. `useEventQuota` の追加
 
-- `openPricingModal()` は開くたびに `GET /api/v1/billing/quota` を取り直す。
-- `startOneTimeCheckout()` は 0 円付与の結果を返し、成功時に `fetchQuota()` を待ってから戻る。
-- `startSubscriptionCheckout()` は API の `detail` をそのままエラー文に使う（二重契約の 409 など）。
+- `openPricingModal(intent?)` は開くたびに `GET /api/v1/billing/quota` を取り直し、`intent`（`draftId` / `returnTo`）を保持する。
+- `startOneTimeCheckout(intent?)` は保持した `intent` を本文に載せ、0 円付与の結果を返す。成功時に `fetchQuota()` を待ってから戻る。電話番号が要るときの戻り先も `intent.returnTo` である。
+- `startSubscriptionCheckout(intent?)` も同じ本文を送る。API の `detail` をそのままエラー文に使う（二重契約の 409 など）。
 
 ### 10.4. 利用規約ページ（SCR-PUB-10）
 
@@ -1307,6 +1377,9 @@ interface OrganizerInviteCardProps {
 2. 電話番号の確認へ回るときは `next=/organizer/events/new?ref=<id>` を組み立て、`/auth/register?step=phone&next=...` に載せる。`QuotaStatusBanner` の `nextPath` にも同じ値を使う。
 3. 201 の応答に `guestOrganizerToken` がある（未登録の幹事）なら、`PublishSuccessModal` を出さずに `router.replace('/organizer/register-required?eventId=<id>')` へ送る。会員の幹事は今までどおりモーダルを出す。
 4. 403 の `error` が `REGISTER_REQUIRED` なら、未登録のまま 1 件作った端末が 2 件目を試した状態である。作成は行われていないので、この画面に留まり「2件目からは会員登録が必要です」のカードを出す。会員登録・ログインのリンクには `next=/organizer/events/new`（`ref` があればそれを含む）を載せる。`sendToRegisterRequired` は使わない（`eventId` がまだ無い）。
+5. 402 のときは、入力を `POST /api/v1/public/events` に `status: "DRAFT"` で送り、下書きを 1 件だけ作る。返った `id` を `draftId` に入れ、`openPricingModal({ draftId, returnTo: nextPath })` で `PricingModal`（`context="create"`）を開く。下書きが作れなかったときは料金モーダルを出さず、エラーのトーストを出す。入力はそのまま画面に残す。
+6. `?draftId=` で開いたときは `GET /api/v1/organizer/events/[id]` で下書きを読み、フォームへ戻す。読み込み中は送信を止める。失敗したらトーストで知らせ、空のフォームで編集を続けられるようにする。復元したフォームは公開状態を `DRAFT` のまま保持する。
+7. `draftId` がある状態の送信は、`POST /api/v1/public/events` ではなく `POST /api/v1/organizer/events/[id]/publish` を呼び、フォームの内容も本文に載せる。402 は同じく `PricingModal` を開き、409 は「このイベントはすでに公開されています」のトーストを出す。成功したら `refreshQuota()` のあと公開完了モーダルを開く。
 
 ### 12.4. SCR-ORG-10（`/organizer/register-required`）
 
@@ -1326,7 +1399,7 @@ interface OrganizerInviteCardProps {
 * タイトルは幹事向け API の `event.title` を使う。別端末・第三者のときは `GET /api/v1/public/events/[id]` の `title` にフォールバックする。通信に失敗したときは汎用文言のまま、共有 URL だけは配れるようにする。
 * `eventId` は `src/lib/ids.ts` の `isEventId` で UUID の形を確かめてからパスに載せる。幹事向け API は権限を先に見るため、不正な ID でも 403 になる。切り分けには公開 API の 404 を使う。
 * 共有 URL のコピーは `navigator.clipboard.writeText` の失敗（http の公開・権限拒否）を握りつぶさない。失敗したら読み取り専用の入力欄を出し、全選択した状態にして手動コピーへ切り替える。成功表示は 2 秒で戻し、`aria-live="polite"` で知らせる。
-* 会員登録は `/auth/register?mode=register&next=/organizer/events/<id>`、ログインは `mode=login` で同じ `next`。`mode` は `next` の有無より優先する（12.5）。
+* 会員登録は `/auth/register?mode=register&next=%2Forganizer%2Fevents%3Fregistered%3D1`、ログインは `mode=login` で同じ `next`。`next` は `src/lib/auth-links.ts` の `registerUrl` / `loginUrl` で組み立て、`encodeURIComponent` を画面側で書かない。着地は主催一覧で、`?registered=1` が付くので登録完了のトーストが出る。`mode` は `next` の有無より優先する（12.5）。
 * 「編集は作成から24時間以内なら会員登録なしでもできる」と明記する。
 
 ### 12.5. `AuthEntryScreen` の `mode`
@@ -1479,7 +1552,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * 単体（`tests/unit/revenue.test.ts`、27 件）: 4 指標の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、`participantPriceDisplay`、`keepPriceSnapshot`。
 * 単体（`tests/unit/allocation.test.ts`、25 件）: 均等割の bps、端数の寄せ先、割合方式・人数方式、未割当、0 除算、領収書、設定の過不足とエラーコード。
 * 結合（`tests/integration/revenue.test.ts`、6 件）: プラン金額の編集後も申込済みの見込みが動かないこと、差額、不参加の除外、按分の保存と閲覧範囲、共同主催の解除。`TEST_DATABASE_URL` があるときだけ走る。
-* 表示の確認は第7節 FE-ORG-08 / 09 / 10 に従う。
+* 表示の確認は第7節 FE-ORG-08 / 09 / 10 / 15 に従う。
 
 ### 13.7. 按分（SCR-ORG-12）
 
@@ -1616,6 +1689,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * `GET /api/v1/organizer/events` は各イベントに `ownerUserId` を、レスポンスに `viewer: { userId, name }` を足す。`serializeOrganizerListItem` は筆頭幹事の `userId` を受け取る。
 * `/organizer/events`（SCR-ORG-01）に「プロフィール」「プロフィールを編集」を置き、「参加者に見えるページ」の節に「催しページを開く」「プレビュー」「URLをコピー」をまとめる。コピーする URL は `organizerProfilePath(viewer.userId)` である。
 * `/mypage`（SCR-PUB-03）に公開状態（公開中／非公開）と「プロフィールを編集」「公開ページを開く」を出す。`GET /api/v1/organizer/profile` が 403 のとき（催しが0件）は節ごと出さない。
+* `/mypage` の主催イベントは直近3件だけを出す。並びは主催一覧と同じで、上部に「すべて見る」を置き `/organizer/events` へ送る。残りは主催一覧で見せる。参加履歴（`/participant/history`）は出さない。
 * プレビューは `OrganizerPagePreviewModal` で開く。中身はログイン済みの表示だけを出し、未ログインのぼかしは出さない。ページの `?view` と `?month` は変えず、閉じると元の一覧に戻る。
 * 告知ページの主催者名は、`userId` があるときだけ `/organizers/[userId]` へのリンクにする（`EventMetaCard`。名前だけをリンクにし、「さんの催しを見る」は添えない）。`serializePublicOrganizerList` は `userId` を返す。
 * 参加者ホームの参加カードに「主催者のページ」を出し、`event.ownerUserId` があるときだけ `/organizers/[userId]` へリンクする（`serializeParticipation` / `participationInclude`）。
@@ -1640,4 +1714,4 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * 単体（`tests/unit/organizer-profile.test.ts`、36件）: リンクの順序と URL の検査、実績の数え方、下書きから表示への組み立て、ジャンルの正規化、自己紹介の省略、`OrganizerProfileSchema` の上限・URL・厳格さ。
 * 結合（`tests/integration/public-organizer-page.test.ts`、8件）: 未ログインの 403 `LOGIN_REQUIRED`、存在しない・退会済みの 404、筆頭幹事と共同主催の掲載対象、開催日の文字列化、複数候補日の並び、満員と参加要望の数え方、締切済みの除外。`TEST_DATABASE_URL` があるときだけ走る。
 * 結合（`tests/integration/organizer-profile.test.ts`、12件）: 未設定でも名前だけ返す、保存内容の公開、非公開に戻すと隠す、upsert が1行にまとまる、催し0件・退会・不正な UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。
-* 表示の確認は第7節 FE-ORG-08 / 09 / 10 に従う。
+* 表示の確認は第7節 FE-ORG-08 / 09 / 10 / 15 に従う。

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { loginUrl, registerUrl } from "@/lib/auth-links";
 import { isEventId } from "@/lib/ids";
 
 /**
@@ -82,7 +83,7 @@ function RegisterRequiredScreen() {
   // 登録済みの幹事には、この画面ではなく管理画面を渡す。
   useEffect(() => {
     if (state.kind === "registered" && eventId) {
-      router.replace(`/organizer/events/${eventId}`);
+      router.replace("/organizer/events");
     }
   }, [state.kind, eventId, router]);
 
@@ -166,7 +167,9 @@ function RegisterRequiredScreen() {
     );
   }
 
-  const nextPath = `/organizer/events/${eventId}`;
+  // 登録・ログインのあとは主催一覧へ。編集画面へ直接送らない（イベントはカードから開く）。
+  const nextPath = "/organizer/events?registered=1";
+  const listPath = "/organizer/events";
 
   return (
     <div className="page--form stack">
@@ -210,23 +213,17 @@ function RegisterRequiredScreen() {
             {`公開したイベントはこの端末に紐づいています。会員登録すると同じイベントがあなたのアカウントに引き継がれ、参加者の回答・リマインド・領収書・共同主催者の招待が使えるようになります。無料枠は登録後もそのまま引き継がれます。`}
           </p>
         </div>
-        <Link
-          href={`/auth/register?mode=register&next=${encodeURIComponent(nextPath)}`}
-          className="btn btn--primary btn--block"
-        >
+        <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
           会員登録して出欠を確認する
         </Link>
-        <Link
-          href={`/auth/register?mode=login&next=${encodeURIComponent(nextPath)}`}
-          className="btn btn--outline btn--block"
-        >
+        <Link href={loginUrl(nextPath)} className="btn btn--outline btn--block">
           すでに会員の方はログイン
         </Link>
       </section>
 
       <p className="help">
         いまは共有 URL の配布だけできます。主催一覧は
-        <Link href={nextPath} className="text-link">
+        <Link href={listPath} className="text-link">
           こちら
         </Link>
         から開けます。編集は作成から24時間以内なら会員登録なしでもできます。

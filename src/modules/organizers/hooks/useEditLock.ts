@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isRegisterRequired, readProblem, sendToRegisterRequired } from "@/lib/problem";
+import { isRegisterRequired, sendToRegisterRequired, RequestProblemError } from "@/lib/problem";
 
 const REVALIDATE_MS = 30_000;
 const CONFLICT_RETRY_MS = 15_000;
@@ -168,7 +168,7 @@ export function useEditLock(eventId: string, holderName: string, enabled: boolea
         }
         throw new Error(data.detail || "保存に失敗しました");
       }
-      if (!res.ok) throw new Error(await readProblem(res));
+      if (!res.ok) throw await RequestProblemError.fromResponse(res);
       return res.json();
     },
     [applyConflict, eventId],

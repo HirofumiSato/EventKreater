@@ -1,24 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
 import { organizerEventsPath, organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
+import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
+import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import type { OrganizerEvent } from "@/modules/events/types";
 
-export default function OrganizerEventsPage() {
+function OrganizerEventsScreen() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const quotaState = useEventQuota();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -53,18 +56,25 @@ export default function OrganizerEventsPage() {
     void load().finally(() => setLoading(false));
   }, [load]);
 
+  // 会員登録から戻ってきたときの完了トースト。URL からは印を消して、再読み込みで繰り返さない。
+  useEffect(() => {
+    if (searchParams.get("registered") !== "1") return;
+    setToast("会員登録が完了しました。公開したイベントは一覧から管理できます。");
+    router.replace("/organizer/events");
+  }, [searchParams, router]);
+
   const cloneEvent = async (id: string) => {
     setBusyId(id);
     try {
       const res = await fetch(`/api/v1/organizer/events/${id}/clone`, { method: "POST" });
       if (res.status === 402) {
-        quotaState.openPricingModal();
+        quotaState.openPricingModal({ returnTo: "/organizer/events" });
         return;
       }
       if (res.status === 403) {
         const problem = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
         if (problem.error === "PHONE_REQUIRED") {
-          window.location.href = "/auth/register?step=phone&next=/organizer/events";
+          window.location.href = phoneVerifyUrl("/organizer/events");
           return;
         }
         throw new Error(problem.detail || "複製に失敗しました");
@@ -137,7 +147,16 @@ export default function OrganizerEventsPage() {
           </Link>
         </div>
       </section>
-      <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={quotaState.openPricingModal} />
+      <QuotaStatusBanner
+        quota={quotaState.quota}
+        onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/organizer/events" })}
+      />
+      <VerifyPaymentBanner
+        onVerified={() => {
+          void quotaState.refreshQuota();
+          void load();
+        }}
+      />
       {viewer?.userId && (
         <section className="panel">
           <div>
@@ -198,7 +217,8 @@ export default function OrganizerEventsPage() {
         onSelectSubscription={quotaState.startSubscriptionCheckout}
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        onGranted={() => setToast("0円チケットを1回分受け取りました。")}
+        context="list"
+        onGranted={() => setToast("0円チケットを1回分受け取りました。もう一度「コピー作成」を押してください。")}
       />
       {managingId && (
         <EventLifecycleModal
@@ -225,5 +245,20 @@ export default function OrganizerEventsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function OrganizerEventsPage() {
+  return (
+    <Suspense
+      fallback={
+        <p className="loading">
+          <span className="spinner" aria-hidden="true" />
+          読み込んでいます
+        </p>
+      }
+    >
+      <OrganizerEventsScreen />
+    </Suspense>
   );
 }

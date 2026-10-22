@@ -41,4 +41,17 @@ describe("toEventRequest と CreateEventSchema の往復", () => {
     expect(payload).toMatchObject({ postalCode: null, town: null, building: null });
     expect(CreateEventSchema.safeParse(payload).success).toBe(true);
   });
+
+  it("公開状態の指定が無ければ即公開として扱う", () => {
+    const { status: _status, ...withoutStatus } = toEventRequest(form);
+    expect(CreateEventSchema.parse(withoutStatus).status).toBe("PUBLISHED");
+  });
+
+  it("下書きの指定を落とさずに受理する", () => {
+    expect(CreateEventSchema.parse({ ...toEventRequest(form), status: "DRAFT" }).status).toBe("DRAFT");
+  });
+
+  it("公開・下書き以外の状態は受け付けない", () => {
+    expect(CreateEventSchema.safeParse({ ...toEventRequest(form), status: "CLOSED" }).success).toBe(false);
+  });
 });

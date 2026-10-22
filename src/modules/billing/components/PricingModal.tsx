@@ -14,7 +14,16 @@ interface PricingModalProps {
   quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
+  /** 開いた画面。キャンセル時の文言を合わせる。 */
+  context?: "create" | "edit" | "list" | "mypage";
 }
+
+const CANCEL_LABEL: Record<NonNullable<PricingModalProps["context"]>, string> = {
+  create: "キャンセルして作成に戻る",
+  edit: "キャンセルして編集に戻る",
+  list: "閉じる",
+  mypage: "閉じる",
+};
 
 function endsAtLabel(iso: string | null): string | null {
   if (!iso) return null;
@@ -74,6 +83,7 @@ export function PricingModal({
   quotes,
   freeGrantRemaining,
   onGranted,
+  context = "list",
 }: PricingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | "SUB" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -181,7 +191,7 @@ export function PricingModal({
         </p>
         <div className="dialog__actions">
           <button type="button" onClick={onClose} disabled={loadingPlan !== null} className="btn btn--ghost btn--block">
-            キャンセルして下書きに戻る
+            {CANCEL_LABEL[context]}
           </button>
         </div>
       </div>

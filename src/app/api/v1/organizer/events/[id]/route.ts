@@ -7,9 +7,9 @@ import { UpdateEventSchema } from "@/lib/schemas";
 import { serializeEvent, serializeOrganizerList, summarizeStatuses } from "@/lib/serializers";
 import {
   assertPricingEditable,
-  deadlineOrThrow,
+  consumeQuotaForDraftPublish,
   eventOptionsInclude,
-  resolveEventLocation,
+  eventUpdateData,
   syncEventOptions,
 } from "@/modules/events/lib/events";
 
@@ -107,25 +107,27 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       }
     }
 
+    const publishingDraft = existing.status === "DRAFT" && input.status === "PUBLISHED";
+    if (publishingDraft && (!ctx.userId || ctx.role !== "OWNER")) {
+      throw new ProblemDetailException({
+        status: 403,
+        title: "Forbidden",
+        detail: "下書きの公開は筆頭幹事（オーナー）の会員だけが行えます。",
+      });
+    }
+
     const event = await prisma.$transaction(async (tx) => {
+      // 下書きの公開は、複製で消費済みの枠を二重に引かない。
+      const charged = publishingDraft
+        ? (await consumeQuotaForDraftPublish(tx, ctx.userId as string, existing.id)).charged
+        : false;
       await syncEventOptions(tx, existing.id, input);
       return tx.event.update({
         where: { id: existing.id },
         data: {
-          title: input.title,
-          location: resolveEventLocation(input),
-          postalCode: input.postalCode ?? null,
-          prefecture: input.prefecture ?? null,
-          city: input.city ?? null,
-          town: input.town ?? null,
-          addressLine: input.addressLine ?? null,
-          building: input.building ?? null,
-          venueName: input.venueName ?? null,
-          rainPolicy: input.rainPolicy,
-          capacity: input.capacity ?? null,
-          flyerAssetId: input.flyerAssetId ?? null,
-          rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
+          ...eventUpdateData(input),
           ...(input.status ? { status: input.status } : {}),
+          ...(charged ? { quotaChargedAt: new Date() } : {}),
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });

@@ -5,6 +5,7 @@ import { toErrorResponse } from "@/lib/http";
 import { VerifySessionSchema } from "@/lib/schemas";
 import { PaymentRejected, fulfillPaidCheckout } from "@/modules/billing/lib/billing";
 import { getStripe } from "@/modules/billing/lib/stripe";
+import { normalizeCheckoutReturnTo } from "@/modules/billing/lib/checkout-return";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       paymentType: session.metadata?.paymentType ?? (session.mode === "subscription" ? "SUBSCRIPTION" : "ONE_TIME"),
+      // 購入前に開いていた画面と、復元する下書き。古いセッションでは null。
+      draftId: session.metadata?.draftId ?? null,
+      returnTo: session.metadata?.returnTo
+        ? normalizeCheckoutReturnTo(session.metadata.returnTo)
+        : null,
       quota: {
         freeEventCount: updatedQuota.freeEventCount,
         paidCredits: updatedQuota.paidCredits,

@@ -59,9 +59,11 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
         </div>
       )}
       <div className="btn-row" style={{ marginTop: "1rem" }}>
-        <Link href={`/events/${event.id}`} className="btn btn--outline btn--sm">
-          公開ページ
-        </Link>
+        {event.status !== "DRAFT" && (
+          <Link href={`/events/${event.id}`} className="btn btn--outline btn--sm">
+            公開ページ
+          </Link>
+        )}
         <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--sm">
           編集
         </Link>

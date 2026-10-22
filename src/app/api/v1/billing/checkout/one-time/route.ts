@@ -8,6 +8,12 @@ import { ensureStripeCustomer } from "@/modules/billing/lib/billing";
 import { getStripe, checkoutIdempotencyKey } from "@/modules/billing/lib/stripe";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteFor, type PricingQuote } from "@/modules/billing/lib/pricing";
+import { CheckoutIntentSchema } from "@/lib/schemas";
+import {
+  DEFAULT_CHECKOUT_RETURN_TO,
+  assertOwnDraft,
+  checkoutReturnUrls,
+} from "@/modules/billing/lib/checkout-intent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,16 +109,23 @@ export async function POST(req: NextRequest) {
     const quote = quoteFor("ONE_TIME", await loadActiveCampaigns(now), now);
     const requestKey = checkoutIdempotencyKey(req, userId, "free_ticket");
 
+    // 枠が無いときに作った下書きを、購入後に復元するための手がかり。
+    const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+    const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
+
     if (quote.chargedPrice === 0) {
       const result = await grantFreeTicket(userId, quote, requestKey);
       return NextResponse.json(result);
     }
+
+    if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
 
     const stripe = getStripe();
     const customerId = await ensureStripeCustomer(userId);
     const appUrl = appBaseUrl();
     const priceId = process.env.STRIPE_PRICE_ID_ONE_TIME;
     const idempotencyKey = checkoutIdempotencyKey(req, userId, "one_time");
+    const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
 
     const session = await stripe.checkout.sessions.create(
       {
@@ -135,12 +148,14 @@ export async function POST(req: NextRequest) {
               },
         ],
         mode: "payment",
-        success_url: `${appUrl}/organizer/events/new?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/organizer/events/new`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         client_reference_id: userId,
         metadata: {
           userId,
           paymentType: "ONE_TIME",
+          ...(intent.draftId ? { draftId: intent.draftId } : {}),
+          ...(intent.returnTo ? { returnTo } : {}),
           ...(quote.campaignId
             ? { campaignId: quote.campaignId, appliedPercent: String(quote.discountPercent) }
             : {}),

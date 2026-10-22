@@ -4,12 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
+import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
+import { loginUrl } from "@/lib/auth-links";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import type { OrganizerEvent } from "@/modules/events/types";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
+
+/** ホームに出す主催イベントの件数。全件は主催一覧（SCR-ORG-01）が持つ。 */
+const SUMMARY_LIMIT = 3;
 
 interface ProfileResponse {
   user: { id: string; email: string; name: string };
@@ -68,7 +73,7 @@ export default function MyPage() {
     return (
       <p className="alert alert--warning">
         {error}{" "}
-        <Link href="/auth/register" className="text-link">
+        <Link href={loginUrl("/mypage")} className="text-link">
           主催者ログイン
         </Link>
       </p>
@@ -98,7 +103,11 @@ export default function MyPage() {
         </div>
       </section>
 
-      <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={quotaState.openPricingModal} />
+      <QuotaStatusBanner
+        quota={quotaState.quota}
+        onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/mypage" })}
+      />
+      <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
       {ownProfile && (
         <section className="panel">
@@ -127,8 +136,16 @@ export default function MyPage() {
 
       <section className="stack">
         <div className="panel">
-          <h2 className="panel__title">主催イベント</h2>
           <div>
+            <h2 className="panel__title">主催イベント</h2>
+            <p className="panel__note">
+              直近の{SUMMARY_LIMIT}件を表示しています。全件の管理は主催イベント一覧で行います。
+            </p>
+          </div>
+          <div className="panel__actions">
+            <Link href="/organizer/events" className="btn btn--outline btn--sm">
+              すべて見る
+            </Link>
             <Link href="/organizer/events/new" className="btn btn--primary btn--sm">
               イベントを作る
             </Link>
@@ -142,7 +159,7 @@ export default function MyPage() {
             </Link>
           </p>
         )}
-        {events.map((event) => (
+        {events.slice(0, SUMMARY_LIMIT).map((event) => (
           <article key={event.id} className="card">
             <Link href={`/organizer/events/${event.id}/edit`} className="card__title">
               {event.title}
@@ -152,6 +169,11 @@ export default function MyPage() {
             </p>
           </article>
         ))}
+        {events.length > SUMMARY_LIMIT && (
+          <Link href="/organizer/events" className="btn btn--ghost btn--block">
+            残り{events.length - SUMMARY_LIMIT}件を主催イベント一覧で見る
+          </Link>
+        )}
       </section>
 
       <PricingModal
@@ -161,6 +183,7 @@ export default function MyPage() {
         onSelectSubscription={quotaState.startSubscriptionCheckout}
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
+        context="mypage"
         onGranted={() => void quotaState.refreshQuota()}
       />
     </div>

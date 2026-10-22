@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
-import { assertCanCreateEvent } from "@/modules/billing/lib/quota";
+import { assertCanCreateEvent, consumeEventQuota } from "@/modules/billing/lib/quota";
 import {
   audiencesForGender,
   composeEventTime,
@@ -11,7 +11,7 @@ import {
   parseRsvpDeadline,
   serializeEvent,
 } from "@/lib/serializers";
-import type { CreateEventInput } from "@/lib/schemas";
+import type { CreateEventInput, UpdateEventInput } from "@/lib/schemas";
 import { isEligibleReferrer } from "@/modules/events/lib/referrer";
 import { attributeFlyerLogsToEvent } from "@/modules/flyers/lib/quota";
 
@@ -313,10 +313,12 @@ function mapForeignKey(error: unknown): never {
 }
 
 export async function createEventForUser(userId: string, input: CreateEventInput) {
-  const decision = await assertCanCreateEvent(userId);
+  // 枠が無いときに作る下書きは課金しない。公開（publish）で初めて枠を消費する。
+  const isDraft = input.status === "DRAFT";
+  const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
     return await prisma.$transaction(async (tx) => {
-      const planType = await decision.consume(tx);
+      const planType = decision ? await decision.consume(tx) : null;
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
       const event = await tx.event.create({
         data: {
@@ -330,7 +332,9 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           // 一覧を持たないため、作成時は常に紹介制で保存する。値は将来のメディアサイト用に残す。
           visibility: "UNLISTED",
           rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
-          status: "PUBLISHED",
+          status: input.status,
+          // 即公開はここで枠を消費している。下書きは公開時に消費する。
+          quotaChargedAt: isDraft ? null : new Date(),
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });
@@ -353,6 +357,16 @@ export async function createEventForUser(userId: string, input: CreateEventInput
 }
 
 export async function createEventForGuest(input: CreateEventInput, guestTokenHash: string) {
+  // 未登録の幹事は下書きを持てない。購入の復元は会員だけの導線にする。
+  if (input.status === "DRAFT") {
+    throw new ProblemDetailException({
+      status: 403,
+      title: "Forbidden",
+      type: "probs/register-required",
+      detail: "下書きの保存には会員登録が必要です。",
+      error: "REGISTER_REQUIRED",
+    });
+  }
   try {
     return await prisma.$transaction(async (tx) => {
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
@@ -369,6 +383,7 @@ export async function createEventForGuest(input: CreateEventInput, guestTokenHas
           visibility: "UNLISTED",
           rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
           status: "PUBLISHED",
+          quotaChargedAt: new Date(),
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });
@@ -398,9 +413,91 @@ export function createdEventBody(
   return {
     event: serializeEvent(event),
     guestOrganizerToken,
-    publicUrl: `/events/${event.id}`,
+    // 下書きは告知ページが存在しない。カードや管理画面がリンクを出さないよう null を返す。
+    publicUrl: event.status === "DRAFT" ? null : `/events/${event.id}`,
     manageUrl: `/organizer/events/${event.id}`,
   };
+}
+
+/**
+ * イベント本体へ保存する更新データ。
+ * 編集画面の PUT と、下書きを公開するときの更新で同じ形を使う。
+ */
+export function eventUpdateData(input: UpdateEventInput) {
+  return {
+    title: input.title,
+    location: resolveEventLocation(input),
+    postalCode: input.postalCode ?? null,
+    prefecture: input.prefecture ?? null,
+    city: input.city ?? null,
+    town: input.town ?? null,
+    addressLine: input.addressLine ?? null,
+    building: input.building ?? null,
+    venueName: input.venueName ?? null,
+    rainPolicy: input.rainPolicy,
+    capacity: input.capacity ?? null,
+    flyerAssetId: input.flyerAssetId ?? null,
+    rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
+  };
+}
+
+/**
+ * 下書きを公開する直前に、まだ枠を消費していなければ消費する。
+ * 複製は作成時に消費済み（`quotaChargedAt` が入っている）なので、二重に引かない。
+ */
+export async function consumeQuotaForDraftPublish(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  eventId: string,
+): Promise<{ charged: boolean }> {
+  const rows = await tx.$queryRaw<Array<{ status: string; quota_charged_at: Date | null }>>`
+    SELECT "status", "quota_charged_at" FROM "events"
+    WHERE "id" = ${eventId}::uuid AND "is_deleted" = false
+    FOR UPDATE
+  `;
+  const row = rows[0];
+  if (!row) {
+    throw new ProblemDetailException({
+      status: 404,
+      title: "Not Found",
+      detail: "イベントが見つかりません。",
+    });
+  }
+  if (row.status !== "DRAFT") {
+    throw new ProblemDetailException({
+      status: 409,
+      title: "Conflict",
+      detail: "このイベントはすでに公開されています。",
+      error: "ALREADY_PUBLISHED",
+    });
+  }
+  if (row.quota_charged_at) return { charged: false };
+  await consumeEventQuota(tx, userId);
+  return { charged: true };
+}
+
+/**
+ * 下書きを公開する。入力が渡されたときは、公開と同時に内容も更新する。
+ * 枠の消費と公開を1つのトランザクションに閉じる。
+ */
+export async function publishDraftEvent(
+  userId: string,
+  eventId: string,
+  input: UpdateEventInput | null = null,
+) {
+  return prisma.$transaction(async (tx) => {
+    const { charged } = await consumeQuotaForDraftPublish(tx, userId, eventId);
+    if (input) await syncEventOptions(tx, eventId, input);
+    return tx.event.update({
+      where: { id: eventId },
+      data: {
+        ...(input ? eventUpdateData(input) : {}),
+        status: "PUBLISHED",
+        ...(charged ? { quotaChargedAt: new Date() } : {}),
+      },
+      include: { flyerAsset: true, ...eventOptionsInclude },
+    });
+  });
 }
 
 /**

@@ -1,15 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
 import { problemMessage, readProblemBody } from "@/lib/problem";
+import { phoneVerifyUrl } from "@/lib/auth-links";
 
 export type OneTimeCheckoutResult = "GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED";
+
+/** 課金を開いた画面と、購入後に復元する下書き。 */
+export interface CheckoutIntent {
+  draftId?: string;
+  returnTo?: string;
+}
+
+const DEFAULT_RETURN_TO = "/organizer/events/new";
+
+function checkoutBody(intent?: CheckoutIntent): string {
+  return JSON.stringify(intent ?? {});
+}
 
 export function useEventQuota() {
   const [quota, setQuota] = useState<UserQuota | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  // モーダルを開いた画面の文脈。購入後の戻り先と、復元する下書きを引き継ぐ。
+  const intentRef = useRef<CheckoutIntent | undefined>(undefined);
 
   const fetchQuota = useCallback(async () => {
     try {
@@ -31,29 +46,39 @@ export function useEventQuota() {
     void fetchQuota();
   }, [fetchQuota]);
 
-  const openPricingModal = useCallback(() => {
-    // 開くたびに最新の販売価格を取り直す。
-    void fetchQuota();
-    setIsPricingModalOpen(true);
-  }, [fetchQuota]);
+  const openPricingModal = useCallback(
+    (intent?: CheckoutIntent) => {
+      intentRef.current = intent;
+      // 開くたびに最新の販売価格を取り直す。
+      void fetchQuota();
+      setIsPricingModalOpen(true);
+    },
+    [fetchQuota],
+  );
 
   /**
    * 0円キャンペーン中は Stripe へ行かず、その場で1回分が付与される。
    * 付与されたら枠を読み直して、作成画面がそのまま再試行できるようにする。
    */
-  const startOneTimeCheckout = useCallback(async (): Promise<OneTimeCheckoutResult> => {
-    const res = await fetch("/api/v1/billing/checkout/one-time", {
-      method: "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
-    if (!res.ok) {
-      const problem = await readProblemBody(res);
-      if (problem.error === "PHONE_REQUIRED") {
-        window.location.href = "/auth/register?step=phone&next=/organizer/events/new";
-        return "PHONE_REQUIRED";
+  const startOneTimeCheckout = useCallback(
+    async (override?: CheckoutIntent): Promise<OneTimeCheckoutResult> => {
+      const intent = override ?? intentRef.current;
+      const res = await fetch("/api/v1/billing/checkout/one-time", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: checkoutBody(intent),
+      });
+      if (!res.ok) {
+        const problem = await readProblemBody(res);
+        if (problem.error === "PHONE_REQUIRED") {
+          window.location.href = phoneVerifyUrl(intent?.returnTo ?? DEFAULT_RETURN_TO);
+          return "PHONE_REQUIRED";
+        }
+        throw new Error(problemMessage(problem, "単発決済セッション作成に失敗しました"));
       }
-      throw new Error(problemMessage(problem, "単発決済セッション作成に失敗しました"));
-    }
     const data = (await res.json()) as {
       checkoutUrl?: string;
       granted?: boolean;
@@ -74,10 +99,15 @@ export function useEventQuota() {
     throw new Error("単発決済セッション作成に失敗しました");
   }, [fetchQuota]);
 
-  const startSubscriptionCheckout = useCallback(async () => {
+  const startSubscriptionCheckout = useCallback(async (override?: CheckoutIntent) => {
+    const intent = override ?? intentRef.current;
     const res = await fetch("/api/v1/billing/checkout/subscription", {
       method: "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+      body: checkoutBody(intent),
     });
     if (!res.ok) {
       throw new Error(problemMessage(await readProblemBody(res), "サブスクセッション作成に失敗しました"));
