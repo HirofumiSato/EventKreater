@@ -620,6 +620,31 @@ model EventInvitation {
   @@index([eventId, isRevoked, expiresAt])
   @@map("event_invitations")
 }
+
+// =============================================================
+// 9. 主催者の公開プロフィール
+// =============================================================
+
+/// 行が無い会員は「未作成（非公開）」として扱う。ページ自体は誰でも開ける。
+model OrganizerProfile {
+  userId       String   @id @map("user_id") @db.Uuid
+  isPublished  Boolean  @default(false) @map("is_published")
+  headline     String?  @db.VarChar(60)
+  bio          String?  @db.VarChar(400)
+  area         String?  @db.VarChar(50)
+  tags         String[]
+  xUrl         String?  @map("x_url") @db.VarChar(200)
+  instagramUrl String?  @map("instagram_url") @db.VarChar(200)
+  websiteUrl   String?  @map("website_url") @db.VarChar(200)
+  lineUrl      String?  @map("line_url") @db.VarChar(200)
+  showStats    Boolean  @default(false) @map("show_stats")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("organizer_profiles")
+}
 ```
 
 ---
@@ -989,6 +1014,23 @@ CREATE TABLE event_invitations (
 );
 
 CREATE INDEX idx_invitations_valid ON event_invitations(event_id, is_revoked, expires_at);
+
+-- 11. 主催者の公開プロフィール（行が無い会員は未作成・非公開）
+CREATE TABLE organizer_profiles (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    is_published BOOLEAN NOT NULL DEFAULT FALSE,
+    headline VARCHAR(60) NULL,
+    bio VARCHAR(400) NULL,
+    area VARCHAR(50) NULL,
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    x_url VARCHAR(200) NULL,
+    instagram_url VARCHAR(200) NULL,
+    website_url VARCHAR(200) NULL,
+    line_url VARCHAR(200) NULL,
+    show_stats BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
 ---

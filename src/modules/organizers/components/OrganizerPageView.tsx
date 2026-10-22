@@ -58,7 +58,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/v1/public/organizers/${userId}`, { cache: "no-store" });
+    const res = await fetch(`/api/v1/public/organizers/${userId}/events`, { cache: "no-store" });
     if (res.status === 403) {
       setState("login");
       setData(null);
@@ -127,8 +127,8 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   if (state === "login") {
     return (
       <div className="stack">
-        <OrganizerHeader name={null} preview={preview} />
-        <LockedSkeleton nextPath={`/organizers/${userId}`} preview={preview} />
+        <OrganizerHeader name={null} userId={userId} preview={preview} />
+        <LockedSkeleton nextPath={`/organizers/${userId}/events`} preview={preview} />
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   if (state === "error") {
     return (
       <div className="stack">
-        <OrganizerHeader name={null} />
+        <OrganizerHeader name={null} userId={userId} />
         <p className="alert alert--error">{error}</p>
         <Link href="/events" className="btn btn--outline">
           イベントを探す
@@ -148,7 +148,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   if (state === "loading") {
     return (
       <div className="stack">
-        <OrganizerHeader name={null} />
+        <OrganizerHeader name={null} userId={userId} />
         <p className="loading">
           <span className="spinner" aria-hidden="true" />
           読み込んでいます
@@ -159,7 +159,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
 
   return (
     <div className="stack">
-      <OrganizerHeader name={data?.organizer.name ?? null} preview={preview} />
+      <OrganizerHeader name={data?.organizer.name ?? null} userId={userId} preview={preview} />
 
       <section className="panel">
         <div className="segment" role="tablist" aria-label="表示の切り替え">
@@ -275,7 +275,15 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   );
 }
 
-function OrganizerHeader({ name, preview = false }: { name: string | null; preview?: boolean }) {
+function OrganizerHeader({
+  name,
+  userId,
+  preview = false,
+}: {
+  name: string | null;
+  userId: string;
+  preview?: boolean;
+}) {
   return (
     <section className="panel">
       <div>
@@ -285,6 +293,9 @@ function OrganizerHeader({ name, preview = false }: { name: string | null; previ
       </div>
       {!preview && (
         <div className="panel__actions">
+          <Link href={`/organizers/${userId}`} className="btn btn--outline">
+            公開プロフィール
+          </Link>
           <Link href="/participant" className="btn btn--outline">
             参加者ホームへ
           </Link>

@@ -146,7 +146,7 @@ export default function ParticipantHomePage() {
                     href={`/organizers/${row.event.ownerUserId}`}
                     className="btn btn--ghost btn--sm"
                   >
-                    主催者のほかの催し
+                    主催者のページ
                   </Link>
                 )}
               </div>

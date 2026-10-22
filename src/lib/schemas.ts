@@ -2,6 +2,8 @@ import { z } from "zod";
 import { normalizePostalCode } from "@/lib/postal-code";
 import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
+import { profileUrlProblem } from "@/modules/organizers/lib/profile";
+import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -425,6 +427,62 @@ export const PricingCampaignSchema = z.object({
 });
 
 export const PricingCampaignUpdateSchema = PricingCampaignSchema;
+
+// ---- 主催者の公開プロフィール ----
+
+/** 未入力を null に寄せる。空欄は「まだ書いていない」として扱う。 */
+function optionalProfileText(max: number, label: string) {
+  return z
+    .string()
+    .trim()
+    .max(max, `${label}は${max}文字以内です`)
+    .optional()
+    .transform((value): string | null => {
+      const normalized = value?.replace(/\r\n/g, "\n").trim() ?? "";
+      return normalized === "" ? null : normalized;
+    });
+}
+
+/** URL は https だけを通し、ホストを限定する。未入力は null。 */
+function optionalProfileUrl(label: string, hosts: readonly string[]) {
+  return z
+    .string()
+    .trim()
+    .max(200, `${label}のURLは200文字以内です`)
+    .optional()
+    .transform((value): string | null => (value ? value : null))
+    .superRefine((value, ctx) => {
+      if (value === null) return;
+      const problem = profileUrlProblem(value, hosts, label);
+      if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
+    });
+}
+
+/**
+ * 公開プロフィールの入力。公開ページに出る項目だけを受け取り、
+ * 表示名（`users.name`）はここでは変えない。
+ */
+export const OrganizerProfileSchema = z
+  .object({
+    isPublished: z.boolean().default(false),
+    headline: optionalProfileText(60, "肩書き"),
+    bio: optionalProfileText(400, "自己紹介"),
+    area: optionalProfileText(50, "活動エリア"),
+    tags: z
+      .array(z.enum(PROFILE_TAGS))
+      .max(MAX_PROFILE_TAGS, `活動ジャンルは${MAX_PROFILE_TAGS}つまで選べます`)
+      .default([])
+      .transform((tags) => [...new Set(tags)]),
+    xUrl: optionalProfileUrl("X", ["x.com", "twitter.com"]),
+    instagramUrl: optionalProfileUrl("Instagram", ["instagram.com"]),
+    websiteUrl: optionalProfileUrl("Webサイト", []),
+    lineUrl: optionalProfileUrl("LINE", ["lin.ee", "line.me"]),
+    showStats: z.boolean().default(false),
+  })
+  .strict();
+
+export type OrganizerProfileFormInput = z.infer<typeof OrganizerProfileSchema>;
+
 
 
 export type GenerateFlyerInput = z.infer<typeof GenerateFlyerSchema>;

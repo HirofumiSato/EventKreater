@@ -1,6 +1,8 @@
 # 参加者が主催者のイベントカレンダー・一覧を見られる公開ページを作る
 
 > 起票済み: [#21](https://github.com/HirofumiSato/EventKreater/issues/21)。このファイルは設計の記録として残す。
+>
+> その後、主催者自身の紹介ページを別 issue（[organizer-profile.md](organizer-profile.md)）に分離した。本 issue の催しページは `/organizers/[userId]/events` へ移し、`/organizers/[userId]` はプロフィールが使う。
 
 ## 背景
 
@@ -16,7 +18,7 @@
 | 掲載する催し | `status = PUBLISHED` かつ未削除。`CLOSED`（受付停止）と申し込み期限を過ぎたものは出さない |
 | 満員の催し | 出さないのではなく掲載し、「参加要望受付中」のバッジを付ける（#20 の参加要望と揃える） |
 | 対象の主催者 | 筆頭幹事だけでなく、共同主催として紐づく催しも含める |
-| URL | `/organizers/[userId]`。`userId` は会員の UUID |
+| URL | `/organizers/[userId]/events`。`userId` は会員の UUID |
 | 画面構成 | 「カレンダー / 一覧」の2タブ。`?view=calendar|list` で切り替え、既定はカレンダー |
 | カレンダー | 催しの全開催日をそれぞれの日に置く。月は今月以降だけを移動でき、過去月へは戻れない |
 | 一覧 | 次に開催される日が近い順。過去の日付だけの催しは出さない |
@@ -28,14 +30,14 @@
 
 ## ゴール
 
-1. ログイン済みの参加者が `/organizers/[userId]` で主催者の催しをカレンダーと一覧の両方から確認できる。
+1. ログイン済みの参加者が `/organizers/[userId]/events` で主催者の催しをカレンダーと一覧の両方から確認できる。
 2. 未ログインの人には中身が見えず、登録・ログインへの案内だけが出る。
 3. 主催者が自分のページのURLをコピーし、参加者から見える形をプレビューできる。
 4. 受付停止・期限切れの催しが出ず、満員の催しは参加要望受付中として出る。
 
 ## スコープ外
 
-- 主催者のプロフィール文・SNSリンク・フォロー機能
+- 主催者のプロフィール文・SNSリンク・フォロー機能（[organizer-profile.md](organizer-profile.md) で扱う）
 - 催しの検索・絞り込み・ページ送り（1主催者の催しは一覧で足りる）
 - 主催者ページ自体のSEO最適化（`noindex` とし、検索には出さない）
 - 未ログイン者への部分的開示（催し名だけ見せる等）
@@ -45,7 +47,7 @@
 
 ### 1. API
 
-`GET /api/v1/public/organizers/[userId]`
+`GET /api/v1/public/organizers/[userId]/events`
 
 - 未ログインは 403 `LOGIN_REQUIRED`（中身は返さない）。
 - `users.deletedAt` が入っている会員は 404。
@@ -87,7 +89,7 @@
 
 ### 3. 画面
 
-`src/app/organizers/[userId]/page.tsx`（サーバー）→ `OrganizerPageView`（クライアント）。
+`src/app/organizers/[userId]/events/page.tsx`（サーバー）→ `OrganizerPageView`（クライアント）。プロフィール（`/organizers/[userId]`）から遷移する。
 
 - 未ログイン（401/403）: 見出しだけ出し、本文は `aria-hidden` の骨組みをぼかす。案内文と参加者ログインへのボタンを重ねる。中身のAPIは呼ばない。
 - ログイン済み: 主催者名、タブ、カレンダーまたは一覧。
@@ -99,14 +101,14 @@
 ### 4. 主催者側
 
 - `GET /api/v1/organizer/events` の応答に `viewer.userId` を足す。
-- 主催イベント一覧の冒頭に「公開ページ」ボタン（新しいタブ）と「URLをコピー」を置く。
+- 主催イベント一覧の冒頭に「プロフィール」ボタン（新しいタブ）、「プロフィールを編集」、「催しページを開く」「プレビュー」「URLをコピー」を置く。コピーする URL はプロフィール（`/organizers/[userId]`）である。
 - `OrganizerPagePreviewModal` を作り、`OrganizerPageView` を `preview` モードで描く。プレビューはログイン済みの見え方だけを出し、未ログインのぼかしは出さない。
 - 各 `EventCard` の「公開ページ」の隣に「主催者のページ」を足す（その催しの筆頭幹事の `userId` を使う。`ownerUserId` を `OrganizerEvent` に足す）。
 
 ### 5. 参加者側
 
-- 告知ページの「主催」欄の名前を `/organizers/[userId]` へのリンクにする（`userId` があるときだけ）。
-- 参加者ホームのカードに「主催者のほかの催し」リンクを足す。
+- 告知ページの「主催」欄の名前を `/organizers/[userId]` へのリンクにする（`userId` があるときだけ。名前だけをリンクにし、「さんの催しを見る」は添えない）。
+- 参加者ホームのカードに「主催者のページ」リンクを足す（`/organizers/[userId]`）。
 - 参加者カレンダーの短冊色に `waitlist` を足す（#20 の参加要望と揃える）。
 
 ### 6. テスト
@@ -134,7 +136,7 @@
 
 ## 受け入れ条件
 
-- [x] ログイン済みの参加者が `/organizers/[userId]` を開くと、主催者名と催しが出る
+- [x] ログイン済みの参加者が `/organizers/[userId]/events` を開くと、主催者名と催しが出る
 - [x] 未ログインで開くと、中身が読めないぼかしの上に「参加者登録・ログイン後に閲覧できます」が出る
 - [x] カレンダーと一覧をタブで切り替えられ、URLのクエリに残る
 - [x] カレンダーは全開催日に催しが並び、今月より前へ戻れない

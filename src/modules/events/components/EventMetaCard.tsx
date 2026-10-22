@@ -45,13 +45,16 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             <dt>主催</dt>
             <dd>
               {owner.userId ? (
-                <Link href={`/organizers/${owner.userId}`} className="text-link">
+                <Link
+                  href={`/organizers/${owner.userId}`}
+                  className="text-link"
+                  aria-label={`${owner.name}さんのプロフィールを見る`}
+                >
                   {owner.name}
                 </Link>
               ) : (
                 owner.name
               )}
-              {owner.userId && <span className="help"> さんの催しを見る</span>}
             </dd>
           </div>
         )}
@@ -63,7 +66,11 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
                 <span key={`${row.name}-${index}`}>
                   {index > 0 && "、"}
                   {row.userId ? (
-                    <Link href={`/organizers/${row.userId}`} className="text-link">
+                    <Link
+                      href={`/organizers/${row.userId}`}
+                      className="text-link"
+                      aria-label={`${row.name}さんのプロフィールを見る`}
+                    >
                       {row.name}
                     </Link>
                   ) : (
