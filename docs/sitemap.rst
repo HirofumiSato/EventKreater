@@ -135,7 +135,7 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - :doc:`testing/local-run`
      - 手元での実行。テストカードは含めない
    * - :doc:`testing/ci`
-     - CI の接続。``check``・``db``・``flyer``・``docs`` の 4 ジョブ。Stripe の秘密鍵は登録しない
+     - CI の接続。``check``・``db``・``flyer``・``docs``・``typecheck`` の 5 ジョブ。Stripe の秘密鍵は登録しない
 
 全体要件と共通ドキュメント
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

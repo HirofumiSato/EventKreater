@@ -48,7 +48,7 @@ start docs\flyer\_build\html\index.html
 | [OpenAI](../../docs/flyer/libraries/openai.rst) | 背景用プロンプトの構造化と DALL-E 3 による画像取得を行う | `gpt-4o-mini` の `beta.chat.completions.parse` と `dall-e-3` を、キーがあるときだけ使う |
 | [HTTPX](../../docs/flyer/libraries/httpx.rst) | 生成画像の URL からバイト列を取得する | `download_image` が残り時間をタイムアウトにして取得する。テストは `MockTransport` を渡す |
 | [pytest](../../docs/flyer/libraries/pytest.rst) | 外部 API なしで単体テストと結合テストを実行する | プロジェクトルートで `python -m pytest tests/ -v` を実行する |
-| [mypy](../../docs/flyer/libraries/mypy.rst) | `src` の型ヒントを厳密に検査する | `python -m mypy --strict src` を実行する。テストは対象外 |
+| [mypy](../../docs/flyer/libraries/mypy.rst) | `src` の型ヒントを厳密に検査する | `python -m mypy` を実行する（`mypy.ini` が strict 設定）。テストは対象外 |
 | [Sphinx](../../docs/flyer/libraries/sphinx.rst) | ガイドと API リファレンスを HTML にする | `python -m sphinx -b html docs/flyer docs/flyer/_build/html` のあと `docs/flyer/_build/html/index.html` を開く |
 | [sphinx-rtd-theme](../../docs/flyer/libraries/sphinx_rtd_theme.rst) | HTML を Read the Docs のレイアウトで表示する | `docs/flyer/conf.py` の `html_theme` に指定する。文書の言語設定とは独立している |
 
@@ -56,5 +56,5 @@ start docs\flyer\_build\html\index.html
 
 ```powershell
 python -m pytest tests/ -v
-python -m mypy --strict src
+python -m mypy
 ```

@@ -31,8 +31,8 @@ from src.domain.models import (
     TemplateId,
     TextLayout,
 )
-from src.infrastructure.storage.local_candidate_store import LocalCandidateStore
 from src.ports.candidate_source_port import CandidateSourcePort
+from src.ports.candidate_store_port import CandidateStorePort
 from src.ports.image_upload_port import ImageUploadPort
 from src.ports.prompt_engine_port import PromptEnginePort
 from src.ports.renderer_port import FlyerRendererPort
@@ -59,7 +59,7 @@ class ProposeCandidatesUseCase:
         prompt_engine: PromptEnginePort,
         source: CandidateSourcePort,
         renderer: FlyerRendererPort,
-        store: LocalCandidateStore,
+        store: CandidateStorePort,
         uploads: ImageUploadPort,
     ) -> None:
         self._prompt_engine = prompt_engine
