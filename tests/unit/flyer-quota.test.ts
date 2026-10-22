@@ -114,12 +114,12 @@ describe("flyerQuotaLabel", () => {
   it("何の回数かと上限が分かる日本語にする", () => {
     expect(
       flyerQuotaLabel({ limit: 3, used: 2, remaining: 1, anonymous: false }),
-    ).toBe("この下書きでチラシを保存できるのは、残り 1 回（最大 3 回）");
+    ).toBe("この下書きでチラシを作成・変更できるのは、残り 1 回（最大 3 回）");
   });
 
   it("未ログインは端末通算であることを示す", () => {
     expect(
       flyerQuotaLabel({ limit: 1, used: 1, remaining: 0, anonymous: true }),
-    ).toBe("未ログインでチラシを保存できるのは、残り 0 回（最大 1 回）");
+    ).toBe("未ログインでチラシを作成・変更できるのは、残り 0 回（最大 1 回）");
   });
 });
