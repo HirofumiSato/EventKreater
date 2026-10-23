@@ -20,7 +20,7 @@
 
 | 種別 | 件数 | 内容 |
 | --- | --- | --- |
-| API | 7 | 仕様書に無い実装。`POST /api/v1/organizer/events/[id]/lifecycle`、`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
+| API | 6 | 仕様書に無い実装。`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
 | DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
 | パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
 | 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |

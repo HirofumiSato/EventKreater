@@ -5,9 +5,9 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 99（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 258
-- API ルート: 77（どの文書にも URL が無いもの 0）
+- 対象文書: 100（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 270
+- API ルート: 78（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -91,6 +91,7 @@
 | `src/app/api/v1/user/participations/route.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/app/api/v1/venues/[id]/route.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/app/api/v1/venues/route.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/app/api/v1/voice/transcriptions/route.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/app/api/v1/webhooks/stripe/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/stripe.rst](stripe.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
 | `src/app/attendance.css` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/auth/register/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -182,9 +183,10 @@
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/modules/events/components/EventFormSections.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/components/EventMetaCard.tsx` | [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
-| `src/modules/events/components/EventStepForm.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/modules/events/components/EventStepForm.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/components/OrganizerInviteCard.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/VenueSelectModal.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/modules/events/components/VoiceInputDock.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/capacity.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/draft.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/events.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
@@ -195,6 +197,14 @@
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/fields.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/normalize.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/openai.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/parse.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/rate-limit.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/transcribe.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/types.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/types.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
@@ -272,6 +282,8 @@
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 
 ## 文書が指すが実在しないパス
 

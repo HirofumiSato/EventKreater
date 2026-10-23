@@ -57,6 +57,7 @@
    detailed_design_spec
    event-page/index
    flyer/index
+   voice-input
 
 .. toctree::
    :maxdepth: 2

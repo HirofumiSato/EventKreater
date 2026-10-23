@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EventFormValues } from "@/modules/events/types";
 import {
   capacitySelectionOf,
@@ -43,6 +43,11 @@ interface EventStepFormProps {
   /** チラシ生成のパネル。最終ステップに出す。 */
   flyerSlot: ReactNode;
   /**
+   * 音声入力のパネル。フォームの末尾に出す。画面では右下に固定表示する。
+   * ステップを開く操作を渡すため、`flyerSlot` と違って関数で受け取る。
+   */
+  voiceSlot?: (api: VoiceStepApi) => ReactNode;
+  /**
    * 開くステップを決め直す単位。下書きを復元したら `draftId`、新規なら "new"。
    * 値の読み込みが終わってから `ready` を true にすると、最初の未完了ステップを開く。
    */
@@ -51,6 +56,17 @@ interface EventStepFormProps {
 }
 
 const STEP_INDEX = new Map(EVENT_STEPS.map((step, index) => [step.key, index]));
+
+/**
+ * 音声入力からステップを操作するための入口。
+ * 音声は「見た目だけのフォーカス」で進むため、見出しボタンへ実フォーカスを移さない。
+ */
+export interface VoiceStepApi {
+  /** ステップを開く。すでに開いていれば何もしない。 */
+  openStep: (key: EventStepKey) => void;
+  /** 画面の読み上げに流す。 */
+  announce: (message: string) => void;
+}
 
 function isForward(from: EventStepKey | null, to: EventStepKey | null): boolean {
   const fromIndex = from === null ? EVENT_STEPS.length : (STEP_INDEX.get(from) ?? 0);
@@ -74,6 +90,7 @@ export function EventStepForm({
   onSaveDraft,
   savingDraft = false,
   flyerSlot,
+  voiceSlot,
   seedKey,
   ready,
 }: EventStepFormProps) {
@@ -142,6 +159,25 @@ export function EventStepForm({
       return next;
     });
   };
+
+  /**
+   * 音声入力用にステップを開く。見出しボタンへ実フォーカスを移さない。
+   * 実フォーカスを移すと、日付・時刻の入力欄で OS のピッカーが開き、マイクを止めてしまう。
+   */
+  const voiceApi = useMemo<VoiceStepApi>(
+    () => ({
+      openStep: (key) => {
+        setOpenKeys((current) => {
+          if (current.has(key)) return current;
+          const next = new Set(current);
+          next.add(key);
+          return next;
+        });
+      },
+      announce: setAnnouncement,
+    }),
+    [],
+  );
 
   const toggleStep = (key: EventStepKey) => {
     setOpenKeys((current) => {
@@ -366,6 +402,7 @@ export function EventStepForm({
           );
         })}
       </ol>
+      {voiceSlot?.(voiceApi)}
     </form>
   );
 }

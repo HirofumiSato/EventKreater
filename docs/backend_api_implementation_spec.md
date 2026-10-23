@@ -119,6 +119,7 @@ flowchart TD
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
+| `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -1266,6 +1267,24 @@ GET の応答は、最後に使った日時の新しい順に最大 20 件であ
 DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id` が UUID でない、既に無い、または他人の候補なら 404（存在を推測させないため区別しない）。成功時は `{ "success": true }`。
 
 候補の記録は、イベントの作成（`POST /api/v1/public/events`）、下書きの保存（`POST .../draft`）、公開（`POST .../publish`）、編集の保存（`PUT .../organizer/events/[id]`）で行う。同じ会場は行を増やさず `lastUsedAt` だけを更新する。記録の失敗はイベントの作成・保存を止めない（ログだけに残す）。実装は `src/modules/events/lib/venue-suggestions.ts`。
+
+### 5.16. POST `/api/v1/voice/transcriptions`（音声を文字にする）
+
+イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`Cache-Control: no-store`。
+
+| 状態 | error | 意味 |
+| :---- | :---- | :---- |
+| 400 | - | 音声が空、または本文を読めない |
+| 413 | - | 5MB を超えた |
+| 415 | - | 音声以外の形式 |
+| 422 | `TRANSCRIBE_EMPTY` / `TRANSCRIBE_UNSUPPORTED` | 聞き取れない、または上流が形式を受け付けない |
+| 429 | `RATE_LIMITED` / `TRANSCRIBE_BUSY` | 回数の上限、または上流が混雑（`Retry-After` 付き） |
+| 502 | `TRANSCRIBE_MISCONFIGURED` / `TRANSCRIBE_FAILED` | 鍵の設定不備、または上流に繋がらない |
+| 503 | `TRANSCRIBE_DISABLED` | `OPENAI_API_KEY` が未設定 |
+
+回数の上限は接続元（IP）ごとに、`VOICE_TRANSCRIBE_LIMIT`（既定 40）回 / `VOICE_TRANSCRIBE_WINDOW_MINUTES`（既定 60 分）で数える。プロセスのメモリ上に持つため、インスタンスを増やすと合計の上限も増える。認識を呼ぶ前に 1 回ぶん消費する（失敗しても課金されうるため）。
+
+文字をフォームの値へ変える規則はサーバーではなく画面側に置く（`src/modules/events/lib/voice/parse.ts`）。欄が決まっていれば LLM を使わず、日付・時刻・金額・人数を決定的に読めるため、同じ発話が常に同じ値になり、テストで仕様を固定できる。導入手順と画面の動きは `docs/voice-input.rst`。
 
 ---
 

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EventStepForm } from "@/modules/events/components/EventStepForm";
+import { VoiceInputDock } from "@/modules/events/components/VoiceInputDock";
 import { FlyerGeneratePanel } from "@/modules/flyers/components/FlyerGeneratePanel";
 import { FlyerSelectModal, type SelectableFlyer } from "@/modules/flyers/components/FlyerSelectModal";
 import { PublishSuccessModal } from "@/modules/organizers/components/PublishSuccessModal";
@@ -374,6 +375,15 @@ function NewEventScreen() {
             <FlyerSelectModal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={applyFlyer} title={form.title} />
           </>
         }
+        voiceSlot={(voiceApi) => (
+          <VoiceInputDock
+            value={form}
+            onChange={setForm}
+            api={voiceApi}
+            showOrganizerName={!quotaState.isLoading && !quotaState.quota}
+            disabled={submitting || savingDraft || restoring}
+          />
+        )}
       />
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

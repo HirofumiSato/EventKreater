@@ -34,6 +34,8 @@
      - :doc:`pricing_campaign_requirements`
    * - イベント告知と出欠
      - :doc:`event-page/index`
+   * - イベント作成の音声入力
+     - :doc:`voice-input` 。右下のマイクボタンと OpenAI の音声認識、導入と上限
    * - チラシ生成 API
      - :doc:`flyer/index` 。章の地図は :doc:`flyer/sphinx_structure`
    * - 以前の要件と設計
@@ -70,6 +72,7 @@
 
       Features --> Billing["利用枠・課金の要件"]
       Features --> Event["event-page"]
+      Features --> Voice["音声入力"]
       Features --> Flyer["flyer"]
       Root --> Archive["archive 実装前の設計"]
 
@@ -195,6 +198,18 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
      - イベントページ機能のローカル起動と操作
 
 要件と設計はアーカイブに移しました。現在の正はコードです。
+
+音声入力
+^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - ページ
+     - 中身
+   * - :doc:`voice-input`
+     - イベント作成画面の右下のマイクボタン。OpenAI の音声認識の導入手順、環境変数、課金の上限、プライバシー
 
 AI チラシ自動生成
 ^^^^^^^^^^^^^^^^^^

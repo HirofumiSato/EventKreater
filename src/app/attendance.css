@@ -3445,3 +3445,168 @@ a.card,
     padding: 1.5rem 1.25rem;
   }
 }
+
+/* 音声入力。右下に固定し、押すと音声モードに入る。 */
+
+.voice-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.voice-fab:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.voice-fab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voice-fab--active,
+.voice-fab--active:hover {
+  background: var(--color-hero);
+  border-color: var(--color-hero);
+}
+
+.voice-fab__label {
+  font-size: 0.85rem;
+}
+
+.voice-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(70vh, 30rem);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  padding: 0.9rem;
+}
+
+.voice-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.voice-panel__title {
+  margin: 0;
+  font-weight: 500;
+}
+
+.voice-panel__close {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.voice-panel__field {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-text);
+}
+
+.voice-panel__prompt {
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.voice-panel__hint,
+.voice-panel__note,
+.voice-panel__transcript {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-subtle);
+}
+
+.voice-panel__message {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-warning-border);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.voice-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.voice-panel__optional {
+  font-size: 0.8rem;
+}
+
+/* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
+[data-voice-target="true"] {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  background: var(--color-primary-soft);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .voice-fab--active {
+    animation: voice-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes voice-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(180 51 42 / 0.45);
+    }
+
+    50% {
+      box-shadow: 0 0 0 8px rgb(180 51 42 / 0);
+    }
+  }
+}
+
+/* 右下のボタンが最後の入力欄や送信ボタンに重ならないようにする。 */
+.page--form:has(.voice-fab) {
+  padding-bottom: 6rem;
+}
+
+@media (max-width: 480px) {
+  .voice-fab {
+    right: 0.5rem;
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .voice-panel {
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+  }
+}
