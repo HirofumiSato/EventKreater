@@ -3566,6 +3566,15 @@ a.card,
   font-size: 0.8rem;
 }
 
+/* 音声モードの覆い。いま聞いている欄だけをくり抜き、それ以外の操作を止める。
+   clip-path は当たり判定にも効くので、くり抜いた内側だけ触れる。 */
+.voice-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+  background: rgb(26 25 22 / 0.6);
+}
+
 /* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
 [data-voice-target="true"] {
   position: relative;
@@ -3576,6 +3585,20 @@ a.card,
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .voice-scrim {
+    animation: voice-scrim-in 160ms ease-out;
+  }
+
+  @keyframes voice-scrim-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
   .voice-fab--active {
     animation: voice-pulse 2s ease-in-out infinite;
   }
