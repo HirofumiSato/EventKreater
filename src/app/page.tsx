@@ -8,7 +8,11 @@ import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
  * 料金の比較は /service に任せ、ここでは主操作を1つに絞る。
  */
 
-const HERO_EYEBROW = "町内会・サークル・勉強会の案内づくりに";
+const HERO_EYEBROW = (
+  <>
+    飯フェス、タコパ、ライブ、占い、撮影会などの<span className="hero__eyebrow-tail">主催者様へ。</span>
+  </>
+);
 const HERO_LEAD =
   "催し名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。";
 

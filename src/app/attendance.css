@@ -476,6 +476,11 @@ svg {
   line-height: 1.4;
 }
 
+/* 折り返すときは「主催者様へ。」を割らず、その手前で改行する。 */
+.hero--stage .hero__eyebrow-tail {
+  white-space: nowrap;
+}
+
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
