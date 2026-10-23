@@ -47,9 +47,9 @@ flowchart TD
 | `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、見出しは `SITE.tagline`（チラシと告知WEBページを5分で作る）。未ログイン時のボタンは「主催者ログイン」。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
 | `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円月額の自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
-| `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない |
+| `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する |
 | `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。出欠集計・クォータ残数・ポータル導線。本文冒頭のサブタブ（主催一覧 / カレンダー / 売上）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
-| `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、選んだ日の予定一覧を出す。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。外部カレンダー連携（`.ics`・購読URL）は持たない |
+| `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、選んだ日の予定一覧を出す。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。公開中の予定は、日別一覧から LINE 共有ボタンで告知URLを送れる（SCR-PUB-01 と同じ注意書きを出す）。外部カレンダー連携（`.ics`・購読URL）は持たない |
 | `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram・Webサイト・LINE、実績の表示可否。保存前に SCR-PUB-14 と同じ見た目でプレビューする。保存後は `PUT /api/v1/organizer/profile`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。本文冒頭のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
@@ -116,7 +116,7 @@ flowchart TD
 | 主催 | SCR-ORG-07 | 共同幹事受諾 | `/invitations/[code]` | 招待コードによる幹事権限のバインド |
 | パネル | SCR-ORG-08 | チラシ生成 | SCR-ORG-02 / SCR-ORG-05 上 | デザイン選択と7項目からの生成、生成結果のプレビュー。過去チラシは SCR-ORG-03 で選ぶ |
 | モーダル | SCR-ORG-03 | チラシ選択モーダル | SCR-ORG-02 / SCR-ORG-05 上 | 生成済みチラシアセットの選択と、7項目の流し込み |
-| モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰 |
+| モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰。LINE共有は公開ページとカレンダーに置く |
 | モーダル | SCR-MOD-02 | 排他ロック競合モーダル | SCR-ORG-05 上（HTTP 409） | 他幹事の編集中通知と、強制引き継ぎ（Takeover） |
 | モーダル | SCR-MOD-03 | 削除・受付停止モーダル | SCR-ORG-01 上（筆頭幹事のみ） | 完全削除（`isDeleted`）または出欠受付停止（`CLOSED`）の確認 |
 | モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月額980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ |
@@ -484,8 +484,10 @@ src/
 │   │   ├── components/EventLifecycleModal.tsx   # SCR-MOD-03（削除・受付停止）
 │   │   ├── components/LockConflictModal.tsx     # SCR-MOD-02（排他ロック競合・Takeover）
 │   │   ├── components/PublishSuccessModal.tsx   # SCR-ORG-04（公開完了・共有URL）
+│   │   ├── components/LineShareButton.tsx       # LINE共有（タッチ端末のみ・毎回注意書き）
+│   │   ├── components/LineShareDialog.tsx       # LINE共有の注意書きと同意
 │   │   ├── hooks/useEditLock.ts                 # 排他ロック・保持確認・Takeover管理
-│   │   └── lib/                                 # public-page・profile・profile-store・locks・invitations・calendar・names
+│   │   └── lib/                                 # public-page・profile・profile-store・locks・invitations・calendar・names・share
 │   ├── participants/                 # SCR-PUB-08 / 09 / 12。ParticipantCalendarView・participations・rsvp
 │   ├── receipts/                     # SCR-PUB-04 / SCR-ORG-09。ReceiptSheet・ReceiptIssueModal
 │   └── revenue/                      # SCR-ORG-11 / SCR-ORG-12。RevenueSummaryLedger・RevenueAllocationSection

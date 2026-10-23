@@ -7,6 +7,7 @@ import { EventMetaCard } from "@/modules/events/components/EventMetaCard";
 import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { StickyRsvpBar } from "@/modules/attendance/components/StickyRsvpBar";
 import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInviteCard";
+import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
 
@@ -46,6 +47,13 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
     <div className="page--narrow stack" style={{ paddingBottom: "4.5rem" }}>
       <PosterHero title={event.title} flyer={event.flyerAsset} />
       <EventMetaCard event={event} />
+      <LineShareButton
+        title={event.title}
+        schedules={event.schedules}
+        location={event.location}
+        path={`/events/${event.id}`}
+        className="btn btn--outline btn--block"
+      />
       <DynamicRsvpBox
         eventId={event.id}
         schedules={event.schedules}

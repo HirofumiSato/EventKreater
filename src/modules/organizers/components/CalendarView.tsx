@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid, CalendarToolbar } from "@/components/common/CalendarMonth";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
+import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import {
   buildMonthGrid,
@@ -154,17 +155,29 @@ export function CalendarView() {
               <ul className="calendar-day__list">
                 {dayEntries.map(({ event, schedule }) => (
                   <li key={`${event.id}-${schedule.id}`} className="calendar-day__item">
-                    <Link
-                      href={organizerEventHref(event)}
-                      className="calendar-day__link"
-                    >
-                      <span className="calendar-day__time">{schedule.eventTime || "時刻未定"}</span>
-                      <span className="calendar-day__title">{event.title}</span>
-                      <span className="calendar-day__meta">
-                        {STATUS_LABELS[event.status]}
-                        {event.role === "CO_HOST" && " · 共同主催"}
-                      </span>
-                    </Link>
+                    <div className="calendar-day__row">
+                      <Link
+                        href={organizerEventHref(event)}
+                        className="calendar-day__link"
+                      >
+                        <span className="calendar-day__time">{schedule.eventTime || "時刻未定"}</span>
+                        <span className="calendar-day__title">{event.title}</span>
+                        <span className="calendar-day__meta">
+                          {STATUS_LABELS[event.status]}
+                          {event.role === "CO_HOST" && " · 共同主催"}
+                        </span>
+                      </Link>
+                      {/* 下書きと受付停止は公開ページを配る意味が無いので出さない。 */}
+                      {event.status === "PUBLISHED" && (
+                        <LineShareButton
+                          title={event.title}
+                          schedules={event.schedules}
+                          location={event.location}
+                          path={`/events/${event.id}`}
+                          className="btn btn--outline btn--sm"
+                        />
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
