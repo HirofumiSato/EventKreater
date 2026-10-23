@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 100（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 270
+- 文書から参照されているコードパス: 272
 - API ルート: 78（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -198,7 +198,8 @@
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
-| `src/modules/events/lib/voice/fields.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/fields.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/mock.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/normalize.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/openai.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/parse.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
@@ -283,6 +284,7 @@
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 
 ## 文書が指すが実在しないパス

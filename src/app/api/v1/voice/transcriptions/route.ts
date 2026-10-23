@@ -4,6 +4,7 @@ import { toErrorResponse } from "@/lib/http";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { VOICE_FIELD_KEYS } from "@/modules/events/lib/voice/fields";
+import { isVoiceMockEnabled } from "@/modules/events/lib/voice/mock";
 import { transcribeWithOpenAi, voiceModel } from "@/modules/events/lib/voice/openai";
 import { consumeVoiceRateLimit } from "@/modules/events/lib/voice/rate-limit";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
@@ -84,7 +85,10 @@ export async function POST(req: NextRequest) {
       typeof rawField === "string" && isVoiceFieldKey(rawField) ? rawField : null;
 
     // 課金を守るため、認識を呼ぶ前に 1 回ぶん消費する。
-    consumeVoiceRateLimit(clientIp(req) ?? "local");
+    // モックは外部を呼ばないので数えない（開発中に 429 で止まらないようにする）。
+    if (!isVoiceMockEnabled()) {
+      consumeVoiceRateLimit(clientIp(req) ?? "local");
+    }
 
     const bytes = new Uint8Array(await audio.arrayBuffer());
     const text = await transcribeWithOpenAi({
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { text, model: voiceModel() },
+      { text, model: isVoiceMockEnabled() ? "mock" : voiceModel() },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
