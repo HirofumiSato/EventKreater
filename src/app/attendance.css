@@ -1960,6 +1960,49 @@ fieldset.field {
   text-align: center;
 }
 
+/* LINE 共有。注意書きは読み飛ばされないよう左揃えにし、警告の面に置く。 */
+
+.dialog--line-share .dialog__title,
+.dialog--line-share .dialog__body,
+.dialog--line-share .dialog__note {
+  text-align: left;
+}
+
+.dialog--line-share .dialog__warning {
+  margin-top: 1rem;
+  line-height: 1.6;
+}
+
+.dialog--line-share .dialog__note {
+  line-height: 1.5;
+}
+
+/*
+ * LINE URL スキームはデスクトップ版 LINE（macOS・Windows）で動かない。
+ * 押しても何も起きないボタンを出さないため、タッチ端末だけに表示する。
+ */
+.line-share {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .line-share {
+    display: inline-flex;
+  }
+}
+
+/* カレンダーの日別一覧。催しへのリンクと共有ボタンを横に並べる。 */
+.calendar-day__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calendar-day__row .calendar-day__link {
+  flex: 1;
+  min-width: 0;
+}
+
 /* スタイルガイドページの目次と見本枠 */
 
 .sg-shell {
