@@ -82,14 +82,15 @@ Next.js 側は `src/modules/flyers/` です。`quota.ts` はチラシ生成回�
 ## 4. 検証（15 分）
 
 ```powershell
-npm run check        # lint + tsc --noEmit + Vitest（289 件）
-npm run test:db      # 実 DB の結合テスト（59 件。TEST_DATABASE_URL が要る）
+npm run check        # lint + tsc --noEmit + Vitest（+ docs のテスト件数の照合）
+npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx
+npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す
 npm run docs:links   # docs に書かれたパスの実在確認
 cd services/flyer; python -m pytest -q
 ```
 
-CI は `check`・`db`・`flyer`・`docs` の 4 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。`check`・`db`・`flyer` は、それぞれの先頭で `scripts/ci-scope.mjs` を呼び、PR の変更ファイルから走らせる範囲を決めます。`docs` だけの変更なら `check` と `db` を、`services/flyer` の外だけの変更なら `flyer` を飛ばします。`docs` は `npm run docs:gen` の生成物が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるかを見ます。`flyer` は `services/flyer` の pytest と mypy を続けて呼びます。
+CI は `check`・`db`・`flyer`・`docs` の 4 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。`check`・`db`・`flyer` は、それぞれの先頭で `scripts/ci-scope.mjs` を呼び、PR の変更ファイルから走らせる範囲を決めます。`docs` だけの変更なら `check` と `db` を、`services/flyer` の外だけの変更なら `flyer` を飛ばします。`docs` は `npm run docs:gen` の生成物が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるかを見ます。テストの件数の照合は `check` の最後に入っています。Vitest の結果をそのまま使えるので、テストをもう一度走らせません。`flyer` は `services/flyer` の pytest と mypy を続けて呼びます。
 読む順の詳細は [testing/index.rst](testing/index.rst) にあります。
 
 ## 掴めたかの確認

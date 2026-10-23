@@ -145,7 +145,11 @@
 現在のテスト
 ------------
 
-34 ファイル、``it`` は 394 件です。内訳は ``tests/unit/`` が 25 ファイル 335 件、``tests/integration/`` が 9 ファイル 59 件です。結合の 59 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表は主なものを抜き出したものです。
+.. count-start
+
+40 ファイル、``it`` は 463 件です。内訳は ``tests/unit/`` が 30 ファイル 399 件、``tests/integration/`` が 10 ファイル 64 件です。結合の 64 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+
+.. count-end
 
 .. list-table::
    :header-rows: 1
@@ -176,7 +180,7 @@
      - ``REGISTER_REQUIRED`` の判定、文言の優先順、イベント ID の UUID 判定
      - 403 の共通処理
    * - ``tests/unit/flyer-quota.test.ts``
-     - 6
+     - 14
      - チラシ生成の利用枠の判定。残数、上限、会員とゲストの扱い
      - SCR-ORG-08
    * - ``tests/unit/event-details.test.ts``
@@ -184,7 +188,7 @@
      - 日時の移行（チルダ・全角数字・1 桁のゼロ埋め・翌日またぎ）、料金の「無料」と補足、会場名と住所の結合、チラシ用の 30 文字以内の料金ラベル、男女別の組の判定・組単位のプラン名の反映と食い違いの検出・共通からの展開・組単位の上限・共通へ戻すときの同名の整理
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-payload-schema.test.ts``
-     - 2
+     - 5
      - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-steps.test.ts``
@@ -196,7 +200,7 @@
      - 定員の選択肢が1〜50の1刻みであること。51以上は数値入力に寄せること。無制限・人数選択・51以上の切り替えで保存値が保たれること。数値入力が正の整数だけを受けること
      - SCR-ORG-02
    * - ``tests/unit/revenue.test.ts``
-     - 27
+     - 28
      - 見込み売上・領収書発行額・差額・平均単価の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、名簿に出す申込時点の金額、同じプランの再保存で金額を保つこと
      - SCR-ORG-06 / SCR-ORG-11 / SCR-ORG-12
    * - ``tests/integration/guest-limit.test.ts``
@@ -204,11 +208,11 @@
      - 未登録は筆頭幹事として 1 件まで。共同幹事だけなら数えない。削除済みでも数える
      - SCR-ORG-02
    * - ``tests/integration/hydrate.test.ts``
-     - 3
+     - 5
      - 筆頭幹事の付け替え、二度呼んでも枠が増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/integration/revenue.test.ts``
-     - 3
+     - 6
      - プラン金額を編集しても申込済みの見込み売上が変わらない。領収書発行額との差額。不参加は売上に含めない
      - SCR-ORG-06 / SCR-ORG-12
    * - ``tests/unit/auth-rate-limits.test.ts``
@@ -219,8 +223,108 @@
      - 9
      - 窓の外を数えない、上限で 429、バケットの分離、成功時のリセット、厳しいほうの上限の選択、確認コードを使い切ったときの ``CODE_EXHAUSTED``
      - SCR-PUB-02
+   * - ``tests/unit/allocation.test.ts``
+     - 25
+     - 均等割と比率割の計算、端数の寄せ先、領収書発行額の按分、未割当の扱い、割合と人数の検証
+     - SCR-ORG-12
+   * - ``tests/unit/auth-links.test.ts``
+     - 3
+     - 戻り先をエンコードして保つ。電話番号の確認へ進んでも戻り先を失わない
+     - SCR-PUB-02
+   * - ``tests/unit/checkout-intent.test.ts``
+     - 7
+     - 購入を開ける画面の制限、外部 URL と余計なクエリの拒否、戻り先の組み立て
+     - SCR-ORG-02
+   * - ``tests/unit/ci-scope.test.mjs``
+     - 23
+     - CI の対象判定。docs だけなら止め、``src``・``prisma``・workflow・``services/flyer`` の変更で必要なジョブを選ぶ
+     - 該当なし（CI）
+   * - ``tests/unit/client-ip.test.ts``
+     - 8
+     - 接続元 IP の採り方。``cf-connecting-ip`` → ``fly-client-ip`` → ``x-forwarded-for`` の末尾、詐称の無視
+     - 該当なし（共通処理）
+   * - ``tests/unit/draft-lifecycle.test.ts``
+     - 2
+     - 下書きは受付停止にできない（409 ``DRAFT_CANNOT_STOP``）
+     - SCR-ORG-02
+   * - ``tests/unit/draft-save.test.ts``
+     - 12
+     - 下書き保存の必須項目、保存と同時の公開状態の変更を断る、次に開くステップの判定
+     - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/flyer-download.test.ts``
+     - 11
+     - ダウンロードの URL と ``Content-Disposition``、拡張子の対応、ファイル名の整形と長さの上限
+     - SCR-ORG-08
+   * - ``tests/unit/flyer-scope.test.ts``
+     - 3
+     - チラシの利用枠の対象判定。公開前の下書き、幹事以外は 403、ゲスト幹事のトークン
+     - SCR-ORG-08
+   * - ``tests/unit/flyer-upload.test.ts``
+     - 8
+     - 受け付ける画像形式（JPEG・PNG・WebP）、8MB の上限、端末ごとの回数制限
+     - SCR-ORG-08
+   * - ``tests/unit/guest-draft.test.ts``
+     - 3
+     - 未登録は下書きを作れず 403 ``REGISTER_REQUIRED``。公開済みは告知 URL とゲスト幹事トークンを返す
+     - SCR-ORG-02
+   * - ``tests/unit/line-share.test.ts``
+     - 15
+     - LINE 共有の本文（開催日の要約、1 行ずつの項目、空欄の詰め方）と、クエリのエンコード
+     - SCR-PUB-01
+   * - ``tests/unit/organizer-calendar.test.ts``
+     - 16
+     - 主催者カレンダーの月の計算（日本時間・うるう年・42 日固定）と、予定の並び順とセルの表記
+     - SCR-ORG-09
+   * - ``tests/unit/organizer-names.test.ts``
+     - 9
+     - 幹事の表示名の優先順位、筆頭の分離、公開用に渡す項目の絞り込み
+     - SCR-ORG-01 / SCR-PUB-03
+   * - ``tests/unit/organizer-profile.test.ts``
+     - 36
+     - プロフィールの入力検証（URL のホスト・ジャンル・文字数）、公開条件、実績の数え方、表示の短縮
+     - SCR-ORG-07 / SCR-PUB-03
+   * - ``tests/unit/participant-calendar.test.ts``
+     - 13
+     - 参加者カレンダーの日付の決め方、1 日 3 行への収め方、欠席の見せ方、主催者と参加者の遷移先
+     - SCR-PUB-04
+   * - ``tests/unit/public-organizer-page.test.ts``
+     - 30
+     - 主催者ページの掲載条件、開催日の絞り込みと並び順、満員の色、公開 URL の組み立て
+     - SCR-PUB-03
+   * - ``tests/unit/rsvp-status.test.ts``
+     - 13
+     - 出欠の選択肢（出席・参加要望）と残席、席を確保済みの人の扱い、待ち順の決め方
+     - SCR-PUB-04
+   * - ``tests/integration/draft-publish.test.ts``
+     - 4
+     - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
+     - SCR-ORG-02
+   * - ``tests/integration/draft-save-preview-publish.test.ts``
+     - 5
+     - 下書き保存では枠を消費せず公開で消費する。上書き保存の可否と、402・409・404 の分かれ方
+     - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/integration/organizer-profile.test.ts``
+     - 12
+     - プロフィールの保存と公開、非公開に戻したときの扱い、退会者と UUID でない URL の 404
+     - SCR-ORG-07 / SCR-PUB-03
+   * - ``tests/integration/organizers.test.ts``
+     - 4
+     - プレビューの主催者名と共同主催の人数、ゲストの表示名、招待の使い切り
+     - SCR-ORG-01
+   * - ``tests/integration/public-organizer-page.test.ts``
+     - 8
+     - 主催者ページの API。未ログインは 403、対象の絞り込み、候補日の並び、満員の扱い
+     - SCR-PUB-03
+   * - ``tests/integration/waitlist.test.ts``
+     - 7
+     - 満員時の参加要望への読み替え、行ロックで最後の 1 席を 1 人に限る、待ち順の繰り上がり
+     - SCR-PUB-04
 
-件数の内訳は ``tests/unit/`` が 289、``tests/integration/`` が 59 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 289 件を実行して 59 件を skip します。
+.. breakdown-start
+
+件数の内訳は ``tests/unit/`` が 399、``tests/integration/`` が 64 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 399 件を実行して 64 件を skip します。
+
+.. breakdown-end
 
 これから書くテスト
 ------------------

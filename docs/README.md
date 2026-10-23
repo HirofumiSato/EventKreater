@@ -12,7 +12,7 @@
 | API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 73 ルートの照合 |
 | 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 35 ページの照合 |
 | チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 66 件 + `mypy`（src の strict） |
-| テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` 348 件の照合 |
+| テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |
 
 ## 既知の乖離（2026-10-22 時点）
 
@@ -25,11 +25,11 @@
 | パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
 | 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
 
-テスト件数は [testing/scope.rst](testing/scope.rst) の記載（348 件）と実測が一致しています。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
+テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
 
 ## 生成された索引
 
-`npm run docs:gen` が次の 4 つを作ります。手で編集しないでください。CI は生成後に差分が出ないことを確かめます。
+`npm run docs:gen` が次の 4 つを作ります。`npm run check` は、テストの件数が原稿と合っているかも見ます。どちらも手で編集しないでください。CI は生成後に差分が出ないことを確かめます。
 
 | ファイル | 内容 |
 | --- | --- |
@@ -56,6 +56,7 @@
 
 ```powershell
 npm run docs:gen     # 索引 4 点を再生成。差分が出たらコミットする
+npm run docs:counts  # テスト件数を testing/scope.rst へ書き戻す
 npm run docs:links   # 本文中の src/ tests/ prisma/ などのパスの実在を確認
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 ```

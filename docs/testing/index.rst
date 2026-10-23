@@ -66,7 +66,7 @@
 
 自動実行の入口は、リポジトリ直下の ``npm run check`` です。中身は ``lint``、``tsc --noEmit``、Vitest です。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
 
-テストは 31 ファイル、``it`` は 348 件です。内訳は ``tests/unit/`` が 22 ファイル 289 件、``tests/integration/`` が 9 ファイル 59 件です。``TEST_DATABASE_URL`` の無い環境では、結合の 59 件が skip され、289 件が実行されます。``npm test`` は 6 秒前後、``npm run check`` は 15 秒前後で終わります。``check`` は ESLint・``tsc``・Vitest を並列で走らせます。
+テストのファイル数と件数、内訳は :doc:`scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/integration/`` が skip され、``tests/unit/`` だけが実行されます。``npm test`` は 6 秒前後、``npm run check`` は 15 秒前後で終わります。``check`` は ESLint・``tsc``・Vitest を並列で走らせます。
 
 PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は ``.github/workflows/ci.yml`` が、手元と同じ ``npm run check`` を呼びます。
 

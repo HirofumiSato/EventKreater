@@ -100,6 +100,8 @@
 
 索引は ``npm run docs:gen`` で作り直します。全原稿の一覧 ``docs/doc-index.json``、API と仕様の突き合わせ ``docs/api-routes.md``、コードから文書への逆引き ``docs/traceability.md``、AI 向けの入口 ``llms.txt`` の 4 つを生成します。生成物は手で編集せず、CI が最新かを検査します。
 
+テストのファイル数と件数も生成物です。``npm run docs:counts`` が Vitest の結果から ``docs/testing/scope.rst`` へ書き戻し、``npm run check`` がずれを検出します。件数を持つページはここだけなので、他の文書では数を書きません。
+
 編集するファイルは次のとおりです。
 
 .. list-table::

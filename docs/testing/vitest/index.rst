@@ -99,7 +99,8 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
    "test": "vitest run",
    "test:watch": "vitest",
    "test:db": "vitest run tests/integration",
-   "check": "npm run lint && npm run typecheck && npm run test"
+   "check": "node scripts/check.mjs",
+   "check:serial": "npm run lint && npm run typecheck && npm run test"
 
 .. list-table::
    :header-rows: 1
@@ -108,7 +109,9 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
    * - コマンド
      - いつ使うか
    * - ``npm run check``
-     - 一区切りの確認。ESLint、``tsc --noEmit``、データベース不要のテストを順に走らせる
+     - 一区切りの確認。ESLint、``tsc --noEmit``、データベース不要のテストを並列で走らせる
+   * - ``npm run check:serial``
+     - 同じ 3 つを順に走らせる。並列で落ちたときに、単体で再現させるため
    * - ``npm test``
      - Vitest だけを一度実行する。``tests/`` の ``.test.ts`` 全体が対象
    * - ``npm run test:watch``
