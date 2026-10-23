@@ -5,6 +5,10 @@ import { toErrorResponse } from "@/lib/http";
 import { UpdateEventSchema } from "@/lib/schemas";
 import { serializeEvent } from "@/lib/serializers";
 import { publishDraftEvent } from "@/modules/events/lib/events";
+import {
+  rememberVenueQuietly,
+  writeVenueOwnerCookie,
+} from "@/modules/events/lib/venue-suggestions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,11 +48,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         : null;
 
     const event = await publishDraftEvent(ctx.userId, params.id, input);
-    return NextResponse.json({
+    const response = NextResponse.json({
       event: serializeEvent(event),
       publicUrl: `/events/${event.id}`,
       manageUrl: `/organizer/events/${event.id}`,
     });
+    if (input) {
+      const venueCookie = await rememberVenueQuietly(req, input);
+      writeVenueOwnerCookie(response, req, venueCookie);
+    }
+    return response;
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/publish`);
   }

@@ -6,6 +6,10 @@ import { SaveEventDraftSchema } from "@/lib/schemas";
 import { serializeEvent } from "@/lib/serializers";
 import { assertDraftSaveStatus } from "@/modules/events/lib/draft";
 import { saveEventDraft } from "@/modules/events/lib/events";
+import {
+  rememberVenueQuietly,
+  writeVenueOwnerCookie,
+} from "@/modules/events/lib/venue-suggestions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +58,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     assertDraftSaveStatus(input.status);
 
     const event = await saveEventDraft(params.id, input, input.flyerDraftKey);
-    return NextResponse.json({ event: serializeEvent(event) });
+    const response = NextResponse.json({ event: serializeEvent(event) });
+    // 下書きの保存でも、入力した会場は候補として覚える（公開前に入力を助けるため）。
+    const venueCookie = await rememberVenueQuietly(req, input);
+    writeVenueOwnerCookie(response, req, venueCookie);
+    return response;
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/draft`);
   }

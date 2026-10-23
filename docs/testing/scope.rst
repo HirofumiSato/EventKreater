@@ -147,7 +147,7 @@
 
 .. count-start
 
-43 ファイル、``it`` は 481 件です。内訳は ``tests/unit/`` が 32 ファイル 414 件、``tests/integration/`` が 11 ファイル 67 件です。結合の 67 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+45 ファイル、``it`` は 497 件です。内訳は ``tests/unit/`` が 33 ファイル 428 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -275,6 +275,10 @@
      - 8
      - 受け付ける画像形式（JPEG・PNG・WebP）、8MB の上限、端末ごとの回数制限
      - SCR-ORG-08
+   * - ``tests/unit/venue-suggestions.test.ts``
+     - 14
+     - 会場の指紋（郵便番号のハイフンと空白の吸収、建物名の区別）、会員と端末の ownerKey、記録（未登録の Cookie 発行・会員は自分のみ・端末分の併用・失敗しても止めない）、一覧の重複除去と上限、削除の絞り込み
+     - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/guest-draft.test.ts``
      - 3
      - 未登録は下書きを作れず 403 ``REGISTER_REQUIRED``。公開済みは告知 URL とゲスト幹事トークンを返す
@@ -331,10 +335,14 @@
      - 7
      - 満員時の参加要望への読み替え、行ロックで最後の 1 席を 1 人に限る、待ち順の繰り上がり
      - SCR-PUB-04
+   * - ``tests/integration/venue-suggestions.test.ts``
+     - 2
+     - 未登録の端末の候補を覚えて次回そのまま選べる。同じ会場は行を増やさず使用日時だけ進む。会員の候補は本人にだけ見え、他人は削除できない
+     - SCR-ORG-02 / SCR-ORG-05
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 414、``tests/integration/`` が 67 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 414 件を実行して 67 件を skip します。
+件数の内訳は ``tests/unit/`` が 428、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 428 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

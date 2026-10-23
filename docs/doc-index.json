@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 108,
+    "docs": 109,
     "preImplementation": 15,
-    "markdown": 44,
+    "markdown": 45,
     "rst": 64,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2373,
+      "lineCount": 2411,
       "headings": [
         {
           "level": 1,
@@ -2177,6 +2177,10 @@
         {
           "level": 3,
           "text": "5.14. GET / PUT /api/v1/organizer/profile（公開プロフィールの編集）"
+        },
+        {
+          "level": 3,
+          "text": "5.15. GET / DELETE /api/v1/venues（過去の会場の候補）"
         },
         {
           "level": 2,
@@ -2447,6 +2451,10 @@
         },
         {
           "path": "src/modules/events/lib/guest-limit.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/venue-suggestions.ts",
           "exists": true
         },
         {
@@ -2794,7 +2802,7 @@
       "title": "データベース物理設計書（DBschema.md）",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1461,
+      "lineCount": 1507,
       "headings": [
         {
           "level": 1,
@@ -5237,7 +5245,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1772,
+      "lineCount": 1773,
       "headings": [
         {
           "level": 1,
@@ -5628,6 +5636,10 @@
         },
         {
           "path": "src/modules/events/components/OrganizerInviteCard.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/VenueSelectModal.tsx",
           "exists": true
         },
         {
@@ -7052,7 +7064,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 23,
+      "lineCount": 24,
       "headings": [
         {
           "level": 1,
@@ -7072,7 +7084,8 @@
         "docs/issues/participant-calendar.md",
         "docs/issues/waitlist.md",
         "docs/issues/auth-attempt-limits.md",
-        "docs/issues/auth-session-skip-and-challenge-resend.md"
+        "docs/issues/auth-session-skip-and-challenge-resend.md",
+        "docs/issues/venue-suggestions.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -7958,6 +7971,123 @@
         },
         {
           "path": "tests/unit/public-organizer-page.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/venue-suggestions.md",
+      "sphinxDoc": "issues/venue-suggestions",
+      "format": "markdown",
+      "title": "開催場所は過去に入力した会場から選べるようにする",
+      "summary": "新規イベント作成（SCR-ORG-02）と編集（SCR-ORG-05）の「開催場所」は、会場名・郵便番号・都道府県・市区町村・町域・番地・建物名の 7 項目を毎回入力する。同じ会場で何度もイベントを開く主催者ほど、同じ住所を打ち直している。郵便番号からの入力補助（PostalCodeField）はあるが、過去に入力した会場をそのまま選ぶ手段が無い。",
+      "preImplementation": false,
+      "lineCount": 108,
+      "headings": [
+        {
+          "level": 1,
+          "text": "開催場所は過去に入力した会場から選べるようにする"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "現状と根拠"
+        },
+        {
+          "level": 2,
+          "text": "今回の決定"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 3,
+          "text": "1. 保存先"
+        },
+        {
+          "level": 3,
+          "text": "2. 所有者の決め方"
+        },
+        {
+          "level": 3,
+          "text": "3. API"
+        },
+        {
+          "level": 3,
+          "text": "4. 画面"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "セキュリティ上の判断"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/venues/[id]/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/venues/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/EventFormSections.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/VenueSelectModal.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/venue-suggestions.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/ownership.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/venue-suggestions.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/venue-suggestions.test.ts",
           "exists": true
         }
       ],
@@ -9550,7 +9680,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 450,
+      "lineCount": 458,
       "headings": [
         {
           "level": 1,
@@ -9637,6 +9767,10 @@
         },
         {
           "path": "tests/integration/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/venue-suggestions.test.ts",
           "exists": true
         },
         {
@@ -9773,6 +9907,10 @@
         },
         {
           "path": "tests/unit/rsvp-status.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/venue-suggestions.test.ts",
           "exists": true
         }
       ],
