@@ -134,6 +134,17 @@ Web だけを起動するときは ``npm run dev:web`` です。ポートを 300
 
 Next.js 14.2 の Turbopack は beta です。画面が崩れる、コンパイルが通らない、といった症状が出たら ``npm run dev:web:webpack`` で Webpack に戻して切り分けます。
 
+Turbopack と Webpack は ``.next`` の作りが違います。片方で作った ``.next`` のまま、もう片方で起動すると、
+``Cannot find module '../chunks/ssr/[turbopack]_runtime.js'`` （ ``.next/server/pages/_document.js`` を読み込むとき）で
+500 になります。起動方式を変えるときは、開発サーバーを止めて ``.next`` を消してから起動し直します。
+
+.. code-block:: powershell
+
+   Remove-Item -Recurse -Force .next
+   npm run dev:web
+
+起動中のサーバーを残したまま ``npm run build`` を回しても、同じ食い違いが起きます。ビルドは開発サーバーを止めてから行います。
+
 ``JWT_SECRET`` や ``DATABASE_URL`` を変えたあとは、開発サーバーを止めて再起動します。
 
 Docker で動かす
