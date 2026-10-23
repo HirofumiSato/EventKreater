@@ -10,7 +10,7 @@ CI への接続
 
 権限は ``contents: read`` と ``pull-requests: read`` です。後者は ``changes`` ジョブが PR の変更ファイル一覧を GitHub API から読むために要ります。CI からリポジトリへ書く操作はしません。
 
-ジョブは 6 つです。先頭の ``changes`` が変更ファイルを見て、後続のジョブに走らせる範囲を渡します。
+ジョブは 5 つです。先頭の ``changes`` が変更ファイルを見て、後続のジョブに走らせる範囲を渡します。
 
 .. list-table::
    :header-rows: 1
@@ -24,19 +24,16 @@ CI への接続
      - ``code`` と ``flyer`` の 2 つの真偽値。規則は「変更に応じた絞り込み」に書きます
    * - ``check``
      - ``npm ci``（キャッシュヒット時は ``npx prisma generate``）のあと ``npm run check``
-     - ESLint、``tsc --noEmit``、``tests/unit/`` の 289 件
+     - ESLint、``tsc --noEmit``、``tests/unit/`` の 358 件
    * - ``db``
      - ``npm ci``、``prisma migrate deploy``、``npm run test:db``
      - ``tests/integration/`` の 59 件。テスト専用の PostgreSQL をサービスとして立てる
    * - ``flyer``
-     - ``pip install -r requirements.txt`` のあと ``python -m pytest -q``
-     - ``services/flyer/tests/`` の描画・API・候補の試験
+     - ``pip install -r requirements.txt`` のあと ``python -m pytest -q`` と ``python -m mypy``
+     - ``services/flyer/tests/`` の描画・API・候補の試験と、``services/flyer/src`` の型（``mypy.ini`` の strict 設定）
    * - ``docs``
      - ``npm run docs:gen``、``git diff --exit-code``、``npm run docs:links``、``npm run docs``
      - 索引 4 点が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるか
-   * - ``typecheck``
-     - ``pip install -r requirements.txt`` のあと ``python -m mypy``
-     - ``services/flyer/src`` の型。``mypy.ini`` の strict 設定
 
 ``check`` は手元と同じコマンドです。CI のためだけの別エントリは作りません。
 
@@ -65,7 +62,9 @@ CI への接続
      - true
      - false
 
-``false`` のとき、そのジョブは重い step だけを飛ばします。``check`` と ``db`` は ``code`` が ``false`` なら何も走らせず、``flyer`` は ``flyer`` が ``false`` なら pytest まで進みません。``typecheck`` は必須チェックではないのでジョブごと飛ばします。``docs`` は絞りません。生成物の ``docs/traceability.md`` は、原稿が指すコードが実在するかで変わるためです。
+``false`` のとき、そのジョブは重い step だけを飛ばします。``check`` と ``db`` は ``code`` が ``false`` なら何も走らせず、``flyer`` は ``flyer`` が ``false`` なら ``pip install`` 以降を飛ばします。``docs`` は絞りません。生成物の ``docs/traceability.md`` は、原稿が指すコードが実在するかで変わるためです。
+
+判定の規則は ``scripts/ci-scope.mjs`` の ``classifyChanges`` に置き、``tests/unit/ci-scope.test.mjs`` を仕様にしています。ワークフローの中にシェルを書かないのは、規則を単体で試験するためと、``case`` のパターンが ``src/`` 配下の ``.md`` まで巻き込むような取りこぼしを型とテストで止めるためです。
 
 判定は保守的にしてあります。判定を誤ると、触っていない領域の破壊を見逃します。次の 3 つは意図した安全側の振る舞いです。
 
@@ -102,14 +101,13 @@ flyer ジョブ
 
 apt での取得は 8 秒前後かかり、ミラーが遅い日はここで数分止まります。そこで ``FontResolver`` が実際に開く 2 本（``NotoSansCJK-Regular.ttc`` と ``NotoSerifCJK-Regular.ttc``）だけを ``actions/cache`` に控え、ヒットしたときは ``/usr/share/fonts/opentype/noto`` へ戻して ``fc-cache`` を流します。``FontResolver`` はファイルパスを直接開くので、fontconfig の設定そのものは使いません。鍵は ``noto-cjk-regular-1`` です。フォントの版を変えたらこの番号を上げます。
 
-``pip`` のキャッシュは ``services/flyer/requirements.txt`` をキーにします。``working-directory`` を ``services/flyer`` にしてあるので、``pip install`` と ``pytest`` はそのまま書けます。
+``pip`` のキャッシュは ``services/flyer/requirements.txt`` をキーにします。``working-directory`` を ``services/flyer`` にしてあるので、``pip install``、``pytest``、``mypy`` はそのまま書けます。
 
-typecheck ジョブ
-----------------
+``python -m mypy`` は同じジョブで続けて呼びます。対象は ``mypy.ini`` の ``files = src`` です。``requirements.txt`` を入れるのは、Pillow や Pydantic の型を解決するためで、これは ``pytest`` と共通です。
 
-``services/flyer`` で ``python -m mypy`` を実行します。対象は ``mypy.ini`` の ``files = src`` です。``pytest`` と同じく ``requirements.txt`` を入れるのは、Pillow や Pydantic の型を解決するためです。
+型検査を別ジョブにしない理由は 2 つあります。1 つは、依存の導入を 1 回で済ませるためです。分けると ``pip install`` の 12 秒を二度払います。もう 1 つは、``flyer`` がブランチ保護の必須チェックだからです。別ジョブのままだと、必須に登録しない限り型エラーが緑のまま通ってしまいます。どちらが落ちたかは step 名（``pytest（振る舞い）`` / ``mypy（型）``）で分かります。
 
-型検査と pytest は分けています。落ちたときに、振る舞いの失敗か型の失敗かがジョブ名で分かります。``flyer`` が ``false`` のときはジョブごと飛ばします。``services/flyer`` を触っていない PR で mypy を回しても、見るものがありません。
+``flyer`` が ``false`` のときは ``pip install`` 以降を飛ばします。``services/flyer`` を触っていない PR で mypy を回しても、見るものがありません。
 
 落とし穴
 --------
@@ -123,6 +121,7 @@ typecheck ジョブ
 * ``node_modules`` のキャッシュが壊れたと疑ったら、GitHub の Actions の Caches から鍵ごと消して再実行します。鍵は ``package-lock.json`` と ``prisma/schema.prisma`` のハッシュなので、依存かスキーマを変えれば自動的に外れます。
 * フォントのキャッシュの鍵 ``noto-cjk-regular-1`` は固定です。``fonts-noto-cjk`` の版を上げたら番号も上げます。
 * ``.venv-docs`` は復元したあとに ``import sphinx`` を試し、通らなければ捨てて作り直します。Python のパッチ版が上がると venv の中の絶対パスが古くなるためです。
+* ``changes`` ジョブは ``tests/unit/ci-scope.test.mjs`` で規則を固定しています。規則を変えたら、同じ PR でテストも直します。``.github/workflows/`` を変えたときは全部 ``true`` に倒れるので、CI を直す PR が自分自身を絞り込んでしまうことはありません。
 
 db ジョブ
 ---------
@@ -182,11 +181,11 @@ db ジョブ
 マージ前のゲートにする
 ----------------------
 
-GitHub のブランチ保護で ``check``、``db``、``flyer`` の 3 つを必須にしています（2026-10-22 に設定）。``docs`` と ``typecheck`` ジョブは同じ日に足しましたが、必須への登録は別操作なので、まだ保護には入っていません。落ちたままの ``main`` が防げ、触っていない領域の破壊（とくに ``services/flyer``）を検出できます。
+GitHub のブランチ保護で ``check``、``db``、``flyer`` の 3 つを必須にしています（2026-10-22 に設定）。``docs`` ジョブは同じ日に足しましたが、必須への登録は別操作なので、まだ保護には入っていません。落ちたままの ``main`` が防げ、触っていない領域の破壊（とくに ``services/flyer``）を検出できます。``flyer`` の mypy は 2026-10-23 に同じジョブへ移したので、型エラーも必須チェックで止まります。
 
 必須にするのは、そのリポジトリで実際に走ったことのあるジョブ名だけです。``db`` を足す前は ``check`` と ``flyer`` の 2 つでした。**ジョブ名を変えると必須チェックは「待ち続けている」状態になり、いつまでもマージできなくなります。** 名前を変えるときは、同じ PR でブランチ保護も直します。
 
-変更に応じた絞り込みを入れても、必須チェックの名前と数は変わりません。飛ぶのは step だけで、ジョブは緑で完了します。ただし判定を誤ると、触っていない領域の破壊を見逃します。``services/flyer`` を含む PR では ``flyer`` が必ず走る、という規則は崩さないでください。
+変更に応じた絞り込みを入れても、必須チェックの名前と数は変わりません。飛ぶのは step だけで、ジョブは緑で完了します。ただし判定を誤ると、触っていない領域の破壊を見逃します。``services/flyer`` を含む PR では ``flyer`` が必ず走る、という規則は崩さないでください。その規則は ``scripts/ci-scope.mjs`` にあり、``tests/unit/ci-scope.test.mjs`` が固定しています。
 
 ``strict`` を有効にしてあるので、``main`` が進んだらブランチを最新化してから再実行します。
 

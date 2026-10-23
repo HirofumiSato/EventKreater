@@ -23,9 +23,9 @@ jobs:
   # 丸ごと飛ばした場合も skipped として扱われるため、必須チェックでの解釈が環境に依存する。
   # ジョブを走らせたまま step を飛ばせば、チェックは緑で完了し、ジョブ名も変わらない。
   #
-  # 判定は保守的。文書（docs/、*.md、llms.txt）だけの変更で check と db を飛ばし、
-  # services/flyer/ の外だけの変更で flyer と typecheck を飛ばす。
-  # main への push は全部走らせる（main は常に全部緑にしておく）。
+  # 判定の規則は scripts/ci-scope.mjs に置き、tests/unit/ci-scope.test.mjs を仕様にする。
+  # 保守的で、文書（docs/、リポジトリ直下の .md、llms.txt）だけの変更で check と db を、
+  # services/flyer/ の外だけの変更で flyer を飛ばす。main への push は全部走らせる。
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -33,52 +33,18 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       flyer: ${{ steps.filter.outputs.flyer }}
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # GITHUB_OUTPUT に code と flyer を書く。gh api で PR の変更ファイルを読む。
       - id: filter
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          if [ -z "${PR_NUMBER}" ]; then
-            { echo "code=true"; echo "flyer=true"; } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          code=false
-          flyer=false
-          total=0
-          files=""
-          if ! files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
-                        --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
-            echo "変更ファイルを取れませんでした。全部走らせます。" >&2
-            files=""
-          fi
-
-          while IFS= read -r path; do
-            if [ -z "$path" ]; then
-              continue
-            fi
-            total=$((total + 1))
-            # リポジトリ直下の .md は文書だけ。`*.md` を case に書くと
-            # スラッシュをまたいで src/ 配下の .md まで拾ってしまう。
-            if [[ "$path" != */* && "$path" == *.md ]]; then
-              continue
-            fi
-            case "$path" in
-              services/flyer/*) flyer=true ;;
-              docs/*|llms.txt) ;;                              # 文書だけ。check も flyer も要らない
-              .github/workflows/*) code=true; flyer=true ;;     # ワークフローを変えたら全部見る
-              *) code=true ;;
-            esac
-          done <<< "$files"
-
-          # 一覧が空、または取得に失敗したときは安全側に倒す。
-          if [ "$total" -eq 0 ]; then
-            code=true
-            flyer=true
-          fi
-
-          { echo "code=$code"; echo "flyer=$flyer"; } >> "$GITHUB_OUTPUT"
+        run: node scripts/ci-scope.mjs
 
   # 手元の `npm run check` と同じ。lint、tsc --noEmit、DB を使わない Vitest。
   # tests/setup/db.ts は TEST_DATABASE_URL が無ければ何も差し替えないため、
@@ -228,8 +194,14 @@ jobs:
           JWT_SECRET: ci-only-placeholder-secret-value-not-used
           NEXT_PUBLIC_APP_URL: http://localhost:3012
 
-  # チラシ生成 API の pytest。描画に日本語フォントを使うので、apt で入れる。
+  # チラシ生成 API の pytest と mypy。描画に日本語フォントを使うので、apt で入れる。
   # フォントが無いと FontResolver が FontRenderError を投げて落ちる。
+  #
+  # mypy を別ジョブにせず、ここで続けて呼ぶ。理由は 2 つある。
+  # - 依存（requirements.txt）の導入が 1 回で済む。2 ジョブに分けると 12 秒を二度払う。
+  # - flyer はブランチ保護の必須チェックなので、mypy の失敗もマージを止められる。
+  #   別ジョブのままだと、必須に登録しない限り型エラーが通ってしまう。
+  # どちらが落ちたかは step 名（pytest / mypy）で分かる。
   flyer:
     needs: changes
     runs-on: ubuntu-latest
@@ -291,29 +263,12 @@ jobs:
       - run: pip install -r requirements.txt
         if: needs.changes.outputs.flyer != 'false'
 
-      - run: python -m pytest -q
+      - name: pytest（振る舞い）
         if: needs.changes.outputs.flyer != 'false'
+        run: python -m pytest -q
 
-  # チラシ生成サービスの型検査。services/flyer/mypy.ini の strict 設定で src だけを見る。
-  # 依存を解決するために requirements.txt を入れる（Pillow などの型が要る）。
-  # 必須チェックではないので、ジョブごと飛ばしてよい。
-  typecheck:
-    needs: changes
-    if: needs.changes.outputs.flyer != 'false'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: services/flyer
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: services/flyer/requirements.txt
-
-      - run: pip install -r requirements.txt
-
-      - run: python -m mypy
+      # services/flyer/mypy.ini の strict 設定で src だけを見る。
+      # 型を解決するために、pytest と同じ requirements.txt をそのまま使う。
+      - name: mypy（型）
+        if: needs.changes.outputs.flyer != 'false'
+        run: python -m mypy

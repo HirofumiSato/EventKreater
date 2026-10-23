@@ -9,7 +9,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    // CI の判定のような、TypeScript を使わない素の .mjs も試験する。
+    include: ["tests/**/*.test.ts", "tests/**/*.test.mjs"],
     // DB を使うテストの接続先を、テスト用 DB へ向ける（tests/setup/db.ts）。
     setupFiles: ["tests/setup/db.ts"],
   },
