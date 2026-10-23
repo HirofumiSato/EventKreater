@@ -2,10 +2,10 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 109,
+    "docs": 110,
     "preImplementation": 15,
     "markdown": 45,
-    "rst": 64,
+    "rst": 65,
     "orphan": 1
   },
   "docs": [
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2411,
+      "lineCount": 2430,
       "headings": [
         {
           "level": 1,
@@ -2181,6 +2181,10 @@
         {
           "level": 3,
           "text": "5.15. GET / DELETE /api/v1/venues（過去の会場の候補）"
+        },
+        {
+          "level": 3,
+          "text": "5.16. POST /api/v1/voice/transcriptions（音声を文字にする）"
         },
         {
           "level": 2,
@@ -2398,6 +2402,10 @@
           "exists": true
         },
         {
+          "path": "docs/voice-input.rst",
+          "exists": true
+        },
+        {
           "path": "src/app/api/v1/billing/checkout/one-time/route.ts",
           "exists": true
         },
@@ -2455,6 +2463,10 @@
         },
         {
           "path": "src/modules/events/lib/venue-suggestions.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/parse.ts",
           "exists": true
         },
         {
@@ -5643,6 +5655,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/components/VoiceInputDock.tsx",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/capacity.ts",
           "exists": true
         },
@@ -5742,7 +5758,7 @@
       "title": "利用枠管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 169,
+      "lineCount": 170,
       "headings": [
         {
           "level": 1,
@@ -5773,6 +5789,7 @@
         "docs/detailed_design_spec.md",
         "docs/event-page/index.rst",
         "docs/flyer/index.rst",
+        "docs/voice-input.rst",
         "docs/archive/index.rst",
         "docs/issues/index.rst",
         "docs/ui-review/home-audit.md",
@@ -8311,7 +8328,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 299,
+      "lineCount": 305,
       "headings": [
         {
           "level": 1,
@@ -9165,7 +9182,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 292,
+      "lineCount": 307,
       "headings": [
         {
           "level": 1,
@@ -9202,6 +9219,10 @@
         {
           "level": 3,
           "text": "イベント告知ページ"
+        },
+        {
+          "level": 3,
+          "text": "音声入力"
         },
         {
           "level": 3,
@@ -9680,7 +9701,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 458,
+      "lineCount": 466,
       "headings": [
         {
           "level": 1,
@@ -9911,6 +9932,14 @@
         },
         {
           "path": "tests/unit/venue-suggestions.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-fields.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-parse.test.ts",
           "exists": true
         }
       ],
@@ -10420,6 +10449,139 @@
         },
         {
           "path": "src/lib/site.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/voice-input.rst",
+      "sphinxDoc": "voice-input",
+      "format": "rst",
+      "title": "イベント作成の音声入力",
+      "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードでは、上から順に空欄へ「見た目だけのフォーカス」を当て、1 欄ずつ話して埋めていきます。",
+      "preImplementation": false,
+      "lineCount": 310,
+      "headings": [
+        {
+          "level": 1,
+          "text": "イベント作成の音声入力"
+        },
+        {
+          "level": 2,
+          "text": "仕組み"
+        },
+        {
+          "level": 2,
+          "text": "画面の操作"
+        },
+        {
+          "level": 3,
+          "text": "フォーカスは見た目だけ"
+        },
+        {
+          "level": 3,
+          "text": "録音の制限"
+        },
+        {
+          "level": 2,
+          "text": "API"
+        },
+        {
+          "level": 2,
+          "text": "導入手順"
+        },
+        {
+          "level": 3,
+          "text": "1. OpenAI の API キーを用意する"
+        },
+        {
+          "level": 3,
+          "text": "2. 環境変数を置く"
+        },
+        {
+          "level": 3,
+          "text": "3. 課金と上限を決める"
+        },
+        {
+          "level": 3,
+          "text": "4. 動作を確かめる"
+        },
+        {
+          "level": 2,
+          "text": "モデルや提供元を変える"
+        },
+        {
+          "level": 2,
+          "text": "音声入力を作っているファイル"
+        },
+        {
+          "level": 2,
+          "text": "プライバシー"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "制約"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "src/app/api/v1/voice/transcriptions/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/EventStepForm.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/VoiceInputDock.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/audio.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/fields.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/normalize.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/openai.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/parse.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/rate-limit.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/transcribe.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/types.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-fields.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-parse.test.ts",
           "exists": true
         }
       ],

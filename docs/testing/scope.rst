@@ -147,7 +147,7 @@
 
 .. count-start
 
-45 ファイル、``it`` は 497 件です。内訳は ``tests/unit/`` が 33 ファイル 428 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+47 ファイル、``it`` は 566 件です。内訳は ``tests/unit/`` が 35 ファイル 497 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -279,6 +279,14 @@
      - 14
      - 会場の指紋（郵便番号のハイフンと空白の吸収、建物名の区別）、会員と端末の ownerKey、記録（未登録の Cookie 発行・会員は自分のみ・端末分の併用・失敗しても止めない）、一覧の重複除去と上限、削除の絞り込み
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/voice-parse.test.ts``
+     - 49
+     - 音声の文字をフォームの値へ変える規則。全角の正規化、漢数字と桁の混在、日付の年解決、時刻の範囲、金額、定員、郵便番号、都道府県、番地、雨天時の方針、申し込み期限
+     - SCR-ORG-02
+   * - ``tests/unit/voice-fields.test.ts``
+     - 20
+     - 音声で埋める欄の並びと巡回。空欄の飛ばし方、未登録の幹事の主催者名、任意の欄、戻る、入力欄の id からの逆引き、パッチの適用
+     - SCR-ORG-02
    * - ``tests/unit/guest-draft.test.ts``
      - 3
      - 未登録は下書きを作れず 403 ``REGISTER_REQUIRED``。公開済みは告知 URL とゲスト幹事トークンを返す
@@ -342,7 +350,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 428、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 428 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 497、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 497 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

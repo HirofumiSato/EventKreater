@@ -60,6 +60,12 @@
      - 電話番号確認コードとログイン確認番号のSMS配送先。空ならサーバログに本文を残す
    * - ``GOOGLE_CLIENT_ID`` / ``GOOGLE_CLIENT_SECRET``
      - Google サインイン。空なら登録画面で設定不足と表示する
+   * - ``OPENAI_API_KEY``
+     - イベント作成画面の音声入力（音声認識）。空ならマイクボタンは使えず、手入力に戻る
+   * - ``VOICE_TRANSCRIBE_MODEL``
+     - 任意。音声認識のモデル。空なら ``gpt-4o-mini-transcribe``
+   * - ``VOICE_TRANSCRIBE_LIMIT`` / ``VOICE_TRANSCRIBE_WINDOW_MINUTES``
+     - 任意。接続元ごとの音声認識の回数と、数える窓（分）。既定は 1 時間 40 回
 
 ``.env.example`` ではアプリ URL を ``http://localhost:3012`` にしています。
 ``next dev`` の既定ポートは 3000 なので、どちらかに揃えます。
