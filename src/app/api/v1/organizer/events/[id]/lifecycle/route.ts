@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertOwner } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { LifecycleSchema } from "@/lib/schemas";
+import { assertCanStopEvent } from "@/modules/events/lib/lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const input = LifecycleSchema.parse(await req.json());
     const existing = await prisma.event.findFirst({
       where: { id: params.id, isDeleted: false },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (!existing) {
       throw new ProblemDetailException({
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     if (input.action === "close") {
+      assertCanStopEvent(existing);
       await prisma.event.update({
         where: { id: existing.id },
         data: { status: "CLOSED" },

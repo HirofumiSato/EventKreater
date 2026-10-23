@@ -459,6 +459,11 @@ export function serializeOrganizerSummary(row: OrganizerSummarySource) {
     role: row.role,
     name: organizerLabel(row),
     isGuest: isGuestOrganizer(row),
+    /**
+     * 公開プロフィールの URL に使う。プレビュー（/organizer/events/[id]/preview）が
+     * 告知ページと同じ主催者リンクを出すために持つ。ゲスト幹事は null。
+     */
+    userId: row.userId ?? null,
   };
 }
 

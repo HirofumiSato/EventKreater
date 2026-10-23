@@ -66,7 +66,9 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
 | `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、この時点で枠を1つ消費して `quota_charged_at` を入れる。`publicUrl` は `null` |
-| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-05 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
+| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
+| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）または `delete`（論理削除）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
@@ -718,6 +720,23 @@ SCR-ORG-02 の購入後の復元と、SCR-ORG-05 の「公開する」から呼�
 
 ---
 
+### 5.1.2. POST `/api/v1/organizer/events/[id]/draft`（下書きの上書き保存）
+
+SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ。2 回目以降の保存はこの入口を使う。編集画面の `PUT` は排他ロックを要求するが、作成画面はロックを持たず競合モーダルも置いていないため、ロック不要の入口を分ける。状態（`status`）は変えない。
+
+1. `assertOrganizer` で幹事権限を確認し、`role` が `OWNER` かつ会員であること。未登録のゲスト幹事は 403 `REGISTER_REQUIRED`、`CO_HOST` は 403、未ログインは 401。
+2. 本文は `SaveEventDraftSchema`（`UpdateEventSchema` に `flyerDraftKey` を足したもの）で検証する。`status` は省略するか `"DRAFT"` だけを許し、それ以外は 400 `STATUS_CHANGE_NOT_ALLOWED`。公開は `publish` に任せる。
+3. `events` の行を `SELECT ... FOR UPDATE` で取る。無い、または削除済みは 404。`DRAFT` でなければ 409 `ALREADY_PUBLISHED`。
+4. `syncEventOptions` と `eventUpdateData` で内容を入れ替える。日時が変われば `sort_date` も更新する。
+5. `flyerDraftKey` が付いていれば `attributeFlyerLogsToEvent` で、作成中のチラシ回数をこのイベントへ付け替える。
+6. `{ event }` を返す。
+
+- **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
+- **枠:** 消費しない。公開時に 1 回だけ消費する。
+- **行ロック:** 公開と同時に走っても、後から来た保存が公開済みの催しを上書きしない。
+
+---
+
 ### 5.2. GET `/api/v1/public/events/[id]`（公開情報取得・Cookie自動照会）
 
 告知URLを直接開いた人に、`PUBLISHED` または `CLOSED` かつ未削除のイベントを返す。下書きと削除済みは 404。一覧・検索の API は持たない。`visibility` は将来のメディアサイト用にレスポンスへ残し、いまは常に `UNLISTED` である。`myRsvp` は端末の Cookie を先に照会し、無ければログイン中の会員（`userId`）で探す。参加していなければ `null` である。
@@ -827,6 +846,8 @@ export const SubmitRsvpSchema = z.object({
   ]
 }
 ```
+
+下書きも含めて全件を返す（絞り込みのクエリは持たない）。参加者を持つのは公開後の催しだけなので、下書きの `stats` はすべて 0 になる。主催一覧（SCR-ORG-01）とマイページは `DRAFT` を除いて表示し、下書きは専用の一覧（SCR-ORG-15）が受け持つ。カレンダー（SCR-ORG-13）は全件を使い、下書きの予定から編集画面へ進む。
 
 ---
 
@@ -1289,7 +1310,7 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-- **`draftId` / `returnTo` の扱い (`CheckoutIntentSchema`):** `draftId` は UUID。渡されたら `assertOwnDraft(userId, draftId)` で、その会員が筆頭幹事である未公開の下書きだけを通す（他人の下書き 403、公開済み 409、無い 404）。`returnTo` は `isAllowedCheckoutReturnTo` を通し、許可外は `/organizer/events/new` に落とす。許可するのは `/mypage`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit` だけである。
+- **`draftId` / `returnTo` の扱い (`CheckoutIntentSchema`):** `draftId` は UUID。渡されたら `assertOwnDraft(userId, draftId)` で、その会員が筆頭幹事である未公開の下書きだけを通す（他人の下書き 403、公開済み 409、無い 404）。`returnTo` は `isAllowedCheckoutReturnTo` を通し、許可外は `/organizer/events/new` に落とす。許可するのは `/mypage`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit`、`/organizer/events/<uuid>/preview` だけである。
 - **成功・キャンセルの URL:** `checkoutReturnUrls(appUrl, returnTo, draftId)` が組み立てる。`session_id={CHECKOUT_SESSION_ID}` と `draftId` をクエリに足し、`{CHECKOUT_SESSION_ID}` はエンコードしない。`draftId` が無ければ `returnTo` のままである。
 - **`metadata`:** `userId`、`paymentType` に加え、`draftId` と `returnTo` を入れる（値があるときだけ）。`verify` はここから戻す。
 - **レスポンス (200 OK):**

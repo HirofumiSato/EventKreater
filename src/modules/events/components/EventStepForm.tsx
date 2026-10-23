@@ -33,6 +33,13 @@ interface EventStepFormProps {
   disabled?: boolean;
   /** 未登録の幹事にだけ、公開ページへ出す主催者名を聞く。 */
   showOrganizerName?: boolean;
+  /**
+   * 会員だけが下書きを保存できる。true のとき、最終ステップに
+   * 「下書き保存」と「プレビューを見る」を並べる。false は従来どおり公開だけ。
+   */
+  canSaveDraft?: boolean;
+  onSaveDraft?: () => void;
+  savingDraft?: boolean;
   /** チラシ生成のパネル。最終ステップに出す。 */
   flyerSlot: ReactNode;
   /**
@@ -63,6 +70,9 @@ export function EventStepForm({
   submitting,
   disabled = false,
   showOrganizerName = false,
+  canSaveDraft = false,
+  onSaveDraft,
+  savingDraft = false,
   flyerSlot,
   seedKey,
   ready,
@@ -170,20 +180,33 @@ export function EventStepForm({
   const isComplete = (key: EventStepKey) =>
     isStepComplete(key, value, { capacitySelection, flyerSkipped: false });
 
-  const submit = () => {
+  /** 必須のステップが埋まっているか確かめる。下書き保存とプレビューの両方で使う。 */
+  const validate = (): boolean => {
     setError(null);
     const blocked = EVENT_STEPS.find((step) => step.mandatory && !isComplete(step.key));
     if (blocked) {
-      setError(`「${blocked.title}」の入力を終えてから公開してください。`);
+      setError(`「${blocked.title}」の入力を終えてから保存してください。`);
       openStep(blocked.key);
-      return;
+      return false;
     }
+    // 定員は任意だが、「51以上」を選んで空のまま保存すると無制限として保存されてしまう。
     if (!isCapacityStepComplete(value.capacity, capacitySelection)) {
       setError("定員の人数を入れるか、「無制限」を選んでください。");
       openStep("capacity");
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const submit = () => {
+    if (!validate()) return;
     onSubmit();
+  };
+
+  const saveDraft = () => {
+    if (!onSaveDraft) return;
+    if (!validate()) return;
+    onSaveDraft();
   };
 
   const nextDisabled = (key: EventStepKey) => {
@@ -296,7 +319,25 @@ export function EventStepForm({
                         戻る
                       </button>
                     )}
-                    {step.key === "flyer" ? (
+                    {step.key === "flyer" && canSaveDraft ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn--outline"
+                          disabled={locked}
+                          onClick={saveDraft}
+                        >
+                          {savingDraft ? "保存中..." : "下書き保存"}
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn--primary"
+                          disabled={locked}
+                        >
+                          {submitting ? "移動中..." : "プレビューを見る"}
+                        </button>
+                      </>
+                    ) : step.key === "flyer" ? (
                       <button
                         type="submit"
                         className="btn btn--primary"

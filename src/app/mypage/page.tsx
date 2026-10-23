@@ -53,7 +53,9 @@ export default function MyPage() {
       const ownBody = ownRes?.ok ? ((await ownRes.json()) as OrganizerProfileDraftResponse) : null;
       if (!active) return;
       setProfile(profileBody);
-      setEvents(eventsBody.events);
+      // 下書きは出欠の統計を持たないため、要約には公開済みと受付停止だけを出す。
+      // 下書きの管理は主催一覧の「下書き一覧」が受け持つ。
+      setEvents(eventsBody.events.filter((event) => event.status !== "DRAFT"));
       setOwnProfile(ownBody);
       await fetch("/api/v1/user/hydrate", { method: "POST" });
     };

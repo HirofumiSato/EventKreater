@@ -136,6 +136,21 @@ export function firstIncompleteMandatoryStep(value: EventFormValues): EventStepK
 }
 
 /**
+ * 下書き保存に必要なステップ。公開までに埋めればよい定員・申し込み期限とチラシは含めない。
+ * API の `SaveEventDraftSchema` も同じ 3 つだけを要求する。
+ */
+export const DRAFT_REQUIRED_STEP_KEYS: readonly EventStepKey[] = MANDATORY_KEYS;
+
+/** 下書きとして保存できる状態か。保存できないときは、直すべき最初のステップを返す。 */
+export function firstIncompleteDraftStep(value: EventFormValues): EventStepKey | null {
+  return firstIncompleteMandatoryStep(value);
+}
+
+export function isDraftReady(value: EventFormValues): boolean {
+  return firstIncompleteDraftStep(value) === null;
+}
+
+/**
  * 復元したときに開くステップ。必須が残っていればそこ、
  * 全部済みなら任意の最初（定員と申し込み期限）にする。
  */

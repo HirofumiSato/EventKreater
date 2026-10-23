@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 106,
+    "docs": 107,
     "preImplementation": 15,
-    "markdown": 42,
+    "markdown": 43,
     "rst": 64,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2328,
+      "lineCount": 2349,
       "headings": [
         {
           "level": 1,
@@ -2117,6 +2117,10 @@
         {
           "level": 3,
           "text": "5.1.1. POST /api/v1/organizer/events/[id]/publish（下書きの公開）"
+        },
+        {
+          "level": 3,
+          "text": "5.1.2. POST /api/v1/organizer/events/[id]/draft（下書きの上書き保存）"
         },
         {
           "level": 3,
@@ -5225,7 +5229,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1747,
+      "lineCount": 1766,
       "headings": [
         {
           "level": 1,
@@ -6511,6 +6515,135 @@
       ]
     },
     {
+      "path": "docs/issues/event-draft-save-and-preview.md",
+      "sphinxDoc": "issues/event-draft-save-and-preview",
+      "format": "markdown",
+      "title": "イベントの下書き保存・プレビュー公開・下書き一覧",
+      "summary": "> 作成画面で入力を失わないよう、公開前に下書きとして保存し、告知ページと同じ見た目で確認してから公開できるようにする issue。GitHub: [#50](https://github.com/HirofumiSato/EventKreater/issues/50)",
+      "preImplementation": false,
+      "lineCount": 94,
+      "headings": [
+        {
+          "level": 1,
+          "text": "イベントの下書き保存・プレビュー公開・下書き一覧"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "決定"
+        },
+        {
+          "level": 2,
+          "text": "フロー"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/draft/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/lifecycle/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/preview/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/drafts/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/new/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/serializers.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/checkout-return.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/EventStepForm.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/draft.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/events.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/lifecycle.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/steps.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/EventLifecycleModal.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/draft-save-preview-publish.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/checkout-intent.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/draft-lifecycle.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/draft-save.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
       "path": "docs/issues/event-owner-and-cohosts.md",
       "sphinxDoc": "issues/event-owner-and-cohosts",
       "format": "markdown",
@@ -6762,7 +6895,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 21,
+      "lineCount": 22,
       "headings": [
         {
           "level": 1,
@@ -6772,6 +6905,7 @@
       "toctree": [
         "docs/issues/organizer-home-screen-flow.md",
         "docs/issues/draft-checkout-and-publish.md",
+        "docs/issues/event-draft-save-and-preview.md",
         "docs/issues/public-organizer-page.md",
         "docs/issues/organizer-profile.md",
         "docs/issues/event-owner-and-cohosts.md",

@@ -501,6 +501,55 @@ export async function publishDraftEvent(
 }
 
 /**
+ * 下書きを上書き保存する。作成画面は編集ロックを持たないため、`PUT` ではなくこの入口を使う。
+ *
+ * 公開と同時に保存される `publishDraftEvent` と違い、状態は変えない。
+ * 行ロックを取ってから状態を確かめるので、公開と同時に走っても
+ * 公開済みの催しを下書きの内容で上書きしない。
+ */
+export async function saveEventDraft(
+  eventId: string,
+  input: UpdateEventInput,
+  flyerDraftKey?: string | null,
+) {
+  return prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ status: string }>>`
+      SELECT "status" FROM "events"
+      WHERE "id" = ${eventId}::uuid AND "is_deleted" = false
+      FOR UPDATE
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new ProblemDetailException({
+        status: 404,
+        title: "Not Found",
+        detail: "イベントが見つかりません。",
+      });
+    }
+    if (row.status !== "DRAFT") {
+      throw new ProblemDetailException({
+        status: 409,
+        title: "Conflict",
+        detail: "このイベントはすでに公開されています。下書きとしては保存できません。",
+        error: "ALREADY_PUBLISHED",
+      });
+    }
+
+    await syncEventOptions(tx, eventId, input);
+    const event = await tx.event.update({
+      where: { id: eventId },
+      data: eventUpdateData(input),
+      include: { flyerAsset: true, ...eventOptionsInclude },
+    });
+    // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。
+    if (flyerDraftKey) {
+      await attributeFlyerLogsToEvent(flyerDraftKey, eventId, tx);
+    }
+    return event;
+  });
+}
+
+/**
  * 定員の判定を1つのトランザクションに閉じるための行ロック。
  * 件数を数えてから作るまでの間に他の送信が割り込むと定員を超えるため、
  * 出欠の送信と幹事の承認の両方で、判定の前にイベント行をロックする。

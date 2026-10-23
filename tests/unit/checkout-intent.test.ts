@@ -19,6 +19,8 @@ describe("Checkout の戻り先", () => {
     expect(isAllowedCheckoutReturnTo("/mypage")).toBe(true);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/edit`)).toBe(true);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/new?ref=${DRAFT_ID}`)).toBe(true);
+    // 下書きのプレビューから公開して 402 になったとき、購入後にこの画面へ戻す。
+    expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/preview`)).toBe(true);
   });
 
   it("外部 URL・別パス・余計なクエリを拒否する", () => {
@@ -28,6 +30,9 @@ describe("Checkout の戻り先", () => {
     expect(isAllowedCheckoutReturnTo("/organizer/events/new?x=1")).toBe(false);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}`)).toBe(false);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/edit?x=1`)).toBe(false);
+    expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/preview?x=1`)).toBe(false);
+    expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/previews`)).toBe(false);
+    expect(isAllowedCheckoutReturnTo("/organizer/events/drafts")).toBe(false);
     expect(isAllowedCheckoutReturnTo("/organizer/revenue")).toBe(false);
   });
 

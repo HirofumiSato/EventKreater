@@ -15,12 +15,13 @@ interface PricingModalProps {
   freeGrantRemaining?: number;
   onGranted?: () => void;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
-  context?: "create" | "edit" | "list" | "mypage";
+  context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
 
 const CANCEL_LABEL: Record<NonNullable<PricingModalProps["context"]>, string> = {
   create: "キャンセルして作成に戻る",
   edit: "キャンセルして編集に戻る",
+  preview: "キャンセルしてプレビューに戻る",
   list: "閉じる",
   mypage: "閉じる",
 };

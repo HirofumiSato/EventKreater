@@ -165,9 +165,14 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           <h1 className="page-title">イベント編集</h1>
           {form.title ? <p className="page-lead">{form.title}</p> : null}
         </div>
-        <Link href="/organizer/events" className="btn btn--ghost">
-          一覧へ戻る
-        </Link>
+        <div className="panel__actions">
+          <Link href={`/organizer/events/${params.id}/preview`} className="btn btn--outline">
+            プレビュー
+          </Link>
+          <Link href="/organizer/events" className="btn btn--ghost">
+            一覧へ戻る
+          </Link>
+        </div>
       </section>
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {form.status === "DRAFT" && (

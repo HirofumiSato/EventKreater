@@ -10,7 +10,7 @@ const UUID_PATTERN = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * Stripe の `success_url` にそのまま載せるため、外部 URL や未知のパスは受け付けない。
  */
 const RETURN_TO_PATTERN = new RegExp(
-  `^/(?:mypage|organizer/events|organizer/events/new(?:\\?ref=${UUID_PATTERN})?|organizer/events/${UUID_PATTERN}/edit)$`,
+  `^/(?:mypage|organizer/events|organizer/events/new(?:\\?ref=${UUID_PATTERN})?|organizer/events/${UUID_PATTERN}/(?:edit|preview))$`,
 );
 
 export function isAllowedCheckoutReturnTo(value: string): boolean {

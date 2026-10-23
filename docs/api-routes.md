@@ -5,10 +5,10 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 73
-- エンドポイント（メソッド × パス）: 89
-- 仕様書に記載: 82
-- 実装のみ（仕様書に記載なし）: 7
+- ルートファイル: 74
+- エンドポイント（メソッド × パス）: 90
+- 仕様書に記載: 84
+- 実装のみ（仕様書に記載なし）: 6
 - 仕様書のみ（実装なし）: 0
 
 ## 一覧
@@ -64,8 +64,9 @@
 | PUT | `/api/v1/organizer/events/[id]` | 条件付き（assertGuestEditWindow, assertLockHolder, assertOrganizer, assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]` | 条件付き（assertGuestEditWindow, assertLockHolder, assertOrganizer, assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/clone` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/clone/route.ts` |
+| POST | `/api/v1/organizer/events/[id]/draft` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/draft/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/invitations` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/invitations/route.ts` |
-| POST | `/api/v1/organizer/events/[id]/lifecycle` | 条件付き（assertOwner） | なし | `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts` |
+| POST | `/api/v1/organizer/events/[id]/lifecycle` | 条件付き（assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/lock` | 条件付き（assertGuestEditWindow, assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/lock/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/lock` | 条件付き（assertGuestEditWindow, assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/lock/route.ts` |
 | GET | `/api/v1/organizer/events/[id]/organizers` | 条件付き（assertOrganizer） | なし | `src/app/api/v1/organizer/events/[id]/organizers/route.ts` |
@@ -110,7 +111,6 @@
 - `DELETE /api/v1/flyer-assets/[id]` — `src/app/api/v1/flyer-assets/[id]/route.ts`
 - `GET /api/v1/geo/postal-codes/[code]` — `src/app/api/v1/geo/postal-codes/[code]/route.ts`
 - `POST /api/v1/invitations/[code]` — `src/app/api/v1/invitations/[code]/route.ts`
-- `POST /api/v1/organizer/events/[id]/lifecycle` — `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts`
 - `GET /api/v1/organizer/events/[id]/organizers` — `src/app/api/v1/organizer/events/[id]/organizers/route.ts`
 - `DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]` — `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts`
 - `GET /api/v1/user/calendar` — `src/app/api/v1/user/calendar/route.ts`

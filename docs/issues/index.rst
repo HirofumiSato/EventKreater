@@ -9,6 +9,7 @@
 
    organizer-home-screen-flow
    draft-checkout-and-publish
+   event-draft-save-and-preview
    public-organizer-page
    organizer-profile
    event-owner-and-cohosts

@@ -170,6 +170,8 @@ export interface EventOrganizerSummary {
   name: string;
   /** 未登録の幹事（ゲスト）か。 */
   isGuest: boolean;
+  /** 会員の幹事だけが持つ。公開プロフィールへのリンクに使う。 */
+  userId: string | null;
 }
 
 export interface EventOrganizerList {
