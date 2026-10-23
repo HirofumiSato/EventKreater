@@ -23,7 +23,7 @@
    * - 純粋関数
      - ``npm test``
      - ``isEligibleReferrer``、``assertGuestEditWindow``、``mergedFreeEventCount``、``resolveInitialAuthMode``、``isRegisterRequired``、``isEventId``、``composeEventTime``、``parseLegacyPrice``、``flyerPriceLabel``、``summarizeRevenue``、``averageRevenue``、``groupByPlan``、``groupBySchedule``、``participantPriceDisplay``、``keepPriceSnapshot``
-     - 289 件
+     - 稼働（件数は :doc:`scope`）
    * - ルート
      - ``npm test``
      - Route Handler を直接呼ぶ。署名の無い Webhook は 400、未登録は 403 ``REGISTER_REQUIRED``、不正なボディは 422
@@ -31,7 +31,7 @@
    * - DB 結合
      - ``npm run test:db``
      - ``assertGuestCanCreate``、``migrateGuestOrganizers``、``consumeEventQuota``、``tryAcquireLock``、同じ ``stripeEventId`` の再送、プラン金額を変えても申込済みの売上が動かないこと、認証の試行回数の窓と ``CODE_EXHAUSTED``
-     - 59 件
+     - 稼働（件数は :doc:`scope`）
    * - 画面の振る舞い
      - ``npm test``
      - 勧誘カードの出し分け、登録案内の 3 状態、HTTP 402 で料金モーダルが出る
@@ -44,6 +44,8 @@
 Route Handler は、``src/app/api/`` から export された ``GET`` や ``POST`` を import し、``NextRequest`` を渡して呼びます。``next dev`` も ``next start`` も立てません。戻り値の ``status`` と JSON を断言します。
 
 ``npm run check`` は ESLint・``tsc --noEmit``・Vitest を並列で走らせます。3 つは互いに依存しないので、待ち時間は一番遅いもの（Vitest）で決まります。出力は各コマンドごとに溜め、失敗したときだけ中身を出します。落ちたものを個別に再現するときは ``npm run check:serial`` です。
+
+テストが通ると、その json レポートを使って ``docs-count`` が走ります。手順は ``docs/testing/scope.rst`` に書いた件数が実測と合っているかを見るだけで、合わなければ ``npm run docs:counts`` を促して終わります。件数は 1 か所だけが持ち、手で合わせません。
 
 画面の層は、クライアントコンポーネントに限って使います。サーバーコンポーネントのページ本体は、そのページが呼ぶ ``src/modules/`` と ``src/lib/`` の関数を試験します。
 

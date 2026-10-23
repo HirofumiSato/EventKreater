@@ -5714,7 +5714,7 @@
       "title": "利用枠管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 167,
+      "lineCount": 169,
       "headings": [
         {
           "level": 1,
@@ -5854,6 +5854,10 @@
         },
         {
           "path": "docs/testing",
+          "exists": true
+        },
+        {
+          "path": "docs/testing/scope.rst",
           "exists": true
         },
         {
@@ -8092,7 +8096,7 @@
       "title": "全体を掴む 90 分",
       "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。",
       "preImplementation": false,
-      "lineCount": 113,
+      "lineCount": 114,
       "headings": [
         {
           "level": 1,
@@ -8131,6 +8135,10 @@
       "codePaths": [
         {
           "path": "docs/local.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/testing/scope.rst",
           "exists": true
         },
         {
@@ -8772,7 +8780,7 @@
       "title": "ドキュメントの派生・検証マップ",
       "summary": "正はコードです。このディレクトリの文書はコードの検証面であり、差分を見つけたら同じ PR で文書も直します。",
       "preImplementation": false,
-      "lineCount": 64,
+      "lineCount": 65,
       "headings": [
         {
           "level": 1,
@@ -8873,7 +8881,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 291,
+      "lineCount": 292,
       "headings": [
         {
           "level": 1,
@@ -8936,6 +8944,10 @@
         },
         {
           "path": "docs/index.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/testing/scope.rst",
           "exists": true
         },
         {
@@ -9023,7 +9035,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 201,
+      "lineCount": 202,
       "headings": [
         {
           "level": 1,
@@ -9064,6 +9076,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/testing/scope.rst",
+          "exists": true
+        },
         {
           "path": "docs/traceability.md",
           "exists": true
@@ -9120,7 +9136,7 @@
       "title": "テストの設計",
       "summary": "読む順の 3 番です。前は ideas、次は vitest/index です。",
       "preImplementation": false,
-      "lineCount": 107,
+      "lineCount": 109,
       "headings": [
         {
           "level": 1,
@@ -9149,6 +9165,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/testing/scope.rst",
+          "exists": true
+        },
         {
           "path": "src/app/api",
           "exists": true
@@ -9315,7 +9335,7 @@
       "title": "手元での実行",
       "summary": "読む順の 10 番です。前は first-cases、次は ci です。",
       "preImplementation": false,
-      "lineCount": 95,
+      "lineCount": 97,
       "headings": [
         {
           "level": 1,
@@ -9349,6 +9369,10 @@
       "toctree": [],
       "codePaths": [
         {
+          "path": "docs/testing/scope.rst",
+          "exists": true
+        },
+        {
           "path": "tests/integration",
           "exists": true
         },
@@ -9372,7 +9396,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 334,
+      "lineCount": 438,
       "headings": [
         {
           "level": 1,
@@ -9426,6 +9450,14 @@
           "exists": true
         },
         {
+          "path": "tests/integration/draft-publish.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/draft-save-preview-publish.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/guest-limit.test.ts",
           "exists": true
         },
@@ -9434,11 +9466,35 @@
           "exists": true
         },
         {
+          "path": "tests/integration/organizer-profile.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizers.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/public-organizer-page.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/revenue.test.ts",
           "exists": true
         },
         {
+          "path": "tests/integration/waitlist.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/allocation.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/auth-links.test.ts",
           "exists": true
         },
         {
@@ -9447,6 +9503,26 @@
         },
         {
           "path": "tests/unit/auth-rate-limits.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/checkout-intent.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ci-scope.test.mjs",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/client-ip.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/draft-lifecycle.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/draft-save.test.ts",
           "exists": true
         },
         {
@@ -9466,7 +9542,23 @@
           "exists": true
         },
         {
+          "path": "tests/unit/flyer-download.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/flyer-quota.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-scope.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-upload.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/guest-draft.test.ts",
           "exists": true
         },
         {
@@ -9478,7 +9570,31 @@
           "exists": true
         },
         {
+          "path": "tests/unit/line-share.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-calendar.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-names.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-profile.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/participant-calendar.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/problem.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/public-organizer-page.test.ts",
           "exists": true
         },
         {
@@ -9487,6 +9603,10 @@
         },
         {
           "path": "tests/unit/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/rsvp-status.test.ts",
           "exists": true
         }
       ],
@@ -9602,7 +9722,7 @@
       "title": "Vitest",
       "summary": "読む順の 4 番です。前は ../design、次は basics です。",
       "preImplementation": false,
-      "lineCount": 138,
+      "lineCount": 141,
       "headings": [
         {
           "level": 1,
@@ -9643,6 +9763,10 @@
         "docs/testing/vitest/practice.rst"
       ],
       "codePaths": [
+        {
+          "path": "scripts/check.mjs",
+          "exists": true
+        },
         {
           "path": "tests/integration",
           "exists": true

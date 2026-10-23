@@ -46,10 +46,11 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 ## コマンド
 
 ```powershell
-npm run check        # lint + tsc --noEmit + Vitest
+npm run check        # lint + tsc --noEmit + Vitest（+ docs のテスト件数の照合）
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
+npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
 cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
@@ -59,6 +60,7 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 
 - コメント・文書・コミットメッセージは日本語で書きます。
 - `docs/doc-index.json`、`docs/api-routes.md`、`docs/traceability.md`、`llms.txt` は `npm run docs:gen` の生成物です。手で編集せず、原稿かコードを直してから再生成してください。
+- テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check` がずれを検出します。テストを足したら件数も更新してください。
 - ルートビルドで有効な Sphinx の設定は `docs/conf.py` だけです。`docs/{event-page,flyer,user-management}/conf.py` は単独ビルド用です。
 - `.env` は読みません。`.env.example` を見てください。
 - 生成物と巨大な依存は読みません: `docs/_build`, `.next`, `node_modules`, `.venv-docs`, `storage`, `logs`。

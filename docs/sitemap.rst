@@ -288,3 +288,4 @@ UI 監査と生成された索引
 生成物は ``docs/_build/html/index.html`` です。ページを足したら、このページの表と親の ``toctree`` の両方を更新します。
 原稿に書いたリポジトリ内のパスは ``npm run docs:links`` で検査します。
 索引は ``npm run docs:gen`` で作り直します。生成物に差分が出たら、原稿かコードを直してから再生成し、差分ごとコミットします。
+テストの件数は ``npm run docs:counts`` が ``docs/testing/scope.rst`` へ書き戻します。件数を持つのはこのページだけです。

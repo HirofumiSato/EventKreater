@@ -29,6 +29,7 @@
     "docs": "node scripts/build-docs.mjs",
     "docs:links": "node scripts/check-doc-links.mjs",
     "docs:gen": "node scripts/gen-doc-index.mjs && node scripts/gen-api-routes.mjs && node scripts/gen-traceability.mjs && node scripts/gen-llms-txt.mjs",
+    "docs:counts": "node scripts/gen-test-counts.mjs",
     "billing:notices": "node scripts/billing-notices.mjs"
   },
   "dependencies": {

@@ -214,7 +214,7 @@ Route Handler を試験するときは、``src/app/api/`` の下のファイル�
      - 0
      - これから作る。ルートは ``tests/routes/``、画面は ``tests/components/`` です（:doc:`../scope`）
 
-現在のファイルは 31 個、``it`` は 348 件です。``TEST_DATABASE_URL`` の無い環境では、289 件が実行され、59 件が skip されます。内訳と、それぞれが何を見ているかは :doc:`../scope` にあります。
+現在のファイル数と件数は :doc:`../scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/unit/`` だけが実行され、``tests/integration/`` は skip されます。内訳と、それぞれが何を見ているかも同じページにあります。
 
 つまずきやすい点
 ----------------
