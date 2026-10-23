@@ -6,7 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
 import { SITE } from "@/lib/site";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
+import {
+  isSwitchingAccount,
+  phoneStepHref,
+  resolveAuthLanding,
+  resolveSessionDestination,
+} from "@/modules/auth/lib/auth-landing";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
+import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
 
 export type AuthAudience = "organizer" | "participant";
@@ -63,6 +70,9 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
   const nextQuery = hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : "";
   const phoneStep = searchParams.get("step") === "phone";
   const loginCodeStep = searchParams.get("step") === "login-code";
+  // 共用端末で別の会員として入り直す。指定があるときだけ、既存セッションで飛ばさない。
+  const switching = isSwitchingAccount(searchParams.get("switch"));
+  const switchQuery = switching ? "&switch=1" : "";
   const googleError = GOOGLE_ERRORS[searchParams.get("error") ?? ""] ?? null;
   const [mode, setMode] = useState<AuthMode>(() => resolveInitialAuthMode(searchParams.get("mode"), hasExplicitNext));
   const [name, setName] = useState("");
@@ -73,22 +83,41 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
   const [unverified, setUnverified] = useState(false);
   const [adminConsoleRequired, setAdminConsoleRequired] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // 電話番号の確認画面も、確認済みかどうかをここで受け取る（画面側の二重取得をやめる）。
+  const existing = useExistingSession(!switching);
+  // 確認番号の入力を待っているなら、それは「別の会員で入り直す」途中なので飛ばさない。
+  const pendingLoginCode = loginCodeStep && existing.pendingChallenge;
+
+  useEffect(() => {
+    if (existing.state !== "authenticated" || !existing.user) return;
+    // 電話番号の確認画面は、確認済みなら PhoneScreen が着地へ送る。
+    if (phoneStep || pendingLoginCode) return;
+    const destination = resolveSessionDestination({
+      audience,
+      basePath,
+      hasExplicitNext,
+      nextPath,
+      phoneVerified: existing.user.phoneVerified,
+      platformRole: existing.user.platformRole,
+    });
+    // 履歴に入口を残さない。戻っても同じ判定をやり直すだけになる。
+    router.replace(destination);
+    router.refresh();
+  }, [audience, basePath, existing.state, existing.user, hasExplicitNext, nextPath, pendingLoginCode, phoneStep, router]);
 
   const finish = useCallback(
     async (phoneVerified: boolean, platformRole?: "MEMBER" | "ADMIN") => {
       await hydrateSession();
       if (!phoneVerified) {
-        router.push(`${basePath}?step=phone${nextQuery}`);
+        router.push(phoneStepHref(basePath, hasExplicitNext, nextPath));
         router.refresh();
         return;
       }
       // 管理者を管理コンソールへ送るのは、主催者入口で戻り先を指定されていないときだけ。
-      const landing =
-        audience === "organizer" && !hasExplicitNext && platformRole === "ADMIN" ? "/console" : nextPath;
-      router.push(landing);
+      router.push(resolveAuthLanding({ audience, hasExplicitNext, nextPath, platformRole }));
       router.refresh();
     },
-    [audience, basePath, hasExplicitNext, nextPath, nextQuery, router],
+    [audience, basePath, hasExplicitNext, nextPath, router],
   );
 
   const submit = async (event: FormEvent) => {
@@ -125,7 +154,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
         return;
       }
       if (body.challengeRequired) {
-        router.push(`${basePath}?step=login-code${nextQuery}`);
+        router.push(`${basePath}?step=login-code${nextQuery}${switchQuery}`);
         return;
       }
       await finish(Boolean(body.phoneVerified));
@@ -160,20 +189,47 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
     void finish(true);
   }, [finish]);
 
+  const holdForSession =
+    existing.state === "checking" ||
+    (existing.state === "authenticated" && !phoneStep && !pendingLoginCode);
+  if (holdForSession) {
+    // ログイン済みならフォームを出さずに着地へ送る。判定中も同じ表示にして、
+    // 一瞬だけ入力欄が見えて消えるのを避ける。
+    return (
+      <p className="loading">
+        <span className="spinner" aria-hidden="true" />
+        ログイン状態を確認しています
+      </p>
+    );
+  }
+
   if (loginCodeStep) {
     return (
       <div className="page--form stack">
         <LoginChallengeForm
           screenName={copy.title.login}
           onConfirmed={({ phoneVerified, platformRole }) => void finish(phoneVerified, platformRole)}
-          onRestart={() => router.push(`${basePath}${hasExplicitNext ? `?next=${encodeURIComponent(nextPath)}` : ""}`)}
+          onRestart={() =>
+            router.push(
+              `${basePath}${hasExplicitNext ? `?next=${encodeURIComponent(nextPath)}` : ""}${switchQuery}`,
+            )
+          }
         />
       </div>
     );
   }
 
   if (phoneStep) {
-    return <PhoneScreen audience={audience} basePath={basePath} nextPath={nextPath} onFinished={completePhone} />;
+    return (
+      <PhoneScreen
+        audience={audience}
+        basePath={basePath}
+        nextPath={nextPath}
+        signedIn={existing.state === "authenticated"}
+        phoneVerified={existing.state === "authenticated" && existing.user?.phoneVerified === true}
+        onFinished={completePhone}
+      />
+    );
   }
 
   return (
@@ -269,11 +325,17 @@ function PhoneScreen({
   audience,
   basePath,
   nextPath,
+  signedIn,
+  phoneVerified,
   onFinished,
 }: {
   audience: AuthAudience;
   basePath: string;
   nextPath: string;
+  /** この端末に有効な会員セッションがある。 */
+  signedIn: boolean;
+  /** そのセッションの電話番号が確認済み。 */
+  phoneVerified: boolean;
   onFinished: () => void;
 }) {
   const [phone, setPhone] = useState("");
@@ -285,18 +347,10 @@ function PhoneScreen({
   /** 確認コードの入力ミスを使い切った状態。再送を前に出す。 */
   const [exhausted, setExhausted] = useState(false);
 
+  // 既に確認済みの会員は、この画面を出さずに着地へ送る。
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const res = await fetch("/api/v1/user/profile");
-      if (!res.ok || cancelled) return;
-      const body = (await res.json()) as { user?: { phoneVerified?: boolean } };
-      if (body.user?.phoneVerified) onFinished();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [onFinished]);
+    if (phoneVerified) onFinished();
+  }, [onFinished, phoneVerified]);
 
   /** 確認コードを送る。送り直しも同じ経路を通す。 */
   const request = async (kind: "send" | "resend") => {
@@ -422,9 +476,16 @@ function PhoneScreen({
         </button>
       )}
       <p className="help">
-        <Link href={basePath} className="text-link">
-          ログイン画面へ戻る
-        </Link>
+        {signedIn ? (
+          // ログイン済みの会員にログイン画面を出すと、また同じ画面へ戻ってしまう。
+          <Link href={nextPath} className="text-link">
+            あとで確認する
+          </Link>
+        ) : (
+          <Link href={basePath} className="text-link">
+            ログイン画面へ戻る
+          </Link>
+        )}
       </p>
     </div>
   );

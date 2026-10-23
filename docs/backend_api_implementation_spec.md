@@ -72,8 +72,9 @@ flowchart TD
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
-| `/api/v1/auth/login-challenge` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | SMSとメールの切り替え。新しい番号を発行する |
+| `/api/v1/auth/login-challenge` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | SMSとメールの切り替え。同じチャネルを渡すと送り直しになる。前のチャレンジは無効にし、新しい番号を発行する |
 | `/api/v1/auth/login-challenge/confirm` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 確認番号の照合。成功時だけ JWT を発行する |
+| `/api/v1/auth/session` | GET | SCR-PUB-02、SCR-PUB-07 | 不要 | 入口ページのセッション確認。有効な会員セッションがあれば `authenticated: true` と `user`（`phoneVerified` / `platformRole`）、確認番号の入力待ちなら `pendingChallenge: true` を返す。無ければ 401 |
 | `/api/v1/auth/verification` | POST | SCR-PUB-02 | 不要 | 未確認の登録意向またはレガシー未確認会員へ確認メールを再送する。応答はメールの有無で変えない |
 | `/api/v1/auth/verify` | POST | SCR-PUB-05 | 不要 | 確認トークンを検証する。新規は電話番号確認へ進み、既存会員はログインへ戻す |
 | `/api/v1/auth/phone/start` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | 確認コードを SMS 送信する。番号と IP で回数を制限する |
@@ -1854,7 +1855,7 @@ export interface ProblemDetails {
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
-対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
+対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。**セッション Cookie が壊れていても 401 で止めず、未ログインとして登録意向で続ける**（`resolveOptionalUserId`）。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
 
 ### 8.6. POST `/api/v1/auth/phone/confirm`（電話番号確認）
 
@@ -1886,7 +1887,30 @@ GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、
 }
 ```
 
-POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が無いときはコードをサーバログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
+POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。**進行中のチャネルと同じ値を渡すと送り直しになる**（前のチャレンジは使用済みにし、新しい行を作る）。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が無いときはコードをサーバログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
+
+画面は二重送信を防ぐため、送信から 60 秒は再送ボタンを押せない。このクールダウンはクライアントだけが持ち、サーバは上の回数で受ける。
+
+### 8.7.1. GET `/api/v1/auth/session`（入口のセッション確認）
+
+対象画面は SCR-PUB-02 と SCR-PUB-07。Cookie の `auth_token` / `__Host-auth_token` を DB の `auth_sessions` まで検証し、有効なら次を返す。
+
+```json
+{
+  "authenticated": true,
+  "pendingChallenge": false,
+  "user": {
+    "id": "usr_1",
+    "name": "山田 太郎",
+    "phoneVerified": true,
+    "platformRole": "MEMBER"
+  }
+}
+```
+
+セッションが無い・期限切れ・失効済みは 401 `{ "authenticated": false }`。`pendingChallenge` は、`login_challenge` Cookie の指すチャレンジが未使用かつ期限内なら真である。セッションが残ったまま別の会員で入り直す途中（共用端末）を、入口のスキップから除くために使う。
+
+画面はこの応答だけで、フォームを出すか着地へ送るかを決める。着地の判定は `src/modules/auth/lib/auth-landing.ts` の `resolveSessionDestination` が持つ。サーバは描画も遷移もせず、`auth_token` も発行しない。
 
 ### 8.8. POST `/api/v1/auth/login-challenge/confirm`（確認番号の照合）
 

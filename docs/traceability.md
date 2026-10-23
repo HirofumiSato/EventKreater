@@ -5,9 +5,9 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 97（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 243
-- API ルート: 74（どの文書にも URL が無いもの 0）
+- 対象文書: 98（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 251
+- API ルート: 75（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -57,7 +57,9 @@
 | `src/app/api/v1` | `AGENTS.md` |
 | `src/app/api/v1/admin/pricing-campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/api/v1/admin/session/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/app/api/v1/auth/local/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/app/api/v1/auth/google/callback/route.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/app/api/v1/auth/local/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/app/api/v1/auth/session/route.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/app/api/v1/auth/verification/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/app/api/v1/auth/verify/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/app/api/v1/billing/checkout` | [docs/onboarding.md](onboarding.md) |
@@ -148,17 +150,20 @@
 | `src/modules/attendance/components/DynamicRsvpBox.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/modules/attendance/components/ParticipantListTable.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/modules/auth` | [docs/archive/index.rst](archive/index.rst) |
-| `src/modules/auth/components/AuthEntryScreen.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/components/LoginChallengeForm.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/modules/auth/components/AuthEntryScreen.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/modules/auth/components/LoginChallengeForm.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/modules/auth/hooks/useExistingSession.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/modules/auth/lib/auth-landing.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/auth-mode.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/auth/lib/auth.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/auth/lib/guards.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/auth/lib/hydrate.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/modules/auth/lib/login-challenge.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/modules/auth/lib/login-challenge.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/phone.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/rate-limit.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/modules/auth/lib/resend.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/billing` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/billing/components/PricingModal.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/components/VerifyPaymentBanner.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) |
@@ -220,6 +225,7 @@
 | `tests/integration/guest-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/helpers.ts` | [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/hydrate.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/login-challenge.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/organizer-profile.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/organizers.test.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -228,6 +234,7 @@
 | `tests/setup/db.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/unit` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/unit/allocation.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/auth-landing.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-links.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-mode.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-rate-limits.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -255,6 +262,7 @@
 | `tests/unit/problem.test.ts` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/unit/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referrer.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/resend-cooldown.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 

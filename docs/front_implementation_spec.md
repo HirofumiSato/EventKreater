@@ -63,7 +63,7 @@ flowchart TD
 | `/organizer/events/[id]/participants` | SCR-ORG-06 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 参加者名簿。冒頭 `h1` は画面名。催し名はリード。出欠の集計（参加・参加要望・不参加）、CSV、参加者へのリマインドと文面コピー、参加者ページのプレビューと共有リンクのコピー、領収書発行。参加要望は待ち順に並べ、承認で出席日時と費用プランを選ぶ。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/invitations/[code]` | SCR-ORG-07 | 招待されたメンバー | 招待コード有効期限内 | 共同幹事受諾。冒頭 `h1` は画面名。催し名はリード |
 | `/mypage` | SCR-PUB-03 | 主催幹事（ログイン会員） | 会員JWT必須 | 主催者マイページ。主催イベントの要約（直近3件）と「すべて見る」→ `/organizer/events`、クォータ残数、筆頭幹事の契約管理、公開プロフィールの状態と編集・閲覧の導線を出す。他の幹事のイベントへの参加履歴は出さない（`GET /api/v1/organizer/events`）。参加履歴は SCR-PUB-09 へ分離。ログアウト（`POST /api/v1/auth/logout`） |
-| `/participant/login` | SCR-PUB-07 | 参加者（履歴を残したい人） | 未ログイン、または電話未確認の会員。管理者も可（purpose `PARTICIPANT`） | 参加者の会員登録・ログイン。`/auth/register` と同じ部品を使い、文言と着地だけを参加者向けにする。`?step=phone` が電話番号確認、`?step=login-code` がログイン確認番号。着地は `/participant`（`next` があればそのパス） |
+| `/participant/login` | SCR-PUB-07 | 参加者（履歴を残したい人） | 未ログイン、または電話未確認の会員。管理者も可（purpose `PARTICIPANT`） | 参加者の会員登録・ログイン。`/auth/register` と同じ部品を使い、文言と着地だけを参加者向けにする。`?step=phone` が電話番号確認、`?step=login-code` がログイン確認番号。着地は `/participant`（`next` があればそのパス）。有効なセッションがあればフォームを出さずに着地へ送る（第9節） |
 | `/participant` | SCR-PUB-08 | 参加者（ログイン会員） | 会員JWT必須 | 参加者ホーム。これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には `/mypage` への切り替えを出す |
 | `/participant/calendar` | SCR-PUB-12 | 参加者（ログイン会員） | 会員JWT必須 | 参加カレンダー（`GET /api/v1/user/calendar`）。出欠を答えた催しを、選んだ日程の日付に置く（未選択ならイベントの代表日）。出席・欠席・参加要望を出し、欠席は控えめに、参加要望はアンバーで表示する。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。一覧・検索は持たない |
 | `/participant/history` | SCR-PUB-09 | 参加者（ログイン会員） | 会員JWT必須 | 参加履歴（`GET /api/v1/user/participations`）。出欠（出席・参加要望・欠席）・時期の絞り込み、ページ送り、領収書へのリンク。集計に参加要望を出す。主催イベントの情報は出さない |
@@ -71,7 +71,7 @@ flowchart TD
 | `/organizers/[userId]/events` | SCR-PUB-13 | 参加者（ログイン会員） | 会員JWT必須（未ログインは 403 `LOGIN_REQUIRED`） | 主催者の催し（`GET /api/v1/public/organizers/[userId]/events`）。カレンダーと一覧を `?view=calendar\|list` で切り替える。月は `?month=YYYY-MM` に持ち、今月より前へは戻れない。未ログインでは骨組みをぼかして参加者ログインへ送る。主催者は SCR-ORG-01 のプレビューで同じ内容を確認できる。`noindex` |
 | `/account` | SCR-PUB-11 | 主催者・参加者（ログイン会員） | 会員JWT必須 | アカウント設定。表示名、メールアドレス、電話番号、パスワード、退会を縦に並べる。冒頭 `h1` は「アカウント設定」。主催者と参加者で同じ画面を使う |
 | `/account/email/verify` | SCR-PUB-11 | 確認リンクを開いた会員 | 確認トークン（ログインは不要） | 新しいメールアドレスの確定。成功したら `/account` へ戻す。無効・期限切れは理由を出す |
-| `/auth/register` | SCR-PUB-02 | 未ログインの幹事 | 未ログイン、または電話未確認の会員。管理者は不可（HTTP 403 `ADMIN_CONSOLE_REQUIRED`） | 主催者のローカル会員登録と Google サインイン（`GET /api/v1/auth/google`）。パスワード登録は確認メール後に電話番号を確認する。`?step=phone` が電話番号確認。`?step=login-code` がログイン確認番号。着地は `/mypage`、`/organizer`、`/invitations`、`/events`、`/participant` だけ。管理者が資格情報を送ると `/console/login` へのリンクだけを出す |
+| `/auth/register` | SCR-PUB-02 | 未ログインの幹事 | 未ログイン、または電話未確認の会員。管理者は不可（HTTP 403 `ADMIN_CONSOLE_REQUIRED`） | 主催者のローカル会員登録と Google サインイン（`GET /api/v1/auth/google`）。パスワード登録は確認メール後に電話番号を確認する。`?step=phone` が電話番号確認。`?step=login-code` がログイン確認番号。着地は `/mypage`、`/organizer`、`/invitations`、`/events`、`/participant` だけ。管理者が資格情報を送ると `/console/login` へのリンクだけを出す。有効なセッションがあればフォームを出さずに着地へ送り（第9節）、`?switch=1` のときだけフォームを出す |
 | `/auth/verify` | SCR-PUB-05 | 確認メールの受信者 | 確認トークン | パスワード登録のメール確認。成功後は電話番号確認へ進む。参加者入口から始めた登録は `?audience=participant` で `/participant/login?step=phone` へ送る。既に会員ならログインへ戻る |
 | `/events` | — | — | — | 画面ではない。`/` へリダイレクトする |
 | `/organizer/events/[id]` | — | — | — | 画面ではない。`/organizer/events/[id]/edit`（SCR-ORG-05）へリダイレクトする |
@@ -1224,6 +1224,8 @@ export interface PricingOption {
 | **FE-AUTH-11** | **電話コードの使い切り** | 電話番号の確認コードを 10 回間違える | 「確認コードを10回間違えたため、このコードは無効になりました。もう一度送信してください。」と、目立つ「確認コードを送り直す」ボタンが出ること |
 | **FE-AUTH-12** | **上限の二重表示なし** | 確認番号を 3 回間違える | 黄色い予告が 1 つだけ出て、赤い案内に回数の文が混ざらないこと |
 | **FE-AUTH-13** | **上限の事前表示** | 上限のある操作の画面を開く | 常時の事前表示はしない。失敗した時点で、上限・残り回数・再試行可能時刻が必ず出ること |
+| **FE-AUTH-14** | **ログイン済みの入口** | 電話番号確認済みの会員で `/auth/register?next=/organizer/events` を開く | パスワードの入力欄もSMSの確認番号も出ず、`/organizer/events` へ着地すること。`/participant/login` では `/participant` へ着地し、セッションの無いブラウザでは従来どおりフォームが出ること |
+| **FE-AUTH-15** | **確認番号の再送** | 確認番号の画面で「確認番号を再送する」を押し、続けて 60 秒以内にもう一度押す | 宛先のマスク付きで「確認番号を再送しました。」が出ること。ボタンは残り秒数付きで押せず、60 秒後に押せること。送り直したあと、前の確認番号では入れず新しい番号だけが通ること |
 
 ---
 
@@ -1250,9 +1252,13 @@ export interface PricingOption {
 
 `src/app/auth/register/page.tsx` は登録とログインを同じページに置く。パスワード登録の成功ではセッションを作らず、確認メールを送った旨だけを出す。既に登録済みのメールでも同じ文面にする。未確認のままログインしたときは、確認メールの再送を出せる。再送 API は `POST /api/v1/auth/verification` で、メールの有無にかかわらず同じ文面を返す。パスワードまたは Google のログイン成功では `?step=login-code` を開き、`LoginChallengeForm` で確認番号を入れる。確認 API は `POST /api/v1/auth/login-challenge/confirm` である。初期モードは `?mode=register` / `?mode=login` を優先し、指定が無ければ `next` の有無で決める（12.5）。SCR-ORG-10 からは `mode=register` と `next=/organizer/events?registered=1` を付けて開く。
 
+**ログイン済みのセッションがある入口**（`/auth/register`、`/participant/login`）は、フォームを出さずに着地へ送る。判定は `GET /api/v1/auth/session` で、Cookie の有無ではなく DB のセッションまで見る。判定中と移動中は「ログイン状態を確認しています」だけを出す。着地は `src/modules/auth/lib/auth-landing.ts` の `resolveSessionDestination` が決める。戻り先の指定があればそのパス、無ければ主催者の入口の管理者は `/console`、それ以外は入口ごとの既定（`/mypage` または `/participant`）である。電話番号が未確認なら、ログインは済んでいるので `?step=phone` だけを出す。`?switch=1` を付けたときは、共用端末で別の会員として入り直す意図とみなし、既存セッションで飛ばさない。確認番号の入力待ちのチャレンジが残っているとき（`GET /api/v1/auth/session` の `pendingChallenge` が真）も飛ばさない。
+
+確認番号の画面（`?step=login-code`）は、`POST /api/v1/auth/login-challenge` に同じチャネルを渡すと送り直せる。画面は「確認番号を再送する」ボタンを出し、送信から 60 秒は残り秒数付きで押せない（`src/modules/auth/lib/resend.ts`）。送り直すと、前の確認番号は無効になる。5 回/時の送信上限はサーバが持ち、超えたときは `limitNotice` が上限と再試行時刻を出す。
+
 確認ページは `src/app/auth/verify/page.tsx` である。クエリ `token` を `POST /api/v1/auth/verify` へ送り、成功したらアドレスバーからトークンを消し、新規は `/auth/register?step=phone` へ進む。
 
-電話番号確認は同じ登録ページの `?step=phone` である。`POST /api/v1/auth/phone/start` でコードを送り、`POST /api/v1/auth/phone/confirm` で会員セッションを作る。同じ確認済み番号の会員があれば、新しい行は作らずその会員へ手段を足す。ログイン済みで電話未確認の会員も、この段階で番号を足す。
+電話番号確認は同じ登録ページの `?step=phone` である。`POST /api/v1/auth/phone/start` でコードを送り、`POST /api/v1/auth/phone/confirm` で会員セッションを作る。同じ確認済み番号の会員があれば、新しい行は作らずその会員へ手段を足す。ログイン済みで電話未確認の会員も、この段階で番号を足す。確認済みかどうかは入口のセッション確認（`GET /api/v1/auth/session`）で受け取り、済んでいれば着地へ送る。ログイン済みの会員には「ログイン画面へ戻る」ではなく「あとで確認する」（着地へのリンク）を出す。戻るリンクのままだと、入口のスキップで同じ確認画面へ送り返される。
 
 Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ。会員が無ければ電話番号確認へ進む。`next` は `/mypage`、`/organizer`、`/invitations`、`/events` だけを許可する。
 

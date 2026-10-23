@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { problemMessage, readProblemBody, type ProblemBody } from "@/lib/problem";
+import { remainingCooldownSeconds } from "@/modules/auth/lib/resend";
 
 interface ChallengeView {
   channel: "SMS" | "EMAIL";
@@ -78,6 +79,24 @@ export function LoginChallengeForm({
   const [attemptNotice, setAttemptNotice] = useState<string | null>(null);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /** 確認番号の送信（切替・再送）。照合の送信とは別に扱い、主ボタンの文言を混ぜない。 */
+  const [sending, setSending] = useState(false);
+  /** 直近に送った時刻。二重送信を防ぐクールダウンの起点。 */
+  const [sentAt, setSentAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const cooldownSeconds = remainingCooldownSeconds(sentAt, now);
+
+  // クールダウンの残りを 1 秒刻みで描き直す。0 になったら止める。
+  useEffect(() => {
+    if (sentAt === null) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => {
+      const next = Date.now();
+      setNow(next);
+      if (remainingCooldownSeconds(sentAt, next) === 0) window.clearInterval(id);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [sentAt]);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +112,8 @@ export function LoginChallengeForm({
       }
       const body = (await res.json()) as ChallengeView;
       setView(body);
+      // この画面に来た時点で 1 通は送れている。すぐの押し直しを防ぐ。
+      setSentAt(Date.now());
       setAttemptNotice(attemptWarning(body.attemptsRemaining, body.attemptLimit ?? FALLBACK_ATTEMPT_LIMIT));
     })();
     return () => {
@@ -100,8 +121,8 @@ export function LoginChallengeForm({
     };
   }, []);
 
-  const deliver = async (channel: "SMS" | "EMAIL") => {
-    setSubmitting(true);
+  const deliver = async (channel: "SMS" | "EMAIL", intent: "switch" | "resend" = "switch") => {
+    setSending(true);
     setError(null);
     setNotice(null);
     setAttemptNotice(null);
@@ -122,12 +143,19 @@ export function LoginChallengeForm({
       const body = (await res.json()) as ChallengeView;
       setView(body);
       setCode("");
+      setSentAt(Date.now());
       setAttemptNotice(attemptWarning(body.attemptsRemaining, body.attemptLimit ?? FALLBACK_ATTEMPT_LIMIT));
-      setNotice(channel === "EMAIL" ? "確認番号をメールで送りました。" : "確認番号をSMSで送りました。");
+      setNotice(
+        intent === "resend"
+          ? `確認番号を ${body.destinationMask} へ送り直しました。`
+          : channel === "EMAIL"
+            ? "確認番号をメールで送りました。"
+            : "確認番号をSMSで送りました。",
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "確認番号を送れませんでした");
     } finally {
-      setSubmitting(false);
+      setSending(false);
     }
   };
 
@@ -219,20 +247,37 @@ export function LoginChallengeForm({
         </div>
         {notice ? <p className="alert alert--success">{notice}</p> : null}
         {error ? <p className="alert alert--error">{error}</p> : null}
-        <button type="submit" className="btn btn--primary btn--block" disabled={submitting || locked}>
+        <button type="submit" className="btn btn--primary btn--block" disabled={submitting || sending || locked}>
           {submitting ? "確認しています" : "確認して入る"}
         </button>
         {onRestart ? (
-          <button type="button" className="btn btn--outline btn--block" disabled={submitting} onClick={onRestart}>
+          <button
+            type="button"
+            className="btn btn--outline btn--block"
+            disabled={submitting || sending}
+            onClick={onRestart}
+          >
             ログインからやり直す
           </button>
         ) : null}
       </form>
+      <button
+        type="button"
+        className="btn btn--outline btn--block"
+        disabled={submitting || sending || locked || cooldownSeconds > 0}
+        onClick={() => void deliver(view.channel, "resend")}
+      >
+        {sending
+          ? "確認番号を送信しています"
+          : cooldownSeconds > 0
+            ? `確認番号を再送する（あと${cooldownSeconds}秒）`
+            : "確認番号を再送する"}
+      </button>
       {view.channel === "SMS" && view.canUseEmail ? (
         <button
           type="button"
           className="btn btn--outline btn--block"
-          disabled={submitting || locked}
+          disabled={submitting || sending || locked}
           onClick={() => void deliver("EMAIL")}
         >
           SMSが届かないのでメールで受け取る
@@ -242,7 +287,7 @@ export function LoginChallengeForm({
         <button
           type="button"
           className="btn btn--outline btn--block"
-          disabled={submitting || locked}
+          disabled={submitting || sending || locked}
           onClick={() => void deliver("SMS")}
         >
           SMSで受け取る
