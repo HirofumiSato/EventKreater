@@ -11,6 +11,8 @@ storage/flyers
 .DS_Store
 tsconfig.tsbuildinfo
 .venv-docs
+.venv
+services/flyer/.venv
 docs/_build/
 docs/*/_build/
 

@@ -28,7 +28,7 @@ Next.js 本体から HTTP で呼ばれる独立サービスで、DB には触れ
 
 - Python 3.11 以上（CI は 3.12）。
 - すべての関数・メソッドに型ヒントを付けます。`Any` の安易な使用と `# type: ignore` を禁止します（`src` は現在 0 件。`tests` の 8 件は許容）。
-- 型検査は `services/flyer/mypy.ini` の strict 設定です。対象は `src` だけで、CI の `typecheck` ジョブが `python -m mypy` を実行します。
+- 型検査は `services/flyer/mypy.ini` の strict 設定です。対象は `src` だけで、CI では `flyer` ジョブが `python -m pytest -q` のあとに `python -m mypy` を実行します。`flyer` は必須チェックなので、型エラーはマージを止めます。
 - `app.state` のように型が `Any` になる境界では、`typing.cast` で組み立て時の型に戻します。`# type: ignore` で黙らせません。
 
 ## エラー処理

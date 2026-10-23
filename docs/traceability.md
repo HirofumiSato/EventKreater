@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 96（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 223
+- 文書から参照されているコードパス: 225
 - API ルート: 73（どの文書にも URL が無いもの 1）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -23,6 +23,7 @@
 | `public/samples` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
+| `scripts/ci-scope.mjs` | [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
@@ -221,6 +222,7 @@
 | `tests/unit/auth-mode.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-rate-limits.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) |
+| `tests/unit/ci-scope.test.mjs` | [docs/testing/ci.rst](testing/ci.rst) |
 | `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |

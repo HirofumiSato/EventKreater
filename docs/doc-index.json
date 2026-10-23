@@ -7996,6 +7996,10 @@
           "exists": true
         },
         {
+          "path": "scripts/ci-scope.mjs",
+          "exists": true
+        },
+        {
           "path": "services/flyer/AGENTS.md",
           "exists": true
         },
@@ -8881,7 +8885,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 199,
+      "lineCount": 201,
       "headings": [
         {
           "level": 1,
@@ -8902,10 +8906,6 @@
         {
           "level": 2,
           "text": "flyer ジョブ"
-        },
-        {
-          "level": 2,
-          "text": "typecheck ジョブ"
         },
         {
           "level": 2,
@@ -8935,6 +8935,10 @@
           "exists": true
         },
         {
+          "path": "scripts/ci-scope.mjs",
+          "exists": true
+        },
+        {
           "path": "services/flyer",
           "exists": true
         },
@@ -8960,6 +8964,10 @@
         },
         {
           "path": "tests/unit",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ci-scope.test.mjs",
           "exists": true
         }
       ],
