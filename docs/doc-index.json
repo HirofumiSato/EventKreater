@@ -10463,7 +10463,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードでは、上から順に空欄へ「見た目だけのフォーカス」を当て、1 欄ずつ話して埋めていきます。",
       "preImplementation": false,
-      "lineCount": 310,
+      "lineCount": 325,
       "headings": [
         {
           "level": 1,
@@ -10480,6 +10480,10 @@
         {
           "level": 3,
           "text": "フォーカスは見た目だけ"
+        },
+        {
+          "level": 3,
+          "text": "覆いと操作の制限"
         },
         {
           "level": 3,

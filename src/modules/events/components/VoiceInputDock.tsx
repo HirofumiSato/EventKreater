@@ -28,6 +28,31 @@ import type { EventFormValues } from "@/modules/events/types";
 
 type VoicePhase = "armed" | "listening" | "transcribing";
 
+/** 音声モードの覆いからくり抜く矩形。ビューポート座標。 */
+interface VoiceSpotlight {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/** 強調の枠（outline 3px + 余白 2px）が隠れないように、矩形を外側へ広げる量。 */
+const SPOTLIGHT_PADDING = 6;
+
+/**
+ * 矩形の外側を覆い、内側だけをくり抜く clip-path を作る。
+ * 外周を時計回り、穴を反時計回りに描くと、既定の nonzero 規則で穴になる。
+ */
+function spotlightClipPath({ top, left, width, height }: VoiceSpotlight): string {
+  const right = left + width;
+  const bottom = top + height;
+  return (
+    "polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, " +
+    `${left}px ${top}px, ${left}px ${bottom}px, ${right}px ${bottom}px, ` +
+    `${right}px ${top}px, ${left}px ${top}px)`
+  );
+}
+
 interface VoiceInputDockProps {
   value: EventFormValues;
   onChange: (value: EventFormValues) => void;
@@ -58,6 +83,8 @@ export function VoiceInputDock({
   const [includeOptional, setIncludeOptional] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
+  // 覆いからくり抜く位置。対象の欄が見つからないときは null で、覆いを出さない。
+  const [spotlight, setSpotlight] = useState<VoiceSpotlight | null>(null);
 
   // 非同期のコールバック（録音停止・住所検索）から最新値を読むための控え。
   const valueRef = useRef(value);
@@ -369,6 +396,91 @@ export function VoiceInputDock({
     };
   }, [active, api, cursor]);
 
+  // 音声モードの間、いま聞いている欄だけを残して画面全体を覆う。
+  // 覆いはそのまま操作を止めるので、スクロールやステップの開閉に合わせて穴を追いかける。
+  // 追いかけは毎フレームではなく、位置が動く合図（スクロール・リサイズ・DOM の変化）でだけ測り直す。
+  useEffect(() => {
+    if (!active) {
+      setSpotlight(null);
+      return;
+    }
+
+    let frame = 0;
+    let retries = 0;
+    let previous = "";
+    let observed: HTMLElement | null = null;
+    let cancelled = false;
+
+    const measure = () => {
+      if (cancelled) return;
+      const target =
+        observed ?? document.querySelector<HTMLElement>('[data-voice-target="true"]');
+      if (!target) {
+        // ステップを開いた直後は、まだ欄が描画されていないことがある。少しだけ待つ。
+        if (retries < 40) {
+          retries += 1;
+          frame = window.requestAnimationFrame(measure);
+        } else if (previous) {
+          previous = "";
+          setSpotlight(null);
+        }
+        return;
+      }
+      if (observed !== target) {
+        observed = target;
+        resizeObserver?.observe(target);
+      }
+      const rect = target.getBoundingClientRect();
+      const next: VoiceSpotlight = {
+        top: Math.max(0, rect.top - SPOTLIGHT_PADDING),
+        left: Math.max(0, rect.left - SPOTLIGHT_PADDING),
+        width: rect.width + SPOTLIGHT_PADDING * 2,
+        height: rect.height + SPOTLIGHT_PADDING * 2,
+      };
+      const key = `${next.top}:${next.left}:${next.width}:${next.height}`;
+      if (key !== previous) {
+        previous = key;
+        setSpotlight(next);
+      }
+    };
+
+    /** 1 フレームに 1 回だけ測る。スクロール中に何度も呼ばれてもまとめる。 */
+    const schedule = () => {
+      if (cancelled || frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        measure();
+      });
+    };
+
+    const resizeObserver =
+      typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
+    // 強調する欄が差し替わったことも、位置が動く合図として拾う。
+    const mutationObserver =
+      typeof MutationObserver === "function" ? new MutationObserver(schedule) : null;
+
+    measure();
+    resizeObserver?.observe(document.body);
+    mutationObserver?.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-voice-target"],
+      subtree: true,
+    });
+    // 入れ子のスクロール領域も拾うため capture で待つ。
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+
+    return () => {
+      cancelled = true;
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      setSpotlight(null);
+    };
+  }, [active, cursor]);
+
   // 手で入力欄を押したら、その欄を言い直す対象にする。
   useEffect(() => {
     if (!active) return;
@@ -426,8 +538,24 @@ export function VoiceInputDock({
     if (next) api.announce(`次は${next.label}です。`);
   };
 
+  /** 覆いは操作を止めるだけなので、押されたら抜け方を伝える。 */
+  const explainScrim = () => {
+    setMessage(
+      "音声モード中は、いま聞いている欄のまわりだけ操作できます。「終了」か Esc で元に戻ります。",
+    );
+    api.announce("音声モード中です。終了するには、終了ボタンかエスケープキーを押してください。");
+  };
+
   return (
     <>
+      {active && spotlight && (
+        <div
+          className="voice-scrim"
+          aria-hidden="true"
+          style={{ clipPath: spotlightClipPath(spotlight) }}
+          onClick={explainScrim}
+        />
+      )}
       <button
         type="button"
         className={`voice-fab${active ? " voice-fab--active" : ""}`}
@@ -518,7 +646,7 @@ export function VoiceInputDock({
             任意の項目も聞く
           </label>
           <p className="voice-panel__note">
-            音声で入れた値は、そのまま手で直せます。直したい欄を押すと、その欄を音声で入れ直せます。
+            いま聞いている欄は、そのまま手で直せます。ほかの欄を直すときは、いったん終了してください。
           </p>
         </section>
       )}
