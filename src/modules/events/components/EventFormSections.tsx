@@ -24,6 +24,7 @@ import {
   type CapacitySelection,
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
+import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
 
 /**
  * 作成画面（ステップ）と編集画面（一括）で同じ入力欄を使うための共通の型。
@@ -474,6 +475,7 @@ export function PricePlansSection({
 
 /** 開催場所と雨天時の方針。 */
 export function LocationSection({ value, onChange, disabled = false }: EventSectionProps) {
+  const [venuePickerOpen, setVenuePickerOpen] = useState(false);
   const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
     onChange({ ...value, [key]: next });
   };
@@ -506,6 +508,16 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
             placeholder="○○ホール"
             className="input"
           />
+          <div className="btn-row">
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              disabled={disabled}
+              onClick={() => setVenuePickerOpen(true)}
+            >
+              過去の会場から選ぶ
+            </button>
+          </div>
         </div>
         <PostalCodeField
           value={value.postalCode}
@@ -619,6 +631,24 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
           ))}
         </select>
       </div>
+      <VenueSelectModal
+        isOpen={venuePickerOpen}
+        onClose={() => setVenuePickerOpen(false)}
+        onSelect={(venue) => {
+          // 会場ひとまとまりで入れる。旧・自由入力の location はそのまま残す
+          // （構造化住所があるときは送信時に使われない）。
+          onChange({
+            ...value,
+            venueName: venue.venueName ?? "",
+            postalCode: venue.postalCode ?? "",
+            prefecture: venue.prefecture ?? "",
+            city: venue.city ?? "",
+            town: venue.town ?? "",
+            addressLine: venue.addressLine ?? "",
+            building: venue.building ?? "",
+          });
+        }}
+      />
     </>
   );
 }

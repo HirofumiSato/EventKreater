@@ -407,6 +407,29 @@ model FlyerGenerationLog {
 }
 
 // =============================================================
+// 3-2. 過去に入力した開催場所（住所サジェスト）
+// =============================================================
+/// 作成画面の「過去の会場から選ぶ」に出す会場の候補。
+/// 会員は `u:<userId>`、未登録の幹事は `d:<端末トークンのsha256>` を ownerKey に持つ。
+model VenueSuggestion {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerKey    String   @map("owner_key") @db.VarChar(80)
+  fingerprint String   @db.VarChar(64)
+  venueName   String?  @map("venue_name") @db.VarChar(150)
+  postalCode  String?  @map("postal_code") @db.VarChar(7)
+  prefecture  String?  @db.VarChar(20)
+  city        String?  @db.VarChar(100)
+  town        String?  @db.VarChar(100)
+  addressLine String?  @map("address_line") @db.VarChar(200)
+  building    String?  @db.VarChar(150)
+  lastUsedAt  DateTime @default(now()) @map("last_used_at") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  @@unique([ownerKey, fingerprint])
+  @@index([ownerKey, lastUsedAt])
+  @@map("venue_suggestions")
+}
+
+// =============================================================
 // 4. イベント本体
 // =============================================================
 model Event {
@@ -852,6 +875,29 @@ CREATE INDEX flyer_generation_logs_owner_token_hash_created_at_idx
     ON flyer_generation_logs (owner_token_hash, created_at);
 CREATE INDEX flyer_generation_logs_user_id_created_at_idx
     ON flyer_generation_logs (user_id, created_at);
+
+-- 5-3. 過去に入力した会場の候補（住所サジェスト）
+-- 会員は u:<user_id>、未登録の幹事は d:<Cookie venue_owner の sha256> を owner_key に持つ。
+-- 同じ会場は (owner_key, fingerprint) で 1 行にまとめ、last_used_at だけを更新する。
+CREATE TABLE venue_suggestions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_key VARCHAR(80) NOT NULL,
+    fingerprint VARCHAR(64) NOT NULL,
+    venue_name VARCHAR(150) NULL,
+    postal_code VARCHAR(7) NULL,
+    prefecture VARCHAR(20) NULL,
+    city VARCHAR(100) NULL,
+    town VARCHAR(100) NULL,
+    address_line VARCHAR(200) NULL,
+    building VARCHAR(150) NULL,
+    last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX venue_suggestions_owner_key_fingerprint_key
+    ON venue_suggestions (owner_key, fingerprint);
+CREATE INDEX venue_suggestions_owner_key_last_used_at_idx
+    ON venue_suggestions (owner_key, last_used_at);
 
 -- 6. イベント本体テーブル
 CREATE TABLE events (

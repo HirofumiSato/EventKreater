@@ -5,6 +5,10 @@ import { toErrorResponse } from "@/lib/http";
 import { CreateEventSchema } from "@/lib/schemas";
 import { createdEventBody, createEventForGuest, createEventForUser } from "@/modules/events/lib/events";
 import { assertGuestCanCreate } from "@/modules/events/lib/guest-limit";
+import {
+  rememberVenueQuietly,
+  writeVenueOwnerCookie,
+} from "@/modules/events/lib/venue-suggestions";
 import { ORGANIZER_MAX_AGE, organizerCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 
 export const runtime = "nodejs";
@@ -21,10 +25,13 @@ export async function POST(req: NextRequest) {
 
     if (userId) {
       const created = await createEventForUser(userId, input);
-      return NextResponse.json(
+      const response = NextResponse.json(
         createdEventBody(created.event, created.guestOrganizerToken),
         { status: 201 },
       );
+      const venueCookie = await rememberVenueQuietly(req, input);
+      writeVenueOwnerCookie(response, req, venueCookie);
+      return response;
     }
 
     await assertGuestCanCreate(collectGuestTokenHashes(req));
@@ -40,6 +47,9 @@ export async function POST(req: NextRequest) {
       guestOrganizerToken,
       ORGANIZER_MAX_AGE,
     );
+    // 未登録の幹事には、入力した会場をこの端末の候補として覚えるための Cookie も渡す。
+    const venueCookie = await rememberVenueQuietly(req, input);
+    writeVenueOwnerCookie(response, req, venueCookie);
     return response;
   } catch (error) {
     return toErrorResponse(error, "/api/v1/public/events");

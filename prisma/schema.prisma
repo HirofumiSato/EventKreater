@@ -529,6 +529,36 @@ model FlyerGenerationLog {
 }
 
 // =============================================================
+// 3-2. 過去に入力した開催場所（住所サジェスト）
+// =============================================================
+
+/// 作成画面の「過去の会場から選ぶ」に出す会場の候補。
+/// 会員は `u:<userId>`、未登録の幹事は `d:<端末トークンのsha256>` を ownerKey に持ち、
+/// どちらも 1 列に寄せる（NULL を含む一意制約が重複を許すため、2 列には分けない）。
+/// 同じ会場を再入力しても行を増やさないよう、正規化した住所の指紋で一意にする。
+model VenueSuggestion {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// `u:<userId>` または `d:<端末トークンのsha256>`。
+  ownerKey    String   @map("owner_key") @db.VarChar(80)
+  /// 正規化した会場の指紋（sha256）。同じ会場の再入力で行を増やさない。
+  fingerprint String   @db.VarChar(64)
+  venueName   String?  @map("venue_name") @db.VarChar(150)
+  postalCode  String?  @map("postal_code") @db.VarChar(7)
+  prefecture  String?  @db.VarChar(20)
+  city        String?  @db.VarChar(100)
+  town        String?  @db.VarChar(100)
+  addressLine String?  @map("address_line") @db.VarChar(200)
+  building    String?  @db.VarChar(150)
+  /// 最後に使った日時。候補の並び順に使う。
+  lastUsedAt  DateTime @default(now()) @map("last_used_at") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([ownerKey, fingerprint])
+  @@index([ownerKey, lastUsedAt])
+  @@map("venue_suggestions")
+}
+
+// =============================================================
 // 4. イベント本体
 // =============================================================
 

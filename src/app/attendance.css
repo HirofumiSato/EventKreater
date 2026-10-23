@@ -1364,6 +1364,25 @@ fieldset.field {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+/* 過去の会場の候補。選ぶボタンと削除ボタンを横に並べる。 */
+.repeat-row--venue {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.choice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.choice__title {
+  color: var(--color-text-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .repeat-row__note {
   grid-column: 1 / -1;
 }

@@ -12,6 +12,10 @@ import {
   eventUpdateData,
   syncEventOptions,
 } from "@/modules/events/lib/events";
+import {
+  rememberVenueQuietly,
+  writeVenueOwnerCookie,
+} from "@/modules/events/lib/venue-suggestions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -133,7 +137,11 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       });
     });
 
-    return NextResponse.json({ event: serializeEvent(event) });
+    const response = NextResponse.json({ event: serializeEvent(event) });
+    // 編集画面の保存でも、変えた会場を候補として覚える。
+    const venueCookie = await rememberVenueQuietly(req, input);
+    writeVenueOwnerCookie(response, req, venueCookie);
+    return response;
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}`);
   }

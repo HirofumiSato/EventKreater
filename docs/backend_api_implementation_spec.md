@@ -117,6 +117,8 @@ flowchart TD
 | `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
 | `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
+| `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
+| `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -1228,6 +1230,42 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `isPublished` / `showStats` | 真偽値。既定は false |
 
 URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。
+
+### 5.15. GET / DELETE `/api/v1/venues`（過去の会場の候補）
+
+対象画面は SCR-ORG-02 / SCR-ORG-05 の「過去の会場から選ぶ」。認証は不要で、次の 2 つを単位に候補を絞る。他人の会場は返さない。
+
+| 単位 | `venue_suggestions.owner_key` |
+| :---- | :---- |
+| ログイン中の会員 | `u:<userId>` |
+| この端末（未登録の幹事） | `d:<Cookie `venue_owner` の値の sha256>` |
+
+端末の単位はサーバーが発行した Cookie からだけ導出し、本文やヘッダで他人の候補を指定できない。Cookie が無い未登録の端末には、イベントの作成・下書き保存・公開の成功時に `venue_owner` を新しく払い出す（180 日）。会員でも Cookie が残っていれば、端末側の候補も合わせて更新する。セッションが無い、または切れているときは未登録として扱い、端末の候補に寄せる（401 にしない）。候補は入力支援でしかないため、候補が開けないことで入力そのものを止めない。
+
+GET の応答は、最後に使った日時の新しい順に最大 20 件である。会員と端末の両方に同じ会場があれば、指紋（会場名・郵便番号・都道府県・市区町村・町域・番地・建物名を正規化した sha256）で 1 件にまとめ、新しいほうを残す。
+
+```json
+{
+  "venues": [
+    {
+      "id": "…",
+      "venueName": "○○ホール",
+      "postalCode": "1500001",
+      "prefecture": "東京都",
+      "city": "渋谷区",
+      "town": "神宮前",
+      "addressLine": "1-2-3",
+      "building": "○○ビル3F",
+      "location": "○○ホール 東京都渋谷区神宮前1-2-3 ○○ビル3F",
+      "lastUsedAt": "2026-10-01T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id` が UUID でない、既に無い、または他人の候補なら 404（存在を推測させないため区別しない）。成功時は `{ "success": true }`。
+
+候補の記録は、イベントの作成（`POST /api/v1/public/events`）、下書きの保存（`POST .../draft`）、公開（`POST .../publish`）、編集の保存（`PUT .../organizer/events/[id]`）で行う。同じ会場は行を増やさず `lastUsedAt` だけを更新する。記録の失敗はイベントの作成・保存を止めない（ログだけに残す）。実装は `src/modules/events/lib/venue-suggestions.ts`。
 
 ---
 

@@ -20,3 +20,4 @@
    waitlist
    auth-attempt-limits
    auth-session-skip-and-challenge-resend
+   venue-suggestions

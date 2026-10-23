@@ -8,6 +8,9 @@ export const AUTH_MAX_AGE = 60 * 60 * 24 * 7;
 export const ORGANIZER_MAX_AGE = 60 * 60 * 24 * 180;
 export const FLYER_OWNER_COOKIE = "flyer_owner";
 export const FLYER_OWNER_MAX_AGE = 60 * 60 * 24 * 180;
+/** 未登録の幹事が入力した会場を、この端末の候補として覚えておくための Cookie。 */
+export const VENUE_OWNER_COOKIE = "venue_owner";
+export const VENUE_OWNER_MAX_AGE = 60 * 60 * 24 * 180;
 export const SIGNUP_INTENT_COOKIE = "signup_intent";
 export const SIGNUP_INTENT_MAX_AGE = 60 * 60 * 24;
 export const LOGIN_CHALLENGE_COOKIE = "login_challenge";
