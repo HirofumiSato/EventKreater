@@ -11,13 +11,82 @@ concurrency:
 
 permissions:
   contents: read
+  # changes ジョブが PR の変更ファイル一覧を GitHub API から読む。
+  pull-requests: read
 
 jobs:
+  # 変更されたファイルから、どのジョブを走らせるかを決める。
+  #
+  # 必須チェック（check / db / flyer）はジョブ自体を消さず、重い step だけを飛ばす。
+  # `on.pull_request.paths` で workflow ごと止めると、必須チェックが報告されないまま
+  # 「待ち続けている」状態になり、いつまでもマージできなくなる。ジョブを `if:` で
+  # 丸ごと飛ばした場合も skipped として扱われるため、必須チェックでの解釈が環境に依存する。
+  # ジョブを走らせたまま step を飛ばせば、チェックは緑で完了し、ジョブ名も変わらない。
+  #
+  # 判定は保守的。文書（docs/、*.md、llms.txt）だけの変更で check と db を飛ばし、
+  # services/flyer/ の外だけの変更で flyer と typecheck を飛ばす。
+  # main への push は全部走らせる（main は常に全部緑にしておく）。
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      flyer: ${{ steps.filter.outputs.flyer }}
+    steps:
+      - id: filter
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -z "${PR_NUMBER}" ]; then
+            { echo "code=true"; echo "flyer=true"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          code=false
+          flyer=false
+          total=0
+          files=""
+          if ! files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+                        --paginate --jq '.[] | .filename, (.previous_filename // empty)'); then
+            echo "変更ファイルを取れませんでした。全部走らせます。" >&2
+            files=""
+          fi
+
+          while IFS= read -r path; do
+            if [ -z "$path" ]; then
+              continue
+            fi
+            total=$((total + 1))
+            # リポジトリ直下の .md は文書だけ。`*.md` を case に書くと
+            # スラッシュをまたいで src/ 配下の .md まで拾ってしまう。
+            if [[ "$path" != */* && "$path" == *.md ]]; then
+              continue
+            fi
+            case "$path" in
+              services/flyer/*) flyer=true ;;
+              docs/*|llms.txt) ;;                              # 文書だけ。check も flyer も要らない
+              .github/workflows/*) code=true; flyer=true ;;     # ワークフローを変えたら全部見る
+              *) code=true ;;
+            esac
+          done <<< "$files"
+
+          # 一覧が空、または取得に失敗したときは安全側に倒す。
+          if [ "$total" -eq 0 ]; then
+            code=true
+            flyer=true
+          fi
+
+          { echo "code=$code"; echo "flyer=$flyer"; } >> "$GITHUB_OUTPUT"
+
   # 手元の `npm run check` と同じ。lint、tsc --noEmit、DB を使わない Vitest。
   # tests/setup/db.ts は TEST_DATABASE_URL が無ければ何も差し替えないため、
   # DATABASE_URL はダミーで足りる。PostgreSQL も Stripe も呼ばない。
   check:
+    needs: changes
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +95,28 @@ jobs:
           node-version: 24
           cache: npm
 
-      # postinstall が prisma generate を呼ぶ。
-      - run: npm ci
+      # npm ci は 20 秒前後かかる。鍵を lock と schema.prisma に結び、
+      # 一致するときは展開済みの node_modules を戻す（db ジョブと同じ鍵）。
+      - name: node_modules を戻す
+        id: node-cache
+        if: needs.changes.outputs.code != 'false'
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
 
-      - run: npm run check
+      # postinstall が prisma generate を呼ぶ。
+      - name: 依存を入れる
+        if: needs.changes.outputs.code != 'false' && steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # キャッシュから戻したときは postinstall が走らないので、生成物だけ作り直す。
+      - name: Prisma Client を生成する
+        if: needs.changes.outputs.code != 'false' && steps.node-cache.outputs.cache-hit == 'true'
+        run: npx prisma generate
+
+      - if: needs.changes.outputs.code != 'false'
+        run: npm run check
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci_placeholder
           JWT_SECRET: ci-only-placeholder-secret-value-not-used
@@ -37,17 +124,19 @@ jobs:
 
   # 文書の整合。生成物に差分が出ないこと、原稿のパスが実在すること、
   # Sphinx が HTML を生成できることを見る。原稿だけ直して索引を忘れた PR を止める。
+  #
+  # 生成物はコードの実在にも依存する（traceability.md）ので、ここは絞らない。
+  # 依存は入れない。生成スクリプトは node:fs / node:path しか import しないため、
+  # npm ci（20 秒）を省ける。
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-
-      - run: npm ci
 
       - run: npm run docs:gen
 
@@ -62,6 +151,19 @@ jobs:
           cache: pip
           cache-dependency-path: docs/requirements.txt
 
+      # .venv-docs を丸ごと戻す。pip install が 10 秒前後かかるため。
+      # 復元した venv は作成時の Python を指すので、壊れていたら捨てて作り直す。
+      - name: Python 環境を戻す
+        id: venv
+        uses: actions/cache@v4
+        with:
+          path: .venv-docs
+          key: ${{ runner.os }}-docs-venv-${{ hashFiles('docs/requirements.txt') }}
+
+      - name: 壊れた venv を捨てる
+        if: steps.venv.outputs.cache-hit == 'true'
+        run: .venv-docs/bin/python -c "import sphinx" || rm -rf .venv-docs
+
       - run: npm run docs:install
 
       - run: npm run docs
@@ -71,10 +173,13 @@ jobs:
   # 部分ユニーク索引（event_organizers_one_owner など）や CHECK 制約を作らないため、
   # それらを見ている結合テストが落ちる。
   db:
+    needs: changes
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        # alpine 版はイメージが小さく、取得（コンテナ初期化）が数秒短い。
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -83,9 +188,9 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -94,13 +199,29 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      - name: node_modules を戻す
+        id: node-cache
+        if: needs.changes.outputs.code != 'false'
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
 
-      - run: npx prisma migrate deploy
+      - name: 依存を入れる
+        if: needs.changes.outputs.code != 'false' && steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Prisma Client を生成する
+        if: needs.changes.outputs.code != 'false' && steps.node-cache.outputs.cache-hit == 'true'
+        run: npx prisma generate
+
+      - if: needs.changes.outputs.code != 'false'
+        run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
 
       - run: npm run test:db
+        if: needs.changes.outputs.code != 'false'
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
           TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/event_platform_billing_test
@@ -110,6 +231,7 @@ jobs:
   # チラシ生成 API の pytest。描画に日本語フォントを使うので、apt で入れる。
   # フォントが無いと FontResolver が FontRenderError を投げて落ちる。
   flyer:
+    needs: changes
     runs-on: ubuntu-latest
     # apt のミラーが遅い日に「日本語フォントを入れる」で止まり続けるのを、
     # 6 時間ではなく 10 分で失敗として返す。
@@ -126,7 +248,27 @@ jobs:
           cache: pip
           cache-dependency-path: services/flyer/requirements.txt
 
-      - name: 日本語フォントを入れる
+      # apt のフォント取得は 8 秒前後かかり、ミラーが遅い日はここで止まる。
+      # 実際に読む .ttc 2 本だけをキャッシュし、ヒット時は system のパスへ戻す。
+      - name: フォントのキャッシュを戻す
+        id: fonts
+        if: needs.changes.outputs.flyer != 'false'
+        uses: actions/cache@v4
+        with:
+          path: .noto-fonts
+          key: noto-cjk-regular-1
+
+      - name: フォントを配る（キャッシュにヒットしたとき）
+        if: needs.changes.outputs.flyer != 'false' && steps.fonts.outputs.cache-hit == 'true'
+        working-directory: .
+        run: |
+          sudo mkdir -p /usr/share/fonts/opentype/noto
+          sudo cp .noto-fonts/*.ttc /usr/share/fonts/opentype/noto/
+          sudo fc-cache -f > /dev/null
+          fc-match "Noto Sans CJK JP"
+
+      - name: 日本語フォントを入れる（キャッシュが無いとき）
+        if: needs.changes.outputs.flyer != 'false' && steps.fonts.outputs.cache-hit != 'true'
         run: |
           # runner には apt のインデックスが用意済みなので、まず install だけを試す。
           # apt-get update はミラーが遅い日に数分〜十数分待たされることがある。
@@ -137,14 +279,29 @@ jobs:
           fi
           fc-match "Noto Sans CJK JP"
 
+      # FontResolver が実際に開くのは NotoSansCJK-Regular.ttc と NotoSerifCJK-Regular.ttc。
+      - name: 次回のためにフォントを控える
+        if: needs.changes.outputs.flyer != 'false' && steps.fonts.outputs.cache-hit != 'true'
+        working-directory: .
+        run: |
+          mkdir -p .noto-fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc .noto-fonts/
+          cp /usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc .noto-fonts/
+
       - run: pip install -r requirements.txt
+        if: needs.changes.outputs.flyer != 'false'
 
       - run: python -m pytest -q
+        if: needs.changes.outputs.flyer != 'false'
 
   # チラシ生成サービスの型検査。services/flyer/mypy.ini の strict 設定で src だけを見る。
   # 依存を解決するために requirements.txt を入れる（Pillow などの型が要る）。
+  # 必須チェックではないので、ジョブごと飛ばしてよい。
   typecheck:
+    needs: changes
+    if: needs.changes.outputs.flyer != 'false'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: services/flyer

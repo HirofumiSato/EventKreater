@@ -8881,7 +8881,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 144,
+      "lineCount": 199,
       "headings": [
         {
           "level": 1,
@@ -8890,6 +8890,10 @@
         {
           "level": 2,
           "text": "置き場所"
+        },
+        {
+          "level": 2,
+          "text": "変更に応じた絞り込み"
         },
         {
           "level": 2,
@@ -8922,6 +8926,18 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/traceability.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "services/flyer",
+          "exists": true
+        },
         {
           "path": "services/flyer/requirements.txt",
           "exists": true
