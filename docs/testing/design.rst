@@ -43,6 +43,8 @@
 
 Route Handler は、``src/app/api/`` から export された ``GET`` や ``POST`` を import し、``NextRequest`` を渡して呼びます。``next dev`` も ``next start`` も立てません。戻り値の ``status`` と JSON を断言します。
 
+``npm run check`` は ESLint・``tsc --noEmit``・Vitest を並列で走らせます。3 つは互いに依存しないので、待ち時間は一番遅いもの（Vitest）で決まります。出力は各コマンドごとに溜め、失敗したときだけ中身を出します。落ちたものを個別に再現するときは ``npm run check:serial`` です。
+
 画面の層は、クライアントコンポーネントに限って使います。サーバーコンポーネントのページ本体は、そのページが呼ぶ ``src/modules/`` と ``src/lib/`` の関数を試験します。
 
 画面のどこを通すか

@@ -122,6 +122,10 @@ Stripe の鍵、テストカード、Webhook の注意は :doc:`stripe` です�
 
 Web だけを起動するときは ``npm run dev:web`` です。ポートを 3000 にする場合は ``NEXT_PUBLIC_APP_URL`` を ``http://localhost:3000`` にしてください。
 
+``dev:web`` は Turbopack（ ``next dev --turbo`` ）で起動します。手元の実測では、初回のコンパイルが ``/`` で 6 秒、``/service`` で 1.3 秒です。同じ 5 画面を開くのに Webpack は 18.7 秒、Turbopack は 12.4 秒でした。保存から再描画までの待ちは、この差より大きく開きます。
+
+Next.js 14.2 の Turbopack は beta です。画面が崩れる、コンパイルが通らない、といった症状が出たら ``npm run dev:web:webpack`` で Webpack に戻して切り分けます。
+
 ``JWT_SECRET`` や ``DATABASE_URL`` を変えたあとは、開発サーバーを止めて再起動します。
 
 Docker で動かす
@@ -136,6 +140,12 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
    docker compose up
 
 ``db``（5433）・``flyer``（8000）・``web``（3012）が起動します。``migrate`` は profile ``setup`` なので ``up`` では動きません。初回とスキーマ変更時だけ実行してください。
+
+.. warning::
+
+   ホスト側と Docker 側は、DB もポートも別です。ホストは ``localhost:5432`` の PostgreSQL と ``npm run dev`` 、Docker は ``localhost:5433`` と ``docker compose up`` です。両方を同時に立ち上げると、``npm run dev`` が 8000 番をコンテナのチラシ API に取られて、どちらを見ているのか分からなくなります。メモリも二重に食います。
+
+   手元で速く回すときは、ホスト側だけにしてください。Docker は本番相当の確認と、ホストに Node・Python・PostgreSQL を入れたくない場合に使います。Docker を止めるときは ``docker compose down`` です。ボリュームは残るので、DB とチラシ画像は消えません（消えるのは ``docker compose down -v`` です）。
 
 .. list-table::
    :header-rows: 1
@@ -244,15 +254,21 @@ npm scripts
    * - コマンド
      - 内容
    * - ``npm run dev``
-     - チラシ API（8000）と Web（3012）を起動する
+     - チラシ API（8000）と Web（3012）を起動する。Web は Turbopack
    * - ``npm run dev:web``
-     - Next.js だけをポート 3012 で起動する
+     - Next.js だけをポート 3012 で起動する。Turbopack
+   * - ``npm run dev:web:webpack``
+     - Next.js だけをポート 3012 で起動する。Webpack。Turbopack で問題が出たときの退避先
    * - ``npm run build``
      - 本番ビルド
    * - ``npm start``
      - ``next build`` 済みのアプリを起動
    * - ``npm run lint``
      - ESLint
+   * - ``npm run check``
+     - ESLint・``tsc --noEmit``・Vitest を並列で走らせ、全部の結果をまとめて出す。1 つでも落ちれば終了コード 1
+   * - ``npm run check:serial``
+     - 同じ 3 つを順に走らせる。並列で落ちたときに、単体で再現させるため
    * - ``npm run db:migrate``
      - ``prisma migrate dev``
    * - ``npm run db:seed``

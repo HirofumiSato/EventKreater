@@ -8023,7 +8023,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 283,
+      "lineCount": 299,
       "headings": [
         {
           "level": 1,
@@ -9120,7 +9120,7 @@
       "title": "テストの設計",
       "summary": "読む順の 3 番です。前は ideas、次は vitest/index です。",
       "preImplementation": false,
-      "lineCount": 105,
+      "lineCount": 107,
       "headings": [
         {
           "level": 1,
