@@ -147,7 +147,7 @@
 
 .. count-start
 
-40 ファイル、``it`` は 463 件です。内訳は ``tests/unit/`` が 30 ファイル 399 件、``tests/integration/`` が 10 ファイル 64 件です。結合の 64 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+43 ファイル、``it`` は 481 件です。内訳は ``tests/unit/`` が 32 ファイル 414 件、``tests/integration/`` が 11 ファイル 67 件です。結合の 67 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -231,6 +231,18 @@
      - 3
      - 戻り先をエンコードして保つ。電話番号の確認へ進んでも戻り先を失わない
      - SCR-PUB-02
+   * - ``tests/unit/auth-landing.test.ts``
+     - 8
+     - 有効なセッションで入口を開いたときの着地。``next`` の有無、入口、管理者、電話番号の確認状況の組み合わせ。``switch=1`` の判定
+     - SCR-PUB-02 / SCR-PUB-07
+   * - ``tests/unit/resend-cooldown.test.ts``
+     - 7
+     - 確認コードの再送を押せるまでの残り秒数。境界、送信前、端末の時計が戻ったとき
+     - SCR-PUB-02
+   * - ``tests/integration/login-challenge.test.ts``
+     - 3
+     - 同じ宛先への再送で前の確認番号が無効になる。送信上限で 429 と再試行時刻。メールへ切り替えたときの宛先
+     - SCR-PUB-02 / ``/console/login``
    * - ``tests/unit/checkout-intent.test.ts``
      - 7
      - 購入を開ける画面の制限、外部 URL と余計なクエリの拒否、戻り先の組み立て
@@ -322,7 +334,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 399、``tests/integration/`` が 64 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 399 件を実行して 64 件を skip します。
+件数の内訳は ``tests/unit/`` が 414、``tests/integration/`` が 67 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 414 件を実行して 67 件を skip します。
 
 .. breakdown-end
 

@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 107,
+    "docs": 108,
     "preImplementation": 15,
-    "markdown": 43,
+    "markdown": 44,
     "rst": 64,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2349,
+      "lineCount": 2373,
       "headings": [
         {
           "level": 1,
@@ -2248,6 +2248,10 @@
         },
         {
           "level": 3,
+          "text": "8.7.1. GET /api/v1/auth/session（入口のセッション確認）"
+        },
+        {
+          "level": 3,
           "text": "8.8. POST /api/v1/auth/login-challenge/confirm（確認番号の照合）"
         },
         {
@@ -2423,6 +2427,10 @@
         },
         {
           "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/auth-landing.ts",
           "exists": true
         },
         {
@@ -5229,7 +5237,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1766,
+      "lineCount": 1772,
       "headings": [
         {
           "level": 1,
@@ -5591,11 +5599,19 @@
           "exists": true
         },
         {
+          "path": "src/modules/auth/lib/auth-landing.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/auth/lib/auth-mode.ts",
           "exists": true
         },
         {
           "path": "src/modules/auth/lib/hydrate.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/resend.ts",
           "exists": true
         },
         {
@@ -6165,6 +6181,143 @@
         },
         {
           "path": "tests/unit/auth-rate-limits.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/auth-session-skip-and-challenge-resend.md",
+      "sphinxDoc": "issues/auth-session-skip-and-challenge-resend",
+      "format": "markdown",
+      "title": "ログイン済みセッションがあるときは再認証を省き、ログイン確認番号に再送ボタンを付ける",
+      "summary": "> 起票済み: [#54](https://github.com/HirofumiSato/EventKreater/issues/54)。このファイルは設計の記録として残す。",
+      "preImplementation": false,
+      "lineCount": 125,
+      "headings": [
+        {
+          "level": 1,
+          "text": "ログイン済みセッションがあるときは再認証を省き、ログイン確認番号に再送ボタンを付ける"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "現状と根拠"
+        },
+        {
+          "level": 2,
+          "text": "今回の決定"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 3,
+          "text": "1. 判定の API"
+        },
+        {
+          "level": 3,
+          "text": "2. 着地の判定"
+        },
+        {
+          "level": 3,
+          "text": "3. 画面"
+        },
+        {
+          "level": 3,
+          "text": "4. 再送"
+        },
+        {
+          "level": 3,
+          "text": "5. 壊れた Cookie の扱い"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "セキュリティ上の判断"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/google/callback/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/local/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/session/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/components/AuthEntryScreen.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/components/LoginChallengeForm.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/hooks/useExistingSession.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/auth-landing.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/login-challenge.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limits.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/resend.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/login-challenge.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/auth-landing.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/resend-cooldown.test.ts",
           "exists": true
         }
       ],
@@ -6899,7 +7052,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 22,
+      "lineCount": 23,
       "headings": [
         {
           "level": 1,
@@ -6918,7 +7071,8 @@
         "docs/issues/organizer-event-calendar.md",
         "docs/issues/participant-calendar.md",
         "docs/issues/waitlist.md",
-        "docs/issues/auth-attempt-limits.md"
+        "docs/issues/auth-attempt-limits.md",
+        "docs/issues/auth-session-skip-and-challenge-resend.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -8338,7 +8492,7 @@
       "title": "全体システム要件定義書（機能横断・共通編）",
       "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1108,
+      "lineCount": 1110,
       "headings": [
         {
           "level": 1,
@@ -9396,7 +9550,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 438,
+      "lineCount": 450,
       "headings": [
         {
           "level": 1,
@@ -9466,6 +9620,10 @@
           "exists": true
         },
         {
+          "path": "tests/integration/login-challenge.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/organizer-profile.test.ts",
           "exists": true
         },
@@ -9491,6 +9649,10 @@
         },
         {
           "path": "tests/unit/allocation.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/auth-landing.test.ts",
           "exists": true
         },
         {
@@ -9599,6 +9761,10 @@
         },
         {
           "path": "tests/unit/referrer.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/resend-cooldown.test.ts",
           "exists": true
         },
         {

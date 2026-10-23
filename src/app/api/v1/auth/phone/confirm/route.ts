@@ -11,7 +11,7 @@ import {
   writeCookie,
 } from "@/modules/auth/lib/cookies";
 import { clearLoginChallengeCookies } from "@/modules/auth/lib/login-challenge";
-import { resolveUserId } from "@/modules/auth/lib/guards";
+import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { confirmPhoneVerification } from "@/modules/auth/lib/phone";
 
 export const runtime = "nodejs";
@@ -25,7 +25,8 @@ const BodySchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const input = BodySchema.parse(await req.json());
-    const userId = await resolveUserId(req);
+    // 失効した Cookie は未ログイン扱い。登録意向（signup_intent）で続けられる。
+    const userId = await resolveOptionalUserId(req);
     const intentId = userId ? null : (req.cookies.get(SIGNUP_INTENT_COOKIE)?.value ?? null);
     const result = await confirmPhoneVerification({
       phoneRaw: input.phone,

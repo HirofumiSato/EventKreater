@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { toErrorResponse } from "@/lib/http";
 import { SIGNUP_INTENT_COOKIE, clientIp } from "@/modules/auth/lib/cookies";
-import { resolveUserId } from "@/modules/auth/lib/guards";
+import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { startPhoneVerification } from "@/modules/auth/lib/phone";
 
 export const runtime = "nodejs";
@@ -15,7 +15,9 @@ const BodySchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const input = BodySchema.parse(await req.json());
-    const userId = await resolveUserId(req);
+    // 失効した Cookie が残っていても、登録意向（signup_intent）で続けられるようにする。
+    // 壊れたトークンは未ログイン扱いにする（401 で登録の途中を止めない）。
+    const userId = await resolveOptionalUserId(req);
     const intentId = userId ? null : (req.cookies.get(SIGNUP_INTENT_COOKIE)?.value ?? null);
     const result = await startPhoneVerification({
       phoneRaw: input.phone,
