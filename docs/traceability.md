@@ -7,7 +7,7 @@
 
 - 対象文書: 96（実装前の設計 15 件は除外）
 - 文書から参照されているコードパス: 225
-- API ルート: 73（どの文書にも URL が無いもの 1）
+- API ルート: 73（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -254,6 +254,4 @@
 
 ## どの文書にも URL が出てこない API ルート
 
-- `GET /api/v1/flyer-assets` — `src/app/api/v1/flyer-assets/route.ts`
-
-`docs/backend_api_implementation_spec.md` に追記するか、不要なら実装を消します。
+なし。

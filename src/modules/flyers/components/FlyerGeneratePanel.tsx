@@ -4,14 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EventFormValues } from "@/modules/events/types";
 import { buildFlyerFormPayload, validateFlyerForm } from "@/modules/flyers/lib/form";
 import { readFlyerDraftKey, resetFlyerDraftKey } from "@/modules/flyers/lib/draft";
+import { flyerDownloadHref } from "@/modules/flyers/lib/download";
 import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
-import type { FlyerQuota } from "@/modules/flyers/types";
+import type { FlyerQuota, SelectableFlyer } from "@/modules/flyers/types";
 import { FlyerCandidateModal } from "./FlyerCandidateModal";
+import { FlyerUploadButton } from "./FlyerUploadButton";
 
 interface FlyerGeneratePanelProps {
   value: EventFormValues;
   disabled?: boolean;
   previewUrl: string | null;
+  /** アップロード済み・生成済みのチラシ ID。ダウンロードの宛先に使う。 */
+  flyerAssetId?: string | null;
   /** 下書きの単位。新規は "new"、編集はイベント ID。 */
   draftScope: string;
   /** 保存済みイベントの ID。共同主催者と同じ回数枠を数えるために送る。 */
@@ -24,6 +28,7 @@ export function FlyerGeneratePanel({
   value,
   disabled = false,
   previewUrl,
+  flyerAssetId = null,
   draftScope,
   eventId = null,
   onGenerated,
@@ -83,6 +88,16 @@ export function FlyerGeneratePanel({
     [onGenerated],
   );
 
+  /** アップロードは生成ではないので回数を消費せず、そのまま掲載する。 */
+  const handleUploaded = useCallback(
+    (flyer: SelectableFlyer) => {
+      setError(null);
+      setStatusNote(null);
+      onGenerated({ id: flyer.id, imageUrl: flyer.imageUrl }, "uploaded");
+    },
+    [onGenerated],
+  );
+
   const startOver = () => {
     const next = resetFlyerDraftKey(draftScope);
     setDraftKey(next);
@@ -95,7 +110,7 @@ export function FlyerGeneratePanel({
         <p className="label">チラシ生成</p>
         <p className="help">
           タイプ・背景・文字の配置・配色の 4 ステップで選んでから保存します。候補を作り直しても回数は減りません。チラシを作成・変更して保存したときだけ
-          1 回消費します。
+          1 回消費します。手元の画像をアップロードする場合は回数を消費しません。
         </p>
       </div>
 
@@ -120,6 +135,11 @@ export function FlyerGeneratePanel({
         >
           {previewUrl ? "作り直す" : "チラシを作る"}
         </button>
+        {previewUrl && flyerAssetId && (
+          <a href={flyerDownloadHref(flyerAssetId)} className="btn btn--ghost btn--sm">
+            ダウンロード
+          </a>
+        )}
         {previewUrl && (
           <button
             type="button"
@@ -134,6 +154,18 @@ export function FlyerGeneratePanel({
           </button>
         )}
       </div>
+
+      <div className="btn-row">
+        <FlyerUploadButton
+          title={value.title}
+          disabled={disabled}
+          onUploaded={handleUploaded}
+          onError={setError}
+        />
+      </div>
+      <p className="help">
+        Canva などで作った画像（JPEG / PNG / WebP、8MBまで）を、そのままチラシにできます。縦長の画像をおすすめします。
+      </p>
 
       {exhausted && (
         <div className="alert alert--warning">

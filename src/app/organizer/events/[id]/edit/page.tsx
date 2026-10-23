@@ -200,6 +200,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
               value={form}
               disabled={!lock.hasLock || saving}
               previewUrl={flyerPreview}
+              flyerAssetId={form.flyerAssetId}
               draftScope={`event:${params.id}`}
               eventId={params.id}
               onGenerated={(asset) => {
@@ -214,7 +215,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
             <button type="button" className="btn btn--outline" disabled={!lock.hasLock || saving} onClick={() => setPickerOpen(true)}>
               過去のチラシから選ぶ
             </button>
-            <FlyerSelectModal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={applyFlyer} />
+            <FlyerSelectModal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={applyFlyer} title={form.title} />
           </>
         }
       />
