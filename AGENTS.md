@@ -1,6 +1,7 @@
 # event-creater
 
 イベント告知・出欠管理と、主催者の利用枠・Stripe 決済を扱うアプリケーションです。
+飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。
 Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python の独立サービス（`services/flyer`、FastAPI + Pillow + OpenAI）です。
 
 ## 最初に読む順

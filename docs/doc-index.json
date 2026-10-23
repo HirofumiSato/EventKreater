@@ -4877,7 +4877,7 @@
       "sphinxDoc": "flyer/specs/system_requirements",
       "format": "markdown",
       "title": "システム要件定義書",
-      "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみでSNS告知に適した高品質チラシ画像（9:16 / 1:1）を即座に取得できるWebアプリケーションである。",
+      "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみでSNS告知に適した高品質チラシ画像（9:16 / 1:1）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
       "lineCount": 287,
       "headings": [
@@ -5760,9 +5760,9 @@
       "sphinxDoc": "index",
       "format": "rst",
       "title": "利用枠管理・課金決済基盤",
-      "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
+      "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 170,
+      "lineCount": 171,
       "headings": [
         {
           "level": 1,
@@ -8399,9 +8399,9 @@
       "sphinxDoc": "onboarding",
       "format": "markdown",
       "title": "全体を掴む 90 分",
-      "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。",
+      "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。 対象は、飯フェス、タコパ、ライブ、占い、撮影会などの主催者です。主催者が自分のチャネルで参加者へ URL を届け、出欠を集める用途に絞ります。",
       "preImplementation": false,
-      "lineCount": 114,
+      "lineCount": 115,
       "headings": [
         {
           "level": 1,
@@ -8643,7 +8643,7 @@
       "title": "全体システム要件定義書（機能横断・共通編）",
       "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1110,
+      "lineCount": 1113,
       "headings": [
         {
           "level": 1,
@@ -10246,7 +10246,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: docs/ui-review/before/（home-390-fv.png、home-390-full.png、home-768-full.png、home-1440-full.png）",
       "preImplementation": false,
-      "lineCount": 386,
+      "lineCount": 388,
       "headings": [
         {
           "level": 1,
