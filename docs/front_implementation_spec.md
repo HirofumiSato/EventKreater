@@ -48,12 +48,14 @@ flowchart TD
 | `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円月額の自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する |
-| `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。出欠集計・クォータ残数・ポータル導線。本文冒頭のサブタブ（主催一覧 / カレンダー / 売上）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
+| `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。出欠集計・クォータ残数・ポータル導線。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。下書きの件数をボタンに添える。本文冒頭のサブタブ（主催一覧 / カレンダー / 売上）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
 | `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、選んだ日の予定一覧を出す。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。公開中の予定は、日別一覧から LINE 共有ボタンで告知URLを送れる（SCR-PUB-01 と同じ注意書きを出す）。外部カレンダー連携（`.ics`・購読URL）は持たない |
 | `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram・Webサイト・LINE、実績の表示可否。保存前に SCR-PUB-14 と同じ見た目でプレビューする。保存後は `PUT /api/v1/organizer/profile`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。本文冒頭のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
-| `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。公開状態は `PUBLISHED`、`visibility` は常に `UNLISTED`。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る |
+| `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。会員の最終ステップは「下書き保存」と「プレビューを見る」の2つで、保存してから SCR-ORG-16 へ進む。未登録の幹事には下書き保存を出さず、従来どおり「公開する」だけを出す（`visibility` は常に `UNLISTED`）。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。`?draftId=` で下書きを復元し、保存のたびに URL へ残す。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る |
+| `/organizer/events/drafts` | SCR-ORG-15 | 主催幹事 / 共同幹事 | 会員JWT | 下書き一覧。冒頭 `h1` は画面名。自分の `DRAFT` だけを出す（`GET /api/v1/organizer/events` を画面側で絞る）。各カードから SCR-ORG-16 のプレビュー、SCR-ORG-05 の編集、削除（SCR-MOD-03）へ進む。下書きの間は枠を消費しない旨を書く。主催一覧へ戻る導線を置く |
+| `/organizer/events/[id]/preview` | SCR-ORG-16 | 主催幹事 / 共同幹事 | 幹事JWT（`GET /api/v1/organizer/events/[id]`）。公開は筆頭幹事の会員のみ | 下書きのプレビュー。`noindex`。SCR-PUB-01 と同じ `PosterHero` と `EventMetaCard` で見た目を確かめ、出欠フォーム・参加履歴・主催者勧誘カードは出さない。「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、成功したら告知ページへ移る。枠不足は 402 で SCR-MOD-01（戻り先はこの画面）。オーナー以外には公開ボタンを出さず、その旨を書く。公開済みの ID を開いたときは告知ページへのリンクを出す |
 | `/organizer/register-required` | SCR-ORG-10 | 未登録の幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・リマインド・領収書・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
 | `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る。冒頭に筆頭幹事だけ表示する幹事パネル（`CoHostPanel`）を置き、主催 / 共同主催の一覧、招待URLの発行、共同主催者の解除を行う。解除はその場で確認を出し、実行後に一覧を読み直す |
 | `/events/[id]/receipt` | SCR-PUB-04 | 参加者本人 | 出欠 Cookie または会員 | 自分の参加費領収書 |
@@ -101,13 +103,15 @@ flowchart TD
 | 誰でも | SCR-PUB-14 | 主催者のプロフィール | `/organizers/[userId]` | 主催者の自己紹介・ジャンル・リンク・実績。非公開なら名前と催しへの導線だけを出す |
 | 会員 | SCR-PUB-13 | 主催者の催し | `/organizers/[userId]/events` | 主催者の催しをカレンダーと一覧で見る。未ログインではぼかした骨組みだけを出す。満員は参加要望受付中 |
 | 会員 | SCR-PUB-11 | アカウント設定 | `/account`（メール確認は `/account/email/verify`） | 表示名、メールアドレス、電話番号、パスワード、退会。変更の前に確認番号を出し、メールは新しいアドレスへのリンクで確定する。管理者は対象外 |
-| 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待、ポータル導線。`?registered=1` で登録完了トーストを出す |
+| 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待、ポータル導線。下書きは出さず、件数だけを「下書き一覧」に添える。`?registered=1` で登録完了トーストを出す |
 | 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
 | 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、肩書き、自己紹介、エリア、ジャンル、SNS・Web・LINE、実績の表示可否。保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、選んだ日の予定一覧。複数の開催日をすべて出す。前月・次月・今月で移動する |
-| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。公開状態は `PUBLISHED`。枠が無いときは `DRAFT` で退避し、`?draftId=` で復元して公開する。`?ref=` を参照元として送る |
+| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。会員は「下書き保存」「プレビューを見る」の2つで保存してから SCR-ORG-16 へ進む。未登録の幹事は「公開する」だけ。枠が無いときも `DRAFT` で退避し、`?draftId=` で復元する。`?ref=` を参照元として送る |
 | 主催 | SCR-ORG-10 | 公開直後の会員登録案内 | `/organizer/register-required` | 共有 URL のコピーと、会員登録・ログイン。名簿・リマインド・領収書・招待は登録後であることを伝える |
-| 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。未登録の幹事は作成から24時間以内 |
+| 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。下書きは公開状態を選べる（その場で公開も可）。「プレビュー」から SCR-ORG-16 を開ける。未登録の幹事は作成から24時間以内 |
+| 主催 | SCR-ORG-15 | 下書き一覧 | `/organizer/events/drafts` | 自分の下書きだけを並べ、プレビュー・編集・削除を行う。下書きの間は枠を消費しない |
+| 主催 | SCR-ORG-16 | 下書きのプレビュー | `/organizer/events/[id]/preview` | 告知ページと同じ見た目で確認し、その場で公開する。出欠フォームは出さない。`noindex` |
 | 公開 | SCR-PUB-04 | 参加者向け領収書 | `/events/[id]/receipt` | 自分の参加費領収書。印刷できる |
 | 主催 | SCR-ORG-09 | 幹事向け領収書 | `/organizer/events/[id]/receipts/[participantId]` | 出席者へ発行した領収書。再発行できる |
 | 主催 | SCR-ORG-06 | 参加者名簿 | `/organizer/events/[id]/participants` | 出欠集計（参加・参加要望・不参加）とコメント詳細。売上サマリとプラン未選択の案内も出す。費用プラン列は申込時点の金額を出す。参加要望は待ち順に並べ、承認で出席へ上げる |
@@ -183,6 +187,8 @@ graph TD
         ORG01["SCR-ORG-01: 主催イベント一覧<br/>/organizer/events"]:::organizer
         ORG02["SCR-ORG-02: 新規イベント作成<br/>/organizer/events/new"]:::organizer
         ORG05["SCR-ORG-05: イベント編集<br/>/organizer/events/[id]/edit"]:::organizer
+        ORG15["SCR-ORG-15: 下書き一覧<br/>/organizer/events/drafts"]:::organizer
+        ORG16["SCR-ORG-16: 下書きのプレビュー<br/>/organizer/events/[id]/preview"]:::organizer
         ORG06["SCR-ORG-06: 参加者名簿<br/>/organizer/events/[id]/participants"]:::organizer
         ORG09["SCR-ORG-09: 幹事向け領収書<br/>/organizer/events/[id]/receipts/[participantId]"]:::organizer
         ORG11["SCR-ORG-11: 売上<br/>/organizer/revenue"]:::organizer
@@ -296,6 +302,7 @@ graph TD
     PUB03 -->|ログアウト| PUB00
     ORG01 -->|新規作成| ORG02
     ORG01 -->|編集・複製| ORG05
+    ORG01 -->|下書き一覧| ORG15
     ORG01 -->|名簿| ORG06
     ORG01 -->|売上を見る| ORG11
     ORG01 -->|カレンダー| ORG13
@@ -323,11 +330,21 @@ graph TD
     ORG05 -->|過去チラシを選ぶ| ORG03
     ORG03 -->|作成へ戻る| ORG02
     ORG03 -->|編集へ戻る| ORG05
-    ORG02 -->|公開できる| ORG04
+    ORG02 -->|下書き保存してプレビューを見る| ORG16
+    ORG02 -->|公開できる（未登録の幹事のみ）| ORG04
     ORG02 -->|公開時: 未登録| ORG10
     ORG02 -->|公開時: 上限到達 HTTP 402（下書きを保存）| MOD01
     ORG02 -->|下書きを公開: 枠あり| ORG04
     ORG02 -->|下書きを公開: 枠なし 402| MOD01
+    ORG15 -->|プレビュー| ORG16
+    ORG15 -->|編集| ORG05
+    ORG15 -->|削除・停止| MOD03
+    MOD03 -->|下書きを削除| ORG15
+    ORG16 -->|公開: 枠あり| PUB01
+    ORG16 -->|公開: 枠なし 402| MOD01
+    ORG16 -->|編集に戻る| ORG05
+    ORG16 -->|下書き一覧へ| ORG15
+    ORG05 -->|プレビュー| ORG16
     ORG10 -->|登録済みの幹事| ORG01
     ORG10 -->|会員登録（?mode=register&next=）| PUB02
     ORG10 -->|ログイン（?mode=login&next=）| PUB02
@@ -395,7 +412,7 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 `/events` と `/organizer/events/[id]` は独立した画面ではない。前者は `/` へ、後者は `/organizer/events/[id]/edit`（SCR-ORG-05）へリダイレクトする。
 
-課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。作成時の 402 では、入力を `status=DRAFT` で保存して `draftId` を Checkout の `metadata` に載せる。戻り先は `/organizer/events/new` で、`draftId` をクエリに保つ。Checkout の成功とキャンセルのどちらでも同じ画面へ戻り、`draftId` があればフォームを復元する。復元したフォームからの公開は `POST /api/v1/organizer/events/[id]/publish` を呼び、枠を1つ消費して `PUBLISHED` にする。そのあと公開完了モーダルへ進む。SCR-PUB-03 からポータルを開く線は、参加の支払いではなく、同じアカウントの主催者契約を開く。復帰先は SCR-ORG-01 である。複製の着地は編集画面であり、複製の時点で枠を消費済みなので公開では二重に引かない。0円の単発は Stripe へ行かず、その場で枠を付与して元の画面に留まる。
+課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。作成時の 402 では、入力を `status=DRAFT` で保存して `draftId` を Checkout の `metadata` に載せる。戻り先は `/organizer/events/new` で、`draftId` をクエリに保つ。Checkout の成功とキャンセルのどちらでも同じ画面へ戻り、`draftId` があればフォームを復元する。復元したフォームからの公開は `POST /api/v1/organizer/events/[id]/publish` を呼び、枠を1つ消費して `PUBLISHED` にする。会員の通常の流れでは、作成画面の「下書き保存」または「プレビューを見る」で `POST /api/v1/public/events`（1回目）／`POST /api/v1/organizer/events/[id]/draft`（2回目以降）に保存し、SCR-ORG-16 の「公開する」から publish を呼ぶ。プレビューからの 402 は、戻り先を `/organizer/events/<id>/preview` にして同じプレビューへ戻す。SCR-PUB-03 からポータルを開く線は、参加の支払いではなく、同じアカウントの主催者契約を開く。復帰先は SCR-ORG-01 である。複製の着地は編集画面であり、複製の時点で枠を消費済みなので公開では二重に引かない。0円の単発は Stripe へ行かず、その場で枠を付与して元の画面に留まる。
 
 主催一覧（SCR-ORG-01）・カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）は、本文冒頭の `OrganizerTabs` で行き来する。カレンダーの予定からは、下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。売上から SCR-ORG-12 を開き、SCR-ORG-12 から名簿と売上へ戻る。未登録の幹事が名簿・売上・領収書を開くと SCR-ORG-10 へ送る。削除と受付停止は SCR-MOD-03 で確認し、完了後は SCR-ORG-01 へ戻る。
 
@@ -423,10 +440,12 @@ src/
 │   ├── organizer/
 │   │   ├── events/
 │   │   │   ├── page.tsx                      # SCR-ORG-01 (主催イベント一覧・クォータ残数・ポータル)
-│   │   │   ├── new/page.tsx                  # SCR-ORG-02 (新規作成・チラシ生成・Stripe戻り同期検知)
+│   │   │   ├── new/page.tsx                  # SCR-ORG-02 (新規作成・下書き保存・チラシ生成・Stripe戻り同期検知)
+│   │   │   ├── drafts/page.tsx               # SCR-ORG-15 (下書き一覧。プレビュー・編集・削除)
 │   │   │   └── [id]/
 │   │   │       ├── page.tsx                  # 画面ではない。edit へリダイレクトする
 │   │   │       ├── edit/page.tsx             # SCR-ORG-05 (イベント編集。保存後はロック解放して一覧へ)
+│   │   │       ├── preview/page.tsx          # SCR-ORG-16 (下書きのプレビューと公開。page は noindex の器)
 │   │   │       ├── participants/page.tsx     # SCR-ORG-06 (参加者名簿・領収書発行・売上サマリ)
 │   │   │       ├── revenue/page.tsx          # SCR-ORG-12 (売上の内訳。プラン別・開催回別)
 │   │   │       └── receipts/[participantId]/page.tsx # SCR-ORG-09 (幹事向け領収書)

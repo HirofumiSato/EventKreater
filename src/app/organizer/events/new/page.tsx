@@ -62,6 +62,7 @@ function NewEventScreen() {
   const [draftId, setDraftId] = useState<string | null>(draftIdParam);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [restoring, setRestoring] = useState(Boolean(draftIdParam));
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
@@ -74,6 +75,9 @@ function NewEventScreen() {
   const nextPath = referrerEventId
     ? `${SITE.nav.createEvent.href}?ref=${encodeURIComponent(referrerEventId)}`
     : SITE.nav.createEvent.href;
+
+  // 下書きは会員だけが保存できる。未登録の幹事には従来どおり公開だけを出す。
+  const canSaveDraft = !quotaState.isLoading && Boolean(quotaState.quota);
 
   // 購入後に戻ってきたとき、下書きの内容をフォームへ戻す。
   useEffect(() => {
@@ -129,6 +133,77 @@ function NewEventScreen() {
 
   const openPricing = (id: string | null) => {
     quotaState.openPricingModal({ ...(id ? { draftId: id } : {}), returnTo: nextPath });
+  };
+
+  /** 下書き ID を URL に残す。再読み込みや購入後の戻りでも同じ下書きを開けるようにする。 */
+  const draftPath = (id: string) =>
+    `${nextPath}${nextPath.includes("?") ? "&" : "?"}draftId=${encodeURIComponent(id)}`;
+
+  /**
+   * 下書きとして保存する。`goPreview` が true なら保存後にプレビューへ進む。
+   * 1回目はイベントの作成（`status: DRAFT`）を兼ね、2回目以降はロック不要の保存 API を呼ぶ。
+   */
+  const saveDraft = async (goPreview: boolean) => {
+    setSavingDraft(true);
+    setToast(null);
+    setRegisterRequired(false);
+    const payload = {
+      ...toEventRequest(form, referrerEventId),
+      status: "DRAFT" as const,
+      // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。既存の下書きでは付け替え済み。
+      ...(draftId ? {} : { flyerDraftKey: readFlyerDraftKey("new") }),
+    };
+    try {
+      let id = draftId;
+      if (id) {
+        const res = await fetch(`/api/v1/organizer/events/${id}/draft`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.status === 409) {
+          // すでに公開済み。保存はできないが、プレビュー側でその旨を出す。
+          router.push(`/organizer/events/${id}/preview`);
+          return;
+        }
+        if (!res.ok) throw new Error(await readProblem(res));
+      } else {
+        const res = await fetch("/api/v1/public/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.status === 403) {
+          const problem = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
+          if (problem.error === "PHONE_REQUIRED") {
+            window.location.href = phoneVerifyUrl(nextPath);
+            return;
+          }
+          if (problem.error === "REGISTER_REQUIRED") {
+            setRegisterRequired(true);
+            return;
+          }
+          throw new Error(problem.detail || "下書きの保存に失敗しました");
+        }
+        if (!res.ok) throw new Error(await readProblem(res));
+        const data = (await res.json()) as { event: { id: string } };
+        id = data.event.id;
+        setDraftId(id);
+        router.replace(draftPath(id), { scroll: false });
+      }
+      void quotaState.refreshQuota();
+      if (goPreview) {
+        router.push(`/organizer/events/${id}/preview`);
+        return;
+      }
+      setToastTone("success");
+      setToast("下書きを保存しました。プレビューで見た目を確認してから公開できます。");
+    } catch (cause) {
+      setToastTone("error");
+      setToast(cause instanceof Error ? cause.message : "下書きの保存に失敗しました");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   /** 下書きを公開する。入力中の内容も一緒に保存する。 */
@@ -238,7 +313,7 @@ function NewEventScreen() {
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {draftId && !restoring && (
         <p className="alert alert--success">
-          下書きを復元しました。内容を確認して、最後のステップで公開してください。
+          下書きを復元しました。内容を確認して、最後のステップからプレビューを開き、公開してください。
         </p>
       )}
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
@@ -261,8 +336,12 @@ function NewEventScreen() {
       <EventStepForm
         value={form}
         onChange={setForm}
-        onSubmit={() => void publish()}
+        // 会員は下書き保存を経てプレビューへ進む。未登録の幹事は従来どおり即公開。
+        onSubmit={() => (canSaveDraft ? void saveDraft(true) : void publish())}
         submitting={submitting}
+        savingDraft={savingDraft}
+        canSaveDraft={canSaveDraft}
+        onSaveDraft={() => void saveDraft(false)}
         disabled={restoring}
         showOrganizerName={!quotaState.isLoading && !quotaState.quota}
         seedKey={draftId ?? "new"}
@@ -271,7 +350,7 @@ function NewEventScreen() {
           <>
             <FlyerGeneratePanel
               value={form}
-              disabled={submitting || restoring}
+              disabled={submitting || savingDraft || restoring}
               previewUrl={flyerPreview}
               flyerAssetId={form.flyerAssetId}
               draftScope="new"

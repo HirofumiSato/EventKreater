@@ -24,6 +24,8 @@ function OrganizerEventsScreen() {
   const searchParams = useSearchParams();
   const quotaState = useEventQuota();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
+  // 下書きは専用の一覧（/organizer/events/drafts）へ分ける。出欠の統計が常に 0 のため。
+  const [draftCount, setDraftCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -47,7 +49,9 @@ function OrganizerEventsScreen() {
       events: OrganizerEvent[];
       viewer?: { userId: string | null; name: string | null };
     };
-    setEvents(data.events);
+    // 一覧 API は全件を返す。マイページとカレンダーが全件前提なので、絞り込みは画面側で行う。
+    setEvents(data.events.filter((event) => event.status !== "DRAFT"));
+    setDraftCount(data.events.filter((event) => event.status === "DRAFT").length);
     setViewer(data.viewer ?? null);
     setError(null);
   }, []);
@@ -120,7 +124,9 @@ function OrganizerEventsScreen() {
       <section className="panel">
         <div>
           <h1 className="page-title">主催イベント一覧</h1>
-          <p className="page-lead">出欠の集計、編集、複製、プラン管理をここから行います。</p>
+          <p className="page-lead">
+            出欠の集計、編集、複製、プラン管理をここから行います。下書きは「下書き一覧」に分けています。
+          </p>
         </div>
         <div className="panel__actions">
           {viewer?.userId && (
@@ -139,6 +145,9 @@ function OrganizerEventsScreen() {
             </>
           )}
           <StripePortalButton />
+          <Link href="/organizer/events/drafts" className="btn btn--outline">
+            下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
+          </Link>
           <Link href="/organizer/revenue" className="btn btn--outline">
             売上を見る
           </Link>
@@ -198,7 +207,17 @@ function OrganizerEventsScreen() {
           </Link>
         </p>
       )}
-      {!loading && !error && events.length === 0 && <p className="empty">まだ主催イベントがありません。</p>}
+      {!loading && !error && events.length === 0 && (
+        <p className="empty">
+          {draftCount > 0 ? `公開中の催しはありません。下書きが${draftCount}件あります。` : "まだ主催イベントがありません。"}
+          {draftCount > 0 && " "}
+          {draftCount > 0 && (
+            <Link href="/organizer/events/drafts" className="text-link">
+              下書き一覧を開く
+            </Link>
+          )}
+        </p>
+      )}
       <div className="stack">
         {events.map((event) => (
           <EventCard

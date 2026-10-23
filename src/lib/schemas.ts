@@ -287,6 +287,17 @@ export const UpdateEventSchema = eventBodySchema
   .superRefine(refineEventAddress)
   .superRefine(refineEventOptions);
 
+/**
+ * 作成画面からの下書き保存。
+ * 下書きの時点では定員・申し込み期限・チラシが空でもよい（`eventBodySchema` が元から任意）。
+ * 作成中に使ったチラシ回数を引き継ぐ `flyerDraftKey` は保存しない。
+ */
+export const SaveEventDraftSchema = UpdateEventSchema.and(
+  z.object({
+    flyerDraftKey: z.string().uuid().nullish(),
+  }),
+);
+
 export const OrganizerParticipantSchema = z
   .object({
     name: z.string().trim().min(1, "名前を入力してください").max(50),
@@ -512,3 +523,4 @@ export type UploadFlyerBackgroundInput = z.infer<typeof UploadFlyerBackgroundSch
 export type SelectFlyerCandidateInput = z.infer<typeof SelectFlyerCandidateSchema>;
 export type CreateEventInput = z.infer<typeof CreateEventSchema>;
 export type UpdateEventInput = z.infer<typeof UpdateEventSchema>;
+export type SaveEventDraftInput = z.infer<typeof SaveEventDraftSchema>;
