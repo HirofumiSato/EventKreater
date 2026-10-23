@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/http";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { VOICE_FIELD_KEYS } from "@/modules/events/lib/voice/fields";
-import { isVoiceMockEnabled } from "@/modules/events/lib/voice/mock";
+import { isVoiceMockEnabled, warnVoiceConfigurationOnce } from "@/modules/events/lib/voice/mock";
 import { transcribeWithOpenAi, voiceModel } from "@/modules/events/lib/voice/openai";
 import { consumeVoiceRateLimit } from "@/modules/events/lib/voice/rate-limit";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
@@ -13,6 +13,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INSTANCE = "/api/v1/voice/transcriptions";
+
+// このルートが読み込まれたとき（開発では初回アクセス時）に、設定を 1 度だけ知らせる。
+// テストでは毎回の出力が警告で埋まるため呼ばない。
+if (process.env.NODE_ENV !== "test") warnVoiceConfigurationOnce();
 
 function isVoiceFieldKey(value: string): value is VoiceFieldKey {
   return (VOICE_FIELD_KEYS as readonly string[]).includes(value);

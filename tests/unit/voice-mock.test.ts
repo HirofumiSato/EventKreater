@@ -143,3 +143,71 @@ describe("モックのときの API", () => {
     expect((await POST(request("title", "198.51.100.7"))).status).toBe(429);
   });
 });
+
+describe("起動時のログ", () => {
+  /** `warned` の印はモジュールに載るので、毎回読み直して新しい状態から始める。 */
+  async function freshWarn(): Promise<() => void> {
+    vi.resetModules();
+    const fresh = await import("@/modules/events/lib/voice/mock");
+    return fresh.warnVoiceConfigurationOnce;
+  }
+
+  it("モックが有効なら、そう出して OpenAI を呼ばないと知らせる", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+
+    (await freshWarn())();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("モックが有効です");
+    warn.mockRestore();
+  });
+
+  it("鍵が無ければ 503 になると知らせる", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
+
+    (await freshWarn())();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("OPENAI_API_KEY が未設定");
+    warn.mockRestore();
+  });
+
+  it("鍵がある通常の設定では黙っている", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+
+    (await freshWarn())();
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("本番では出さない", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    vi.stubEnv("NODE_ENV", "production");
+
+    (await freshWarn())();
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("同じプロセスでは 1 度しか出さない", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+
+    const once = await freshWarn();
+    once();
+    once();
+    once();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+});
