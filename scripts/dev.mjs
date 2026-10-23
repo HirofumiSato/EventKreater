@@ -46,7 +46,7 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 if (await listening(8000)) {
-  console.log("[flyer] already listening on 127.0.0.1:8000");
+  console.log("[flyer] 127.0.0.1:8000 は既に起動しています。そのまま使います（Docker の flyer かもしれません）");
 } else {
   launch(
     "flyer",
@@ -56,7 +56,7 @@ if (await listening(8000)) {
 }
 
 if (await listening(3012)) {
-  console.error("[web] port 3012 is already in use");
+  console.error("[web] ポート 3012 は使用中です。Docker の web が動いていないか確認してください（docker compose down で止まります）。");
   shutdown();
 } else {
   launch("web", "npm run dev:web", root);
