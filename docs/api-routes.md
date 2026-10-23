@@ -6,8 +6,8 @@
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
 - ルートファイル: 73
-- エンドポイント（メソッド × パス）: 88
-- 仕様書に記載: 81
+- エンドポイント（メソッド × パス）: 89
+- 仕様書に記載: 82
 - 実装のみ（仕様書に記載なし）: 7
 - 仕様書のみ（実装なし）: 0
 
@@ -44,6 +44,7 @@
 | POST | `/api/v1/billing/portal` | 必須（requireUserId） | あり | `src/app/api/v1/billing/portal/route.ts` |
 | GET | `/api/v1/billing/quota` | 必須（requireUserId） | あり | `src/app/api/v1/billing/quota/route.ts` |
 | GET | `/api/v1/flyer-assets` | なし | あり | `src/app/api/v1/flyer-assets/route.ts` |
+| POST | `/api/v1/flyer-assets` | なし | あり | `src/app/api/v1/flyer-assets/route.ts` |
 | DELETE | `/api/v1/flyer-assets/[id]` | なし | なし | `src/app/api/v1/flyer-assets/[id]/route.ts` |
 | GET | `/api/v1/flyer-assets/[id]/image` | なし | あり | `src/app/api/v1/flyer-assets/[id]/image/route.ts` |
 | POST | `/api/v1/flyers/candidates` | なし | あり | `src/app/api/v1/flyers/candidates/route.ts` |

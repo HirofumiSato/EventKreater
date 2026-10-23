@@ -33,3 +33,14 @@ export function detectImageKind(bytes: Uint8Array): UploadImageKind | null {
 export function imageContentType(kind: UploadImageKind): string {
   return IMAGE_MIME[kind];
 }
+
+const IMAGE_EXTENSION: Record<UploadImageKind, "jpg" | "png" | "webp"> = {
+  jpeg: "jpg",
+  png: "png",
+  webp: "webp",
+};
+
+/** 保存ファイル名とダウンロード名の拡張子。MIME ではなく一般的な表記に合わせる。 */
+export function imageExtension(kind: UploadImageKind): "jpg" | "png" | "webp" {
+  return IMAGE_EXTENSION[kind];
+}

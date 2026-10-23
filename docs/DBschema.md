@@ -33,7 +33,7 @@
 * **StripeWebhookEvent (Webhook冪等性ログ):** Stripeから受信・処理したWebhook Event IDを記録し、重複処理を防止。
 * **Event (イベント本体):** 主催者が告知・出欠を集めるイベントの実体（基本7項目＋ステータス＋掲載フラグ＋任意の申し込み期限）。`visibility` は将来のメディアサイト用の予約列であり、いまのアプリは一覧を持たないため常に `UNLISTED`（紹介制）。
 * **Receipt (参加費の領収書):** 幹事が出席者へ発行する文書。1参加者につき1件。金額は幹事が入力し、参加費の決済は持たない。
-* **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した 9:16 の JPEG。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは `storage/flyers/{id}.jpg` に置く。`externalFlyerId` は生成サービスが払い出した `generation_id`。チラシなしのイベントも許容する。
+* **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した 9:16 の JPEG、または主催者がアップロードした完成済みの画像。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは生成なら `storage/flyers/{id}.jpg`、アップロードなら `storage/flyers/{id}.{jpg|png|webp}` に置く。アップロードは再エンコードせず、`aspectRatio` は `auto`、`externalFlyerId` は NULL になる。チラシなしのイベントも許容する。
 * **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（筆頭幹事。1イベント1行）とCO_HOST（共同主催者）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
 * **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。
 * **EventLock (排他編集ロック):** 共同主催者間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。

@@ -273,6 +273,7 @@ function NewEventScreen() {
               value={form}
               disabled={submitting || restoring}
               previewUrl={flyerPreview}
+              flyerAssetId={form.flyerAssetId}
               draftScope="new"
               onGenerated={(asset) => {
                 setForm((current) => ({ ...current, flyerAssetId: asset.id }));
@@ -291,7 +292,7 @@ function NewEventScreen() {
             >
               過去のチラシから選ぶ
             </button>
-            <FlyerSelectModal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={applyFlyer} />
+            <FlyerSelectModal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={applyFlyer} title={form.title} />
           </>
         }
       />

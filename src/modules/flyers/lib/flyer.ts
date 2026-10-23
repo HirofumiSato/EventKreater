@@ -4,7 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import type { GenerateFlyerInput } from "@/lib/schemas";
 import { RAIN_POLICY_LABELS } from "@/modules/events/types";
 import type { FlyerCandidate, FlyerCandidateKind } from "@/modules/flyers/types";
-import { MAX_IMAGE_BYTES, detectImageKind } from "@/modules/flyers/lib/upload";
+import { MAX_IMAGE_BYTES, detectImageKind, imageExtension, type UploadImageKind } from "@/modules/flyers/lib/upload";
 
 const FLYER_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,29 +54,44 @@ export function assertFlyerAssetId(id: string): string {
   return id;
 }
 
-function imagePath(id: string): string {
-  return path.join(storageDir(), `${assertFlyerAssetId(id)}.jpg`);
+/** 保存済みチラシの拡張子。生成は JPEG、アップロードは原本の形式で置く。 */
+const STORED_EXTENSIONS = ["jpg", "png", "webp"] as const;
+
+type StoredExtension = (typeof STORED_EXTENSIONS)[number];
+
+function imagePath(id: string, extension: StoredExtension): string {
+  return path.join(storageDir(), `${assertFlyerAssetId(id)}.${extension}`);
 }
 
-export async function saveFlyerImage(id: string, bytes: Buffer): Promise<void> {
+export async function saveFlyerImage(
+  id: string,
+  bytes: Buffer,
+  kind: UploadImageKind = "jpeg",
+): Promise<void> {
   await mkdir(storageDir(), { recursive: true });
-  await writeFile(imagePath(id), bytes);
+  await writeFile(imagePath(id, imageExtension(kind)), bytes);
 }
 
 export async function readFlyerImage(id: string): Promise<Buffer> {
-  try {
-    return await readFile(imagePath(id));
-  } catch {
-    throw new ProblemDetailException({
-      status: 404,
-      title: "Not Found",
-      detail: "チラシが見つかりません。",
-    });
+  // 生成したチラシは jpg、アップロードは原本の拡張子で置いてある。
+  for (const extension of STORED_EXTENSIONS) {
+    try {
+      return await readFile(imagePath(id, extension));
+    } catch {
+      // 次の拡張子を試す。どれも無ければ下で 404 にする。
+    }
   }
+  throw new ProblemDetailException({
+    status: 404,
+    title: "Not Found",
+    detail: "チラシが見つかりません。",
+  });
 }
 
 export async function removeFlyerImage(id: string): Promise<void> {
-  await rm(imagePath(id), { force: true });
+  await Promise.all(
+    STORED_EXTENSIONS.map((extension) => rm(imagePath(id, extension), { force: true })),
+  );
 }
 
 interface FlyerGenerateResponse {

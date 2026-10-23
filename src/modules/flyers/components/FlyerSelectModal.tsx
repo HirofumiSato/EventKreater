@@ -2,25 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { readProblem } from "@/lib/problem";
-import type { FlyerAsset, RainPolicy } from "@/modules/events/types";
+import { flyerDownloadHref } from "@/modules/flyers/lib/download";
+import type { SelectableFlyer } from "@/modules/flyers/types";
+import { FlyerUploadButton } from "./FlyerUploadButton";
 
-export interface SelectableFlyer extends FlyerAsset {
-  title: string | null;
-  eventDate: string | null;
-  eventTime: string | null;
-  price: string | null;
-  location: string | null;
-  rainPolicy: RainPolicy | null;
-  capacity: number | null;
-}
+export type { SelectableFlyer } from "@/modules/flyers/types";
 
 interface FlyerSelectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (flyer: SelectableFlyer) => void;
+  /** アップロードしたチラシの表示名に使う催し名。 */
+  title?: string;
 }
 
-export function FlyerSelectModal({ isOpen, onClose, onSelect }: FlyerSelectModalProps) {
+export function FlyerSelectModal({
+  isOpen,
+  onClose,
+  onSelect,
+  title = "",
+}: FlyerSelectModalProps) {
   const [flyers, setFlyers] = useState<SelectableFlyer[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,7 @@ export function FlyerSelectModal({ isOpen, onClose, onSelect }: FlyerSelectModal
     if (!isOpen) return;
     let active = true;
     setLoading(true);
+    setError(null);
     void fetch("/api/v1/flyer-assets")
       .then(async (res) => {
         if (!res.ok) throw new Error(await readProblem(res));
@@ -69,10 +71,22 @@ export function FlyerSelectModal({ isOpen, onClose, onSelect }: FlyerSelectModal
         <h3 id="flyer-select-title" className="dialog__title">
           チラシ選択
         </h3>
-        <p className="dialog__body">選ぶと、生成時の7項目が作成フォームに入ります。削除すると一覧から外れます。掲載中のイベントの画像はそのまま残ります。</p>
+        <p className="dialog__body">選ぶと、生成時の7項目が作成フォームに入ります。アップロードした画像は、そのままチラシとして使えます。削除すると一覧から外れます。掲載中のイベントの画像はそのまま残ります。</p>
+        <div className="btn-row">
+          <FlyerUploadButton
+            title={title}
+            disabled={loading}
+            onUploaded={(flyer) => {
+              onSelect(flyer);
+              onClose();
+            }}
+            onError={setError}
+          />
+        </div>
+        <p className="help">Canva などで作った画像（JPEG / PNG / WebP、8MBまで）を、そのままチラシにできます。</p>
         {loading && <p className="loading">読み込んでいます</p>}
         {error && <p className="alert alert--error">{error}</p>}
-        {!loading && flyers.length === 0 && <p className="empty">この端末で生成したチラシはまだありません。</p>}
+        {!loading && flyers.length === 0 && <p className="empty">この端末で作った・アップロードしたチラシはまだありません。</p>}
         <div className="card-grid">
           {flyers.map((flyer) => (
             <article key={flyer.id} className="card">
@@ -89,6 +103,9 @@ export function FlyerSelectModal({ isOpen, onClose, onSelect }: FlyerSelectModal
                 >
                   このチラシを使う
                 </button>
+                <a href={flyerDownloadHref(flyer.id)} className="btn btn--ghost btn--sm">
+                  ダウンロード
+                </a>
                 <button type="button" className="btn btn--danger btn--sm" onClick={() => void remove(flyer.id)}>
                   削除
                 </button>

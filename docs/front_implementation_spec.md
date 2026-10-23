@@ -114,8 +114,8 @@ flowchart TD
 | 主催 | SCR-ORG-11 | 売上 | `/organizer/revenue` | 見込み売上・領収書発行額・差額・平均単価。全期間が初期値で、開催日で絞り込む。イベント別の一覧 |
 | 主催 | SCR-ORG-12 | 売上の内訳 | `/organizer/events/[id]/revenue` | プラン別と開催回別の人数・小計。プラン未選択の案内 |
 | 主催 | SCR-ORG-07 | 共同幹事受諾 | `/invitations/[code]` | 招待コードによる幹事権限のバインド |
-| パネル | SCR-ORG-08 | チラシ生成 | SCR-ORG-02 / SCR-ORG-05 上 | デザイン選択と7項目からの生成、生成結果のプレビュー。過去チラシは SCR-ORG-03 で選ぶ |
-| モーダル | SCR-ORG-03 | チラシ選択モーダル | SCR-ORG-02 / SCR-ORG-05 上 | 生成済みチラシアセットの選択と、7項目の流し込み |
+| パネル | SCR-ORG-08 | チラシ生成 | SCR-ORG-02 / SCR-ORG-05 上 | デザイン選択と7項目からの生成、生成結果のプレビューとダウンロード、手元の画像のアップロード。過去チラシは SCR-ORG-03 で選ぶ |
+| モーダル | SCR-ORG-03 | チラシ選択モーダル | SCR-ORG-02 / SCR-ORG-05 上 | 生成済み・アップロード済みチラシの選択と、7項目の流し込み。各チラシのダウンロードと、その場でのアップロード |
 | モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰。LINE共有は公開ページとカレンダーに置く |
 | モーダル | SCR-MOD-02 | 排他ロック競合モーダル | SCR-ORG-05 上（HTTP 409） | 他幹事の編集中通知と、強制引き継ぎ（Takeover） |
 | モーダル | SCR-MOD-03 | 削除・受付停止モーダル | SCR-ORG-01 上（筆頭幹事のみ） | 完全削除（`isDeleted`）または出欠受付停止（`CLOSED`）の確認 |
@@ -472,7 +472,7 @@ src/
 │   ├── auth/                         # SCR-PUB-02 / 05 / 07。AuthEntryScreen・LoginChallengeForm・Hydration
 │   ├── billing/                      # SCR-MOD-01。PricingModal・QuotaStatusBanner・StripePortalButton・plans/pricing/quota
 │   ├── events/                       # SCR-PUB-01 / SCR-ORG-01 / 02 / 05。EventCard・EventForm・EventMetaCard・OrganizerInviteCard・PosterHero
-│   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal
+│   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal・FlyerUploadButton
 │   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-13 / 14
 │   │   ├── components/OrganizerTabs.tsx         # 主催一覧 / カレンダー / 売上 / プロフィール（本文内サブタブ）
 │   │   ├── components/OrganizerProfileForm.tsx  # SCR-ORG-14（保存前プレビュー）
@@ -1183,6 +1183,7 @@ export interface PricingOption {
 | **FE-ORG-14** | **公開直後の登録の着地** | SCR-ORG-10 で「会員登録」または「ログイン」を押して完了する | `/organizer/events?registered=1` へ戻り、「登録が完了しました」のトーストが1回だけ出ること。`registered` は表示後に URL から消えること |
 | **FE-ORG-15** | **主催者マイページの要約** | 主催イベントを5件持つ会員で `/mypage` を開く | 主催イベントが直近3件だけ出て、「すべて見る」が `/organizer/events` を指すこと。利用枠の残数と公開プロフィールの状態が出ること。参加履歴（`/participant/history`）への導線が無いこと |
 | **FE-ORG-16** | **下書きの公開ボタン** | 下書きの編集画面と主催一覧を開く | 編集画面では「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、枠が無ければ `PricingModal` が出ること。一覧の下書きカードには「公開ページ」を出さないこと |
+| **FE-ORG-17** | **チラシのダウンロードとアップロード** | 作成画面で手元の JPEG をアップロードし、プレビューの「ダウンロード」を押す。続けて「過去のチラシから選ぶ」を開く | アップロード後にプレビューが出て、作成フォームの `flyerAssetId` がそのチラシになること。ダウンロードが `チラシ-{催し名}.jpg` の名前で保存され、回数（quota）が減らないこと。選択モーダルにアップロードしたチラシが並び、各カードからもダウンロードできること。PNG・WebP も同じように扱え、GIF や 8MB 超はエラーになること |
 | **FE-PUB-00** | **サービス名** | 公開画面のヘッダーとフッター | 表示が `SITE.name`（いまは `EventKreater`）であること |
 | **FE-PUB-01** | **未ログインのヘッダー** | 未ログインでホーム、ヘッダー、フッターを見る | ヘッダーに「参加者ログイン」（`/participant/login`）と「主催者ログイン」（`/auth/register`）があること。管理者ログインへのリンクは無いこと |
 | **FE-PUB-02** | **参加者のヘッダー** | 主催イベントを持たない会員でログインし、`/participant` を開く | ヘッダーが「参加者ホーム」「参加カレンダー」「参加履歴」「主催者として使う」だけで、「イベント告知ページを作る」「主催一覧」「イベントを探す」が無いこと。「主催者として使う」の着地が `/organizer/events` であること |
@@ -1389,7 +1390,7 @@ interface OrganizerInviteCardProps {
 | 2 | 費用プラン | `pricePlans`（男女別の切り替えを含む） | 必須 | 全行にプラン名と 0 以上の整数の金額がある |
 | 3 | 開催場所 | `venueName`・住所・`rainPolicy` | 必須 | `refineEventAddress` と同じ条件。住所を入れ始めたら都道府県・市区町村・番地まで、入れていなければ会場名か旧形式の場所 |
 | 4 | 定員と申し込み期限 | `capacity`、`rsvpDeadline` | 任意 | 「51以上」を選んだときだけ人数が入っている |
-| 5 | チラシ生成 | SCR-ORG-08 と SCR-ORG-03 | 任意 | チラシがあるか、「チラシなしで公開する」で送信した |
+| 5 | チラシの用意 | SCR-ORG-08 と SCR-ORG-03 | 任意 | チラシがあるか、「チラシなしで公開する」で送信した |
 
 * 開閉は `<ol>` とボタン（`aria-expanded` / `aria-controls`）で行い、閉じたステップの入力欄は描画しない。開いた見出しへフォーカスを移し、自動展開は `aria-live="polite"` で知らせる。
 * 必須ステップが**新たに**埋まったときだけ、次の必須ステップを開いて今のステップを畳む（`isForward`）。過去のステップを開き直して編集しても、後ろのステップは開閉しない。

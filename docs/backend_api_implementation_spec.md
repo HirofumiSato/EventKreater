@@ -32,7 +32,7 @@ flowchart TD
 5. **RFC 7807 準拠のエラーレスポンス:**
    - すべてのエラーレスポンスを `application/problem+json` 構造に統一。
 6. **チラシ生成は外部サービスへ委譲し、結果だけを自前で保存する:**
-   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` でタイプ・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
+   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` でタイプ・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。手元の完成済み画像を上げる `POST /api/v1/flyer-assets` も同じ `flyer_assets` 行を作り、原本の形式のまま `storage/flyers/{id}.{jpg|png|webp}` に置く（回数は消費しない）。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
 
 ---
 
@@ -111,7 +111,9 @@ flowchart TD
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | SCR-ORG-03 | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
 | `/api/v1/flyers/candidates/[id]` | GET | SCR-ORG-03 | 不要 | 候補 JPEG の中継 |
 | `/api/v1/flyers/generate` | POST | SCR-ORG-03 | 不要 | 選んだ候補を確定し、JPEG と `flyer_assets` を保存 |
-| `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシ JPEG の取得 |
+| `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
+| `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
+| `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -2052,7 +2054,31 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ### 9.4. GET `/api/v1/flyer-assets/[id]/image`（画像取得）
 
-`id` が UUID でない、またはファイルが無いときは 404。あるときは `Content-Type: image/jpeg` と `Cache-Control: public, max-age=31536000, immutable` でバイト列を返す。認証は不要。公開イベントページのチラシ表示がこの URL を使う。
+`id` が UUID でない、またはファイルが無いときは 404。あるときは保存したバイト列をそのまま返す。認証は不要で、公開イベントページのチラシ表示がこの URL を使う。
+
+- `Content-Type` は保存バイト列の先頭から決める（`image/jpeg` / `image/png` / `image/webp`）。生成したチラシは JPEG、アップロードしたチラシは原本の形式である。
+- 既定の `Cache-Control` は `public, max-age=31536000, immutable`。
+- `?download=1` を付けると `Content-Disposition: attachment` を付け、`Cache-Control: private, no-store` にする。ファイル名は `flyer_assets.title` から `チラシ-{催し名}.{拡張子}` を作る。空なら `flyer-{id}.{拡張子}`。日本語は RFC 5987 の `filename*` で送り、ASCII の `filename` も併記する。
+
+### 9.5. POST `/api/v1/flyer-assets`（アップロードしたチラシの保存）
+
+手元の完成済み画像を、そのままチラシとして保存する。対象は SCR-ORG-02 / SCR-ORG-05 / SCR-ORG-03。認証は不要で、Cookie `flyer_owner` の端末トークンを単位に所有者を決める。**生成ではないため、利用枠（quota）と `flyer_generation_logs` は使わない。**
+
+`multipart/form-data` で次を送る。
+
+| フィールド | 制約 |
+| :---- | :---- |
+| `file` | 必須。JPEG / PNG / WebP、8 MiB まで。先頭バイトで形式を判定する |
+| `title` | 任意。100 文字まで。催し名として `flyer_assets.title` に入れる |
+
+成功時は 201 と `{ "flyerAsset": { ... } }` を返す。`flyerAsset` は 9.3 と同じ形で、`aspectRatio` は `auto`（原本の比率のまま）、`externalFlyerId` は NULL である。
+
+1. 新しい UUID を `flyer_assets.id` とファイル名に使う。
+2. `storage/flyers/{id}.{jpg|png|webp}` に原本を再エンコードせずに書く。
+3. `flyer_assets` を作る。`userId` と `ownerTokenHash` は生成時と同じく `resolveFlyerOwner` の結果を使う。
+4. 行の作成に失敗したら、書いたファイルを削除する。
+
+同じ端末は 10 分に 5 回までとし、超えたら 429。未ログインでも作れる。8 MiB 超は 413、形式が JPEG / PNG / WebP でなければ 422 `INVALID_IMAGE`。
 
 ---
 

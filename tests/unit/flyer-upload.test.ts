@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   detectImageKind,
   imageContentType,
+  imageExtension,
   MAX_IMAGE_BYTES,
 } from "@/modules/flyers/lib/upload";
 import {
@@ -35,6 +36,12 @@ describe("detectImageKind", () => {
     expect(imageContentType("jpeg")).toBe("image/jpeg");
     expect(imageContentType("png")).toBe("image/png");
     expect(imageContentType("webp")).toBe("image/webp");
+  });
+
+  it("保存とダウンロードの拡張子は jpg / png / webp", () => {
+    expect(imageExtension("jpeg")).toBe("jpg");
+    expect(imageExtension("png")).toBe("png");
+    expect(imageExtension("webp")).toBe("webp");
   });
 
   it("上限は 8MB", () => {
