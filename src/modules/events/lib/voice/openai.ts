@@ -1,5 +1,6 @@
 import { ProblemDetailException } from "@/lib/exceptions";
 import { voicePromptFor } from "@/modules/events/lib/voice/fields";
+import { isVoiceMockEnabled, mockTranscript } from "@/modules/events/lib/voice/mock";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
 
 /**
@@ -17,9 +18,9 @@ export function voiceModel(): string {
   return configured ? configured : DEFAULT_VOICE_MODEL;
 }
 
-/** 鍵が無ければ音声入力は使えない。画面は手入力へ戻る。 */
+/** 鍵が無ければ音声入力は使えない。画面は手入力へ戻る。モックが有効なら鍵は要らない。 */
 export function isVoiceTranscriptionConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY?.trim());
+  return isVoiceMockEnabled() || Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
 interface OpenAiErrorBody {
@@ -77,6 +78,9 @@ export async function transcribeWithOpenAi(input: {
   filename: string;
   field: VoiceFieldKey | null;
 }): Promise<string> {
+  // モックは鍵より先に見る。鍵が空でも画面の流れを試せるようにするため。
+  if (isVoiceMockEnabled()) return mockTranscript(input.field);
+
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw unavailable(

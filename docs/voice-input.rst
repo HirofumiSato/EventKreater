@@ -178,6 +178,9 @@ API
    * - ``VOICE_TRANSCRIBE_WINDOW_MINUTES``
      - ``60``
      - 回数を数える窓（分）
+   * - ``VOICE_TRANSCRIBE_MOCK``
+     - ``0``
+     - ``1`` なら OpenAI を呼ばず、欄の入力例を認識結果にする（開発用）
 
 3. 課金と上限を決める
 ^^^^^^^^^^^^^^^^^^^^^
@@ -221,6 +224,29 @@ API
    * - すぐ上限になる
      - ``VOICE_TRANSCRIBE_LIMIT`` 。開発中は大きめにする
 
+5. 課金せずに試す（モック）
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+鍵を用意せず、課金もせずに画面の流れを確かめたいときは ``VOICE_TRANSCRIBE_MOCK=1`` を使います。
+
+.. code-block:: ini
+
+   VOICE_TRANSCRIBE_MOCK=1
+
+有効にすると、認識の問い合わせだけを差し替えます。OpenAI へは送らず、
+いま聞いている欄の入力例（ ``fields.ts`` の ``example`` 。「12月5日」「3000円」など）を
+認識結果として返します。入力例は ``parse.ts`` が読める形で書いてあるため、
+聞き直しにならず次の欄へ進みます。
+
+* 差し替えるのは認識だけです。録音とマイクの許可はそのまま要ります。無言で「停止して入力」でも構いません
+* ``OPENAI_API_KEY`` は空のままで動きます。503 の ``TRANSCRIBE_DISABLED`` は出ません
+* 回数の上限を数えません。開発中に ``429`` で止まらないようにするためです
+* 応答の ``model`` は ``mock`` になります。実モデル名と取り違えないようにしています
+* ``NODE_ENV=production`` では常に無効です。``next build`` と ``next start`` が該当します
+
+確かめられるのは、録音から送信、``parse.ts`` による値の決定、フォームへの反映、
+ステップの自動展開、次の欄への巡回までです。認識の精度だけは対象外です。
+
 モデルや提供元を変える
 ----------------------
 
@@ -251,6 +277,8 @@ API ルートと画面はそのまま動きます。
      - 変えるところ
    * - OpenAI の別モデル
      - ``VOICE_TRANSCRIBE_MODEL`` を変える。``whisper-1`` は ``response_format`` に ``verbose_json`` も使える
+   * - 何も呼ばない（モック）
+     - ``VOICE_TRANSCRIBE_MOCK=1`` 。``openai.ts`` は鍵より先に ``mockTranscript`` を返す
    * - 自前のサーバー（Whisper など）
      - ``transcribeWithOpenAi`` の ``fetch`` 先を自前の URL にし、``OPENAI_API_KEY`` の代わりの鍵を読む。``.env.example`` とこのページを更新する
    * - 端末内の認識（WASM）
@@ -279,6 +307,8 @@ API ルートと画面はそのまま動きます。
      - 画面から API を呼ぶ
    * - ``src/modules/events/lib/voice/openai.ts``
      - サーバー側の OpenAI 呼び出し
+   * - ``src/modules/events/lib/voice/mock.ts``
+     - 課金せずに試すための差し替え。欄の入力例を認識結果にする
    * - ``src/modules/events/lib/voice/rate-limit.ts``
      - 接続元ごとの回数制限
    * - ``src/app/api/v1/voice/transcriptions/route.ts``
@@ -311,8 +341,11 @@ API ルートと画面はそのまま動きます。
      - 全角の正規化、漢数字、日付の年解決、時刻の範囲、金額、定員、住所、雨天、期限
    * - ``tests/unit/voice-fields.test.ts``
      - 欄の並び、空欄の飛ばし方、任意の欄、戻る、id からの逆引き、パッチの適用
+   * - ``tests/unit/voice-mock.test.ts``
+     - モックの有効判定（本番では無効）、全欄の入力例が読めること、鍵なしで外部を呼ばないこと、API の応答と回数制限の扱い
 
 音声そのもの（マイク・通信・モデルの精度）は自動テストの対象外です。手で確かめます。
+モックは録音を差し替えないため、マイクと許可は手で確かめる範囲に残ります。
 
 制約
 ----

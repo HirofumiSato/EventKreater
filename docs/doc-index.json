@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2430,
+      "lineCount": 2432,
       "headings": [
         {
           "level": 1,
@@ -2463,6 +2463,10 @@
         },
         {
           "path": "src/modules/events/lib/venue-suggestions.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/fields.ts",
           "exists": true
         },
         {
@@ -8328,7 +8332,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 305,
+      "lineCount": 307,
       "headings": [
         {
           "level": 1,
@@ -9701,7 +9705,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 466,
+      "lineCount": 470,
       "headings": [
         {
           "level": 1,
@@ -9936,6 +9940,10 @@
         },
         {
           "path": "tests/unit/voice-fields.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-mock.test.ts",
           "exists": true
         },
         {
@@ -10463,7 +10471,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードでは、上から順に空欄へ「見た目だけのフォーカス」を当て、1 欄ずつ話して埋めていきます。",
       "preImplementation": false,
-      "lineCount": 325,
+      "lineCount": 358,
       "headings": [
         {
           "level": 1,
@@ -10514,6 +10522,10 @@
           "text": "4. 動作を確かめる"
         },
         {
+          "level": 3,
+          "text": "5. 課金せずに試す（モック）"
+        },
+        {
           "level": 2,
           "text": "モデルや提供元を変える"
         },
@@ -10557,6 +10569,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/mock.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/voice/normalize.ts",
           "exists": true
         },
@@ -10582,6 +10598,10 @@
         },
         {
           "path": "tests/unit/voice-fields.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-mock.test.ts",
           "exists": true
         },
         {

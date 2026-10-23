@@ -66,6 +66,8 @@
      - 任意。音声認識のモデル。空なら ``gpt-4o-mini-transcribe``
    * - ``VOICE_TRANSCRIBE_LIMIT`` / ``VOICE_TRANSCRIBE_WINDOW_MINUTES``
      - 任意。接続元ごとの音声認識の回数と、数える窓（分）。既定は 1 時間 40 回
+   * - ``VOICE_TRANSCRIBE_MOCK``
+     - 任意。``1`` なら OpenAI を呼ばず、欄の入力例を認識結果として返す（開発用）。``NODE_ENV=production`` では無効
 
 ``.env.example`` ではアプリ URL を ``http://localhost:3012`` にしています。
 ``next dev`` の既定ポートは 3000 なので、どちらかに揃えます。
