@@ -23,7 +23,7 @@
 | `public/samples` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
-| `scripts/ci-scope.mjs` | [docs/testing/ci.rst](testing/ci.rst) |
+| `scripts/ci-scope.mjs` | [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |

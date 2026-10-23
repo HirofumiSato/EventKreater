@@ -89,7 +89,7 @@ npm run docs:links   # docs に書かれたパスの実在確認
 cd services/flyer; python -m pytest -q
 ```
 
-CI は `changes`・`check`・`db`・`flyer`・`docs` の 5 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。先頭の `changes` が PR の変更ファイルを見て、`docs` だけの変更なら `check` と `db` を、`services/flyer` の外だけの変更なら `flyer` を飛ばします。`docs` は `npm run docs:gen` の生成物が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるかを見ます。`flyer` は `services/flyer` の pytest と mypy を続けて呼びます。
+CI は `check`・`db`・`flyer`・`docs` の 4 ジョブです（[../.github/workflows/ci.yml](../.github/workflows/ci.yml)）。`check`・`db`・`flyer` は、それぞれの先頭で `scripts/ci-scope.mjs` を呼び、PR の変更ファイルから走らせる範囲を決めます。`docs` だけの変更なら `check` と `db` を、`services/flyer` の外だけの変更なら `flyer` を飛ばします。`docs` は `npm run docs:gen` の生成物が最新か、原稿のパスが実在するか、Sphinx が HTML を生成できるかを見ます。`flyer` は `services/flyer` の pytest と mypy を続けて呼びます。
 読む順の詳細は [testing/index.rst](testing/index.rst) にあります。
 
 ## 掴めたかの確認

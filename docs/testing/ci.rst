@@ -8,9 +8,9 @@ CI への接続
 
 ワークフローはリポジトリ直下の ``.github/workflows/ci.yml`` に 1 本だけ置きます。トリガーは ``pull_request`` と ``main`` への ``push`` です。同じブランチの実行が重なったときは、前の実行を打ち切ります（``concurrency`` の ``cancel-in-progress``）。
 
-権限は ``contents: read`` と ``pull-requests: read`` です。後者は ``changes`` ジョブが PR の変更ファイル一覧を GitHub API から読むために要ります。CI からリポジトリへ書く操作はしません。
+権限は ``contents: read`` と ``pull-requests: read`` です。後者は変更ファイルの判定が PR の一覧を GitHub API から読むために要ります。CI からリポジトリへ書く操作はしません。
 
-ジョブは 5 つです。先頭の ``changes`` が変更ファイルを見て、後続のジョブに走らせる範囲を渡します。
+ジョブは 4 つです。``check``、``db``、``flyer`` は、それぞれの先頭で変更ファイルを見て走らせる step を選びます。
 
 .. list-table::
    :header-rows: 1
@@ -19,9 +19,6 @@ CI への接続
    * - ジョブ
      - 呼ぶコマンド
      - 見ているもの
-   * - ``changes``
-     - ``gh api`` で PR の変更ファイル一覧を取る
-     - ``code`` と ``flyer`` の 2 つの真偽値。規則は「変更に応じた絞り込み」に書きます
    * - ``check``
      - ``npm ci``（キャッシュヒット時は ``npx prisma generate``）のあと ``npm run check``
      - ESLint、``tsc --noEmit``、``tests/unit/`` の 358 件
@@ -40,7 +37,9 @@ CI への接続
 変更に応じた絞り込み
 --------------------
 
-``changes`` ジョブは PR の変更ファイル一覧を取り、次の規則で 2 つの真偽値を出します。``main`` への push は常に両方 ``true`` です。
+``check``、``db``、``flyer`` は、``actions/setup-node`` のあとに ``node scripts/ci-scope.mjs`` を呼びます。このスクリプトが PR の変更ファイル一覧を取り、``code`` と ``flyer`` の 2 つの真偽値を ``GITHUB_OUTPUT`` に書きます。``main`` への push は常に両方 ``true`` です。
+
+判定を独立したジョブにしないのは、その所要時間（10 秒前後）を全ジョブが直列で待つことになるためです。実測では、独立した ``changes`` ジョブを置いた版は全体が 58 秒、各ジョブに畳み込んだ版は 45 秒でした。
 
 .. list-table::
    :header-rows: 1
@@ -74,6 +73,8 @@ CI への接続
 
 **必須チェックのジョブは消さず、step だけを飛ばします。** ``on.pull_request.paths`` で workflow ごと止めると、必須チェックが報告されないまま「待ち続けている」状態になり、いつまでもマージできなくなります。``if:`` でジョブごと飛ばした場合は skipped として報告されるため、必須チェックでの扱いが環境に依存します。必須の 3 つ（``check``、``db``、``flyer``）はジョブを走らせたまま step を飛ばして緑で完了させます。ジョブ名が変わらないので、ブランチ保護の設定もそのままです。
 
+このため、``check``、``db``、``flyer`` の 3 ジョブは、何もすることが無い PR でも 5 秒ほどで緑のチェックを返します。中身は ``checkout``、``setup-node``、``ci-scope`` の 3 つだけです。
+
 check ジョブ
 ------------
 
@@ -103,9 +104,11 @@ apt での取得は 8 秒前後かかり、ミラーが遅い日はここで数�
 
 ``pip`` のキャッシュは ``services/flyer/requirements.txt`` をキーにします。``working-directory`` を ``services/flyer`` にしてあるので、``pip install``、``pytest``、``mypy`` はそのまま書けます。
 
+``pip install`` は 14 秒前後かかり、``pytest`` と ``mypy`` を合わせた時間より長くなります。そこで ``services/flyer`` 直下の ``.venv`` を丸ごと ``actions/cache`` に控え、復元できたときは依存解決だけを数秒で通します。復元した venv は作成時の Python を指すので、``import pytest, mypy`` が通らなければ捨てて作り直します。``.venv`` は ``.gitignore`` にあります。
+
 ``python -m mypy`` は同じジョブで続けて呼びます。対象は ``mypy.ini`` の ``files = src`` です。``requirements.txt`` を入れるのは、Pillow や Pydantic の型を解決するためで、これは ``pytest`` と共通です。
 
-型検査を別ジョブにしない理由は 2 つあります。1 つは、依存の導入を 1 回で済ませるためです。分けると ``pip install`` の 12 秒を二度払います。もう 1 つは、``flyer`` がブランチ保護の必須チェックだからです。別ジョブのままだと、必須に登録しない限り型エラーが緑のまま通ってしまいます。どちらが落ちたかは step 名（``pytest（振る舞い）`` / ``mypy（型）``）で分かります。
+型検査を別ジョブにしない理由は 2 つあります。1 つは、依存の導入を 1 回で済ませるためです。分けると ``pip install`` の 14 秒を二度払います。もう 1 つは、``flyer`` がブランチ保護の必須チェックだからです。別ジョブのままだと、必須に登録しない限り型エラーが緑のまま通ってしまいます。どちらが落ちたかは step 名（``pytest（振る舞い）`` / ``mypy（型）``）で分かります。
 
 ``flyer`` が ``false`` のときは ``pip install`` 以降を飛ばします。``services/flyer`` を触っていない PR で mypy を回しても、見るものがありません。
 
@@ -121,7 +124,7 @@ apt での取得は 8 秒前後かかり、ミラーが遅い日はここで数�
 * ``node_modules`` のキャッシュが壊れたと疑ったら、GitHub の Actions の Caches から鍵ごと消して再実行します。鍵は ``package-lock.json`` と ``prisma/schema.prisma`` のハッシュなので、依存かスキーマを変えれば自動的に外れます。
 * フォントのキャッシュの鍵 ``noto-cjk-regular-1`` は固定です。``fonts-noto-cjk`` の版を上げたら番号も上げます。
 * ``.venv-docs`` は復元したあとに ``import sphinx`` を試し、通らなければ捨てて作り直します。Python のパッチ版が上がると venv の中の絶対パスが古くなるためです。
-* ``changes`` ジョブは ``tests/unit/ci-scope.test.mjs`` で規則を固定しています。規則を変えたら、同じ PR でテストも直します。``.github/workflows/`` を変えたときは全部 ``true`` に倒れるので、CI を直す PR が自分自身を絞り込んでしまうことはありません。
+* ``scripts/ci-scope.mjs`` の規則は ``tests/unit/ci-scope.test.mjs`` で固定しています。規則を変えたら、同じ PR でテストも直します。``.github/workflows/`` を変えたときは全部 ``true`` に倒れるので、CI を直す PR が自分自身を絞り込んでしまうことはありません。
 
 db ジョブ
 ---------
