@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>装飾モック | 全画面</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-default-deco="tape-shadow">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="mock-index.html">EventKreater</a>
+      <div class="site-header__actions">
+        <a class="btn btn--outline btn--sm" href="mock-compare.html">比較</a>
+        <a class="btn btn--primary btn--sm" href="mock-frame.html?p=mock-home.html&w=390">スマホで見る</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">決定／影だけ・用途で 2 つに分ける</p>
+        <h1 class="page-title">全 29画面。</h1>
+        <p class="page-lead">
+          管理コンソール（<code>/console/**</code>）を除く、すべての画面です。
+          <strong>スマホがほぼ 100%</strong> なので、名前を押すと 390px の枠で開きます。PC は右の小さなリンクから。
+        </p>
+        <div class="panel__actions" style="margin-top: 1.25rem">
+          <a class="btn btn--primary" href="mock-frame.html?p=mock-home.html&w=390">ホーム（スマホ）</a>
+          <a class="btn btn--outline" href="mock-compare.html">2 つの用途を並べる</a>
+        </div>
+      </div>
+
+      <p class="device-note">
+        既定はスマホ 390px。PC は同じ画面を 1280px の枠で開きます。装飾は、枠の中でその幅のメディアクエリが効いた状態で描かれます。
+      </p>
+
+      <div class="compare-bar__row" style="gap: 0.5rem">
+        <span class="compare-bar__label">名前を押したときの幅</span>
+        <div class="segment" role="group" aria-label="開く幅">
+          <button class="segment__item" type="button" data-open-width="390" aria-pressed="true">スマホ 390</button>
+          <button class="segment__item" type="button" data-open-width="1280" aria-pressed="false">PC 1280</button>
+        </div>
+      </div>
+
+      <div id="screen-groups"></div>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">2 つの用途の分かれ目</h2>
+          <p class="section__note">同じ「影だけ」のまま、6 つだけ変えています。</p>
+        </div>
+
+        <ul class="mock-decide" style="margin-top: 1rem">
+          <li>
+            <strong>影だけ（導入）— 縁なし・硬い影 3px。</strong>
+            <p>
+              公開ページ、認証、参加者、アカウント、新規作成。傾きは 0.5 度まで、数字には山吹の下線。
+              初めて触る人の画面で、装飾が判断の材料になります。
+            </p>
+          </li>
+          <li>
+            <strong>静かめ（管理）— 罫線 1px・弱い影・傾きなし。</strong>
+            <p>
+              主催者ホームと、そこに紐づく名簿・売上・領収書・設定。数字は墨で置き、桁を揃えます。
+              同じ人が毎週開く画面で、装飾は 2 回目から読む邪魔になります。
+            </p>
+          </li>
+          <li>
+            <strong>地紋を落とす。</strong> 導入は 16px の方眼、管理は無地。
+            <p>数字の後ろで点が動いて見えるので、走査する画面では敷きません。</p>
+          </li>
+          <li>
+            <strong>タブを下線にする。</strong> 導入は墨の丸、管理は下線 2px。
+            <p>塗りつぶしの丸は、一覧の上で「ボタン」に見えます。管理画面では現在地で十分です。</p>
+          </li>
+          <li>
+            <strong>ヒーローとヘッダーは共通。</strong>
+            <p>用途に関係なく同じです。比較のたびに第一印象が動くと、判断の基準が持ちません。</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">色は、増やすならこの 3 つ。</h2>
+          <p class="section__note">朱は「押す」ためだけに残す。飾りには別の色を持たせたほうが、朱が効きます。</p>
+        </div>
+
+        <ul class="palette" id="palette">
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #e09b16"></span>
+            <div class="palette__meta">
+              <span class="palette__name">山吹 <code>--pop-warm</code></span>
+              <span class="palette__hex">#e09b16</span>
+              <span class="palette__ratio" data-color="#e09b16"></span>
+              <span class="palette__ratio" data-color="#e09b16" data-on="#1a1916"></span>
+            </div>
+          </li>
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #fff3d6"></span>
+            <div class="palette__meta">
+              <span class="palette__name">山吹の下地 <code>--pop-warm-tint</code></span>
+              <span class="palette__hex">#fff3d6</span>
+              <span class="palette__ratio" data-color="#8a5800" data-on="#fff3d6"></span>
+            </div>
+          </li>
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #1d7a6b"></span>
+            <div class="palette__meta">
+              <span class="palette__name">青緑 <code>--pop-cool</code></span>
+              <span class="palette__hex">#1d7a6b</span>
+              <span class="palette__ratio" data-color="#ffffff" data-on="#1d7a6b"></span>
+            </div>
+          </li>
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #e4f3ef"></span>
+            <div class="palette__meta">
+              <span class="palette__name">青緑の下地 <code>--pop-cool-tint</code></span>
+              <span class="palette__hex">#e4f3ef</span>
+              <span class="palette__ratio" data-color="#16695b" data-on="#e4f3ef"></span>
+            </div>
+          </li>
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #ffe6d5"></span>
+            <div class="palette__meta">
+              <span class="palette__name">桃 <code>--pop-peach</code></span>
+              <span class="palette__hex">#ffe6d5</span>
+              <span class="palette__ratio" data-color="#a8452a" data-on="#ffe6d5"></span>
+            </div>
+          </li>
+          <li class="palette__item">
+            <span class="palette__chip" style="background: #fdf3e4"></span>
+            <div class="palette__meta">
+              <span class="palette__name">紙（貼り紙） <code>--color-bg</code></span>
+              <span class="palette__hex">#fdf3e4</span>
+              <span class="palette__ratio" data-color="#1a1916" data-on="#fdf3e4"></span>
+            </div>
+          </li>
+        </ul>
+        <p class="help" style="margin-top: 0.75rem">
+          比は実測値です。WCAG AA（本文 4.5:1）を下回った組は赤で出ます。
+          山吹の面に白文字は 2.3:1 なので、山吹を使うときは必ず墨を載せます。
+        </p>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">決めたこと</h2>
+          <p class="section__note">この 2 点で確定しています。</p>
+        </div>
+
+        <ul class="mock-decide" style="margin-top: 1rem">
+          <li>
+            <strong>1. 用途で分ける。</strong> ホームと新規作成は<strong>影だけ</strong>、主催者ホームから先は<strong>静かめ</strong>。
+            <p>
+              名簿・売上・領収書・設定も静かめです。画面をまたいでも、FV とヘッダーは共通のまま。
+            </p>
+          </li>
+          <li>
+            <strong>2. 静かめは、罫線 1px ＋ 弱い影 ＋ 傾きなし。</strong>
+            <p>影は完全には落とさず、輪郭は罫線で残す。数字は墨、タブは下線。</p>
+          </li>
+          <li>
+            <strong>3. スマホを基準にする。</strong> 比較も一覧も 390px を既定にした。
+            <p>
+              横に並べる比較は、2 枚までなら PC の画面でも 390px のまま並びます。
+              スマホ実機で見るときは、そのまま縦に 1 枚ずつ並びます。
+            </p>
+          </li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>EventKreater / 装飾モック</p>
+      <ul class="site-footer__links">
+        <li><a href="mock-compare.html">比較</a></li>
+        <li><a href="mock-home.html">ホーム</a></li>
+        <li><a href="mock-create.html">新規作成</a></li>
+        <li><a href="mock-organizer.html">主催一覧</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <div class="mockbar" role="group" aria-label="モックの切り替え">
+    <span class="mockbar__label">一覧</span>
+    <div class="mockbar__group">
+      <span>装飾</span>
+      <button type="button" data-deco-btn="tape-shadow" aria-pressed="true">影だけ</button>
+      <button type="button" data-deco-btn="tape-quiet" aria-pressed="false">静かめ</button>
+    </div>
+  </div>
+
+  <script src="mock-screens-data.js"></script>
+  <script src="mock-theme.js"></script>
+  <script>
+    // 目録から一覧を組む。画面を足したら、データを 1 行直すだけで済む。
+    const mount = document.getElementById("screen-groups");
+
+    for (const group of window.MOCK_GROUPS) {
+      const items = window.MOCK_SCREENS.filter((s) => s.group === group.key);
+      if (!items.length) continue;
+
+      const section = document.createElement("section");
+      section.className = "screen-group";
+
+      section.innerHTML = `
+        <div class="screen-group__head">
+          <h2 class="screen-group__title">${group.title}</h2>
+          <span class="screen-group__count">${items.length} 画面</span>
+          <p class="screen-group__note">${group.note}</p>
+        </div>
+        <ul class="screen-list">
+          ${items
+            .map(
+              (s) => `
+            <li class="screen-row">
+              <span class="screen-row__no" aria-hidden="true">${s.no}</span>
+              <div>
+                <p class="screen-row__title">
+                  <a href="mock-frame.html?p=${s.file}&w=390" data-frame-link>${s.name}</a>
+                </p>
+                <p class="screen-row__meta">
+                  <span class="screen-row__path">${s.path}</span>
+                  <span class="scope-tag scope-tag--${s.scope}">${s.scope === "pop" ? "影だけ" : "静かめ"}</span>
+                </p>
+                <p class="screen-row__note">${s.note}</p>
+                <p class="screen-row__act">
+                  <a class="btn btn--outline btn--sm" href="mock-frame.html?p=${s.file}&w=390">スマホ</a>
+                  <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=${s.file}&w=1280">PC</a>
+                  <a class="btn btn--ghost btn--sm" href="${s.file}">幅そのまま</a>
+                </p>
+              </div>
+            </li>`,
+            )
+            .join("")}
+        </ul>
+      `;
+      mount.append(section);
+    }
+
+    // 名前を押したときに開く幅。行ごとの「スマホ」「PC」は、この設定に従わず固定。
+    const widthButtons = document.querySelectorAll("[data-open-width]");
+
+    function applyOpenWidth(width) {
+      for (const link of document.querySelectorAll("[data-frame-link]")) {
+        link.href = link.href.replace(/w=\d+/, `w=${width}`);
+      }
+      for (const button of widthButtons) {
+        button.setAttribute("aria-pressed", String(Number(button.dataset.openWidth) === width));
+      }
+    }
+
+    for (const button of widthButtons) {
+      button.addEventListener("click", () => applyOpenWidth(Number(button.dataset.openWidth)));
+    }
+
+    // 色の比を、この場で計算して出す。目視の判断を数字で裏付ける。
+    function channel(value) {
+      const c = value / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    function luminance(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return (
+        0.2126 * channel((n >> 16) & 255) +
+        0.7152 * channel((n >> 8) & 255) +
+        0.0722 * channel(n & 255)
+      );
+    }
+
+    function ratio(a, b) {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    for (const node of document.querySelectorAll("[data-color]")) {
+      const fg = node.dataset.color;
+      const bg = node.dataset.on || "#fdf3e4";
+      const value = ratio(fg, bg);
+      const pass = value >= 4.5;
+      node.textContent = `${fg} on ${bg}: ${value.toFixed(2)}:1 ${pass ? "AA" : "AA 未満"}`;
+      node.classList.add(pass ? "is-ok" : "is-ng");
+    }
+  </script>
+</body>
+</html>

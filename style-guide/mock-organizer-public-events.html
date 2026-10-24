@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催者の催し</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="participant" data-current="participant" data-screen="主催者の催し" data-path="/organizers/[userId]/events">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">佐藤 みのり の催し</h1>
+        <p class="page-lead">これからの催しと、終わった催しの一覧です。</p>
+      </div>
+
+      <div class="roster-toolbar">
+        <div class="segment" role="group" aria-label="表示の切り替え">
+          <button class="segment__item" type="button" aria-pressed="true">一覧</button>
+          <button class="segment__item" type="button" aria-pressed="false">カレンダー</button>
+        </div>
+        <a class="text-link" href="mock-organizer-public.html" style="font-size: 0.8125rem">プロフィールへ</a>
+      </div>
+
+      <section class="section" style="margin-top: 0">
+        <div class="section__head">
+          <h2 class="section__title">これから</h2>
+          <p class="section__note">2件。満員の催しは参加要望を受け付けます。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">秋の芋煮会</p>
+              <p class="rows__meta">11月8日（日）11:00–15:00 ／ 河川敷公園 第2広場<br>参加 28 / 40名 ／ 大人 500円</p>
+            </div>
+            <span class="badge badge--success badge--sm">受付中</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">冬の焚き火会</p>
+              <p class="rows__meta">12月13日（土）16:00–19:00 ／ 河川敷公園<br>参加 12 / 20名 ／ 無料</p>
+            </div>
+            <span class="badge badge--success badge--sm">受付中</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">終わった催し</h2>
+          <p class="section__note">新しい順です。</p>
+        </div>
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">第2回 たこ焼きパーティー</p>
+              <p class="rows__meta">9月27日（土）／ 参加 18名</p>
+            </div>
+            <span class="badge badge--neutral badge--sm">終了</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">夏の流しそうめん</p>
+              <p class="rows__meta">8月9日（土）／ 参加 31名</p>
+            </div>
+            <span class="badge badge--neutral badge--sm">終了</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">七夕の集まり</p>
+              <p class="rows__meta">7月5日（土）／ 参加 22名</p>
+            </div>
+            <span class="badge badge--neutral badge--sm">終了</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="notice">
+        この一覧を見るには、参加者ログインが必要です。ログインしていない場合は、骨組みだけをぼかして表示し、ログインへ案内します。
+      </div>
+
+      <p class="screen-note">今月より前の月へは戻れません。主催者は、主催一覧のプレビューから同じ内容を確認できます。</p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 売上</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="売上" data-path="/organizer/revenue">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">売上</h1>
+        <p class="page-lead">見込みと、領収書を出した額の差がそのまま残りです。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a href="mock-organizer.html">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a class="is-current" href="mock-revenue.html" aria-current="page">売上</a>
+        <a href="mock-organizer-profile.html">プロフィール</a>
+      </nav>
+
+      <section class="panel" style="margin-top: 0">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem">
+          <h2 class="panel__title">全期間</h2>
+          <label style="font-size: 0; display: flex">
+            <span class="visually-hidden">期間で絞る</span>
+            <select class="select input--compact" style="font-size: 0.875rem">
+              <option>全期間</option>
+              <option>この 3か月</option>
+              <option>この 1年</option>
+            </select>
+          </label>
+        </div>
+
+        <ul class="ledger" style="margin-top: 0.875rem">
+          <li class="ledger__row">
+            <span class="ledger__label">見込み売上<span class="ledger__note">答えた人数 × プランの金額</span></span>
+            <span class="ledger__value">18,500<span class="ledger__note">円</span></span>
+          </li>
+          <li class="ledger__row">
+            <span class="ledger__label">領収書の発行額<span class="ledger__note">実際に発行した分</span></span>
+            <span class="ledger__value">12,000<span class="ledger__note">円</span></span>
+          </li>
+          <li class="ledger__row ledger__row--total">
+            <span class="ledger__label">差額<span class="ledger__note">まだ受け取っていない分</span></span>
+            <span class="ledger__value">6,500<span class="ledger__note">円</span></span>
+          </li>
+          <li class="ledger__row">
+            <span class="ledger__label">平均単価<span class="ledger__note">1人あたり</span></span>
+            <span class="ledger__value">661<span class="ledger__note">円</span></span>
+          </li>
+        </ul>
+
+        <p class="screen-note" style="margin-top: 0.75rem">
+          領収書を出していない参加者は、見込みのまま残ります。集金は当日でも、あとからでも構いません。
+        </p>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">催し別</h2>
+          <p class="section__note">開催日の新しい順です。行を押すと内訳が出ます。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item rows__item--link">
+            <div class="rows__main">
+              <p class="rows__title">秋の芋煮会</p>
+              <p class="rows__meta">11月8日（日）／ 参加 28名 ／ 発行済み 12,000円</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-revenue-detail.html">内訳</a>
+          </li>
+          <li class="rows__item rows__item--link">
+            <div class="rows__main">
+              <p class="rows__title">第3回 たこ焼きパーティー</p>
+              <p class="rows__meta">11月22日（土）／ 参加 9名 ／ 発行済み 0円</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-revenue-detail.html">内訳</a>
+          </li>
+          <li class="rows__item rows__item--link">
+            <div class="rows__main">
+              <p class="rows__title">第2回 たこ焼きパーティー</p>
+              <p class="rows__meta">9月27日（土）／ 参加 18名 ／ 発行済み 21,600円</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-revenue-detail.html">内訳</a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">プラン未選択の参加者</h2>
+          <p class="section__note">金額が決まっていない人は、見込みに入りません。</p>
+        </div>
+        <div class="panel" style="margin-top: 0.75rem">
+          <p class="panel__note">秋の芋煮会に 2人います。名簿から、費用プランを選んでもらうか、こちらで決めてください。</p>
+          <div class="panel__actions">
+            <a class="btn btn--primary btn--sm" href="mock-roster.html">名簿で決める</a>
+          </div>
+        </div>
+      </section>
+
+      <p class="screen-note">
+        この画面は会員の主催者だけが開けます。未登録の幹事は、登録の案内へ進みます。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | アカウント設定</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="participant" data-current="account" data-screen="アカウント設定" data-path="/account">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page page--form" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">設定</p>
+        <h1 class="page-title">アカウント設定</h1>
+        <p class="page-lead">主催者と参加者で、同じ画面を使います。</p>
+      </div>
+
+      <section class="panel" style="margin-top: 0">
+        <h2 class="panel__title">表示名</h2>
+        <p class="panel__note">名簿と領収書に、この名前が出ます。</p>
+        <div class="field" style="margin-top: 0.75rem">
+          <label class="label" for="ac-name">表示名</label>
+          <input class="input" id="ac-name" value="山田 花子" autocomplete="name">
+        </div>
+        <div class="panel__actions">
+          <button class="btn btn--primary btn--sm" type="button">保存</button>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 0">
+        <h2 class="panel__title">メールアドレス</h2>
+        <p class="panel__note">変更すると、新しいアドレスに確認のリンクが届きます。押すまで、変更は確定しません。</p>
+        <div class="field" style="margin-top: 0.75rem">
+          <label class="label" for="ac-email">メールアドレス</label>
+          <input class="input" id="ac-email" type="email" value="hanako@example.com" autocomplete="email">
+        </div>
+        <p class="screen-note" style="margin-top: 0.5rem">確認待ち: minori@example.com（10月24日 09:10 に送信）</p>
+        <div class="panel__actions">
+          <button class="btn btn--primary btn--sm" type="button">変更する</button>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 0">
+        <h2 class="panel__title">電話番号</h2>
+        <p class="panel__note">ログインの確認番号を受け取る番号です。変更には、その場で確認番号を入れます。</p>
+        <div class="field" style="margin-top: 0.75rem">
+          <label class="label" for="ac-phone">電話番号</label>
+          <input class="input" id="ac-phone" type="tel" inputmode="tel" value="090-1234-5678" autocomplete="tel">
+        </div>
+        <div class="panel__actions">
+          <button class="btn btn--primary btn--sm" type="button">変更する</button>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 0">
+        <h2 class="panel__title">パスワード</h2>
+        <p class="panel__note">8文字以上。確認番号でログインすることもできます。</p>
+        <div class="field" style="margin-top: 0.75rem">
+          <label class="label" for="ac-pass">いまのパスワード</label>
+          <input class="input" id="ac-pass" type="password" value="password1234" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label class="label" for="ac-pass2">新しいパスワード</label>
+          <input class="input" id="ac-pass2" type="password" value="" autocomplete="new-password">
+        </div>
+        <div class="panel__actions">
+          <button class="btn btn--primary btn--sm" type="button">変更する</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">退会</h2>
+          <p class="section__note">作った催しは、退会後も告知ページに残ります。</p>
+        </div>
+        <p class="screen-note" style="margin-top: 0.75rem">
+          退会すると、ログインと出欠の記録が使えなくなります。参加者として答えた記録は、主催者の名簿に残ります。
+          催しをすべて閉じてから退会してください。
+        </p>
+        <div class="panel__actions">
+          <button class="btn btn--danger btn--sm" type="button">退会の手続きへ</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

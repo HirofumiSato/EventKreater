@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催者のプロフィール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-screen="主催者のプロフィール" data-path="/organizers/[userId]">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div class="profile-head">
+        <span class="profile-head__avatar" aria-hidden="true">み</span>
+        <div>
+          <h1 class="profile-head__name">佐藤 みのり</h1>
+          <p class="profile-head__title">河川敷で、ゆるい集まりを開いています。</p>
+        </div>
+      </div>
+
+      <div class="genre-chips">
+        <span class="chip" aria-pressed="false">飯フェス</span>
+        <span class="chip" aria-pressed="false">芋煮</span>
+        <span class="chip" aria-pressed="false">焚き火</span>
+      </div>
+
+      <p style="color: var(--color-text-muted); font-size: 0.875rem; line-height: 1.9">
+        2019年から、川辺町の河川敷で年 4回ほど集まりを開いています。大人数ではなく、20〜40人くらいで、
+        初めての人もひとりで来られる規模を選んでいます。子ども連れの参加も歓迎です。
+        料理はいつも 2釜に分けて、辛いものと甘いものを用意します。
+      </p>
+
+      <dl class="kv">
+        <div class="kv__row">
+          <dt>活動エリア</dt>
+          <dd>埼玉県 川辺市・東松山市</dd>
+        </div>
+        <div class="kv__row">
+          <dt>催しの数</dt>
+          <dd>これまで 14回 ／ これから 2件</dd>
+        </div>
+      </dl>
+
+      <div class="profile-links">
+        <a href="#main">X @minori_imo</a>
+        <a href="#main">Instagram</a>
+        <a href="#main">Webサイト</a>
+      </div>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">これからの催し</h2>
+          <p class="section__note">参加には、参加者ログインが必要です。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">秋の芋煮会</p>
+              <p class="rows__meta">11月8日（日）11:00 ／ 河川敷公園 第2広場</p>
+            </div>
+            <span class="badge badge--success badge--sm">受付中</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">冬の焚き火会</p>
+              <p class="rows__meta">12月13日（土）16:00 ／ 河川敷公園</p>
+            </div>
+            <span class="badge badge--neutral badge--sm">準備中</span>
+          </li>
+        </ul>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <a class="btn btn--primary btn--sm" href="mock-organizer-public-events.html">催しをすべて見る</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">終わった催し</h2>
+          <p class="section__note">実績の表示を許可しているものだけを出します。</p>
+        </div>
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">第2回 たこ焼きパーティー</p>
+              <p class="rows__meta">9月27日（土）／ 参加 18名</p>
+            </div>
+            <span class="rows__value">18名</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">夏の流しそうめん</p>
+              <p class="rows__meta">8月9日（土）／ 参加 31名</p>
+            </div>
+            <span class="rows__value">31名</span>
+          </li>
+        </ul>
+      </section>
+
+      <p class="screen-note">
+        プロフィールを公開していない主催者は、名前と催しへの導線だけを出します。この画面は検索には出しません。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

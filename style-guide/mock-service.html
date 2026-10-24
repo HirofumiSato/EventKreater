@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | サービスと料金</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-current="service" data-screen="サービスと料金" data-path="/service">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">料金</p>
+        <h1 class="page-title">作るほど高くならない。公開した回数だけ。</h1>
+        <p class="page-lead">
+          チラシと告知ページの作成、出欠の集計、名簿、領収書までが同じ料金に含まれます。
+          参加者が払うのは、催しの参加費だけです。
+        </p>
+      </div>
+
+      <ul class="plan-list">
+        <li class="plan-card">
+          <p class="plan-card__name">無料</p>
+          <p class="plan-card__price">0<small>円 / 最初の 2回</small></p>
+          <p class="screen-note" style="margin-top: 0.5rem">イベントの公開を、累計 2回まで料金なしで試せます。</p>
+          <ul class="plan-card__list">
+            <li>チラシと告知ページの生成</li>
+            <li>出欠の受付と集計</li>
+            <li>参加者名簿と CSV</li>
+          </ul>
+        </li>
+
+        <li class="plan-card plan-card--pick">
+          <p class="plan-card__name">単発チケット</p>
+          <p class="plan-card__price">299<small>円 / 1回</small></p>
+          <p class="screen-note" style="margin-top: 0.5rem">必要なときだけ 1回分を足します。たまに開く人向けです。</p>
+          <ul class="plan-card__list">
+            <li>無料の 2回を使い切ったあとに</li>
+            <li>買った回数に期限なし</li>
+            <li>領収書の発行も含む</li>
+          </ul>
+        </li>
+
+        <li class="plan-card">
+          <p class="plan-card__name">月額</p>
+          <p class="plan-card__price">980<small>円 / 月</small></p>
+          <p class="screen-note" style="margin-top: 0.5rem">契約が有効なあいだ、イベント作成の回数は数えません。</p>
+          <ul class="plan-card__list">
+            <li>月に 4回以上開くなら、こちらが安い</li>
+            <li>毎月の自動更新</li>
+            <li>解約はいつでも。次の更新で止まる</li>
+          </ul>
+        </li>
+      </ul>
+
+      <section class="section" style="margin-top: 2rem">
+        <div class="section__head">
+          <h2 class="section__title">料金に含まれるもの</h2>
+          <p class="section__note">あとから追加課金になる機能はありません。</p>
+        </div>
+        <ul class="rows" style="margin-top: 1rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">チラシと告知ページ</p>
+              <p class="rows__meta">縦長のチラシと、出欠を取れる告知ページを同時に作ります。</p>
+            </div>
+            <span class="rows__value">含む</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">出欠の受付・集計</p>
+              <p class="rows__meta">参加者は登録なしで答えられます。待ち順も自動で並びます。</p>
+            </div>
+            <span class="rows__value">含む</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">名簿・リマインド・領収書</p>
+              <p class="rows__meta">幹事の画面から、参加者への案内と領収書の発行まで行えます。</p>
+            </div>
+            <span class="rows__value">含む</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">共同幹事</p>
+              <p class="rows__meta">招待リンクから、もう 1人を同じ催しの幹事に加えられます。</p>
+            </div>
+            <span class="rows__value">含む</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">よくある質問</h2>
+        </div>
+        <div class="stack" style="margin-top: 1rem; gap: 0">
+          <details class="fold">
+            <summary class="fold__summary">参加者からは料金を取りますか</summary>
+            <div class="fold__body">
+              <p>取りません。参加者が答えるのは出欠だけで、参加費は催しの主催者へ直接お支払いください。</p>
+            </div>
+          </details>
+          <details class="fold">
+            <summary class="fold__summary">途中で解約できますか</summary>
+            <div class="fold__body">
+              <p>月額はいつでも解約できます。解約しても、次の更新までは使えます。日割りの返金はしません。</p>
+            </div>
+          </details>
+          <details class="fold">
+            <summary class="fold__summary">キャンペーン価格は、あとから変わりますか</summary>
+            <div class="fold__body">
+              <p>すでに購入した回の金額は変わりません。実施中のキャンペーンは、購入前に販売価格と定価を並べて表示します。</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <div class="panel__actions">
+        <a class="btn btn--primary" href="mock-create.html">無料でイベント告知ページを作る</a>
+        <a class="btn btn--outline" href="mock-register.html">主催者ログイン</a>
+      </div>
+      <p class="screen-note">
+        料金の詳細な条件は<a href="mock-terms.html">利用規約</a>に定めています。支払いはこの画面からは始めません。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

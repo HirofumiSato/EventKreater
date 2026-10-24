@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | メールアドレスの確定</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="participant" data-current="account" data-screen="メールの確定" data-path="/account/email/verify">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page page--form" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">確認</p>
+        <h1 class="page-title">メールアドレスを確定しました</h1>
+        <p class="page-lead">これからは、新しいアドレスでログインできます。</p>
+      </div>
+
+      <div class="alert alert--success">
+        <strong>hanako@example.com</strong> に変わりました。確認のメールは、この通知だけです。
+      </div>
+
+      <div class="panel">
+        <p class="panel__title">次にやること</p>
+        <ul class="rows" style="margin-top: 0.5rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">アカウント設定に戻る</p>
+              <p class="rows__meta">電話番号とパスワードは、この画面から変えられます。</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-account.html">開く</a>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">参加者ホームを見る</p>
+              <p class="rows__meta">これからの催しと、答えた出欠が並びます。</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-participant.html">開く</a>
+          </li>
+        </ul>
+      </div>
+
+      <p class="screen-note">心当たりがない場合は、すぐにパスワードを変えてください。</p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

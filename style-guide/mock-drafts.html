@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 下書き一覧</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="下書き一覧" data-path="/organizer/events/drafts">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">下書き一覧</h1>
+        <p class="page-lead">公開するまで、利用枠は減りません。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a href="mock-organizer.html">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a href="mock-revenue.html">売上</a>
+        <a class="is-current" href="mock-drafts.html" aria-current="page">下書き</a>
+      </nav>
+
+      <div class="draft-card">
+        <div>
+          <p class="draft-card__title">冬の焚き火会</p>
+          <p class="draft-card__meta">12月13日（土）16:00 ／ 河川敷公園<br>最終更新 10月23日 21:40 ／ チラシ未生成</p>
+        </div>
+        <div class="draft-card__actions">
+          <a class="btn btn--primary btn--sm" href="mock-preview.html">プレビュー</a>
+          <a class="btn btn--outline btn--sm" href="mock-edit.html">編集</a>
+          <button class="btn btn--ghost btn--sm" type="button">削除</button>
+        </div>
+      </div>
+
+      <div class="draft-card">
+        <div>
+          <p class="draft-card__title">写真部 冬の撮影会</p>
+          <p class="draft-card__meta">12月20日（日）9:00 ／ 港の倉庫街<br>最終更新 10月21日 08:15 ／ 費用プラン未入力</p>
+        </div>
+        <div class="draft-card__actions">
+          <a class="btn btn--primary btn--sm" href="mock-preview.html">プレビュー</a>
+          <a class="btn btn--outline btn--sm" href="mock-edit.html">編集</a>
+          <button class="btn btn--ghost btn--sm" type="button">削除</button>
+        </div>
+      </div>
+
+      <div class="draft-card">
+        <div>
+          <p class="draft-card__title">春の新歓</p>
+          <p class="draft-card__meta">4月5日（日）11:00 ／ 未定<br>最終更新 10月2日 19:02 ／ 催し名だけ</p>
+        </div>
+        <div class="draft-card__actions">
+          <a class="btn btn--primary btn--sm" href="mock-preview.html">プレビュー</a>
+          <a class="btn btn--outline btn--sm" href="mock-edit.html">編集</a>
+          <button class="btn btn--ghost btn--sm" type="button">削除</button>
+        </div>
+      </div>
+
+      <p class="screen-note">
+        下書きは、自分（と共同幹事）にだけ見えます。URL を知っていても、公開していない催しは開けません。
+        削除すると元に戻せません。
+      </p>
+
+      <div class="panel__actions">
+        <a class="btn btn--primary btn--sm" href="mock-create.html">新しく作る</a>
+        <a class="btn btn--outline btn--sm" href="mock-organizer.html">主催一覧へ戻る</a>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

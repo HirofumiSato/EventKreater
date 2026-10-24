@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催者ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="mock-index.html">EventKreater</a>
+      <nav id="site-nav" class="site-nav" aria-label="サイト">
+        <div class="site-nav__action">
+          <a class="btn btn--primary btn--sm btn--block" href="mock-create.html">新規作成</a>
+        </div>
+        <a class="site-nav__link" href="mock-organizer.html">主催一覧</a>
+        <a class="site-nav__link" href="#">主催者マイページ</a>
+        <a class="site-nav__link" href="#">アカウント</a>
+      </nav>
+      <div class="site-header__actions">
+        <a class="btn btn--primary btn--sm" href="mock-create.html">イベントを作る</a>
+        <a class="btn btn--outline btn--sm site-header__action" href="mock-organizer.html">主催一覧</a>
+        <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="メニュー">
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">主催イベント</h1>
+        <p class="page-lead">作ったイベントと、参加者の出欠をまとめて見られます。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a class="is-current" href="mock-organizer.html" aria-current="page">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a href="mock-revenue.html">売上</a>
+        <a href="mock-drafts.html">下書き</a>
+        <a href="mock-organizer-profile.html">プロフィール</a>
+      </nav>
+
+      <p class="alert alert--success">
+        無料トライアル: 残り 2回。3回目からは公開時に 1イベント 299円です。
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <p class="stat__label">公開中</p>
+          <p class="stat__value">2<span class="stat__unit">件</span></p>
+        </div>
+        <div class="stat">
+          <p class="stat__label">回答待ち</p>
+          <p class="stat__value">12<span class="stat__unit">人</span></p>
+        </div>
+        <div class="stat">
+          <p class="stat__label">見込み売上</p>
+          <p class="stat__value">18,500<span class="stat__unit">円</span></p>
+        </div>
+      </div>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">公開中</h2>
+          <p class="section__note">2件。期限が近いものが上に来ます。</p>
+        </div>
+
+        <div class="card-grid" style="margin-top: 1rem">
+          <article class="event-card">
+            <img class="event-card__thumb" src="../public/samples/flyer-autumn.jpg" alt="" width="1080" height="1920">
+            <div>
+              <div class="event-card__head">
+                <h3 class="event-card__title">秋の芋煮会</h3>
+                <span class="badge badge--success">公開中</span>
+              </div>
+              <p class="event-card__meta">
+                11月8日（日）11:00–15:00 ／ 河川敷公園 第2広場<br>
+                大人 500円・子ども 無料
+              </p>
+              <div class="event-card__meter-label">
+                <span>参加 28名 / 定員 40名</span>
+                <span>締切 11月5日</span>
+              </div>
+              <div class="meter" role="img" aria-label="定員40名のうち28名が参加">
+                <span style="width: 70%"></span>
+              </div>
+            </div>
+            <div class="card__actions" style="margin-top: 0">
+              <a class="btn btn--outline btn--sm" href="mock-roster.html">名簿を見る</a>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <img class="event-card__thumb" src="../public/samples/flyer-autumn.jpg" alt="" width="1080" height="1920">
+            <div>
+              <div class="event-card__head">
+                <h3 class="event-card__title">第3回 たこ焼きパーティー</h3>
+                <span class="badge badge--success">公開中</span>
+              </div>
+              <p class="event-card__meta">
+                11月22日（土）18:00–21:00 ／ 集会所 2F<br>
+                参加費 1,200円
+              </p>
+              <div class="event-card__meter-label">
+                <span>参加 9名 / 定員なし</span>
+                <span>締切 11月20日</span>
+              </div>
+              <div class="meter" role="img" aria-label="定員なし、9名が参加">
+                <span style="width: 22%"></span>
+              </div>
+            </div>
+            <div class="card__actions" style="margin-top: 0">
+              <a class="btn btn--outline btn--sm" href="mock-roster.html">名簿を見る</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">共有と設定</h2>
+          <p class="section__note">普段は閉じています。</p>
+        </div>
+
+        <div class="stack" style="margin-top: 1rem">
+          <details class="fold">
+            <summary class="fold__summary">告知URLをコピーする</summary>
+            <div class="fold__body">
+              <div class="field">
+                <label class="label" for="share-url">参加者に送るURL</label>
+                <input class="input" id="share-url" readonly value="https://example.com/e/autumn-imo">
+              </div>
+              <p class="help">このURLを開いた人は、登録なしで出欠を答えられます。</p>
+              <div class="panel__actions">
+                <button class="btn btn--primary btn--sm" type="button">コピー</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="fold">
+            <summary class="fold__summary">チラシを作り直す</summary>
+            <div class="fold__body">
+              <p>入力内容を変えたら、チラシだけを作り直せます。告知ページのURLは変わりません。</p>
+              <div class="panel__actions">
+                <button class="btn btn--outline btn--sm" type="button">チラシを再生成</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="fold">
+            <summary class="fold__summary">公開をやめる</summary>
+            <div class="fold__body">
+              <p>公開をやめると、URLを開いても出欠を答えられなくなります。回答済みの記録は残ります。</p>
+              <div class="panel__actions">
+                <button class="btn btn--danger btn--sm" type="button">非公開にする</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>EventKreater</p>
+      <ul class="site-footer__links">
+        <li><a href="mock-index.html">モック一覧</a></li>
+        <li><a href="#">利用規約</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <div class="mockbar" role="group" aria-label="モックの切り替え">
+    <a class="mockbar__home" href="mock-index.html">← モック一覧</a>
+    <a class="mockbar__home" href="mock-compare.html">比較</a>
+    <span class="mockbar__label">主催一覧</span>
+    <div class="mockbar__group">
+      <span>装飾</span>
+      <button type="button" data-deco-btn="tape-shadow" aria-pressed="false">影だけ</button>
+      <button type="button" data-deco-btn="tape-quiet" aria-pressed="true">静かめ</button>
+      <button type="button" data-deco-btn="base" aria-pressed="false">現行</button>
+    </div>
+  </div>
+
+  <script src="mock-theme.js"></script>
+</body>
+</html>
