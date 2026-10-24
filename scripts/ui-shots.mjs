@@ -423,6 +423,25 @@ try {
   await cdp.send("Runtime.enable", {}, sessionId);
   await cdp.send("Network.enable", {}, sessionId);
 
+  // 取得の完了を待つための計測。画面側の fetch を包み、未完了の本数を数える。
+  // これが 0 になるまで撮ると、「読み込んでいます」の途中を撮らないで済む。
+  await cdp.send(
+    "Page.addScriptToEvaluateOnNewDocument",
+    {
+      source: `(() => {
+        window.__pendingFetches = 0;
+        const original = window.fetch;
+        window.fetch = function (...args) {
+          window.__pendingFetches += 1;
+          return original.apply(this, args).finally(() => {
+            window.__pendingFetches -= 1;
+          });
+        };
+      })();`,
+    },
+    sessionId,
+  );
+
   let consoleErrors = [];
   let httpErrors = [];
   cdp.on("Runtime.consoleAPICalled", (params) => {
@@ -471,19 +490,40 @@ try {
     await cdp.send("Page.navigate", { url }, sessionId);
     await loaded;
     const started = Date.now();
-    while (Date.now() - started < 20000) {
+    let stable = 0;
+    let lastLength = -1;
+    while (Date.now() - started < 25000) {
+      let ready = false;
+      let length = -1;
       try {
-        const ready = await evaluate(`(() => {
+        const state = await evaluate(`(() => {
           const loading = document.querySelectorAll(".loading").length;
           const images = Array.from(document.images);
           const pending = images.filter((image) => !image.complete).length;
-          return document.readyState === "complete" && loading === 0 && pending === 0;
+          return {
+            ready:
+              document.readyState === "complete" &&
+              loading === 0 &&
+              pending === 0 &&
+              (window.__pendingFetches ?? 0) === 0,
+            length: (document.body.innerText || "").length,
+          };
         })()`);
-        if (ready) return;
+        ready = state.ready;
+        length = state.length;
       } catch {
         // 遷移中は評価できないことがある。
       }
-      await sleep(120);
+      // 取得の途中で「読み込んでいます」のまま撮らないよう、本文の長さが
+      // 2 回続けて同じになるまで待つ（最大 25 秒）。
+      if (ready && length > 0 && length === lastLength) {
+        stable += 1;
+        if (stable >= 2) return;
+      } else {
+        stable = 0;
+      }
+      lastLength = length;
+      await sleep(ready ? 400 : 120);
     }
   }
 
@@ -628,21 +668,30 @@ try {
 
   await cdp.send("Emulation.clearDeviceMetricsOverride", {}, sessionId).catch(() => {});
 
-  await writeFile(
-    REPORT_FILE,
-    `${JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        baseUrl: BASE,
-        mockBaseUrl: mockAvailable ? MOCK_BASE : null,
-        note: "overflow は scrollWidth - innerWidth。0 以外は横スクロールが出ている。",
-        screens: report,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
+  // Windows では、画像を書き終えた直後に report.json が一時的に掴まれることがある
+  // （セキュリティソフトの走査）。数回やり直してから諦める。
+  const reportJson = `${JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      baseUrl: BASE,
+      mockBaseUrl: mockAvailable ? MOCK_BASE : null,
+      note: "overflow は scrollWidth - innerWidth。0 以外は横スクロールが出ている。",
+      screens: report,
+    },
+    null,
+    2,
+  )}\n`;
+  let written = false;
+  for (let attempt = 0; attempt < 6 && !written; attempt += 1) {
+    try {
+      await writeFile(REPORT_FILE, reportJson, "utf8");
+      written = true;
+    } catch {
+      await rm(REPORT_FILE, { force: true }).catch(() => {});
+      await sleep(400);
+    }
+  }
+  if (!written) throw new Error(`report.json を書き出せませんでした: ${REPORT_FILE}`);
 
   console.log("");
   console.log(`撮影 ${report.length} 枚 → ${path.relative(ROOT, OUT_DIR)}`);

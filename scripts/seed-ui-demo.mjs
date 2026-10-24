@@ -579,6 +579,9 @@ try {
     ],
   });
 
+  // 撮影のやり直しで前回のロックが残ると、編集画面が 409 になる。いったん全部消す。
+  await prisma.eventLock.deleteMany({});
+
   // 編集の排他ロック（共同幹事が編集中の状態）。編集画面を撮る催しには置かない。
   await prisma.eventLock.create({
     data: {

@@ -147,7 +147,7 @@
 
 .. count-start
 
-49 ファイル、``it`` は 590 件です。内訳は ``tests/unit/`` が 37 ファイル 521 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+51 ファイル、``it`` は 622 件です。内訳は ``tests/unit/`` が 39 ファイル 553 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -327,6 +327,14 @@
      - 8
      - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
      - 全画面の共通レイアウト
+   * - ``tests/unit/format.test.ts``
+     - 10
+     - 金額（``3,000円`` / ``¥3,000``）、保存形式の日付と月の見出し、日時の表記、壊れた値の据え置き、日本時間の今月の範囲（UTC の月末が翌月になる場合を含む）
+     - 全画面の共通表示
+   * - ``tests/unit/ui-css.test.mjs``
+     - 22
+     - TSX とモックから静的クラスを拾う解析、``${...}`` と三項演算子の扱い、動的な接頭辞の判定、未定義・未使用クラスの突き合わせ
+     - 該当なし（検査）
    * - ``tests/integration/draft-publish.test.ts``
      - 4
      - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
@@ -358,7 +366,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 521、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 521 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 553、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 553 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

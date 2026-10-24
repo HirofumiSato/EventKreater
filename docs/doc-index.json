@@ -7003,10 +7003,6 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/app/console/events/page.tsx",
           "exists": true
         },
@@ -7064,6 +7060,10 @@
         },
         {
           "path": "src/modules/organizers/lib/names.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
           "exists": true
         },
         {
@@ -7231,10 +7231,6 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/app/organizer/calendar/page.tsx",
           "exists": true
         },
@@ -7276,6 +7272,14 @@
         },
         {
           "path": "src/modules/organizers/lib/calendar.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/screens/organizer.css",
           "exists": true
         },
         {
@@ -7811,10 +7815,6 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/components/common/CalendarEventModal.tsx",
           "exists": true
         },
@@ -7856,6 +7856,14 @@
         },
         {
           "path": "src/modules/participants/types.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/screens/organizer.css",
           "exists": true
         },
         {
@@ -8254,10 +8262,6 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/app/participant/history/page.tsx",
           "exists": true
         },
@@ -8299,6 +8303,10 @@
         },
         {
           "path": "src/modules/revenue/lib/revenue.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
           "exists": true
         },
         {
@@ -9706,7 +9714,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 474,
+      "lineCount": 482,
       "headings": [
         {
           "level": 1,
@@ -9884,6 +9892,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/format.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/guest-draft.test.ts",
           "exists": true
         },
@@ -9937,6 +9949,10 @@
         },
         {
           "path": "tests/unit/rsvp-status.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ui-css.test.mjs",
           "exists": true
         },
         {
@@ -10465,10 +10481,6 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/app/page.tsx",
           "exists": true
         },
@@ -10483,6 +10495,22 @@
         {
           "path": "src/lib/site.ts",
           "exists": true
+        },
+        {
+          "path": "src/styles/base.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/tokens.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/tokens.css",
+          "exists": true
         }
       ],
       "includedBy": [
@@ -10496,7 +10524,7 @@
       "title": "モックと実装の対応表",
       "summary": "モック 29 画面と実装の各ページを 1 画面 1 行で結ぶ台帳です。 移行のたびに、この表の「状態」と各節を更新します。",
       "preImplementation": false,
-      "lineCount": 1242,
+      "lineCount": 1287,
       "headings": [
         {
           "level": 1,
@@ -10521,6 +10549,22 @@
         {
           "level": 3,
           "text": "状態"
+        },
+        {
+          "level": 2,
+          "text": "共通スタイルと共通部品"
+        },
+        {
+          "level": 3,
+          "text": "CSS の層（読む順）"
+        },
+        {
+          "level": 3,
+          "text": "ブロックと部品の対応"
+        },
+        {
+          "level": 3,
+          "text": "金額・日付"
         },
         {
           "level": 2,
@@ -10706,6 +10750,10 @@
           "exists": true
         },
         {
+          "path": "docs/ui-review/css-baseline.json",
+          "exists": true
+        },
+        {
           "path": "docs/ui-review/screens",
           "exists": true
         },
@@ -10722,19 +10770,11 @@
           "exists": true
         },
         {
-          "path": "src/app/attendance.css",
-          "exists": true
-        },
-        {
           "path": "src/app/auth/register/page.tsx",
           "exists": true
         },
         {
           "path": "src/app/auth/verify/page.tsx",
-          "exists": true
-        },
-        {
-          "path": "src/app/deco.css",
           "exists": true
         },
         {
@@ -10835,6 +10875,90 @@
         },
         {
           "path": "src/app/terms/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Alert.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Badge.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Dialog.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/EmptyState.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Field.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Loading.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/PageHeader.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Panel.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Rows.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Section.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/format.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles",
+          "exists": true
+        },
+        {
+          "path": "src/styles/base.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/surface.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/tokens.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/index.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/screens",
+          "exists": true
+        },
+        {
+          "path": "src/styles/tokens.css",
           "exists": true
         }
       ],

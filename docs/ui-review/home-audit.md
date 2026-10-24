@@ -41,7 +41,7 @@
 | C4 | 未ログイン時に「参加者ログイン」と「主催者ログイン」の2本を出す | `docs/front_implementation_spec.md:951`（FE-PUB-01） |
 | C5 | 管理コンソールへのリンクを出さない | `docs/front_implementation_spec.md:951` |
 | C6 | 主操作（朱のボタン）は画面につき1つ | `style-guide/index.html:85-87` |
-| C7 | 色・書体・角・影の規約を変えない | `src/app/attendance.css:3-51`、`style-guide/index.html:83-97` |
+| C7 | 色・書体・角・影の規約を変えない | `src/styles/tokens.css`、`style-guide/index.html:83-97` |
 | C8 | ナビの文言とパスは `SITE.nav` を正とする | `src/lib/site.ts`、`docs/front_implementation_spec.md` 3.1 |
 
 ### 2.2. 現状が既に違反しているもの
@@ -93,7 +93,7 @@
 
 ### 3.4. 機能カードの孤立
 
-`.card-grid` は `768px` 以上で3列固定（`src/app/attendance.css:1448-1452`）。カードは4枚あるため、**3枚 + 孤立した1枚**になる。
+`.card-grid` は `768px` 以上で3列固定（`src/styles/components.css`）。カードは4枚あるため、**3枚 + 孤立した1枚**になる。
 
 | 幅 | 列 | カード位置 |
 | :--- | :--- | :--- |
@@ -117,7 +117,7 @@
 
 ### 3.6. 余白
 
-セクション間はすべて 20px（`--stack` の `gap: 1.25rem`、`attendance.css:250-254`）。ヒーロー、機能、手順、注意の**すべてが同じ間隔**で並ぶため、塊の切れ目が読めない。
+セクション間はすべて 20px（`--stack` の `gap: 1.25rem`、`src/styles/components.css`）。ヒーロー、機能、手順、注意の**すべてが同じ間隔**で並ぶため、塊の切れ目が読めない。
 
 ### 3.7. コントラスト（参考）
 
@@ -146,7 +146,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | B-01 | 機能の塊が何かわからない | 機能グリッドにセクション見出しがない | `src/app/page.tsx:39-46` | 機能群の前に h2 がある |
 | B-02 | 見出し階層が崩れている | カード見出しが h2、かつ16px | `src/app/page.tsx:42` | 機能カードが h3。h2 はセクション見出しのみ |
-| B-03 | 作りかけに見える | 4枚を3列に置き、1枚が孤立する | `attendance.css:1448-1452` | 768px 以上で孤立カードが出ない |
+| B-03 | 作りかけに見える | 4枚を3列に置き、1枚が孤立する | `src/styles/components.css`（`.card-grid`） | 768px 以上で孤立カードが出ない |
 | B-04 | 主張が8つ並列で優先順位がない | 機能4 + 手順3 + 注意1 が同格 | `src/app/page.tsx:31-68` | セクションが3つ以内。各セクションに1つの主張 |
 | B-05 | 手順が手順に見えない | 同一カードに `STEP n` を書いただけ | `src/app/page.tsx:50-57` | 順序・所要時間・つながりが視覚的に示されている |
 | B-06 | 機能名が内部用語 | 「幹事と利用枠」は課金の内部語 | `src/app/page.tsx:6` | 利用者が得る結果で書かれている |
@@ -156,9 +156,9 @@
 
 | ID | 症状 | 原因 | 該当箇所 | 受入基準 |
 | :--- | :--- | :--- | :--- | :--- |
-| C-01 | リズムがない | セクション間が一律20px | `attendance.css:250-254` | セクション間がヒーロー直後より広い |
+| C-01 | リズムがない | セクション間が一律20px | `src/styles/components.css`（`--stack`） | セクション間がヒーロー直後より広い |
 | C-02 | ヘッダーが高い | ナビが2段に折り返す（モバイル87px） | `Navbar.tsx:65-72` | 390px でヘッダーが1段 |
-| C-03 | 朱の面積が小さい | 色はヒーロー上辺の3pxだけ | `attendance.css:256-263` | 朱が1箇所以上で面として使われている |
+| C-03 | 朱の面積が小さい | 色はヒーロー上辺の3pxだけ | `src/styles/components.css`（`.hero--stage`） | 朱が1箇所以上で面として使われている |
 
 ---
 
@@ -227,7 +227,7 @@ P0 だけで「何の画面か」はほぼ解消する。P1 までで対外に�
 2. `docs/ui-review/before/home-390-full.png`
 3. `docs/ui-review/before/home-1440-full.png`
 4. `src/app/page.tsx` 全文
-5. `src/app/attendance.css` の 144–340 行（レイアウトとヒーロー）、1448–1452 行（グリッド）
+5. `src/styles/components.css` のレイアウトとヒーロー、`.card-grid` のグリッド
 6. 本文書の第2節（制約）
 
 ### 7.2. 固定する質問
@@ -251,7 +251,7 @@ P0 だけで「何の画面か」はほぼ解消する。P1 までで対外に�
 ## 8. P0 の実施結果
 
 **実施日:** 2026-10-21
-**変更:** `src/app/page.tsx`、`src/lib/site.ts`、`src/components/common/Navbar.tsx`、`src/app/attendance.css`（`.hero__actions` の `align-items`）
+**変更:** `src/app/page.tsx`、`src/lib/site.ts`、`src/components/common/Navbar.tsx`、`src/styles/components.css`（`.hero__actions` の `align-items`）
 **before / after 画像:** `docs/ui-review/before/` と `docs/ui-review/after/`
 
 ### 8.1. 差分
@@ -328,9 +328,9 @@ P0 は情報の並べ替えに留まり、画面の印象は変わらなかっ�
 
 | 対象 | 変更 |
 | :--- | :--- |
-| `src/app/attendance.css` | `--radius-*` を 0 に統一。`--color-ink-soft`、`--space-section` を追加。`body` に `overflow-x: clip` |
-| 同上 | `.hero--stage`（全幅の墨地・2カラム）、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` を追加 |
-| 同上 | 墨地と朱の帯ではフォーカスリングを白に。朱のリングは墨地で 2.89:1 しかない |
+| `src/styles/tokens.css` | `--radius-*` を 0 に統一。`--color-ink-soft`、`--space-section` を追加 |
+| `src/styles/base.css` | `body` に `overflow-x: clip` |
+| `src/styles/components.css` | `.hero--stage`（全幅の墨地・2カラム）、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` を追加。墨地と朱の帯ではフォーカスリングを白に（朱のリングは墨地で 2.89:1 しかない） |
 | `src/app/page.tsx` | ヒーローを `.hero__grid`（コピー＋チラシ）に変更。`card-grid` を `feature-list` / `step-list` に置換。末尾を `cta-band` に変更 |
 | `public/samples/flyer-autumn.jpg` | ローカルのチラシ生成API（`style_2_warm_earth`）で生成した見本。1080×1920 |
 | `style-guide/*` | 角の値を 0 に更新。`.hero--stage`、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` の見本を追加 |
@@ -395,11 +395,11 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 
 | 項目 | 旧（V1〜V5） | 新（モック採用後） | 正 |
 | --- | --- | --- | --- |
-| 角 | すべて `0px` | `--radius-sm 8px` / `--radius 14px` / `--radius-lg 20px` / `--radius-xl 26px` | `style-guide/deco.css` |
+| 角 | すべて `0px` | `--radius-sm 8px` / `--radius 14px` / `--radius-lg 20px` / `--radius-xl 26px` | `src/styles/tokens.css` |
 | ホームの面 | 箱を持たない（カード 0 枚） | `event-card` / `feature-row` / `step-list` の面を使う | `style-guide/mock-home.html` |
-| 影 | 無し | `deco--tape-shadow` は硬い `3px 3px 0`、`deco--tape-quiet` は `0 1px 2px` | `style-guide/deco.css` |
-| 見出しの書体 | 既存のゴシック | `Zen Maru Gothic`（`--font-maru`） | `style-guide/deco.css` |
-| 地紋 | 無し | `deco--tape` は 16px 方眼と暖色の紙 | `style-guide/deco.css` |
+| 影 | 無し | `deco--tape-shadow` は硬い `3px 3px 0`、`deco--tape-quiet` は `0 1px 2px` | `src/styles/deco/tokens.css` |
+| 見出しの書体 | 既存のゴシック | `Zen Maru Gothic`（`--font-maru`） | `src/styles/deco/tokens.css` |
+| 地紋 | 無し | `deco--tape` は 16px 方眼と暖色の紙 | `src/styles/deco/tokens.css` |
 | スコープ | 画面ごとに個別判断 | `pop`（`/`・`/service`・`/terms`・`/events/**`・`/organizers/**`・`/auth/**`・`/participant/**`・`/invitations/**`・`/account/**`・`/organizer/events/new`）と `quiet`（`/mypage`・`/organizer/**`）の 2 つ | `src/lib/design-scope.ts` |
 
 ### 10.2. 残る制約

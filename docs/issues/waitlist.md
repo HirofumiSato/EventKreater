@@ -24,7 +24,7 @@
 - 出欠フォームは「出席 / 欠席」の2択で、`status === "ATTENDING"` のときだけ性別・日時・費用プランを出す（`src/modules/attendance/components/DynamicRsvpBox.tsx:105-198`）。
 - 名簿は「参加 / 不参加 / 回答」の3集計で、行の状態は2値の三項演算子で出している（`src/modules/attendance/components/ParticipantListTable.tsx:43,179-184`）。
 - 参加者ホーム・履歴・カレンダーも「出席 / 欠席」の二択で表示する（`src/app/participant/page.tsx:120`、`src/app/participant/history/page.tsx:43`、`src/modules/participants/lib/participations.ts:76`）。
-- 色は緑（出席）・赤（欠席）・アンバー（`--color-warning-*`）が既にあり、`.choice--tentative` と `.badge--tentative` が未使用で残っている（`src/app/attendance.css:1270,1311`）。
+- 色は緑（出席）・赤（欠席）・アンバー（`--color-warning-*`）が既にあり、`.choice--tentative` と `.badge--tentative` が未使用で残っている（`src/styles/components.css`）。
 
 ### 方針との関係
 
@@ -294,4 +294,4 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 - `src/modules/attendance/components/ParticipantListTable.tsx` — 名簿
 - `src/lib/serializers.ts` — `summarizeStatuses`、`serializeEvent`
 - `src/modules/revenue/lib/revenue.ts` — 売上の集計
-- `src/app/attendance.css` — `badge--tentative`、`choice--tentative`、`--color-warning-*`
+- `src/styles/components.css` — `badge--tentative`、`choice--tentative`、`--color-warning-*`
