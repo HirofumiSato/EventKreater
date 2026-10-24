@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | イベントの編集</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="イベントの編集" data-path="/organizer/events/[id]/edit">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="page--form stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">イベントの編集</h1>
+        <p class="page-lead">秋の芋煮会 ／ 公開中</p>
+      </div>
+
+      <div class="notice">
+        いま編集中のあいだ、ほかの人は保存できません。残り 21分。保存すると、この制限は解除されます。
+      </div>
+
+      <div class="panel" style="margin-top: 0">
+        <p class="panel__title">共同幹事</p>
+        <p class="panel__note">招待リンクから、もう 1人を幹事に加えられます。解除はその場で確認します。</p>
+        <ul class="rows" style="margin-top: 0.5rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">佐藤 みのり</p>
+              <p class="rows__meta">筆頭幹事 ／ 公開・非公開を変えられる</p>
+            </div>
+            <span class="badge badge--neutral badge--sm">本人</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">田中 健</p>
+              <p class="rows__meta">共同幹事 ／ 名簿と売上を見られる</p>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button">解除</button>
+          </li>
+        </ul>
+        <div class="panel__actions">
+          <button class="btn btn--outline btn--sm" type="button">招待リンクを発行</button>
+        </div>
+      </div>
+
+      <form class="form event-steps" novalidate>
+        <ol class="event-steps__list">
+
+          <li class="event-step event-step--open">
+            <h2 class="event-step__heading">
+              <button type="button" class="event-step__toggle" aria-expanded="true">
+                <span class="event-step__number" aria-hidden="true">1</span>
+                <span class="event-step__labels">
+                  <span class="event-step__title">催しの名前と開催日時</span>
+                  <span class="event-step__summary">秋の芋煮会 / 11月8日（日）</span>
+                </span>
+                <span class="event-step__state">入力済み</span>
+              </button>
+            </h2>
+            <div class="event-step__body">
+              <div class="field">
+                <label class="label" for="ed-title">催しの名前</label>
+                <input class="input" id="ed-title" value="秋の芋煮会">
+              </div>
+              <div class="repeat-block">
+                <div class="repeat-row repeat-row--schedule">
+                  <div class="field">
+                    <label class="label" for="ed-date">開催日</label>
+                    <input class="input" id="ed-date" type="date" value="2026-11-08">
+                  </div>
+                  <div class="field">
+                    <label class="label" for="ed-start">開始</label>
+                    <input class="input" id="ed-start" type="time" value="11:00">
+                  </div>
+                  <div class="field">
+                    <label class="label" for="ed-end">終了</label>
+                    <input class="input" id="ed-end" type="time" value="15:00">
+                  </div>
+                </div>
+              </div>
+              <div class="event-step__actions">
+                <button type="button" class="btn btn--primary event-step__next">保存して次へ</button>
+              </div>
+            </div>
+          </li>
+
+          <li class="event-step">
+            <h2 class="event-step__heading">
+              <button type="button" class="event-step__toggle" aria-expanded="false">
+                <span class="event-step__number" aria-hidden="true">2</span>
+                <span class="event-step__labels">
+                  <span class="event-step__title">費用プラン</span>
+                  <span class="event-step__summary">大人 500円 / 子ども 無料</span>
+                </span>
+                <span class="event-step__state">入力済み</span>
+              </button>
+            </h2>
+          </li>
+
+          <li class="event-step">
+            <h2 class="event-step__heading">
+              <button type="button" class="event-step__toggle" aria-expanded="false">
+                <span class="event-step__number" aria-hidden="true">3</span>
+                <span class="event-step__labels">
+                  <span class="event-step__title">開催場所</span>
+                  <span class="event-step__summary">河川敷公園 第2広場 / 雨天決行</span>
+                </span>
+                <span class="event-step__state">入力済み</span>
+              </button>
+            </h2>
+          </li>
+
+          <li class="event-step">
+            <h2 class="event-step__heading">
+              <button type="button" class="event-step__toggle" aria-expanded="false">
+                <span class="event-step__number" aria-hidden="true">4</span>
+                <span class="event-step__labels">
+                  <span class="event-step__title">申し込みの締切と定員</span>
+                  <span class="event-step__summary">11月5日 / 40名</span>
+                </span>
+                <span class="event-step__state">入力済み</span>
+              </button>
+            </h2>
+          </li>
+
+          <li class="event-step">
+            <h2 class="event-step__heading">
+              <button type="button" class="event-step__toggle" aria-expanded="false">
+                <span class="event-step__number" aria-hidden="true">5</span>
+                <span class="event-step__labels">
+                  <span class="event-step__title">チラシ</span>
+                  <span class="event-step__summary">生成済み / 秋の芋煮会</span>
+                </span>
+                <span class="event-step__state">入力済み</span>
+              </button>
+            </h2>
+          </li>
+        </ol>
+      </form>
+
+      <div class="panel__actions">
+        <button class="btn btn--primary" type="button">保存して閉じる</button>
+        <a class="btn btn--outline" href="mock-preview.html">プレビュー</a>
+        <a class="btn btn--ghost" href="mock-organizer.html">主催一覧へ戻る</a>
+      </div>
+
+      <p class="screen-note">
+        保存すると、編集中の制限を解除して主催一覧へ戻ります。保存せずに閉じると、制限は時間で切れます。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

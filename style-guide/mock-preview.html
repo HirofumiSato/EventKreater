@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 下書きのプレビュー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="下書きのプレビュー" data-path="/organizer/events/[id]/preview">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div class="notice">
+        <strong>下書きのプレビューです。</strong> 参加者には見えていません。出欠フォームは出ません。
+        公開すると、この内容で URL が発行されます。
+      </div>
+
+      <div class="panel" style="margin-top: 0">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center">
+          <button class="btn btn--primary btn--sm" type="button">公開する</button>
+          <a class="btn btn--outline btn--sm" href="mock-edit.html">編集に戻る</a>
+          <a class="btn btn--ghost btn--sm" href="mock-drafts.html">下書き一覧</a>
+        </div>
+        <p class="screen-note" style="margin-top: 0.625rem">
+          公開には、利用枠を 1回使います。いまの残りは 0回です。公開すると料金の選択に進みます。
+        </p>
+      </div>
+
+      <section class="poster-hero" style="margin-top: 0.5rem">
+        <img class="poster-hero__image" src="../public/samples/flyer-autumn.jpg" alt="秋の芋煮会のチラシ" width="1080" height="1920">
+      </section>
+
+      <div class="event-sheet">
+        <h1 class="event-sheet__title">秋の芋煮会</h1>
+        <p class="screen-note" style="margin-top: 0.25rem">主催: 佐藤 みのり</p>
+
+        <div class="event-sheet__badges">
+          <span class="badge badge--neutral badge--sm">下書き</span>
+          <span class="badge badge--neutral badge--sm">定員 40名</span>
+          <span class="badge badge--warning badge--sm">締切 11月5日</span>
+        </div>
+
+        <dl class="event-facts">
+          <div class="event-facts__row">
+            <dt>日時</dt>
+            <dd>11月8日（日）11:00–15:00<br><span class="screen-note">雨天決行</span></dd>
+          </div>
+          <div class="event-facts__row">
+            <dt>場所</dt>
+            <dd>河川敷公園 第2広場</dd>
+          </div>
+          <div class="event-facts__row">
+            <dt>費用</dt>
+            <dd>大人 500円 ／ 子ども 無料</dd>
+          </div>
+        </dl>
+
+        <p class="screen-note" style="margin-top: 1rem">
+          毎年 40人ほど集まる、ゆるい芋煮会です。途中参加・途中抜けとも自由。
+        </p>
+      </div>
+
+      <div class="empty">
+        <p class="empty__title">出欠フォームは出ません</p>
+        <p class="empty__body">公開すると、ここに出欠の受付が入ります。プレビューでは見た目だけを確かめます。</p>
+      </div>
+
+      <div class="notice">
+        公開できるのは筆頭幹事だけです。共同幹事には「公開する」を出さず、その旨を書きます。
+      </div>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

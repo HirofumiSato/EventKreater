@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | イベント告知・出欠</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-screen="告知・出欠" data-path="/events/[id]">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main" style="padding-top: 0">
+    <div class="stack" style="gap: 0">
+
+      <section class="poster-hero">
+        <span class="poster-hero__stamp">受付中</span>
+        <img class="poster-hero__image" src="../public/samples/flyer-autumn.jpg" alt="秋の芋煮会のチラシ" width="1080" height="1920">
+      </section>
+
+      <div class="event-sheet">
+        <h1 class="event-sheet__title">秋の芋煮会</h1>
+        <p class="screen-note" style="margin-top: 0.25rem">主催: 佐藤 みのり</p>
+
+        <div class="event-sheet__badges">
+          <span class="badge badge--success badge--sm">参加 28名</span>
+          <span class="badge badge--neutral badge--sm">定員 40名</span>
+          <span class="badge badge--warning badge--sm">締切 11月5日</span>
+        </div>
+
+        <dl class="event-facts">
+          <div class="event-facts__row">
+            <dt>日時</dt>
+            <dd>11月8日（日）11:00–15:00<br><span class="screen-note">雨天決行</span></dd>
+          </div>
+          <div class="event-facts__row">
+            <dt>場所</dt>
+            <dd>河川敷公園 第2広場<br><span class="screen-note">東武線「川辺駅」から徒歩 8分</span></dd>
+          </div>
+          <div class="event-facts__row">
+            <dt>費用</dt>
+            <dd>大人 500円 ／ 子ども 無料<br><span class="screen-note">当日、受付で集めます</span></dd>
+          </div>
+          <div class="event-facts__row">
+            <dt>持ち物</dt>
+            <dd>軍手、飲み物、座れるもの</dd>
+          </div>
+        </dl>
+
+        <p style="margin-top: 1rem; font-size: 0.875rem; line-height: 1.8; color: var(--color-text-muted)">
+          毎年 40人ほど集まる、ゆるい芋煮会です。途中参加・途中抜けとも自由。子ども連れの参加も歓迎します。
+          芋煮は 2釜、甘口と辛口を用意します。
+        </p>
+      </div>
+
+      <div style="padding: 0 1rem">
+        <section class="rsvp" aria-labelledby="rsvp-title">
+          <h2 class="rsvp__title" id="rsvp-title">出欠を答える</h2>
+          <p class="rsvp__note">名前と出欠だけ。登録は要りません。答えを変えるときは、同じ端末からもう一度どうぞ。</p>
+
+          <div class="rsvp__choices" role="group" aria-label="出欠">
+            <button class="rsvp__choice is-picked" type="button" aria-pressed="true">
+              <span>出席する<small>参加費 500円</small></span>
+            </button>
+            <button class="rsvp__choice" type="button" aria-pressed="false">
+              <span>欠席する<small>案内は届きません</small></span>
+            </button>
+          </div>
+          <p class="screen-note" style="margin-top: 0.5rem">
+            定員に達すると「出席する」は消え、代わりに参加要望（待ち順）を受け付けます。
+          </p>
+
+          <div class="field" style="margin-top: 0.875rem">
+            <label class="label" for="rsvp-name">名前</label>
+            <input class="input" id="rsvp-name" value="山田 花子" autocomplete="name">
+          </div>
+
+          <div class="field" style="margin-top: 0.75rem">
+            <span class="label">人数</span>
+            <div class="rsvp__foot" style="margin-top: 0.25rem">
+              <button class="btn btn--outline btn--sm" type="button" aria-label="1人減らす">−</button>
+              <span style="min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700">2 名</span>
+              <button class="btn btn--outline btn--sm" type="button" aria-label="1人増やす">＋</button>
+              <span class="screen-note">大人 2名で 1,000円</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 0.75rem">
+            <label class="label" for="rsvp-note">ひとこと（任意）</label>
+            <textarea class="textarea" id="rsvp-note" rows="2">子ども用に椅子を1脚お願いします</textarea>
+          </div>
+
+          <div class="rsvp__foot">
+            <button class="btn btn--primary btn--block" type="button">この内容で答える</button>
+          </div>
+          <p class="screen-note" style="margin-top: 0.5rem">答えると、主催者に名前と出欠が届きます。</p>
+        </section>
+
+        <div class="org-invite">
+          <div class="org-invite__body">
+            <p class="org-invite__title">自分でも催しを開くなら</p>
+            <p class="screen-note">チラシと告知ページを 5分で。最初の 2回は無料です。</p>
+          </div>
+          <a class="btn btn--outline btn--sm" href="mock-create.html">作ってみる</a>
+        </div>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <button class="btn btn--outline btn--sm" type="button">LINEで送る</button>
+          <button class="btn btn--ghost btn--sm" type="button">URLをコピー</button>
+        </div>
+        <p class="screen-note" style="margin-top: 0.5rem">
+          LINE の共有は、個人のアカウントから送られます。送信の停止や、本サービスが責任を負わないことを確認してから開きます。
+        </p>
+
+        <section class="section" style="margin-top: 2rem">
+          <div class="section__head">
+            <h2 class="section__title">主催者のほかの催し</h2>
+            <p class="section__note">同じ主催者が開くものです。</p>
+          </div>
+          <ul class="rows" style="margin-top: 0.75rem">
+            <li class="rows__item">
+              <div class="rows__main">
+                <p class="rows__title">第3回 たこ焼きパーティー</p>
+                <p class="rows__meta">11月22日（土）18:00 ／ 集会所 2F</p>
+              </div>
+              <span class="rows__value">1,200円</span>
+            </li>
+            <li class="rows__item">
+              <div class="rows__main">
+                <p class="rows__title">冬の焚き火会</p>
+                <p class="rows__meta">12月13日（土）16:00 ／ 河川敷公園</p>
+              </div>
+              <span class="rows__value">無料</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="sticky-cta">
+        <a class="btn btn--outline" href="mock-organizer-public.html">主催者を見る</a>
+        <a class="btn btn--primary" href="#rsvp-title">出欠を答える</a>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

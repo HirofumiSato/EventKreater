@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 売上の内訳</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="売上の内訳" data-path="/organizer/events/[id]/revenue">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">売上の内訳</h1>
+        <p class="page-lead">秋の芋煮会 ／ 11月8日（日）</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a href="mock-organizer.html">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a class="is-current" href="mock-revenue.html" aria-current="page">売上</a>
+        <a href="mock-organizer-profile.html">プロフィール</a>
+      </nav>
+
+      <section class="panel" style="margin-top: 0">
+        <ul class="ledger">
+          <li class="ledger__row">
+            <span class="ledger__label">見込み売上</span>
+            <span class="ledger__value">14,000<span class="ledger__note">円</span></span>
+          </li>
+          <li class="ledger__row">
+            <span class="ledger__label">領収書の発行額</span>
+            <span class="ledger__value">12,000<span class="ledger__note">円</span></span>
+          </li>
+          <li class="ledger__row ledger__row--total">
+            <span class="ledger__label">差額</span>
+            <span class="ledger__value">2,000<span class="ledger__note">円</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">プラン別</h2>
+          <p class="section__note">申込時点の金額で数えています。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">大人</p>
+              <p class="rows__meta">20名 ／ 1人 500円</p>
+            </div>
+            <span class="rows__value">10,000円</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">子ども</p>
+              <p class="rows__meta">8名 ／ 無料</p>
+            </div>
+            <span class="rows__value">0円</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">プラン未選択</p>
+              <p class="rows__meta">2名 ／ 金額が決まっていません</p>
+            </div>
+            <span class="rows__value">—</span>
+          </li>
+        </ul>
+
+        <div class="panel" style="margin-top: 0.875rem">
+          <p class="panel__title">プラン未選択の 2人</p>
+          <p class="panel__note">名簿から費用プランを選ぶと、見込み売上に入ります。</p>
+          <div class="panel__actions">
+            <a class="btn btn--primary btn--sm" href="mock-roster.html">名簿で決める</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">開催回別</h2>
+          <p class="section__note">1回だけの催しは、1行になります。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">11月8日（日）11:00–15:00</p>
+              <p class="rows__meta">参加 28名 ／ 発行済み 12,000円</p>
+            </div>
+            <span class="rows__value">14,000円</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="panel__actions">
+        <a class="btn btn--outline btn--sm" href="mock-revenue.html">売上へ戻る</a>
+        <button class="btn btn--ghost btn--sm" type="button">CSVで書き出す</button>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 端末の幅で見る</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="frame-page">
+  <div class="frame-bar" role="group" aria-label="表示の切り替え">
+    <span class="frame-bar__name" id="frame-name">画面</span>
+    <span class="frame-bar__path" id="frame-path"></span>
+    <div class="frame-bar__group">
+      <label class="frame-bar__pick">
+        <span>画面</span>
+        <select id="pick-screen" aria-label="画面を選ぶ"></select>
+      </label>
+      <a id="to-prev" href="#">← 前</a>
+      <a id="to-next" href="#">次 →</a>
+      <span>幅</span>
+      <a id="to-390" href="#" aria-current="false">スマホ 390</a>
+      <a id="to-1280" href="#" aria-current="false">PC 1280</a>
+      <a id="to-raw" href="#">この幅のまま開く</a>
+      <a href="mock-index.html">一覧</a>
+    </div>
+  </div>
+
+  <div class="frame-stage">
+    <div class="frame-device" id="device">
+      <iframe id="frame" title="画面モック" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <p class="frame-hint">
+    枠の中は実物と同じ CSS で描いています。幅を変えると、メディアクエリもその幅で効きます。
+    390 はスマホ（iPhone 相当）、1280 は PC です。操作は枠の中にそのまま届きます。
+  </p>
+
+  <script src="mock-screens-data.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const screens = window.MOCK_SCREENS || [];
+    const page = params.get("p") || "mock-home.html";
+    const width = params.get("w") === "1280" ? 1280 : 390;
+    const deco = params.get("t") || "";
+
+    const height = width === 390 ? 844 : 900;
+
+    const frame = document.getElementById("frame");
+    const src = `${page}${deco ? `?t=${deco}&embed=1` : "?embed=1"}`;
+    frame.src = src;
+    frame.width = String(width);
+    frame.height = String(height);
+
+    document.getElementById("device").style.width = `${width}px`;
+
+    // いまどの画面か。番号・名前・パスを帯に出す。
+    const current = screens.find((s) => s.file === page);
+    const index = screens.findIndex((s) => s.file === page);
+
+    document.getElementById("frame-name").textContent = current
+      ? `${current.no} ${current.name}`
+      : page;
+    document.getElementById("frame-path").textContent = current
+      ? `${current.path} / ${current.scope === "quiet" ? "静かめ" : "影だけ"}`
+      : "";
+
+    // 幅と装飾を保ったまま、画面だけ差し替える。
+    function link(file, w) {
+      const next = new URLSearchParams({ p: file, w: String(w) });
+      if (deco) next.set("t", deco);
+      return `mock-frame.html?${next.toString()}`;
+    }
+
+    // 29 画面を順に送る。端では反対側へ回る。
+    if (index >= 0) {
+      const prev = screens[(index - 1 + screens.length) % screens.length];
+      const next = screens[(index + 1) % screens.length];
+      const toPrev = document.getElementById("to-prev");
+      const toNext = document.getElementById("to-next");
+      toPrev.href = link(prev.file, width);
+      toNext.href = link(next.file, width);
+      toPrev.title = prev.name;
+      toNext.title = next.name;
+    }
+
+    // 画面の選択。区分ごとにまとめる。
+    const pick = document.getElementById("pick-screen");
+    for (const group of window.MOCK_GROUPS || []) {
+      const items = screens.filter((s) => s.group === group.key);
+      if (!items.length) continue;
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = group.title;
+      for (const s of items) {
+        const option = document.createElement("option");
+        option.value = s.file;
+        option.textContent = `${s.no} ${s.name}`;
+        optgroup.append(option);
+      }
+      pick.append(optgroup);
+    }
+    if (current) pick.value = current.file;
+    pick.addEventListener("change", () => {
+      location.href = link(pick.value, width);
+    });
+
+    const a390 = document.getElementById("to-390");
+    const a1280 = document.getElementById("to-1280");
+    a390.href = link(page, 390);
+    a1280.href = link(page, 1280);
+    a390.toggleAttribute("aria-current", width === 390);
+    a1280.toggleAttribute("aria-current", width === 1280);
+
+    document.getElementById("to-raw").href = `${page}${deco ? `?t=${deco}` : ""}`;
+  </script>
+</body>
+</html>

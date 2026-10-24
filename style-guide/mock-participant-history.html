@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 参加履歴</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="participant" data-current="participant-history" data-screen="参加履歴" data-path="/participant/history">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">参加者</p>
+        <h1 class="page-title">参加履歴</h1>
+        <p class="page-lead">答えた出欠と、受け取った領収書の一覧です。</p>
+      </div>
+
+      <div class="roster-toolbar">
+        <div class="segment" role="group" aria-label="出欠で絞り込む">
+          <button class="segment__item" type="button" aria-pressed="true">すべて 12</button>
+          <button class="segment__item" type="button" aria-pressed="false">出席 7</button>
+          <button class="segment__item" type="button" aria-pressed="false">要望 1</button>
+          <button class="segment__item" type="button" aria-pressed="false">欠席 2</button>
+        </div>
+        <label class="roster-toolbar__search">
+          <span class="visually-hidden">時期で絞る</span>
+          <select class="select input--compact">
+            <option>この 1年</option>
+            <option>この 3か月</option>
+            <option>すべて</option>
+          </select>
+        </label>
+      </div>
+
+      <ul class="rows">
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">秋の芋煮会</p>
+            <p class="rows__meta">11月8日（日）／ 出席 2名 ／ 1,000円</p>
+          </div>
+          <a class="btn btn--ghost btn--sm" href="mock-event-receipt.html">領収書</a>
+        </li>
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">写真部 秋の撮影会</p>
+            <p class="rows__meta">10月12日（日）／ 出席 1名 ／ 1,500円</p>
+          </div>
+          <a class="btn btn--ghost btn--sm" href="mock-event-receipt.html">領収書</a>
+        </li>
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">第2回 たこ焼きパーティー</p>
+            <p class="rows__meta">9月27日（土）／ 出席 2名 ／ 2,400円</p>
+          </div>
+          <a class="btn btn--ghost btn--sm" href="mock-event-receipt.html">領収書</a>
+        </li>
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">夏の流しそうめん</p>
+            <p class="rows__meta">8月9日（土）／ 欠席</p>
+          </div>
+          <span class="badge badge--declined badge--sm">欠席</span>
+        </li>
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">七夕の集まり</p>
+            <p class="rows__meta">7月5日（土）／ 出席 2名 ／ 1,000円</p>
+          </div>
+          <a class="btn btn--ghost btn--sm" href="mock-event-receipt.html">領収書</a>
+        </li>
+        <li class="rows__item">
+          <div class="rows__main">
+            <p class="rows__title">写真部 春の撮影会</p>
+            <p class="rows__meta">4月19日（日）／ 参加要望（補欠）</p>
+          </div>
+          <span class="badge badge--waitlist badge--sm">要望</span>
+        </li>
+      </ul>
+
+      <div class="panel__actions">
+        <button class="btn btn--outline btn--sm" type="button">さらに読み込む</button>
+        <a class="btn btn--ghost btn--sm" href="mock-participant-calendar.html">カレンダーで見る</a>
+      </div>
+
+      <p class="screen-note">
+        主催している催しは、この一覧には出しません。主催者マイページで見られます。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

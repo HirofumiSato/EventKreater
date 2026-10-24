@@ -1,0 +1,1180 @@
+/* ==========================================================================
+   画面モック用の部品。製品へは移さない（deco.css と attendance.css が正）。
+   スマホ（390px）を基準に書き、720px 以上でだけ列を増やす。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   端末の枠。mock-frame.html が使う。ここだけはページの外側の話。
+   -------------------------------------------------------------------------- */
+
+.frame-page {
+  min-height: 100vh;
+  margin: 0;
+  background: #23211d;
+  color: #f2ece1;
+  font-family: var(--font);
+}
+
+.frame-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.14);
+  background: #23211d;
+  font-size: 0.8125rem;
+}
+
+.frame-bar__name {
+  color: #fff;
+  font-weight: 700;
+}
+
+.frame-bar__path {
+  color: #a9a297;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.frame-bar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+
+.frame-bar__pick {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+}
+
+.frame-bar__pick select {
+  max-width: 15rem;
+  padding: 0.1875rem 0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: #23211d;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.frame-bar a,
+.frame-bar button {
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: transparent;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.frame-bar a[aria-current="true"],
+.frame-bar button[aria-current="true"] {
+  border-color: #fff;
+  background: #fff;
+  color: #1a1916;
+}
+
+.frame-stage {
+  display: flex;
+  justify-content: safe center;
+  padding: 1.25rem 0.75rem 3rem;
+  /* 1280px の枠は、狭い画面では横に送って見る。左端を切らない。 */
+  overflow-x: auto;
+}
+
+.frame-device {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+}
+
+.frame-device iframe {
+  display: block;
+  border: 0;
+  background: #fff;
+}
+
+.frame-hint {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   告知ページ（SCR-PUB-01）。チラシを先頭に置き、その下で出欠を取る。
+   スマホではチラシが画面のほとんどを占める。これが正しい。
+   -------------------------------------------------------------------------- */
+
+.poster-hero {
+  position: relative;
+  margin-inline: calc(50% - 50vw);
+  background: #221f1b;
+}
+
+.poster-hero__image {
+  display: block;
+  width: 100%;
+  max-height: 74vh;
+  object-fit: contain;
+  background: #221f1b;
+}
+
+.poster-hero__stamp {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: var(--pop-warm);
+  color: #1a1916;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.3);
+  transform: rotate(-2deg);
+}
+
+.event-sheet {
+  position: relative;
+  margin-top: -1.25rem;
+  padding: 1.25rem 1rem 1.5rem;
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -10px 24px -16px rgb(26 25 22 / 0.5);
+}
+
+.event-sheet__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.event-sheet__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+}
+
+.event-facts {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.event-facts__row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.event-facts dt {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.event-facts dd {
+  margin: 0;
+}
+
+/* 出欠。名前と出欠だけで終わる。 */
+.rsvp {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.rsvp__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.rsvp__note {
+  margin-top: 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.rsvp__choices {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.rsvp__choice {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 3rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: left;
+}
+
+.rsvp__choice small {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.rsvp__choice.is-picked {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #fff;
+}
+
+.rsvp__choice.is-picked small {
+  color: #d8d4cc;
+}
+
+.rsvp__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+/* スマホの追従ボタン。本文の最後に置くと、押されないまま帰られる。 */
+.sticky-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline: calc(50% - 50vw);
+  padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.sticky-cta .btn {
+  flex: 1 1 auto;
+}
+
+/* 主催者勧誘。出欠の直下に 1 枚だけ。 */
+.org-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.org-invite__body {
+  flex: 1 1 12rem;
+}
+
+.org-invite__title {
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   カレンダー。390px で 7 列。1 マスは 44px を下回らせない。
+   -------------------------------------------------------------------------- */
+
+.cal {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.cal__month {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cal__nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.cal__nav button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.cal__weekday {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 0.5rem 0.25rem 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  text-align: center;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 0 0.25rem 0.5rem;
+}
+
+.cal__day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.125rem;
+  min-height: 2.75rem;
+  padding: 0.3125rem 0 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.cal__day.is-outside {
+  color: #b7b1a6;
+}
+
+.cal__day.is-today {
+  border-color: var(--color-primary);
+  font-weight: 700;
+}
+
+.cal__day.is-selected {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.cal__day.has-event::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--pop-warm);
+}
+
+.cal__day.is-selected.has-event::after {
+  background: var(--pop-warm);
+}
+
+.cal__day.has-event.is-declined::after {
+  background: var(--color-text-subtle);
+}
+
+.cal__day.has-event.is-waitlist::after {
+  background: var(--color-warning-line);
+}
+
+.cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.875rem;
+  padding: 0.625rem 0.875rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.cal__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.cal__legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--pop-warm);
+}
+
+.cal__legend i.is-declined {
+  background: var(--color-text-subtle);
+}
+
+.cal__legend i.is-waitlist {
+  background: var(--color-warning-line);
+}
+
+/* 行の一覧。見出し＋補足＋右端の値を 1 行に置く。 */
+.rows {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.rows__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rows__main {
+  min-width: 0;
+}
+
+.rows__title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.rows__meta {
+  margin-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.rows__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rows a.rows__item,
+.rows__item--link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rows__item--link:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+/* 帳票。売上のサマリは、表ではなく行で読ませる。 */
+.ledger {
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--color-text);
+  list-style: none;
+}
+
+.ledger__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ledger__label {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.ledger__value {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.ledger__row--total .ledger__value {
+  font-size: 1.5rem;
+}
+
+.ledger__note {
+  display: block;
+  color: var(--color-text-subtle);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* 領収書。紙として読ませる。 */
+.receipt-sheet {
+  padding: 1.25rem 1.125rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+.receipt-sheet__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.receipt-sheet__no {
+  margin-top: 0.25rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.receipt-sheet__to {
+  margin-top: 1.25rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--color-text);
+  font-size: 1.0625rem;
+}
+
+.receipt-sheet__amount {
+  margin-top: 1rem;
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+
+.receipt-sheet__lines {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.receipt-sheet__line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 0.8125rem;
+}
+
+.receipt-sheet__foot {
+  margin-top: 1.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* 主催者のプロフィール。 */
+.profile-head {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+}
+
+.profile-head__avatar {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.profile-head__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.profile-head__title {
+  margin-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.profile-links a {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.genre-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+/* 料金。スマホでは 1 列。比べるのは縦に並んでから。 */
+.plan-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-card {
+  padding: 1.125rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.plan-card--pick {
+  border-color: var(--color-text);
+}
+
+.plan-card__name {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.plan-card__price {
+  margin-top: 0.375rem;
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.plan-card__price small {
+  margin-left: 0.25rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.plan-card__list {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  list-style: none;
+}
+
+.plan-card__list li {
+  padding-left: 1rem;
+  text-indent: -1rem;
+}
+
+.plan-card__list li::before {
+  content: "・";
+  color: var(--color-primary);
+}
+
+/* 利用規約。読むための画面なので、装飾は最小。 */
+.legal {
+  font-size: 0.875rem;
+  line-height: 1.9;
+}
+
+.legal h2 {
+  margin-top: 1.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.legal p,
+.legal ol,
+.legal ul {
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+}
+
+.legal ol,
+.legal ul {
+  padding-left: 1.25rem;
+}
+
+/* 認証。1 列。入力の幅は 100%。 */
+.auth-card {
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.auth-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.auth-card__note {
+  margin-top: 0.375rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.auth-card__body {
+  display: grid;
+  gap: 0.875rem;
+  margin-top: 1rem;
+}
+
+.auth-alt {
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.code-input {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+/* 状態の案内。 */
+.empty {
+  padding: 1.75rem 1.25rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+
+.empty__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.empty__body {
+  margin-top: 0.375rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.notice {
+  padding: 0.875rem 1rem;
+  border-left: 3px solid var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+}
+
+.notice strong {
+  font-weight: 700;
+}
+
+/* 定義リスト。項目名と値を縦に置く。 */
+.kv {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.kv__row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.kv dt {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.kv dd {
+  margin: 0;
+}
+
+/* 下書きの札。 */
+.draft-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.draft-card__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.draft-card__meta {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.draft-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+/* サブタブ。スマホでは横に送る。折り返すと現在地が読みにくい。 */
+.org-subnav {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.125rem;
+  border-bottom: 1px solid var(--color-border-strong);
+  scrollbar-width: none;
+}
+
+.org-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.org-subnav a {
+  flex: 0 0 auto;
+  padding: 0.625rem 0.625rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.org-subnav a.is-current {
+  border-bottom-color: var(--color-text);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* 画面の目的を 1 行で添える。モックの注記ではなく、製品の文言として読める形にする。 */
+.screen-note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* 720px 以上でだけ列を増やす。 */
+@media (min-width: 720px) {
+  .rsvp__choices {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .event-sheet {
+    margin-top: -2rem;
+    padding: 1.75rem 1.5rem 2rem;
+  }
+
+  .event-sheet__title {
+    font-size: 1.875rem;
+  }
+
+  .poster-hero__image {
+    max-height: 60vh;
+  }
+
+  .plan-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+/* ==========================================================================
+   画面の一覧。名前を押すとスマホ幅で開く。PC は右の小さなリンク。
+   ========================================================================== */
+
+.screen-group {
+  margin-top: 2rem;
+}
+
+.screen-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.screen-group__title {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.screen-group__count {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-group__note {
+  width: 100%;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.screen-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screen-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.125rem 0.375rem;
+  padding: 0.6875rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.screen-row__no {
+  grid-row: 1 / span 4;
+  padding-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-row__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.screen-row__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.screen-row__title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.screen-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.screen-row__path {
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.scope-tag {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.scope-tag--pop {
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+}
+
+.scope-tag--quiet {
+  background: var(--pop-cool-tint);
+  color: var(--pop-cool-text);
+}
+
+.screen-row__note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.screen-row__act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.screen-row__act .btn {
+  font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   比較。既定はスマホ。390px の枠をそのまま並べる。
+   ========================================================================== */
+
+.compare-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 2px 10px -6px rgb(26 25 22 / 0.4);
+}
+
+.compare-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.compare-bar__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.compare-select {
+  flex: 1 1 12rem;
+  min-height: 2.5rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+/* スマホ幅の枠は 390px 固定。拡げると別の画面になる。 */
+.compare--phone {
+  grid-template-columns: repeat(auto-fit, minmax(406px, 1fr));
+}
+
+.compare--phone .compare__frame {
+  width: 390px;
+  height: 760px;
+  margin-inline: auto;
+}
+
+.compare--phone .compare__panel {
+  min-width: 406px;
+}
+
+.compare--pc {
+  grid-template-columns: 1fr;
+}
+
+.compare--pc .compare__frame {
+  width: 1280px;
+  height: 860px;
+}
+
+.compare--pc .compare__panel {
+  overflow-x: auto;
+}
+
+@media (max-width: 860px) {
+  .compare--phone {
+    grid-template-columns: 1fr;
+  }
+
+  .compare--phone .compare__panel {
+    min-width: 0;
+  }
+}
+
+/* 一覧の見出しで、スマホを先に出す。 */
+.device-note {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--pop-warm);
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* 枠の中のスクロール。PC 幅は横に送れるようにする。 */
+.compare__stage {
+  overflow: auto;
+  background: #fff;
+}
+
+.compare--phone .compare__stage {
+  display: flex;
+  justify-content: center;
+}
+
+/* 枠の中では帯を出さない。比較の対象は本文だけ。 */
+html.is-embed .mockbar {
+  display: none;
+}
+
+html.is-embed.has-mockbar body {
+  padding-bottom: 0;
+}
+
+html.is-embed .skip-link,
+html.is-embed .sticky-cta {
+  position: static;
+}
+
+html.is-embed .sticky-cta {
+  margin-top: 1rem;
+}

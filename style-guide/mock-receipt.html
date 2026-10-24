@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 幹事向け領収書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="幹事向け領収書" data-path="/organizer/events/[id]/receipts/[participantId]">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">領収書</h1>
+        <p class="page-lead">秋の芋煮会 ／ 山田 花子 さん</p>
+      </div>
+
+      <div class="panel" style="margin-top: 0">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.375rem">
+          <button class="btn btn--primary btn--sm" type="button">再発行する</button>
+          <button class="btn btn--outline btn--sm" type="button">印刷する</button>
+          <a class="btn btn--ghost btn--sm" href="mock-roster.html">名簿へ戻る</a>
+        </div>
+        <p class="screen-note" style="margin-top: 0.625rem">
+          再発行すると、同じ番号で新しい発行日が入ります。番号は変わりません。
+        </p>
+      </div>
+
+      <div class="receipt-sheet">
+        <p class="receipt-sheet__title">領収書</p>
+        <p class="receipt-sheet__no">No. R-2026-1108-0042</p>
+
+        <p class="receipt-sheet__to">山田 花子 様</p>
+
+        <p class="receipt-sheet__amount">￥1,000</p>
+        <p class="screen-note" style="text-align: right; margin-top: 0.125rem">（消費税込み）</p>
+
+        <div class="receipt-sheet__lines">
+          <div class="receipt-sheet__line">
+            <span>但し書き</span>
+            <span>秋の芋煮会 参加費として</span>
+          </div>
+          <div class="receipt-sheet__line">
+            <span>内訳</span>
+            <span>大人 2名 × 500円</span>
+          </div>
+          <div class="receipt-sheet__line">
+            <span>受領日</span>
+            <span>2026年11月8日</span>
+          </div>
+          <div class="receipt-sheet__line">
+            <span>発行者</span>
+            <span>佐藤 みのり</span>
+          </div>
+        </div>
+
+        <p class="receipt-sheet__foot">
+          この領収書は、主催者が発行したものです。参加者本人のページからも同じ内容を表示できます。
+          金額の変更が必要なときは、名簿で費用プランを直してから再発行してください。
+        </p>
+      </div>
+
+      <dl class="kv">
+        <div class="kv__row">
+          <dt>参加者</dt>
+          <dd>山田 花子 ／ 出席 2名</dd>
+        </div>
+        <div class="kv__row">
+          <dt>費用プラン</dt>
+          <dd>大人 500円 × 2</dd>
+        </div>
+        <div class="kv__row">
+          <dt>支払い</dt>
+          <dd>受領済み（11月8日）</dd>
+        </div>
+        <div class="kv__row">
+          <dt>発行履歴</dt>
+          <dd>11月8日 15:12 ／ 再発行 0回</dd>
+        </div>
+      </dl>
+
+      <div class="notice">
+        領収書を出せるのは会員の幹事だけです。未登録の幹事には、登録の案内を出します。
+      </div>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

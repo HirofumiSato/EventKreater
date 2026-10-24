@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 参加者ホーム</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="participant" data-current="participant" data-screen="参加者ホーム" data-path="/participant">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">参加者</p>
+        <h1 class="page-title">こんにちは、山田 花子さん</h1>
+        <p class="page-lead">答えた出欠と、これからの催しがここに並びます。</p>
+      </div>
+
+      <div class="roster-summary">
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">これから</span>
+          <span class="roster-summary__value">2<span>件</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">今年 出席</span>
+          <span class="roster-summary__value">7<span>件</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">今年 欠席</span>
+          <span class="roster-summary__value">2<span>件</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">参加要望</span>
+          <span class="roster-summary__value">1<span>件</span></span>
+        </div>
+        <div class="roster-summary__item roster-summary__item--money">
+          <span class="roster-summary__label">次の支払い</span>
+          <span class="roster-summary__value">1,000<span>円</span></span>
+        </div>
+      </div>
+
+      <section class="section" style="margin-top: 0">
+        <div class="section__head">
+          <h2 class="section__title">次の催し</h2>
+          <p class="section__note">いちばん近いものです。</p>
+        </div>
+
+        <article class="event-card" style="margin-top: 0.875rem">
+          <img class="event-card__thumb" src="../public/samples/flyer-autumn.jpg" alt="" width="1080" height="1920">
+          <div>
+            <div class="event-card__head">
+              <h3 class="event-card__title">秋の芋煮会</h3>
+              <span class="badge badge--attending badge--sm">出席</span>
+            </div>
+            <p class="event-card__meta">
+              11月8日（日）11:00–15:00 ／ 河川敷公園 第2広場<br>
+              大人 2名 ／ 当日 1,000円
+            </p>
+            <div class="event-card__meter-label">
+              <span>あと 12日</span>
+              <span>主催: 佐藤 みのり</span>
+            </div>
+          </div>
+          <div class="card__actions" style="margin-top: 0">
+            <a class="btn btn--outline btn--sm" href="mock-event.html">開く</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">これからの参加</h2>
+          <p class="section__note">日付の近い順です。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">第3回 たこ焼きパーティー</p>
+              <p class="rows__meta">11月22日（土）18:00 ／ 集会所 2F</p>
+            </div>
+            <span class="badge badge--attending badge--sm">出席</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">冬の焚き火会</p>
+              <p class="rows__meta">12月13日（土）16:00 ／ 河川敷公園</p>
+            </div>
+            <span class="badge badge--tentative badge--sm">未定</span>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">写真部 冬の撮影会</p>
+              <p class="rows__meta">12月20日（日）9:00 ／ 港の倉庫街</p>
+            </div>
+            <span class="badge badge--waitlist badge--sm">参加要望 2番目</span>
+          </li>
+        </ul>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <a class="btn btn--outline btn--sm" href="mock-participant-calendar.html">カレンダーで見る</a>
+          <a class="btn btn--ghost btn--sm" href="mock-participant-history.html">参加履歴</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">主催する側でも使う</h2>
+          <p class="section__note">同じアカウントで、催しを開けます。</p>
+        </div>
+        <div class="panel" style="margin-top: 0.875rem">
+          <p class="panel__title">主催者マイページ</p>
+          <p class="panel__note">作った催し、出欠の集計、売上をまとめて見られます。</p>
+          <div class="panel__actions">
+            <a class="btn btn--primary btn--sm" href="mock-mypage.html">主催者として使う</a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

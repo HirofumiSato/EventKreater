@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催カレンダー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="主催カレンダー" data-path="/organizer/calendar">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">カレンダー</h1>
+        <p class="page-lead">開催日ごとに並びます。日付を押すと、その日の催しが出ます。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a href="mock-organizer.html">主催一覧</a>
+        <a class="is-current" href="mock-organizer-calendar.html" aria-current="page">カレンダー</a>
+        <a href="mock-revenue.html">売上</a>
+        <a href="mock-organizer-profile.html">プロフィール</a>
+      </nav>
+
+      <div class="cal">
+        <div class="cal__head">
+          <p class="cal__month">2026年 11月</p>
+          <div class="cal__nav">
+            <button type="button" aria-label="前の月">‹</button>
+            <button type="button">今月</button>
+            <button type="button" aria-label="次の月">›</button>
+          </div>
+        </div>
+
+        <div class="cal__weekday" aria-hidden="true">
+          <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+        </div>
+
+        <div class="cal__grid">
+          <button class="cal__day is-outside" type="button">1</button>
+          <button class="cal__day is-outside" type="button">2</button>
+          <button class="cal__day is-outside" type="button">3</button>
+          <button class="cal__day is-outside" type="button">4</button>
+          <button class="cal__day is-outside" type="button">5</button>
+          <button class="cal__day is-outside" type="button">6</button>
+          <button class="cal__day is-outside" type="button">7</button>
+
+          <button class="cal__day has-event is-selected" type="button" aria-pressed="true">8</button>
+          <button class="cal__day" type="button">9</button>
+          <button class="cal__day" type="button">10</button>
+          <button class="cal__day" type="button">11</button>
+          <button class="cal__day" type="button">12</button>
+          <button class="cal__day" type="button">13</button>
+          <button class="cal__day" type="button">14</button>
+
+          <button class="cal__day" type="button">15</button>
+          <button class="cal__day" type="button">16</button>
+          <button class="cal__day" type="button">17</button>
+          <button class="cal__day" type="button">18</button>
+          <button class="cal__day" type="button">19</button>
+          <button class="cal__day" type="button">20</button>
+          <button class="cal__day" type="button">21</button>
+
+          <button class="cal__day has-event has-event--draft" type="button">22</button>
+          <button class="cal__day" type="button">23</button>
+          <button class="cal__day" type="button">24</button>
+          <button class="cal__day is-today" type="button">25</button>
+          <button class="cal__day" type="button">26</button>
+          <button class="cal__day" type="button">27</button>
+          <button class="cal__day" type="button">28</button>
+
+          <button class="cal__day" type="button">29</button>
+          <button class="cal__day" type="button">30</button>
+          <button class="cal__day is-outside" type="button">1</button>
+          <button class="cal__day is-outside" type="button">2</button>
+          <button class="cal__day is-outside" type="button">3</button>
+          <button class="cal__day is-outside" type="button">4</button>
+          <button class="cal__day is-outside" type="button">5</button>
+        </div>
+
+        <div class="cal__legend">
+          <span><i aria-hidden="true"></i>公開中</span>
+          <span><i class="is-declined" aria-hidden="true"></i>下書き</span>
+        </div>
+      </div>
+
+      <section class="section" style="margin-top: 0">
+        <div class="section__head">
+          <h2 class="section__title">11月8日（日）</h2>
+          <p class="section__note">この日の催しは 1件です。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.5rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">秋の芋煮会</p>
+              <p class="rows__meta">11:00–15:00 ／ 河川敷公園 第2広場<br>参加 28 / 40名 ／ 見込み 14,000円</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-roster.html">名簿</a>
+          </li>
+        </ul>
+      </section>
+
+      <div class="notice">
+        開催日が複数ある催しは、すべての日付に 1件ずつ並びます。公開中の催しからは、その場で LINE 共有もできます。
+      </div>
+
+      <p class="screen-note">外部カレンダーの購読（.ics）は用意していません。共有は URL で行います。</p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催者のログイン・登録</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-screen="主催者のログイン" data-path="/auth/register">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page page--form" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">ログイン</h1>
+        <p class="page-lead">作った催しと、参加者の出欠をここから見られます。</p>
+      </div>
+
+      <div class="auth-card">
+        <h2 class="auth-card__title">メールアドレスで入る</h2>
+        <p class="auth-card__note">パスワードを忘れたときは、確認番号で入れます。</p>
+
+        <div class="auth-card__body">
+          <div class="field">
+            <label class="label" for="lg-email">メールアドレス</label>
+            <input class="input" id="lg-email" type="email" inputmode="email" autocomplete="email" value="minori@example.com">
+          </div>
+          <div class="field">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem">
+              <label class="label" for="lg-pass">パスワード</label>
+              <a class="text-link" href="#main" style="font-size: 0.75rem">忘れた</a>
+            </div>
+            <input class="input" id="lg-pass" type="password" autocomplete="current-password" value="password1234">
+          </div>
+        </div>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <button class="btn btn--primary btn--block" type="button">ログイン</button>
+        </div>
+
+        <div class="panel__actions" style="margin-top: 0.5rem">
+          <button class="btn btn--outline btn--block" type="button">Googleではじめる</button>
+        </div>
+
+        <div class="auth-alt">
+          はじめての方は<a href="#register">新規登録</a>。
+          イベント作成の途中で登録する場合は、作った内容がそのまま引き継がれます。
+        </div>
+      </div>
+
+      <div class="auth-card" id="register">
+        <h2 class="auth-card__title">はじめての方（新規登録）</h2>
+        <p class="auth-card__note">確認メールが届きます。その後、電話番号を確認して登録が終わります。</p>
+
+        <div class="auth-card__body">
+          <div class="field">
+            <label class="label" for="rg-email">メールアドレス</label>
+            <input class="input" id="rg-email" type="email" inputmode="email" autocomplete="email" value="">
+          </div>
+          <div class="field">
+            <label class="label" for="rg-pass">パスワード（8文字以上）</label>
+            <input class="input" id="rg-pass" type="password" autocomplete="new-password" value="">
+          </div>
+          <div class="field">
+            <label class="label" for="rg-phone">電話番号</label>
+            <input class="input" id="rg-phone" type="tel" inputmode="tel" autocomplete="tel" value="">
+          </div>
+        </div>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <button class="btn btn--outline btn--block" type="button">登録する</button>
+        </div>
+        <div class="panel__actions" style="margin-top: 0.5rem">
+          <button class="btn btn--ghost btn--block" type="button">Googleで登録する</button>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <h2 class="auth-card__title">確認番号で入る</h2>
+        <p class="auth-card__note">登録した電話番号に 6桁の番号を送ります。SMS が届かないときはメールにも出せます。</p>
+        <div class="auth-card__body">
+          <div class="field">
+            <label class="label" for="lg-phone">電話番号</label>
+            <input class="input" id="lg-phone" type="tel" inputmode="tel" value="090-1234-5678">
+          </div>
+        </div>
+        <div class="panel__actions" style="margin-top: 0.875rem">
+          <button class="btn btn--outline btn--block" type="button">番号を送る</button>
+        </div>
+      </div>
+
+      <p class="screen-note">
+        参加者として入る方は<a href="mock-participant-login.html">参加者ログイン</a>へ。
+        管理者の入口は、この画面には出しません。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

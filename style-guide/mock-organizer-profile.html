@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 公開プロフィールの編集</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="organizer" data-screen="公開プロフィールの編集" data-path="/organizer/profile">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page page--form" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">公開プロフィール</h1>
+        <p class="page-lead">参加者が、催しを開く人を知るためのページです。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a href="mock-organizer.html">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a href="mock-revenue.html">売上</a>
+        <a class="is-current" href="mock-organizer-profile.html" aria-current="page">プロフィール</a>
+      </nav>
+
+      <div class="panel" style="margin-top: 0">
+        <p class="panel__title">公開の設定</p>
+        <p class="panel__note">非公開にすると、名前と催しへの導線だけを出します。</p>
+        <div class="segment" role="group" aria-label="公開の設定" style="margin-top: 0.5rem">
+          <button class="segment__item" type="button" aria-pressed="true">公開する</button>
+          <button class="segment__item" type="button" aria-pressed="false">公開しない</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="pf-title">肩書き（60文字まで）</label>
+        <input class="input" id="pf-title" value="河川敷で、ゆるい集まりを開いています。" maxlength="60">
+        <p class="help">一覧と、プロフィールの名前の下に出ます。</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="pf-bio">自己紹介（400文字まで）</label>
+        <textarea class="textarea" id="pf-bio" rows="6">2019年から、川辺町の河川敷で年4回ほど集まりを開いています。大人数ではなく、20〜40人くらいで、初めての人もひとりで来られる規模を選んでいます。子ども連れの参加も歓迎です。</textarea>
+        <p class="help">146 / 400文字</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="pf-area">活動エリア</label>
+        <input class="input" id="pf-area" value="埼玉県 川辺市・東松山市">
+      </div>
+
+      <div class="field">
+        <span class="label">ジャンル（3つまで）</span>
+        <div class="genre-chips">
+          <span class="chip" aria-pressed="true">飯フェス</span>
+          <span class="chip" aria-pressed="true">芋煮</span>
+          <span class="chip" aria-pressed="true">焚き火</span>
+          <span class="chip" aria-pressed="false">ライブ</span>
+          <span class="chip" aria-pressed="false">撮影会</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="pf-x">X</label>
+        <input class="input" id="pf-x" value="@minori_imo" inputmode="url">
+      </div>
+      <div class="field">
+        <label class="label" for="pf-insta">Instagram</label>
+        <input class="input" id="pf-insta" value="minori.imo" inputmode="url">
+      </div>
+      <div class="field">
+        <label class="label" for="pf-web">Webサイト</label>
+        <input class="input" id="pf-web" value="" inputmode="url" placeholder="https://">
+      </div>
+      <div class="field">
+        <label class="label" for="pf-line">LINE</label>
+        <input class="input" id="pf-line" value="" placeholder="友だち追加の URL">
+      </div>
+
+      <div class="panel">
+        <p class="panel__title">実績の表示</p>
+        <p class="panel__note">終わった催しの参加人数を、プロフィールに出します。</p>
+        <div class="segment" role="group" aria-label="実績の表示" style="margin-top: 0.5rem">
+          <button class="segment__item" type="button" aria-pressed="true">表示する</button>
+          <button class="segment__item" type="button" aria-pressed="false">表示しない</button>
+        </div>
+      </div>
+
+      <div class="panel__actions">
+        <button class="btn btn--primary" type="button">保存する</button>
+        <a class="btn btn--outline" href="mock-organizer-public.html">プレビュー</a>
+        <a class="btn btn--ghost" href="mock-mypage.html">マイページ</a>
+      </div>
+
+      <p class="screen-note">
+        表示名は<a href="mock-account.html">アカウント設定</a>で変えます。この画面では、肩書きと自己紹介を扱います。
+        保存の前に、参加者と同じ見た目でプレビューできます。
+      </p>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>

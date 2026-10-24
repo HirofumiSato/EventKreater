@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>モック | 主催者マイページ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/app/attendance.css">
+  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-screens.css">
+</head>
+<body class="deco deco--tape deco--tape-quiet" data-scope="admin" data-nav="organizer" data-current="mypage" data-screen="主催者マイページ" data-path="/mypage">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <main class="page" id="main">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">主催者</p>
+        <h1 class="page-title">主催者マイページ</h1>
+        <p class="page-lead">佐藤 みのり さん。催しは 2件、公開中です。</p>
+      </div>
+
+      <nav class="org-subnav" aria-label="主催者">
+        <a class="is-current" href="mock-organizer.html" aria-current="page">主催一覧</a>
+        <a href="mock-organizer-calendar.html">カレンダー</a>
+        <a href="mock-revenue.html">売上</a>
+        <a href="mock-organizer-profile.html">プロフィール</a>
+      </nav>
+
+      <div class="roster-summary">
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">公開中</span>
+          <span class="roster-summary__value">2<span>件</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">回答待ち</span>
+          <span class="roster-summary__value">12<span>人</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">見込み売上</span>
+          <span class="roster-summary__value">18,500<span>円</span></span>
+        </div>
+        <div class="roster-summary__item">
+          <span class="roster-summary__label">無料の残り</span>
+          <span class="roster-summary__value">0<span>回</span></span>
+        </div>
+        <div class="roster-summary__item roster-summary__item--money">
+          <span class="roster-summary__label">プラン</span>
+          <span class="roster-summary__value" style="font-size: 1rem">月額</span>
+        </div>
+      </div>
+
+      <section class="section" style="margin-top: 0">
+        <div class="section__head">
+          <h2 class="section__title">直近の催し</h2>
+          <p class="section__note">3件まで。すべては主催一覧で見られます。</p>
+        </div>
+
+        <ul class="rows" style="margin-top: 0.75rem">
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">秋の芋煮会</p>
+              <p class="rows__meta">11月8日（日）／ 参加 28 / 40名 ／ 回答待ち 12人</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-roster.html">名簿</a>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">第3回 たこ焼きパーティー</p>
+              <p class="rows__meta">11月22日（土）／ 参加 9名 ／ 定員なし</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-roster.html">名簿</a>
+          </li>
+          <li class="rows__item">
+            <div class="rows__main">
+              <p class="rows__title">冬の焚き火会</p>
+              <p class="rows__meta">12月13日（土）／ 下書き</p>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="mock-preview.html">プレビュー</a>
+          </li>
+        </ul>
+
+        <div class="panel__actions" style="margin-top: 1rem">
+          <a class="btn btn--outline btn--sm" href="mock-organizer.html">すべて見る</a>
+          <a class="btn btn--primary btn--sm" href="mock-create.html">イベントを作る</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">利用枠と契約</h2>
+          <p class="section__note">筆頭幹事だけが契約を変えられます。</p>
+        </div>
+
+        <div class="panel" style="margin-top: 0.75rem">
+          <p class="panel__title">月額 980円</p>
+          <p class="panel__note">契約が有効なあいだ、イベント作成の回数は数えません。次回更新 11月1日。</p>
+          <div class="panel__actions">
+            <button class="btn btn--outline btn--sm" type="button">契約を管理する</button>
+            <a class="btn btn--ghost btn--sm" href="mock-service.html">料金を見る</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">公開プロフィール</h2>
+          <p class="section__note">参加者が、主催者の人柄を見られる場所です。</p>
+        </div>
+
+        <dl class="kv" style="margin-top: 0.75rem">
+          <div class="kv__row">
+            <dt>状態</dt>
+            <dd>公開中 ／ 最終更新 10月20日</dd>
+          </div>
+          <div class="kv__row">
+            <dt>見えている内容</dt>
+            <dd>肩書き、自己紹介、活動エリア、ジャンル 3つ、X・Instagram</dd>
+          </div>
+        </dl>
+
+        <div class="panel__actions" style="margin-top: 0.875rem">
+          <a class="btn btn--primary btn--sm" href="mock-organizer-profile.html">編集する</a>
+          <a class="btn btn--outline btn--sm" href="mock-organizer-public.html">公開ページを見る</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">アカウント</h2>
+        </div>
+        <div class="panel__actions" style="margin-top: 0.75rem">
+          <a class="btn btn--outline btn--sm" href="mock-account.html">アカウント設定</a>
+          <a class="btn btn--outline btn--sm" href="mock-participant.html">参加者として見る</a>
+          <button class="btn btn--ghost btn--sm" type="button">ログアウト</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
+</body>
+</html>
