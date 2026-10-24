@@ -11,6 +11,7 @@
  *   data-current="participant"       ナビの現在地のキー
  *   data-scope="onboard|admin"       装飾の既定（mock-theme.js が読む）
  *   data-chrome="bare"               共通ヘッダーを出さない（主催者の独自ページ）
+ *   data-mock-toggle="member:ログイン済み"  帯に状態の切り替えを出す（body に is-member が付く）
  * >
  */
 (function () {
@@ -22,6 +23,11 @@
   const path = body.dataset.path || "";
   // 告知ページは主催者の独自ページに見せたいので、共通ヘッダーを出さない。
   const bare = body.dataset.chrome === "bare";
+
+  // 枠の中から渡された状態。?s=member,full
+  for (const key of (new URLSearchParams(location.search).get("s") || "").split(",")) {
+    if (key) body.classList.add(`is-${key}`);
+  }
 
   const NAVS = {
     public: [
@@ -113,6 +119,22 @@
     return "base";
   }
 
+  // 画面ごとの状態の切り替え。告知ページの「ログイン済み」「満員」など。
+  //   data-mock-toggle="member:ログイン済み,full:満員"
+  // 押すと body に is-member / is-full が付き、CSS が該当の状態を出す。
+  function stateToggles() {
+    return (body.dataset.mockToggle || "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const [key, label] = entry.split(":");
+        const on = body.classList.contains(`is-${key}`);
+        return `<button type="button" data-mock-state="${key}" aria-pressed="${on}">${label}</button>`;
+      })
+      .join("");
+  }
+
   function bar() {
     const deco = decoNow();
     const frame = (w) => `mock-frame.html?p=${encodeURIComponent(file)}&w=${w}&t=${deco}`;
@@ -120,12 +142,14 @@
       `<button type="button" data-deco-btn="${key}" aria-pressed="${deco === key}">${
         { "tape-shadow": "影だけ", "tape-quiet": "静かめ", base: "現行" }[key]
       }</button>`;
+    const states = stateToggles();
     return `
   <div class="mockbar" role="group" aria-label="モックの切り替え">
     <a class="mockbar__home" href="mock-index.html">← 一覧</a>
     <a class="mockbar__home" href="mock-compare.html">比較</a>
     <a class="mockbar__home" href="${frame(390)}" title="390px の枠で開き直す">スマホ枠</a>
     <span class="mockbar__label">${screen}</span>
+    ${states ? `<div class="mockbar__group"><span>状態</span>${states}</div>` : ""}
     <details class="mockbar__more">
       <summary>表示</summary>
       <div class="mockbar__panel">
@@ -163,6 +187,14 @@
   document.documentElement.classList.add("has-mockbar");
 
   // 装飾ボタンは mock-theme.js が拾うので、ここでは何もしない。
+  // 状態の切り替えは、body のクラスを付け外しするだけ。CSS が状態を出す。
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-mock-state]");
+    if (!button) return;
+    const on = body.classList.toggle(`is-${button.dataset.mockState}`);
+    button.setAttribute("aria-pressed", String(on));
+  });
+
   // 帯の中の details は、外側を押したら閉じる。
   document.addEventListener("click", (event) => {
     const details = document.querySelector(".mockbar__more");

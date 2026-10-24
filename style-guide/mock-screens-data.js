@@ -28,6 +28,10 @@ window.MOCK_SCREENS = [
   {
     no: "04", group: "public", name: "イベント告知・出欠", path: "/events/[id]", file: "mock-event.html", scope: "pop",
     note: "チラシを先頭に、その下で出欠。参加者が最初に見る画面。",
+    states: [
+      { key: "member", label: "ログイン済み" },
+      { key: "full", label: "満員" },
+    ],
   },
   {
     no: "05", group: "public", name: "参加費の領収書", path: "/events/[id]/receipt", file: "mock-event-receipt.html", scope: "pop",

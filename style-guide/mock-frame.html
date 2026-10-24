@@ -27,6 +27,7 @@
       <span>幅</span>
       <a id="to-390" href="#" aria-current="false">スマホ 390</a>
       <a id="to-1280" href="#" aria-current="false">PC 1280</a>
+      <span id="frame-states" style="display: contents"></span>
       <a id="to-raw" href="#">この幅のまま開く</a>
       <a href="mock-index.html">一覧</a>
     </div>
@@ -50,12 +51,17 @@
     const page = params.get("p") || "mock-home.html";
     const width = params.get("w") === "1280" ? 1280 : 390;
     const deco = params.get("t") || "";
+    // 画面ごとの状態（告知ページの「ログイン済み」「満員」など）。s=member,full
+    const statesParam = params.get("s") || "";
+    const onStates = new Set(statesParam.split(",").filter(Boolean));
 
     const height = width === 390 ? 844 : 900;
 
     const frame = document.getElementById("frame");
-    const src = `${page}${deco ? `?t=${deco}&embed=1` : "?embed=1"}`;
-    frame.src = src;
+    const query = new URLSearchParams({ embed: "1" });
+    if (deco) query.set("t", deco);
+    if (statesParam) query.set("s", statesParam);
+    frame.src = `${page}?${query.toString()}`;
     frame.width = String(width);
     frame.height = String(height);
 
@@ -76,6 +82,7 @@
     function link(file, w) {
       const next = new URLSearchParams({ p: file, w: String(w) });
       if (deco) next.set("t", deco);
+      if (statesParam) next.set("s", statesParam);
       return `mock-frame.html?${next.toString()}`;
     }
 
@@ -115,10 +122,41 @@
     const a1280 = document.getElementById("to-1280");
     a390.href = link(page, 390);
     a1280.href = link(page, 1280);
-    a390.toggleAttribute("aria-current", width === 390);
-    a1280.toggleAttribute("aria-current", width === 1280);
+    // 空の aria-current では CSS が拾えない。[aria-current="true"] で揃える。
+    const markCurrent = (el, on) => {
+      if (on) el.setAttribute("aria-current", "true");
+      else el.removeAttribute("aria-current");
+    };
+    markCurrent(a390, width === 390);
+    markCurrent(a1280, width === 1280);
 
-    document.getElementById("to-raw").href = `${page}${deco ? `?t=${deco}` : ""}`;
+    // 画面ごとの状態。押すと URL の s を書き換え、枠の中の状態が変わる。
+    const stateHost = document.getElementById("frame-states");
+    for (const state of current?.states ?? []) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = state.label;
+      button.setAttribute("aria-pressed", String(onStates.has(state.key)));
+      button.addEventListener("click", () => {
+        const next = new URLSearchParams({ p: page, w: String(width) });
+        if (deco) next.set("t", deco);
+        const picked = new Set(onStates);
+        if (picked.has(state.key)) {
+          picked.delete(state.key);
+        } else {
+          picked.add(state.key);
+        }
+        if (picked.size) next.set("s", [...picked].join(","));
+        location.href = `mock-frame.html?${next.toString()}`;
+      });
+      stateHost.append(button);
+    }
+
+    const raw = new URLSearchParams();
+    if (deco) raw.set("t", deco);
+    if (statesParam) raw.set("s", statesParam);
+    const rawQuery = raw.toString();
+    document.getElementById("to-raw").href = `${page}${rawQuery ? `?${rawQuery}` : ""}`;
   </script>
 </body>
 </html>

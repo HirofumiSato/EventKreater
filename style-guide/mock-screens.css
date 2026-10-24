@@ -82,7 +82,8 @@
 }
 
 .frame-bar a[aria-current="true"],
-.frame-bar button[aria-current="true"] {
+.frame-bar button[aria-current="true"],
+.frame-bar button[aria-pressed="true"] {
   border-color: #fff;
   background: #fff;
   color: #1a1916;
@@ -152,13 +153,12 @@
   transform: rotate(-2deg);
 }
 
+/* チラシの上に重ねない。下端が隠れると、日時や場所が読めなくなる。 */
 .event-sheet {
   position: relative;
-  margin-top: -1.25rem;
+  margin-top: 0;
   padding: 1.25rem 1rem 1.5rem;
-  border-radius: 1.25rem 1.25rem 0 0;
   background: var(--color-surface);
-  box-shadow: 0 -10px 24px -16px rgb(26 25 22 / 0.5);
 }
 
 .event-sheet__title {
@@ -167,11 +167,55 @@
   line-height: 1.35;
 }
 
+/* 主催者名はプロフィールへの入口。押せることを下線だけで示す。 */
+.event-sheet__host {
+  margin-top: 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.event-sheet__host a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 0.22em;
+}
+
+.event-sheet__host a::after {
+  content: " →";
+  text-decoration: none;
+}
+
 .event-sheet__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
   margin-top: 0.625rem;
+}
+
+/* 定員に達したときだけ、札を「満員」に差し替える。 */
+.event-sheet__badges [data-when="full"],
+.poster-hero__stamp[data-when="full"] {
+  display: none;
+}
+
+body.is-full .event-sheet__badges [data-when="open"],
+body.is-full .poster-hero__stamp[data-when="open"] {
+  display: none;
+}
+
+body.is-full .event-sheet__badges [data-when="full"] {
+  display: inline-flex;
+}
+
+body.is-full .poster-hero__stamp[data-when="full"] {
+  display: inline-block;
+}
+
+.poster-hero__stamp--full {
+  background: var(--color-danger-solid);
+  color: #fff;
 }
 
 .event-facts {
@@ -212,13 +256,6 @@
 .rsvp__title {
   font-size: 1.0625rem;
   font-weight: 700;
-}
-
-.rsvp__note {
-  margin-top: 0.25rem;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  line-height: 1.6;
 }
 
 .rsvp__choices {
@@ -264,6 +301,131 @@
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.875rem;
+}
+
+/* 出欠は参加者アカウントに紐づく。未ログインが既定で、フォームの代わりに入口を出す。 */
+.rsvp__gate {
+  display: block;
+  margin-top: 0.875rem;
+}
+
+.rsvp__form {
+  display: none;
+}
+
+body.is-member .rsvp__gate {
+  display: none;
+}
+
+body.is-member .rsvp__form {
+  display: block;
+}
+
+.rsvp__gate-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.rsvp__gate-note {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+}
+
+.rsvp__gate .btn {
+  margin-top: 0.875rem;
+}
+
+.rsvp__gate-alt {
+  margin-top: 0.625rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.rsvp__gate-alt a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* 誰として答えるか。フォームの先頭に 1 行だけ。 */
+.rsvp__member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  margin-top: 0.75rem;
+  padding: 0.4375rem 0.625rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.rsvp__member a {
+  margin-inline-start: auto;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+/* 定員に達したときだけ出す。赤は「もう入れない」ことだけを伝える。 */
+.rsvp__alert {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-danger-border);
+  border-left: 3px solid var(--color-danger-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+body.is-full .rsvp__alert {
+  display: block;
+}
+
+.rsvp__alert strong {
+  display: block;
+  font-weight: 700;
+}
+
+/* 定員に達したら、出席の代わりに待ち順を出す。2 つ同時には出さない。 */
+.rsvp__choice[data-when="full"] {
+  display: none;
+}
+
+body.is-full .rsvp__choice[data-when="open"] {
+  display: none;
+}
+
+body.is-full .rsvp__choice[data-when="full"] {
+  display: flex;
+}
+
+/* 追従ボタンの文言も、未ログインならログインへ送る。 */
+.sticky-cta [data-when="member"] {
+  display: none;
+}
+
+.sticky-cta [data-when="guest"] {
+  display: inline-flex;
+}
+
+body.is-member .sticky-cta [data-when="guest"] {
+  display: none;
+}
+
+body.is-member .sticky-cta [data-when="member"] {
+  display: inline-flex;
 }
 
 /* スマホの追従ボタン。本文の最後に置くと、押されないまま帰られる。 */
@@ -963,7 +1125,6 @@
   }
 
   .event-sheet {
-    margin-top: -2rem;
     padding: 1.75rem 1.5rem 2rem;
   }
 

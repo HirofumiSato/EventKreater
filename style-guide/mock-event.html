@@ -13,24 +13,27 @@
   <link rel="stylesheet" href="mock.css">
   <link rel="stylesheet" href="mock-screens.css">
 </head>
-<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-chrome="bare" data-screen="告知・出欠" data-path="/events/[id]">
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-chrome="bare" data-mock-toggle="member:ログイン済み,full:満員" data-screen="告知・出欠" data-path="/events/[id]">
   <a class="skip-link" href="#main">本文へ</a>
 
   <main class="page" id="main" style="padding-top: 0">
     <div class="stack" style="gap: 0">
 
       <section class="poster-hero">
-        <span class="poster-hero__stamp">受付中</span>
+        <span class="poster-hero__stamp" data-when="open">受付中</span>
+        <span class="poster-hero__stamp poster-hero__stamp--full" data-when="full">満員</span>
         <img class="poster-hero__image" src="../public/samples/flyer-autumn.jpg" alt="秋の芋煮会のチラシ" width="1080" height="1920">
       </section>
 
       <div class="event-sheet">
         <h1 class="event-sheet__title">秋の芋煮会</h1>
-        <p class="screen-note" style="margin-top: 0.25rem">主催: 佐藤 みのり</p>
+        <p class="event-sheet__host">
+          主催: <a href="mock-organizer-public.html">佐藤 みのり</a>
+        </p>
 
         <div class="event-sheet__badges">
-          <span class="badge badge--success badge--sm">参加 28名</span>
-          <span class="badge badge--neutral badge--sm">定員 40名</span>
+          <span class="badge badge--neutral badge--sm" data-when="open">定員 40名</span>
+          <span class="badge badge--declined badge--sm" data-when="full">満員</span>
           <span class="badge badge--warning badge--sm">締切 11月5日</span>
         </div>
 
@@ -62,48 +65,73 @@
       <div style="padding: 0 1rem">
         <section class="rsvp" aria-labelledby="rsvp-title">
           <h2 class="rsvp__title" id="rsvp-title">出欠を答える</h2>
-          <p class="rsvp__note">名前と出欠だけ。登録は要りません。答えを変えるときは、同じ端末からもう一度どうぞ。</p>
 
-          <div class="rsvp__choices" role="group" aria-label="出欠">
-            <button class="rsvp__choice is-picked" type="button" aria-pressed="true">
-              <span>出席する<small>参加費 500円</small></span>
-            </button>
-            <button class="rsvp__choice" type="button" aria-pressed="false">
-              <span>欠席する<small>案内は届きません</small></span>
-            </button>
-          </div>
-          <p class="screen-note" style="margin-top: 0.5rem">
-            定員に達すると「出席する」は消え、代わりに参加要望（待ち順）を受け付けます。
-          </p>
-
-          <div class="field" style="margin-top: 0.875rem">
-            <label class="label" for="rsvp-name">名前</label>
-            <input class="input" id="rsvp-name" value="山田 花子" autocomplete="name">
+          <!-- 未ログイン。出欠は参加者アカウントに紐づくので、先にログインしてもらう。 -->
+          <div class="rsvp__gate">
+            <p class="rsvp__gate-title">答えるには、参加者アカウントでログインします。</p>
+            <p class="rsvp__gate-note">
+              出欠はアカウントに残ります。同じアカウントなら、答えの変更も、ほかの催しの出欠もここにまとまります。
+            </p>
+            <a class="btn btn--primary btn--block" href="mock-participant-login.html">ログインして答える</a>
+            <p class="rsvp__gate-alt">
+              はじめての方は <a href="mock-register-required.html">参加者アカウントを作る</a>
+            </p>
           </div>
 
-          <div class="field" style="margin-top: 0.75rem">
-            <span class="label">人数</span>
-            <div class="rsvp__foot" style="margin-top: 0.25rem">
-              <button class="btn btn--outline btn--sm" type="button" aria-label="1人減らす">−</button>
-              <span style="min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700">2 名</span>
-              <button class="btn btn--outline btn--sm" type="button" aria-label="1人増やす">＋</button>
-              <span class="screen-note">大人 2名で 1,000円</span>
+          <div class="rsvp__form">
+            <p class="rsvp__member">
+              <span>山田 花子 さんとして答えます</span>
+              <a href="mock-participant-login.html">アカウントを切り替える</a>
+            </p>
+
+            <!-- 定員に達したときだけ出す。通常は非表示。 -->
+            <p class="rsvp__alert" role="status">
+              <strong>定員 40名に達しました。</strong>
+              いまは参加要望（待ち順）として受け付けます。空きが出たら、主催者から連絡します。
+            </p>
+
+            <div class="rsvp__choices" role="group" aria-label="出欠">
+              <button class="rsvp__choice is-picked" type="button" aria-pressed="true" data-when="open">
+                <span>出席する<small>参加費 500円</small></span>
+              </button>
+              <button class="rsvp__choice" type="button" aria-pressed="false" data-when="full">
+                <span>参加を希望する<small>空きが出たら連絡します</small></span>
+              </button>
+              <button class="rsvp__choice" type="button" aria-pressed="false">
+                <span>欠席する<small>案内は届きません</small></span>
+              </button>
             </div>
-          </div>
 
-          <div class="field" style="margin-top: 0.75rem">
-            <label class="label" for="rsvp-note">ひとこと（任意）</label>
-            <textarea class="textarea" id="rsvp-note" rows="2">子ども用に椅子を1脚お願いします</textarea>
-          </div>
+            <div class="field" style="margin-top: 0.875rem">
+              <label class="label" for="rsvp-name">ニックネーム</label>
+              <input class="input" id="rsvp-name" value="はなこ" autocomplete="nickname">
+              <p class="screen-note" style="margin-top: 0.375rem">主催者と、同じ催しの参加者に表示されます。</p>
+            </div>
 
-          <div class="rsvp__foot">
-            <button class="btn btn--primary btn--block" type="button">この内容で答える</button>
+            <div class="field" style="margin-top: 0.75rem">
+              <span class="label">人数</span>
+              <div class="rsvp__foot" style="margin-top: 0.25rem">
+                <button class="btn btn--outline btn--sm" type="button" aria-label="1人減らす">−</button>
+                <span style="min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700">2 名</span>
+                <button class="btn btn--outline btn--sm" type="button" aria-label="1人増やす">＋</button>
+                <span class="screen-note">大人 2名で 1,000円</span>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top: 0.75rem">
+              <label class="label" for="rsvp-note">ひとこと（任意）</label>
+              <textarea class="textarea" id="rsvp-note" rows="2">子ども用に椅子を1脚お願いします</textarea>
+            </div>
+
+            <div class="rsvp__foot">
+              <button class="btn btn--primary btn--block" type="button">この内容で答える</button>
+            </div>
+            <p class="screen-note" style="margin-top: 0.5rem">答えると、主催者に名前と出欠が届きます。</p>
           </div>
-          <p class="screen-note" style="margin-top: 0.5rem">答えると、主催者に名前と出欠が届きます。</p>
         </section>
 
         <div class="panel__actions" style="margin-top: 1rem">
-          <button class="btn btn--outline btn--sm" type="button">LINEで送る</button>
+          <button class="btn btn--outline btn--sm" type="button">LINEで友達に共有</button>
           <button class="btn btn--ghost btn--sm" type="button">URLをコピー</button>
         </div>
         <p class="screen-note" style="margin-top: 0.5rem">
@@ -145,7 +173,8 @@
 
       <div class="sticky-cta">
         <a class="btn btn--outline" href="mock-organizer-public.html">主催者を見る</a>
-        <a class="btn btn--primary" href="#rsvp-title">出欠を答える</a>
+        <a class="btn btn--primary" href="#rsvp-title" data-when="member">出欠を答える</a>
+        <a class="btn btn--primary" href="mock-participant-login.html" data-when="guest">ログインして答える</a>
       </div>
 
     </div>
