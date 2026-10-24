@@ -18,6 +18,7 @@
     "test:db": "vitest run tests/integration",
     "check": "node scripts/check.mjs",
     "ui:map": "node scripts/check-ui-map.mjs",
+    "ui:css": "node scripts/check-ui-css.mjs",
     "check:serial": "npm run lint && npm run typecheck && npm run test",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
