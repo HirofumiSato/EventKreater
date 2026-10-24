@@ -38,6 +38,8 @@ const TASKS = [
     module: "vitest/vitest.mjs",
     args: ["run", "--reporter=default", "--reporter=json", `--outputFile.json=${vitestReport}`],
   },
+  // リポジトリ内のスクリプトは import.meta.resolve を通さず、パスで直接起動する。
+  { label: "ui-map", script: "scripts/check-ui-map.mjs", args: [] },
 ];
 
 function run(task) {
@@ -46,7 +48,7 @@ function run(task) {
     const chunks = [];
     let child;
     try {
-      const script = entry(task.module);
+      const script = task.script ? path.join(root, task.script) : entry(task.module);
       child = spawn(process.execPath, [script, ...task.args], {
         cwd: root,
         stdio: ["ignore", "pipe", "pipe"],

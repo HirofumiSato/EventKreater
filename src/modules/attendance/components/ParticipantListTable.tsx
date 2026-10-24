@@ -125,40 +125,59 @@ export function ParticipantListTable({
   return (
     <div className="table-card">
       <div className="table-card__head">
-        <h2 className="table-card__title">参加者</h2>
-        <button type="button" className="btn btn--sm" onClick={() => downloadCsv(rows)}>
-          CSVを書き出す
-        </button>
-        <div className="chips">
-          {filters.map(([key, label]) => (
-            <label key={key} className="chip">
-              <input type="radio" name="participant-filter" checked={filter === key} onChange={() => setFilter(key)} />
-              {label}
-            </label>
-          ))}
+        <h2 className="table-card__title">回答者 {rows.length}人</h2>
+        <div className="panel__actions">
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => downloadCsv(rows)}>
+            CSVで書き出す
+          </button>
         </div>
       </div>
       <div className="table-card__search">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名前・コメント検索" className="input" />
+        <div className="roster-toolbar">
+          <div className="segment" role="group" aria-label="出欠で絞り込む">
+            {filters.map(([key, label]) => (
+              <label key={key} className="segment__item">
+                <input
+                  type="radio"
+                  name="participant-filter"
+                  checked={filter === key}
+                  onChange={() => setFilter(key)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <label className="roster-toolbar__search">
+            <span className="visually-hidden">名前・コメントで探す</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="名前・コメントで探す"
+              className="input input--compact"
+            />
+          </label>
+        </div>
       </div>
       <div className="table-card__scroll">
-        <table className="data">
+        <table className="roster">
+          <caption className="visually-hidden">参加者の名簿</caption>
           <thead>
             <tr>
-              <th>名前</th>
-              <th>性別</th>
-              <th>出欠</th>
-              <th>日時</th>
-              <th>費用プラン</th>
-              <th>コメント</th>
-              <th>回答日時</th>
-              {onSave && <th>操作</th>}
+              <th scope="col">名前</th>
+              <th scope="col">性別</th>
+              <th scope="col">出欠</th>
+              <th scope="col">日時</th>
+              <th scope="col">費用プラン</th>
+              <th scope="col">コメント</th>
+              <th scope="col">回答日時</th>
+              {onSave && <th scope="col">操作</th>}
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={onSave ? 8 : 7} className="data__empty">
+                <td colSpan={onSave ? 8 : 7} className="roster__meta">
                   該当する参加者はいません。
                 </td>
               </tr>
@@ -172,16 +191,16 @@ export function ParticipantListTable({
                       <input className="input" value={draftName} onChange={(event) => setDraftName(event.target.value)} />
                     ) : (
                       <>
-                        {row.name}
+                        <span className="roster__name">{row.name}</span>
                         {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
-                          <span className="badge badge--sm badge--waitlist" style={{ marginLeft: "0.375rem" }}>
+                          <span className="badge badge--sm badge--waitlist badge--inline">
                             待ち {row.waitlistPosition}番目
                           </span>
                         )}
                       </>
                     )}
                   </td>
-                  <td className="data__muted">
+                  <td className="roster__meta">
                     {editing ? (
                       <select
                         className="select"
@@ -220,7 +239,7 @@ export function ParticipantListTable({
                       </span>
                     )}
                   </td>
-                  <td className="data__muted">
+                  <td className="roster__meta">
                     {editing && draftStatus === "ATTENDING" ? (
                       <select className="select" value={draftScheduleId} onChange={(event) => setDraftScheduleId(event.target.value)}>
                         {schedules.map((schedule) => (
@@ -233,7 +252,7 @@ export function ParticipantListTable({
                       row.scheduleLabel || "—"
                     )}
                   </td>
-                  <td className="data__muted">
+                  <td className="roster__meta">
                     {editing && draftStatus === "ATTENDING" ? (
                       <select className="select" value={draftPricePlanId} onChange={(event) => setDraftPricePlanId(event.target.value)}>
                         {draftPlans.map((plan) => (
@@ -247,14 +266,14 @@ export function ParticipantListTable({
                       row.pricePlanLabel || "—"
                     )}
                   </td>
-                  <td className="data__muted">
+                  <td className="roster__meta">
                     {editing ? (
                       <input className="input" value={draftComment} onChange={(event) => setDraftComment(event.target.value)} />
                     ) : (
                       row.comment || "—"
                     )}
                   </td>
-                  <td className="data__muted">
+                  <td className="roster__meta">
                     {row.status === "WAITLISTED" && row.waitlistedAt
                       ? `要望 ${new Date(row.waitlistedAt).toLocaleString("ja-JP")}`
                       : new Date(row.createdAt).toLocaleString("ja-JP")}
@@ -316,6 +335,11 @@ export function ParticipantListTable({
             })}
           </tbody>
         </table>
+      </div>
+      <div className="table-card__foot">
+        <p className="help">
+          名簿は回答順です。「変更」から出欠・日時・費用プランを直せます。費用プランを選ぶと売上に入ります。
+        </p>
       </div>
     </div>
   );

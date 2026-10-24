@@ -4,13 +4,18 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/common/Navbar";
 import { SITE } from "@/lib/site";
+import { decoClassName, designScope } from "@/lib/design-scope";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const concealed = pathname.startsWith("/console");
+  // 装飾のスコープもパスだけで決まる。usePathname は初回描画から値を持つので、
+  // サーバーとクライアントで同じクラスになり、色のちらつきが出ない。
+  const scope = designScope(pathname);
+  const deco = decoClassName(scope);
 
   return (
-    <>
+    <div className={deco || undefined}>
       {concealed ? null : <Navbar />}
       <main id="main" className="page">
         {children}
@@ -42,6 +47,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
           </div>
         </footer>
       )}
-    </>
+    </div>
   );
 }

@@ -253,7 +253,48 @@ export function EventStepForm({
     return false;
   };
 
+  const requiredSteps = EVENT_STEPS.filter((step) => step.mandatory);
+  const requiredDone = requiredSteps.filter((step) => isComplete(step.key)).length;
+  const progressPercent = requiredSteps.length
+    ? Math.round((requiredDone / requiredSteps.length) * 100)
+    : 0;
+
   return (
+    <div className="stack">
+      <div className="progress-card">
+        <div className="progress-card__head">
+          <span className="progress-card__label">必須の入力</span>
+          <span className="progress-card__count">
+            <strong>{requiredDone}</strong> / {requiredSteps.length}{" "}
+            <span>（全 {EVENT_STEPS.length} ステップ）</span>
+          </span>
+        </div>
+        <div
+          className="progress-card__track"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={requiredSteps.length}
+          aria-valuenow={requiredDone}
+          aria-label="必須の入力の進み具合"
+        >
+          <span className="progress-card__fill" style={{ width: `${progressPercent}%` }} />
+        </div>
+        <div className="progress-dots" aria-hidden="true">
+          {EVENT_STEPS.map((step) => (
+            <span
+              key={step.key}
+              className={[
+                "progress-dots__dot",
+                openKeys.has(step.key) ? "is-current" : "",
+                isComplete(step.key) ? "is-done" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            />
+          ))}
+        </div>
+      </div>
+
     <form
       className="form event-steps"
       noValidate
@@ -388,7 +429,7 @@ export function EventStepForm({
                     ) : (
                       <button
                         type="button"
-                        className="btn btn--outline"
+                        className="btn btn--primary event-step__next"
                         disabled={locked || nextDisabled(step.key)}
                         onClick={() => goNext(step.key)}
                       >
@@ -404,5 +445,6 @@ export function EventStepForm({
       </ol>
       {voiceSlot?.(voiceApi)}
     </form>
+    </div>
   );
 }

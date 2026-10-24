@@ -194,16 +194,21 @@ export function LoginChallengeForm({
     return (
       <div className="stack">
         <div>
+          <p className="eyebrow">確認</p>
           <h1 className="page-title">{screenName}</h1>
           <p className="page-lead">確認番号の入力からやり直してください。</p>
         </div>
-        {lockedNotice ? <p className="alert alert--warning">{lockedNotice}</p> : null}
-        {error ? <p className="alert alert--error">{error}</p> : null}
-        {onRestart ? (
-          <button type="button" className="btn btn--outline btn--block" onClick={onRestart}>
-            ログインからやり直す
-          </button>
-        ) : null}
+        <div className="auth-card">
+          {lockedNotice ? <p className="alert alert--warning">{lockedNotice}</p> : null}
+          {error ? <p className="alert alert--error">{error}</p> : null}
+          {onRestart ? (
+            <div className="panel__actions">
+              <button type="button" className="btn btn--outline btn--block" onClick={onRestart}>
+                ログインからやり直す
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -215,6 +220,7 @@ export function LoginChallengeForm({
   return (
     <div className="stack">
       <div>
+        <p className="eyebrow">確認</p>
         <h1 className="page-title">{screenName}</h1>
         <p className="page-lead">
           {view.channel === "SMS"
@@ -224,75 +230,82 @@ export function LoginChallengeForm({
       </div>
       {lockedNotice ? <p className="alert alert--warning">{lockedNotice}</p> : null}
       {attemptNotice ? <p className="alert alert--warning">{attemptNotice}</p> : null}
-      <form className="form" onSubmit={submit}>
-        <div className="field">
-          <label className="label" htmlFor="login-challenge-code">
-            6桁の確認番号
-          </label>
-          <input
-            id="login-challenge-code"
-            required
-            inputMode="numeric"
-            pattern="\d{6}"
-            maxLength={6}
-            autoComplete="one-time-code"
-            value={code}
-            disabled={locked}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-            className="input"
-          />
-          <p className="help">
-            {attemptLimit}回間違えると、アカウントが{lockMinutes}分間ロックされます。
-          </p>
-        </div>
-        {notice ? <p className="alert alert--success">{notice}</p> : null}
-        {error ? <p className="alert alert--error">{error}</p> : null}
-        <button type="submit" className="btn btn--primary btn--block" disabled={submitting || sending || locked}>
-          {submitting ? "確認しています" : "確認して入る"}
-        </button>
-        {onRestart ? (
+      <div className="auth-card">
+        <h2 className="auth-card__title">6桁の確認番号を入れる</h2>
+        <p className="auth-card__note">
+          {attemptLimit}回間違えると、アカウントが{lockMinutes}分間ロックされます。
+        </p>
+        <form className="auth-card__body" onSubmit={submit}>
+          <div className="field">
+            <label className="label" htmlFor="login-challenge-code">
+              6桁の確認番号
+            </label>
+            <input
+              id="login-challenge-code"
+              required
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              autoComplete="one-time-code"
+              value={code}
+              disabled={locked}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="input code-input"
+            />
+          </div>
+          {notice ? <p className="alert alert--success">{notice}</p> : null}
+          {error ? <p className="alert alert--error">{error}</p> : null}
+          <div className="panel__actions">
+            <button type="submit" className="btn btn--primary btn--block" disabled={submitting || sending || locked}>
+              {submitting ? "確認しています" : "確認して入る"}
+            </button>
+            {onRestart ? (
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                disabled={submitting || sending}
+                onClick={onRestart}
+              >
+                ログインからやり直す
+              </button>
+            ) : null}
+          </div>
+        </form>
+        <div className="panel__actions">
           <button
             type="button"
-            className="btn btn--outline btn--block"
-            disabled={submitting || sending}
-            onClick={onRestart}
+            className="btn btn--ghost btn--block"
+            disabled={submitting || sending || locked || cooldownSeconds > 0}
+            onClick={() => void deliver(view.channel, "resend")}
           >
-            ログインからやり直す
+            {sending
+              ? "確認番号を送信しています"
+              : cooldownSeconds > 0
+                ? `確認番号を再送する（あと${cooldownSeconds}秒）`
+                : "確認番号を再送する"}
           </button>
-        ) : null}
-      </form>
-      <button
-        type="button"
-        className="btn btn--outline btn--block"
-        disabled={submitting || sending || locked || cooldownSeconds > 0}
-        onClick={() => void deliver(view.channel, "resend")}
-      >
-        {sending
-          ? "確認番号を送信しています"
-          : cooldownSeconds > 0
-            ? `確認番号を再送する（あと${cooldownSeconds}秒）`
-            : "確認番号を再送する"}
-      </button>
-      {view.channel === "SMS" && view.canUseEmail ? (
-        <button
-          type="button"
-          className="btn btn--outline btn--block"
-          disabled={submitting || sending || locked}
-          onClick={() => void deliver("EMAIL")}
-        >
-          SMSが届かないのでメールで受け取る
-        </button>
-      ) : null}
-      {view.channel === "EMAIL" && view.canUseSms ? (
-        <button
-          type="button"
-          className="btn btn--outline btn--block"
-          disabled={submitting || sending || locked}
-          onClick={() => void deliver("SMS")}
-        >
-          SMSで受け取る
-        </button>
-      ) : null}
+          {view.channel === "SMS" && view.canUseEmail ? (
+            <button
+              type="button"
+              className="btn btn--ghost btn--block"
+              disabled={submitting || sending || locked}
+              onClick={() => void deliver("EMAIL")}
+            >
+              SMSが届かないのでメールで受け取る
+            </button>
+          ) : null}
+          {view.channel === "EMAIL" && view.canUseSms ? (
+            <button
+              type="button"
+              className="btn btn--ghost btn--block"
+              disabled={submitting || sending || locked}
+              onClick={() => void deliver("SMS")}
+            >
+              SMSで受け取る
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

@@ -147,7 +147,7 @@
 
 .. count-start
 
-48 ファイル、``it`` は 582 件です。内訳は ``tests/unit/`` が 36 ファイル 513 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+49 ファイル、``it`` は 590 件です。内訳は ``tests/unit/`` が 37 ファイル 521 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -323,6 +323,10 @@
      - 13
      - 出欠の選択肢（出席・参加要望）と残席、席を確保済みの人の扱い、待ち順の決め方
      - SCR-PUB-04
+   * - ``tests/unit/design-scope.test.ts``
+     - 8
+     - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
+     - 全画面の共通レイアウト
    * - ``tests/integration/draft-publish.test.ts``
      - 4
      - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
@@ -354,7 +358,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 513、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 513 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 521、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 521 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

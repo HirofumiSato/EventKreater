@@ -118,44 +118,50 @@ function OrganizerEventsScreen() {
     }
   };
 
+  const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
+  const closedCount = events.filter((event) => event.status === "CLOSED").length;
+  const attendingTotal = events.reduce((total, event) => total + event.stats.attendingCount, 0);
+
   return (
     <div className="stack">
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">主催イベント一覧</h1>
+        <p className="page-lead">
+          作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。
+        </p>
+      </div>
+
       <OrganizerTabs />
-      <section className="panel">
-        <div>
-          <h1 className="page-title">主催イベント一覧</h1>
-          <p className="page-lead">
-            出欠の集計、編集、複製、プラン管理をここから行います。下書きは「下書き一覧」に分けています。
-          </p>
-        </div>
-        <div className="panel__actions">
-          {viewer?.userId && (
-            <>
-              <Link
-                href={organizerProfilePath(viewer.userId)}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn--outline"
-              >
-                プロフィール
-              </Link>
-              <Link href="/organizer/profile" className="btn btn--outline">
-                プロフィールを編集
-              </Link>
-            </>
-          )}
-          <StripePortalButton />
-          <Link href="/organizer/events/drafts" className="btn btn--outline">
-            下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
-          </Link>
-          <Link href="/organizer/revenue" className="btn btn--outline">
-            売上を見る
-          </Link>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
-            新規作成
-          </Link>
-        </div>
-      </section>
+
+      <div className="panel__actions">
+        {viewer?.userId && (
+          <>
+            <Link
+              href={organizerProfilePath(viewer.userId)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              プロフィール
+            </Link>
+            <Link href="/organizer/profile" className="btn btn--outline btn--sm">
+              プロフィールを編集
+            </Link>
+          </>
+        )}
+        <StripePortalButton />
+        <Link href="/organizer/events/drafts" className="btn btn--outline btn--sm">
+          下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
+        </Link>
+        <Link href="/organizer/revenue" className="btn btn--outline btn--sm">
+          売上を見る
+        </Link>
+        <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+          新規作成
+        </Link>
+      </div>
+
       <QuotaStatusBanner
         quota={quotaState.quota}
         onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/organizer/events" })}
@@ -166,33 +172,7 @@ function OrganizerEventsScreen() {
           void load();
         }}
       />
-      {viewer?.userId && (
-        <section className="panel">
-          <div>
-            <p className="eyebrow">参加者に見えるページ</p>
-            <h2 className="panel__title">主催者ページの確認と共有</h2>
-            <p className="panel__note">
-              告知ページの主催者名から、プロフィールと催しのページへ移動できます。URLを配って集客にも使えます。
-            </p>
-          </div>
-          <div className="panel__actions">
-            <Link
-              href={organizerEventsPath(viewer.userId)}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn--outline btn--sm"
-            >
-              催しページを開く
-            </Link>
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setPreviewOpen(true)}>
-              プレビュー
-            </button>
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicPageUrl()}>
-              URLをコピー
-            </button>
-          </div>
-        </section>
-      )}
+
       {loading && (
         <p className="loading">
           <span className="spinner" aria-hidden="true" />
@@ -207,28 +187,97 @@ function OrganizerEventsScreen() {
           </Link>
         </p>
       )}
-      {!loading && !error && events.length === 0 && (
-        <p className="empty">
-          {draftCount > 0 ? `公開中の催しはありません。下書きが${draftCount}件あります。` : "まだ主催イベントがありません。"}
-          {draftCount > 0 && " "}
-          {draftCount > 0 && (
-            <Link href="/organizer/events/drafts" className="text-link">
-              下書き一覧を開く
-            </Link>
-          )}
-        </p>
+
+      {!loading && !error && (
+        <div className="stat-grid">
+          <div className="stat">
+            <p className="stat__label">公開中</p>
+            <p className="stat__value">
+              {publishedCount}
+              <span className="stat__unit">件</span>
+            </p>
+          </div>
+          <div className="stat">
+            <p className="stat__label">受付停止</p>
+            <p className="stat__value">
+              {closedCount}
+              <span className="stat__unit">件</span>
+            </p>
+          </div>
+          <div className="stat">
+            <p className="stat__label">参加</p>
+            <p className="stat__value">
+              {attendingTotal}
+              <span className="stat__unit">人</span>
+            </p>
+          </div>
+        </div>
       )}
-      <div className="stack">
-        {events.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            busy={busyId === event.id}
-            onClone={() => void cloneEvent(event.id)}
-            onDelete={() => setManagingId(event.id)}
-          />
-        ))}
-      </div>
+
+      {viewer?.userId && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">主催者ページ</h2>
+            <p className="section__note">参加者に見えるページです。URLを配って集客にも使えます。</p>
+          </div>
+          <div className="panel" style={{ marginTop: "0.75rem" }}>
+            <p className="panel__note">
+              告知ページの主催者名から、プロフィールと催しのページへ移動できます。
+            </p>
+            <div className="panel__actions">
+              <Link
+                href={organizerEventsPath(viewer.userId)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn--outline btn--sm"
+              >
+                催しページを開く
+              </Link>
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => setPreviewOpen(true)}>
+                プレビュー
+              </button>
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicPageUrl()}>
+                URLをコピー
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">公開中</h2>
+          <p className="section__note">
+            {events.length}件。出欠の集計、編集、複製はここから行います。
+          </p>
+        </div>
+        {!loading && !error && events.length === 0 && (
+          <div className="empty" style={{ marginTop: "1rem" }}>
+            <p className="empty__title">
+              {draftCount > 0 ? `公開中の催しはありません。下書きが${draftCount}件あります。` : "まだ主催イベントがありません。"}
+            </p>
+            {draftCount > 0 && (
+              <p className="empty__body">
+                内容を確かめてから公開できます。{" "}
+                <Link href="/organizer/events/drafts" className="text-link">
+                  下書き一覧を開く
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
+        <div className="card-grid" style={{ marginTop: "1rem" }}>
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              busy={busyId === event.id}
+              onClone={() => void cloneEvent(event.id)}
+              onDelete={() => setManagingId(event.id)}
+            />
+          ))}
+        </div>
+      </section>
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}
         onClose={quotaState.closePricingModal}

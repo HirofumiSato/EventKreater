@@ -125,6 +125,22 @@ export function parseEventDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+/**
+ * 画面とメールに出す日付。`2026-11-08` → `11月8日（日）`。
+ * 保存形式（`formatEventDate`）は API と DB の都合で変えない。
+ */
+export function formatEventDateLabel(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${month}月${day}日（${weekday}）`;
+}
+
 const TOKYO_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DEADLINE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
@@ -274,7 +290,7 @@ export function serializePricePlans(rows: PricePlanRecord[]) {
 
 export function scheduleLabel(rows: { eventDate: string; eventTime: string }[]): string {
   if (rows.length === 0) return "";
-  const first = `${rows[0].eventDate} ${rows[0].eventTime}`;
+  const first = `${formatEventDateLabel(rows[0].eventDate)} ${rows[0].eventTime}`.trim();
   if (rows.length === 1) return first;
   return `${first} ほか${rows.length - 1}件`;
 }

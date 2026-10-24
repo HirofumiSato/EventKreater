@@ -70,92 +70,211 @@ export default function ParticipantHomePage() {
   }
 
   const summary = upcoming?.summary;
+  /** 直近 1 件だけを大きく（チラシ付きのカード）し、残りは行にする。 */
+  const nextItem = upcoming?.items[0] ?? null;
+  const restItems = upcoming?.items.slice(1) ?? [];
 
   return (
     <div className="stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">{profile.user.name} さんの参加者ホーム</h1>
-          <p className="page-lead">{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</p>
-        </div>
+      <div>
+        <p className="eyebrow">参加者</p>
+        <h1 className="page-title">こんにちは、{profile.user.name} さん</h1>
+        <p className="page-lead">{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</p>
         <div className="panel__actions">
-          <button type="button" onClick={() => void logout()} className="btn btn--ghost">
+          <button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
             ログアウト
           </button>
         </div>
-      </section>
+      </div>
 
-      <section className="stat-grid">
-        <article className="stat">
-          <p className="stat__label">これからの参加</p>
-          <p className="stat__value">{summary ? `${summary.upcoming} 件` : "-"}</p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">出席と回答したイベント</p>
-          <p className="stat__value">{summary ? `${summary.attending} 件` : "-"}</p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">参加要望を出しているイベント</p>
-          <p className="stat__value">{summary ? `${summary.waitlisted} 件` : "-"}</p>
-        </article>
-        <article className="stat">
-          <p className="stat__label">欠席と回答したイベント</p>
-          <p className="stat__value">{summary ? `${summary.declined} 件` : "-"}</p>
-        </article>
-      </section>
+      {/* 数は 4 つ。モックの「次の支払い」は実装に持つ金額が無いので出さない。 */}
+      <div className="roster-summary">
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">これから</span>
+          <span className="roster-summary__value">
+            {summary ? summary.upcoming : "-"}
+            <span>件</span>
+          </span>
+        </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">出席</span>
+          <span className="roster-summary__value">
+            {summary ? summary.attending : "-"}
+            <span>件</span>
+          </span>
+        </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">欠席</span>
+          <span className="roster-summary__value">
+            {summary ? summary.declined : "-"}
+            <span>件</span>
+          </span>
+        </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">参加要望</span>
+          <span className="roster-summary__value">
+            {summary ? summary.waitlisted : "-"}
+            <span>件</span>
+          </span>
+        </div>
+      </div>
 
-      <section className="stack">
+      {nextItem && (
+        <section className="section" style={{ marginTop: 0 }}>
+          <div className="section__head">
+            <h2 className="section__title">次の催し</h2>
+            <p className="section__note">いちばん近いものです。</p>
+          </div>
+          <article
+            className={`event-card${nextItem.event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}
+            style={{ marginTop: "0.875rem" }}
+          >
+            {nextItem.event.flyerThumbnailUrl ? (
+              <img
+                className="event-card__thumb"
+                src={nextItem.event.flyerThumbnailUrl}
+                alt=""
+                width={1080}
+                height={1920}
+              />
+            ) : null}
+            <div>
+              <div className="event-card__head">
+                <h3 className="event-card__title">
+                  <Link href={`/events/${nextItem.event.id}`}>{nextItem.event.title}</Link>
+                </h3>
+                <span className={`badge badge--sm badge--${rsvpStatusTone(nextItem.status)}`}>
+                  {nextItem.statusLabel}
+                </span>
+              </div>
+              <p className="event-card__meta">
+                {nextItem.scheduleLabel ?? nextItem.event.sortDate}
+                {nextItem.pricePlanLabel ? ` ・ ${nextItem.pricePlanLabel}` : ""}
+                <br />
+                {nextItem.event.location}
+              </p>
+              {nextItem.comment && <p className="event-card__meta">コメント: {nextItem.comment}</p>}
+              <div className="event-card__meter-label">
+                <span>回答済み</span>
+                <span>
+                  {new Intl.DateTimeFormat("ja-JP", {
+                    timeZone: "Asia/Tokyo",
+                    month: "numeric",
+                    day: "numeric",
+                  }).format(new Date(nextItem.answeredAt))}
+                  に回答
+                </span>
+              </div>
+            </div>
+            <div className="card__actions" style={{ marginTop: 0 }}>
+              <Link href={`/events/${nextItem.event.id}`} className="btn btn--outline btn--sm">
+                開く
+              </Link>
+              {nextItem.receiptId && (
+                <Link href={`/events/${nextItem.event.id}/receipt`} className="btn btn--ghost btn--sm">
+                  領収書を見る
+                </Link>
+              )}
+              {nextItem.event.ownerUserId && (
+                <Link
+                  href={`/organizers/${nextItem.event.ownerUserId}`}
+                  className="btn btn--ghost btn--sm"
+                >
+                  主催者のページ
+                </Link>
+              )}
+            </div>
+          </article>
+        </section>
+      )}
+
+      {!upcoming || upcoming.items.length === 0 ? (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">これからの参加</h2>
+            <p className="section__note">日付の近い順です。回答はあとから変えられます。</p>
+          </div>
+          <p className="empty">
+            <span className="empty__title">これから参加する催しはありません。</span>
+            <span className="empty__body">主催者から届いた告知URLを開くと、出欠を答えられます。</span>
+          </p>
+        </section>
+      ) : (
+        restItems.length > 0 && (
+          <section className="section">
+            <div className="section__head">
+              <h2 className="section__title">これからの参加</h2>
+              <p className="section__note">日付の近い順です。回答はあとから変えられます。</p>
+            </div>
+            <ul className="rows">
+              {restItems.map((row) => (
+                <li key={row.id} className="rows__item">
+                  <div className="rows__main">
+                    <p className="rows__title">
+                      <Link href={`/events/${row.event.id}`}>{row.event.title}</Link>
+                    </p>
+                    <p className="rows__meta">
+                      {row.scheduleLabel ?? row.event.sortDate}
+                      {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""} ／ {row.event.location}
+                    </p>
+                    <p className="rows__meta">
+                      <Link href={`/events/${row.event.id}`} className="text-link">
+                        出欠を変更
+                      </Link>
+                      {row.receiptId && (
+                        <>
+                          {" ・ "}
+                          <Link href={`/events/${row.event.id}/receipt`} className="text-link">
+                            領収書を見る
+                          </Link>
+                        </>
+                      )}
+                      {row.event.ownerUserId && (
+                        <>
+                          {" ・ "}
+                          <Link href={`/organizers/${row.event.ownerUserId}`} className="text-link">
+                            主催者のページ
+                          </Link>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
+                    {row.statusLabel}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      )}
+
+      <div className="panel__actions">
+        <Link href="/participant/calendar" className="btn btn--outline btn--sm">
+          カレンダーで見る
+        </Link>
+        <Link href="/participant/history" className="btn btn--ghost btn--sm">
+          参加履歴をすべて見る
+        </Link>
+      </div>
+
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">主催する側でも使う</h2>
+          <p className="section__note">同じアカウントで、催しを開けます。</p>
+        </div>
         <div className="panel">
-          <h2 className="panel__title">次に参加するイベント</h2>
-          <div>
-            <Link href="/participant/history" className="btn btn--outline btn--sm">
-              参加履歴をすべて見る
+          <p className="panel__title">主催者マイページ</p>
+          <p className="panel__note">作った催し、出欠の集計、売上をまとめて見られます。</p>
+          <div className="panel__actions">
+            <Link href="/mypage" className="btn btn--primary btn--sm">
+              主催者として使う
             </Link>
           </div>
         </div>
-        {!upcoming || upcoming.items.length === 0 ? (
-          <p className="empty">これから参加するイベントはありません。</p>
-        ) : (
-          upcoming.items.map((row) => (
-            <article key={row.id} className="card">
-              <div className="btn-row">
-                <Link href={`/events/${row.event.id}`} className="card__title">
-                  {row.event.title}
-                </Link>
-                <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
-                  {row.statusLabel}
-                </span>
-              </div>
-              <p className="card__body">
-                {row.scheduleLabel ?? row.event.sortDate}
-                {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""}
-                {` ・ ${row.event.location}`}
-              </p>
-              {row.comment && <p className="card__body">コメント: {row.comment}</p>}
-              <div className="card__actions">
-                <Link href={`/events/${row.event.id}`} className="btn btn--outline btn--sm">
-                  出欠を変更する
-                </Link>
-                {row.receiptId && (
-                  <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
-                    領収書を見る
-                  </Link>
-                )}
-                {row.event.ownerUserId && (
-                  <Link
-                    href={`/organizers/${row.event.ownerUserId}`}
-                    className="btn btn--ghost btn--sm"
-                  >
-                    主催者のページ
-                  </Link>
-                )}
-              </div>
-            </article>
-          ))
-        )}
       </section>
 
-      <p className="help">
+      <p className="screen-note">
         参加するだけならログインは要りません。履歴を残したいときだけ、この画面のアカウントでログインしてください。
       </p>
     </div>

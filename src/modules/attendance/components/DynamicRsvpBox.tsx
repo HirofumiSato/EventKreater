@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRsvp } from "@/modules/attendance/hooks/useRsvp";
 import { nextRsvpChoices } from "@/modules/events/lib/rsvp-status";
 import {
@@ -23,6 +24,10 @@ interface DynamicRsvpBoxProps {
   waitlistCount: number;
   closed: boolean;
   closedMessage?: string;
+  /** ログイン中の会員名。誰として答えるかの 1 行に出す。 */
+  memberName?: string | null;
+  /** ログイン導線。今の告知ページへ戻れるよう、呼び出し側が next を付ける。 */
+  loginHref?: string;
   onCountChange: (count: number) => void;
   onWaitlistCountChange?: (count: number) => void;
 }
@@ -39,6 +44,8 @@ export function DynamicRsvpBox({
   waitlistCount,
   closed,
   closedMessage = "このイベントは出欠を受け付けていません。",
+  memberName = null,
+  loginHref,
   onCountChange,
   onWaitlistCountChange,
 }: DynamicRsvpBoxProps) {
@@ -126,9 +133,9 @@ export function DynamicRsvpBox({
   };
 
   return (
-    <section id="rsvp" className="card card--padded">
+    <section id="rsvp" className="rsvp">
       <p className="eyebrow">出欠</p>
-      <h2 className="panel__title">
+      <h2 className="rsvp__title">
         {myRsvp
           ? "回答済み・変更できます"
           : choices.mode === "full"
@@ -140,6 +147,13 @@ export function DynamicRsvpBox({
           ? "空きが出たら、幹事が順番に承認します。参加要望として受け付けます。"
           : "アカウントは不要です。この端末に回答を覚えておきます。"}
       </p>
+      {/* ログインは必須ではない。持っている人にだけ、あとから変えられることを添える。 */}
+      {!memberName && loginHref && (
+        <p className="rsvp__login">
+          参加者アカウントをお持ちなら{" "}
+          <Link href={loginHref}>ログイン</Link> すると、あとから答えを変えられます。
+        </p>
+      )}
       {myRsvp?.status === "WAITLISTED" && (
         <p className="alert alert--warning">
           参加要望中です。
@@ -148,10 +162,17 @@ export function DynamicRsvpBox({
         </p>
       )}
       <form onSubmit={onSubmit} className="form form--spaced">
+        {/* 誰として答えるか。ログイン中だけ、フォームの先頭に 1 行。 */}
+        {memberName && (
+          <p className="rsvp__member">
+            <span>{memberName} さんとして答えます</span>
+            {loginHref && <Link href={loginHref}>アカウントを切り替える</Link>}
+          </p>
+        )}
         <fieldset className="field">
           <legend className="label">出欠</legend>
-          <div className="choice-group" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <label className={choices.attend ? "choice choice--attending" : "choice choice--waitlist"}>
+          <div className="rsvp__choices">
+            <label className="rsvp__choice">
               <input
                 type="radio"
                 name="rsvp"
@@ -159,9 +180,12 @@ export function DynamicRsvpBox({
                 disabled={closed || isSubmitting}
                 onChange={() => setStatus(attendValue)}
               />
-              {choices.attend ? "出席" : "参加要望"}
+              <span>
+                {choices.attend ? "出席する" : "参加を希望する"}
+                <small>{choices.attend ? "あとから変更できます" : "空きが出たら連絡します"}</small>
+              </span>
             </label>
-            <label className="choice choice--declined">
+            <label className="rsvp__choice">
               <input
                 type="radio"
                 name="rsvp"
@@ -169,12 +193,16 @@ export function DynamicRsvpBox({
                 disabled={closed || isSubmitting}
                 onChange={() => setStatus("DECLINED")}
               />
-              欠席
+              <span>
+                欠席する
+                <small>案内は届きません</small>
+              </span>
             </label>
           </div>
           {!choices.attend && (
-            <p className="help">
-              定員 {capacity}名に達しています。参加要望は参加人数に含まれず、空きが出たときに幹事が承認します。
+            <p className="rsvp__alert" role="status">
+              <strong>定員 {capacity}名に達しました。</strong>
+              いまは参加要望（待ち順）として受け付けます。空きが出たら、幹事が順番に承認します。
             </p>
           )}
         </fieldset>
@@ -288,19 +316,21 @@ export function DynamicRsvpBox({
               : "回答を保存しました。"}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={closed || isSubmitting || (status === "ATTENDING" && availablePlans.length === 0)}
-          className="btn btn--primary btn--block"
-        >
-          {isSubmitting
-            ? "送信中..."
-            : myRsvp
-              ? "回答を更新する"
-              : status === "WAITLISTED"
-                ? "参加要望を送る"
-                : "この内容で回答を送信"}
-        </button>
+        <div className="rsvp__foot">
+          <button
+            type="submit"
+            disabled={closed || isSubmitting || (status === "ATTENDING" && availablePlans.length === 0)}
+            className="btn btn--primary btn--block"
+          >
+            {isSubmitting
+              ? "送信中..."
+              : myRsvp
+                ? "回答を更新する"
+                : status === "WAITLISTED"
+                  ? "参加要望を送る"
+                  : "この内容で回答を送信"}
+          </button>
+        </div>
         {myRsvp && (
           <button type="button" onClick={() => void onCancel()} disabled={isSubmitting} className="btn btn--ghost btn--block">
             回答を取り消す

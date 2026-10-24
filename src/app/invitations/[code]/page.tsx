@@ -79,55 +79,58 @@ export default function InvitationPage({ params }: { params: { code: string } })
   return (
     <div className="page--form stack">
       <div>
-        <h1 className="page-title">共同主催者の招待</h1>
+        <p className="eyebrow">招待</p>
+        <h1 className="page-title">共同主催者に加わりますか</h1>
         <p className="page-lead">{preview.event.title}</p>
       </div>
-      <dl className="meta-list">
-        <div>
-          <dt>主催</dt>
-          <dd>{preview.event.organizer.ownerName ?? "主催者"}</dd>
-        </div>
-        <div>
-          <dt>開催</dt>
-          <dd>
-            {preview.event.schedules.map((row) => `${row.eventDate} ${row.eventTime}`).join("、")}
-          </dd>
-        </div>
-        <div>
-          <dt>場所</dt>
-          <dd>{preview.event.location}</dd>
-        </div>
-        <div>
-          <dt>費用</dt>
-          <dd>{preview.event.pricePlans.map((row) => `${row.name} ${row.price}`).join("、")}</dd>
-        </div>
-        <div>
-          <dt>雨天</dt>
-          <dd>{RAIN_POLICY_LABELS[preview.event.rainPolicy]}</dd>
-        </div>
-      </dl>
-      <p className="help">有効期限 {new Date(preview.invitation.expiresAt).toLocaleString("ja-JP")}</p>
       {error && <p className="alert alert--error">{error}</p>}
-      {preview.loggedIn ? (
-        <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
-          {pending ? "参加処理中..." : "共同主催者として参加する"}
-        </button>
-      ) : (
-        <div className="stack">
-          <p className="help">
-            共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
-          </p>
-          <Link href={loginHref} className="btn btn--primary btn--block">
-            会員登録して受諾する
-          </Link>
-          <Link
-            href={`/auth/register?mode=login&next=${encodeURIComponent(`/invitations/${params.code}`)}`}
-            className="btn btn--outline btn--block"
-          >
-            すでに会員の方はログイン
-          </Link>
+      <div className="auth-card">
+        <h2 className="auth-card__title">{preview.event.organizer.ownerName ?? "主催者"} からの招待</h2>
+        <p className="auth-card__note">
+          加わると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
+        </p>
+        <dl className="kv">
+          <div className="kv__row">
+            <dt>開催</dt>
+            <dd>{preview.event.schedules.map((row) => `${row.eventDate} ${row.eventTime}`).join("、")}</dd>
+          </div>
+          <div className="kv__row">
+            <dt>場所</dt>
+            <dd>{preview.event.location}</dd>
+          </div>
+          <div className="kv__row">
+            <dt>費用</dt>
+            <dd>{preview.event.pricePlans.map((row) => `${row.name} ${row.price}`).join("、")}</dd>
+          </div>
+          <div className="kv__row">
+            <dt>雨天</dt>
+            <dd>{RAIN_POLICY_LABELS[preview.event.rainPolicy]}</dd>
+          </div>
+        </dl>
+        <p className="help">有効期限 {new Date(preview.invitation.expiresAt).toLocaleString("ja-JP")}</p>
+        <div className="panel__actions">
+          {preview.loggedIn ? (
+            <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
+              {pending ? "参加処理中..." : "共同主催者として参加する"}
+            </button>
+          ) : (
+            <>
+              <p className="help">
+                共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
+              </p>
+              <Link href={loginHref} className="btn btn--primary btn--block">
+                会員登録して受諾する
+              </Link>
+              <Link
+                href={`/auth/register?mode=login&next=${encodeURIComponent(`/invitations/${params.code}`)}`}
+                className="btn btn--ghost btn--block"
+              >
+                すでに会員の方はログイン
+              </Link>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

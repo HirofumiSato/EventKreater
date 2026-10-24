@@ -74,30 +74,30 @@ export default function AccountPage() {
 
   return (
     <div className="page--form stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">アカウント</h1>
-          <p className="page-lead">
-            表示名、ログインに使う連絡先、パスワードをここで管理します。主催者・参加者のどちらの立場でも同じ設定を使います。
-          </p>
-        </div>
-        <div className="panel__actions">
-          {isOrganizer ? (
-            <Link href="/mypage" className="btn btn--outline btn--sm">
-              主催者マイページへ
-            </Link>
-          ) : (
-            <Link href="/participant" className="btn btn--outline btn--sm">
-              参加者ホームへ
-            </Link>
-          )}
-        </div>
-      </section>
+      <div>
+        <p className="eyebrow">設定</p>
+        <h1 className="page-title">アカウント設定</h1>
+        <p className="page-lead">主催者と参加者で、同じ画面を使います。</p>
+      </div>
+      <div className="btn-row">
+        {isOrganizer ? (
+          <Link href="/mypage" className="btn btn--outline btn--sm">
+            主催者マイページへ
+          </Link>
+        ) : (
+          <Link href="/participant" className="btn btn--outline btn--sm">
+            参加者ホームへ
+          </Link>
+        )}
+      </div>
 
       <AccountInfoPanel profile={profile} onChange={patchProfile} />
 
       <section className="panel">
         <h2 className="panel__title">電話番号</h2>
+        <p className="panel__note">
+          ログインの確認番号を受け取る番号です。変更には、その場で確認番号を入れます。
+        </p>
         <PhoneChangePanel profile={profile} onChange={patchProfile} />
       </section>
 

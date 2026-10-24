@@ -11,7 +11,7 @@ import {
   resolveAttendanceChoice,
 } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
-import { formatEventDate, participantPriceDisplay } from "@/lib/serializers";
+import { formatEventDate, formatEventDateLabel, participantPriceDisplay } from "@/lib/serializers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         scheduleId: updated.scheduleId,
         pricePlanId: updated.pricePlanId,
         scheduleLabel: updated.schedule
-          ? `${formatEventDate(updated.schedule.eventDate)} ${updated.schedule.eventTime}`
+          ? `${formatEventDateLabel(formatEventDate(updated.schedule.eventDate))} ${updated.schedule.eventTime}`
           : null,
         pricePlanLabel: price.label,
         pricePlanAmount: price.amount,

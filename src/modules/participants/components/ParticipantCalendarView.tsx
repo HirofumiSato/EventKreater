@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid, CalendarToolbar } from "@/components/common/CalendarMonth";
 import {
   buildMonthGrid,
-  countMonthEntries,
   currentMonth,
   defaultSelectedDate,
   entriesForDate,
@@ -16,6 +15,7 @@ import {
   todayInTokyo,
 } from "@/lib/calendar";
 import { groupParticipantEntriesByDate, toParticipantCellItem } from "@/modules/participants/lib/calendar";
+import { rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import type {
   ParticipantCalendarEntry,
   ParticipantCalendarResponse,
@@ -68,7 +68,6 @@ export function ParticipantCalendarView() {
 
   const grouped = useMemo(() => groupParticipantEntriesByDate(entries), [entries]);
   const cells = useMemo(() => buildMonthGrid(month), [month]);
-  const monthEntryCount = useMemo(() => countMonthEntries(grouped, month), [grouped, month]);
   const dayEntries = entriesForDate(grouped, selectedDate);
   const todayMonth = today.slice(0, 7);
 
@@ -80,24 +79,19 @@ export function ParticipantCalendarView() {
 
   return (
     <div className="stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">参加カレンダー</h1>
-          <p className="page-lead">出欠を答えた催しを、開催日ごとに並べます。</p>
-        </div>
+      <div>
+        <p className="eyebrow">参加者</p>
+        <h1 className="page-title">参加カレンダー</h1>
+        <p className="page-lead">出欠を答えた催しを、開催日ごとに並べます。</p>
         <div className="panel__actions">
-          <Link href="/participant" className="btn btn--outline">
+          <Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
           </Link>
+          <Link href="/participant/history" className="btn btn--ghost btn--sm">
+            参加履歴
+          </Link>
         </div>
-      </section>
-
-      <CalendarToolbar
-        month={month}
-        todayMonth={todayMonth}
-        onShift={(delta) => goToMonth(shiftMonth(month, delta))}
-        onToday={() => goToMonth(todayMonth)}
-      />
+      </div>
 
       {error && (
         <p className="alert alert--warning">
@@ -115,14 +109,14 @@ export function ParticipantCalendarView() {
         </p>
       )}
 
-      {!error && !loading && monthEntryCount === 0 && (
-        <section className="card calendar-empty">
-          <p>この月に出欠した催しはありません。</p>
-        </section>
-      )}
-
       {!error && (
-        <div className="calendar-layout">
+        <div className="cal">
+          <CalendarToolbar
+            month={month}
+            todayMonth={todayMonth}
+            onShift={(delta) => goToMonth(shiftMonth(month, delta))}
+            onToday={() => goToMonth(todayMonth)}
+          />
           <CalendarMonthGrid
             month={month}
             cells={cells}
@@ -132,52 +126,62 @@ export function ParticipantCalendarView() {
               entriesForDate(grouped, date).map(toParticipantCellItem)
             }
             onSelect={setSelectedDate}
+            legend={
+              <>
+                <span>
+                  <i aria-hidden="true" />
+                  出席
+                </span>
+                <span>
+                  <i className="is-waitlist" aria-hidden="true" />
+                  参加要望
+                </span>
+                <span>
+                  <i className="is-declined" aria-hidden="true" />
+                  欠席
+                </span>
+              </>
+            }
           />
-
-          <section className="card calendar-day" aria-labelledby="participant-calendar-day-heading">
-            <div className="calendar-day__head">
-              <h2 id="participant-calendar-day-heading" className="card__title">
-                {formatDayHeading(selectedDate)}
-              </h2>
-              <p className="help">{dayEntries.length > 0 ? `${dayEntries.length}件` : ""}</p>
-            </div>
-            {dayEntries.length === 0 ? (
-              <p className="empty">この日に出欠した催しはありません。</p>
-            ) : (
-              <ul className="calendar-day__list">
-                {dayEntries.map((entry) => {
-                  const declined = entry.status === "DECLINED";
-                  const waitlisted = entry.status === "WAITLISTED";
-                  return (
-                    <li
-                      key={entry.participantId}
-                      className={`calendar-day__item${declined ? " is-declined" : waitlisted ? " is-waitlist" : ""}`}
-                    >
-                      <Link href={`/events/${entry.event.id}`} className="calendar-day__link">
-                        <span className="calendar-day__time">
-                          {entry.eventTime || "時刻未定"}
-                        </span>
-                        <span className="calendar-day__title">{entry.event.title}</span>
-                        <span
-                          className={`calendar-day__meta${
-                            declined
-                              ? " calendar-day__meta--declined"
-                              : waitlisted
-                                ? " calendar-day__meta--waitlist"
-                                : ""
-                          }`}
-                        >
-                          {entry.statusLabel}
-                          {entry.event.location ? ` · ${entry.event.location}` : ""}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
         </div>
+      )}
+
+      {!error && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
+            <p className="section__note">
+              {dayEntries.length > 0
+                ? `この日の催しは ${dayEntries.length}件です。`
+                : "この日に出欠した催しはありません。"}
+            </p>
+          </div>
+          {dayEntries.length === 0 ? (
+            <p className="empty">
+              <span className="empty__title">この日は空いています。</span>
+              <span className="empty__body">日付を押すと、その日に出欠した催しが出ます。</span>
+            </p>
+          ) : (
+            <ul className="rows">
+              {dayEntries.map((entry) => (
+                <li key={entry.participantId} className="rows__item">
+                  <div className="rows__main">
+                    <p className="rows__title">
+                      <Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link>
+                    </p>
+                    <p className="rows__meta">
+                      {entry.eventTime || "時刻未定"}
+                      {entry.event.location ? ` ／ ${entry.event.location}` : ""}
+                    </p>
+                  </div>
+                  <span className={`badge badge--sm badge--${rsvpStatusTone(entry.status)}`}>
+                    {entry.statusLabel}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
     </div>
   );

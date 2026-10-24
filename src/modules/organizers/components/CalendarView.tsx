@@ -80,29 +80,13 @@ export function CalendarView() {
 
   return (
     <div className="stack">
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">カレンダー</h1>
+        <p className="page-lead">開催日ごとに並びます。日付を押すと、その日の催しが出ます。</p>
+      </div>
+
       <OrganizerTabs />
-
-      <section className="panel">
-        <div>
-          <h1 className="page-title">カレンダー</h1>
-          <p className="page-lead">自分の催しを、開催日ごとに並べます。</p>
-        </div>
-        <div className="panel__actions">
-          <Link href="/organizer/events" className="btn btn--outline">
-            主催一覧へ
-          </Link>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
-            新規作成
-          </Link>
-        </div>
-      </section>
-
-      <CalendarToolbar
-        month={month}
-        todayMonth={todayMonth}
-        onShift={(delta) => goToMonth(shiftMonth(month, delta))}
-        onToday={() => goToMonth(todayMonth)}
-      />
 
       {error && (
         <p className="alert alert--warning">
@@ -121,16 +105,25 @@ export function CalendarView() {
       )}
 
       {!error && !loading && monthEntryCount === 0 && (
-        <section className="card calendar-empty">
-          <p>この月に予定はありません。</p>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--outline btn--sm">
-            新規作成
-          </Link>
-        </section>
+        <div className="empty">
+          <p className="empty__title">この月に予定はありません。</p>
+          <p className="empty__body">
+            別の月へ移るか、新しい催しを作ってください。{" "}
+            <Link href={SITE.nav.createEvent.href} className="text-link">
+              新規作成
+            </Link>
+          </p>
+        </div>
       )}
 
       {!error && (
-        <div className="calendar-layout">
+        <div className="cal">
+          <CalendarToolbar
+            month={month}
+            todayMonth={todayMonth}
+            onShift={(delta) => goToMonth(shiftMonth(month, delta))}
+            onToday={() => goToMonth(todayMonth)}
+          />
           <CalendarMonthGrid
             month={month}
             cells={cells}
@@ -140,50 +133,75 @@ export function CalendarView() {
               entriesForDate(grouped, date).map(toOrganizerCellItem)
             }
             onSelect={setSelectedDate}
+            legend={
+              <>
+                <span>
+                  <i aria-hidden="true" />
+                  公開中
+                </span>
+                <span>
+                  <i className="is-muted" aria-hidden="true" />
+                  下書き・受付停止
+                </span>
+              </>
+            }
           />
-
-          <section className="card calendar-day" aria-labelledby="calendar-day-heading">
-            <div className="calendar-day__head">
-              <h2 id="calendar-day-heading" className="card__title">
-                {formatDayHeading(selectedDate)}
-              </h2>
-              <p className="help">{dayEntries.length > 0 ? `${dayEntries.length}件` : ""}</p>
-            </div>
-            {dayEntries.length === 0 ? (
-              <p className="empty">この日の予定はありません。</p>
-            ) : (
-              <ul className="calendar-day__list">
-                {dayEntries.map(({ event, schedule }) => (
-                  <li key={`${event.id}-${schedule.id}`} className="calendar-day__item">
-                    <div className="calendar-day__row">
-                      <Link
-                        href={organizerEventHref(event)}
-                        className="calendar-day__link"
-                      >
-                        <span className="calendar-day__time">{schedule.eventTime || "時刻未定"}</span>
-                        <span className="calendar-day__title">{event.title}</span>
-                        <span className="calendar-day__meta">
-                          {STATUS_LABELS[event.status]}
-                          {event.role === "CO_HOST" && " · 共同主催"}
-                        </span>
-                      </Link>
-                      {/* 下書きと受付停止は公開ページを配る意味が無いので出さない。 */}
-                      {event.status === "PUBLISHED" && (
-                        <LineShareButton
-                          title={event.title}
-                          schedules={event.schedules}
-                          location={event.location}
-                          path={`/events/${event.id}`}
-                          className="btn btn--outline btn--sm"
-                        />
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </div>
+      )}
+
+      {!error && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
+            <p className="section__note">
+              {dayEntries.length > 0
+                ? `この日の催しは ${dayEntries.length}件です。`
+                : "この日の予定はありません。"}
+            </p>
+          </div>
+          {dayEntries.length === 0 ? (
+            <p className="empty">
+              <span className="empty__title">この日は空いています。</span>
+              <span className="empty__body">日付を押すと、その日の催しが出ます。</span>
+            </p>
+          ) : (
+            <ul className="rows">
+              {dayEntries.map(({ event, schedule }) => (
+                <li key={`${event.id}-${schedule.id}`} className="rows__item">
+                  <div className="rows__main">
+                    <p className="rows__title">
+                      <Link href={organizerEventHref(event)}>{event.title}</Link>
+                    </p>
+                    <p className="rows__meta">
+                      {schedule.eventTime || "時刻未定"}
+                      {event.location ? ` ／ ${event.location}` : ""}
+                      <br />
+                      参加 {event.stats.attendingCount}
+                      {event.capacity === null ? "名（定員なし）" : ` / ${event.capacity}名`} ・{" "}
+                      {STATUS_LABELS[event.status]}
+                      {event.role === "CO_HOST" && " · 共同主催"}
+                    </p>
+                  </div>
+                  <div className="event-card__actions">
+                    <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--ghost btn--sm">
+                      名簿
+                    </Link>
+                    {/* 下書きと受付停止は公開ページを配る意味が無いので出さない。 */}
+                    {event.status === "PUBLISHED" && (
+                      <LineShareButton
+                        title={event.title}
+                        schedules={event.schedules}
+                        location={event.location}
+                        path={`/events/${event.id}`}
+                        className="btn btn--outline btn--sm"
+                      />
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
     </div>
   );

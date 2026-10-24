@@ -5,6 +5,7 @@ import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import {
   formatEventDate,
+  formatEventDateLabel,
   participantPriceDisplay,
   serializePricePlans,
   serializeSchedules,
@@ -67,7 +68,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           comment: row.comment,
           scheduleId: row.scheduleId,
           pricePlanId: row.pricePlanId,
-          scheduleLabel: row.schedule ? `${formatEventDate(row.schedule.eventDate)} ${row.schedule.eventTime}` : null,
+          scheduleLabel: row.schedule
+            ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
+            : null,
           pricePlanLabel: price.label,
           pricePlanAmount: price.amount,
           createdAt: row.createdAt.toISOString(),

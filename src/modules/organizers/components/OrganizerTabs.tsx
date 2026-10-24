@@ -12,20 +12,25 @@ const TABS = [
   { href: "/organizer/events", label: "主催一覧" },
   { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
+  { href: "/organizer/events/drafts", label: "下書き" },
   { href: "/organizer/profile", label: "プロフィール" },
 ] as const;
 
 export function OrganizerTabs() {
   const pathname = usePathname();
   return (
-    <nav className="organizer-tabs" aria-label="主催者の節">
+    <nav className="org-subnav" aria-label="主催者の節">
       {TABS.map((tab) => {
-        const current = pathname === tab.href;
+        // 下書きは配下の画面（プレビューなど）でも現在地にする。
+        const current =
+          tab.href === "/organizer/events"
+            ? pathname === tab.href
+            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`organizer-tabs__link${current ? " is-current" : ""}`}
+            className={current ? "is-current" : undefined}
             aria-current={current ? "page" : undefined}
           >
             {tab.label}

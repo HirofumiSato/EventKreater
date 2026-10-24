@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 100（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 272
+- 対象文書: 101（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 279
 - API ルート: 78（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -51,8 +51,8 @@
 | `services/flyer/tests/test_domain.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_renderer.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `src/app` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) |
-| `src/app/account/email/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/account/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/app/account/email/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/account/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
 | `src/app/api` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) / [docs/index.rst](index.rst) / [docs/sitemap.rst](sitemap.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/app/api/v1` | `AGENTS.md` |
 | `src/app/api/v1/admin/pricing-campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
@@ -93,9 +93,9 @@
 | `src/app/api/v1/venues/route.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/app/api/v1/voice/transcriptions/route.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/app/api/v1/webhooks/stripe/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/stripe.rst](stripe.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
-| `src/app/attendance.css` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
-| `src/app/auth/register/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/auth/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/app/attendance.css` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/auth/register/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/auth/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
 | `src/app/console/events/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/app/console/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/console/login/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
@@ -103,29 +103,34 @@
 | `src/app/console/payments/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/console/pricing/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/console/users/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/app/deco.css` | [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
 | `src/app/events/[id]/EventPageClient.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/onboarding.md](onboarding.md) |
-| `src/app/events/[id]/page.tsx` | [docs/archive/index.rst](archive/index.rst) / [docs/onboarding.md](onboarding.md) |
-| `src/app/invitations/[code]/page.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
-| `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
-| `src/app/organizer/events/[id]/edit/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/organizer/events/[id]/participants/page.tsx` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
-| `src/app/organizer/events/[id]/preview/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
-| `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) |
-| `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
-| `src/app/organizer/events/new/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/organizer/events/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
-| `src/app/organizer/profile/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
-| `src/app/organizer/register-required/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
-| `src/app/organizer/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
-| `src/app/organizers/[userId]/events/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
-| `src/app/organizers/[userId]/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
-| `src/app/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
-| `src/app/participant/history/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
-| `src/app/participant/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
+| `src/app/events/[id]/page.tsx` | [docs/archive/index.rst](archive/index.rst) / [docs/onboarding.md](onboarding.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/events/[id]/receipt/page.tsx` | [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/invitations/[code]/page.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/[id]/edit/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/[id]/participants/page.tsx` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/[id]/preview/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/[id]/receipts/[participantId]/page.tsx` | [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/new/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/events/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/profile/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/register-required/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizer/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizers/[userId]/events/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/organizers/[userId]/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/participant/calendar/page.tsx` | [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/participant/history/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/participant/login/page.tsx` | [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/participant/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
 | `src/app/robots.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/service/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
-| `src/app/terms/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
+| `src/app/service/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
+| `src/app/terms/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/ui-review/mock-implementation-map.md](ui-review/mock-implementation-map.md) |
 | `src/components/common/CalendarEventModal.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/components/common/CalendarMonth.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
 | `src/components/common/Navbar.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -134,6 +139,7 @@
 | `src/lib/auth-links.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/lib/calendar.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/crypto.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
+| `src/lib/design-scope.ts` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/lib/http.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/local.rst](local.rst) |
 | `src/lib/ids.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
@@ -258,6 +264,7 @@
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/ci-scope.test.mjs` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/client-ip.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/design-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-lifecycle.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-save.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

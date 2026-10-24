@@ -62,23 +62,15 @@ export default function OrganizerDraftsPage() {
 
   return (
     <div className="stack">
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">下書き一覧</h1>
+        <p className="page-lead">
+          公開するまで、利用枠は減りません。プレビューで見た目を確かめてから公開できます。
+        </p>
+      </div>
+
       <OrganizerTabs />
-      <section className="panel">
-        <div>
-          <h1 className="page-title">下書き一覧</h1>
-          <p className="page-lead">
-            公開前の催しです。プレビューで見た目を確かめてから公開できます。下書きの間は利用枠を消費しません。
-          </p>
-        </div>
-        <div className="panel__actions">
-          <Link href="/organizer/events" className="btn btn--outline">
-            主催一覧
-          </Link>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
-            新規作成
-          </Link>
-        </div>
-      </section>
 
       {loading && (
         <p className="loading">
@@ -95,25 +87,33 @@ export default function OrganizerDraftsPage() {
         </p>
       )}
       {!loading && !error && events.length === 0 && (
-        <p className="empty">
-          下書きはありません。{" "}
-          <Link href={SITE.nav.createEvent.href} className="text-link">
-            {SITE.cta.createEventFirst}
-          </Link>
-        </p>
+        <div className="empty">
+          <p className="empty__title">下書きはありません。</p>
+          <p className="empty__body">
+            <Link href={SITE.nav.createEvent.href} className="text-link">
+              {SITE.cta.createEventFirst}
+            </Link>
+          </p>
+        </div>
       )}
 
       <div className="stack">
         {events.map((event) => (
-          <article key={event.id} className="card">
-            <p className="eyebrow eyebrow--muted">
-              {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
-            </p>
-            <h2 className="card__title">{event.title}</h2>
-            <p className="help">
-              {scheduleLabel(event.schedules)} / {priceLabel(event.pricePlans)} / {event.location}
-            </p>
-            <div className="btn-row" style={{ marginTop: "1rem" }}>
+          <article key={event.id} className="draft-card">
+            <div>
+              <p className="draft-card__title">
+                {event.title}
+                <span className="badge badge--sm badge--neutral">
+                  {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
+                </span>
+              </p>
+              <p className="draft-card__meta">
+                {scheduleLabel(event.schedules)} ／ {event.location || "場所未定"}
+                <br />
+                {priceLabel(event.pricePlans)}
+              </p>
+            </div>
+            <div className="draft-card__actions">
               <Link href={`/organizer/events/${event.id}/preview`} className="btn btn--primary btn--sm">
                 プレビュー
               </Link>
@@ -122,7 +122,7 @@ export default function OrganizerDraftsPage() {
               </Link>
               <button
                 type="button"
-                className="btn btn--danger btn--sm"
+                className="btn btn--ghost btn--sm"
                 disabled={busyId === event.id}
                 onClick={() => setDeletingId(event.id)}
               >
@@ -131,6 +131,20 @@ export default function OrganizerDraftsPage() {
             </div>
           </article>
         ))}
+      </div>
+
+      <p className="screen-note">
+        下書きは、自分（と共同幹事）にだけ見えます。URL を知っていても、公開していない催しは開けません。
+        削除すると元に戻せません。
+      </p>
+
+      <div className="panel__actions">
+        <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+          新しく作る
+        </Link>
+        <Link href="/organizer/events" className="btn btn--outline btn--sm">
+          主催一覧へ戻る
+        </Link>
       </div>
 
       {deletingId && (

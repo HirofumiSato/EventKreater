@@ -83,6 +83,10 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const tokenHash = rawToken ? sha256(rawToken) : null;
     // 端末のクッキーが無い・別端末でも、ログインしていれば同じ回答を返す。
     const userId = await resolveOptionalUserId(req);
+    // 誰として答えるかの 1 行に出す、ログイン中の会員名。
+    const viewerName = userId
+      ? (await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }))?.name ?? null
+      : null;
     // 告知ページの勧誘カードの出し分け。ゲスト幹事は Cookie で本人と分かるので、JWT だけでは足りない。
     const guestHashes = collectGuestTokenHashes(req, event.id);
     const organizerConditions = [
@@ -173,6 +177,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
        */
       viewer: {
         loggedIn: Boolean(userId),
+        name: viewerName,
         isThisEventsOrganizer: Boolean(myOrganizerRow),
         hasOrganizerRole: memberOrganizerCount > 0 || guestOwnerCount > 0,
       },

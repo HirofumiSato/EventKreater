@@ -43,61 +43,75 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
     );
   }
 
+  const full = event.capacity !== null && event.attendingCount >= event.capacity;
+
   return (
-    <div className="page--narrow stack" style={{ paddingBottom: "4.5rem" }}>
-      <PosterHero title={event.title} flyer={event.flyerAsset} />
-      <EventMetaCard event={event} />
-      <LineShareButton
+    <div className="page--narrow event-page">
+      <PosterHero
         title={event.title}
-        schedules={event.schedules}
-        location={event.location}
-        path={`/events/${event.id}`}
-        className="btn btn--outline btn--block"
+        flyer={event.flyerAsset}
+        stamp={!event.rsvpOpen ? "受付終了" : full ? "満員" : "受付中"}
+        isFull={event.rsvpOpen && full}
       />
-      <DynamicRsvpBox
-        eventId={event.id}
-        schedules={event.schedules}
-        pricePlans={event.pricePlans}
-        initialRsvp={event.myRsvp}
-        capacity={event.capacity}
-        attendingCount={event.attendingCount}
-        waitlistCount={event.waitlistCount}
-        closed={!event.rsvpOpen}
-        closedMessage={
-          event.status === "PUBLISHED"
-            ? "申し込み期限を過ぎています。新しい申し込みと回答の変更はできません。取消はできます。"
-            : "このイベントは出欠を受け付けていません。"
-        }
-        onCountChange={(count) => setEvent((current) => (current ? { ...current, attendingCount: count } : current))}
-        onWaitlistCountChange={(count) =>
-          setEvent((current) => (current ? { ...current, waitlistCount: count } : current))
-        }
-      />
-      <OrganizerInviteCard eventId={event.id} viewer={event.viewer} />
-      {event.myReceipt && (
-        <p className="page-lead" style={{ textAlign: "center" }}>
-          <Link href={`/events/${event.id}/receipt`} className="text-link">
-            領収書を見る
-          </Link>
-        </p>
-      )}
-      <p className="page-lead" style={{ textAlign: "center" }}>
-        {event.loggedIn ? (
-          <Link href="/participant/history" className="text-link">
-            自分の参加履歴を見る
-          </Link>
-        ) : (
-          <Link href={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`} className="text-link">
-            会員登録して履歴を保存
-          </Link>
+      <EventMetaCard event={event} />
+      <div className="event-body">
+        <LineShareButton
+          title={event.title}
+          schedules={event.schedules}
+          location={event.location}
+          path={`/events/${event.id}`}
+          className="btn btn--outline btn--block"
+        />
+        <DynamicRsvpBox
+          eventId={event.id}
+          schedules={event.schedules}
+          pricePlans={event.pricePlans}
+          initialRsvp={event.myRsvp}
+          capacity={event.capacity}
+          attendingCount={event.attendingCount}
+          waitlistCount={event.waitlistCount}
+          closed={!event.rsvpOpen}
+          closedMessage={
+            event.status === "PUBLISHED"
+              ? "申し込み期限を過ぎています。新しい申し込みと回答の変更はできません。取消はできます。"
+              : "このイベントは出欠を受け付けていません。"
+          }
+          memberName={event.viewer.loggedIn ? event.viewer.name ?? event.myRsvp?.name ?? null : null}
+          loginHref={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`}
+          onCountChange={(count) => setEvent((current) => (current ? { ...current, attendingCount: count } : current))}
+          onWaitlistCountChange={(count) =>
+            setEvent((current) => (current ? { ...current, waitlistCount: count } : current))
+          }
+        />
+        <OrganizerInviteCard eventId={event.id} viewer={event.viewer} />
+        {event.myReceipt && (
+          <p className="page-lead event-page__foot">
+            <Link href={`/events/${event.id}/receipt`} className="text-link">
+              領収書を見る
+            </Link>
+          </p>
         )}
-      </p>
+        <p className="page-lead event-page__foot">
+          {event.loggedIn ? (
+            <Link href="/participant/history" className="text-link">
+              自分の参加履歴を見る
+            </Link>
+          ) : (
+            <Link href={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`} className="text-link">
+              会員登録して履歴を保存
+            </Link>
+          )}
+        </p>
+      </div>
       <StickyRsvpBar
         attendingCount={event.attendingCount}
         waitlistCount={event.waitlistCount}
         capacity={event.capacity}
         answered={Boolean(event.myRsvp)}
         closed={!event.rsvpOpen}
+        organizerHref={
+          event.organizers.owner?.userId ? `/organizers/${event.organizers.owner.userId}` : null
+        }
       />
     </div>
   );

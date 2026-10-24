@@ -16,11 +16,17 @@ export function OrganizerInviteCard({ eventId, viewer }: OrganizerInviteCardProp
   if (viewer.isThisEventsOrganizer || viewer.hasOrganizerRole) return null;
 
   return (
-    <section className="card card--padded">
-      <h2 className="panel__title">あなたも{SITE.nav.createEvent.label}をしませんか？</h2>
+    <section className="org-invite" aria-labelledby="org-invite-title">
+      <p className="org-invite__tag">無料ではじめられます</p>
+      <h2 className="org-invite__title" id="org-invite-title">
+        あなたも{SITE.nav.createEvent.label}をしませんか？
+      </h2>
+      <p className="org-invite__note">
+        このページと同じチラシと告知ページを、5 分で作れます。最初の 2 回は無料です。
+      </p>
       <Link
         href={`${SITE.nav.createEvent.href}?ref=${encodeURIComponent(eventId)}`}
-        className="btn btn--outline btn--block"
+        className="btn btn--outline"
       >
         {SITE.nav.createEvent.label}
       </Link>

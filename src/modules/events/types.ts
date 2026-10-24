@@ -143,6 +143,8 @@ export interface EventFormValues {
 
 export interface PublicEventViewer {
   loggedIn: boolean;
+  /** ログイン中の会員名。誰として答えるかの 1 行に使う。未ログインは null。 */
+  name: string | null;
   /** このイベントの幹事（ゲスト幹事の端末 Cookie を含む）。勧誘カードを出さない。 */
   isThisEventsOrganizer: boolean;
   /** 削除されていない主催イベントを1件以上持つ会員。勧誘カードを出さない。 */

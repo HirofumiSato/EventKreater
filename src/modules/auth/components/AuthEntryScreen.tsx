@@ -46,7 +46,7 @@ const COPY: Record<
     lead: `${SITE.nav.createEvent.label}幹事の入口です。新規登録は、確認メールのリンクを開いたあと電話番号を確認します。同じ電話番号の会員が既にあるときは、新しいアカウントは作りません。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。`,
     submit: { register: "登録してはじめる", login: "ログイン" },
     switchToOther: { href: "/participant/login", label: "参加者としてログイン" },
-    otherLabel: "参加したイベントの履歴を見たいだけなら",
+    otherLabel: "参加した催しの履歴を残したいだけなら",
   },
   participant: {
     title: { register: "参加者の会員登録", login: "参加者ログイン" },
@@ -54,7 +54,7 @@ const COPY: Record<
       "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠と領収書を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
     submit: { register: "登録して履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
-    otherLabel: `${SITE.nav.createEvent.label}幹事なら`,
+    otherLabel: "催しを開く幹事なら",
   },
 };
 
@@ -235,6 +235,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
   return (
     <div className="page--form stack">
       <div>
+        <p className="eyebrow">{audience === "participant" ? "参加者" : "主催者"}</p>
         <h1 className="page-title">{mode === "register" ? copy.title.register : copy.title.login}</h1>
         <p className="page-lead">{copy.lead}</p>
       </div>
@@ -248,75 +249,91 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
           ログイン
         </label>
       </div>
-      <a
-        href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
-        className="btn btn--outline btn--block"
-      >
-        Googleで続ける
-      </a>
-      <form onSubmit={submit} className="form">
-        {mode === "register" && (
+      <div className="auth-card">
+        <h2 className="auth-card__title">
+          {mode === "register" ? "はじめての方（新規登録）" : "メールアドレスで入る"}
+        </h2>
+        <p className="auth-card__note">
+          {mode === "register"
+            ? "確認メールが届きます。その後、電話番号を確認して登録が終わります。"
+            : "パスワードを忘れたときは、確認番号で入れます。"}
+        </p>
+        <form onSubmit={submit} className="auth-card__body">
+          {mode === "register" && (
+            <div className="field">
+              <label className="label" htmlFor="register-name">
+                名前
+              </label>
+              <input
+                id="register-name"
+                required
+                maxLength={50}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="input"
+              />
+            </div>
+          )}
           <div className="field">
-            <label className="label" htmlFor="register-name">
-              名前
+            <label className="label" htmlFor="register-email">
+              メールアドレス
             </label>
             <input
-              id="register-name"
+              id="register-email"
               required
-              maxLength={50}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="input"
             />
           </div>
-        )}
-        <div className="field">
-          <label className="label" htmlFor="register-email">
-            メールアドレス
-          </label>
-          <input
-            id="register-email"
-            required
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="input"
-          />
-        </div>
-        <div className="field">
-          <label className="label" htmlFor="register-password">
-            パスワード
-          </label>
-          <input
-            id="register-password"
-            required
-            type="password"
-            minLength={mode === "register" ? 8 : 1}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="input"
-          />
-          {mode === "register" && <p className="help">8文字以上。漏えいが確認されているパスワードは使えません。</p>}
-        </div>
-        {notice && <p className="alert alert--success">{notice}</p>}
-        {error && <p className="alert alert--error">{error}</p>}
-        {adminConsoleRequired && (
-          <a className="btn btn--outline btn--block" href="/console/login">
-            管理者ログインへ
-          </a>
-        )}
-        {unverified && (
-          <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
-            確認メールを再送する
+          <div className="field">
+            <label className="label" htmlFor="register-password">
+              パスワード
+            </label>
+            <input
+              id="register-password"
+              required
+              type="password"
+              minLength={mode === "register" ? 8 : 1}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="input"
+            />
+            {mode === "register" && <p className="help">8文字以上。漏えいが確認されているパスワードは使えません。</p>}
+          </div>
+          {notice && <p className="alert alert--success">{notice}</p>}
+          {error && <p className="alert alert--error">{error}</p>}
+          {adminConsoleRequired && (
+            <a className="btn btn--outline btn--block" href="/console/login">
+              管理者ログインへ
+            </a>
+          )}
+          {unverified && (
+            <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
+              確認メールを再送する
+            </button>
+          )}
+          <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
+            {submitting ? "処理中..." : mode === "register" ? copy.submit.register : copy.submit.login}
           </button>
-        )}
-        <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-          {submitting ? "処理中..." : mode === "register" ? copy.submit.register : copy.submit.login}
-        </button>
-      </form>
-      <p className="help">
-        {copy.otherLabel}は <Link href={copy.switchToOther.href} className="text-link">{copy.switchToOther.label}</Link>
-      </p>
+        </form>
+        <div className="panel__actions">
+          <a
+            href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
+            className="btn btn--outline btn--block"
+          >
+            Googleで続ける
+          </a>
+        </div>
+        <div className="auth-alt">
+          {copy.otherLabel}{" "}
+          <Link href={copy.switchToOther.href} className="text-link">
+            {copy.switchToOther.label}
+          </Link>
+          へ。
+        </div>
+      </div>
     </div>
   );
 }
@@ -417,6 +434,7 @@ function PhoneScreen({
   return (
     <div className="page--form stack">
       <div>
+        <p className="eyebrow">{audience === "participant" ? "参加者" : "主催者"}</p>
         <h1 className="page-title">電話番号の確認</h1>
         <p className="page-lead">
           {audience === "participant"
@@ -425,68 +443,78 @@ function PhoneScreen({
           確認後の移動先は {nextPath} です。
         </p>
       </div>
-      <form onSubmit={sent ? confirm : start} className="form">
-        <div className="field">
-          <label className="label" htmlFor="register-phone">
-            電話番号
-          </label>
-          <input
-            id="register-phone"
-            required
-            inputMode="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="input"
-            placeholder="09012345678"
-          />
-          <p className="help">日本の携帯電話は 0 から入力できます。国番号付き（+81）も受け付けます。</p>
-        </div>
-        {sent && (
+      <div className="auth-card">
+        <h2 className="auth-card__title">{sent ? "確認番号で入る" : "電話番号で入る"}</h2>
+        <p className="auth-card__note">
+          {sent
+            ? "登録した電話番号に 6桁の番号を送りました。届かないときは、下から送り直せます。"
+            : "登録した電話番号に 6桁の番号を送ります。"}
+        </p>
+        <form onSubmit={sent ? confirm : start} className="auth-card__body">
           <div className="field">
-            <label className="label" htmlFor="register-phone-code">
-              確認コード（6桁）
+            <label className="label" htmlFor="register-phone">
+              電話番号
             </label>
             <input
-              id="register-phone-code"
+              id="register-phone"
               required
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
               className="input"
+              placeholder="09012345678"
             />
+            <p className="help">日本の携帯電話は 0 から入力できます。国番号付き（+81）も受け付けます。</p>
+          </div>
+          {sent && (
+            <div className="field">
+              <label className="label" htmlFor="register-phone-code">
+                確認コード（6桁）
+              </label>
+              <input
+                id="register-phone-code"
+                required
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="input code-input"
+              />
+            </div>
+          )}
+          {notice && <p className="alert alert--success">{notice}</p>}
+          {error && <p className="alert alert--error">{error}</p>}
+          <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
+            {submitting ? "処理中..." : sent ? "確認して続ける" : "確認コードを送る"}
+          </button>
+        </form>
+        {sent && (
+          <div className="panel__actions">
+            <button
+              type="button"
+              disabled={submitting}
+              className={exhausted ? "btn btn--primary btn--block" : "btn btn--outline btn--block"}
+              onClick={() => void request("resend")}
+            >
+              確認コードを送り直す
+            </button>
           </div>
         )}
-        {notice && <p className="alert alert--success">{notice}</p>}
-        {error && <p className="alert alert--error">{error}</p>}
-        <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-          {submitting ? "処理中..." : sent ? "確認して続ける" : "確認コードを送る"}
-        </button>
-      </form>
-      {sent && (
-        <button
-          type="button"
-          disabled={submitting}
-          className={exhausted ? "btn btn--primary btn--block" : "btn btn--outline btn--block"}
-          onClick={() => void request("resend")}
-        >
-          確認コードを送り直す
-        </button>
-      )}
-      <p className="help">
-        {signedIn ? (
-          // ログイン済みの会員にログイン画面を出すと、また同じ画面へ戻ってしまう。
-          <Link href={nextPath} className="text-link">
-            あとで確認する
-          </Link>
-        ) : (
-          <Link href={basePath} className="text-link">
-            ログイン画面へ戻る
-          </Link>
-        )}
-      </p>
+        <p className="help">
+          {signedIn ? (
+            // ログイン済みの会員にログイン画面を出すと、また同じ画面へ戻ってしまう。
+            <Link href={nextPath} className="text-link">
+              あとで確認する
+            </Link>
+          ) : (
+            <Link href={basePath} className="text-link">
+              ログイン画面へ戻る
+            </Link>
+          )}
+        </p>
+      </div>
     </div>
   );
 }

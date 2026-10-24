@@ -289,6 +289,8 @@ UI 監査と生成された索引
      - 中身
    * - :doc:`ui-review/home-audit`
      - ホーム画面（SCR-PUB-00）の UI/UX 監査
+   * - :doc:`ui-review/mock-implementation-map`
+     - モック 29 画面と実装の対応表（機能台帳・差分・移行状態）
    * - :doc:`api-routes`
      - 生成物。``src/app/api/**/route.ts`` と API 仕様の突き合わせ
    * - :doc:`traceability`

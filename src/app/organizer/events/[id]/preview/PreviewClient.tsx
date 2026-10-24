@@ -146,26 +146,29 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
 
   return (
     <div className="page--narrow stack">
+      <div className="notice">
+        <strong>下書きのプレビューです。</strong> 参加者には見えていません。出欠フォームは出ません。
+        公開すると、この内容で URL が発行されます。
+      </div>
+
       <section className="panel">
-        <div>
-          <p className="eyebrow">未公開のプレビュー</p>
-          <p className="page-lead">
-            参加者にはまだ見えません。公開すると告知URLが有効になり、出欠を受け付けます。
-          </p>
-        </div>
         <div className="panel__actions">
           {canPublish && (
-            <button type="button" className="btn btn--primary" disabled={publishing} onClick={() => void publish()}>
+            <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
               {publishing ? "公開中..." : "公開する"}
             </button>
           )}
-          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--outline">
-            編集する
+          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--outline btn--sm">
+            編集に戻る
           </Link>
-          <Link href={DRAFT_LIST_PATH} className="btn btn--ghost">
+          <Link href={DRAFT_LIST_PATH} className="btn btn--ghost btn--sm">
             下書き一覧
           </Link>
         </div>
+        <p className="screen-note">
+          公開には、利用枠を 1回使います。公開すると、告知URLが有効になり出欠を受け付けます。
+        </p>
+
         {!isDraft && (
           <p className="alert alert--success">
             このイベントは公開済みです。{" "}
@@ -206,9 +209,12 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         }}
       />
 
-      <p className="page-lead" style={{ textAlign: "center" }}>
-        出欠フォームは公開後に告知ページへ表示されます。
-      </p>
+      <div className="empty">
+        <p className="empty__title">出欠フォームは出ません</p>
+        <p className="empty__body">
+          公開すると、ここに出欠の受付が入ります。プレビューでは見た目だけを確かめます。
+        </p>
+      </div>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

@@ -22,6 +22,8 @@ interface EventMetaCardProps {
   >;
 }
 
+/* チラシの下に置く「紙」1 枚。催し名・主催・事実の順に読み、
+   数字（残席）は最後に置く。読む順が、申し込む順になっている。 */
 export function EventMetaCard({ event }: EventMetaCardProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
   const remaining = event.capacity === null ? null : Math.max(0, event.capacity - event.attendingCount);
@@ -30,47 +32,31 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
   const coHosts = event.organizers.coHosts;
 
   return (
-    <section className="card card--padded">
-      <div className="btn-row">
-        <span className="badge badge--sm badge--neutral">{RAIN_POLICY_LABELS[event.rainPolicy]}</span>
-        {event.status === "CLOSED" && <span className="badge badge--sm badge--declined">受付停止</span>}
-        {event.status === "PUBLISHED" && event.rsvpDeadline && !event.rsvpOpen && (
-          <span className="badge badge--sm badge--declined">申し込み期限切れ</span>
-        )}
-      </div>
-      <h1 className="panel__title">{event.title}</h1>
-      <dl className="meta-list">
-        {owner && (
-          <div>
-            <dt>主催</dt>
-            <dd>
+    <section className="event-sheet">
+      <h1 className="event-sheet__title">{event.title}</h1>
+      {(owner || coHosts.length > 0) && (
+        <p className="event-sheet__host">
+          主催:{" "}
+          {owner && (
+            <>
               {owner.userId ? (
-                <Link
-                  href={`/organizers/${owner.userId}`}
-                  className="text-link"
-                  aria-label={`${owner.name}さんのプロフィールを見る`}
-                >
+                <Link href={`/organizers/${owner.userId}`} aria-label={`${owner.name}さんのプロフィールを見る`}>
                   {owner.name}
                 </Link>
               ) : (
                 owner.name
               )}
-            </dd>
-          </div>
-        )}
-        {coHosts.length > 0 && (
-          <div>
-            <dt>共同主催</dt>
-            <dd>
+            </>
+          )}
+          {coHosts.length > 0 && (
+            <>
+              {owner ? "／" : null}
+              共同主催:{" "}
               {coHosts.map((row, index) => (
                 <span key={`${row.name}-${index}`}>
                   {index > 0 && "、"}
                   {row.userId ? (
-                    <Link
-                      href={`/organizers/${row.userId}`}
-                      className="text-link"
-                      aria-label={`${row.name}さんのプロフィールを見る`}
-                    >
+                    <Link href={`/organizers/${row.userId}`} aria-label={`${row.name}さんのプロフィールを見る`}>
                       {row.name}
                     </Link>
                   ) : (
@@ -78,37 +64,42 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
                   )}
                 </span>
               ))}
-            </dd>
-          </div>
+            </>
+          )}
+        </p>
+      )}
+
+      <div className="event-sheet__badges">
+        <span className="badge badge--sm badge--neutral">{RAIN_POLICY_LABELS[event.rainPolicy]}</span>
+        {event.status === "CLOSED" && <span className="badge badge--sm badge--declined">受付停止</span>}
+        {event.status === "PUBLISHED" && event.rsvpDeadline && !event.rsvpOpen && (
+          <span className="badge badge--sm badge--declined">申し込み期限切れ</span>
         )}
-        <div>
-          <dt>開催日時</dt>
+        {event.capacity !== null && (
+          <span className="badge badge--sm badge--neutral">
+            {remaining === 0 ? "満員" : `定員 ${event.capacity}名`}
+          </span>
+        )}
+        {event.rsvpDeadline && (
+          <span className="badge badge--sm badge--warning">
+            締切 {formatRsvpDeadlineLabel(event.rsvpDeadline)}
+            {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
+          </span>
+        )}
+      </div>
+
+      <dl className="event-facts">
+        <div className="event-facts__row">
+          <dt>日時</dt>
           <dd>
-            <ul className="option-list">
-              {event.schedules.map((row) => (
-                <li key={row.id}>
-                  {row.eventDate} {row.eventTime}
-                </li>
-              ))}
-            </ul>
+            {event.schedules.map((row) => (
+              <span key={row.id} className="event-facts__line">
+                {row.eventDate} {row.eventTime}
+              </span>
+            ))}
           </dd>
         </div>
-        <div>
-          <dt>費用</dt>
-          <dd>
-            <ul className="option-list">
-              {event.pricePlans.map((row) => (
-                <li key={row.id}>
-                  {row.audience !== "ANY" && (
-                    <span className="badge badge--sm badge--neutral">{PRICE_AUDIENCE_LABELS[row.audience]}</span>
-                  )}{" "}
-                  {row.name} {row.price}
-                </li>
-              ))}
-            </ul>
-          </dd>
-        </div>
-        <div>
+        <div className="event-facts__row">
           <dt>場所</dt>
           <dd>
             {event.location}
@@ -118,16 +109,18 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             </a>
           </dd>
         </div>
-        {event.rsvpDeadline && (
-          <div>
-            <dt>申し込み期限</dt>
-            <dd>
-              {formatRsvpDeadlineLabel(event.rsvpDeadline)}
-              {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
-            </dd>
-          </div>
-        )}
-        <div>
+        <div className="event-facts__row">
+          <dt>費用</dt>
+          <dd>
+            {event.pricePlans.map((row) => (
+              <span key={row.id} className="event-facts__line">
+                {row.audience !== "ANY" && `${PRICE_AUDIENCE_LABELS[row.audience]} `}
+                {row.name} {row.price}
+              </span>
+            ))}
+          </dd>
+        </div>
+        <div className="event-facts__row">
           <dt>参加</dt>
           <dd>
             {event.attendingCount}名
@@ -137,7 +130,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           </dd>
         </div>
         {event.waitlistCount > 0 && (
-          <div>
+          <div className="event-facts__row">
             <dt>参加要望</dt>
             <dd>
               {event.waitlistCount}名

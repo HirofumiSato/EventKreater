@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
-import { formatEventDate } from "@/lib/serializers";
+import { formatEventDate, formatEventDateLabel } from "@/lib/serializers";
 import { groupByPlan, groupBySchedule, summarizeRevenue } from "@/modules/revenue/lib/revenue";
 import { buildAllocationView } from "@/modules/revenue/lib/allocation-view";
 
@@ -65,7 +65,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       const schedule = event.schedules.find((item) => item.id === row.scheduleId);
       return {
         scheduleId: row.scheduleId,
-        label: schedule ? `${formatEventDate(schedule.eventDate)} ${schedule.eventTime}` : "日時なし",
+        label: schedule
+          ? `${formatEventDateLabel(formatEventDate(schedule.eventDate))} ${schedule.eventTime}`
+          : "日時なし",
         attendingCount: row.attendingCount,
         subtotal: row.subtotal,
       };

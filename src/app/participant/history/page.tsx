@@ -37,33 +37,27 @@ function answeredLabel(iso: string): string {
 
 function HistoryRow({ row }: { row: ParticipationItem }) {
   return (
-    <article className="card">
-      <div className="btn-row">
-        <Link href={`/events/${row.event.id}`} className="card__title">
-          {row.event.title}
-        </Link>
-        <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
-          {row.statusLabel}
-        </span>
+    <li className="rows__item">
+      <div className="rows__main">
+        <p className="rows__title">
+          <Link href={`/events/${row.event.id}`}>{row.event.title}</Link>
+        </p>
+        <p className="rows__meta">
+          {row.scheduleLabel ?? row.event.sortDate}
+          {row.pricePlanLabel ? ` ／ ${row.pricePlanLabel}` : ""}
+          {` ／ ${row.event.location}`}
+        </p>
+        {row.comment && <p className="rows__meta">コメント: {row.comment}</p>}
+        <p className="rows__meta">回答日: {answeredLabel(row.answeredAt)}</p>
       </div>
-      <p className="card__body">
-        {row.scheduleLabel ?? row.event.sortDate}
-        {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""}
-        {` ・ ${row.event.location}`}
-      </p>
-      {row.comment && <p className="card__body">コメント: {row.comment}</p>}
-      <p className="help">回答日: {answeredLabel(row.answeredAt)}</p>
-      <div className="card__actions">
-        <Link href={`/events/${row.event.id}`} className="btn btn--outline btn--sm">
-          イベントを開く
+      {row.receiptId ? (
+        <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
+          領収書
         </Link>
-        {row.receiptId && (
-          <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
-            領収書を見る
-          </Link>
-        )}
-      </div>
-    </article>
+      ) : (
+        <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>{row.statusLabel}</span>
+      )}
+    </li>
   );
 }
 
@@ -117,75 +111,78 @@ export default function ParticipantHistoryPage() {
 
   return (
     <div className="stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">参加履歴</h1>
-          <p className="page-lead">出欠の回答と、幹事が発行した領収書をここにまとめています。</p>
-        </div>
+      <div>
+        <p className="eyebrow">参加者</p>
+        <h1 className="page-title">参加履歴</h1>
+        <p className="page-lead">答えた出欠と、受け取った領収書の一覧です。</p>
         <div className="panel__actions">
-          <Link href="/participant" className="btn btn--outline">
+          <Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
           </Link>
         </div>
-      </section>
+      </div>
 
       {summary && (
-        <section className="stat-grid">
-          <article className="stat">
-            <p className="stat__label">これからの参加</p>
-            <p className="stat__value">{summary.upcoming} 件</p>
-          </article>
-          <article className="stat">
-            <p className="stat__label">出席</p>
-            <p className="stat__value">{summary.attending} 件</p>
-          </article>
-          <article className="stat">
-            <p className="stat__label">参加要望</p>
-            <p className="stat__value">{summary.waitlisted} 件</p>
-          </article>
-          <article className="stat">
-            <p className="stat__label">欠席</p>
-            <p className="stat__value">{summary.declined} 件</p>
-          </article>
-        </section>
-      )}
-
-      <section className="panel">
-        <div className="stack">
-          <div>
-            <p className="label">出欠</p>
-            <div className="segment">
-              {STATUS_OPTIONS.map((option) => (
-                <label key={option.value} className="segment__item">
-                  <input
-                    type="radio"
-                    name="history-status"
-                    checked={status === option.value}
-                    onChange={() => changeStatus(option.value)}
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
+        <div className="roster-summary">
+          <div className="roster-summary__item">
+            <span className="roster-summary__label">これから</span>
+            <span className="roster-summary__value">
+              {summary.upcoming}
+              <span>件</span>
+            </span>
           </div>
-          <div>
-            <p className="label">時期</p>
-            <div className="segment">
-              {SCOPE_OPTIONS.map((option) => (
-                <label key={option.value} className="segment__item">
-                  <input
-                    type="radio"
-                    name="history-scope"
-                    checked={scope === option.value}
-                    onChange={() => changeScope(option.value)}
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
+          <div className="roster-summary__item">
+            <span className="roster-summary__label">出席</span>
+            <span className="roster-summary__value">
+              {summary.attending}
+              <span>件</span>
+            </span>
+          </div>
+          <div className="roster-summary__item">
+            <span className="roster-summary__label">参加要望</span>
+            <span className="roster-summary__value">
+              {summary.waitlisted}
+              <span>件</span>
+            </span>
+          </div>
+          <div className="roster-summary__item">
+            <span className="roster-summary__label">欠席</span>
+            <span className="roster-summary__value">
+              {summary.declined}
+              <span>件</span>
+            </span>
           </div>
         </div>
-      </section>
+      )}
+
+      <div className="roster-toolbar">
+        <div className="segment" role="group" aria-label="出欠で絞り込む">
+          {STATUS_OPTIONS.map((option) => (
+            <label key={option.value} className="segment__item">
+              <input
+                type="radio"
+                name="history-status"
+                checked={status === option.value}
+                onChange={() => changeStatus(option.value)}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        <div className="segment" role="group" aria-label="時期で絞り込む">
+          {SCOPE_OPTIONS.map((option) => (
+            <label key={option.value} className="segment__item">
+              <input
+                type="radio"
+                name="history-scope"
+                checked={scope === option.value}
+                onChange={() => changeScope(option.value)}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </div>
 
       {error && (
         <p className="alert alert--warning">
@@ -204,19 +201,22 @@ export default function ParticipantHistoryPage() {
       )}
 
       {data && data.items.length === 0 && !loading && (
-        <p className="empty">条件に合う参加履歴はありません。</p>
+        <p className="empty">
+          <span className="empty__title">条件に合う参加履歴はありません。</span>
+          <span className="empty__body">絞り込みを「すべて」に戻すと、答えた出欠がすべて出ます。</span>
+        </p>
       )}
 
       {data && data.items.length > 0 && (
-        <section className="stack">
+        <ul className="rows">
           {data.items.map((row) => (
             <HistoryRow key={row.id} row={row} />
           ))}
-        </section>
+        </ul>
       )}
 
       {data && data.total > 0 && (
-        <div className="btn-row">
+        <div className="panel__actions">
           <button
             type="button"
             className="btn btn--outline btn--sm"
@@ -238,6 +238,10 @@ export default function ParticipantHistoryPage() {
           </button>
         </div>
       )}
+
+      <p className="screen-note">
+        主催している催しは、この一覧には出しません。主催者マイページで見られます。
+      </p>
     </div>
   );
 }

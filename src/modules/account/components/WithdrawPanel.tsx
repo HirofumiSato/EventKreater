@@ -67,20 +67,23 @@ export function WithdrawPanel({ profile }: Props) {
   };
 
   return (
-    <section className="panel">
-      <h2 className="panel__title">退会</h2>
-      <p className="panel__note panel__note--warning">
+    <section className="section">
+      <div className="section__head">
+        <h2 className="section__title">退会</h2>
+        <p className="section__note">作った催しは、退会後も閲覧ページに残ります。</p>
+      </div>
+      <p className="screen-note">
         退会するとログインできなくなります。あなたが筆頭幹事のイベントは閉じられ、公開中のページも見られなくなります。
         共同主催として参加しているイベントは、あなたの幹事権限だけが外れます。
       </p>
-      <p className="panel__note">
+      <p className="screen-note">
         電話番号は再登録の確認のために残します。同じ電話番号で登録し直すと、以前のアカウントと利用枠を引き継ぎます。
         無料枠が戻ることはありません。
       </p>
 
       {!open && (
-        <div className="btn-row">
-          <button type="button" className="btn btn--danger" onClick={() => setOpen(true)}>
+        <div className="panel__actions">
+          <button type="button" className="btn btn--danger btn--sm" onClick={() => setOpen(true)}>
             退会の手続きへ
           </button>
         </div>

@@ -19,6 +19,7 @@ interface OrganizerProfileViewProps {
  *
  * サーバーコンポーネントからも、編集画面のプレビューからも同じ見た目で使う。
  * 非公開の会員は名前と催しへの導線だけを出す（自己紹介・リンク・実績は出さない）。
+ * ここでは催しを取得しない。一覧は催しページに任せ、この画面は人物 1 枚に絞る。
  */
 export function OrganizerProfileView({
   userId,
@@ -32,43 +33,26 @@ export function OrganizerProfileView({
 
   return (
     <div className="stack">
-      <section className="profile-hero">
-        <div className="profile-hero__avatar" aria-hidden="true">
+      <div className="profile-head">
+        <span className="profile-head__avatar" aria-hidden="true">
           {profileInitial(name)}
-        </div>
-        <div className="profile-hero__body">
+        </span>
+        <div>
           <p className="eyebrow">主催者</p>
-          <h1 className="profile-hero__name">{name}</h1>
-          {showContent && profile.headline && <p className="profile-hero__headline">{profile.headline}</p>}
-
-          {showContent && (profile.area || profile.tags.length > 0 || profile.links.length > 0) && (
-            <div className="profile-meta">
-              {profile.area && <span className="profile-area">{profile.area}</span>}
-              {profile.tags.length > 0 && (
-                <ul className="profile-tags" aria-label="活動ジャンル">
-                  {profile.tags.map((tag) => (
-                    <li key={tag} className="profile-tag">
-                      {PROFILE_TAG_LABELS[tag]}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-
-          {showContent && profile.links.length > 0 && (
-            <ul className="profile-links" aria-label="主催者のリンク">
-              {profile.links.map((link) => (
-                <li key={link.kind}>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer nofollow">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h1 className="profile-head__name">{name}</h1>
+          {showContent && profile.headline && <p className="profile-head__title">{profile.headline}</p>}
         </div>
-      </section>
+      </div>
+
+      {showContent && profile.tags.length > 0 && (
+        <div className="genre-chips" aria-label="活動ジャンル">
+          {profile.tags.map((tag) => (
+            <span key={tag} className="chip">
+              {PROFILE_TAG_LABELS[tag]}
+            </span>
+          ))}
+        </div>
+      )}
 
       {preview && !profile.isPublished && (
         <p className="alert alert--info">
@@ -76,40 +60,47 @@ export function OrganizerProfileView({
         </p>
       )}
 
-      {showContent && profile.bio && (
-        <section className="card">
-          <h2 className="card__title">自己紹介</h2>
-          <p className="profile-bio">{profile.bio}</p>
-        </section>
+      {showContent && profile.bio && <p className="profile-bio">{profile.bio}</p>}
+
+      {showContent && (profile.area || profile.stats) && (
+        <dl className="kv">
+          {profile.area && (
+            <div className="kv__row">
+              <dt>活動エリア</dt>
+              <dd>{profile.area}</dd>
+            </div>
+          )}
+          {profile.stats && (
+            <div className="kv__row">
+              <dt>催しの数</dt>
+              <dd>
+                これまで {profile.stats.eventCount}回 ／ {profile.stats.sinceYear}年から
+              </dd>
+            </div>
+          )}
+        </dl>
       )}
 
-      {showContent && profile.stats && (
-        <section className="card">
-          <h2 className="card__title">活動</h2>
-          <dl className="profile-stats">
-            <div>
-              <dt className="profile-stats__label">主催した催し</dt>
-              <dd className="profile-stats__value">{profile.stats.eventCount}回</dd>
-            </div>
-            <div>
-              <dt className="profile-stats__label">活動開始</dt>
-              <dd className="profile-stats__value">{profile.stats.sinceYear}年</dd>
-            </div>
-          </dl>
-        </section>
+      {showContent && profile.links.length > 0 && (
+        <ul className="profile-links" aria-label="主催者のリンク">
+          {profile.links.map((link) => (
+            <li key={link.kind}>
+              <a href={link.url} target="_blank" rel="noopener noreferrer nofollow">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
 
       {!showContent && (
-        <section className="card">
-          <p className="empty">この主催者は、まだプロフィールを公開していません。</p>
-        </section>
+        <p className="empty">この主催者は、まだプロフィールを公開していません。</p>
       )}
 
-      <section className="panel">
-        <div>
-          <p className="eyebrow">催し</p>
-          <h2 className="panel__title">{name}さんの催し</h2>
-          <p className="panel__note">これから開催される催しの日程と会場を確認できます。</p>
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">{name}さんの催し</h2>
+          <p className="section__note">これから開催される催しの日程と会場を確認できます。</p>
         </div>
         <div className="panel__actions">
           <Link href={eventsHref} className="btn btn--primary">
@@ -117,6 +108,10 @@ export function OrganizerProfileView({
           </Link>
         </div>
       </section>
+
+      <p className="screen-note">
+        プロフィールを公開していない主催者は、名前と催しへの導線だけを出します。この画面は検索には出しません。
+      </p>
     </div>
   );
 }

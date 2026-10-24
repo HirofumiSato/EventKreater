@@ -112,10 +112,13 @@ function RegisterRequiredScreen() {
   if (!rawEventId) {
     return (
       <div className="page--form stack">
-        <h1 className="page-title">イベントを公開しました</h1>
-        <p className="alert alert--warning">
-          このページは公開直後の幹事向けです。続けて出欠を確認するには、会員登録をしてください。
-        </p>
+        <div>
+          <p className="eyebrow">公開</p>
+          <h1 className="page-title">公開しました</h1>
+          <p className="page-lead">
+            このページは公開直後の幹事向けです。続けて出欠を確認するには、会員登録をしてください。
+          </p>
+        </div>
         <Link href="/organizer/events" className="btn btn--primary btn--block">
           主催イベント一覧へ
         </Link>
@@ -150,6 +153,7 @@ function RegisterRequiredScreen() {
     return (
       <div className="page--form stack">
         <div>
+          <p className="eyebrow">公開</p>
           <h1 className="page-title">このページは公開直後の幹事向けです</h1>
           <p className="page-lead">
             {state.title
@@ -174,55 +178,99 @@ function RegisterRequiredScreen() {
   return (
     <div className="page--form stack">
       <div>
-        <h1 className="page-title">イベントを公開しました</h1>
+        <p className="eyebrow">公開</p>
+        <h1 className="page-title">公開しました</h1>
         <p className="page-lead">
-          {`${state.title ? `「${state.title}」は` : "イベントは"}公開されたまま残ります。参加者に共有する URL を配ってください。`}
+          この URL を参加者に送ってください。登録なしで出欠を答えられます。
         </p>
       </div>
 
-      <section className="card card--padded stack">
-        <div>
-          <p className="label">参加者に共有する URL</p>
-          <p className="quote">{shareUrl}</p>
-        </div>
-        <button type="button" className="btn btn--outline btn--block" onClick={() => void copyShareUrl()}>
-          {copied ? "コピーしました" : "共有 URL をコピー"}
-        </button>
-        <p className="help" aria-live="polite">
-          {copyFailed ? "コピーできませんでした。下の URL を選んでコピーしてください。" : ""}
-        </p>
-        {copyFailed && (
+      <p className="alert alert--success">
+        {state.title ? `「${state.title}」を公開しました。` : "イベントを公開しました。"}
+      </p>
+
+      <section className="panel">
+        <p className="panel__title">参加者に送る URL</p>
+        <div className="field">
+          <label className="label visually-hidden" htmlFor="share-url">
+            参加者に送る URL
+          </label>
           <input
+            id="share-url"
             ref={manualInput}
             className="input"
             readOnly
             value={shareUrl}
-            aria-label="共有 URL（手動でコピー）"
             onFocus={(event) => event.currentTarget.select()}
           />
-        )}
-        <a href={shareUrl} className="btn btn--ghost btn--block" target="_blank" rel="noreferrer">
-          公開ページを開く
-        </a>
-      </section>
-
-      <section className="card card--padded stack">
-        <div>
-          <h2 className="panel__title">出欠の確認には会員登録が必要です</h2>
-          <p className="help">
-            {`公開したイベントはこの端末に紐づいています。会員登録すると同じイベントがあなたのアカウントに引き継がれ、参加者の回答・リマインド・領収書・共同主催者の招待が使えるようになります。無料枠は登録後もそのまま引き継がれます。`}
-          </p>
         </div>
-        <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
-          会員登録して出欠を確認する
-        </Link>
-        <Link href={loginUrl(nextPath)} className="btn btn--outline btn--block">
-          すでに会員の方はログイン
-        </Link>
+        <div className="panel__actions">
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => void copyShareUrl()}>
+            {copied ? "コピーしました" : "コピー"}
+          </button>
+          <a href={shareUrl} className="btn btn--outline btn--sm" target="_blank" rel="noreferrer">
+            ページを見る
+          </a>
+        </div>
+        <p className="help" aria-live="polite">
+          {copyFailed ? "コピーできませんでした。上の URL を選んでコピーしてください。" : ""}
+        </p>
       </section>
 
-      <p className="help">
-        いまは共有 URL の配布だけできます。主催一覧は
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">登録すると、できること</h2>
+          <p className="section__note">いまは公開だけです。名簿から先は、会員登録のあとで使えます。</p>
+        </div>
+        <ul className="rows">
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">参加者名簿</p>
+              <p className="rows__meta">出欠、人数、費用、支払いを 1枚で見られます。</p>
+            </div>
+            <span className="badge badge--neutral badge--sm">登録後</span>
+          </li>
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">リマインド</p>
+              <p className="rows__meta">開催が近づいたら、参加者へ案内を送れます。</p>
+            </div>
+            <span className="badge badge--neutral badge--sm">登録後</span>
+          </li>
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">領収書</p>
+              <p className="rows__meta">参加費を受け取ったら、その場で発行できます。</p>
+            </div>
+            <span className="badge badge--neutral badge--sm">登録後</span>
+          </li>
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">共同幹事の招待</p>
+              <p className="rows__meta">もう 1人を、同じ催しの幹事に加えられます。</p>
+            </div>
+            <span className="badge badge--neutral badge--sm">登録後</span>
+          </li>
+        </ul>
+
+        <div className="panel__actions">
+          <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
+            会員登録して出欠を確認する
+          </Link>
+        </div>
+        <div className="panel__actions">
+          <Link href={loginUrl(nextPath)} className="btn btn--outline btn--block">
+            すでに会員の方はログイン
+          </Link>
+        </div>
+
+        <p className="screen-note">
+          作った内容は、登録後そのまま引き継がれます。登録しなくても、公開した催しはこのまま動きます。
+        </p>
+      </section>
+
+      <p className="screen-note">
+        この画面は検索に出しません。第三者がこの URL を開いても、案内は出ません。主催一覧は
         <Link href={listPath} className="text-link">
           こちら
         </Link>

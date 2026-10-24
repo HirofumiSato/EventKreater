@@ -43,35 +43,52 @@ function EmailVerifyInner() {
 
   return (
     <div className="page--form stack">
-      <section className="panel">
-        <h1 className="page-title">メールアドレスの変更</h1>
+      <div>
+        <p className="eyebrow">確認</p>
+        <h1 className="page-title">メールアドレスの確認</h1>
+        <p className="page-lead">確認が終わると、新しいアドレスでログインできます。</p>
+      </div>
 
-        {state === "working" && <p className="help">確認しています...</p>}
+      {state === "working" && <p className="help">確認しています...</p>}
 
-        {state === "missing" && (
-          <p className="alert alert--warning">
-            確認リンクが正しくありません。アカウント画面からもう一度やり直してください。
-          </p>
-        )}
+      {state === "missing" && (
+        <p className="alert alert--warning">
+          確認リンクが正しくありません。アカウント画面からもう一度やり直してください。
+        </p>
+      )}
 
-        {state === "done" && (
-          <p className="alert alert--success">
-            {email ? `${email} に変更しました。` : "メールアドレスを変更しました。"}
-            他の端末のログインは解除されました。この端末から開いた場合は、そのまま続けられます。
-          </p>
-        )}
+      {state === "done" && (
+        <p className="alert alert--success">
+          {email ? `${email} に変更しました。` : "メールアドレスを変更しました。"}
+          他の端末のログインは解除されました。この端末から開いた場合は、そのまま続けられます。
+        </p>
+      )}
 
-        {state === "error" && <p className="alert alert--error">{message}</p>}
+      {state === "error" && <p className="alert alert--error">{message}</p>}
 
-        <div className="btn-row">
-          <Link href="/account" className="btn btn--primary">
-            アカウントへ
-          </Link>
-          <Link href="/" className="btn btn--ghost">
-            トップへ
-          </Link>
-        </div>
-      </section>
+      <div className="panel">
+        <p className="panel__title">次にやること</p>
+        <ul className="rows">
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">アカウント設定に戻る</p>
+              <p className="rows__meta">電話番号とパスワードは、アカウント設定から変えられます。</p>
+            </div>
+            <Link href="/account" className="btn btn--ghost btn--sm">
+              開く
+            </Link>
+          </li>
+          <li className="rows__item">
+            <div className="rows__main">
+              <p className="rows__title">トップへ戻る</p>
+              <p className="rows__meta">主催者の催しと、参加した催しの入口があります。</p>
+            </div>
+            <Link href="/" className="btn btn--ghost btn--sm">
+              開く
+            </Link>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

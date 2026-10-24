@@ -11,6 +11,7 @@ import { readProblem } from "@/lib/problem";
 import { loginUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
+import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import type { OrganizerEvent } from "@/modules/events/types";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
 
@@ -91,20 +92,45 @@ export default function MyPage() {
     );
   }
 
+  const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
+  const closedCount = events.filter((event) => event.status === "CLOSED").length;
+  const attendingTotal = events.reduce((sum, event) => sum + event.stats.attendingCount, 0);
+
   return (
     <div className="stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">{profile.user.name} のマイページ</h1>
-          <p className="page-lead">{profile.user.email} ・ 幹事として主催するイベントを管理します。</p>
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">主催者マイページ</h1>
+        <p className="page-lead">
+          {profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
+        </p>
+      </div>
+
+      <OrganizerTabs />
+
+      <div className="roster-summary">
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">公開中</span>
+          <span className="roster-summary__value">
+            {publishedCount}
+            <span>件</span>
+          </span>
         </div>
-        <div className="panel__actions">
-          <StripePortalButton />
-          <button type="button" onClick={() => void logout()} className="btn btn--ghost">
-            ログアウト
-          </button>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">受付停止</span>
+          <span className="roster-summary__value">
+            {closedCount}
+            <span>件</span>
+          </span>
         </div>
-      </section>
+        <div className="roster-summary__item roster-summary__item--money">
+          <span className="roster-summary__label">参加</span>
+          <span className="roster-summary__value">
+            {attendingTotal}
+            <span>人</span>
+          </span>
+        </div>
+      </div>
 
       <QuotaStatusBanner
         quota={quotaState.quota}
@@ -112,47 +138,12 @@ export default function MyPage() {
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
-      {ownProfile && (
-        <section className="panel">
-          <div>
-            <p className="eyebrow">公開プロフィール</p>
-            <h2 className="panel__title">{ownProfile.profile.isPublished ? "公開中" : "非公開"}</h2>
-            <p className="panel__note">
-              参加者が告知ページの主催者名から開くページです。自己紹介とリンクを書くと、初めて参加する人が申し込みやすくなります。
-            </p>
-          </div>
-          <div className="panel__actions">
-            <Link href="/organizer/profile" className="btn btn--outline btn--sm">
-              プロフィールを編集
-            </Link>
-            <a
-              href={ownProfile.homePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--outline btn--sm"
-            >
-              公開ページを開く
-            </a>
-          </div>
-        </section>
-      )}
-
-      <section className="stack">
-        <div className="panel">
-          <div>
-            <h2 className="panel__title">主催イベント</h2>
-            <p className="panel__note">
-              直近の{SUMMARY_LIMIT}件を表示しています。全件の管理は主催イベント一覧で行います。
-            </p>
-          </div>
-          <div className="panel__actions">
-            <Link href="/organizer/events" className="btn btn--outline btn--sm">
-              すべて見る
-            </Link>
-            <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
-              {SITE.nav.createEvent.label}
-            </Link>
-          </div>
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">直近の催し</h2>
+          <p className="section__note">
+            {SUMMARY_LIMIT}件まで。すべては主催一覧で見られます。
+          </p>
         </div>
         {events.length === 0 && (
           <p className="empty">
@@ -162,21 +153,109 @@ export default function MyPage() {
             </Link>
           </p>
         )}
-        {events.slice(0, SUMMARY_LIMIT).map((event) => (
-          <article key={event.id} className="card">
-            <Link href={`/organizer/events/${event.id}/edit`} className="card__title">
-              {event.title}
-            </Link>
-            <p className="card__body">
-              {scheduleLabel(event.schedules)} · {priceLabel(event.pricePlans)} · 参加 {event.stats.attendingCount}名
-            </p>
-          </article>
-        ))}
-        {events.length > SUMMARY_LIMIT && (
-          <Link href="/organizer/events" className="btn btn--ghost btn--block">
-            残り{events.length - SUMMARY_LIMIT}件を主催イベント一覧で見る
-          </Link>
+        {events.length > 0 && (
+          <ul className="rows">
+            {events.slice(0, SUMMARY_LIMIT).map((event) => (
+              <li key={event.id} className="rows__item">
+                <div className="rows__main">
+                  <p className="rows__title">{event.title}</p>
+                  <p className="rows__meta">
+                    {scheduleLabel(event.schedules)} ／ 参加 {event.stats.attendingCount}名
+                    {event.capacity === null ? " ／ 定員なし" : ` / ${event.capacity}名`} ／{" "}
+                    {priceLabel(event.pricePlans)}
+                  </p>
+                </div>
+                <div className="event-card__actions">
+                  <Link
+                    href={`/organizer/events/${event.id}/participants`}
+                    className="btn btn--ghost btn--sm"
+                  >
+                    名簿
+                  </Link>
+                  <Link
+                    href={`/organizer/events/${event.id}/edit`}
+                    className="btn btn--ghost btn--sm"
+                  >
+                    編集
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
+        <div className="panel__actions">
+          <Link href="/organizer/events" className="btn btn--outline btn--sm">
+            すべて見る
+          </Link>
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+            {SITE.nav.createEvent.label}
+          </Link>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">利用枠と契約</h2>
+          <p className="section__note">筆頭幹事だけが契約を変えられます。</p>
+        </div>
+        <div className="panel">
+          <div className="panel__actions">
+            <StripePortalButton />
+            <Link href="/service#pricing" className="btn btn--ghost btn--sm">
+              料金を見る
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {ownProfile && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">公開プロフィール</h2>
+            <p className="section__note">参加者が、主催者の人柄を見られる場所です。</p>
+          </div>
+          <dl className="kv">
+            <div className="kv__row">
+              <dt>状態</dt>
+              <dd>{ownProfile.profile.isPublished ? "公開中" : "非公開"}</dd>
+            </div>
+            <div className="kv__row">
+              <dt>見えている内容</dt>
+              <dd>肩書き、自己紹介、活動エリア、ジャンル、リンク</dd>
+            </div>
+          </dl>
+          <div className="panel__actions">
+            <Link href="/organizer/profile" className="btn btn--primary btn--sm">
+              編集する
+            </Link>
+            <a
+              href={ownProfile.homePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              公開ページを見る
+            </a>
+          </div>
+        </section>
+      )}
+
+      <section className="section">
+        <div className="section__head">
+          <h2 className="section__title">アカウント</h2>
+          <p className="section__note">{profile.user.email}</p>
+        </div>
+        <div className="panel__actions">
+          <Link href="/account" className="btn btn--outline btn--sm">
+            アカウント設定
+          </Link>
+          <Link href="/participant" className="btn btn--outline btn--sm">
+            参加者として見る
+          </Link>
+          <button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
+            ログアウト
+          </button>
+        </div>
       </section>
 
       <PricingModal

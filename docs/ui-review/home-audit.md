@@ -384,4 +384,29 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 - カード（`.card`）は他の画面で使うため残した。ホームからのみ参照を外した。
 - ヒーローのチラシは `next/image` ではなく `<img>`。既存の他の画面と同じ扱いに揃えた（LCP の最適化は別途）。
 
+---
+
+## 10. モック採用による上書き（2026-10-24）
+
+この文書の V1〜V5 が決めた**「角 0・墨と朱」は、モックの全面採用により上書き**します。
+9 章までの実測値とスクリーンショットは、当時の判断の記録として残します。現在の正ではありません。
+
+### 10.1. 変わった点
+
+| 項目 | 旧（V1〜V5） | 新（モック採用後） | 正 |
+| --- | --- | --- | --- |
+| 角 | すべて `0px` | `--radius-sm 8px` / `--radius 14px` / `--radius-lg 20px` / `--radius-xl 26px` | `style-guide/deco.css` |
+| ホームの面 | 箱を持たない（カード 0 枚） | `event-card` / `feature-row` / `step-list` の面を使う | `style-guide/mock-home.html` |
+| 影 | 無し | `deco--tape-shadow` は硬い `3px 3px 0`、`deco--tape-quiet` は `0 1px 2px` | `style-guide/deco.css` |
+| 見出しの書体 | 既存のゴシック | `Zen Maru Gothic`（`--font-maru`） | `style-guide/deco.css` |
+| 地紋 | 無し | `deco--tape` は 16px 方眼と暖色の紙 | `style-guide/deco.css` |
+| スコープ | 画面ごとに個別判断 | `pop`（`/`・`/service`・`/terms`・`/events/**`・`/organizers/**`・`/auth/**`・`/participant/**`・`/invitations/**`・`/account/**`・`/organizer/events/new`）と `quiet`（`/mypage`・`/organizer/**`）の 2 つ | `src/lib/design-scope.ts` |
+
+### 10.2. 残る制約
+
+- 機能・リンク・遷移・状態・UX の正は**実装のまま**です。モックは静的 HTML で、認証・ローディング・エラー・空・満員・締切後を持ちません。
+- 2.1 の C1〜C8（一覧・検索を置かない、主操作を絞る、`SITE.nav` を正とする、など）は**そのまま有効**です。
+- 画面ごとの機能台帳と差分は `docs/ui-review/mock-implementation-map.md` に移しました。移行の進み具合はそちらだけが持ちます。
+
+
 

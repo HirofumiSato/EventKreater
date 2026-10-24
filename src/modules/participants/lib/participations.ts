@@ -1,6 +1,7 @@
 import type { Prisma, PriceAudience, RsvpStatus } from "@prisma/client";
 import {
   formatEventDate,
+  formatEventDateLabel,
   pricePlanChoiceLabel,
   serializeEvent,
   serializePricePlans,
@@ -75,7 +76,7 @@ export function serializeParticipation(row: {
     status: row.status,
     comment: row.comment,
     scheduleLabel: row.schedule
-      ? `${formatEventDate(row.schedule.eventDate)} ${row.schedule.eventTime}`
+      ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
       : null,
     pricePlanLabel: row.pricePlan ? pricePlanChoiceLabel(row.pricePlan) : null,
     statusLabel: rsvpStatusLabel(row.status),

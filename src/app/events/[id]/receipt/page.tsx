@@ -40,12 +40,26 @@ export default function ParticipantReceiptPage({ params }: { params: { id: strin
 
   return (
     <div className="stack">
-      <p className="no-print">
-        <Link href={`/events/${params.id}`} className="text-link">
+      <div className="no-print">
+        <p className="eyebrow">領収書</p>
+        <h1 className="page-title">参加費の領収書</h1>
+        <p className="page-lead">{receipt.eventTitle}</p>
+      </div>
+      <ReceiptSheet receipt={receipt} />
+      <div className="panel__actions no-print">
+        <button type="button" className="btn btn--primary btn--sm" onClick={() => window.print()}>
+          印刷する
+        </button>
+        <Link href="/participant/history" className="btn btn--outline btn--sm">
+          参加履歴へ戻る
+        </Link>
+        <Link href={`/events/${params.id}`} className="btn btn--ghost btn--sm">
           告知へ戻る
         </Link>
+      </div>
+      <p className="screen-note no-print">
+        印刷では、この用紙だけを出します。ヘッダーとフッターは印刷されません。
       </p>
-      <ReceiptSheet receipt={receipt} />
     </div>
   );
 }

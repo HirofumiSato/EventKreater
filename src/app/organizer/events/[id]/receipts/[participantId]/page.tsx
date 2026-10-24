@@ -72,18 +72,27 @@ export default function OrganizerReceiptPage({ params }: { params: { id: string;
   return (
     <div className="stack">
       <div className="no-print">
-        <h1 className="page-title">幹事向け領収書</h1>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">領収書</h1>
         <p className="page-lead">
-          {receipt.eventTitle} / {receipt.addressee} 様
+          {receipt.eventTitle} ／ {receipt.addressee} さん
         </p>
       </div>
-      <div className="btn-row no-print">
-        <Link href={`/organizer/events/${params.id}/participants`} className="text-link">
-          参加者名簿へ戻る
-        </Link>
-        <button type="button" className="btn btn--outline btn--sm" onClick={() => setReissuing(true)}>
-          再発行
-        </button>
+      <div className="panel no-print">
+        <div className="panel__actions">
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => setReissuing(true)}>
+            再発行する
+          </button>
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => window.print()}>
+            印刷する
+          </button>
+          <Link href={`/organizer/events/${params.id}/participants`} className="btn btn--ghost btn--sm">
+            名簿へ戻る
+          </Link>
+        </div>
+        <p className="screen-note">
+          再発行すると、同じ番号で新しい発行日が入ります。番号は変わりません。
+        </p>
       </div>
       {formError && <p className="alert alert--error no-print">{formError}</p>}
       <ReceiptSheet receipt={receipt} />

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarMonthGrid, CalendarToolbar } from "@/components/common/CalendarMonth";
+import { CalendarMonthGrid } from "@/components/common/CalendarMonth";
 import {
   buildMonthGrid,
   countMonthEntries,
@@ -41,6 +41,9 @@ interface OrganizerPageViewProps {
  *
  * 未ログインではAPIが 403 を返すので、中身は描かずに骨組みをぼかして案内を重ねる。
  * サーバー側でも催しを返さないため、DOM を見ても内容は分からない。
+ *
+ * 切替は URL のクエリ（`view`・`month`）と連動したまま。見た目だけを
+ * モックの segment に寄せ、label + radio の意味は変えない。
  */
 export function OrganizerPageView({ userId, preview = false }: OrganizerPageViewProps) {
   const router = useRouter();
@@ -159,116 +162,137 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
 
   return (
     <div className="stack">
-      <OrganizerHeader name={data?.organizer.name ?? null} userId={userId} preview={preview} />
-
-      <section className="panel">
-        <div className="segment" role="tablist" aria-label="表示の切り替え">
-          <label className="segment__item">
-            <input
-              type="radio"
-              name="organizer-view"
-              checked={view === "calendar"}
-              onChange={() => setView("calendar")}
-            />
-            カレンダー
-          </label>
-          <label className="segment__item">
-            <input
-              type="radio"
-              name="organizer-view"
-              checked={view === "list"}
-              onChange={() => setView("list")}
-            />
-            一覧
-          </label>
-        </div>
-      </section>
+      <OrganizerHeader
+        name={data?.organizer.name ?? null}
+        userId={userId}
+        preview={preview}
+        toolbar={
+          <div className="roster-toolbar">
+            <div className="segment" role="tablist" aria-label="表示の切り替え">
+              <label className="segment__item">
+                <input
+                  type="radio"
+                  name="organizer-view"
+                  checked={view === "calendar"}
+                  onChange={() => setView("calendar")}
+                />
+                カレンダー
+              </label>
+              <label className="segment__item">
+                <input
+                  type="radio"
+                  name="organizer-view"
+                  checked={view === "list"}
+                  onChange={() => setView("list")}
+                />
+                一覧
+              </label>
+            </div>
+            {!preview && (
+              <div className="btn-row">
+                <Link href={`/organizers/${userId}`} className="text-link">
+                  プロフィールへ
+                </Link>
+                <Link href="/participant" className="text-link">
+                  参加者ホームへ
+                </Link>
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {events.length === 0 ? (
-        <section className="card">
-          <p className="empty">これから開催される催しはありません。</p>
-        </section>
+        <p className="empty">これから開催される催しはありません。</p>
       ) : view === "calendar" ? (
         <>
-          <section className="panel calendar-toolbar">
-            <div className="calendar-toolbar__nav">
-              <button
-                type="button"
-                className="btn btn--outline btn--sm"
-                onClick={() => goToMonth(shiftMonth(month, -1))}
-                disabled={!canGoPrev}
-              >
-                前月
-              </button>
-              <button
-                type="button"
-                className="btn btn--outline btn--sm"
-                onClick={() => goToMonth(shiftMonth(month, 1))}
-              >
-                次月
-              </button>
-              {month !== todayMonth && (
-                <button type="button" className="btn btn--sm" onClick={() => goToMonth(todayMonth)}>
-                  今月
+          <div className="cal">
+            <div className="cal__head">
+              <p className="cal__month" aria-live="polite">
+                {Number(month.slice(0, 4))}年{Number(month.slice(5, 7))}月
+              </p>
+              <div className="cal__nav">
+                <button
+                  type="button"
+                  aria-label="前の月"
+                  onClick={() => goToMonth(shiftMonth(month, -1))}
+                  disabled={!canGoPrev}
+                >
+                  ‹
                 </button>
-              )}
+                {month !== todayMonth && (
+                  <button type="button" onClick={() => goToMonth(todayMonth)}>
+                    今月
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="次の月"
+                  onClick={() => goToMonth(shiftMonth(month, 1))}
+                >
+                  ›
+                </button>
+              </div>
             </div>
-            <p className="calendar-toolbar__month" aria-live="polite">
-              {Number(month.slice(0, 4))}年{Number(month.slice(5, 7))}月
-            </p>
-          </section>
 
-          {monthEntryCount === 0 && (
-            <section className="card calendar-empty">
-              <p>この月に開催される催しはありません。</p>
-            </section>
-          )}
-
-          <div className="calendar-layout">
             <CalendarMonthGrid
               month={month}
               cells={cells}
               today={today}
               selectedDate={selectedDate}
-              itemsForDate={(date) =>
-                entriesForDate(grouped, date).map(toOrganizerCellItem)
-              }
+              itemsForDate={(date) => entriesForDate(grouped, date).map(toOrganizerCellItem)}
               onSelect={setSelectedDate}
             />
-
-            <section className="card calendar-day" aria-labelledby="organizer-calendar-day-heading">
-              <div className="calendar-day__head">
-                <h2 id="organizer-calendar-day-heading" className="card__title">
-                  {formatDayHeading(selectedDate)}
-                </h2>
-                <p className="help">{dayEntries.length > 0 ? `${dayEntries.length}件` : ""}</p>
-              </div>
-              {dayEntries.length === 0 ? (
-                <p className="empty">この日に開催される催しはありません。</p>
-              ) : (
-                <ul className="calendar-day__list">
-                  {dayEntries.map((entry) => (
-                    <li key={`${entry.event.id}:${entry.schedule.eventTime}`} className="calendar-day__item">
-                      <Link href={`/events/${entry.event.id}`} className="calendar-day__link">
-                        <span className="calendar-day__time">{entry.schedule.eventTime || "時刻未定"}</span>
-                        <span className="calendar-day__title">{entry.event.title}</span>
-                        <span className="calendar-day__meta">
-                          {entry.event.location}
-                          {entry.event.isFull ? " · 参加要望受付中" : ""}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
           </div>
+
+          {monthEntryCount === 0 && (
+            <p className="empty">この月に開催される催しはありません。</p>
+          )}
+
+          <section className="section">
+            <div className="section__head">
+              <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
+              <p className="section__note">
+                {dayEntries.length > 0
+                  ? `この日の催しは ${dayEntries.length}件です。`
+                  : "この日に開催される催しはありません。"}
+              </p>
+            </div>
+            {dayEntries.length === 0 ? (
+              <p className="empty">日付を押すと、その日の催しが出ます。</p>
+            ) : (
+              <ul className="rows">
+                {dayEntries.map((entry) => (
+                  <li key={`${entry.event.id}:${entry.schedule.eventTime}`} className="rows__item">
+                    <div className="rows__main">
+                      <p className="rows__title">
+                        <Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link>
+                      </p>
+                      <p className="rows__meta">
+                        {entry.schedule.eventTime || "時刻未定"}
+                        {entry.event.location ? ` ／ ${entry.event.location}` : ""}
+                        {entry.event.isFull ? " ／ 参加要望受付中" : ""}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </>
       ) : (
-        <section className="stack">
-          {events.map((event) => (
-            <OrganizerPublicEventCard key={event.id} event={event} today={today} />
-          ))}
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">これから</h2>
+            <p className="section__note">
+              {events.length}件。満員の催しは参加要望を受け付けます。
+            </p>
+          </div>
+          <ul className="rows">
+            {events.map((event) => (
+              <OrganizerPublicEventRow key={event.id} event={event} today={today} />
+            ))}
+          </ul>
         </section>
       )}
     </div>
@@ -279,19 +303,22 @@ function OrganizerHeader({
   name,
   userId,
   preview = false,
+  toolbar,
 }: {
   name: string | null;
   userId: string;
   preview?: boolean;
+  toolbar?: ReactNode;
 }) {
   return (
-    <section className="panel">
+    <div className="organizer-head">
       <div>
-        <p className="eyebrow">主催者の催し</p>
-        <h1 className="page-title">{name ? `${name}さんの催し` : "主催者の催し"}</h1>
-        <p className="page-lead">これから開催される催しを、カレンダーと一覧で確認できます。</p>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">{name ? `${name} の催し` : "主催者の催し"}</h1>
+        <p className="page-lead">これからの催しと、終わった催しの一覧です。</p>
       </div>
-      {!preview && (
+      {toolbar}
+      {!preview && !toolbar && (
         <div className="panel__actions">
           <Link href={`/organizers/${userId}`} className="btn btn--outline">
             公開プロフィール
@@ -301,7 +328,7 @@ function OrganizerHeader({
           </Link>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -339,64 +366,48 @@ function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: bool
   );
 }
 
-function OrganizerPublicEventCard({ event, today }: { event: PublicOrganizerEvent; today: string }) {
+function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent; today: string }) {
   const dates = upcomingSchedules(event, today);
   const ratio =
     event.capacity !== null && event.capacity > 0
       ? Math.min(100, Math.round((event.attendingCount / event.capacity) * 100))
       : null;
   return (
-    <article className="card">
-      <div className="summary">
-        <div>
-          <h3 className="summary__name">
-            <Link href={`/events/${event.id}`} className="card__title">
-              {event.title}
-            </Link>
-          </h3>
-          <ul className="option-list">
-            {dates.map((row) => (
-              <li key={row.id}>
-                {row.eventDate} {row.eventTime}
-              </li>
-            ))}
-          </ul>
-          <p className="help">
-            {priceLabel(event.pricePlans)} / {event.location}
-          </p>
-          <div className="btn-row" style={{ marginTop: "0.25rem" }}>
-            {event.isFull && event.acceptsWaitlist && (
-              <span className="badge badge--sm badge--waitlist">参加要望受付中</span>
-            )}
-            {event.isFull && !event.acceptsWaitlist && (
-              <span className="badge badge--sm badge--declined">満員</span>
-            )}
-            {!event.isFull && event.remainingSeats !== null && (
-              <span className="badge badge--sm badge--neutral">残り {event.remainingSeats}名</span>
-            )}
-            {event.capacity === null && (
-              <span className="badge badge--sm badge--neutral">定員なし</span>
-            )}
-          </div>
+    <li className="rows__item">
+      <div className="rows__main">
+        <p className="rows__title">
+          <Link href={`/events/${event.id}`}>{event.title}</Link>
+        </p>
+        <p className="rows__meta">
+          {dates.map((row) => `${row.eventDate} ${row.eventTime}`).join(" ／ ")}
+          <br />
+          {event.location} ／ {priceLabel(event.pricePlans)}
+          <br />
+          参加 {event.attendingCount}名
+          {event.capacity !== null && ` / 定員 ${event.capacity}名`}
+        </p>
+        <div className="btn-row">
+          {event.isFull && event.acceptsWaitlist && (
+            <span className="badge badge--sm badge--waitlist">参加要望受付中</span>
+          )}
+          {event.isFull && !event.acceptsWaitlist && (
+            <span className="badge badge--sm badge--declined">満員</span>
+          )}
+          {!event.isFull && event.remainingSeats !== null && (
+            <span className="badge badge--sm badge--neutral">残り {event.remainingSeats}名</span>
+          )}
+          {event.capacity === null && <span className="badge badge--sm badge--neutral">定員なし</span>}
+          <Link href={`/events/${event.id}`} className="text-link">
+            {event.isFull ? "参加要望を出す" : "出欠を答える"}
+          </Link>
         </div>
-        {event.flyerThumbnailUrl && (
-          <img src={event.flyerThumbnailUrl} alt="" className="event-thumb" />
+        {ratio !== null && (
+          <div className="meter" aria-hidden="true">
+            <span style={{ width: `${ratio}%` }} />
+          </div>
         )}
       </div>
-      <p className="help">
-        参加 {event.attendingCount}名
-        {event.capacity !== null && ` / 定員 ${event.capacity}名`}
-      </p>
-      {ratio !== null && (
-        <div className="meter" aria-hidden="true">
-          <span style={{ width: `${ratio}%` }} />
-        </div>
-      )}
-      <div className="btn-row" style={{ marginTop: "0.75rem" }}>
-        <Link href={`/events/${event.id}`} className="btn btn--outline btn--sm">
-          {event.isFull ? "参加要望を出す" : "出欠を答える"}
-        </Link>
-      </div>
-    </article>
+      <span className="rows__value">{event.isFull ? "満員" : "受付中"}</span>
+    </li>
   );
 }

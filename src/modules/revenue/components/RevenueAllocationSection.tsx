@@ -135,193 +135,193 @@ export function RevenueAllocationSection({
   };
 
   return (
-    <section className="table-card">
-      <div className="table-card__head">
-        <h2 className="table-card__title">主催者別</h2>
-        {!editing && allocation.canEdit && (
-          <button type="button" className="btn btn--ghost btn--sm" onClick={startEditing}>
-            配分を設定
-          </button>
-        )}
+    <section className="section">
+      <div className="section__head">
+        <h2 className="section__title">主催者別</h2>
+        <p className="section__note">
+          {allocation.configured
+            ? "按分は集金の分担を決めるための表示です。送金や決済は行いません。"
+            : `まだ配分を保存していません。均等割（${formatShareBps(
+                10000 / Math.max(1, allocation.organizerCount),
+              )}% 前後）で計算しています。`}
+        </p>
       </div>
 
-      {error && (
-        <p className="alert alert--error" style={{ margin: "0 1.25rem 0.75rem" }}>
-          {error}
-        </p>
-      )}
-
-      {!allocation.configured && !editing && (
-        <p className="help" style={{ padding: "0 1.25rem 0.75rem" }}>
-          まだ配分を保存していません。均等割（{formatShareBps(10000 / Math.max(1, allocation.organizerCount))}%
-          前後）で計算しています。
-        </p>
-      )}
-
-      {editing ? (
-        <div className="stack" style={{ padding: "0 1.25rem 1.25rem" }}>
-          <div className="chips" role="group" aria-label="按分の方式">
-            {(Object.keys(MODE_LABELS) as Mode[]).map((value) => (
-              <label key={value} className="chip">
-                <input
-                  type="radio"
-                  name="allocation-mode"
-                  value={value}
-                  checked={mode === value}
-                  onChange={() => setMode(value)}
-                />
-                {MODE_LABELS[value]}
-              </label>
-            ))}
+      <div className="panel">
+        {!editing && allocation.canEdit && (
+          <div className="panel__actions">
+            <button type="button" className="btn btn--outline btn--sm" onClick={startEditing}>
+              配分を設定
+            </button>
           </div>
+        )}
 
-          <div className="table-card__scroll">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th scope="col">名前</th>
-                  <th scope="col">立場</th>
-                  <th scope="col">{mode === "RATIO" ? "割合（%）" : "人数"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocation.rows.map((row) => (
-                  <tr key={row.organizerId}>
-                    <td>
-                      {row.name}
-                      {row.isYou && <span className="help">（あなた）</span>}
-                    </td>
-                    <td className="data__muted">
-                      {row.role === "OWNER" ? "主催者" : "共同主催者"}
-                      {row.isGuest && "（未登録）"}
-                    </td>
-                    <td>
-                      <input
-                        className="input"
-                        type="number"
-                        min={0}
-                        step={mode === "RATIO" ? "0.01" : "1"}
-                        inputMode="decimal"
-                        aria-label={`${row.name} の${mode === "RATIO" ? "割合" : "人数"}`}
-                        value={
-                          mode === "RATIO"
-                            ? (ratioInputs[row.organizerId] ?? "")
-                            : (headcountInputs[row.organizerId] ?? "")
-                        }
-                        onChange={(event) => {
-                          const value = event.currentTarget.value;
-                          if (mode === "RATIO") {
-                            setRatioInputs((prev) => ({ ...prev, [row.organizerId]: value }));
-                          } else {
-                            setHeadcountInputs((prev) => ({ ...prev, [row.organizerId]: value }));
+        {error && <p className="alert alert--error">{error}</p>}
+
+        {editing ? (
+          <div className="stack">
+            <div className="chips" role="group" aria-label="按分の方式">
+              {(Object.keys(MODE_LABELS) as Mode[]).map((value) => (
+                <label key={value} className="chip">
+                  <input
+                    type="radio"
+                    name="allocation-mode"
+                    value={value}
+                    checked={mode === value}
+                    onChange={() => setMode(value)}
+                  />
+                  {MODE_LABELS[value]}
+                </label>
+              ))}
+            </div>
+
+            <div className="table-card__scroll">
+              <table className="roster">
+                <thead>
+                  <tr>
+                    <th scope="col">名前</th>
+                    <th scope="col">立場</th>
+                    <th scope="col">{mode === "RATIO" ? "割合（%）" : "人数"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocation.rows.map((row) => (
+                    <tr key={row.organizerId}>
+                      <td>
+                        <span className="roster__name">{row.name}</span>
+                        {row.isYou && <span className="help">（あなた）</span>}
+                      </td>
+                      <td className="roster__meta">
+                        {row.role === "OWNER" ? "主催者" : "共同主催者"}
+                        {row.isGuest && "（未登録）"}
+                      </td>
+                      <td>
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          step={mode === "RATIO" ? "0.01" : "1"}
+                          inputMode="decimal"
+                          aria-label={`${row.name} の${mode === "RATIO" ? "割合" : "人数"}`}
+                          value={
+                            mode === "RATIO"
+                              ? (ratioInputs[row.organizerId] ?? "")
+                              : (headcountInputs[row.organizerId] ?? "")
                           }
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          onChange={(event) => {
+                            const value = event.currentTarget.value;
+                            if (mode === "RATIO") {
+                              setRatioInputs((prev) => ({ ...prev, [row.organizerId]: value }));
+                            } else {
+                              setHeadcountInputs((prev) => ({ ...prev, [row.organizerId]: value }));
+                            }
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <p className="help">
-            {mode === "RATIO"
-              ? `合計 ${formatShareBps(ratioTotal)}%（100.00% にしてください）`
-              : `合計 ${headcountTotal} / ${attendingCount} 人（未割当 ${Math.max(0, attendingCount - headcountTotal)} 人）`}
-          </p>
-
-          <div className="chips" role="group" aria-label="按分の公開範囲">
-            {(Object.keys(VISIBILITY_LABELS) as Visibility[]).map((value) => (
-              <label key={value} className="chip">
-                <input
-                  type="radio"
-                  name="allocation-visibility"
-                  value={value}
-                  checked={visibility === value}
-                  onChange={() => setVisibility(value)}
-                />
-                {VISIBILITY_LABELS[value]}
-              </label>
-            ))}
-          </div>
-          <p className="help">
-            主催者は設定にかかわらず全員分を見られます。共同主催者は「各自の分だけ」のとき、自分の行と他の人数だけを見ます。
-          </p>
-
-          <div className="btn-row">
-            <button type="button" className="btn btn--primary btn--sm" disabled={pending} onClick={() => void save()}>
-              {pending ? "保存しています..." : "保存する"}
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              disabled={pending}
-              onClick={() => {
-                setEditing(false);
-                setError(null);
-              }}
-            >
-              やめる
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="table-card__scroll">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th scope="col">名前</th>
-                  <th scope="col">立場</th>
-                  <th scope="col">{allocation.mode === "RATIO" ? "割合" : "人数"}</th>
-                  <th scope="col">見込み</th>
-                  <th scope="col">発行済み</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocation.rows.map((row) => (
-                  <tr key={row.organizerId}>
-                    <td>
-                      {row.name}
-                      {row.isYou && <span className="help">（あなた）</span>}
-                    </td>
-                    <td className="data__muted">
-                      {row.role === "OWNER" ? "主催者" : "共同主催者"}
-                      {row.isGuest && "（未登録）"}
-                    </td>
-                    <td className="num">
-                      {allocation.mode === "RATIO"
-                        ? `${formatShareBps(row.shareBps)}%`
-                        : `${row.headcount ?? 0} 人`}
-                    </td>
-                    <td className="num">{yen(row.expectedRevenue)}</td>
-                    <td className="num">{yen(row.issuedRevenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {allocation.hiddenRows > 0 && (
-            <p className="help" style={{ padding: "0.75rem 1.25rem 0" }}>
-              他の {allocation.hiddenRows} 人分は非表示です。
+            <p className="help">
+              {mode === "RATIO"
+                ? `合計 ${formatShareBps(ratioTotal)}%（100.00% にしてください）`
+                : `合計 ${headcountTotal} / ${attendingCount} 人（未割当 ${Math.max(0, attendingCount - headcountTotal)} 人）`}
             </p>
-          )}
 
-          {allocation.mode === "HEADCOUNT" &&
-            (allocation.unallocated.headcount > 0 ||
-              allocation.unallocated.expectedRevenue > 0) && (
-              <p className="help" style={{ padding: "0.75rem 1.25rem 0" }}>
-                未割当 {allocation.unallocated.headcount} 人・
-                {yen(allocation.unallocated.expectedRevenue)}。売上から消えたわけではありません。
-              </p>
+            <div className="chips" role="group" aria-label="按分の公開範囲">
+              {(Object.keys(VISIBILITY_LABELS) as Visibility[]).map((value) => (
+                <label key={value} className="chip">
+                  <input
+                    type="radio"
+                    name="allocation-visibility"
+                    value={value}
+                    checked={visibility === value}
+                    onChange={() => setVisibility(value)}
+                  />
+                  {VISIBILITY_LABELS[value]}
+                </label>
+              ))}
+            </div>
+            <p className="help">
+              主催者は設定にかかわらず全員分を見られます。共同主催者は「各自の分だけ」のとき、自分の行と他の人数だけを見ます。
+            </p>
+
+            <div className="panel__actions">
+              <button type="button" className="btn btn--primary btn--sm" disabled={pending} onClick={() => void save()}>
+                {pending ? "保存しています..." : "保存する"}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                disabled={pending}
+                onClick={() => {
+                  setEditing(false);
+                  setError(null);
+                }}
+              >
+                やめる
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="table-card__scroll">
+              <table className="roster">
+                <thead>
+                  <tr>
+                    <th scope="col">名前</th>
+                    <th scope="col">立場</th>
+                    <th scope="col" className="is-num">
+                      {allocation.mode === "RATIO" ? "割合" : "人数"}
+                    </th>
+                    <th scope="col" className="is-num">
+                      見込み
+                    </th>
+                    <th scope="col" className="is-num">
+                      発行済み
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocation.rows.map((row) => (
+                    <tr key={row.organizerId}>
+                      <td>
+                        <span className="roster__name">{row.name}</span>
+                        {row.isYou && <span className="help">（あなた）</span>}
+                      </td>
+                      <td className="roster__meta">
+                        {row.role === "OWNER" ? "主催者" : "共同主催者"}
+                        {row.isGuest && "（未登録）"}
+                      </td>
+                      <td className="is-num">
+                        {allocation.mode === "RATIO"
+                          ? `${formatShareBps(row.shareBps)}%`
+                          : `${row.headcount ?? 0} 人`}
+                      </td>
+                      <td className="is-num">{yen(row.expectedRevenue)}</td>
+                      <td className="is-num">{yen(row.issuedRevenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {allocation.hiddenRows > 0 && (
+              <p className="help">他の {allocation.hiddenRows} 人分は非表示です。</p>
             )}
 
-          <p className="help" style={{ padding: "0.75rem 1.25rem 1.25rem" }}>
-            按分は集金の分担を決めるための表示です。送金や決済は行いません。
-          </p>
-        </>
-      )}
+            {allocation.mode === "HEADCOUNT" &&
+              (allocation.unallocated.headcount > 0 || allocation.unallocated.expectedRevenue > 0) && (
+                <p className="help">
+                  未割当 {allocation.unallocated.headcount} 人・
+                  {yen(allocation.unallocated.expectedRevenue)}。売上から消えたわけではありません。
+                </p>
+              )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

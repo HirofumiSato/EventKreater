@@ -103,26 +103,29 @@ export default function OrganizerRevenuePage() {
 
   return (
     <div className="stack">
-      <OrganizerTabs />
-
-      <section className="panel">
-        <div>
-          <h1 className="page-title">売上</h1>
-          <p className="page-lead">
-            出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。
-          </p>
-        </div>
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">売上</h1>
+        <p className="page-lead">
+          出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。
+        </p>
         <div className="panel__actions">
-          <Link href="/organizer/events" className="btn btn--outline">
+          <Link href="/organizer/events" className="btn btn--outline btn--sm">
             主催一覧へ
           </Link>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
             新規作成
           </Link>
         </div>
-      </section>
+      </div>
+
+      <OrganizerTabs />
 
       <section className="panel">
+        <div className="panel__head">
+          <h2 className="panel__title">期間</h2>
+          <p className="panel__note">開催日で絞り込みます。初期表示は全期間です。</p>
+        </div>
         <div className="chips" role="group" aria-label="集計する期間">
           {(
             [
@@ -144,7 +147,7 @@ export default function OrganizerRevenuePage() {
           ))}
         </div>
         {range === "CUSTOM" && (
-          <div className="chips" style={{ marginTop: "0.75rem" }}>
+          <div className="chips">
             <label className="label" htmlFor="revenue-from">
               開始
             </label>
@@ -167,7 +170,6 @@ export default function OrganizerRevenuePage() {
             />
           </div>
         )}
-        <p className="help">開催日で絞り込みます。初期表示は全期間です。</p>
       </section>
 
       {loading && (
@@ -181,13 +183,13 @@ export default function OrganizerRevenuePage() {
         <section className="alert alert--warning">
           <p>{error}</p>
           {registerRequired ? (
-            <p style={{ marginTop: "0.5rem" }}>
+            <p className="alert__actions">
               <Link href={registerUrl("/organizer/revenue")} className="btn btn--primary btn--sm">
                 会員登録して売上を見る
               </Link>
             </p>
           ) : (
-            <p style={{ marginTop: "0.5rem" }}>
+            <p className="alert__actions">
               <Link href="/auth/register?mode=login&next=/organizer/revenue" className="text-link">
                 主催者ログイン
               </Link>
@@ -198,85 +200,94 @@ export default function OrganizerRevenuePage() {
 
       {!loading && !error && totals && (
         <>
-          <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
-
-          {totals.unassignedPlanCount > 0 && (
-            <section className="alert alert--warning">
-              <p>
-                出席しているのに費用プランが未選択の参加者が {totals.unassignedPlanCount} 人います。この人たちは売上に含めていません。名簿でプランを選ぶと集計に入ります。
-              </p>
-              <ul className="stack" style={{ marginTop: "0.5rem" }}>
-                {unassignedEvents.map((event) => (
-                  <li key={event.id}>
-                    <Link href={`/organizer/events/${event.id}/participants`} className="text-link">
-                      {event.title}（{event.unassignedPlanCount} 人）
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section className="table-card">
-            <div className="table-card__head">
-              <h2 className="table-card__title">イベント別</h2>
-              <p className="help">
+          <section className="panel">
+            <div className="panel__head">
+              <h2 className="panel__title">
                 {data.period.from || data.period.to
                   ? `${data.period.from ?? "指定なし"} 〜 ${data.period.to ?? "指定なし"}`
                   : "全期間"}
-              </p>
+              </h2>
+              <p className="panel__note">見込みと、領収書を出した額の差がそのまま残りです。</p>
             </div>
-            <div className="table-card__scroll">
-              <table className="data">
-                <thead>
-                  <tr>
-                    <th scope="col">イベント</th>
-                    <th scope="col">開催日</th>
-                    <th scope="col">状態</th>
-                    <th scope="col">出席 / 欠席</th>
-                    <th scope="col">見込み</th>
-                    <th scope="col">あなたの取り分</th>
-                    <th scope="col">発行済み</th>
-                    <th scope="col">差額</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.events.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="data__empty">
-                        この期間に主催イベントはありません。
-                      </td>
-                    </tr>
-                  )}
-                  {data.events.map((event) => (
-                    <tr key={event.id}>
-                      <td>
-                        <Link href={`/organizer/events/${event.id}/revenue`} className="text-link">
-                          {event.title}
-                        </Link>
-                        {event.role === "CO_HOST" ? (
-                          <div className="data__muted">共同主催</div>
-                        ) : null}
-                      </td>
-                      <td>{event.sortDate}</td>
-                      <td className="data__muted">{STATUS_LABELS[event.status]}</td>
-                      <td>
-                        {event.attendingCount} / {event.declinedCount}
-                        {event.unassignedPlanCount > 0 && (
-                          <span className="help">（未選択 {event.unassignedPlanCount}）</span>
-                        )}
-                      </td>
-                      <td>{yen(event.expectedRevenue)}</td>
-                      <td className="num">{yen(event.myShare.expectedRevenue)}</td>
-                      <td>{yen(event.issuedRevenue)}</td>
-                      <td className={event.unreconciled < 0 ? "stat__value--warning" : undefined}>
-                        {yen(event.unreconciled)}
-                      </td>
-                    </tr>
+            <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
+          </section>
+
+          {totals.unassignedPlanCount > 0 && (
+            <section className="section">
+              <div className="section__head">
+                <h2 className="section__title">プラン未選択の参加者</h2>
+                <p className="section__note">金額が決まっていない人は、見込みに入りません。</p>
+              </div>
+              <div className="panel">
+                <p className="panel__note panel__note--warning">
+                  出席しているのに費用プランが未選択の参加者が {totals.unassignedPlanCount} 人います。この人たちは売上に含めていません。名簿でプランを選ぶと集計に入ります。
+                </p>
+                <ul className="alert__list">
+                  {unassignedEvents.map((event) => (
+                    <li key={event.id}>
+                      <Link href={`/organizer/events/${event.id}/participants`} className="text-link">
+                        {event.title}（{event.unassignedPlanCount} 人）
+                      </Link>
+                    </li>
                   ))}
-                </tbody>
-              </table>
+                </ul>
+              </div>
+            </section>
+          )}
+
+          <section className="section">
+            <div className="section__head">
+              <h2 className="section__title">催し別</h2>
+              <p className="section__note">開催日の新しい順です。行を押すと内訳が出ます。</p>
             </div>
+            {data.events.length === 0 ? (
+              <p className="empty">
+                <span className="empty__title">この期間に主催イベントはありません。</span>
+                <span className="empty__body">期間を広げるか、新しい催しを作ってください。</span>
+              </p>
+            ) : (
+              <ul className="rows">
+                {data.events.map((event) => (
+                  <li key={event.id} className="rows__item">
+                    <div className="rows__main">
+                      <p className="rows__title">
+                        <Link href={`/organizer/events/${event.id}/revenue`}>{event.title}</Link>
+                        {event.role === "CO_HOST" ? (
+                          <span className="badge badge--sm badge--neutral">共同主催</span>
+                        ) : null}
+                      </p>
+                      <p className="rows__meta">
+                        {event.sortDate} ／ {STATUS_LABELS[event.status]} ／ 出席{" "}
+                        {event.attendingCount}・欠席 {event.declinedCount}
+                        {event.unassignedPlanCount > 0 && ` ／ 未選択 ${event.unassignedPlanCount}`}
+                      </p>
+                      <p className="rows__meta">
+                        見込み {yen(event.expectedRevenue)} ／ あなたの取り分{" "}
+                        {yen(event.myShare.expectedRevenue)} ／ 発行済み {yen(event.issuedRevenue)} ／
+                        差額{" "}
+                        <span className={event.unreconciled < 0 ? "text-warning" : undefined}>
+                          {yen(event.unreconciled)}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="event-card__actions">
+                      <Link
+                        href={`/organizer/events/${event.id}/revenue`}
+                        className="btn btn--ghost btn--sm"
+                      >
+                        内訳
+                      </Link>
+                      <Link
+                        href={`/organizer/events/${event.id}/participants`}
+                        className="btn btn--ghost btn--sm"
+                      >
+                        名簿
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <p className="help">

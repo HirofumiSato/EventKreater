@@ -306,9 +306,10 @@ function NewEventScreen() {
   return (
     <div className="page--form stack">
       <div>
+        <p className="eyebrow">5ステップ</p>
         <h1 className="page-title">新規イベント作成</h1>
         <p className="page-lead">
-          5つのステップで入力します。日時と費用プランは複数登録できます。ログイン時は利用枠を消費します。
+          済んだステップは畳まれます。次に入れるものだけが開きます。日時と費用プランは複数登録できます。
         </p>
       </div>
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
@@ -319,19 +320,21 @@ function NewEventScreen() {
       )}
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
       {registerRequired && (
-        <section className="card card--padded stack">
+        <section className="panel stack">
           <div>
             <h2 className="panel__title">2件目からは会員登録が必要です</h2>
             <p className="help">
               未登録のまま作れるイベントは1件だけです。会員登録すると、この端末で公開したイベントもあなたのアカウントに引き継がれます。
             </p>
           </div>
-          <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
-            会員登録する
-          </Link>
-          <Link href={loginUrl(nextPath)} className="btn btn--outline btn--block">
-            すでに会員の方はログイン
-          </Link>
+          <div className="panel__actions">
+            <Link href={registerUrl(nextPath)} className="btn btn--primary btn--sm">
+              会員登録する
+            </Link>
+            <Link href={loginUrl(nextPath)} className="btn btn--outline btn--sm">
+              すでに会員の方はログイン
+            </Link>
+          </div>
         </section>
       )}
       <EventStepForm

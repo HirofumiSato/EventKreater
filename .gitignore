@@ -8,6 +8,8 @@ coverage
 .env
 .env.local
 storage/flyers
+# 撮影用の JWT とデモ会員の控え。`npm run db:seed:ui` が作り直す。
+storage/ui-demo.json
 .DS_Store
 tsconfig.tsbuildinfo
 .venv-docs

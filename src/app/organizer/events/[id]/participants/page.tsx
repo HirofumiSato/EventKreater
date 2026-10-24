@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ParticipantListTable } from "@/modules/attendance/components/ParticipantListTable";
+import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { ReceiptIssueModal } from "@/modules/receipts/components/ReceiptIssueModal";
 import { Toast } from "@/components/common/Toast";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
@@ -179,36 +180,101 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
   return (
     <div className="stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">参加者名簿</h1>
-          <p className="page-lead">
-            {data.event.title}。参加 {data.stats.attendingCount} / 参加要望 {data.stats.waitlistedCount} / 不参加 {data.stats.declinedCount}
-            {data.event.capacity !== null && ` / 定員 ${data.event.capacity}`}
-          </p>
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">参加者名簿</h1>
+        <p className="page-lead">{data.event.title}</p>
+      </div>
+
+      <OrganizerTabs />
+
+      <div className="roster-summary">
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">回答</span>
+          <span className="roster-summary__value">
+            {data.stats.totalResponses}
+            <span>人</span>
+          </span>
         </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">参加</span>
+          <span className="roster-summary__value">
+            {data.stats.attendingCount}
+            <span>人</span>
+          </span>
+        </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">参加要望</span>
+          <span className="roster-summary__value">
+            {data.stats.waitlistedCount}
+            <span>人</span>
+          </span>
+        </div>
+        <div className="roster-summary__item">
+          <span className="roster-summary__label">欠席</span>
+          <span className="roster-summary__value">
+            {data.stats.declinedCount}
+            <span>人</span>
+          </span>
+        </div>
+        <div className="roster-summary__item roster-summary__item--money">
+          <span className="roster-summary__label">集金済み</span>
+          <span className="roster-summary__value">
+            {data.revenue.issuedRevenue.toLocaleString("ja-JP")}
+            <span>円</span>
+          </span>
+        </div>
+      </div>
+
+      <section className="panel">
         <div className="panel__actions">
-          <button type="button" className="btn" disabled={sending} onClick={() => void sendReminder()}>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            disabled={sending}
+            onClick={() => void sendReminder()}
+          >
             {sending ? "送っています..." : "参加者へリマインド"}
           </button>
-          <button type="button" className="btn btn--outline" disabled={copyingText} onClick={() => void copyReminderText()}>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            disabled={copyingText}
+            onClick={() => void copyReminderText()}
+          >
             {copyingText ? "準備中..." : "文面をコピー"}
           </button>
-          <Link href={`/events/${params.id}`} target="_blank" rel="noreferrer" className="btn btn--outline">
+          <Link
+            href={`/events/${params.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn--outline btn--sm"
+          >
             参加者ページをプレビュー
           </Link>
-          <button type="button" className="btn btn--outline" onClick={() => void copyShareLink()}>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={() => void copyShareLink()}
+          >
             {copiedLink ? "コピーしました" : "共有リンクをコピー"}
           </button>
-          <Link href={`/organizer/events/${params.id}/revenue`} className="btn btn--ghost">
+          <Link href={`/organizer/events/${params.id}/revenue`} className="btn btn--ghost btn--sm">
             売上の内訳
           </Link>
-          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--ghost">
+          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--ghost btn--sm">
             編集へ戻る
           </Link>
         </div>
+        <p className="screen-note">
+          リマインドは、アカウントのある参加者に送られます。アカウントのない人には、文面をコピーして個別に連絡してください。
+        </p>
       </section>
-      <RevenueSummaryLedger summary={data.revenue} />
+
+      <section className="panel">
+        <RevenueSummaryLedger summary={data.revenue} />
+      </section>
+
       {data.revenue.unassignedPlanCount > 0 && (
         <p className="alert alert--warning">
           出席しているのに費用プランが未選択の参加者が {data.revenue.unassignedPlanCount} 人います。表の「費用プラン」を選ぶと売上に入ります。

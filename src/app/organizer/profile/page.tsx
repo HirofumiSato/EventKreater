@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { OrganizerProfileForm } from "@/modules/organizers/components/OrganizerProfileForm";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 
@@ -15,16 +16,22 @@ export const metadata: Metadata = {
 export default function OrganizerProfilePage() {
   return (
     <div className="stack">
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">公開プロフィール</h1>
+        <p className="page-lead">
+          参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。
+        </p>
+      </div>
       <OrganizerTabs />
-      <section className="panel">
-        <div>
-          <h1 className="page-title">公開プロフィール</h1>
-          <p className="page-lead">
-            参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。
-          </p>
-        </div>
-      </section>
       <OrganizerProfileForm />
+      <p className="screen-note">
+        表示名は
+        <Link href="/account" className="text-link">
+          アカウント設定
+        </Link>
+        で変えます。この画面では、肩書きと自己紹介を扱います。保存の前に、参加者と同じ見た目でプレビューできます。
+      </p>
     </div>
   );
 }

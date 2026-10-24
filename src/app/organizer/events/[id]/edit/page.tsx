@@ -160,20 +160,28 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="page--form stack">
-      <section className="panel">
-        <div>
-          <h1 className="page-title">イベント編集</h1>
-          {form.title ? <p className="page-lead">{form.title}</p> : null}
-        </div>
+      <div>
+        <p className="eyebrow">主催者</p>
+        <h1 className="page-title">イベントの編集</h1>
+        {form.title ? (
+          <p className="page-lead">
+            {form.title} ／ {form.status === "DRAFT" ? "下書き" : form.status === "PUBLISHED" ? "公開中" : "受付停止"}
+          </p>
+        ) : null}
         <div className="panel__actions">
-          <Link href={`/organizer/events/${params.id}/preview`} className="btn btn--outline">
+          <Link href={`/organizer/events/${params.id}/preview`} className="btn btn--outline btn--sm">
             プレビュー
           </Link>
-          <Link href="/organizer/events" className="btn btn--ghost">
+          <Link href="/organizer/events" className="btn btn--ghost btn--sm">
             一覧へ戻る
           </Link>
         </div>
-      </section>
+      </div>
+      {lock.hasLock && (
+        <div className="notice">
+          いま編集中のあいだ、ほかの人は保存できません。保存すると、この制限は解除されます。
+        </div>
+      )}
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {form.status === "DRAFT" && (
         <QuotaStatusBanner

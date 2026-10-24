@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 110,
+    "docs": 111,
     "preImplementation": 15,
-    "markdown": 45,
+    "markdown": 46,
     "rst": 65,
     "orphan": 1
   },
@@ -5762,7 +5762,7 @@
       "title": "利用枠管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 171,
+      "lineCount": 172,
       "headings": [
         {
           "level": 1,
@@ -5797,6 +5797,7 @@
         "docs/archive/index.rst",
         "docs/issues/index.rst",
         "docs/ui-review/home-audit.md",
+        "docs/ui-review/mock-implementation-map.md",
         "docs/api-routes.md",
         "docs/traceability.md"
       ],
@@ -9186,7 +9187,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 307,
+      "lineCount": 309,
       "headings": [
         {
           "level": 1,
@@ -9705,7 +9706,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 470,
+      "lineCount": 474,
       "headings": [
         {
           "level": 1,
@@ -9836,6 +9837,10 @@
         },
         {
           "path": "tests/unit/client-ip.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/design-scope.test.ts",
           "exists": true
         },
         {
@@ -10246,7 +10251,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: docs/ui-review/before/（home-390-fv.png、home-390-full.png、home-768-full.png、home-1440-full.png）",
       "preImplementation": false,
-      "lineCount": 388,
+      "lineCount": 413,
       "headings": [
         {
           "level": 1,
@@ -10403,6 +10408,18 @@
         {
           "level": 3,
           "text": "9.5. 残した判断"
+        },
+        {
+          "level": 2,
+          "text": "10. モック採用による上書き（2026-10-24）"
+        },
+        {
+          "level": 3,
+          "text": "10.1. 変わった点"
+        },
+        {
+          "level": 3,
+          "text": "10.2. 残る制約"
         }
       ],
       "toctree": [],
@@ -10436,6 +10453,10 @@
           "exists": true
         },
         {
+          "path": "docs/ui-review/mock-implementation-map.md",
+          "exists": true
+        },
+        {
           "path": "public/samples",
           "exists": true
         },
@@ -10456,7 +10477,364 @@
           "exists": true
         },
         {
+          "path": "src/lib/design-scope.ts",
+          "exists": true
+        },
+        {
           "path": "src/lib/site.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/ui-review/mock-implementation-map.md",
+      "sphinxDoc": "ui-review/mock-implementation-map",
+      "format": "markdown",
+      "title": "モックと実装の対応表",
+      "summary": "モック 29 画面と実装の各ページを 1 画面 1 行で結ぶ台帳です。 移行のたびに、この表の「状態」と各節を更新します。",
+      "preImplementation": false,
+      "lineCount": 1242,
+      "headings": [
+        {
+          "level": 1,
+          "text": "モックと実装の対応表"
+        },
+        {
+          "level": 2,
+          "text": "この表の読み方"
+        },
+        {
+          "level": 3,
+          "text": "変えてよいもの"
+        },
+        {
+          "level": 3,
+          "text": "変えてはいけないもの"
+        },
+        {
+          "level": 3,
+          "text": "スコープ"
+        },
+        {
+          "level": 3,
+          "text": "状態"
+        },
+        {
+          "level": 2,
+          "text": "対応表"
+        },
+        {
+          "level": 3,
+          "text": "公開（7 画面）"
+        },
+        {
+          "level": 3,
+          "text": "認証・設定（6 画面）"
+        },
+        {
+          "level": 3,
+          "text": "参加者（3 画面）"
+        },
+        {
+          "level": 3,
+          "text": "主催者（13 画面）"
+        },
+        {
+          "level": 2,
+          "text": "公開画面"
+        },
+        {
+          "level": 3,
+          "text": "01 ホーム（/）"
+        },
+        {
+          "level": 3,
+          "text": "02 サービスと料金（/service）"
+        },
+        {
+          "level": 3,
+          "text": "03 利用規約（/terms）"
+        },
+        {
+          "level": 3,
+          "text": "04 イベント告知・出欠（/events/[id]）"
+        },
+        {
+          "level": 3,
+          "text": "05 参加費の領収書（/events/[id]/receipt）"
+        },
+        {
+          "level": 3,
+          "text": "06 主催者のプロフィール（/organizers/[userId]）"
+        },
+        {
+          "level": 3,
+          "text": "07 主催者の催し（/organizers/[userId]/events）"
+        },
+        {
+          "level": 2,
+          "text": "認証・設定画面"
+        },
+        {
+          "level": 3,
+          "text": "08 主催者のログイン・登録（/auth/register）"
+        },
+        {
+          "level": 3,
+          "text": "09 メールの確認（/auth/verify）"
+        },
+        {
+          "level": 3,
+          "text": "10 参加者ログイン（/participant/login）"
+        },
+        {
+          "level": 3,
+          "text": "11 共同幹事の招待（/invitations/[code]）"
+        },
+        {
+          "level": 3,
+          "text": "12 アカウント設定（/account）"
+        },
+        {
+          "level": 3,
+          "text": "13 メールアドレスの確定（/account/email/verify）"
+        },
+        {
+          "level": 2,
+          "text": "参加者画面"
+        },
+        {
+          "level": 3,
+          "text": "14 参加者ホーム（/participant）"
+        },
+        {
+          "level": 3,
+          "text": "15 参加カレンダー（/participant/calendar）"
+        },
+        {
+          "level": 3,
+          "text": "16 参加履歴（/participant/history）"
+        },
+        {
+          "level": 2,
+          "text": "主催者画面"
+        },
+        {
+          "level": 3,
+          "text": "17 主催一覧（/organizer/events）"
+        },
+        {
+          "level": 3,
+          "text": "18 主催カレンダー（/organizer/calendar）"
+        },
+        {
+          "level": 3,
+          "text": "19 売上（/organizer/revenue）"
+        },
+        {
+          "level": 3,
+          "text": "20 売上の内訳（/organizer/events/[id]/revenue）"
+        },
+        {
+          "level": 3,
+          "text": "21 新規イベント作成（/organizer/events/new）"
+        },
+        {
+          "level": 3,
+          "text": "22 イベントの編集（/organizer/events/[id]/edit）"
+        },
+        {
+          "level": 3,
+          "text": "23 下書き一覧（/organizer/events/drafts）"
+        },
+        {
+          "level": 3,
+          "text": "24 下書きのプレビュー（/organizer/events/[id]/preview）"
+        },
+        {
+          "level": 3,
+          "text": "25 参加者名簿（/organizer/events/[id]/participants）"
+        },
+        {
+          "level": 3,
+          "text": "26 幹事向け領収書（/organizer/events/[id]/receipts/[participantId]）"
+        },
+        {
+          "level": 3,
+          "text": "27 公開直後の案内（/organizer/register-required）"
+        },
+        {
+          "level": 3,
+          "text": "28 公開プロフィールの編集（/organizer/profile）"
+        },
+        {
+          "level": 3,
+          "text": "29 主催者マイページ（/mypage）"
+        },
+        {
+          "level": 2,
+          "text": "検証記録（2026-10-24）"
+        },
+        {
+          "level": 3,
+          "text": "手順"
+        },
+        {
+          "level": 3,
+          "text": "結果"
+        },
+        {
+          "level": 3,
+          "text": "この周回で直したもの"
+        },
+        {
+          "level": 3,
+          "text": "意図して残した差分"
+        },
+        {
+          "level": 2,
+          "text": "画面追加・変更時の手順"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/index.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/ui-review/screens",
+          "exists": true
+        },
+        {
+          "path": "docs/ui-review/screens/mock",
+          "exists": true
+        },
+        {
+          "path": "src/app/account/email/verify/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/account/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/attendance.css",
+          "exists": true
+        },
+        {
+          "path": "src/app/auth/register/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/auth/verify/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/deco.css",
+          "exists": true
+        },
+        {
+          "path": "src/app/events/[id]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/events/[id]/receipt/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/invitations/[code]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/calendar/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/edit/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/participants/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/preview/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/receipts/[participantId]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/revenue/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/drafts/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/new/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/profile/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/register-required/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/revenue/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizers/[userId]/events/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizers/[userId]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/participant/calendar/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/participant/history/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/participant/login/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/participant/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/service/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/terms/page.tsx",
           "exists": true
         }
       ],

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { formatRsvpDeadlineLabel, priceLabel, scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
@@ -11,73 +12,123 @@ interface EventCardProps {
   onDelete: () => void;
 }
 
+/** 状態の札。公開中だけ色を付け、停止と下書きは墨のままにする。 */
+function statusTone(status: OrganizerEvent["status"]): string {
+  return status === "PUBLISHED" ? "badge badge--success" : "badge badge--neutral";
+}
+
 export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
   const ratio = event.capacity
     ? Math.min(100, Math.round((event.stats.attendingCount / event.capacity) * 100))
     : null;
+  const publicPath = `/events/${event.id}`;
+  const [copied, setCopied] = useState(false);
+
+  const copyPublicUrl = async () => {
+    if (!event.status || event.status === "DRAFT") return;
+    await navigator.clipboard.writeText(`${window.location.origin}${publicPath}`);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <article className="card">
-      <div className="summary">
-        <div>
-          <p className="eyebrow eyebrow--muted">
-            {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
-          </p>
-          <h3 className="summary__name">{event.title}</h3>
-          <p className="help">
-            主催: {event.ownerName}
-            {event.role === "CO_HOST" && "（あなたは共同主催）"}
-          </p>
-          <p className="help">
-            {scheduleLabel(event.schedules)} / {priceLabel(event.pricePlans)} / {event.location}
-          </p>
-          {event.rsvpDeadline && (
-            <p className="help">
-              申し込み期限 {formatRsvpDeadlineLabel(event.rsvpDeadline)}
+    <article className={`event-card${event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}>
+      {event.flyerThumbnailUrl ? (
+        <img className="event-card__thumb" src={event.flyerThumbnailUrl} alt="" width={1080} height={1920} />
+      ) : null}
+
+      <div>
+        <div className="event-card__head">
+          <h3 className="event-card__title">{event.title}</h3>
+          <span className={statusTone(event.status)}>{STATUS_LABELS[event.status]}</span>
+          <span className="badge badge--neutral">{event.role === "OWNER" ? "主催" : "共同主催"}</span>
+        </div>
+
+        <p className="event-card__meta">
+          {scheduleLabel(event.schedules)} ／ {event.location}
+          <br />
+          {priceLabel(event.pricePlans)}
+          {event.rsvpDeadline ? (
+            <>
+              {" "}
+              ／ 締切 {formatRsvpDeadlineLabel(event.rsvpDeadline)}
               {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
-            </p>
-          )}
+            </>
+          ) : null}
+        </p>
+        <p className="event-card__meta">
+          主催: {event.ownerName}
+          {event.role === "CO_HOST" ? "（あなたは共同主催）" : ""}
+        </p>
+
+        <div className="event-card__meter-label">
+          <span>
+            参加 {event.stats.attendingCount}名 / {event.capacity === null ? "定員なし" : `定員 ${event.capacity}名`}
+          </span>
+          <span>
+            回答 {event.stats.totalResponses}名 ・ 不参加 {event.stats.declinedCount}名
+          </span>
         </div>
-        {event.flyerThumbnailUrl && <img src={event.flyerThumbnailUrl} alt="" className="event-thumb" />}
-      </div>
-      <div className="stat-grid" style={{ marginTop: "1rem" }}>
-        <div className="stat">
-          <p className="stat__label">参加</p>
-          <p className="stat__value">{event.stats.attendingCount}</p>
-        </div>
-        <div className="stat">
-          <p className="stat__label">不参加</p>
-          <p className="stat__value">{event.stats.declinedCount}</p>
-        </div>
-        <div className="stat">
-          <p className="stat__label">回答</p>
-          <p className="stat__value">{event.stats.totalResponses}</p>
-        </div>
-      </div>
-      {ratio !== null && (
-        <div className="meter" aria-hidden="true">
-          <span style={{ width: `${ratio}%` }} />
-        </div>
-      )}
-      <div className="btn-row" style={{ marginTop: "1rem" }}>
+        {ratio !== null && (
+          <div
+            className="meter"
+            role="img"
+            aria-label={`定員${event.capacity}名のうち${event.stats.attendingCount}名が参加`}
+          >
+            <span style={{ width: `${ratio}%` }} />
+          </div>
+        )}
+
         {event.status !== "DRAFT" && (
-          <Link href={`/events/${event.id}`} className="btn btn--outline btn--sm">
+          <details className="fold" style={{ marginTop: "0.875rem" }}>
+            <summary className="fold__summary">共有と設定</summary>
+            <div className="fold__body stack">
+              <div className="field">
+                <label className="label" htmlFor={`share-url-${event.id}`}>
+                  参加者に送るURL
+                </label>
+                <input
+                  className="input"
+                  id={`share-url-${event.id}`}
+                  readOnly
+                  value={`/events/${event.id}`}
+                  onFocus={(input) => input.currentTarget.select()}
+                />
+              </div>
+              <p className="help">このURLを開いた人は、登録なしで出欠を答えられます。</p>
+              <div className="panel__actions">
+                <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicUrl()}>
+                  {copied ? "コピーしました" : "URLをコピー"}
+                </button>
+                <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
+                  チラシを作り直す
+                </Link>
+                {event.role === "OWNER" && (
+                  <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
+                    公開をやめる・削除
+                  </button>
+                )}
+              </div>
+            </div>
+          </details>
+        )}
+      </div>
+
+      <div className="event-card__actions">
+        <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
+          名簿を見る
+        </Link>
+        {event.status !== "DRAFT" && (
+          <Link href={publicPath} className="btn btn--ghost btn--sm">
             公開ページ
           </Link>
         )}
-        <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--sm">
+        <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
           編集
         </Link>
-        <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--sm">
-          出欠確認
-        </Link>
-        <button type="button" onClick={onClone} disabled={busy} className="btn btn--sm">
+        <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
           コピー作成
         </button>
-        {event.role === "OWNER" && (
-          <button type="button" onClick={onDelete} disabled={busy} className="btn btn--danger btn--sm">
-            削除・停止
-          </button>
-        )}
       </div>
     </article>
   );

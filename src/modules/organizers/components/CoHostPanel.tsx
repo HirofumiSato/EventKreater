@@ -87,11 +87,11 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
   const coHosts = data?.organizers.coHosts ?? [];
 
   return (
-    <section className="card stack">
-      <div>
-        <p className="label">幹事</p>
-        <p className="help">
-          公開ページには「主催」と「共同主催」を分けて表示します。共同主催者は、イベントの編集・名簿・領収書を筆頭幹事と分担できます。招待された側は会員登録が必要です。
+    <section className="panel">
+      <div className="panel__head">
+        <h2 className="panel__title">共同幹事</h2>
+        <p className="panel__note">
+          招待リンクから、もう 1人を幹事に加えられます。解除はその場で確認します。
         </p>
       </div>
       {error && <p className="alert alert--error">{error}</p>}
@@ -102,90 +102,86 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
         </p>
       ) : (
         <>
-          <div className="stack">
+          <ul className="rows">
             {owner && (
-              <div className="summary">
-                <div>
-                  <p className="eyebrow eyebrow--muted">主催（筆頭幹事）</p>
-                  <p className="summary__name">{owner.name}</p>
-                  {owner.isGuest && <p className="help">未登録の幹事</p>}
+              <li className="rows__item">
+                <div className="rows__main">
+                  <p className="rows__title">{owner.name}</p>
+                  <p className="rows__meta">
+                    筆頭幹事 ／ 公開・非公開を変えられる
+                    {owner.isGuest ? " ／ 未登録の幹事" : ""}
+                  </p>
                 </div>
-              </div>
+                <span className="badge badge--neutral badge--sm">主催</span>
+              </li>
             )}
-            <div>
-              <p className="eyebrow eyebrow--muted">共同主催</p>
-              {coHosts.length === 0 ? (
-                <p className="help">まだいません。</p>
-              ) : (
-                <ul className="stack" style={{ marginTop: "0.5rem" }}>
-                  {coHosts.map((row) => (
-                    <li key={row.id} className="summary">
-                      <div>
-                        <p>{row.name}</p>
-                        {row.isGuest && <p className="help">未登録の幹事</p>}
-                      </div>
-                      {data?.canManage &&
-                        (removingId === row.id ? (
-                          <div className="btn-row">
-                            <button
-                              type="button"
-                              className="btn btn--danger btn--sm"
-                              disabled={pending}
-                              onClick={() => void removeCoHost(row.id)}
-                            >
-                              本当に外す
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--sm"
-                              disabled={pending}
-                              onClick={() => setRemovingId(null)}
-                            >
-                              やめる
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            disabled={pending}
-                            onClick={() => setRemovingId(row.id)}
-                          >
-                            外す
-                          </button>
-                        ))}
-                    </li>
+            {coHosts.map((row) => (
+              <li key={row.id} className="rows__item">
+                <div className="rows__main">
+                  <p className="rows__title">{row.name}</p>
+                  <p className="rows__meta">
+                    共同幹事 ／ 名簿と売上を見られる
+                    {row.isGuest ? " ／ 未登録の幹事" : ""}
+                  </p>
+                </div>
+                {data?.canManage &&
+                  (removingId === row.id ? (
+                    <div className="btn-row">
+                      <button
+                        type="button"
+                        className="btn btn--danger btn--sm"
+                        disabled={pending}
+                        onClick={() => void removeCoHost(row.id)}
+                      >
+                        本当に外す
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        disabled={pending}
+                        onClick={() => setRemovingId(null)}
+                      >
+                        やめる
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      disabled={pending}
+                      onClick={() => setRemovingId(row.id)}
+                    >
+                      外す
+                    </button>
                   ))}
-                </ul>
-              )}
-            </div>
-          </div>
+              </li>
+            ))}
+            {coHosts.length === 0 && (
+              <li className="rows__item">
+                <div className="rows__main">
+                  <p className="rows__title">共同幹事はまだいません</p>
+                  <p className="rows__meta">招待リンクを発行すると、もう 1人を加えられます。</p>
+                </div>
+              </li>
+            )}
+          </ul>
 
           {data?.canManage ? (
-            <div className="stack">
-              <button type="button" disabled={pending} onClick={() => void createInvite()} className="btn btn--sm">
-                {pending ? "作成しています..." : "招待URLを作る"}
+            <div className="panel__actions">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => void createInvite()}
+                className="btn btn--outline btn--sm"
+              >
+                {pending ? "作成しています..." : "招待リンクを発行"}
               </button>
-              {shareUrl && (
-                <div className="stack">
-                  <p className="quote">{shareUrl}</p>
-                  {expiresAt && <p className="help">有効期限 {new Date(expiresAt).toLocaleString("ja-JP")}</p>}
-                  <p className="help">URLを知っている会員が受諾すると、共同主催者に加わります。7日間有効で、一度受諾すると無効になります。</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(shareUrl).then(() => setCopied(true));
-                    }}
-                    className="btn btn--primary btn--sm"
-                  >
-                    {copied ? "コピーしました" : "URLをコピー"}
-                  </button>
-                </div>
-              )}
             </div>
           ) : data?.registerRequired ? (
             <div className="stack">
-              <p className="help">共同主催者の招待・削除には会員登録が必要です。登録すると、いまのイベントはあなたのアカウントに引き継がれます。</p>
+              <p className="help">
+                共同主催者の招待・削除には会員登録が必要です。登録すると、いまのイベントはあなたのアカウントに引き継がれます。
+              </p>
               <Link
                 href={`/organizer/register-required?eventId=${encodeURIComponent(eventId)}`}
                 className="btn btn--outline btn--sm"
@@ -195,6 +191,28 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
             </div>
           ) : (
             <p className="help">共同主催者の招待・削除は筆頭幹事だけが行えます。</p>
+          )}
+
+          {shareUrl && (
+            <div className="panel">
+              <p className="panel__title">招待リンク</p>
+              <p className="quote">{shareUrl}</p>
+              {expiresAt && <p className="help">有効期限 {new Date(expiresAt).toLocaleString("ja-JP")}</p>}
+              <p className="help">
+                URLを知っている会員が受諾すると、共同主催者に加わります。7日間有効で、一度受諾すると無効になります。
+              </p>
+              <div className="panel__actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(shareUrl).then(() => setCopied(true));
+                  }}
+                  className="btn btn--primary btn--sm"
+                >
+                  {copied ? "コピーしました" : "URLをコピー"}
+                </button>
+              </div>
+            </div>
           )}
         </>
       )}
