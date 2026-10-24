@@ -13,6 +13,7 @@ import {
   type MyRsvp,
   type RsvpStatus,
 } from "@/modules/events/types";
+import { Alert } from "@/components/ui";
 
 interface DynamicRsvpBoxProps {
   eventId: string;
@@ -155,11 +156,11 @@ export function DynamicRsvpBox({
         </p>
       )}
       {myRsvp?.status === "WAITLISTED" && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           参加要望中です。
           {myRsvp.waitlistPosition !== null && ` 現在 ${myRsvp.waitlistPosition} 番目です。`}
           {choices.mode === "open" && " 空きが出ました。出席に変更できます。"}
-        </p>
+        </Alert>
       )}
       <form onSubmit={onSubmit} className="form form--spaced">
         {/* 誰として答えるか。ログイン中だけ、フォームの先頭に 1 行。 */}
@@ -252,11 +253,11 @@ export function DynamicRsvpBox({
             <fieldset className="field">
               <legend className="label">費用プラン</legend>
               {availablePlans.length === 0 ? (
-                <p className="alert alert--warning">
+                <Alert tone="warning">
                   {gender
                     ? "この性別で選べる費用プランがありません。幹事に確認してください。"
                     : "性別を選ぶと費用プランが表示されます。"}
-                </p>
+                </Alert>
               ) : (
                 <div className="choice-group choice-group--stack">
                   {availablePlans.map((row) => (
@@ -304,9 +305,9 @@ export function DynamicRsvpBox({
             placeholder="楽しみにしています"
           />
         </div>
-        {error && <p className="alert alert--error">{error}</p>}
+        {error && <Alert tone="error">{error}</Alert>}
         {saved && !error && (
-          <p className="alert alert--success">
+          <Alert tone="success">
             {status === "WAITLISTED"
               ? `参加要望を受け付けました。空きが出たら幹事が承認します。${
                   myRsvp?.waitlistPosition !== null && myRsvp?.waitlistPosition !== undefined
@@ -314,7 +315,7 @@ export function DynamicRsvpBox({
                     : ""
                 }`
               : "回答を保存しました。"}
-          </p>
+          </Alert>
         )}
         <div className="rsvp__foot">
           <button
@@ -336,7 +337,7 @@ export function DynamicRsvpBox({
             回答を取り消す
           </button>
         )}
-        {closed && <p className="alert alert--warning">{closedMessage}</p>}
+        {closed && <Alert tone="warning">{closedMessage}</Alert>}
       </form>
     </section>
   );

@@ -1,0 +1,283 @@
+/* ==========================================================================
+   deco/quiet.css — 貼り紙（管理）。
+
+   もとは 1 枚の attendance.css と deco.css。読み込み順は index.css が持つ。
+   宣言順は元のまま。並べ替えると詳細度の同じ規則どうしが入れ替わり、
+   見た目が変わる。追加はこの層の末尾へ。
+   ========================================================================== */
+
+/* ==========================================================================
+   2. 管理（admin）— 静かめ
+   数字と行を走査する画面。傾けない・塗らない・細くする。
+   影は残すが、硬いずれではなく「紙が 1 枚ぶん浮いている」だけにする。
+   主催者ホーム、参加者名簿、売上、領収書。
+   ========================================================================== */
+
+.deco.deco--tape-quiet {
+  --quiet-line: #e3d9c8;
+  --quiet-line-strong: #c6bba7;
+  --quiet-wash: #fbf7f0;
+  --quiet-hover: #f7f1e6;
+  /* 地紋をやめる。数字の後ろで点が動いて見える。 */
+  background-color: var(--quiet-wash);
+  background-image: none;
+}
+
+/* 見出しの波線は落とす。帯だけ残して、声は残す。 */
+.deco.deco--tape-quiet .section__head {
+  padding-left: 0.875rem;
+  border-left: 4px solid var(--color-primary);
+}
+
+.deco.deco--tape-quiet .section__title {
+  padding-bottom: 0;
+  text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
+   面。罫線 1px と、ごく弱い影。輪郭は走査に要るので消さない。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .feature-row,
+.deco.deco--tape-quiet .card,
+.deco.deco--tape-quiet .stat,
+.deco.deco--tape-quiet .panel,
+.deco.deco--tape-quiet .table-card,
+.deco.deco--tape-quiet .event-step,
+.deco.deco--tape-quiet .event-card,
+.deco.deco--tape-quiet .progress-card,
+.deco.deco--tape-quiet .fold {
+  border: 1px solid var(--quiet-line);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+  /* 傾けない。管理画面では全行が同じ軸に乗っている必要がある。 */
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   数字。色を塗らず、墨で置く。差は見出しの言葉で付ける。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .stat {
+  padding: 1rem 1.125rem;
+}
+
+.deco.deco--tape-quiet .stat__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.deco.deco--tape-quiet .stat__value {
+  margin-top: 0.25rem;
+  color: var(--color-text);
+  font-family: var(--font-maru), var(--font);
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  border-bottom: 0;
+}
+
+.deco.deco--tape-quiet .stat__unit {
+  margin-left: 0.125rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+
+
+
+
+
+
+.deco.deco--tape-quiet .organizer-tabs__link.is-current {
+  border-bottom-color: var(--color-text);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   イベントの札。サムネイルは小さく、行として読ませる。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .event-card {
+  gap: 0.875rem;
+  padding: 1rem;
+}
+
+.deco.deco--tape-quiet .event-card__thumb {
+  border-radius: 6px;
+}
+
+.deco.deco--tape-quiet .event-card__title {
+  font-size: 0.9375rem;
+}
+
+.deco.deco--tape-quiet .event-card__meta,
+.deco.deco--tape-quiet .event-card__meter-label {
+  color: var(--color-text-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   ボタン。押すものだけが浮く。主ボタンも影は付けない。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .btn--primary {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .btn--outline,
+.deco.deco--tape-quiet .btn--ghost {
+  border: 1px solid var(--quiet-line-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .btn--outline:hover {
+  border-color: var(--color-text);
+}
+
+.deco.deco--tape-quiet .eyebrow {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-subtle);
+  box-shadow: none;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   入力。管理画面では、どこを編集できるかが一目で分かるほうが大事。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .input,
+.deco.deco--tape-quiet .textarea,
+.deco.deco--tape-quiet .select {
+  border: 1px solid var(--quiet-line-strong);
+  background: #fff;
+}
+
+.deco.deco--tape-quiet .input:focus,
+.deco.deco--tape-quiet .textarea:focus,
+.deco.deco--tape-quiet .select:focus {
+  outline: 3px solid var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   折りたたみ。共有 URL など、普段は閉じておくもの。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .fold__summary {
+  padding: 0.75rem 1rem;
+}
+
+.deco.deco--tape-quiet .fold__summary:hover {
+  background: var(--quiet-hover);
+}
+
+.deco.deco--tape-quiet .fold[open] > .fold__summary {
+  border-bottom: 1px solid var(--quiet-line);
+}
+
+/* --------------------------------------------------------------------------
+   名簿の表。罫線だけで区切る。縞は使わない（行の対応を見失う）。
+   -------------------------------------------------------------------------- */
+
+.deco.deco--tape-quiet .roster th {
+  border-bottom-color: var(--quiet-line-strong);
+}
+
+.deco.deco--tape-quiet .roster td {
+  border-bottom-color: var(--quiet-line);
+}
+
+.deco.deco--tape-quiet .roster tbody tr:hover {
+  background: var(--quiet-hover);
+}
+
+/* 状態の色は薄めず、面を白く抜く。色が意味を持つ行なので、地の色に負けさせない。 */
+.deco.deco--tape-quiet .badge,
+.deco.deco--tape-quiet .chip {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .roster-summary__item {
+  border: 1px solid var(--quiet-line);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+  transform: none;
+}
+
+.deco.deco--tape-quiet .meter {
+  height: 0.375rem;
+  background: var(--color-slate-100);
+}
+
+.deco.deco--tape-quiet .alert {
+  border: 1px solid var(--quiet-line);
+  border-left: 3px solid currentColor;
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .progress-card {
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .progress-card__track {
+  background: var(--color-slate-100);
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .progress-card__fill {
+  background: var(--pop-cool);
+}
+
+/* カレンダーも静かめ。面の影を消し、罫線だけにする。
+   セルの中は短冊（催し名）で示すので、点は描かない。 */
+.deco.deco--tape-quiet .cal {
+  border: 1px solid var(--quiet-line);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+}
+
+.deco.deco--tape-quiet .cal__day.is-selected {
+  background: var(--color-text);
+}
+
+.deco.deco--tape-quiet .draft-card,
+.deco.deco--tape-quiet .receipt-sheet,
+.deco.deco--tape-quiet .plan-card,
+.deco.deco--tape-quiet .auth-card,
+.deco.deco--tape-quiet .event-sheet {
+  border: 1px solid var(--quiet-line);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+}
+
+.deco.deco--tape-quiet .notice {
+  border-left-color: var(--color-primary);
+  background: var(--quiet-hover);
+}
+
+.deco.deco--tape-quiet .empty {
+  border-color: var(--quiet-line-strong);
+}
+
+.deco.deco--tape-quiet .roster-summary__value {
+  color: var(--color-text);
+}
+
+.deco.deco--tape-quiet .org-subnav a:hover {
+  background: var(--quiet-hover);
+}
+
+.deco.deco--tape-quiet .ledger__value {
+  color: var(--color-text);
+}

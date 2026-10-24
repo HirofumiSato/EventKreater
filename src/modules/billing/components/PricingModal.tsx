@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
+import { yenMark } from "@/lib/format";
+import { Alert, Dialog } from "@/components/ui";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -52,7 +54,7 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
         </p>
       )}
       <p className="stat__value">
-        ¥{charged.toLocaleString("ja-JP")}
+        {yenMark(charged)}
         {discounted && (
           <span
             style={{
@@ -62,7 +64,7 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
               textDecoration: "line-through",
             }}
           >
-            ¥{list.toLocaleString("ja-JP")}
+            {yenMark(list)}
           </span>
         )}
       </p>
@@ -130,11 +132,14 @@ export function PricingModal({
   };
 
   return (
-    <div className="modal" style={{ display: "flex" }}>
-      <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
-      <div className="dialog" role="dialog" aria-modal="true">
-        <h3 className="dialog__title">課金プラン選択</h3>
-        <p className="dialog__body">継続して告知ページを作るには、次のどちらかを選びます。</p>
+    <Dialog
+      title="課金プラン選択"
+      onClose={onClose}
+      actions={<><button type="button" onClick={onClose} disabled={loadingPlan !== null} className="btn btn--ghost btn--block">
+            {CANCEL_LABEL[context]}
+          </button></>}
+    >
+      <p className="dialog__body">継続して告知ページを作るには、次のどちらかを選びます。</p>
         <div className="stack" style={{ marginTop: "1.25rem" }}>
           <article className="card">
             <h4 className="card__title">単発チケット</h4>
@@ -190,12 +195,6 @@ export function PricingModal({
           </Link>
           をご確認ください。
         </p>
-        <div className="dialog__actions">
-          <button type="button" onClick={onClose} disabled={loadingPlan !== null} className="btn btn--ghost btn--block">
-            {CANCEL_LABEL[context]}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

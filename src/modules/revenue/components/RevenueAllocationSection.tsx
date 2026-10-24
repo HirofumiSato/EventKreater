@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { yen } from "@/lib/format";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
 import { equalSharesBps, formatShareBps } from "@/modules/revenue/lib/allocation";
 import type { RevenueAllocationView } from "@/modules/revenue/types";
+import { Alert, Panel, Section, SectionHead } from "@/components/ui";
 
 interface Props {
   eventId: string;
@@ -14,10 +16,6 @@ interface Props {
 
 type Mode = "RATIO" | "HEADCOUNT";
 type Visibility = "ALL" | "OWN_ONLY";
-
-function yen(amount: number): string {
-  return `${amount.toLocaleString("ja-JP")}円`;
-}
 
 function parseRatioBps(value: string): number {
   const parsed = Number(value);
@@ -135,19 +133,17 @@ export function RevenueAllocationSection({
   };
 
   return (
-    <section className="section">
-      <div className="section__head">
-        <h2 className="section__title">主催者別</h2>
-        <p className="section__note">
-          {allocation.configured
+    <Section>
+      <SectionHead
+        title="主催者別"
+        note={<>{allocation.configured
             ? "按分は集金の分担を決めるための表示です。送金や決済は行いません。"
             : `まだ配分を保存していません。均等割（${formatShareBps(
                 10000 / Math.max(1, allocation.organizerCount),
-              )}% 前後）で計算しています。`}
-        </p>
-      </div>
+              )}% 前後）で計算しています。`}</>}
+      />
 
-      <div className="panel">
+      <Panel as="div">
         {!editing && allocation.canEdit && (
           <div className="panel__actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={startEditing}>
@@ -156,7 +152,7 @@ export function RevenueAllocationSection({
           </div>
         )}
 
-        {error && <p className="alert alert--error">{error}</p>}
+        {error && <Alert tone="error">{error}</Alert>}
 
         {editing ? (
           <div className="stack">
@@ -321,7 +317,7 @@ export function RevenueAllocationSection({
               )}
           </>
         )}
-      </div>
-    </section>
+      </Panel>
+    </Section>
   );
 }

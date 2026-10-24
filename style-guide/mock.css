@@ -1,32 +1,209 @@
 /* ==========================================================================
-   モック専用。製品へは移さない。
+   mock.css — 外枠と一覧。画面を並べる帯、比較ページ、スマホ枠。
 
-   装飾の実体は deco.css。ここには
-     - モックの切り替え帯
-     - 比較画面
-     - 一覧ページと色見本
-     - 製品にまだ無い構造（進捗カード・イベントの札・折りたたみ・通知）
-   だけを置く。装飾の値は書かない。
+   モック専用。製品はこのファイルを読まない。
+   部品そのものの定義は src/styles/ が持つ。ここに置くのは
+   「モックでしか出ない状態」と「モックの外枠」だけ。
+   ========================================================================== */
+
+/* ==========================================================================
+   装飾の基準と、貼り紙の 2 つの用途。
+   方向は「影だけ」に決まった。FV はそのままでよい。
+   ただし、同じ装飾を全画面に置くと、どちらかが必ず損をする。
+   画面を 2 つに分け、共通の骨格の上で、影の強さと色の量だけを変える。
+
+     導入（onboard）… ホーム、新規イベント作成
+       初めて触る人の画面。印象を作る。傾き・地紋・山吹の面を残す。
+       tape-shadow
+
+     管理（admin）  … 主催者ホーム、参加者名簿、売上、領収書
+       毎日見る人の画面。数字と行を走査する。傾けない・塗らない・細くする。
+       tape-quiet
+
+   共通で動かさないもの: 角（8/14/20/26px と 999px）、書体（見出しは丸ゴシック）、
+   動き（開く 260ms / 押し 180ms）、FV、ヘッダー。
+
+   製品へ移すときは body.deco と、採用した 2 ブロックを src/styles/ へ入れる。
+   スコープは page.tsx 側のクラスで切り替える（例: <body class="deco deco--tape deco--tape-quiet">）。
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   製品は段の中身を条件付きレンダリングする。モックは DOM を残すので、閉じた段を隠す。
+   意味を持たない色。状態色（参加・未定・欠席）には使わない。
+   山吹に白文字は 2.3:1。必ず墨を載せる。
    -------------------------------------------------------------------------- */
 
-.event-step:not(.event-step--open) > .event-step__body {
-  display: none;
+:root {
+  --pop-warm: #e09b16;
+  --pop-warm-deep: #8a5800;
+  --pop-warm-tint: #fff3d6;
+  --pop-cool: #1d7a6b;
+  --pop-cool-text: #16695b;
+  --pop-cool-tint: #e4f3ef;
+  --pop-peach: #ffe6d5;
+  --pop-peach-deep: #a8452a;
+  --tape-ink: #1a1916;
 }
 
-/* 比較画面の iframe では、切り替えの帯を出さない。 */
-html.is-embed .mockbar {
-  display: none;
+/* 見出しだけ丸ゴシック。本文は Zen Kaku Gothic New のまま。 */
+body.deco h1,
+body.deco h2,
+body.deco h3,
+body.deco .page-title,
+body.deco .section__title,
+body.deco .hero__title,
+body.deco .panel__title,
+body.deco .card__title,
+body.deco .feature-row__title,
+body.deco .step-row__title,
+body.deco .event-step__title,
+body.deco .event-card__title,
+body.deco .table-card__title,
+body.deco .mock-index__title {
+  font-family: "Zen Maru Gothic", var(--font);
+  letter-spacing: 0.01em;
 }
 
-/* 製品は条件付きレンダリングで音声入力を出し入れする。モックは DOM を残すので、
-   [hidden] を効かせる（.voice-panel の display: flex が UA の [hidden] に勝つため）。 */
-.voice-panel[hidden],
-.voice-scrim[hidden] {
-  display: none;
+@keyframes deco-step-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 済んだ番号は一度だけ弾む。 */
+@keyframes deco-done {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes deco-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   mock.css — 外枠と一覧。画面を並べる帯、比較ページ、スマホ枠。
+
+   モック専用。製品はこのファイルを読まない。
+   部品そのものの定義は src/styles/ が持つ。ここに置くのは
+   「モックでしか出ない状態」と「モックの外枠」だけ。
+   ========================================================================== */
+
+/* ==========================================================================
+   装飾の基準と、貼り紙の 2 つの用途。
+   方向は「影だけ」に決まった。FV はそのままでよい。
+   ただし、同じ装飾を全画面に置くと、どちらかが必ず損をする。
+   画面を 2 つに分け、共通の骨格の上で、影の強さと色の量だけを変える。
+
+     導入（onboard）… ホーム、新規イベント作成
+       初めて触る人の画面。印象を作る。傾き・地紋・山吹の面を残す。
+       tape-shadow
+
+     管理（admin）  … 主催者ホーム、参加者名簿、売上、領収書
+       毎日見る人の画面。数字と行を走査する。傾けない・塗らない・細くする。
+       tape-quiet
+
+   共通で動かさないもの: 角（8/14/20/26px と 999px）、書体（見出しは丸ゴシック）、
+   動き（開く 260ms / 押し 180ms）、FV、ヘッダー。
+
+   製品へ移すときは body.deco と、採用した 2 ブロックを src/styles/ へ入れる。
+   スコープは page.tsx 側のクラスで切り替える（例: <body class="deco deco--tape deco--tape-quiet">）。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   意味を持たない色。状態色（参加・未定・欠席）には使わない。
+   山吹に白文字は 2.3:1。必ず墨を載せる。
+   -------------------------------------------------------------------------- */
+
+:root {
+  --pop-warm: #e09b16;
+  --pop-warm-deep: #8a5800;
+  --pop-warm-tint: #fff3d6;
+  --pop-cool: #1d7a6b;
+  --pop-cool-text: #16695b;
+  --pop-cool-tint: #e4f3ef;
+  --pop-peach: #ffe6d5;
+  --pop-peach-deep: #a8452a;
+  --tape-ink: #1a1916;
+}
+
+/* 見出しだけ丸ゴシック。本文は Zen Kaku Gothic New のまま。 */
+body.deco h1,
+body.deco h2,
+body.deco h3,
+body.deco .page-title,
+body.deco .section__title,
+body.deco .hero__title,
+body.deco .panel__title,
+body.deco .card__title,
+body.deco .feature-row__title,
+body.deco .step-row__title,
+body.deco .event-step__title,
+body.deco .event-card__title,
+body.deco .table-card__title,
+body.deco .mock-index__title {
+  font-family: "Zen Maru Gothic", var(--font);
+  letter-spacing: 0.01em;
+}
+
+@keyframes deco-step-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 済んだ番号は一度だけ弾む。 */
+@keyframes deco-done {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes deco-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -37,382 +214,6 @@ html.is-embed .mockbar {
   bottom: 4.5rem;
   left: 1rem;
   right: auto;
-}
-
-.mock-toast .alert {
-  box-shadow: 0 18px 40px -16px rgb(26 25 22 / 0.4);
-}
-
-/* --------------------------------------------------------------------------
-   進捗カード。製品の EventStepForm に移す前提の構造。
-   -------------------------------------------------------------------------- */
-
-.progress-card {
-  padding: 1rem 1.125rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  background: var(--color-surface);
-}
-
-.progress-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-  margin-bottom: 0.625rem;
-}
-
-.progress-card__label {
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-}
-
-.progress-card__count {
-  font-size: 1.125rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.progress-card__count span {
-  color: var(--color-text-subtle);
-  font-family: var(--font);
-  font-size: 0.8125rem;
-  font-weight: 400;
-}
-
-.progress-card__track {
-  position: relative;
-  height: 0.625rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--color-slate-100);
-}
-
-.progress-card__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--pop-warm), var(--color-primary));
-  transition: width 320ms cubic-bezier(0.2, 0.9, 0.25, 1.06);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .progress-card__fill {
-    transition: none;
-  }
-}
-
-.progress-dots {
-  display: flex;
-  gap: 0.375rem;
-  margin-top: 0.625rem;
-}
-
-.progress-dots__dot {
-  flex: 1;
-  height: 0.3125rem;
-  border-radius: 999px;
-  background: var(--color-line);
-  transition: background-color 180ms ease;
-}
-
-.progress-dots__dot.is-done {
-  background: var(--pop-cool);
-}
-
-.progress-dots__dot.is-current {
-  background: var(--color-primary);
-}
-
-/* --------------------------------------------------------------------------
-   イベントの札。行ではなく面で見せる。
-   -------------------------------------------------------------------------- */
-
-.event-card {
-  display: grid;
-  gap: 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  background: var(--color-surface);
-}
-
-@media (min-width: 640px) {
-  .event-card {
-    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
-    align-items: start;
-  }
-}
-
-.event-card__thumb {
-  display: block;
-  width: 4.5rem;
-  height: 6rem;
-  object-fit: cover;
-  border-radius: var(--radius-lg);
-  background: var(--color-slate-100);
-}
-
-.event-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.375rem 0.5rem;
-}
-
-.event-card__title {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.event-card__meta {
-  margin-top: 0.25rem;
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
-  line-height: 1.7;
-}
-
-.event-card__meter-label {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-}
-
-/* --------------------------------------------------------------------------
-   折りたたみ。共有リンクなど、普段は閉じておくもの。
-   -------------------------------------------------------------------------- */
-
-.fold {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.fold__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-}
-
-.fold__summary::-webkit-details-marker {
-  display: none;
-}
-
-.fold__summary::after {
-  content: "＋";
-  margin-left: auto;
-  color: var(--color-text-subtle);
-}
-
-.fold[open] .fold__summary::after {
-  content: "−";
-}
-
-.fold[open] .fold__summary {
-  border-bottom: 1px solid var(--color-line);
-}
-
-.fold__body {
-  padding: 1rem;
-  font-size: 0.875rem;
-  line-height: 1.7;
-}
-
-/* ==========================================================================
-   参加者名簿。製品では RosterTable.tsx になる部分。
-   製品の attendance.css には表のスタイルがまだ無いので、ここで持つ。
-   罫線だけで区切り、縞は使わない（行の対応を見失うため）。
-   ========================================================================== */
-
-/* 製品に無い状態色。主催者の一覧で「公開中」「未払い」を出すのに要る。 */
-.badge--success {
-  border-color: var(--color-success-border);
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-.badge--warning {
-  border-color: var(--color-warning-border);
-  background: var(--color-warning-bg);
-  color: var(--color-warning-text);
-}
-
-/* モックは button で組む。製品は input[type=radio] を :has() で見る。 */
-.segment__item[aria-pressed="true"],
-.chip[aria-pressed="true"] {
-  border-color: var(--color-text);
-  background: var(--color-text);
-  color: #fff;
-}
-
-.roster-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .roster-summary {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-.roster-summary__item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-}
-
-.roster-summary__label {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-}
-
-.roster-summary__value {
-  color: var(--color-text);
-  font-family: "Zen Maru Gothic", var(--font);
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.roster-summary__value span {
-  margin-left: 0.125rem;
-  color: var(--color-text-subtle);
-  font-family: var(--font);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.roster-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.roster-toolbar__search {
-  flex: 0 1 16rem;
-}
-
-.roster-toolbar__search .input {
-  width: 100%;
-}
-
-.table-card__foot {
-  padding: 0.75rem 1.25rem 1rem;
-  border-top: 1px solid var(--color-line);
-}
-
-.table-card__foot .help {
-  margin: 0;
-}
-
-.roster {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-
-.roster th {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border-strong);
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.roster td {
-  padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--color-line);
-  font-size: 0.875rem;
-  vertical-align: middle;
-}
-
-.roster th.is-num,
-.roster td.is-num {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.roster__name {
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.roster__meta {
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-}
-
-.roster tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-@media (max-width: 639px) {
-  .roster th,
-  .roster td {
-    padding-inline: 0.5rem;
-  }
-
-  /* スマホでは、名前・出欠・人数だけを残す。横に送らせない。 */
-  .roster th:nth-child(4),
-  .roster td:nth-child(4),
-  .roster th:nth-child(6),
-  .roster td:nth-child(6),
-  .roster th:nth-child(7),
-  .roster td:nth-child(7) {
-    display: none;
-  }
-}
-
-/* ==========================================================================
-   モックの切り替え帯
-   ========================================================================== */
-
-.mockbar {
-  position: fixed;
-  bottom: 0.5rem;
-  left: 0.5rem;
-  right: 0.5rem;
-  z-index: 100;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.375rem;
-  width: fit-content;
-  max-width: calc(100% - 1rem);
-  padding: 0.375rem 0.5rem;
-  background: #1a1916;
-  color: #d8d4cc;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  border-radius: 8px;
-}
-
-/* 帯のぶん、最後の行を空ける。 */
-html.has-mockbar body {
-  padding-bottom: 4.5rem;
 }
 
 .mockbar__more {
@@ -460,7 +261,6 @@ html.has-mockbar body {
   font-size: 0.6875rem;
 }
 
-
 .mockbar__label {
   color: #fff;
   font-weight: 700;
@@ -492,28 +292,6 @@ html.has-mockbar body {
   gap: 0.25rem;
   padding-left: 0.5rem;
   border-left: 1px solid rgb(255 255 255 / 0.24);
-}
-
-.mockbar button {
-  padding: 0.1875rem 0.5rem;
-  border: 1px solid rgb(255 255 255 / 0.32);
-  background: transparent;
-  color: #d8d4cc;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  border-radius: 3px;
-  white-space: nowrap;
-}
-
-.mockbar button:hover {
-  border-color: #fff;
-  color: #fff;
-}
-
-.mockbar button[aria-pressed="true"] {
-  border-color: #fff;
-  background: #fff;
-  color: #1a1916;
 }
 
 /* ==========================================================================
@@ -613,12 +391,6 @@ html.has-mockbar body {
   box-shadow: var(--shadow-sm);
 }
 
-/* その画面で採る案。ここだけ朱の縁を許す。 */
-.compare__panel.is-pick {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
 .compare__head {
   display: flex;
   flex-wrap: wrap;
@@ -675,15 +447,6 @@ html.has-mockbar body {
   height: 42rem;
   border: 0;
   background: #fff;
-}
-
-.compare.is-single {
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-.compare.is-single .compare__frame {
-  height: 54rem;
 }
 
 .compare__legend {
@@ -908,14 +671,6 @@ html.has-mockbar body {
   font-size: 0.75rem;
 }
 
-.palette__ratio.is-ok {
-  color: var(--pop-cool-text);
-}
-
-.palette__ratio.is-ng {
-  color: var(--danger-text, #8f1d32);
-}
-
 .mock-decide {
   display: grid;
   gap: 0.75rem;
@@ -937,4 +692,722 @@ html.has-mockbar body {
   margin-top: 0.25rem;
   color: var(--color-text-subtle);
   font-size: 0.8125rem;
+}
+
+/* ==========================================================================
+   画面モック用の部品。製品へは移さない（src/styles/ が正）。
+   スマホ（390px）を基準に書き、720px 以上でだけ列を増やす。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   端末の枠。mock-frame.html が使う。ここだけはページの外側の話。
+   -------------------------------------------------------------------------- */
+
+.frame-page {
+  min-height: 100vh;
+  margin: 0;
+  background: #23211d;
+  color: #f2ece1;
+  font-family: var(--font);
+}
+
+.frame-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.14);
+  background: #23211d;
+  font-size: 0.8125rem;
+}
+
+.frame-bar__name {
+  color: #fff;
+  font-weight: 700;
+}
+
+.frame-bar__path {
+  color: #a9a297;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.frame-bar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+
+.frame-bar__pick {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+}
+
+.frame-bar__pick select {
+  max-width: 15rem;
+  padding: 0.1875rem 0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: #23211d;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.frame-bar a,
+.frame-bar button {
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: transparent;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.frame-bar a[aria-current="true"],
+.frame-bar button[aria-current="true"],
+.frame-bar button[aria-pressed="true"] {
+  border-color: #fff;
+  background: #fff;
+  color: #1a1916;
+}
+
+.frame-stage {
+  display: flex;
+  justify-content: safe center;
+  padding: 1.25rem 0.75rem 3rem;
+  /* 1280px の枠は、狭い画面では横に送って見る。左端を切らない。 */
+  overflow-x: auto;
+}
+
+.frame-device {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+}
+
+.frame-device iframe {
+  display: block;
+  border: 0;
+  background: #fff;
+}
+
+.frame-hint {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* スマホの追従ボタン。本文の最後に置くと、押されないまま帰られる。 */
+.sticky-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline: calc(50% - 50vw);
+  padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* ==========================================================================
+   画面の一覧。名前を押すとスマホ幅で開く。PC は右の小さなリンク。
+   ========================================================================== */
+
+.screen-group {
+  margin-top: 2rem;
+}
+
+.screen-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.screen-group__title {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.screen-group__count {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-group__note {
+  width: 100%;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.screen-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screen-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.125rem 0.375rem;
+  padding: 0.6875rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.screen-row__no {
+  grid-row: 1 / span 4;
+  padding-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-row__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.screen-row__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.screen-row__title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.screen-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.screen-row__path {
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.scope-tag {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.scope-tag--pop {
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+}
+
+.scope-tag--quiet {
+  background: var(--pop-cool-tint);
+  color: var(--pop-cool-text);
+}
+
+.screen-row__note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.screen-row__act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+/* ==========================================================================
+   比較。既定はスマホ。390px の枠をそのまま並べる。
+   ========================================================================== */
+
+.compare-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 2px 10px -6px rgb(26 25 22 / 0.4);
+}
+
+.compare-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.compare-bar__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.compare-select {
+  flex: 1 1 12rem;
+  min-height: 2.5rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+/* スマホ幅の枠は 390px 固定。拡げると別の画面になる。 */
+.compare--phone {
+  grid-template-columns: repeat(auto-fit, minmax(406px, 1fr));
+}
+
+.compare--phone .compare__frame {
+  width: 390px;
+  height: 760px;
+  margin-inline: auto;
+}
+
+.compare--phone .compare__panel {
+  min-width: 406px;
+}
+
+.compare--pc {
+  grid-template-columns: 1fr;
+}
+
+.compare--pc .compare__frame {
+  width: 1280px;
+  height: 860px;
+}
+
+.compare--pc .compare__panel {
+  overflow-x: auto;
+}
+
+@media (max-width: 860px) {
+  .compare--phone {
+    grid-template-columns: 1fr;
+  }
+
+  .compare--phone .compare__panel {
+    min-width: 0;
+  }
+}
+
+/* 一覧の見出しで、スマホを先に出す。 */
+.device-note {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--pop-warm);
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* 枠の中のスクロール。PC 幅は横に送れるようにする。 */
+.compare__stage {
+  overflow: auto;
+  background: #fff;
+}
+
+.compare--phone .compare__stage {
+  display: flex;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   画面モック用の部品。製品へは移さない（src/styles/ が正）。
+   スマホ（390px）を基準に書き、720px 以上でだけ列を増やす。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   端末の枠。mock-frame.html が使う。ここだけはページの外側の話。
+   -------------------------------------------------------------------------- */
+
+.frame-page {
+  min-height: 100vh;
+  margin: 0;
+  background: #23211d;
+  color: #f2ece1;
+  font-family: var(--font);
+}
+
+.frame-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.14);
+  background: #23211d;
+  font-size: 0.8125rem;
+}
+
+.frame-bar__name {
+  color: #fff;
+  font-weight: 700;
+}
+
+.frame-bar__path {
+  color: #a9a297;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.frame-bar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+
+.frame-bar__pick {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+}
+
+.frame-bar__pick select {
+  max-width: 15rem;
+  padding: 0.1875rem 0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: #23211d;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.frame-bar a,
+.frame-bar button {
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 3px;
+  background: transparent;
+  color: #f2ece1;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.frame-bar a[aria-current="true"],
+.frame-bar button[aria-current="true"],
+.frame-bar button[aria-pressed="true"] {
+  border-color: #fff;
+  background: #fff;
+  color: #1a1916;
+}
+
+.frame-stage {
+  display: flex;
+  justify-content: safe center;
+  padding: 1.25rem 0.75rem 3rem;
+  /* 1280px の枠は、狭い画面では横に送って見る。左端を切らない。 */
+  overflow-x: auto;
+}
+
+.frame-device {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+}
+
+.frame-device iframe {
+  display: block;
+  border: 0;
+  background: #fff;
+}
+
+.frame-hint {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  color: #a9a297;
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* スマホの追従ボタン。本文の最後に置くと、押されないまま帰られる。 */
+.sticky-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline: calc(50% - 50vw);
+  padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* ==========================================================================
+   画面の一覧。名前を押すとスマホ幅で開く。PC は右の小さなリンク。
+   ========================================================================== */
+
+.screen-group {
+  margin-top: 2rem;
+}
+
+.screen-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-text);
+}
+
+.screen-group__title {
+  font-family: "Zen Maru Gothic", var(--font);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.screen-group__count {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-group__note {
+  width: 100%;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.screen-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screen-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.125rem 0.375rem;
+  padding: 0.6875rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.screen-row__no {
+  grid-row: 1 / span 4;
+  padding-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-row__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.screen-row__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.screen-row__title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.screen-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.screen-row__path {
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.scope-tag {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.scope-tag--pop {
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+}
+
+.scope-tag--quiet {
+  background: var(--pop-cool-tint);
+  color: var(--pop-cool-text);
+}
+
+.screen-row__note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.screen-row__act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+/* ==========================================================================
+   比較。既定はスマホ。390px の枠をそのまま並べる。
+   ========================================================================== */
+
+.compare-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 2px 10px -6px rgb(26 25 22 / 0.4);
+}
+
+.compare-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.compare-bar__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.compare-select {
+  flex: 1 1 12rem;
+  min-height: 2.5rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+/* スマホ幅の枠は 390px 固定。拡げると別の画面になる。 */
+.compare--phone {
+  grid-template-columns: repeat(auto-fit, minmax(406px, 1fr));
+}
+
+.compare--phone .compare__frame {
+  width: 390px;
+  height: 760px;
+  margin-inline: auto;
+}
+
+.compare--phone .compare__panel {
+  min-width: 406px;
+}
+
+.compare--pc {
+  grid-template-columns: 1fr;
+}
+
+.compare--pc .compare__frame {
+  width: 1280px;
+  height: 860px;
+}
+
+.compare--pc .compare__panel {
+  overflow-x: auto;
+}
+
+@media (max-width: 860px) {
+  .compare--phone {
+    grid-template-columns: 1fr;
+  }
+
+  .compare--phone .compare__panel {
+    min-width: 0;
+  }
+}
+
+/* 一覧の見出しで、スマホを先に出す。 */
+.device-note {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--pop-warm);
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* 枠の中のスクロール。PC 幅は横に送れるようにする。 */
+.compare__stage {
+  overflow: auto;
+  background: #fff;
+}
+
+.compare--phone .compare__stage {
+  display: flex;
+  justify-content: center;
 }

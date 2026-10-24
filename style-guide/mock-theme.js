@@ -10,7 +10,7 @@
  *   画面を移ると、その画面の用途の装飾に戻る。用途の取り違えを防ぐため。
  *   横並びで比べたいときは mock-compare.html が URL で指定する。
  *
- *   base は「現行」（attendance.css のまま）で、比較の基準にだけ使う。
+ *   base は「現行」（src/styles/ のまま）で、比較の基準にだけ使う。
  */
 (function () {
   const ALL = ["tape-shadow", "tape-quiet", "base"];

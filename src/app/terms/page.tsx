@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { yen } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import { PageHeader, Panel } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: `利用規約 | ${SITE.name}`,
@@ -9,8 +11,6 @@ export const metadata: Metadata = {
 };
 
 const UPDATED_AT = "2026年10月21日";
-
-const yen = (value: number) => `${value.toLocaleString("ja-JP")}円`;
 
 const sections = [
   ["第1条（適用）", "applicability"],
@@ -35,14 +35,13 @@ const sections = [
 export default function TermsPage() {
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">規約</p>
-        <h1 className="page-title">{SITE.name} 利用規約</h1>
-        <p className="page-lead">
-          この規約は、{SITE.name}（以下「本サービス」）の利用条件、料金、期間限定の価格キャンペーン、
+      <PageHeader
+        eyebrow="規約"
+        title={<>{SITE.name} 利用規約</>}
+        lead={<>この規約は、{SITE.name}（以下「本サービス」）の利用条件、料金、期間限定の価格キャンペーン、
           0円プランの自動更新と終了前の通知について定めるものです。
-        </p>
-      </div>
+        </>}
+      />
 
       <div className="notice">
         <strong>要約</strong>　公開は累計 {FREE_EVENT_LIMIT} 回まで無料。単発は {yen(ONE_TIME_PRICE_JPY)}、
@@ -50,7 +49,7 @@ export default function TermsPage() {
         解約はいつでもでき、日割りの返金はしません。
       </div>
 
-      <nav className="panel" aria-label="目次">
+      <Panel as="nav" aria-label="目次">
         <h2 className="panel__title">目次</h2>
         <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0, gap: "0.25rem" }}>
           {sections.map(([label, id]) => (
@@ -61,7 +60,7 @@ export default function TermsPage() {
             </li>
           ))}
         </ul>
-      </nav>
+      </Panel>
 
       <section className="legal" id="applicability">
         <h2>第1条（適用）</h2>

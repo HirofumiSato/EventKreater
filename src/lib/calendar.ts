@@ -6,6 +6,8 @@
  * 表示上の「今日」だけは日本時間で決める。
  */
 
+import { formatDateJa, formatMonthJa } from "@/lib/format";
+
 const TOKYO_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 /** 日曜始まり。セルの並びと見出しで同じ配列を使う。 */
@@ -132,16 +134,12 @@ export function defaultSelectedDate(month: string): string {
 
 /** 見出し用。「2026年10月」。 */
 export function formatMonthTitle(month: string): string {
-  return `${Number(month.slice(0, 4))}年${Number(month.slice(5, 7))}月`;
+  return formatMonthJa(month);
 }
 
 /** 見出し用。「10月22日（木）」。 */
 export function formatDayHeading(date: string): string {
-  const year = Number(date.slice(0, 4));
-  const month = Number(date.slice(5, 7));
-  const day = Number(date.slice(8, 10));
-  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-  return `${month}月${day}日（${weekday}）`;
+  return formatDateJa(date);
 }
 
 /** セルの読み上げ用。「10月22日、予定2件」。 */

@@ -1,0 +1,308 @@
+/* ==========================================================================
+   deco/pop.css — 貼り紙（導入・告知）。
+
+   もとは 1 枚の attendance.css と deco.css。読み込み順は index.css が持つ。
+   宣言順は元のまま。並べ替えると詳細度の同じ規則どうしが入れ替わり、
+   見た目が変わる。追加はこの層の末尾へ。
+   ========================================================================== */
+
+/* ==========================================================================
+   貼り紙。2 つの用途に共通の骨格。
+   ========================================================================== */
+
+.deco.deco--tape {
+  --color-bg: #fdf3e4;
+  --color-surface: #fffdf8;
+  --color-border: #e6d7be;
+  --color-border-strong: #b7b1a6;
+  --color-line: #efe3d0;
+  background-color: #fdf3e4;
+  background-image: radial-gradient(rgb(26 25 22 / 0.045) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.deco.deco--tape .event-step--open > .event-step__body {
+  border-top: 1px dashed var(--color-border);
+}
+
+.deco.deco--tape .event-step__title {
+  font-size: 1.0625rem;
+}
+
+.deco.deco--tape .event-step--done:not(.event-step--open) .event-step__toggle {
+  padding-block: 0.625rem;
+}
+
+.deco.deco--tape .event-step--done:not(.event-step--open) .event-step__state {
+  color: var(--pop-cool-text);
+}
+
+/* ==========================================================================
+   1. 導入（onboard）— 影だけ
+   縁を消し、硬い影 3px で浮かす。傾きは 0.5 度まで。色は面に少しだけ。
+   ホームと新規作成。初めて触る人の画面。
+   ========================================================================== */
+
+.deco.deco--tape-shadow .feature-row,
+.deco.deco--tape-shadow .card,
+.deco.deco--tape-shadow .stat,
+.deco.deco--tape-shadow .panel,
+.deco.deco--tape-shadow .table-card,
+.deco.deco--tape-shadow .event-step,
+.deco.deco--tape-shadow .event-card,
+.deco.deco--tape-shadow .progress-card,
+.deco.deco--tape-shadow .fold {
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.15);
+}
+
+.deco.deco--tape-shadow .feature-row,
+.deco.deco--tape-shadow .feature-row:nth-child(3n + 1),
+.deco.deco--tape-shadow .feature-row:nth-child(3n + 2),
+.deco.deco--tape-shadow .feature-row:nth-child(3n + 3) {
+  background: var(--color-surface);
+}
+
+/* 行を面として見せるときは、札が触れないよう間を空ける。
+   罫線のリストのまま（base）では、詰めたままが正しい。 */
+.deco .feature-list,
+.deco .step-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* 番号は文字ではなく札。文字の幅に引きずられると、列からはみ出して
+   隣の見出しとくっついて見える。 */
+.deco .feature-row__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  width: 2rem;
+  height: 2rem;
+  padding-top: 0;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+/* 傾きは 0.5 度まで。1 度を超えると、行が揃って見えなくなる。 */
+.deco.deco--tape-shadow .stat {
+  transform: rotate(-0.5deg);
+}
+
+.deco.deco--tape-shadow .stat:nth-child(even) {
+  transform: rotate(0.5deg);
+}
+
+.deco.deco--tape-shadow .event-card:nth-of-type(odd) {
+  transform: rotate(-0.45deg);
+}
+
+.deco.deco--tape-shadow .event-card:nth-of-type(even) {
+  transform: rotate(0.45deg);
+}
+
+.deco.deco--tape-shadow .feature-row__index {
+  border: 0;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-5deg);
+  border-radius: 8px;
+}
+
+.deco.deco--tape-shadow .stat__value {
+  display: inline-block;
+  padding-bottom: 0.1rem;
+  border-bottom: 3px solid var(--pop-warm);
+}
+
+.deco.deco--tape-shadow .btn--primary {
+  border: 0;
+  background: var(--color-primary);
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.8);
+}
+
+.deco.deco--tape-shadow .btn--outline,
+.deco.deco--tape-shadow .btn--ghost {
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.1);
+}
+
+.deco.deco--tape-shadow .eyebrow {
+  border: 0;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.16);
+  transform: rotate(-1.5deg);
+}
+
+.deco.deco--tape-shadow .event-step__number {
+  border: 0;
+  border-radius: 9px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  transform: rotate(-5deg);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+}
+
+.deco.deco--tape-shadow .event-step--done .event-step__number {
+  background: var(--color-primary);
+  color: #fff;
+  transform: none;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.22);
+}
+
+.deco.deco--tape-shadow .event-step--done:not(.event-step--open) {
+  background: var(--color-surface);
+}
+
+.deco.deco--tape-shadow .event-step--open {
+  position: relative;
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.16);
+}
+
+.deco.deco--tape-shadow .event-step--open::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -0.6rem;
+  right: 1.5rem;
+  width: 3.25rem;
+  height: 1rem;
+  border-radius: 2px;
+  background: rgb(224 155 22 / 0.5);
+  transform: rotate(4deg);
+  pointer-events: none;
+}
+
+.deco.deco--tape-shadow .input,
+.deco.deco--tape-shadow .textarea,
+.deco.deco--tape-shadow .select {
+  border: 1px solid var(--color-border-strong);
+  background: #fff;
+}
+
+.deco.deco--tape-shadow .progress-card__track {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+
+.deco.deco--tape-shadow .progress-card__fill {
+  background: repeating-linear-gradient(-45deg, var(--pop-warm) 0 7px, #f4bd54 7px 14px);
+}
+
+
+
+.deco.deco--tape-shadow .organizer-tabs__link.is-current {
+  border: 0;
+  background: var(--color-text);
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--pop-warm);
+}
+
+.deco.deco--tape-shadow .cta-band {
+  border: 0;
+  border-radius: var(--radius-3xl);
+  box-shadow: 6px 6px 0 rgb(26 25 22 / 0.18);
+}
+
+/* 告知ページの最後に置く主催者への誘い。主役は出欠なので、
+   朱のボタンではなく、山吹の札と紙の面で存在だけを残す。 */
+.deco .org-invite {
+  border: 0;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
+}
+
+/* 音声入力。右下の丸い札は、紙に貼ったボタンとして置く。
+   押すと上に紙が開く。本体（attendance.css）の形は変えず、角と影だけ足す。 */
+.deco .voice-fab {
+  border-radius: 999px;
+  padding: 0.8125rem 1.25rem;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.26);
+}
+
+.deco .voice-fab:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.28);
+}
+
+.deco .voice-fab--active,
+.deco .voice-fab--active:hover {
+  /* 覆いの上に残るので、墨ではなく山吹にする。暗い面でも札として読める。 */
+  border-color: var(--pop-warm);
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  transform: none;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.28);
+}
+
+.deco .voice-panel {
+  border-radius: var(--radius-xl);
+  box-shadow: 5px 5px 0 rgb(26 25 22 / 0.18);
+}
+
+.deco .voice-panel__message {
+  border-radius: var(--radius-lg);
+}
+
+/* 聞いている欄の枠は、札と同じ山吹にして「いまここ」を 1 色で示す。 */
+.deco [data-voice-target="true"] {
+  outline: 3px solid var(--pop-warm);
+  outline-offset: 2px;
+  background: var(--pop-warm-tint);
+}
+
+.deco .org-invite__tag {
+  box-shadow: 1px 1px 0 rgb(26 25 22 / 0.2);
+  transform: rotate(-2deg);
+}
+
+/* 手順の番号も同じ大きさの札に揃える。36px の数字は行の頭で重く、
+   見出しより先に目に入ってしまう。 */
+.deco .step-row::before {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.deco.deco--tape-shadow .step-row::before {
+  border: 0;
+  border-radius: 10px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-4deg);
+}
+
+.deco.deco--tape-shadow .badge,
+.deco.deco--tape-shadow .chip {
+  border: 0;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.1);
+}
+
+/* 名簿の要約も、導入では「札」として扱う。管理では面を静かにする。 */
+.deco.deco--tape-shadow .roster-summary__item {
+  border: 0;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.15);
+  transform: rotate(-0.5deg);
+}
+
+.deco.deco--tape-shadow .roster-summary__item:nth-child(even) {
+  transform: rotate(0.5deg);
+}
+
+.deco.deco--tape-shadow .alert {
+  border: 0;
+  border-left: 3px solid currentColor;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.1);
+}

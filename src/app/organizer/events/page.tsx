@@ -18,6 +18,7 @@ import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import type { OrganizerEvent } from "@/modules/events/types";
+import { Alert, EmptyState, Loading, PageHeader, Panel, Section, SectionHead } from "@/components/ui";
 
 function OrganizerEventsScreen() {
   const router = useRouter();
@@ -124,13 +125,7 @@ function OrganizerEventsScreen() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">主催イベント一覧</h1>
-        <p className="page-lead">
-          作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。
-        </p>
-      </div>
+      <PageHeader eyebrow="主催者" title="主催イベント一覧" lead="作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。" />
 
       <OrganizerTabs />
 
@@ -174,18 +169,17 @@ function OrganizerEventsScreen() {
       />
 
       {loading && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       )}
       {error && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href={SITE.nav.organizerLogin.href} className="text-link">
             {SITE.nav.organizerLogin.label}
           </Link>
-        </p>
+        </Alert>
       )}
 
       {!loading && !error && (
@@ -215,12 +209,9 @@ function OrganizerEventsScreen() {
       )}
 
       {viewer?.userId && (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">主催者ページ</h2>
-            <p className="section__note">参加者に見えるページです。URLを配って集客にも使えます。</p>
-          </div>
-          <div className="panel" style={{ marginTop: "0.75rem" }}>
+        <Section>
+          <SectionHead title="主催者ページ" note="参加者に見えるページです。URLを配って集客にも使えます。" />
+          <Panel as="div" style={{ marginTop: "0.75rem" }}>
             <p className="panel__note">
               告知ページの主催者名から、プロフィールと催しのページへ移動できます。
             </p>
@@ -240,19 +231,15 @@ function OrganizerEventsScreen() {
                 URLをコピー
               </button>
             </div>
-          </div>
-        </section>
+          </Panel>
+        </Section>
       )}
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">公開中</h2>
-          <p className="section__note">
-            {events.length}件。出欠の集計、編集、複製はここから行います。
-          </p>
-        </div>
+      <Section>
+        <SectionHead title="公開中" note={<>{events.length}件。出欠の集計、編集、複製はここから行います。
+          </>} />
         {!loading && !error && events.length === 0 && (
-          <div className="empty" style={{ marginTop: "1rem" }}>
+          <EmptyState as="div" style={{ marginTop: "1rem" }}>
             <p className="empty__title">
               {draftCount > 0 ? `公開中の催しはありません。下書きが${draftCount}件あります。` : "まだ主催イベントがありません。"}
             </p>
@@ -264,7 +251,7 @@ function OrganizerEventsScreen() {
                 </Link>
               </p>
             )}
-          </div>
+          </EmptyState>
         )}
         <div className="card-grid" style={{ marginTop: "1rem" }}>
           {events.map((event) => (
@@ -277,7 +264,7 @@ function OrganizerEventsScreen() {
             />
           ))}
         </div>
-      </section>
+      </Section>
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}
         onClose={quotaState.closePricingModal}
@@ -320,10 +307,9 @@ export default function OrganizerEventsPage() {
   return (
     <Suspense
       fallback={
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       }
     >
       <OrganizerEventsScreen />

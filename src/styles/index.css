@@ -1,0 +1,14 @@
+/* 共有スタイルの入口。モックと本体はこの 1 ファイルだけを読む。
+   順番が仕様。値 → 土台 → 部品 → 画面 → 装飾（最後）の順で、後ろほど優先される。
+   モック（style-guide/*.html）も同じファイルを読むので、直すのは 1 箇所で済む。 */
+@import "./tokens.css";
+@import "./base.css";
+@import "./components.css";
+@import "./screens/public.css";
+@import "./screens/organizer.css";
+@import "./deco/tokens.css";
+@import "./deco/base.css";
+@import "./deco/pop.css";
+@import "./deco/quiet.css";
+@import "./deco/surface.css";
+@import "./deco/print.css";

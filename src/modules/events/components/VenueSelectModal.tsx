@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatPostalCode } from "@/lib/postal-code";
 import { readProblem } from "@/lib/problem";
+import { Alert, Dialog, EmptyState, Loading } from "@/components/ui";
 
 /** 過去に入力した会場。GET /api/v1/venues の 1 件ぶん。 */
 export interface SelectableVenue {
@@ -84,13 +85,8 @@ export function VenueSelectModal({ isOpen, onClose, onSelect }: VenueSelectModal
   if (!isOpen) return null;
 
   return (
-    <div className="modal" style={{ display: "flex" }}>
-      <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="venue-select-title">
-        <h3 id="venue-select-title" className="dialog__title">
-          過去の会場から選ぶ
-        </h3>
-        <p className="dialog__body">
+    <Dialog title="過去の会場から選ぶ" titleId="venue-select-title" onClose={onClose}>
+      <p className="dialog__body">
           選ぶと、会場名・郵便番号・住所がまとめて入ります。この端末とアカウントで過去に使った会場だけが出ます。
         </p>
         {loading && <p className="loading">読み込んでいます</p>}
@@ -141,7 +137,6 @@ export function VenueSelectModal({ isOpen, onClose, onSelect }: VenueSelectModal
         <button type="button" onClick={onClose} className="btn btn--ghost btn--block">
           閉じる
         </button>
-      </div>
-    </div>
+    </Dialog>
   );
 }

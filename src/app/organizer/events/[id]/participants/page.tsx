@@ -11,6 +11,7 @@ import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequire
 import type { EventPricePlanOption, EventScheduleOption, ParticipantRow } from "@/modules/events/types";
 import type { RevenueSummary } from "@/modules/revenue/lib/revenue";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
+import { Alert, Loading, PageHeader, Panel } from "@/components/ui";
 
 interface ParticipantsResponse {
   event: {
@@ -168,23 +169,18 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
     setToast("参加者用の共有リンクをコピーしました。");
   };
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (!data) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         参加者を読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">参加者名簿</h1>
-        <p className="page-lead">{data.event.title}</p>
-      </div>
+      <PageHeader eyebrow="主催者" title="参加者名簿" lead={<>{data.event.title}</>} />
 
       <OrganizerTabs />
 
@@ -226,7 +222,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      <section className="panel">
+      <Panel>
         <div className="panel__actions">
           <button
             type="button"
@@ -269,16 +265,16 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         <p className="screen-note">
           リマインドは、アカウントのある参加者に送られます。アカウントのない人には、文面をコピーして個別に連絡してください。
         </p>
-      </section>
+      </Panel>
 
-      <section className="panel">
+      <Panel>
         <RevenueSummaryLedger summary={data.revenue} />
-      </section>
+      </Panel>
 
       {data.revenue.unassignedPlanCount > 0 && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           出席しているのに費用プランが未選択の参加者が {data.revenue.unassignedPlanCount} 人います。表の「費用プラン」を選ぶと売上に入ります。
-        </p>
+        </Alert>
       )}
       <ParticipantListTable
         rows={data.participants}

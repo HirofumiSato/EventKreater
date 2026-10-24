@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { formatDateTimeJa } from "@/lib/format";
 import { readProblem } from "@/lib/problem";
 import { RAIN_POLICY_LABELS, type RainPolicy } from "@/modules/events/types";
+import { Alert, Loading, PageHeader } from "@/components/ui";
 
 interface Preview {
   event: {
@@ -63,27 +65,22 @@ export default function InvitationPage({ params }: { params: { code: string } })
       <div className="page--form stack">
         <h1 className="page-title">共同主催者の招待</h1>
         <p className="page-lead">招待を表示できません。</p>
-        <p className="alert alert--error">{error}</p>
+        <Alert tone="error">{error}</Alert>
       </div>
     );
   }
   if (!preview) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         招待を確認しています
-      </p>
+      </Loading>
     );
   }
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">招待</p>
-        <h1 className="page-title">共同主催者に加わりますか</h1>
-        <p className="page-lead">{preview.event.title}</p>
-      </div>
-      {error && <p className="alert alert--error">{error}</p>}
+      <PageHeader eyebrow="招待" title="共同主催者に加わりますか" lead={<>{preview.event.title}</>} />
+      {error && <Alert tone="error">{error}</Alert>}
       <div className="auth-card">
         <h2 className="auth-card__title">{preview.event.organizer.ownerName ?? "主催者"} からの招待</h2>
         <p className="auth-card__note">
@@ -107,7 +104,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
             <dd>{RAIN_POLICY_LABELS[preview.event.rainPolicy]}</dd>
           </div>
         </dl>
-        <p className="help">有効期限 {new Date(preview.invitation.expiresAt).toLocaleString("ja-JP")}</p>
+        <p className="help">有効期限 {formatDateTimeJa(preview.invitation.expiresAt)}</p>
         <div className="panel__actions">
           {preview.loggedIn ? (
             <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">

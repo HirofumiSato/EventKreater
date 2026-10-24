@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Alert, Loading } from "@/components/ui";
 
 /** `POST /api/v1/billing/checkout/verify` の応答のうち、画面が使う部分。 */
 export interface VerifyPaymentResult {
@@ -57,14 +58,13 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
 
   if (status === "VERIFYING") {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         Stripeでの決済完了を確認しています。
-      </p>
+      </Loading>
     );
   }
   if (status === "SUCCESS") {
-    return <p className="alert alert--success">お支払いが確認できました。作成枠が付与されました。</p>;
+    return <Alert tone="success">お支払いが確認できました。作成枠が付与されました。</Alert>;
   }
-  return <p className="alert alert--error">{errorMessage || "決済の確認が完了できませんでした。"}</p>;
+  return <Alert tone="error">{errorMessage || "決済の確認が完了できませんでした。"}</Alert>;
 }

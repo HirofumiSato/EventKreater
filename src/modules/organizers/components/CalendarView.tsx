@@ -23,6 +23,7 @@ import {
 } from "@/modules/organizers/lib/calendar";
 import { readProblem } from "@/lib/problem";
 import { SITE } from "@/lib/site";
+import { Alert, EmptyState, Loading, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 export function CalendarView() {
   const router = useRouter();
@@ -80,32 +81,27 @@ export function CalendarView() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">カレンダー</h1>
-        <p className="page-lead">開催日ごとに並びます。日付を押すと、その日の催しが出ます。</p>
-      </div>
+      <PageHeader eyebrow="主催者" title="カレンダー" lead="開催日ごとに並びます。日付を押すと、その日の催しが出ます。" />
 
       <OrganizerTabs />
 
       {error && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href={SITE.nav.organizerLogin.href} className="text-link">
             {SITE.nav.organizerLogin.label}
           </Link>
-        </p>
+        </Alert>
       )}
 
       {loading && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       )}
 
       {!error && !loading && monthEntryCount === 0 && (
-        <div className="empty">
+        <EmptyState as="div">
           <p className="empty__title">この月に予定はありません。</p>
           <p className="empty__body">
             別の月へ移るか、新しい催しを作ってください。{" "}
@@ -113,7 +109,7 @@ export function CalendarView() {
               新規作成
             </Link>
           </p>
-        </div>
+        </EmptyState>
       )}
 
       {!error && (
@@ -150,39 +146,31 @@ export function CalendarView() {
       )}
 
       {!error && (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
-            <p className="section__note">
-              {dayEntries.length > 0
+        <Section>
+          <SectionHead
+            title={<>{formatDayHeading(selectedDate)}</>}
+            note={<>{dayEntries.length > 0
                 ? `この日の催しは ${dayEntries.length}件です。`
-                : "この日の予定はありません。"}
-            </p>
-          </div>
+                : "この日の予定はありません。"}</>}
+          />
           {dayEntries.length === 0 ? (
-            <p className="empty">
+            <EmptyState>
               <span className="empty__title">この日は空いています。</span>
               <span className="empty__body">日付を押すと、その日の催しが出ます。</span>
-            </p>
+            </EmptyState>
           ) : (
-            <ul className="rows">
+            <Rows>
               {dayEntries.map(({ event, schedule }) => (
-                <li key={`${event.id}-${schedule.id}`} className="rows__item">
-                  <div className="rows__main">
-                    <p className="rows__title">
-                      <Link href={organizerEventHref(event)}>{event.title}</Link>
-                    </p>
-                    <p className="rows__meta">
-                      {schedule.eventTime || "時刻未定"}
+                <Row
+                  title={<><Link href={organizerEventHref(event)}>{event.title}</Link></>}
+                  meta={<>{schedule.eventTime || "時刻未定"}
                       {event.location ? ` ／ ${event.location}` : ""}
                       <br />
                       参加 {event.stats.attendingCount}
                       {event.capacity === null ? "名（定員なし）" : ` / ${event.capacity}名`} ・{" "}
                       {STATUS_LABELS[event.status]}
-                      {event.role === "CO_HOST" && " · 共同主催"}
-                    </p>
-                  </div>
-                  <div className="event-card__actions">
+                      {event.role === "CO_HOST" && " · 共同主催"}</>}
+                  aside={<><div className="event-card__actions">
                     <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--ghost btn--sm">
                       名簿
                     </Link>
@@ -196,12 +184,13 @@ export function CalendarView() {
                         className="btn btn--outline btn--sm"
                       />
                     )}
-                  </div>
-                </li>
+                  </div></>}
+                  key={`${event.id}-${schedule.id}`}
+                />
               ))}
-            </ul>
+            </Rows>
           )}
-        </section>
+        </Section>
       )}
     </div>
   );

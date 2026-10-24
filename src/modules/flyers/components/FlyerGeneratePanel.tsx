@@ -9,6 +9,7 @@ import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
 import type { FlyerQuota, SelectableFlyer } from "@/modules/flyers/types";
 import { FlyerCandidateModal } from "./FlyerCandidateModal";
 import { FlyerUploadButton } from "./FlyerUploadButton";
+import { Alert } from "@/components/ui";
 
 interface FlyerGeneratePanelProps {
   value: EventFormValues;
@@ -168,7 +169,7 @@ export function FlyerGeneratePanel({
       </p>
 
       {exhausted && (
-        <div className="alert alert--warning">
+        <Alert tone="warning" as="div">
           {quota?.anonymous ? (
             <p>
               未ログインで作れるチラシは 1 回までです。
@@ -186,10 +187,10 @@ export function FlyerGeneratePanel({
               </button>
             </>
           )}
-        </div>
+        </Alert>
       )}
-      {statusNote && <p className="alert alert--warning">{statusNote}</p>}
-      {error && <p className="alert alert--error">{error}</p>}
+      {statusNote && <Alert tone="warning">{statusNote}</Alert>}
+      {error && <Alert tone="error">{error}</Alert>}
 
       {draftKey && (
         <FlyerCandidateModal

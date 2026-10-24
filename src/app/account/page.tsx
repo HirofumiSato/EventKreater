@@ -8,6 +8,7 @@ import { PasswordPanel } from "@/modules/account/components/PasswordPanel";
 import { PhoneChangePanel } from "@/modules/account/components/PhoneChangePanel";
 import { WithdrawPanel } from "@/modules/account/components/WithdrawPanel";
 import type { AccountProfile, AccountProfileResponse } from "@/modules/account/types";
+import { Alert, PageHeader, Panel } from "@/components/ui";
 
 /**
  * 会員のアカウント設定。主催者・参加者のどちらも同じ画面を使う。
@@ -62,23 +63,19 @@ export default function AccountPage() {
     return (
       <div className="page--form stack">
         <h1 className="page-title">アカウント</h1>
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error ?? "会員情報を読み込めませんでした。"}{" "}
           <Link href="/auth/login" className="text-link">
             ログイン
           </Link>
-        </p>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">設定</p>
-        <h1 className="page-title">アカウント設定</h1>
-        <p className="page-lead">主催者と参加者で、同じ画面を使います。</p>
-      </div>
+      <PageHeader eyebrow="設定" title="アカウント設定" lead="主催者と参加者で、同じ画面を使います。" />
       <div className="btn-row">
         {isOrganizer ? (
           <Link href="/mypage" className="btn btn--outline btn--sm">
@@ -93,13 +90,13 @@ export default function AccountPage() {
 
       <AccountInfoPanel profile={profile} onChange={patchProfile} />
 
-      <section className="panel">
+      <Panel>
         <h2 className="panel__title">電話番号</h2>
         <p className="panel__note">
           ログインの確認番号を受け取る番号です。変更には、その場で確認番号を入れます。
         </p>
         <PhoneChangePanel profile={profile} onChange={patchProfile} />
-      </section>
+      </Panel>
 
       <PasswordPanel profile={profile} onChange={patchProfile} />
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
+import { Alert, EmptyState, Field } from "@/components/ui";
 
 interface AdminPaymentRow {
   id: string;
@@ -95,7 +96,7 @@ export default function AdminPaymentsPage() {
   };
 
   if (blocked) {
-    return <p className="empty">このページは利用できません。</p>;
+    return <EmptyState>このページは利用できません。</EmptyState>;
   }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -109,10 +110,7 @@ export default function AdminPaymentsPage() {
         </p>
       </div>
       <form className="form" onSubmit={search}>
-        <div className="field">
-          <label className="label" htmlFor="admin-payment-q">
-            検索
-          </label>
+        <Field label="検索" htmlFor="admin-payment-q">
           <input
             id="admin-payment-q"
             value={q}
@@ -120,7 +118,7 @@ export default function AdminPaymentsPage() {
             placeholder="名前、メール、Stripe ID"
             className="input"
           />
-        </div>
+        </Field>
         <div className="btn-row">
           <button type="submit" className="btn btn--primary">
             検索
@@ -139,7 +137,7 @@ export default function AdminPaymentsPage() {
           </button>
         </div>
       </form>
-      {error ? <p className="alert alert--error">{error}</p> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
       <p className="help">
         {submittedQ ? `「${submittedQ}」` : "全件"} {total}件
       </p>

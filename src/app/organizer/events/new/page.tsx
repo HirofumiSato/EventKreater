@@ -28,6 +28,7 @@ import {
   type EventScheduleOption,
   type FlyerAsset,
 } from "@/modules/events/types";
+import { Alert, Loading, PageHeader, Panel } from "@/components/ui";
 
 /** 復元する下書きの取得結果。編集画面と同じ形。 */
 interface DraftDetailResponse {
@@ -305,22 +306,16 @@ function NewEventScreen() {
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">5ステップ</p>
-        <h1 className="page-title">新規イベント作成</h1>
-        <p className="page-lead">
-          済んだステップは畳まれます。次に入れるものだけが開きます。日時と費用プランは複数登録できます。
-        </p>
-      </div>
+      <PageHeader eyebrow="5ステップ" title="新規イベント作成" lead="済んだステップは畳まれます。次に入れるものだけが開きます。日時と費用プランは複数登録できます。" />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {draftId && !restoring && (
-        <p className="alert alert--success">
+        <Alert tone="success">
           下書きを復元しました。内容を確認して、最後のステップからプレビューを開き、公開してください。
-        </p>
+        </Alert>
       )}
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
       {registerRequired && (
-        <section className="panel stack">
+        <Panel className="stack">
           <div>
             <h2 className="panel__title">2件目からは会員登録が必要です</h2>
             <p className="help">
@@ -335,7 +330,7 @@ function NewEventScreen() {
               すでに会員の方はログイン
             </Link>
           </div>
-        </section>
+        </Panel>
       )}
       <EventStepForm
         value={form}
@@ -413,10 +408,9 @@ export default function NewEventPage() {
   return (
     <Suspense
       fallback={
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       }
     >
       <NewEventScreen />

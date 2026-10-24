@@ -3,6 +3,7 @@ import { buildServicePlans } from "@/modules/billing/lib/plans";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteBoth } from "@/modules/billing/lib/pricing";
 import { SITE } from "@/lib/site";
+import { Alert, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -56,14 +57,11 @@ export default async function ServicePage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">料金</p>
-        <h1 className="page-title">作るほど高くならない。公開した回数だけ。</h1>
-        <p className="page-lead">
-          チラシと告知ページの作成、出欠の集計、名簿、領収書までが同じ料金に含まれます。
-          参加者が払うのは、催しの参加費だけです。
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="料金"
+        title="作るほど高くならない。公開した回数だけ。"
+        lead="チラシと告知ページの作成、出欠の集計、名簿、領収書までが同じ料金に含まれます。 参加者が払うのは、催しの参加費だけです。"
+      />
 
       <ul className="plan-list">
         {plans.map((plan) => (
@@ -96,34 +94,28 @@ export default async function ServicePage() {
       </ul>
 
       {campaignDeadline && (
-        <p className="alert alert--info">
+        <Alert tone="info">
           期間限定の価格キャンペーンを実施中です。表示中の金額は {campaignDeadline} までの販売価格です。
           0円の月額プランは、無料期間の終了後に月額料金へ自動で切り替わります。
-        </p>
+        </Alert>
       )}
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">料金に含まれるもの</h2>
-          <p className="section__note">あとから追加課金になる機能はありません。</p>
-        </div>
-        <ul className="rows">
+      <Section>
+        <SectionHead title="料金に含まれるもの" note="あとから追加課金になる機能はありません。" />
+        <Rows>
           {capabilities.map(([title, body]) => (
-            <li key={title} className="rows__item">
-              <div className="rows__main">
-                <p className="rows__title">{title}</p>
-                <p className="rows__meta">{body}</p>
-              </div>
-              <span className="rows__value">含む</span>
-            </li>
+            <Row
+              title={<>{title}</>}
+              meta={<>{body}</>}
+              aside={<><span className="rows__value">含む</span></>}
+              key={title}
+            />
           ))}
-        </ul>
-      </section>
+        </Rows>
+      </Section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">よくある質問</h2>
-        </div>
+      <Section>
+        <SectionHead title="よくある質問" />
         <div className="fold-list">
           {faqs.map(([question, answer]) => (
             <details key={question} className="fold">
@@ -134,7 +126,7 @@ export default async function ServicePage() {
             </details>
           ))}
         </div>
-      </section>
+      </Section>
 
       <div className="panel__actions">
         <Link href={SITE.nav.createEvent.href} className="btn btn--primary">

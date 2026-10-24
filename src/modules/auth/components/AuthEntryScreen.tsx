@@ -15,6 +15,7 @@ import {
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
+import { Alert, Field, Loading, PageHeader } from "@/components/ui";
 
 export type AuthAudience = "organizer" | "participant";
 
@@ -196,10 +197,9 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
     // ログイン済みならフォームを出さずに着地へ送る。判定中も同じ表示にして、
     // 一瞬だけ入力欄が見えて消えるのを避ける。
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         ログイン状態を確認しています
-      </p>
+      </Loading>
     );
   }
 
@@ -234,11 +234,11 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">{audience === "participant" ? "参加者" : "主催者"}</p>
-        <h1 className="page-title">{mode === "register" ? copy.title.register : copy.title.login}</h1>
-        <p className="page-lead">{copy.lead}</p>
-      </div>
+      <PageHeader
+        eyebrow={<>{audience === "participant" ? "参加者" : "主催者"}</>}
+        title={<>{mode === "register" ? copy.title.register : copy.title.login}</>}
+        lead={<>{copy.lead}</>}
+      />
       <div className="segment">
         <label className="segment__item">
           <input type="radio" name="auth-mode" checked={mode === "register"} onChange={() => setMode("register")} />
@@ -260,10 +260,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
         </p>
         <form onSubmit={submit} className="auth-card__body">
           {mode === "register" && (
-            <div className="field">
-              <label className="label" htmlFor="register-name">
-                名前
-              </label>
+            <Field label="名前" htmlFor="register-name">
               <input
                 id="register-name"
                 required
@@ -272,12 +269,9 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
                 onChange={(event) => setName(event.target.value)}
                 className="input"
               />
-            </div>
+            </Field>
           )}
-          <div className="field">
-            <label className="label" htmlFor="register-email">
-              メールアドレス
-            </label>
+          <Field label="メールアドレス" htmlFor="register-email">
             <input
               id="register-email"
               required
@@ -286,11 +280,8 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
               onChange={(event) => setEmail(event.target.value)}
               className="input"
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="register-password">
-              パスワード
-            </label>
+          </Field>
+          <Field label="パスワード" htmlFor="register-password">
             <input
               id="register-password"
               required
@@ -301,9 +292,9 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
               className="input"
             />
             {mode === "register" && <p className="help">8文字以上。漏えいが確認されているパスワードは使えません。</p>}
-          </div>
-          {notice && <p className="alert alert--success">{notice}</p>}
-          {error && <p className="alert alert--error">{error}</p>}
+          </Field>
+          {notice && <Alert tone="success">{notice}</Alert>}
+          {error && <Alert tone="error">{error}</Alert>}
           {adminConsoleRequired && (
             <a className="btn btn--outline btn--block" href="/console/login">
               管理者ログインへ
@@ -433,16 +424,15 @@ function PhoneScreen({
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">{audience === "participant" ? "参加者" : "主催者"}</p>
-        <h1 className="page-title">電話番号の確認</h1>
-        <p className="page-lead">
-          {audience === "participant"
+      <PageHeader
+        eyebrow={<>{audience === "participant" ? "参加者" : "主催者"}</>}
+        title="電話番号の確認"
+        lead={<>{audience === "participant"
             ? "履歴を残す会員は、確認済みの電話番号が必要です。メールアドレスや Google アカウントが違っても、同じ番号なら同じ会員になります。"
             : "無料枠は、確認済みの電話番号 1 件につき 2 回です。メールアドレスや Google アカウントが違っても、同じ番号なら同じ会員になります。"}{" "}
           確認後の移動先は {nextPath} です。
-        </p>
-      </div>
+        </>}
+      />
       <div className="auth-card">
         <h2 className="auth-card__title">{sent ? "確認番号で入る" : "電話番号で入る"}</h2>
         <p className="auth-card__note">
@@ -451,10 +441,7 @@ function PhoneScreen({
             : "登録した電話番号に 6桁の番号を送ります。"}
         </p>
         <form onSubmit={sent ? confirm : start} className="auth-card__body">
-          <div className="field">
-            <label className="label" htmlFor="register-phone">
-              電話番号
-            </label>
+          <Field label="電話番号" htmlFor="register-phone">
             <input
               id="register-phone"
               required
@@ -466,12 +453,9 @@ function PhoneScreen({
               placeholder="09012345678"
             />
             <p className="help">日本の携帯電話は 0 から入力できます。国番号付き（+81）も受け付けます。</p>
-          </div>
+          </Field>
           {sent && (
-            <div className="field">
-              <label className="label" htmlFor="register-phone-code">
-                確認コード（6桁）
-              </label>
+            <Field label="確認コード（6桁）" htmlFor="register-phone-code">
               <input
                 id="register-phone-code"
                 required
@@ -482,10 +466,10 @@ function PhoneScreen({
                 onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="input code-input"
               />
-            </div>
+            </Field>
           )}
-          {notice && <p className="alert alert--success">{notice}</p>}
-          {error && <p className="alert alert--error">{error}</p>}
+          {notice && <Alert tone="success">{notice}</Alert>}
+          {error && <Alert tone="error">{error}</Alert>}
           <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
             {submitting ? "処理中..." : sent ? "確認して続ける" : "確認コードを送る"}
           </button>
@@ -523,10 +507,9 @@ export function AuthEntryScreen({ audience }: { audience: AuthAudience }) {
   return (
     <Suspense
       fallback={
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           ログイン画面を準備しています
-        </p>
+        </Loading>
       }
     >
       <AuthEntry audience={audience} />

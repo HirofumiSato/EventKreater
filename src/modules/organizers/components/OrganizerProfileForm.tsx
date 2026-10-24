@@ -18,6 +18,7 @@ import {
   type OrganizerProfileStats,
   type ProfileTag,
 } from "@/modules/organizers/types";
+import { Alert, Field, Loading, Panel } from "@/components/ui";
 
 type LoadState = "loading" | "ready" | "error" | "register" | "not-organizer";
 
@@ -108,10 +109,9 @@ export function OrganizerProfileForm() {
 
   if (state === "loading") {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
@@ -149,7 +149,7 @@ export function OrganizerProfileForm() {
   if (state === "error") {
     return (
       <section className="card stack">
-        <p className="alert alert--error">{error}</p>
+        <Alert tone="error">{error}</Alert>
         <div className="btn-row">
           <Link href="/organizer/events" className="btn btn--outline">
             主催一覧へ戻る
@@ -162,7 +162,7 @@ export function OrganizerProfileForm() {
   if (previewing) {
     return (
       <div className="stack">
-        <section className="panel">
+        <Panel>
           <div>
             <p className="eyebrow">プレビュー</p>
             <h2 className="panel__title">参加者から見たページ</h2>
@@ -176,7 +176,7 @@ export function OrganizerProfileForm() {
               {saving ? "保存しています…" : "この内容で保存"}
             </button>
           </div>
-        </section>
+        </Panel>
         <OrganizerProfileView
           userId="preview"
           name={name}
@@ -191,7 +191,7 @@ export function OrganizerProfileForm() {
 
   return (
     <div className="stack">
-      <section className="panel">
+      <Panel>
         <div>
           <p className="eyebrow">公開設定</p>
           <h2 className="panel__title">{draft.isPublished ? "公開中" : "非公開"}</h2>
@@ -214,7 +214,7 @@ export function OrganizerProfileForm() {
             </a>
           )}
         </div>
-      </section>
+      </Panel>
 
       <form
         className="form form--spaced"
@@ -236,10 +236,7 @@ export function OrganizerProfileForm() {
           <p className="help">オフのままでも、ページと催しへの導線は開けます。</p>
         </fieldset>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-headline">
-            肩書き・ひとこと
-          </label>
+        <Field label="肩書き・ひとこと" htmlFor="profile-headline">
           <input
             id="profile-headline"
             className="input"
@@ -249,12 +246,9 @@ export function OrganizerProfileForm() {
             placeholder="渋谷で月いちの読書会をひらいています"
           />
           <p className="help">{draft.headline.length}/60</p>
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-bio">
-            自己紹介
-          </label>
+        <Field label="自己紹介" htmlFor="profile-bio">
           <textarea
             id="profile-bio"
             className="textarea"
@@ -265,12 +259,9 @@ export function OrganizerProfileForm() {
             placeholder="どんな催しを、どんな人と、どんな気持ちで開いているか。"
           />
           <p className="help">{draft.bio.length}/400</p>
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-area">
-            活動エリア
-          </label>
+        <Field label="活動エリア" htmlFor="profile-area">
           <input
             id="profile-area"
             className="input"
@@ -279,7 +270,7 @@ export function OrganizerProfileForm() {
             onChange={(event) => update("area", event.target.value)}
             placeholder="東京都渋谷区"
           />
-        </div>
+        </Field>
 
         <fieldset className="field">
           <legend className="label">活動ジャンル（{MAX_PROFILE_TAGS}つまで）</legend>
@@ -302,10 +293,7 @@ export function OrganizerProfileForm() {
           </div>
         </fieldset>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-x">
-            X
-          </label>
+        <Field label="X" htmlFor="profile-x">
           <input
             id="profile-x"
             className="input"
@@ -315,12 +303,9 @@ export function OrganizerProfileForm() {
             onChange={(event) => update("xUrl", event.target.value)}
             placeholder="https://x.com/example"
           />
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-instagram">
-            Instagram
-          </label>
+        <Field label="Instagram" htmlFor="profile-instagram">
           <input
             id="profile-instagram"
             className="input"
@@ -330,12 +315,9 @@ export function OrganizerProfileForm() {
             onChange={(event) => update("instagramUrl", event.target.value)}
             placeholder="https://www.instagram.com/example"
           />
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-website">
-            Webサイト
-          </label>
+        <Field label="Webサイト" htmlFor="profile-website">
           <input
             id="profile-website"
             className="input"
@@ -345,12 +327,9 @@ export function OrganizerProfileForm() {
             onChange={(event) => update("websiteUrl", event.target.value)}
             placeholder="https://example.com"
           />
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="profile-line">
-            LINE
-          </label>
+        <Field label="LINE" htmlFor="profile-line">
           <input
             id="profile-line"
             className="input"
@@ -361,7 +340,7 @@ export function OrganizerProfileForm() {
             placeholder="https://lin.ee/xxxxxxx"
           />
           <p className="help">lin.ee か line.me のURLだけを載せられます。</p>
-        </div>
+        </Field>
 
         <fieldset className="field">
           <legend className="label">実績</legend>

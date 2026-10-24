@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { formatRsvpDeadlineLabel } from "@/lib/serializers";
 import { PRICE_AUDIENCE_LABELS, RAIN_POLICY_LABELS, type PublicEvent } from "@/modules/events/types";
+import { Badge } from "@/components/ui";
 
 interface EventMetaCardProps {
   event: Pick<
@@ -70,21 +71,21 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
       )}
 
       <div className="event-sheet__badges">
-        <span className="badge badge--sm badge--neutral">{RAIN_POLICY_LABELS[event.rainPolicy]}</span>
-        {event.status === "CLOSED" && <span className="badge badge--sm badge--declined">受付停止</span>}
+        <Badge tone="neutral" small>{RAIN_POLICY_LABELS[event.rainPolicy]}</Badge>
+        {event.status === "CLOSED" && <Badge tone="declined" small>受付停止</Badge>}
         {event.status === "PUBLISHED" && event.rsvpDeadline && !event.rsvpOpen && (
-          <span className="badge badge--sm badge--declined">申し込み期限切れ</span>
+          <Badge tone="declined" small>申し込み期限切れ</Badge>
         )}
         {event.capacity !== null && (
-          <span className="badge badge--sm badge--neutral">
+          <Badge tone="neutral" small>
             {remaining === 0 ? "満員" : `定員 ${event.capacity}名`}
-          </span>
+          </Badge>
         )}
         {event.rsvpDeadline && (
-          <span className="badge badge--sm badge--warning">
+          <Badge tone="warning" small>
             締切 {formatRsvpDeadlineLabel(event.rsvpDeadline)}
             {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
-          </span>
+          </Badge>
         )}
       </div>
 

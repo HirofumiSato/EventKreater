@@ -27,6 +27,7 @@ import {
   type EventStatus,
   type FlyerAsset,
 } from "@/modules/events/types";
+import { Alert, Loading } from "@/components/ui";
 
 interface DetailResponse {
   event: {
@@ -148,13 +149,12 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
     setFlyerPreview(flyer.imageUrl);
   };
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (!ready) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         編集画面を準備しています
-      </p>
+      </Loading>
     );
   }
 
@@ -191,12 +191,11 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         />
       )}
       {lock.status === "acquiring" && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           編集を開始しています
-        </p>
+        </Loading>
       )}
-      {lock.error && <p className="alert alert--error">{lock.error}</p>}
+      {lock.error && <Alert tone="error">{lock.error}</Alert>}
       {role === "OWNER" && <CoHostPanel eventId={params.id} />}
       <EventForm
         value={form}

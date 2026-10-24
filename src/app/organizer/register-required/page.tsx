@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUrl, registerUrl } from "@/lib/auth-links";
 import { isEventId } from "@/lib/ids";
+import { Alert, Badge, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 /**
  * 公開直後の案内ページの状態。
@@ -112,13 +113,7 @@ function RegisterRequiredScreen() {
   if (!rawEventId) {
     return (
       <div className="page--form stack">
-        <div>
-          <p className="eyebrow">公開</p>
-          <h1 className="page-title">公開しました</h1>
-          <p className="page-lead">
-            このページは公開直後の幹事向けです。続けて出欠を確認するには、会員登録をしてください。
-          </p>
-        </div>
+        <PageHeader eyebrow="公開" title="公開しました" lead="このページは公開直後の幹事向けです。続けて出欠を確認するには、会員登録をしてください。" />
         <Link href="/organizer/events" className="btn btn--primary btn--block">
           主催イベント一覧へ
         </Link>
@@ -142,25 +137,22 @@ function RegisterRequiredScreen() {
 
   if (state.kind === "loading" || state.kind === "registered") {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
   if (state.kind === "forbidden") {
     return (
       <div className="page--form stack">
-        <div>
-          <p className="eyebrow">公開</p>
-          <h1 className="page-title">このページは公開直後の幹事向けです</h1>
-          <p className="page-lead">
-            {state.title
+        <PageHeader
+          eyebrow="公開"
+          title="このページは公開直後の幹事向けです"
+          lead={<>{state.title
               ? `「${state.title}」は公開されています。参加者は共有 URL から出欠を回答できます。`
-              : "イベントは公開されています。参加者は共有 URL から出欠を回答できます。"}
-          </p>
-        </div>
+              : "イベントは公開されています。参加者は共有 URL から出欠を回答できます。"}</>}
+        />
         <a href={shareUrl} className="btn btn--primary btn--block" target="_blank" rel="noreferrer">
           公開ページを開く
         </a>
@@ -177,19 +169,13 @@ function RegisterRequiredScreen() {
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">公開</p>
-        <h1 className="page-title">公開しました</h1>
-        <p className="page-lead">
-          この URL を参加者に送ってください。登録なしで出欠を答えられます。
-        </p>
-      </div>
+      <PageHeader eyebrow="公開" title="公開しました" lead="この URL を参加者に送ってください。登録なしで出欠を答えられます。" />
 
-      <p className="alert alert--success">
+      <Alert tone="success">
         {state.title ? `「${state.title}」を公開しました。` : "イベントを公開しました。"}
-      </p>
+      </Alert>
 
-      <section className="panel">
+      <Panel>
         <p className="panel__title">参加者に送る URL</p>
         <div className="field">
           <label className="label visually-hidden" htmlFor="share-url">
@@ -215,43 +201,32 @@ function RegisterRequiredScreen() {
         <p className="help" aria-live="polite">
           {copyFailed ? "コピーできませんでした。上の URL を選んでコピーしてください。" : ""}
         </p>
-      </section>
+      </Panel>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">登録すると、できること</h2>
-          <p className="section__note">いまは公開だけです。名簿から先は、会員登録のあとで使えます。</p>
-        </div>
-        <ul className="rows">
-          <li className="rows__item">
-            <div className="rows__main">
-              <p className="rows__title">参加者名簿</p>
-              <p className="rows__meta">出欠、人数、費用、支払いを 1枚で見られます。</p>
-            </div>
-            <span className="badge badge--neutral badge--sm">登録後</span>
-          </li>
-          <li className="rows__item">
-            <div className="rows__main">
-              <p className="rows__title">リマインド</p>
-              <p className="rows__meta">開催が近づいたら、参加者へ案内を送れます。</p>
-            </div>
-            <span className="badge badge--neutral badge--sm">登録後</span>
-          </li>
-          <li className="rows__item">
-            <div className="rows__main">
-              <p className="rows__title">領収書</p>
-              <p className="rows__meta">参加費を受け取ったら、その場で発行できます。</p>
-            </div>
-            <span className="badge badge--neutral badge--sm">登録後</span>
-          </li>
-          <li className="rows__item">
-            <div className="rows__main">
-              <p className="rows__title">共同幹事の招待</p>
-              <p className="rows__meta">もう 1人を、同じ催しの幹事に加えられます。</p>
-            </div>
-            <span className="badge badge--neutral badge--sm">登録後</span>
-          </li>
-        </ul>
+      <Section>
+        <SectionHead title="登録すると、できること" note="いまは公開だけです。名簿から先は、会員登録のあとで使えます。" />
+        <Rows>
+          <Row
+            title="参加者名簿"
+            meta="出欠、人数、費用、支払いを 1枚で見られます。"
+            aside={<><Badge tone="neutral" small>登録後</Badge></>}
+          />
+          <Row
+            title="リマインド"
+            meta="開催が近づいたら、参加者へ案内を送れます。"
+            aside={<><Badge tone="neutral" small>登録後</Badge></>}
+          />
+          <Row
+            title="領収書"
+            meta="参加費を受け取ったら、その場で発行できます。"
+            aside={<><Badge tone="neutral" small>登録後</Badge></>}
+          />
+          <Row
+            title="共同幹事の招待"
+            meta="もう 1人を、同じ催しの幹事に加えられます。"
+            aside={<><Badge tone="neutral" small>登録後</Badge></>}
+          />
+        </Rows>
 
         <div className="panel__actions">
           <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
@@ -267,7 +242,7 @@ function RegisterRequiredScreen() {
         <p className="screen-note">
           作った内容は、登録後そのまま引き継がれます。登録しなくても、公開した催しはこのまま動きます。
         </p>
-      </section>
+      </Section>
 
       <p className="screen-note">
         この画面は検索に出しません。第三者がこの URL を開いても、案内は出ません。主催一覧は
@@ -284,10 +259,9 @@ export default function RegisterRequiredPage() {
   return (
     <Suspense
       fallback={
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       }
     >
       <RegisterRequiredScreen />

@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { readProblem } from "@/lib/problem";
+import { Alert, Loading, PageHeader } from "@/components/ui";
 
 function VerifyScreen() {
   const router = useRouter();
@@ -44,21 +45,19 @@ function VerifyScreen() {
 
   return (
     <div className="page--form stack">
-      <div>
-        <p className="eyebrow">確認</p>
-        <h1 className="page-title">メールアドレスの確認</h1>
-        <p className="page-lead">
-          {participant
+      <PageHeader
+        eyebrow="確認"
+        title="メールアドレスの確認"
+        lead={<>{participant
             ? "リンク先の確認が終わると、電話番号の確認へ進みます。参加者ホームの準備ができたら、そのまま出欠の履歴を残せます。"
-            : "リンク先の確認が終わると、電話番号の確認へ進みます。既に会員のときはログインしてください。"}
-        </p>
-      </div>
+            : "リンク先の確認が終わると、電話番号の確認へ進みます。既に会員のときはログインしてください。"}</>}
+      />
       {status === "done" ? (
-        <p className="alert alert--success">
+        <Alert tone="success">
           {nextStep === "phone" ? "メールの確認が完了しました。電話番号を確認してください。" : "確認が完了しました。ログインしてください。"}
-        </p>
+        </Alert>
       ) : null}
-      {message && <p className="alert alert--error">{message}</p>}
+      {message && <Alert tone="error">{message}</Alert>}
       <div className="auth-card">
         <h2 className="auth-card__title">届いたメールを開く</h2>
         <p className="auth-card__note">
@@ -88,10 +87,9 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           確認画面を準備しています
-        </p>
+        </Loading>
       }
     >
       <VerifyScreen />

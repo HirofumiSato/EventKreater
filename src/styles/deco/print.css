@@ -1,0 +1,55 @@
+/* ==========================================================================
+   deco/print.css — 印刷。
+
+   もとは 1 枚の attendance.css と deco.css。読み込み順は index.css が持つ。
+   宣言順は元のまま。並べ替えると詳細度の同じ規則どうしが入れ替わり、
+   見た目が変わる。追加はこの層の末尾へ。
+   ========================================================================== */
+
+@media print {
+  .deco,
+  .deco.deco--tape,
+  .deco.deco--tape-quiet {
+    background: #fff !important;
+    background-image: none !important;
+    min-height: 0;
+  }
+
+  .deco .site-header,
+  .deco .site-footer,
+  .deco .no-print,
+  .deco .skip-link,
+  .deco .mockbar {
+    display: none !important;
+  }
+
+  .deco .page,
+  .deco .page--narrow,
+  .deco .page--form {
+    width: auto;
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .deco * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .deco .receipt,
+  .deco .receipt-sheet,
+  .deco .card,
+  .deco .panel {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  .deco .receipt,
+  .deco .receipt-sheet {
+    break-inside: avoid;
+  }
+}

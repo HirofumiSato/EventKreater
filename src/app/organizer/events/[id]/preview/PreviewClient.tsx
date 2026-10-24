@@ -21,6 +21,7 @@ import type {
   OrganizerRole,
   RainPolicy,
 } from "@/modules/events/types";
+import { Alert, EmptyState, Loading, Panel } from "@/components/ui";
 
 interface PreviewResponse {
   event: {
@@ -124,7 +125,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
   if (error) {
     return (
       <div className="stack">
-        <p className="alert alert--error">{error}</p>
+        <Alert tone="error">{error}</Alert>
         <Link href="/organizer/events" className="btn btn--outline">
           主催一覧へ戻る
         </Link>
@@ -133,10 +134,9 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
   }
   if (!detail) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         プレビューを読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
@@ -151,7 +151,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         公開すると、この内容で URL が発行されます。
       </div>
 
-      <section className="panel">
+      <Panel>
         <div className="panel__actions">
           {canPublish && (
             <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
@@ -170,19 +170,19 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         </p>
 
         {!isDraft && (
-          <p className="alert alert--success">
+          <Alert tone="success">
             このイベントは公開済みです。{" "}
             <Link href={`/events/${params.id}`} className="text-link">
               告知ページを開く
             </Link>
-          </p>
+          </Alert>
         )}
         {isDraft && (!registered || role !== "OWNER") && (
-          <p className="alert alert--warning">
+          <Alert tone="warning">
             公開は筆頭幹事（オーナー）の会員だけが行えます。内容の確認と編集はこのまま続けられます。
-          </p>
+          </Alert>
         )}
-      </section>
+      </Panel>
 
       <QuotaStatusBanner
         quota={quotaState.quota}
@@ -209,12 +209,12 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         }}
       />
 
-      <div className="empty">
+      <EmptyState as="div">
         <p className="empty__title">出欠フォームは出ません</p>
         <p className="empty__body">
           公開すると、ここに出欠の受付が入ります。プレビューでは見た目だけを確かめます。
         </p>
-      </div>
+      </EmptyState>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

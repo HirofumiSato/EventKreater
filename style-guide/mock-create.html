@@ -8,35 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../src/app/attendance.css">
-  <link rel="stylesheet" href="deco.css">
+  <link rel="stylesheet" href="../src/styles/index.css">
   <link rel="stylesheet" href="mock.css">
+  <link rel="stylesheet" href="mock-states.css">
 </head>
-<body class="deco deco--tape deco--tape-shadow" data-scope="onboard">
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="organizer" data-current="create" data-screen="新規イベント作成" data-path="/organizer/events/new">
   <a class="skip-link" href="#main">本文へ</a>
-
-  <header class="site-header">
-    <div class="site-header__inner">
-      <a class="site-brand" href="mock-index.html">EventKreater</a>
-      <nav id="site-nav" class="site-nav" aria-label="サイト">
-        <div class="site-nav__action">
-          <a class="btn btn--outline btn--sm btn--block" href="#">参加者として見る</a>
-        </div>
-        <a class="site-nav__link" href="mock-organizer.html">主催一覧</a>
-        <a class="site-nav__link" href="#">主催者マイページ</a>
-        <a class="site-nav__link" href="#">アカウント</a>
-      </nav>
-      <div class="site-header__actions">
-        <a class="btn btn--outline btn--sm" href="mock-create.html">イベント告知ページを作る</a>
-        <a class="btn btn--outline btn--sm site-header__action" href="#">参加者として見る</a>
-        <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="メニュー">
-          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
-          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
-          <span class="site-menu-toggle__bar" aria-hidden="true"></span>
-        </button>
-      </div>
-    </div>
-  </header>
 
   <main class="page" id="main">
     <div class="page--form stack">
@@ -240,33 +217,7 @@
     </div>
   </main>
 
-  <footer class="site-footer">
-    <div class="site-footer__inner">
-      <p>EventKreater</p>
-      <ul class="site-footer__links">
-        <li><a href="mock-index.html">モック一覧</a></li>
-        <li><a href="#">利用規約</a></li>
-      </ul>
-    </div>
-  </footer>
-
-  <div class="mockbar" role="group" aria-label="モックの切り替え">
-    <a class="mockbar__home" href="mock-index.html">← モック一覧</a>
-    <a class="mockbar__home" href="mock-compare.html">比較</a>
-    <span class="mockbar__label">新規作成</span>
-    <div class="mockbar__group">
-      <span>装飾</span>
-      <button type="button" data-deco-btn="tape-shadow" aria-pressed="true">影だけ</button>
-      <button type="button" data-deco-btn="tape-quiet" aria-pressed="false">静かめ</button>
-      <button type="button" data-deco-btn="base" aria-pressed="false">現行</button>
-    </div>
-    <div class="mockbar__group">
-      <button type="button" id="reset">最初から</button>
-      <button type="button" id="toggle-motion" aria-pressed="true">動き ON</button>
-    </div>
-  </div>
-
-  <!-- 音声入力。本体の VoiceInputDock と同じ markup と CSS（attendance.css）を使う。
+  <!-- 音声入力。本体の VoiceInputDock と同じ markup と CSS（src/styles/）を使う。
        ここでは見た目と、押したときの流れだけを再現する。 -->
   <div class="voice-scrim" id="voice-scrim" aria-hidden="true" hidden></div>
 
@@ -312,6 +263,7 @@
   </section>
 
   <script src="mock-theme.js"></script>
+  <script src="mock-shell.js"></script>
   <script>
     const STEPS = ["basic", "pricing", "location", "capacity", "flyer"];
     const MANDATORY = ["basic", "pricing", "location"];
@@ -427,18 +379,6 @@
     document.querySelector("[data-preview]").addEventListener("click", () =>
       showToast("公開の準備ができました。プレビューを開きます。"),
     );
-
-    document.getElementById("reset").addEventListener("click", () => {
-      done = new Set();
-      openKey = "basic";
-      for (const li of items.values()) {
-        delete li.dataset.justDone;
-        li.classList.remove("event-step--just-done");
-      }
-      const toast = document.querySelector(".mock-toast");
-      if (toast) toast.remove();
-      render();
-    });
 
     render();
 

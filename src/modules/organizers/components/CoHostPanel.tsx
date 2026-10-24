@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { formatDateTimeJa } from "@/lib/format";
 import { isRegisterRequired, readProblem, readProblemBody } from "@/lib/problem";
 import type { EventOrganizerList } from "@/modules/events/types";
+import { Alert, Badge, Loading, Panel, PanelHead, Row, Rows } from "@/components/ui";
 
 interface OrganizerResponse {
   organizers: EventOrganizerList;
@@ -87,44 +89,30 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
   const coHosts = data?.organizers.coHosts ?? [];
 
   return (
-    <section className="panel">
-      <div className="panel__head">
-        <h2 className="panel__title">共同幹事</h2>
-        <p className="panel__note">
-          招待リンクから、もう 1人を幹事に加えられます。解除はその場で確認します。
-        </p>
-      </div>
-      {error && <p className="alert alert--error">{error}</p>}
+    <Panel>
+      <PanelHead title="共同幹事" note="招待リンクから、もう 1人を幹事に加えられます。解除はその場で確認します。" />
+      {error && <Alert tone="error">{error}</Alert>}
       {loading ? (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           幹事を読み込んでいます
-        </p>
+        </Loading>
       ) : (
         <>
-          <ul className="rows">
+          <Rows>
             {owner && (
-              <li className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">{owner.name}</p>
-                  <p className="rows__meta">
-                    筆頭幹事 ／ 公開・非公開を変えられる
-                    {owner.isGuest ? " ／ 未登録の幹事" : ""}
-                  </p>
-                </div>
-                <span className="badge badge--neutral badge--sm">主催</span>
-              </li>
+              <Row
+                title={<>{owner.name}</>}
+                meta={<>筆頭幹事 ／ 公開・非公開を変えられる
+                    {owner.isGuest ? " ／ 未登録の幹事" : ""}</>}
+                aside={<><Badge tone="neutral" small>主催</Badge></>}
+              />
             )}
             {coHosts.map((row) => (
-              <li key={row.id} className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">{row.name}</p>
-                  <p className="rows__meta">
-                    共同幹事 ／ 名簿と売上を見られる
-                    {row.isGuest ? " ／ 未登録の幹事" : ""}
-                  </p>
-                </div>
-                {data?.canManage &&
+              <Row
+                title={<>{row.name}</>}
+                meta={<>共同幹事 ／ 名簿と売上を見られる
+                    {row.isGuest ? " ／ 未登録の幹事" : ""}</>}
+                aside={<>{data?.canManage &&
                   (removingId === row.id ? (
                     <div className="btn-row">
                       <button
@@ -153,18 +141,14 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
                     >
                       外す
                     </button>
-                  ))}
-              </li>
+                  ))}</>}
+                key={row.id}
+              />
             ))}
             {coHosts.length === 0 && (
-              <li className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">共同幹事はまだいません</p>
-                  <p className="rows__meta">招待リンクを発行すると、もう 1人を加えられます。</p>
-                </div>
-              </li>
+              <Row title="共同幹事はまだいません" meta="招待リンクを発行すると、もう 1人を加えられます。" />
             )}
-          </ul>
+          </Rows>
 
           {data?.canManage ? (
             <div className="panel__actions">
@@ -194,10 +178,10 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
           )}
 
           {shareUrl && (
-            <div className="panel">
+            <Panel as="div">
               <p className="panel__title">招待リンク</p>
               <p className="quote">{shareUrl}</p>
-              {expiresAt && <p className="help">有効期限 {new Date(expiresAt).toLocaleString("ja-JP")}</p>}
+              {expiresAt && <p className="help">有効期限 {formatDateTimeJa(expiresAt)}</p>}
               <p className="help">
                 URLを知っている会員が受諾すると、共同主催者に加わります。7日間有効で、一度受諾すると無効になります。
               </p>
@@ -212,10 +196,10 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
                   {copied ? "コピーしました" : "URLをコピー"}
                 </button>
               </div>
-            </div>
+            </Panel>
           )}
         </>
       )}
-    </section>
+    </Panel>
   );
 }

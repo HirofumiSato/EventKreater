@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ReceiptSheet } from "@/modules/receipts/components/ReceiptSheet";
 import { readProblem } from "@/lib/problem";
 import type { ReceiptView } from "@/modules/events/types";
+import { Alert, Loading } from "@/components/ui";
 
 export default function ParticipantReceiptPage({ params }: { params: { id: string } }) {
   const [receipt, setReceipt] = useState<ReceiptView | null>(null);
@@ -28,13 +29,12 @@ export default function ParticipantReceiptPage({ params }: { params: { id: strin
     };
   }, [params.id]);
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (!receipt) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         領収書を読み込んでいます
-      </p>
+      </Loading>
     );
   }
 

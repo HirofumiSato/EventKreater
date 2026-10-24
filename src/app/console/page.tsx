@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
+import { EmptyState } from "@/components/ui";
 
 const destinations = [
   ["会員", "名前とメールで検索し、他の会員の管理者権限を変更します。", "/console/users", "会員を開く"],
@@ -45,11 +46,11 @@ export default function ConsoleHomePage() {
   }, [router]);
 
   if (blocked) {
-    return <p className="empty">このページは利用できません。</p>;
+    return <EmptyState>このページは利用できません。</EmptyState>;
   }
 
   if (!ready) {
-    return <p className="empty">読み込んでいます</p>;
+    return <EmptyState>読み込んでいます</EmptyState>;
   }
 
   return (

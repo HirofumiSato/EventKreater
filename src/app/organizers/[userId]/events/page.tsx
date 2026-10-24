@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
+import { Loading } from "@/components/ui";
 
 /** 参加者向けのページなので、検索結果には出さない。 */
 export const metadata: Metadata = {
@@ -15,10 +16,9 @@ export default function OrganizerEventsPage({ params }: { params: { userId: stri
     <div className="page--narrow">
       <Suspense
         fallback={
-          <p className="loading">
-            <span className="spinner" aria-hidden="true" />
+          <Loading>
             読み込んでいます
-          </p>
+          </Loading>
         }
       >
         <OrganizerPageView userId={params.userId} />
