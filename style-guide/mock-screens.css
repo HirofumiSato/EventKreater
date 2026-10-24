@@ -175,11 +175,25 @@
   line-height: 1.7;
 }
 
-.event-sheet__host a {
-  color: var(--color-text-muted);
+/* 主催者名はプロフィールへの入口。青は使わず、本文の色と下線だけで押せることを示す。 */
+.event-sheet__host a,
+.event-sheet__host a:visited {
+  color: inherit;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-decoration-color: var(--color-border-strong);
   text-underline-offset: 0.22em;
+}
+
+.event-sheet__host a:hover {
+  color: var(--color-text);
+  text-decoration-color: currentColor;
+}
+
+.event-sheet__host a:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .event-sheet__host a::after {
@@ -303,57 +317,28 @@ body.is-full .poster-hero__stamp[data-when="full"] {
   margin-top: 0.875rem;
 }
 
-/* 出欠は参加者アカウントに紐づく。未ログインが既定で、フォームの代わりに入口を出す。 */
-.rsvp__gate {
-  display: block;
-  margin-top: 0.875rem;
-}
-
-.rsvp__form {
-  display: none;
-}
-
-body.is-member .rsvp__gate {
-  display: none;
-}
-
-body.is-member .rsvp__form {
-  display: block;
-}
-
-.rsvp__gate-title {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.6;
-}
-
-.rsvp__gate-note {
-  margin-top: 0.25rem;
-  color: var(--color-text-muted);
+/* ログインは必須ではない。名前と出欠だけで答えられる。
+   アカウントを持つ人にだけ、あとから変更できる導線を添える。 */
+.rsvp__login {
+  margin-top: 0.5rem;
+  color: var(--color-text-subtle);
   font-size: 0.8125rem;
   line-height: 1.75;
 }
 
-.rsvp__gate .btn {
-  margin-top: 0.875rem;
-}
-
-.rsvp__gate-alt {
-  margin-top: 0.625rem;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  text-align: center;
-}
-
-.rsvp__gate-alt a {
+.rsvp__login a {
   color: var(--color-text);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
-/* 誰として答えるか。フォームの先頭に 1 行だけ。 */
+body.is-member .rsvp__login {
+  display: none;
+}
+
+/* 誰として答えるか。ログインしているときだけ、フォームの先頭に 1 行。 */
 .rsvp__member {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.625rem;
@@ -364,6 +349,10 @@ body.is-member .rsvp__form {
   color: var(--color-text-muted);
   font-size: 0.8125rem;
   line-height: 1.6;
+}
+
+body.is-member .rsvp__member {
+  display: flex;
 }
 
 .rsvp__member a {
@@ -409,23 +398,6 @@ body.is-full .rsvp__choice[data-when="open"] {
 
 body.is-full .rsvp__choice[data-when="full"] {
   display: flex;
-}
-
-/* 追従ボタンの文言も、未ログインならログインへ送る。 */
-.sticky-cta [data-when="member"] {
-  display: none;
-}
-
-.sticky-cta [data-when="guest"] {
-  display: inline-flex;
-}
-
-body.is-member .sticky-cta [data-when="guest"] {
-  display: none;
-}
-
-body.is-member .sticky-cta [data-when="member"] {
-  display: inline-flex;
 }
 
 /* スマホの追従ボタン。本文の最後に置くと、押されないまま帰られる。 */

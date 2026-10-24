@@ -66,17 +66,11 @@
         <section class="rsvp" aria-labelledby="rsvp-title">
           <h2 class="rsvp__title" id="rsvp-title">出欠を答える</h2>
 
-          <!-- 未ログイン。出欠は参加者アカウントに紐づくので、先にログインしてもらう。 -->
-          <div class="rsvp__gate">
-            <p class="rsvp__gate-title">答えるには、参加者アカウントでログインします。</p>
-            <p class="rsvp__gate-note">
-              出欠はアカウントに残ります。同じアカウントなら、答えの変更も、ほかの催しの出欠もここにまとまります。
-            </p>
-            <a class="btn btn--primary btn--block" href="mock-participant-login.html">ログインして答える</a>
-            <p class="rsvp__gate-alt">
-              はじめての方は <a href="mock-register-required.html">参加者アカウントを作る</a>
-            </p>
-          </div>
+          <!-- ログインは必須ではない。名前と出欠だけで答えられる。
+               アカウントを持つ人だけ、あとから変更できる導線を添える。 -->
+          <p class="rsvp__login">
+            参加者アカウントをお持ちなら <a href="mock-participant-login.html">ログイン</a> すると、あとから答えを変えられます。
+          </p>
 
           <div class="rsvp__form">
             <p class="rsvp__member">
@@ -173,8 +167,7 @@
 
       <div class="sticky-cta">
         <a class="btn btn--outline" href="mock-organizer-public.html">主催者を見る</a>
-        <a class="btn btn--primary" href="#rsvp-title" data-when="member">出欠を答える</a>
-        <a class="btn btn--primary" href="mock-participant-login.html" data-when="guest">ログインして答える</a>
+        <a class="btn btn--primary" href="#rsvp-title">出欠を答える</a>
       </div>
 
     </div>

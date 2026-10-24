@@ -134,16 +134,29 @@ body.deco .hero--stage .hero__eyebrow {
 }
 
 /* スマホでは札をやめて、ヒーローの幅いっぱいに横断させる。
+   横断したままでも、札と同じ角度だけ傾けて手作り感を残す。
    PC は今の札のまま。 */
 @media (max-width: 899px) {
+  /* 傾けた帯の角がはみ出して横スクロールにならないよう、ヒーローの中で切る。 */
+  body.deco .hero--stage {
+    overflow: hidden;
+  }
+
   body.deco .hero--stage .hero__eyebrow {
     display: block;
     /* ヒーローの左右の余白を打ち消して、画面の端まで通す。
        余白の値は幅ごとに変わるので、固定値ではなく 50% - 50vw で戻す。 */
     margin-inline: calc(50% - 50vw);
-    padding: 0.5rem 1rem;
+    /* 1 行に収める。行数が増えると帯が厚くなり、ヒーローの頭が重くなる。
+       文字サイズは画面幅に合わせ、狭い端末でも折り返さない。 */
+    padding: 0.4375rem 0.75rem;
+    font-size: clamp(0.5625rem, 2.84vw, 0.75rem);
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    white-space: nowrap;
+    text-align: center;
     border-radius: 0;
-    transform: none;
+    transform: rotate(-2.5deg);
     box-shadow: none;
   }
 }
