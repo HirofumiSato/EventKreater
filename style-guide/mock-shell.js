@@ -10,6 +10,7 @@
  *   data-nav="public|participant|organizer"
  *   data-current="participant"       ナビの現在地のキー
  *   data-scope="onboard|admin"       装飾の既定（mock-theme.js が読む）
+ *   data-chrome="bare"               共通ヘッダーを出さない（主催者の独自ページ）
  * >
  */
 (function () {
@@ -19,6 +20,8 @@
   const current = body.dataset.current || "";
   const screen = body.dataset.screen || "";
   const path = body.dataset.path || "";
+  // 告知ページは主催者の独自ページに見せたいので、共通ヘッダーを出さない。
+  const bare = body.dataset.chrome === "bare";
 
   const NAVS = {
     public: [
@@ -121,6 +124,7 @@
   <div class="mockbar" role="group" aria-label="モックの切り替え">
     <a class="mockbar__home" href="mock-index.html">← 一覧</a>
     <a class="mockbar__home" href="mock-compare.html">比較</a>
+    <a class="mockbar__home" href="${frame(390)}" title="390px の枠で開き直す">スマホ枠</a>
     <span class="mockbar__label">${screen}</span>
     <details class="mockbar__more">
       <summary>表示</summary>
@@ -146,7 +150,7 @@
   const main = document.getElementById("main");
   if (main) {
     // すでにヘッダーを持つページ（先に作ったモック）は、そのまま使う。
-    if (!document.querySelector(".site-header")) {
+    if (!bare && !document.querySelector(".site-header")) {
       main.insertAdjacentHTML("beforebegin", header());
     }
     if (!document.querySelector(".site-footer")) {

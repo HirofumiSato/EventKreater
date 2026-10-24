@@ -133,6 +133,21 @@ body.deco .hero--stage .hero__eyebrow {
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
 
+/* スマホでは札をやめて、ヒーローの幅いっぱいに横断させる。
+   PC は今の札のまま。 */
+@media (max-width: 899px) {
+  body.deco .hero--stage .hero__eyebrow {
+    display: block;
+    /* ヒーローの左右の余白を打ち消して、画面の端まで通す。
+       余白の値は幅ごとに変わるので、固定値ではなく 50% - 50vw で戻す。 */
+    margin-inline: calc(50% - 50vw);
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 body.deco .hero__poster {
   position: relative;
 }
@@ -386,6 +401,29 @@ body.deco.deco--tape-shadow .feature-row:nth-child(3n + 3) {
   background: var(--color-surface);
 }
 
+/* 行を面として見せるときは、札が触れないよう間を空ける。
+   罫線のリストのまま（base）では、詰めたままが正しい。 */
+body.deco .feature-list,
+body.deco .step-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* 番号は文字ではなく札。文字の幅に引きずられると、列からはみ出して
+   隣の見出しとくっついて見える。 */
+body.deco .feature-row__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  width: 2rem;
+  height: 2rem;
+  padding-top: 0;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
 /* 傾きは 0.5 度まで。1 度を超えると、行が揃って見えなくなる。 */
 body.deco.deco--tape-shadow .stat {
   transform: rotate(-0.5deg);
@@ -510,6 +548,32 @@ body.deco.deco--tape-shadow .cta-band {
   border: 0;
   border-radius: var(--radius-3xl);
   box-shadow: 6px 6px 0 rgb(26 25 22 / 0.18);
+}
+
+/* 告知ページの最後に置く主催者への誘い。主役は出欠なので、
+   朱のボタンではなく、山吹の札と紙の面で存在だけを残す。 */
+body.deco .org-invite {
+  border: 0;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
+}
+
+body.deco .org-invite__tag {
+  box-shadow: 1px 1px 0 rgb(26 25 22 / 0.2);
+  transform: rotate(-2deg);
+}
+
+/* 手順の番号も同じ大きさの札に揃える。36px の数字は行の頭で重く、
+   見出しより先に目に入ってしまう。 */
+body.deco .step-row::before {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 body.deco.deco--tape-shadow .step-row::before {

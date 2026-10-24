@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="mock.css">
   <link rel="stylesheet" href="mock-screens.css">
 </head>
-<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-screen="告知・出欠" data-path="/events/[id]">
+<body class="deco deco--tape deco--tape-shadow" data-scope="onboard" data-nav="public" data-chrome="bare" data-screen="告知・出欠" data-path="/events/[id]">
   <a class="skip-link" href="#main">本文へ</a>
 
   <main class="page" id="main" style="padding-top: 0">
@@ -102,14 +102,6 @@
           <p class="screen-note" style="margin-top: 0.5rem">答えると、主催者に名前と出欠が届きます。</p>
         </section>
 
-        <div class="org-invite">
-          <div class="org-invite__body">
-            <p class="org-invite__title">自分でも催しを開くなら</p>
-            <p class="screen-note">チラシと告知ページを 5分で。最初の 2回は無料です。</p>
-          </div>
-          <a class="btn btn--outline btn--sm" href="mock-create.html">作ってみる</a>
-        </div>
-
         <div class="panel__actions" style="margin-top: 1rem">
           <button class="btn btn--outline btn--sm" type="button">LINEで送る</button>
           <button class="btn btn--ghost btn--sm" type="button">URLをコピー</button>
@@ -139,6 +131,15 @@
               <span class="rows__value">無料</span>
             </li>
           </ul>
+        </section>
+
+        <section class="org-invite" aria-labelledby="org-invite-title">
+          <p class="org-invite__tag">無料ではじめられます</p>
+          <h2 class="org-invite__title" id="org-invite-title">あなたも、催しを開いてみませんか。</h2>
+          <p class="org-invite__note">
+            このページと同じチラシと告知ページを、5 分で作れます。最初の 2 回は無料です。
+          </p>
+          <a class="btn btn--outline" href="mock-create.html">自分も開いてみる</a>
         </section>
       </div>
 
