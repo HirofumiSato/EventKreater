@@ -53,6 +53,7 @@ npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
 npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
+npm run mock:serve   # 装飾モック（style-guide/）を 127.0.0.1:4321 で配信
 cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ```

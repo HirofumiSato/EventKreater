@@ -19,14 +19,16 @@
   if (params.has("embed")) {
     document.documentElement.classList.add("is-embed");
 
-    // 枠の中ではブラウザのスクロールバーを消す。Windows の縦 15px が入ると、
-    // 390px の枠が 375px に痩せて、実機（iOS は重ね表示）と改行位置が変わる。
-    if (window.innerWidth <= 480) {
-      const style = document.createElement("style");
-      style.textContent =
-        "html{scrollbar-width:none}html::-webkit-scrollbar{width:0;height:0}";
-      document.head.append(style);
-    }
+    // 枠の中ではブラウザのスクロールバーを消す。
+    //   - 390px: Windows の縦 15px が入ると 375px に痩せ、実機（iOS は重ね表示）と
+    //     改行位置が変わる。
+    //   - 1280px: 同じ 15px で、全幅の帯（margin-inline: calc(50% - 50vw)）が
+    //     8px だけ横にはみ出す。枠の中で横スクロールバーが出て読みづらい。
+    // 実ブラウザの幅のまま見たいときは、枠を使わず「この幅のまま開く」で開く。
+    const style = document.createElement("style");
+    style.textContent =
+      "html{scrollbar-width:none}html::-webkit-scrollbar{width:0;height:0}";
+    document.head.append(style);
   }
 
   const scope = document.body.dataset.scope === "admin" ? "admin" : "onboard";
