@@ -570,6 +570,45 @@ body.deco .org-invite {
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
 }
 
+/* 音声入力。右下の丸い札は、紙に貼ったボタンとして置く。
+   押すと上に紙が開く。本体（attendance.css）の形は変えず、角と影だけ足す。 */
+body.deco .voice-fab {
+  border-radius: 999px;
+  padding: 0.8125rem 1.25rem;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.26);
+}
+
+body.deco .voice-fab:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.28);
+}
+
+body.deco .voice-fab--active,
+body.deco .voice-fab--active:hover {
+  /* 覆いの上に残るので、墨ではなく山吹にする。暗い面でも札として読める。 */
+  border-color: var(--pop-warm);
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  transform: none;
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.28);
+}
+
+body.deco .voice-panel {
+  border-radius: var(--radius-xl);
+  box-shadow: 5px 5px 0 rgb(26 25 22 / 0.18);
+}
+
+body.deco .voice-panel__message {
+  border-radius: var(--radius-lg);
+}
+
+/* 聞いている欄の枠は、札と同じ山吹にして「いまここ」を 1 色で示す。 */
+body.deco [data-voice-target="true"] {
+  outline: 3px solid var(--pop-warm);
+  outline-offset: 2px;
+  background: var(--pop-warm-tint);
+}
+
 body.deco .org-invite__tag {
   box-shadow: 1px 1px 0 rgb(26 25 22 / 0.2);
   transform: rotate(-2deg);

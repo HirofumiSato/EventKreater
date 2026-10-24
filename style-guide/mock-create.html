@@ -266,6 +266,51 @@
     </div>
   </div>
 
+  <!-- 音声入力。本体の VoiceInputDock と同じ markup と CSS（attendance.css）を使う。
+       ここでは見た目と、押したときの流れだけを再現する。 -->
+  <div class="voice-scrim" id="voice-scrim" aria-hidden="true" hidden></div>
+
+  <button
+    type="button"
+    class="voice-fab"
+    id="voice-fab"
+    aria-label="音声入力を開始"
+    aria-pressed="false"
+  >
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <path d="M12 19v3"></path>
+    </svg>
+    <span class="voice-fab__label">音声入力</span>
+  </button>
+
+  <section class="voice-panel" id="voice-panel" aria-label="音声入力" hidden>
+    <div class="voice-panel__head">
+      <p class="voice-panel__title" id="voice-title">音声入力</p>
+      <button type="button" class="voice-panel__close" id="voice-close">終了</button>
+    </div>
+    <p class="voice-panel__field" id="voice-field">催しの名前</p>
+    <p class="voice-panel__prompt" id="voice-prompt" aria-live="polite">
+      催しの名前を話してください。
+    </p>
+    <p class="voice-panel__hint" id="voice-hint">例: 忘年会</p>
+    <p class="voice-panel__transcript" id="voice-transcript" hidden></p>
+    <p class="voice-panel__message" id="voice-message" role="status" hidden></p>
+    <div class="voice-panel__actions">
+      <button type="button" class="btn btn--primary btn--sm" id="voice-talk">話す</button>
+      <button type="button" class="btn btn--ghost btn--sm" id="voice-prev">戻る</button>
+      <button type="button" class="btn btn--ghost btn--sm" id="voice-skip">スキップ</button>
+    </div>
+    <label class="check voice-panel__optional">
+      <input type="checkbox" id="voice-optional" />
+      任意の項目も聞く
+    </label>
+    <p class="voice-panel__note">
+      いま聞いている欄は、そのまま手で直せます。ほかの欄を直すときは、いったん終了してください。
+    </p>
+  </section>
+
   <script src="mock-theme.js"></script>
   <script>
     const STEPS = ["basic", "pricing", "location", "capacity", "flyer"];
@@ -396,6 +441,195 @@
     });
 
     render();
+
+    // -------------------------------------------------------------------
+    // 音声入力。本体の VoiceInputDock の流れを見た目だけでなぞる。
+    // 上から順に欄を指し、話したことにする。値は変えない。
+    // -------------------------------------------------------------------
+    const VOICE_STEPS = {
+      basic: [
+        ["mc-title", "催しの名前", "催しの名前を話してください。", "忘年会"],
+        ["mc-date", "開催日", "開催日を話してください。", "12月5日"],
+        ["mc-start", "開始時刻", "開始時刻を話してください。", "18時"],
+        ["mc-end", "終了時刻", "終了時刻を話してください。", "20時"],
+      ],
+      pricing: [
+        ["mc-plan-name", "費用プランの名前", "費用プランの名前を話してください。", "一般"],
+        ["mc-plan-amount", "金額", "金額を円で話してください。", "3000円"],
+        ["mc-plan-note", "費用の補足", "費用の補足があれば話してください。無ければ「スキップ」を押します。", "1ドリンク付"],
+      ],
+      location: [
+        ["mc-venue", "会場名", "会場名を話してください。", "渋谷ホール"],
+        ["mc-rain", "雨天時の方針", "雨天のときの方を話してください。", "雨天決行"],
+      ],
+      capacity: [
+        ["mc-capacity", "定員", "定員を話してください。「無制限」でも構いません。", "30人"],
+        ["mc-deadline", "申し込み期限", "申し込みの期限を話してください。「なし」でも構いません。", "12月1日23時59分"],
+      ],
+      flyer: [],
+    };
+
+    const voiceFab = document.getElementById("voice-fab");
+    const voicePanel = document.getElementById("voice-panel");
+    const voiceScrim = document.getElementById("voice-scrim");
+    const voiceTitle = document.getElementById("voice-title");
+    const voiceField = document.getElementById("voice-field");
+    const voicePrompt = document.getElementById("voice-prompt");
+    const voiceHint = document.getElementById("voice-hint");
+    const voiceTranscript = document.getElementById("voice-transcript");
+    const voiceMessage = document.getElementById("voice-message");
+    const voiceTalk = document.getElementById("voice-talk");
+    const voiceOptional = document.getElementById("voice-optional");
+
+    let voiceOn = false;
+    let voiceListening = false;
+    let voiceCursor = 0;
+    let voiceTarget = null;
+
+    const voiceList = () => VOICE_STEPS[openKey] ?? [];
+    const voiceEntry = () => voiceList()[voiceCursor] ?? null;
+
+    // いま聞いている欄のまわりだけを覆いからくり抜く。clip-path は当たり判定にも効く。
+    function measureVoiceSpotlight() {
+      if (!voiceOn || !voiceTarget) return;
+      const rect = voiceTarget.getBoundingClientRect();
+      const pad = 6;
+      const top = Math.max(0, rect.top - pad);
+      const left = Math.max(0, rect.left - pad);
+      const right = rect.right + pad;
+      const bottom = rect.bottom + pad;
+      voiceScrim.style.clipPath =
+        "polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, " +
+        `${left}px ${top}px, ${left}px ${bottom}px, ${right}px ${bottom}px, ` +
+        `${right}px ${top}px, ${left}px ${top}px)`;
+    }
+
+    function showVoiceMessage(text) {
+      voiceMessage.textContent = text;
+      voiceMessage.hidden = !text;
+    }
+
+    function pointVoiceAt(index) {
+      voiceTarget?.removeAttribute("data-voice-target");
+      voiceTarget = null;
+      voiceListening = false;
+      voiceTitle.textContent = "音声入力";
+
+      const list = voiceList();
+      if (!list.length) {
+        voiceField.textContent = "入力できる欄がすべて埋まりました";
+        voicePrompt.textContent = "内容を確認してください。";
+        voiceHint.hidden = true;
+        voiceTalk.disabled = true;
+        voiceTalk.textContent = "話す";
+        measureVoiceSpotlight();
+        return;
+      }
+
+      voiceCursor = Math.max(0, Math.min(index, list.length - 1));
+      const [id, label, prompt, example] = list[voiceCursor];
+      const target = document.getElementById(id);
+      voiceTarget = target;
+      target?.setAttribute("data-voice-target", "true");
+
+      const current = target?.value?.trim();
+      voiceField.textContent = label;
+      voicePrompt.textContent = prompt;
+      voiceHint.hidden = false;
+      voiceHint.textContent = `例: ${example}${current ? ` ／ いまの値: ${current}` : ""}`;
+      voiceTalk.disabled = false;
+      voiceTalk.textContent = current ? "言い直す" : "話す";
+      showVoiceMessage("");
+      voiceTranscript.hidden = true;
+
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      measureVoiceSpotlight();
+    }
+
+    function setVoice(on) {
+      voiceOn = on;
+      voiceFab.classList.toggle("voice-fab--active", on);
+      voiceFab.setAttribute("aria-pressed", String(on));
+      voiceFab.setAttribute("aria-label", on ? "音声入力を終了" : "音声入力を開始");
+      voiceFab.querySelector(".voice-fab__label").textContent = on ? "終了" : "音声入力";
+      voicePanel.hidden = !on;
+      voiceScrim.hidden = !on;
+
+      if (!on) {
+        voiceTarget?.removeAttribute("data-voice-target");
+        voiceTarget = null;
+        voiceListening = false;
+        return;
+      }
+
+      // 閉じているステップなら、最初の未入力のステップを開く。
+      if (!openKey || !items.get(openKey)?.classList.contains("event-step--open")) {
+        openKey = STEPS.find((key) => !done.has(key)) ?? "basic";
+        render();
+      }
+      pointVoiceAt(0);
+    }
+
+    voiceFab.addEventListener("click", () => setVoice(!voiceOn));
+    document.getElementById("voice-close").addEventListener("click", () => setVoice(false));
+    document.getElementById("voice-prev").addEventListener("click", () => pointVoiceAt(voiceCursor - 1));
+    document.getElementById("voice-skip").addEventListener("click", () => pointVoiceAt(voiceCursor + 1));
+
+    voiceOptional.addEventListener("change", () => {
+      if (!voiceOn) return;
+      showVoiceMessage(voiceOptional.checked ? "任意の項目も、続けて聞きます。" : "必須の項目だけを聞きます。");
+    });
+
+    voiceTalk.addEventListener("click", () => {
+      const entry = voiceEntry();
+      if (!entry) return;
+      if (!voiceListening) {
+        voiceListening = true;
+        voiceTitle.textContent = "聞いています";
+        voicePrompt.textContent = "話し終えたら「停止して入力」を押してください。";
+        voiceTalk.textContent = "停止して入力";
+        showVoiceMessage("");
+        return;
+      }
+
+      // 聞き取りの結果。本体では、ここで欄に値が入る。
+      const [, label, , example] = entry;
+      const next = voiceList()[voiceCursor + 1];
+      voiceListening = false;
+      voiceTitle.textContent = "音声入力";
+      if (next) pointVoiceAt(voiceCursor + 1);
+      else voiceTalk.textContent = "言い直す";
+      voiceTranscript.hidden = false;
+      voiceTranscript.textContent = `聞き取り: ${example}`;
+      showVoiceMessage(
+        next
+          ? `${label}を「${example}」で入力しました。次は${next[1]}です。`
+          : `${label}を「${example}」で入力しました。音声で入力できる欄がすべて埋まりました。`,
+      );
+    });
+
+    voiceScrim.addEventListener("click", () =>
+      showVoiceMessage(
+        "音声モード中は、いま聞いている欄のまわりだけ操作できます。「終了」か Esc で元に戻ります。",
+      ),
+    );
+
+    document.addEventListener("keydown", (event) => {
+      if (!voiceOn || event.key !== "Escape") return;
+      event.stopPropagation();
+      setVoice(false);
+    });
+
+    let voiceFrame = 0;
+    const scheduleVoiceMeasure = () => {
+      if (!voiceOn || voiceFrame) return;
+      voiceFrame = requestAnimationFrame(() => {
+        voiceFrame = 0;
+        measureVoiceSpotlight();
+      });
+    };
+    window.addEventListener("scroll", scheduleVoiceMeasure, { capture: true, passive: true });
+    window.addEventListener("resize", scheduleVoiceMeasure);
   </script>
 </body>
 </html>
