@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { readProblem } from "@/lib/problem";
 import type { AccountProfile } from "@/modules/account/types";
+import { Alert, Field, Section, SectionHead } from "@/components/ui";
 
 interface Props {
   profile: AccountProfile;
@@ -67,11 +68,8 @@ export function WithdrawPanel({ profile }: Props) {
   };
 
   return (
-    <section className="section">
-      <div className="section__head">
-        <h2 className="section__title">退会</h2>
-        <p className="section__note">作った催しは、退会後も閲覧ページに残ります。</p>
-      </div>
+    <Section>
+      <SectionHead title="退会" note="作った催しは、退会後も閲覧ページに残ります。" />
       <p className="screen-note">
         退会するとログインできなくなります。あなたが筆頭幹事のイベントは閉じられ、公開中のページも見られなくなります。
         共同主催として参加しているイベントは、あなたの幹事権限だけが外れます。
@@ -92,10 +90,7 @@ export function WithdrawPanel({ profile }: Props) {
       {open && (
         <form className="stack" onSubmit={(event) => void submit(event)}>
           {profile.hasPassword ? (
-            <div className="field">
-              <label className="label" htmlFor="withdraw-password">
-                現在のパスワード
-              </label>
+            <Field label="現在のパスワード" htmlFor="withdraw-password">
               <input
                 id="withdraw-password"
                 type="password"
@@ -106,12 +101,9 @@ export function WithdrawPanel({ profile }: Props) {
                 disabled={busy}
                 required
               />
-            </div>
+            </Field>
           ) : (
-            <div className="field">
-              <label className="label" htmlFor="withdraw-code">
-                確認番号
-              </label>
+            <Field label="確認番号" htmlFor="withdraw-code">
               <input
                 id="withdraw-code"
                 className="input"
@@ -133,13 +125,10 @@ export function WithdrawPanel({ profile }: Props) {
                   {codeSent ? "確認番号を再送する" : "確認番号を送る"}
                 </button>
               </div>
-            </div>
+            </Field>
           )}
 
-          <div className="field">
-            <label className="label" htmlFor="withdraw-phrase">
-              確認のため「退会」と入力してください
-            </label>
+          <Field label="確認のため「退会」と入力してください" htmlFor="withdraw-phrase">
             <input
               id="withdraw-phrase"
               className="input"
@@ -149,10 +138,10 @@ export function WithdrawPanel({ profile }: Props) {
               placeholder="退会"
               required
             />
-          </div>
+          </Field>
 
-          {notice && <p className="alert alert--info">{notice}</p>}
-          {error && <p className="alert alert--error">{error}</p>}
+          {notice && <Alert tone="info">{notice}</Alert>}
+          {error && <Alert tone="error">{error}</Alert>}
 
           <div className="btn-row">
             <button
@@ -180,6 +169,6 @@ export function WithdrawPanel({ profile }: Props) {
           </div>
         </form>
       )}
-    </section>
+    </Section>
   );
 }

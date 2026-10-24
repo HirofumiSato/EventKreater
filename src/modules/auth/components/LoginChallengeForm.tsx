@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { problemMessage, readProblemBody, type ProblemBody } from "@/lib/problem";
 import { remainingCooldownSeconds } from "@/modules/auth/lib/resend";
+import { Alert, EmptyState, Field, PageHeader } from "@/components/ui";
 
 interface ChallengeView {
   channel: "SMS" | "EMAIL";
@@ -187,20 +188,16 @@ export function LoginChallengeForm({
   };
 
   if (!view && !error && !lockedNotice) {
-    return <p className="empty">読み込んでいます</p>;
+    return <EmptyState>読み込んでいます</EmptyState>;
   }
 
   if (!view) {
     return (
       <div className="stack">
-        <div>
-          <p className="eyebrow">確認</p>
-          <h1 className="page-title">{screenName}</h1>
-          <p className="page-lead">確認番号の入力からやり直してください。</p>
-        </div>
+        <PageHeader eyebrow="確認" title={<>{screenName}</>} lead="確認番号の入力からやり直してください。" />
         <div className="auth-card">
-          {lockedNotice ? <p className="alert alert--warning">{lockedNotice}</p> : null}
-          {error ? <p className="alert alert--error">{error}</p> : null}
+          {lockedNotice ? <Alert tone="warning">{lockedNotice}</Alert> : null}
+          {error ? <Alert tone="error">{error}</Alert> : null}
           {onRestart ? (
             <div className="panel__actions">
               <button type="button" className="btn btn--outline btn--block" onClick={onRestart}>
@@ -219,27 +216,22 @@ export function LoginChallengeForm({
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">確認</p>
-        <h1 className="page-title">{screenName}</h1>
-        <p className="page-lead">
-          {view.channel === "SMS"
+      <PageHeader
+        eyebrow="確認"
+        title={<>{screenName}</>}
+        lead={<>{view.channel === "SMS"
             ? `登録済みの電話 ${view.destinationMask} へSMSで確認番号を送りました。`
-            : `登録済みのメール ${view.destinationMask} へ確認番号を送りました。`}
-        </p>
-      </div>
-      {lockedNotice ? <p className="alert alert--warning">{lockedNotice}</p> : null}
-      {attemptNotice ? <p className="alert alert--warning">{attemptNotice}</p> : null}
+            : `登録済みのメール ${view.destinationMask} へ確認番号を送りました。`}</>}
+      />
+      {lockedNotice ? <Alert tone="warning">{lockedNotice}</Alert> : null}
+      {attemptNotice ? <Alert tone="warning">{attemptNotice}</Alert> : null}
       <div className="auth-card">
         <h2 className="auth-card__title">6桁の確認番号を入れる</h2>
         <p className="auth-card__note">
           {attemptLimit}回間違えると、アカウントが{lockMinutes}分間ロックされます。
         </p>
         <form className="auth-card__body" onSubmit={submit}>
-          <div className="field">
-            <label className="label" htmlFor="login-challenge-code">
-              6桁の確認番号
-            </label>
+          <Field label="6桁の確認番号" htmlFor="login-challenge-code">
             <input
               id="login-challenge-code"
               required
@@ -252,9 +244,9 @@ export function LoginChallengeForm({
               onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               className="input code-input"
             />
-          </div>
-          {notice ? <p className="alert alert--success">{notice}</p> : null}
-          {error ? <p className="alert alert--error">{error}</p> : null}
+          </Field>
+          {notice ? <Alert tone="success">{notice}</Alert> : null}
+          {error ? <Alert tone="error">{error}</Alert> : null}
           <div className="panel__actions">
             <button type="submit" className="btn btn--primary btn--block" disabled={submitting || sending || locked}>
               {submitting ? "確認しています" : "確認して入る"}

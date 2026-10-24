@@ -6,6 +6,7 @@ import { ReceiptIssueModal } from "@/modules/receipts/components/ReceiptIssueMod
 import { ReceiptSheet } from "@/modules/receipts/components/ReceiptSheet";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
 import type { ReceiptView } from "@/modules/events/types";
+import { Alert, Loading, Panel } from "@/components/ui";
 
 export default function OrganizerReceiptPage({ params }: { params: { id: string; participantId: string } }) {
   const [receipt, setReceipt] = useState<ReceiptView | null>(null);
@@ -59,13 +60,12 @@ export default function OrganizerReceiptPage({ params }: { params: { id: string;
     }
   };
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (!receipt) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         領収書を読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
@@ -78,7 +78,7 @@ export default function OrganizerReceiptPage({ params }: { params: { id: string;
           {receipt.eventTitle} ／ {receipt.addressee} さん
         </p>
       </div>
-      <div className="panel no-print">
+      <Panel as="div" className="no-print">
         <div className="panel__actions">
           <button type="button" className="btn btn--primary btn--sm" onClick={() => setReissuing(true)}>
             再発行する
@@ -93,7 +93,7 @@ export default function OrganizerReceiptPage({ params }: { params: { id: string;
         <p className="screen-note">
           再発行すると、同じ番号で新しい発行日が入ります。番号は変わりません。
         </p>
-      </div>
+      </Panel>
       {formError && <p className="alert alert--error no-print">{formError}</p>}
       <ReceiptSheet receipt={receipt} />
       {reissuing && (

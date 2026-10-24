@@ -5,6 +5,7 @@ import { readProblem } from "@/lib/problem";
 import { flyerDownloadHref } from "@/modules/flyers/lib/download";
 import type { SelectableFlyer } from "@/modules/flyers/types";
 import { FlyerUploadButton } from "./FlyerUploadButton";
+import { Alert, Dialog, EmptyState, Loading } from "@/components/ui";
 
 export type { SelectableFlyer } from "@/modules/flyers/types";
 
@@ -65,13 +66,8 @@ export function FlyerSelectModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal" style={{ display: "flex" }}>
-      <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="flyer-select-title">
-        <h3 id="flyer-select-title" className="dialog__title">
-          チラシ選択
-        </h3>
-        <p className="dialog__body">選ぶと、生成時の7項目が作成フォームに入ります。アップロードした画像は、そのままチラシとして使えます。削除すると一覧から外れます。掲載中のイベントの画像はそのまま残ります。</p>
+    <Dialog title="チラシ選択" titleId="flyer-select-title" onClose={onClose}>
+      <p className="dialog__body">選ぶと、生成時の7項目が作成フォームに入ります。アップロードした画像は、そのままチラシとして使えます。削除すると一覧から外れます。掲載中のイベントの画像はそのまま残ります。</p>
         <div className="btn-row">
           <FlyerUploadButton
             title={title}
@@ -116,7 +112,6 @@ export function FlyerSelectModal({
         <button type="button" onClick={onClose} className="btn btn--ghost btn--block">
           閉じる
         </button>
-      </div>
-    </div>
+    </Dialog>
   );
 }

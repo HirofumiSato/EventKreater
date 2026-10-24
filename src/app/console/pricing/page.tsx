@@ -7,6 +7,8 @@ import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
 import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
 import { roundChargedPrice } from "@/modules/billing/lib/pricing";
+import { yenMark } from "@/lib/format";
+import { Alert, EmptyState, Field } from "@/components/ui";
 
 interface CampaignRow {
   id: string;
@@ -102,10 +104,6 @@ function fromRow(row: CampaignRow): FormValues {
     freePerUserLimit: String(row.freePerUserLimit),
     isEnabled: row.isEnabled,
   };
-}
-
-function yen(value: number): string {
-  return `¥${value.toLocaleString("ja-JP")}`;
 }
 
 export default function AdminPricingPage() {
@@ -226,7 +224,7 @@ export default function AdminPricingPage() {
   };
 
   if (blocked) {
-    return <p className="empty">このページは利用できません。</p>;
+    return <EmptyState>このページは利用できません。</EmptyState>;
   }
 
   return (
@@ -240,14 +238,18 @@ export default function AdminPricingPage() {
       </div>
 
       {toast && (
-        <div className="alert alert--success" style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+        <Alert
+          tone="success"
+          as="div"
+          style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}
+        >
           <p>{toast}</p>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => setToast(null)}>
             閉じる
           </button>
-        </div>
+        </Alert>
       )}
-      {error ? <p className="alert alert--error">{error}</p> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
 
       <div className="btn-row">
         <button type="button" className="btn btn--primary" onClick={startCreate}>
@@ -261,10 +263,7 @@ export default function AdminPricingPage() {
       {formOpen && (
         <form className="form panel" onSubmit={submit}>
           <h2 className="panel__title">{editingId ? "キャンペーンを編集" : "キャンペーンを作成"}</h2>
-          <div className="field">
-            <label className="label" htmlFor="campaign-name">
-              名前
-            </label>
+          <Field label="名前" htmlFor="campaign-name">
             <input
               id="campaign-name"
               className="input"
@@ -274,11 +273,8 @@ export default function AdminPricingPage() {
               maxLength={100}
               required
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="campaign-target">
-              対象
-            </label>
+          </Field>
+          <Field label="対象" htmlFor="campaign-target">
             <select
               id="campaign-target"
               className="input"
@@ -289,11 +285,8 @@ export default function AdminPricingPage() {
               <option value="ONE_TIME">単発のみ</option>
               <option value="SUBSCRIPTION">月額のみ</option>
             </select>
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="campaign-kind">
-              割引の種類
-            </label>
+          </Field>
+          <Field label="割引の種類" htmlFor="campaign-kind">
             <select
               id="campaign-kind"
               className="input"
@@ -303,12 +296,9 @@ export default function AdminPricingPage() {
               <option value="PERCENT">割合で割引</option>
               <option value="FREE">無料（0円）</option>
             </select>
-          </div>
+          </Field>
           {form.discountKind === "PERCENT" && (
-            <div className="field">
-              <label className="label" htmlFor="campaign-percent">
-                割引率（%）
-              </label>
+            <Field label="割引率（%）" htmlFor="campaign-percent">
               <input
                 id="campaign-percent"
                 className="input"
@@ -322,12 +312,9 @@ export default function AdminPricingPage() {
               <p className="help">
                 10円単位で切り上げ、最低10円を請求します。1円も安くならない割引は保存できません。
               </p>
-            </div>
+            </Field>
           )}
-          <div className="field">
-            <label className="label" htmlFor="campaign-start">
-              開始日時（JST）
-            </label>
+          <Field label="開始日時（JST）" htmlFor="campaign-start">
             <input
               id="campaign-start"
               className="input"
@@ -336,11 +323,8 @@ export default function AdminPricingPage() {
               onChange={(event) => setForm({ ...form, startsAt: event.target.value })}
               required
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="campaign-end">
-              終了日時（JST）
-            </label>
+          </Field>
+          <Field label="終了日時（JST）" htmlFor="campaign-end">
             <input
               id="campaign-end"
               className="input"
@@ -350,11 +334,8 @@ export default function AdminPricingPage() {
               required
             />
             <p className="help">最大12か月まで。月額の割引は、加入から終了日までを1か月単位で切り上げた月数ぶん続きます。</p>
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="campaign-priority">
-              優先度
-            </label>
+          </Field>
+          <Field label="優先度" htmlFor="campaign-priority">
             <input
               id="campaign-priority"
               className="input"
@@ -365,11 +346,8 @@ export default function AdminPricingPage() {
               onChange={(event) => setForm({ ...form, priority: event.target.value })}
             />
             <p className="help">重なったときに大きい方が適用されます。同じなら新しい方が勝ちます。</p>
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="campaign-limit">
-              0円チケットを1人が受け取れる回数
-            </label>
+          </Field>
+          <Field label="0円チケットを1人が受け取れる回数" htmlFor="campaign-limit">
             <input
               id="campaign-limit"
               className="input"
@@ -379,7 +357,7 @@ export default function AdminPricingPage() {
               value={form.freePerUserLimit}
               onChange={(event) => setForm({ ...form, freePerUserLimit: event.target.value })}
             />
-          </div>
+          </Field>
           <label className="label" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <input
               type="checkbox"
@@ -389,14 +367,14 @@ export default function AdminPricingPage() {
             すぐに有効にする
           </label>
 
-          <div className="alert alert--info">
+          <Alert tone="info" as="div">
             <p>
-              販売価格のプレビュー: 単発 {yen(previewOneTime)}
-              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yen(ONE_TIME_PRICE_JPY)}）` : ""} / 月額{" "}
-              {yen(previewSubscription)}
-              {previewSubscription !== SUBSCRIPTION_PRICE_JPY ? `（定価 ${yen(SUBSCRIPTION_PRICE_JPY)}）` : ""}
+              販売価格のプレビュー: 単発 {yenMark(previewOneTime)}
+              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yenMark(ONE_TIME_PRICE_JPY)}）` : ""} / 月額{" "}
+              {yenMark(previewSubscription)}
+              {previewSubscription !== SUBSCRIPTION_PRICE_JPY ? `（定価 ${yenMark(SUBSCRIPTION_PRICE_JPY)}）` : ""}
             </p>
-          </div>
+          </Alert>
 
           <div className="btn-row">
             <button type="submit" className="btn btn--primary" disabled={saving}>
@@ -459,7 +437,7 @@ export default function AdminPricingPage() {
                       {row.discountKind === "FREE" ? "無料（0円）" : `${row.percent}%OFF`}
                       <div className="data__muted">
                         {row.discountKind === "PERCENT"
-                          ? `単発 ${yen(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 月額 ${yen(
+                          ? `単発 ${yenMark(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 月額 ${yenMark(
                               roundChargedPrice(SUBSCRIPTION_PRICE_JPY, row.percent),
                             )}`
                           : row.target === "SUBSCRIPTION"
@@ -476,8 +454,8 @@ export default function AdminPricingPage() {
                     <td>{STATUS_LABEL[row.status]}</td>
                     <td className="data__muted">
                       {row.stats.paidCount}件
-                      <div>売上 {yen(row.stats.revenue)}</div>
-                      <div>割引 {yen(row.stats.discountTotal)}</div>
+                      <div>売上 {yenMark(row.stats.revenue)}</div>
+                      <div>割引 {yenMark(row.stats.discountTotal)}</div>
                     </td>
                     <td>
                       <div className="btn-row">

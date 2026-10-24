@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { currentMonthBounds, yen } from "@/lib/format";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
@@ -9,6 +10,7 @@ import { registerUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { STATUS_LABELS } from "@/modules/events/types";
 import type { EventRevenueRow, RevenueSummary } from "@/modules/revenue/lib/revenue";
+import { Badge, EmptyState, Loading, PageHeader, Panel, PanelHead, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 interface RevenueResponse {
   period: { from: string | null; to: string | null; status: string | null };
@@ -19,25 +21,6 @@ interface RevenueResponse {
 }
 
 type Range = "ALL" | "MONTH" | "CUSTOM";
-
-/** 円は「3,000円」で揃える。0 円を「無料」と言い換えない（売上は無料ではない）。 */
-function yen(amount: number): string {
-  return `${amount.toLocaleString("ja-JP")}円`;
-}
-
-function isoDate(year: number, monthIndex: number, day: number): string {
-  const value = new Date(Date.UTC(year, monthIndex, day));
-  return value.toISOString().slice(0, 10);
-}
-
-/** 日本時間の「今月」を YYYY-MM-DD の範囲にする。 */
-function currentMonthBounds(now = new Date()): { from: string; to: string } {
-  const shifted = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const year = shifted.getUTCFullYear();
-  const month = shifted.getUTCMonth();
-  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  return { from: isoDate(year, month, 1), to: isoDate(year, month, lastDay) };
-}
 
 export default function OrganizerRevenuePage() {
   const [range, setRange] = useState<Range>("ALL");
@@ -103,29 +86,22 @@ export default function OrganizerRevenuePage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">売上</h1>
-        <p className="page-lead">
-          出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。
-        </p>
-        <div className="panel__actions">
-          <Link href="/organizer/events" className="btn btn--outline btn--sm">
+      <PageHeader
+        eyebrow="主催者"
+        title="売上"
+        lead="出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。"
+        actions={<><Link href="/organizer/events" className="btn btn--outline btn--sm">
             主催一覧へ
           </Link>
           <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
             新規作成
-          </Link>
-        </div>
-      </div>
+          </Link></>}
+      />
 
       <OrganizerTabs />
 
-      <section className="panel">
-        <div className="panel__head">
-          <h2 className="panel__title">期間</h2>
-          <p className="panel__note">開催日で絞り込みます。初期表示は全期間です。</p>
-        </div>
+      <Panel>
+        <PanelHead title="期間" note="開催日で絞り込みます。初期表示は全期間です。" />
         <div className="chips" role="group" aria-label="集計する期間">
           {(
             [
@@ -170,13 +146,12 @@ export default function OrganizerRevenuePage() {
             />
           </div>
         )}
-      </section>
+      </Panel>
 
       {loading && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           売上を集計しています
-        </p>
+        </Loading>
       )}
 
       {!loading && error && (
@@ -200,25 +175,20 @@ export default function OrganizerRevenuePage() {
 
       {!loading && !error && totals && (
         <>
-          <section className="panel">
-            <div className="panel__head">
-              <h2 className="panel__title">
-                {data.period.from || data.period.to
+          <Panel>
+            <PanelHead
+              title={<>{data.period.from || data.period.to
                   ? `${data.period.from ?? "指定なし"} 〜 ${data.period.to ?? "指定なし"}`
-                  : "全期間"}
-              </h2>
-              <p className="panel__note">見込みと、領収書を出した額の差がそのまま残りです。</p>
-            </div>
+                  : "全期間"}</>}
+              note="見込みと、領収書を出した額の差がそのまま残りです。"
+            />
             <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
-          </section>
+          </Panel>
 
           {totals.unassignedPlanCount > 0 && (
-            <section className="section">
-              <div className="section__head">
-                <h2 className="section__title">プラン未選択の参加者</h2>
-                <p className="section__note">金額が決まっていない人は、見込みに入りません。</p>
-              </div>
-              <div className="panel">
+            <Section>
+              <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
+              <Panel as="div">
                 <p className="panel__note panel__note--warning">
                   出席しているのに費用プランが未選択の参加者が {totals.unassignedPlanCount} 人います。この人たちは売上に含めていません。名簿でプランを選ぶと集計に入ります。
                 </p>
@@ -231,46 +201,29 @@ export default function OrganizerRevenuePage() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            </section>
+              </Panel>
+            </Section>
           )}
 
-          <section className="section">
-            <div className="section__head">
-              <h2 className="section__title">催し別</h2>
-              <p className="section__note">開催日の新しい順です。行を押すと内訳が出ます。</p>
-            </div>
+          <Section>
+            <SectionHead title="催し別" note="開催日の新しい順です。行を押すと内訳が出ます。" />
             {data.events.length === 0 ? (
-              <p className="empty">
+              <EmptyState>
                 <span className="empty__title">この期間に主催イベントはありません。</span>
                 <span className="empty__body">期間を広げるか、新しい催しを作ってください。</span>
-              </p>
+              </EmptyState>
             ) : (
-              <ul className="rows">
+              <Rows>
                 {data.events.map((event) => (
-                  <li key={event.id} className="rows__item">
-                    <div className="rows__main">
-                      <p className="rows__title">
-                        <Link href={`/organizer/events/${event.id}/revenue`}>{event.title}</Link>
+                  <Row
+                    title={<><Link href={`/organizer/events/${event.id}/revenue`}>{event.title}</Link>
                         {event.role === "CO_HOST" ? (
-                          <span className="badge badge--sm badge--neutral">共同主催</span>
-                        ) : null}
-                      </p>
-                      <p className="rows__meta">
-                        {event.sortDate} ／ {STATUS_LABELS[event.status]} ／ 出席{" "}
+                          <Badge tone="neutral" small>共同主催</Badge>
+                        ) : null}</>}
+                    meta={<>{event.sortDate} ／ {STATUS_LABELS[event.status]} ／ 出席{" "}
                         {event.attendingCount}・欠席 {event.declinedCount}
-                        {event.unassignedPlanCount > 0 && ` ／ 未選択 ${event.unassignedPlanCount}`}
-                      </p>
-                      <p className="rows__meta">
-                        見込み {yen(event.expectedRevenue)} ／ あなたの取り分{" "}
-                        {yen(event.myShare.expectedRevenue)} ／ 発行済み {yen(event.issuedRevenue)} ／
-                        差額{" "}
-                        <span className={event.unreconciled < 0 ? "text-warning" : undefined}>
-                          {yen(event.unreconciled)}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="event-card__actions">
+                        {event.unassignedPlanCount > 0 && ` ／ 未選択 ${event.unassignedPlanCount}`}</>}
+                    aside={<><div className="event-card__actions">
                       <Link
                         href={`/organizer/events/${event.id}/revenue`}
                         className="btn btn--ghost btn--sm"
@@ -283,12 +236,22 @@ export default function OrganizerRevenuePage() {
                       >
                         名簿
                       </Link>
-                    </div>
-                  </li>
+                    </div></>}
+                    key={event.id}
+                  >
+                    <p className="rows__meta">
+                        見込み {yen(event.expectedRevenue)} ／ あなたの取り分{" "}
+                        {yen(event.myShare.expectedRevenue)} ／ 発行済み {yen(event.issuedRevenue)} ／
+                        差額{" "}
+                        <span className={event.unreconciled < 0 ? "text-warning" : undefined}>
+                          {yen(event.unreconciled)}
+                        </span>
+                      </p>
+                  </Row>
                 ))}
-              </ul>
+              </Rows>
             )}
-          </section>
+          </Section>
 
           <p className="help">
             見込み売上は、参加者が申し込んだ時点の費用プラン金額で計算します。あとからプラン金額を変えても、申込済みの金額は変わりません。

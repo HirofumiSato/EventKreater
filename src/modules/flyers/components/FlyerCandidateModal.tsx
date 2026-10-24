@@ -16,6 +16,7 @@ import type {
   FlyerQuota,
   FlyerWizardStep,
 } from "@/modules/flyers/types";
+import { Alert } from "@/components/ui";
 
 const STEP_TITLES: Record<FlyerWizardStep, string> = {
   1: "タイプ",
@@ -454,7 +455,7 @@ export function FlyerCandidateModal({
                     <span className="candidate-upload__badge">選択中</span>
                   )}
                 </div>
-                {uploadError && <p className="alert alert--error">{uploadError}</p>}
+                {uploadError && <Alert tone="error">{uploadError}</Alert>}
               </div>
               <input
                 ref={fileInputRef}
@@ -508,18 +509,18 @@ export function FlyerCandidateModal({
             </div>
           )}
 
-          {error && <p className="alert alert--error">{error}</p>}
+          {error && <Alert tone="error">{error}</Alert>}
           {sessionExpired && (
-            <p className="alert alert--warning">
+            <Alert tone="warning">
               ログインの有効期限が切れています。
               <a href="/auth/login">ログインし直す</a>
-            </p>
+            </Alert>
           )}
           {registerRequired && (
-            <p className="alert alert--warning">
+            <Alert tone="warning">
               未ログインで作れるチラシは 1 回までです。
               <a href="/auth/register?mode=register">会員登録して続ける</a>
-            </p>
+            </Alert>
           )}
         </div>
 

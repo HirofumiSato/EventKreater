@@ -11,6 +11,8 @@ import {
   type RsvpStatus,
 } from "@/modules/events/types";
 import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
+import { formatDateTimeJa } from "@/lib/format";
+import { Badge } from "@/components/ui";
 
 interface ParticipantListTableProps {
   rows: ParticipantRow[];
@@ -46,7 +48,7 @@ function downloadCsv(rows: ParticipantRow[]) {
       csvCell(row.scheduleLabel ?? ""),
       csvCell(row.pricePlanLabel ?? ""),
       csvCell(row.comment ?? ""),
-      csvCell(new Date(row.createdAt).toLocaleString("ja-JP")),
+      csvCell(formatDateTimeJa(row.createdAt)),
     ].join(","),
   );
   const blob = new Blob([`\uFEFF${[header.join(","), ...lines].join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -193,9 +195,9 @@ export function ParticipantListTable({
                       <>
                         <span className="roster__name">{row.name}</span>
                         {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
-                          <span className="badge badge--sm badge--waitlist badge--inline">
+                          <Badge tone="waitlist" small inline>
                             待ち {row.waitlistPosition}番目
-                          </span>
+                          </Badge>
                         )}
                       </>
                     )}
@@ -234,9 +236,9 @@ export function ParticipantListTable({
                         <option value="DECLINED">欠席</option>
                       </select>
                     ) : (
-                      <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
+                      <Badge tone={rsvpStatusTone(row.status)} small>
                         {rsvpStatusLabel(row.status)}
-                      </span>
+                      </Badge>
                     )}
                   </td>
                   <td className="roster__meta">
@@ -275,8 +277,8 @@ export function ParticipantListTable({
                   </td>
                   <td className="roster__meta">
                     {row.status === "WAITLISTED" && row.waitlistedAt
-                      ? `要望 ${new Date(row.waitlistedAt).toLocaleString("ja-JP")}`
-                      : new Date(row.createdAt).toLocaleString("ja-JP")}
+                      ? `要望 ${formatDateTimeJa(row.waitlistedAt)}`
+                      : formatDateTimeJa(row.createdAt)}
                   </td>
                   {onSave && (
                     <td>

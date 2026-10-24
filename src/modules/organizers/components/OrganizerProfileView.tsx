@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { profileInitial } from "@/modules/organizers/lib/profile";
 import { PROFILE_TAG_LABELS, type OrganizerProfileContent } from "@/modules/organizers/types";
+import { Alert, EmptyState, Section, SectionHead } from "@/components/ui";
 
 interface OrganizerProfileViewProps {
   userId: string;
@@ -55,9 +56,9 @@ export function OrganizerProfileView({
       )}
 
       {preview && !profile.isPublished && (
-        <p className="alert alert--info">
+        <Alert tone="info">
           いまは非公開です。この内容は参加者に表示されません。公開すると、この見え方で表示されます。
-        </p>
+        </Alert>
       )}
 
       {showContent && profile.bio && <p className="profile-bio">{profile.bio}</p>}
@@ -94,20 +95,17 @@ export function OrganizerProfileView({
       )}
 
       {!showContent && (
-        <p className="empty">この主催者は、まだプロフィールを公開していません。</p>
+        <EmptyState>この主催者は、まだプロフィールを公開していません。</EmptyState>
       )}
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">{name}さんの催し</h2>
-          <p className="section__note">これから開催される催しの日程と会場を確認できます。</p>
-        </div>
+      <Section>
+        <SectionHead title={<>{name}さんの催し</>} note="これから開催される催しの日程と会場を確認できます。" />
         <div className="panel__actions">
           <Link href={eventsHref} className="btn btn--primary">
             催しを見る
           </Link>
         </div>
-      </section>
+      </Section>
 
       <p className="screen-note">
         プロフィールを公開していない主催者は、名前と催しへの導線だけを出します。この画面は検索には出しません。

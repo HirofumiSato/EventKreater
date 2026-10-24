@@ -24,6 +24,7 @@ import {
   upcomingSchedules,
 } from "@/modules/organizers/lib/public-page";
 import type { PublicOrganizerEvent, PublicOrganizerPage } from "@/modules/events/types";
+import { Alert, Badge, EmptyState, Loading, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 type LoadState = "loading" | "ready" | "login" | "error";
 
@@ -140,7 +141,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
     return (
       <div className="stack">
         <OrganizerHeader name={null} userId={userId} />
-        <p className="alert alert--error">{error}</p>
+        <Alert tone="error">{error}</Alert>
         <Link href="/events" className="btn btn--outline">
           イベントを探す
         </Link>
@@ -152,10 +153,9 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
     return (
       <div className="stack">
         <OrganizerHeader name={null} userId={userId} />
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       </div>
     );
   }
@@ -203,7 +203,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
       />
 
       {events.length === 0 ? (
-        <p className="empty">これから開催される催しはありません。</p>
+        <EmptyState>これから開催される催しはありません。</EmptyState>
       ) : view === "calendar" ? (
         <>
           <div className="cal">
@@ -246,54 +246,43 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
           </div>
 
           {monthEntryCount === 0 && (
-            <p className="empty">この月に開催される催しはありません。</p>
+            <EmptyState>この月に開催される催しはありません。</EmptyState>
           )}
 
-          <section className="section">
-            <div className="section__head">
-              <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
-              <p className="section__note">
-                {dayEntries.length > 0
+          <Section>
+            <SectionHead
+              title={<>{formatDayHeading(selectedDate)}</>}
+              note={<>{dayEntries.length > 0
                   ? `この日の催しは ${dayEntries.length}件です。`
-                  : "この日に開催される催しはありません。"}
-              </p>
-            </div>
+                  : "この日に開催される催しはありません。"}</>}
+            />
             {dayEntries.length === 0 ? (
-              <p className="empty">日付を押すと、その日の催しが出ます。</p>
+              <EmptyState>日付を押すと、その日の催しが出ます。</EmptyState>
             ) : (
-              <ul className="rows">
+              <Rows>
                 {dayEntries.map((entry) => (
-                  <li key={`${entry.event.id}:${entry.schedule.eventTime}`} className="rows__item">
-                    <div className="rows__main">
-                      <p className="rows__title">
-                        <Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link>
-                      </p>
-                      <p className="rows__meta">
-                        {entry.schedule.eventTime || "時刻未定"}
+                  <Row
+                    title={<><Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link></>}
+                    meta={<>{entry.schedule.eventTime || "時刻未定"}
                         {entry.event.location ? ` ／ ${entry.event.location}` : ""}
-                        {entry.event.isFull ? " ／ 参加要望受付中" : ""}
-                      </p>
-                    </div>
-                  </li>
+                        {entry.event.isFull ? " ／ 参加要望受付中" : ""}</>}
+                    key={`${entry.event.id}:${entry.schedule.eventTime}`}
+                  />
                 ))}
-              </ul>
+              </Rows>
             )}
-          </section>
+          </Section>
         </>
       ) : (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">これから</h2>
-            <p className="section__note">
-              {events.length}件。満員の催しは参加要望を受け付けます。
-            </p>
-          </div>
-          <ul className="rows">
+        <Section>
+          <SectionHead title="これから" note={<>{events.length}件。満員の催しは参加要望を受け付けます。
+            </>} />
+          <Rows>
             {events.map((event) => (
               <OrganizerPublicEventRow key={event.id} event={event} today={today} />
             ))}
-          </ul>
-        </section>
+          </Rows>
+        </Section>
       )}
     </div>
   );
@@ -312,11 +301,7 @@ function OrganizerHeader({
 }) {
   return (
     <div className="organizer-head">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">{name ? `${name} の催し` : "主催者の催し"}</h1>
-        <p className="page-lead">これからの催しと、終わった催しの一覧です。</p>
-      </div>
+      <PageHeader eyebrow="主催者" title={<>{name ? `${name} の催し` : "主催者の催し"}</>} lead="これからの催しと、終わった催しの一覧です。" />
       {toolbar}
       {!preview && !toolbar && (
         <div className="panel__actions">
@@ -373,20 +358,17 @@ function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent
       ? Math.min(100, Math.round((event.attendingCount / event.capacity) * 100))
       : null;
   return (
-    <li className="rows__item">
-      <div className="rows__main">
-        <p className="rows__title">
-          <Link href={`/events/${event.id}`}>{event.title}</Link>
-        </p>
-        <p className="rows__meta">
-          {dates.map((row) => `${row.eventDate} ${row.eventTime}`).join(" ／ ")}
+    <Row
+      title={<><Link href={`/events/${event.id}`}>{event.title}</Link></>}
+      meta={<>{dates.map((row) => `${row.eventDate} ${row.eventTime}`).join(" ／ ")}
           <br />
           {event.location} ／ {priceLabel(event.pricePlans)}
           <br />
           参加 {event.attendingCount}名
-          {event.capacity !== null && ` / 定員 ${event.capacity}名`}
-        </p>
-        <div className="btn-row">
+          {event.capacity !== null && ` / 定員 ${event.capacity}名`}</>}
+      aside={<><span className="rows__value">{event.isFull ? "満員" : "受付中"}</span></>}
+    >
+      <div className="btn-row">
           {event.isFull && event.acceptsWaitlist && (
             <span className="badge badge--sm badge--waitlist">参加要望受付中</span>
           )}
@@ -406,8 +388,6 @@ function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent
             <span style={{ width: `${ratio}%` }} />
           </div>
         )}
-      </div>
-      <span className="rows__value">{event.isFull ? "満員" : "受付中"}</span>
-    </li>
+    </Row>
   );
 }

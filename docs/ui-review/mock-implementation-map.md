@@ -5,7 +5,9 @@
 
 - ドキュメントの入口: `docs/index.rst` の「UI 監査」
 - モックの目録: `style-guide/mock-screens-data.js`
-- 検査: `npm run ui:map`
+- 検査: `npm run ui:map` / `npm run ui:css`
+- 共有スタイル: `src/styles/index.css`（モックと本体が同じファイルを読む）
+- 共通 UI 部品: `src/components/ui/`（ブロック構造はここで 1 回だけ書く）
 
 ## この表の読み方
 
@@ -37,6 +39,46 @@
 ### 状態
 
 `未着手` → `移行中` → `検証済`。`保留` は、モックに寄せると実装機能を落とすため止めた画面です（理由を節に書く）。
+
+## 共通スタイルと共通部品
+
+見た目は `src/styles/`、ブロック構造は `src/components/ui/` が正です。
+モックと本体は同じ CSS を読むため、色・余白・字の大きさを直すときは `src/styles/**` の 1 か所だけを触ります。
+ページ側で同じ `className` の組み立てを書き直さないでください。
+
+### CSS の層（読む順）
+
+| ファイル | 中身 |
+| :--- | :--- |
+| `src/styles/tokens.css` | `:root` の色・角・影・書体・余白 |
+| `src/styles/base.css` | reset、`html`/`body`、`page`、`site-header`、`site-footer`、`stack`、`eyebrow` |
+| `src/styles/components.css` | `btn`、`input`、`badge`、`alert`、`panel`、`card`、`section`、`rows`、`table`、`modal`、`empty`、`loading`、`cal`、`fold` |
+| `src/styles/screens/*.css` | 画面ごとの差分（公開・主催者） |
+| `src/styles/deco/*.css` | 貼り紙の装飾だけ。必ず最後に読む |
+
+### ブロックと部品の対応
+
+| モックのブロック | 部品 | 置き場所 |
+| :--- | :--- | :--- |
+| `page-title` + `eyebrow` + `page-lead` | `PageHeader`（`eyebrow` / `title` / `lead` / `actions`） | `src/components/ui/PageHeader.tsx` |
+| `section` + `section__head` | `Section` / `SectionHead`（`title` / `note` / `actions`） | `src/components/ui/Section.tsx` |
+| `panel` + `panel__title` | `Panel` / `PanelHead` | `src/components/ui/Panel.tsx` |
+| `rows` + `row` | `Rows` / `Row`（`title` / `meta` / `aside`） | `src/components/ui/Rows.tsx` |
+| `alert alert--error` | `Alert`（`tone` は error / warning / info / success） | `src/components/ui/Alert.tsx` |
+| `loading` + `spinner` | `Loading`（`spinner` の有無だけ切り替える） | `src/components/ui/Loading.tsx` |
+| `empty` + `empty__title` + `empty__body` | `EmptyState` | `src/components/ui/EmptyState.tsx` |
+| `badge badge--paid` | `Badge`（`tone` / `small` / `inline`） | `src/components/ui/Badge.tsx` |
+| `modal` / `dialog` | `Dialog`（`titleId` / `onClose` / `actions`） | `src/components/ui/Dialog.tsx` |
+| `field` + `label` + `help` + `error` | `Field`（入力要素は画面側に残す） | `src/components/ui/Field.tsx` |
+
+部品は出力するタグ・クラス・`role`・`aria-*` を変えません。`as` でタグを選び、`className` と `style` を足せます。
+表示の条件（`isDraft`、`role === "OWNER"` など）はページ側に残してください。
+
+### 金額・日付
+
+`src/lib/format.ts` の `yen`（`3,000円`）、`yenMark`（`¥3,000`）、`formatDateJa`（`11月8日（日）`）、
+`formatMonthJa`（`2026年10月`）、`formatDateTimeJa`、`isoDate`、`currentMonthBounds` を使います。
+画面に `toLocaleString("ja-JP")` を直書きしません。通貨が JPY でない管理画面だけは、理由をコメントして画面側で組みます。
 
 ## 対応表
 
@@ -1201,17 +1243,34 @@ npm run ui:map       # 29 画面が 1 回ずつ・パスが実在することを
 
 証拠画像: `docs/ui-review/screens/*.png`、モックは `docs/ui-review/screens/mock/*.png`。
 
+### 2026-10-24 基盤整備のあと
+
+CSS を `src/styles/` へ層別し、共通ブロックを `src/components/ui/` へ出したあとの再撮影です。
+
+| 項目 | 値 |
+| :--- | :--- |
+| 撮影枚数 | 122（実装 66・モック 56） |
+| 横スクロール | 0 枚 |
+| 画像の読み込み失敗 | 0 枚 |
+| コンソールエラー | 0 枚 |
+| HTTP 400 以上 | 0 枚 |
+
+- アプリ 66 枚は、撮り直す前後で画面の高さ（`h=`）が変わっていないことを 1 枚ずつ確認しました。
+- モック 56 枚は、外枠を `mock-shell.js` に寄せた 4 画面（01 / 17 / 25 / 21）だけ高さが変わりました。変わった理由は「モックの外枠」の表に残しています。
+- 1 回目の再撮影では、`EventLifecycleModal.tsx` と `LockConflictModal.tsx` の `"use client"` が import の後ろに落ちていて、`/mypage` と `/organizer/profile` が 500 になりました。宣言を先頭へ戻し、0 件を確認しています。
+- 編集画面の排他ロックが前回の撮影から残り 409 になっていたため、`npm run db:seed:ui` が最初にロックを消すようにしました。
+
 ### この周回で直したもの
 
 | 症状 | 原因 | 直した場所 |
 | :--- | :--- | :--- |
-| モックにある暖色・影・角が実装で出ない | `src/app/deco.css` の先頭に UTF-8 BOM があり、`:root` が `・ｿ :root` という不正なセレクタとして捨てられていた | `src/app/deco.css` |
-| 空状態の見出しと本文が 1 行につながる | `.empty__title` / `.empty__body` を `span` で置く画面があり、`display` が `inline` のままだった | `src/app/deco.css` |
-| 空状態の字がモックより大きい | 見出し `1rem`・本文 `0.875rem` だった | `src/app/deco.css`（`0.9375rem` / `0.8125rem`） |
-| 名簿の「出席」が 2 行に割れる | 狭いセルで `.badge` が折り返していた | `src/app/attendance.css` の `.badge` に `white-space: nowrap` |
-| チラシの無いカードで本文が 4.5rem 幅に潰れる | 3 列固定のため、`img` が無いと本文が 1 列目（サムネイル列）に入っていた | `.event-card--no-thumb`（`src/app/deco.css`、`EventCard`、参加者ホーム） |
-| 主催一覧のカードで操作 4 つが本文を押し潰す | 右の `auto` 列が max-content を取り、本文の列が 0px になっていた | `.event-card > .event-card__actions` を本文の下へ（`src/app/deco.css`） |
-| 端末のダーク設定で配色が自動反転する | `color-scheme` が未指定だった | `:root { color-scheme: light }`（`attendance.css`） |
+| モックにある暖色・影・角が実装で出ない | `deco.css` の先頭に UTF-8 BOM があり、`:root` が `・ｿ :root` という不正なセレクタとして捨てられていた | `src/styles/deco/tokens.css` |
+| 空状態の見出しと本文が 1 行につながる | `.empty__title` / `.empty__body` を `span` で置く画面があり、`display` が `inline` のままだった | `src/styles/deco/surface.css` |
+| 空状態の字がモックより大きい | 見出し `1rem`・本文 `0.875rem` だった | `src/styles/deco/surface.css`（`0.9375rem` / `0.8125rem`） |
+| 名簿の「出席」が 2 行に割れる | 狭いセルで `.badge` が折り返していた | `src/styles/components.css` の `.badge` に `white-space: nowrap` |
+| チラシの無いカードで本文が 4.5rem 幅に潰れる | 3 列固定のため、`img` が無いと本文が 1 列目（サムネイル列）に入っていた | `.event-card--no-thumb`（`src/styles/deco/surface.css`、`EventCard`、参加者ホーム） |
+| 主催一覧のカードで操作 4 つが本文を押し潰す | 右の `auto` 列が max-content を取り、本文の列が 0px になっていた | `.event-card > .event-card__actions` を本文の下へ（`src/styles/deco/surface.css`） |
+| 端末のダーク設定で配色が自動反転する | `color-scheme` が未指定だった | `:root { color-scheme: light }`（`src/styles/tokens.css`） |
 | 幅 390 と 1280 で確認画面の 2 枚目が 400 になる | メール変更トークンが 1 本で、1 枚目の撮影が使用済みにしていた | 幅ごとに 1 本ずつ発行（`seed-ui-demo.mjs`、`ui-shots.mjs`） |
 
 ### 意図して残した差分
@@ -1232,10 +1291,35 @@ npm run ui:map       # 29 画面が 1 回ずつ・パスが実在することを
 
 ---
 
+## モックの外枠
+
+ナビ・フッター・切り替え帯は `style-guide/mock-shell.js` が出します。各 HTML は `<main id="main">` の中身だけを書き、`body` に次を置きます。
+
+| 属性 | 例 | 意味 |
+| :--- | :--- | :--- |
+| `data-nav` | `public` / `participant` / `organizer` | どのナビを出すか |
+| `data-current` | `participant` / `organizer` / `create` / `mypage` | 現在地（`aria-current="page"`） |
+| `data-screen` | `参加者ホーム` | 帯に出す画面名 |
+| `data-path` | `/participant` | 実装でのパス（表示だけ） |
+| `data-scope` | `onboard` / `admin` | 装飾の既定 |
+
+`mock-home` / `mock-organizer` / `mock-roster` / `mock-create` は直書きのヘッダー・フッター・旧 `mockbar` を削除し、この形へ移しました。
+統合で意図して変わったのは次の 4 点です。
+
+| 画面 | 変わったこと | 理由 |
+| :--- | :--- | :--- |
+| `mock-home.html` | 主操作が `btn--primary`（旧 `btn--outline`）、フッターのリンクが実装と同じ並び | ヘッダー・フッターを 1 か所に寄せた |
+| `mock-organizer.html` | ナビに「イベント告知ページを作る」「参加者として見る」が増え、副操作が「主催一覧」 | `mock-shell.js` の `organizer` ナビに統一 |
+| `mock-roster.html` | ナビの現在地が「参加者名簿」から「主催一覧」に移る（`data-current` なし） | 名簿は主催一覧の配下で、独立したナビ項目を持たない |
+| `mock-create.html` | 未接続だった「最初から」「動き ON」ボタンを削除 | ハンドラが無く、`mock-shell.js` の帯に置き場所が無い |
+
 ## 画面追加・変更時の手順
 
-1. `style-guide/mock-*.html` と `style-guide/mock-screens-data.js` を更新する。
-2. この表の行と節を同じ PR で更新する。
-3. `npm run ui:map` を通す（29 件が 1 回ずつ、パスが実在、状態が規定内）。
-4. `npm run check` を通す。
-5. 390px / 1280px のスクリーンショットを PR に添える。
+1. 見た目を変えるときは `src/styles/**` を直す（モックと本体が同じファイルを読む）。`style-guide/mock.css` と `mock-states.css` はモック専用の帯・状態だけに使う。
+2. 見出し・パネル・空状態などの並びを変えるときは `src/components/ui/**` を直す。出力するタグ・クラス・`aria-*` は変えない。
+3. `style-guide/mock-*.html` と `style-guide/mock-screens-data.js` を更新する。外枠（ヘッダー・フッター・帯）は `mock-shell.js` に任せ、`body` の `data-nav` / `data-current` / `data-screen` / `data-path` だけを書く。
+4. この表の行と節を同じ PR で更新する。
+5. `npm run ui:css` を通す（未定義クラス・未使用クラス。既知の例外は `docs/ui-review/css-baseline.json`）。
+6. `npm run ui:map` を通す（29 件が 1 回ずつ、パスが実在、状態が規定内）。
+7. `npm run check` を通す。
+8. 390px / 1280px のスクリーンショット（`npm run ui:shots`）を PR に添える。`report.json` の横スクロール・画像失敗・コンソールエラー・400 以上はすべて 0 にする。

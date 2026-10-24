@@ -25,6 +25,7 @@ import {
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
 import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
+import { Alert, Dialog, Field } from "@/components/ui";
 
 /**
  * 作成画面（ステップ）と編集画面（一括）で同じ入力欄を使うための共通の型。
@@ -51,10 +52,7 @@ export function BasicSection({
 
   return (
     <>
-      <div className="field">
-        <label className="label" htmlFor="event-title">
-          催しの名前 <span className="req">*</span>
-        </label>
+      <Field label={<>催しの名前 <span className="req">*</span></>} htmlFor="event-title">
         <input
           id="event-title"
           required
@@ -64,12 +62,9 @@ export function BasicSection({
           onChange={(event) => set("title", event.target.value)}
           className="input"
         />
-      </div>
+      </Field>
       {showOrganizerName && (
-        <div className="field">
-          <label className="label" htmlFor="event-organizer-name">
-            主催者名（公開されます）
-          </label>
+        <Field label="主催者名（公開されます）" htmlFor="event-organizer-name">
           <input
             id="event-organizer-name"
             maxLength={50}
@@ -82,7 +77,7 @@ export function BasicSection({
           <p className="help">
             公開ページの「主催」に出る名前です。未登録のまま作成しているため、アカウント名がありません。空欄なら「主催者」と表示されます。あとから会員登録すると、この名前はアカウントの表示名に切り替わります。
           </p>
-        </div>
+        </Field>
       )}
       <fieldset className="field" disabled={disabled}>
         <legend className="label">
@@ -341,12 +336,12 @@ export function PricePlansSection({
             </p>
           )}
           {hasLegacyCommonPlan && (
-            <p className="alert alert--warning">
+            <Alert tone="warning">
               対象が「共通」のまま残っている料金があります。対象は画面から変えられません。
               {pricingModeLocked
                 ? "出席者がいるため、いまは共通料金へ戻せません。その料金を選んでいる出席者を選び直してから、共通料金へ戻して入れ直してください。"
                 : "チェックを外して共通料金に戻し、もう一度入れると、男性用・女性用の組に揃えられます。"}
-            </p>
+            </Alert>
           )}
           {pricingMode === "GENDER"
             ? planGroups.map((group) => {
@@ -382,9 +377,9 @@ export function PricePlansSection({
                       </button>
                     </div>
                     {groupNamesDiffer(group) && (
-                      <p className="alert alert--warning">
+                      <Alert tone="warning">
                         この組の中でプラン名が違います。上のプラン名を入れ直すと、男性用・女性用の両方に反映されます。
-                      </p>
+                      </Alert>
                     )}
                     {group.map((row) => (
                       <div key={row.key} className="repeat-row repeat-row--plan">
@@ -433,22 +428,11 @@ export function PricePlansSection({
         </div>
       </fieldset>
       {confirmCommonOpen && (
-        <div className="modal" style={{ display: "flex" }}>
-          <button
-            type="button"
-            className="modal__backdrop"
-            aria-label="閉じる"
-            onClick={() => setConfirmCommonOpen(false)}
-          />
-          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="pricing-mode-title">
-            <h3 id="pricing-mode-title" className="dialog__title">
-              共通料金に戻しますか？
-            </h3>
-            <p className="dialog__body">
-              男性用の料金を共通の料金に戻し、女性用の料金を削除します。女性用の料金を選んでいた参加者は、保存後に費用プランが未設定になります。名簿から選び直してください。
-            </p>
-            <div className="dialog__actions">
-              <button
+        <Dialog
+          title="共通料金に戻しますか？"
+          titleId="pricing-mode-title"
+          onClose={() => setConfirmCommonOpen(false)}
+          actions={<><button
                 type="button"
                 className="btn btn--danger btn--block"
                 onClick={() => {
@@ -464,10 +448,12 @@ export function PricePlansSection({
                 onClick={() => setConfirmCommonOpen(false)}
               >
                 やめる
-              </button>
-            </div>
-          </div>
-        </div>
+              </button></>}
+        >
+          <p className="dialog__body">
+              男性用の料金を共通の料金に戻し、女性用の料金を削除します。女性用の料金を選んでいた参加者は、保存後に費用プランが未設定になります。名簿から選び直してください。
+            </p>
+        </Dialog>
       )}
     </>
   );
@@ -496,10 +482,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
         <legend className="label">
           開催場所 <span className="req">*</span>
         </legend>
-        <div className="field">
-          <label className="label" htmlFor="event-venue-name">
-            会場名
-          </label>
+        <Field label="会場名" htmlFor="event-venue-name">
           <input
             id="event-venue-name"
             maxLength={150}
@@ -518,7 +501,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               過去の会場から選ぶ
             </button>
           </div>
-        </div>
+        </Field>
         <PostalCodeField
           value={value.postalCode}
           disabled={disabled}
@@ -534,10 +517,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
           }}
         />
         <div className="repeat-row repeat-row--address">
-          <div className="field">
-            <label className="label" htmlFor="event-prefecture">
-              都道府県
-            </label>
+          <Field label="都道府県" htmlFor="event-prefecture">
             <input
               id="event-prefecture"
               maxLength={20}
@@ -546,11 +526,8 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               placeholder="東京都"
               className="input"
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="event-city">
-              市区町村
-            </label>
+          </Field>
+          <Field label="市区町村" htmlFor="event-city">
             <input
               id="event-city"
               maxLength={100}
@@ -559,13 +536,10 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               placeholder="渋谷区"
               className="input"
             />
-          </div>
+          </Field>
         </div>
         <div className="repeat-row repeat-row--address">
-          <div className="field">
-            <label className="label" htmlFor="event-town">
-              町域
-            </label>
+          <Field label="町域" htmlFor="event-town">
             <input
               id="event-town"
               maxLength={100}
@@ -574,11 +548,8 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               placeholder="神宮前"
               className="input"
             />
-          </div>
-          <div className="field">
-            <label className="label" htmlFor="event-address-line">
-              番地
-            </label>
+          </Field>
+          <Field label="番地" htmlFor="event-address-line">
             <input
               id="event-address-line"
               maxLength={200}
@@ -587,12 +558,9 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               placeholder="1-2-3"
               className="input"
             />
-          </div>
+          </Field>
         </div>
-        <div className="field">
-          <label className="label" htmlFor="event-building">
-            建物名・階数（任意）
-          </label>
+        <Field label="建物名・階数（任意）" htmlFor="event-building">
           <input
             id="event-building"
             maxLength={150}
@@ -601,22 +569,19 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
             placeholder="○○ビル3F"
             className="input"
           />
-        </div>
+        </Field>
         {locationPreview && <p className="help">公開ページの表示: {locationPreview}</p>}
         {!hasStructuredAddress && !value.venueName && value.location ? (
-          <p className="alert alert--warning">
+          <Alert tone="warning">
             このイベントは旧形式の場所「{value.location}」で登録されています。郵便番号から住所を入れると表示が新しくなります。空のまま保存すると旧形式のまま残ります。
-          </p>
+          </Alert>
         ) : (
           <p className="help">
             郵便番号から入れると都道府県・市区町村・町域が自動で入ります。オンライン開催など場所が決まっていないときは、会場名だけでも保存できます。
           </p>
         )}
       </fieldset>
-      <div className="field">
-        <label className="label" htmlFor="event-rain-policy">
-          雨天時の方針
-        </label>
+      <Field label="雨天時の方針" htmlFor="event-rain-policy">
         <select
           id="event-rain-policy"
           disabled={disabled}
@@ -630,7 +595,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
             </option>
           ))}
         </select>
-      </div>
+      </Field>
       <VenueSelectModal
         isOpen={venuePickerOpen}
         onClose={() => setVenuePickerOpen(false)}
@@ -680,10 +645,7 @@ export function CapacitySection({
 
   return (
     <>
-      <div className="field">
-        <label className="label" htmlFor="event-capacity">
-          定員
-        </label>
+      <Field label="定員" htmlFor="event-capacity">
         <select
           id="event-capacity"
           disabled={disabled}
@@ -699,12 +661,9 @@ export function CapacitySection({
           ))}
           <option value="custom">51以上（数値入力）</option>
         </select>
-      </div>
+      </Field>
       {selection === "custom" && (
-        <div className="field">
-          <label className="label" htmlFor="event-capacity-custom">
-            人数
-          </label>
+        <Field label="人数" htmlFor="event-capacity-custom">
           <input
             id="event-capacity-custom"
             type="number"
@@ -718,12 +677,9 @@ export function CapacitySection({
             className="input"
           />
           <p className="help">51人以上の人数を入れてください。空欄のままでは次へ進めません。</p>
-        </div>
+        </Field>
       )}
-      <div className="field">
-        <label className="label" htmlFor="rsvp-deadline">
-          申し込み期限
-        </label>
+      <Field label="申し込み期限" htmlFor="rsvp-deadline">
         <input
           id="rsvp-deadline"
           type="datetime-local"
@@ -736,7 +692,7 @@ export function CapacitySection({
         <p className="help">
           空欄なら期限はありません。この日時（日本時間）になると、新しい申し込みと回答の変更を止めます。取消はできます。告知URLは開いたままです。
         </p>
-      </div>
+      </Field>
     </>
   );
 }
@@ -748,10 +704,7 @@ export function StatusSection({ value, onChange, disabled = false }: EventSectio
   };
 
   return (
-    <div className="field">
-      <label className="label" htmlFor="event-status">
-        公開状態
-      </label>
+    <Field label="公開状態" htmlFor="event-status">
       {value.status === "DRAFT" ? (
         <>
           <select
@@ -774,7 +727,7 @@ export function StatusSection({ value, onChange, disabled = false }: EventSectio
           </p>
         </>
       )}
-    </div>
+    </Field>
   );
 }
 

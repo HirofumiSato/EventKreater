@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { yen } from "@/lib/format";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { RevenueAllocationSection } from "@/modules/revenue/components/RevenueAllocationSection";
@@ -18,6 +19,7 @@ import type {
   ScheduleRevenueView,
 } from "@/modules/revenue/lib/revenue";
 import type { RevenueAllocationView } from "@/modules/revenue/types";
+import { Alert, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 interface EventRevenueResponse {
   event: { id: string; title: string; sortDate: string; status: "DRAFT" | "PUBLISHED" | "CLOSED" };
@@ -25,10 +27,6 @@ interface EventRevenueResponse {
   byPlan: PlanRevenueRow[];
   bySchedule: ScheduleRevenueView[];
   allocation: RevenueAllocationView;
-}
-
-function yen(amount: number): string {
-  return `${amount.toLocaleString("ja-JP")}円`;
 }
 
 export default function EventRevenuePage({ params }: { params: { id: string } }) {
@@ -63,13 +61,12 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
     void load();
   }, [load]);
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (loading || !data) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         売上を集計しています
-      </p>
+      </Loading>
     );
   }
 
@@ -77,14 +74,11 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">売上の内訳</h1>
-        <p className="page-lead">
-          {event.title}。{event.sortDate} 開催・{STATUS_LABELS[event.status]}
-        </p>
-        <div className="panel__actions">
-          <Link
+      <PageHeader
+        eyebrow="主催者"
+        title="売上の内訳"
+        lead={<>{event.title}。{event.sortDate} 開催・{STATUS_LABELS[event.status]}</>}
+        actions={<><Link
             href={`/organizer/events/${params.id}/participants`}
             className="btn btn--outline btn--sm"
           >
@@ -92,23 +86,19 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
           </Link>
           <Link href="/organizer/revenue" className="btn btn--ghost btn--sm">
             売上一覧へ
-          </Link>
-        </div>
-      </div>
+          </Link></>}
+      />
 
       <OrganizerTabs />
 
-      <section className="panel">
+      <Panel>
         <RevenueSummaryLedger summary={summary} />
-      </section>
+      </Panel>
 
       {summary.unassignedPlanCount > 0 && (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">プラン未選択の参加者</h2>
-            <p className="section__note">金額が決まっていない人は、見込みに入りません。</p>
-          </div>
-          <div className="panel">
+        <Section>
+          <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
+          <Panel as="div">
             <p className="panel__note panel__note--warning">
               出席しているのに費用プランが未選択の参加者が {summary.unassignedPlanCount} 人います。この人たちは売上に含めていません。
             </p>
@@ -117,8 +107,8 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
                 名簿でプランを選ぶ
               </Link>
             </p>
-          </div>
-        </section>
+          </Panel>
+        </Section>
       )}
 
       {allocation.organizerCount > 1 && (
@@ -132,58 +122,48 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
         />
       )}
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">プラン別</h2>
-          <p className="section__note">申込時点の金額で数えています。</p>
-        </div>
+      <Section>
+        <SectionHead title="プラン別" note="申込時点の金額で数えています。" />
         {byPlan.length === 0 ? (
-          <p className="empty">
+          <EmptyState>
             <span className="empty__title">プランを選んだ出席者がまだいません。</span>
             <span className="empty__body">名簿から費用プランを選ぶと、ここに小計が出ます。</span>
-          </p>
+          </EmptyState>
         ) : (
-          <ul className="rows">
+          <Rows>
             {byPlan.map((row) => (
-              <li key={`${row.audience}:${row.name}:${row.amount}`} className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">{row.name}</p>
-                  <p className="rows__meta">
-                    {PRICE_AUDIENCE_LABELS[row.audience]} ／ {row.attendingCount} 人 ／ 1 人{" "}
-                    {yen(row.amount)}
-                  </p>
-                </div>
-                <span className="rows__value">{yen(row.subtotal)}</span>
-              </li>
+              <Row
+                title={<>{row.name}</>}
+                meta={<>{PRICE_AUDIENCE_LABELS[row.audience]} ／ {row.attendingCount} 人 ／ 1 人{" "}
+                    {yen(row.amount)}</>}
+                aside={<><span className="rows__value">{yen(row.subtotal)}</span></>}
+                key={`${row.audience}:${row.name}:${row.amount}`}
+              />
             ))}
-          </ul>
+          </Rows>
         )}
-      </section>
+      </Section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">開催回別</h2>
-          <p className="section__note">1回だけの催しは、1行になります。</p>
-        </div>
+      <Section>
+        <SectionHead title="開催回別" note="1回だけの催しは、1行になります。" />
         {bySchedule.length === 0 ? (
-          <p className="empty">
+          <EmptyState>
             <span className="empty__title">出席者がまだいません。</span>
             <span className="empty__body">出欠が入ると、開催回ごとの小計が出ます。</span>
-          </p>
+          </EmptyState>
         ) : (
-          <ul className="rows">
+          <Rows>
             {bySchedule.map((row) => (
-              <li key={row.scheduleId ?? "unknown"} className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">{row.label}</p>
-                  <p className="rows__meta">出席 {row.attendingCount} 人</p>
-                </div>
-                <span className="rows__value">{yen(row.subtotal)}</span>
-              </li>
+              <Row
+                title={<>{row.label}</>}
+                meta={<>出席 {row.attendingCount} 人</>}
+                aside={<><span className="rows__value">{yen(row.subtotal)}</span></>}
+                key={row.scheduleId ?? "unknown"}
+              />
             ))}
-          </ul>
+          </Rows>
         )}
-      </section>
+      </Section>
     </div>
   );
 }

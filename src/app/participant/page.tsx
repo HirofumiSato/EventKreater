@@ -5,6 +5,7 @@ import Link from "next/link";
 import { readProblem } from "@/lib/problem";
 import { rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import type { ParticipationListResponse } from "@/modules/participants/types";
+import { Alert, Badge, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 interface ProfileResponse {
   user: { id: string; email: string; name: string };
@@ -51,21 +52,20 @@ export default function ParticipantHomePage() {
   if (error) {
     return (
       <div className="page--narrow stack">
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href="/participant/login" className="text-link">
             参加者ログイン
           </Link>
-        </p>
+        </Alert>
       </div>
     );
   }
   if (!profile) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         参加者ホームを読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
@@ -76,16 +76,14 @@ export default function ParticipantHomePage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">参加者</p>
-        <h1 className="page-title">こんにちは、{profile.user.name} さん</h1>
-        <p className="page-lead">{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</p>
-        <div className="panel__actions">
-          <button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
+      <PageHeader
+        eyebrow="参加者"
+        title={<>こんにちは、{profile.user.name} さん</>}
+        lead={<>{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</>}
+        actions={<><button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
             ログアウト
-          </button>
-        </div>
-      </div>
+          </button></>}
+      />
 
       {/* 数は 4 つ。モックの「次の支払い」は実装に持つ金額が無いので出さない。 */}
       <div className="roster-summary">
@@ -120,11 +118,8 @@ export default function ParticipantHomePage() {
       </div>
 
       {nextItem && (
-        <section className="section" style={{ marginTop: 0 }}>
-          <div className="section__head">
-            <h2 className="section__title">次の催し</h2>
-            <p className="section__note">いちばん近いものです。</p>
-          </div>
+        <Section style={{ marginTop: 0 }}>
+          <SectionHead title="次の催し" note="いちばん近いものです。" />
           <article
             className={`event-card${nextItem.event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}
             style={{ marginTop: "0.875rem" }}
@@ -143,9 +138,9 @@ export default function ParticipantHomePage() {
                 <h3 className="event-card__title">
                   <Link href={`/events/${nextItem.event.id}`}>{nextItem.event.title}</Link>
                 </h3>
-                <span className={`badge badge--sm badge--${rsvpStatusTone(nextItem.status)}`}>
+                <Badge tone={rsvpStatusTone(nextItem.status)} small>
                   {nextItem.statusLabel}
-                </span>
+                </Badge>
               </div>
               <p className="event-card__meta">
                 {nextItem.scheduleLabel ?? nextItem.event.sortDate}
@@ -185,39 +180,33 @@ export default function ParticipantHomePage() {
               )}
             </div>
           </article>
-        </section>
+        </Section>
       )}
 
       {!upcoming || upcoming.items.length === 0 ? (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">これからの参加</h2>
-            <p className="section__note">日付の近い順です。回答はあとから変えられます。</p>
-          </div>
-          <p className="empty">
+        <Section>
+          <SectionHead title="これからの参加" note="日付の近い順です。回答はあとから変えられます。" />
+          <EmptyState>
             <span className="empty__title">これから参加する催しはありません。</span>
             <span className="empty__body">主催者から届いた告知URLを開くと、出欠を答えられます。</span>
-          </p>
-        </section>
+          </EmptyState>
+        </Section>
       ) : (
         restItems.length > 0 && (
-          <section className="section">
-            <div className="section__head">
-              <h2 className="section__title">これからの参加</h2>
-              <p className="section__note">日付の近い順です。回答はあとから変えられます。</p>
-            </div>
-            <ul className="rows">
+          <Section>
+            <SectionHead title="これからの参加" note="日付の近い順です。回答はあとから変えられます。" />
+            <Rows>
               {restItems.map((row) => (
-                <li key={row.id} className="rows__item">
-                  <div className="rows__main">
-                    <p className="rows__title">
-                      <Link href={`/events/${row.event.id}`}>{row.event.title}</Link>
-                    </p>
-                    <p className="rows__meta">
-                      {row.scheduleLabel ?? row.event.sortDate}
-                      {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""} ／ {row.event.location}
-                    </p>
-                    <p className="rows__meta">
+                <Row
+                  title={<><Link href={`/events/${row.event.id}`}>{row.event.title}</Link></>}
+                  meta={<>{row.scheduleLabel ?? row.event.sortDate}
+                      {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""} ／ {row.event.location}</>}
+                  aside={<><Badge tone={rsvpStatusTone(row.status)} small>
+                    {row.statusLabel}
+                  </Badge></>}
+                  key={row.id}
+                >
+                  <p className="rows__meta">
                       <Link href={`/events/${row.event.id}`} className="text-link">
                         出欠を変更
                       </Link>
@@ -238,14 +227,10 @@ export default function ParticipantHomePage() {
                         </>
                       )}
                     </p>
-                  </div>
-                  <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>
-                    {row.statusLabel}
-                  </span>
-                </li>
+                </Row>
               ))}
-            </ul>
-          </section>
+            </Rows>
+          </Section>
         )
       )}
 
@@ -258,12 +243,9 @@ export default function ParticipantHomePage() {
         </Link>
       </div>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">主催する側でも使う</h2>
-          <p className="section__note">同じアカウントで、催しを開けます。</p>
-        </div>
-        <div className="panel">
+      <Section>
+        <SectionHead title="主催する側でも使う" note="同じアカウントで、催しを開けます。" />
+        <Panel as="div">
           <p className="panel__title">主催者マイページ</p>
           <p className="panel__note">作った催し、出欠の集計、売上をまとめて見られます。</p>
           <div className="panel__actions">
@@ -271,8 +253,8 @@ export default function ParticipantHomePage() {
               主催者として使う
             </Link>
           </div>
-        </div>
-      </section>
+        </Panel>
+      </Section>
 
       <p className="screen-note">
         参加するだけならログインは要りません。履歴を残したいときだけ、この画面のアカウントでログインしてください。

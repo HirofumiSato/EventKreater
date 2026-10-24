@@ -10,6 +10,7 @@ import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInvite
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
+import { Alert, Loading } from "@/components/ui";
 
 export default function PublicEventPage({ params }: { params: { id: string } }) {
   const [event, setEvent] = useState<PublicEvent | null>(null);
@@ -33,13 +34,12 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
     };
   }, [params.id]);
 
-  if (error) return <p className="alert alert--error">{error}</p>;
+  if (error) return <Alert tone="error">{error}</Alert>;
   if (!event) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         イベントを読み込んでいます
-      </p>
+      </Loading>
     );
   }
 

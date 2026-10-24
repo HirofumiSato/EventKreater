@@ -40,6 +40,7 @@ const TASKS = [
   },
   // リポジトリ内のスクリプトは import.meta.resolve を通さず、パスで直接起動する。
   { label: "ui-map", script: "scripts/check-ui-map.mjs", args: [] },
+  { label: "ui-css", script: "scripts/check-ui-css.mjs", args: [] },
 ];
 
 function run(task) {

@@ -23,6 +23,8 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 | DB 物理設計 | `prisma/schema.prisma`（`docs/DBschema.md` は解説） |
 | API 契約 | `src/app/api/**/route.ts`（ディレクトリがそのまま URL） |
 | 画面 | `src/app/**/page.tsx` |
+| 共通スタイル | `src/styles/**/*.css`（モックも同じファイルを読む） |
+| 共通 UI 部品 | `src/components/ui/**` |
 | チラシ描画 | `services/flyer/src/**` |
 
 - `docs/README.md` に既知の乖離をまとめてあります。まずそこを見てください。
@@ -38,7 +40,9 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 | 画面のクライアント側 | 同じディレクトリの `*Client.tsx` | サーバーは OGP・初期データのみ |
 | 純ロジック | `src/modules/<機能>/lib/*.ts` | DOM と Next に依存しない。テスト対象 |
 | UI | `src/modules/<機能>/components/` | ロジックを持たない |
-| 横断ユーティリティ | `src/lib/` | `schemas.ts`（zod）、`serializers.ts`、`problem.ts`（RFC 7807） |
+| 共通 UI 部品 | `src/components/ui/` | `PageHeader`、`Section`、`Panel`、`Rows`、`Alert`、`Loading`、`EmptyState`、`Badge`、`Dialog`、`Field`。モックのブロックを直すときはここを 1 回直す |
+| 共有スタイル | `src/styles/` | `index.css` が入口。`tokens` → `base` → `components` → `screens` → `deco`（最後）の順。モックも同じファイルを読む |
+| 横断ユーティリティ | `src/lib/` | `schemas.ts`（zod）、`serializers.ts`、`problem.ts`（RFC 7807）、`format.ts`（金額・日付） |
 | DB | `prisma/schema.prisma` | 変更は `prisma/migrations/` に追加 |
 | 振る舞いの仕様 | `tests/**/*.test.ts` | テスト名が日本語の仕様文になっている |
 
@@ -48,6 +52,9 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 
 ```powershell
 npm run check        # lint + tsc --noEmit + Vitest（+ docs のテスト件数の照合）
+npm run ui:css       # TSX とモックのクラスが CSS に揃っているか（未定義・未使用）
+npm run ui:map       # 29 画面とモックの対応表が壊れていないか
+npm run ui:shots     # 390 / 1280 のスクリーンショットと report.json を撮り直す
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
@@ -61,6 +68,8 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ## 規約
 
 - コメント・文書・コミットメッセージは日本語で書きます。
+- 見た目の変更は `src/styles/**` の 1 箇所、ブロック構造の変更は `src/components/ui/**` の 1 箇所で済ませます。ページ側に同じクラスの組み立てを書き戻さないでください。
+- 金額と日付の文字列は `src/lib/format.ts` を通します。`toLocaleString` を画面に直書きしません（通貨が JPY でない管理画面など、意図がある場所はコメントを残します）。
 - `docs/doc-index.json`、`docs/api-routes.md`、`docs/traceability.md`、`llms.txt` は `npm run docs:gen` の生成物です。手で編集せず、原稿かコードを直してから再生成してください。
 - テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check` がずれを検出します。テストを足したら件数も更新してください。
 - ルートビルドで有効な Sphinx の設定は `docs/conf.py` だけです。`docs/{event-page,flyer,user-management}/conf.py` は単独ビルド用です。

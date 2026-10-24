@@ -164,7 +164,7 @@ GET /api/v1/user/calendar
 
 - 900px 以上は `.calendar-layout` を2列（月 / 一覧）にする。900px 未満は1列で、月の下に一覧を置く。
 - 375px でセルの中身が折り返さないこと。日番号と催し名の帯を縦に積み、帯は1行で省略する（9px、入りきらない分は `+N`）。
-- スタイルは `src/app/attendance.css` の既存の `.calendar*` を再利用し、欠席の色だけ足す。
+- スタイルは `src/styles/components.css` の既存の `.cal` ブロックを再利用し、欠席の色だけ足す。
 
 ### 5. ナビゲーション
 
@@ -242,6 +242,6 @@ GET /api/v1/user/calendar
 - `src/modules/organizers/components/CalendarView.tsx` — 幹事カレンダーの画面
 - `src/components/common/CalendarMonth.tsx` — 共通の月グリッドとツールバー
 - `src/lib/calendar.ts` — 共通の日付計算
-- `src/app/attendance.css` — `.calendar*` のスタイル
+- `src/styles/screens/organizer.css` — `.cal` のスタイル
 - `docs/front_implementation_spec.md` — 画面表、画面カタログ、ヘッダー、受け入れ条件
 - `docs/overall_system_requirements_common.md` — 画面カタログとヘッダーの出し分け

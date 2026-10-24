@@ -7,10 +7,10 @@
 // ただし IDE の内蔵ブラウザなど、file:// のままではページ間のリンクが辿れない環境がある。
 // その差を吸収するために、同じものを HTTP でも出せるようにしておく。
 //
-// ルートはリポジトリ直下。モックは ../src/app/attendance.css と ../public/samples/*.jpg を
+// ルートはリポジトリ直下。モックは ../src/styles/index.css と ../public/samples/*.jpg を
 // 相対参照するので、style-guide を根にすると CSS と画像が 404 になる。
 //
-// 配るのは style-guide/ と public/ と src/app/ の静的ファイルだけ。.env や
+// 配るのは style-guide/ と public/ と src/styles/ の静的ファイルだけ。.env や
 // prisma/ のような、モックが見ないものは置かない。拡張子で弾く。
 
 import fs from "node:fs";
@@ -24,7 +24,7 @@ const host = "127.0.0.1";
 const entry = "/style-guide/mock-index.html";
 
 // モックが実際に参照する範囲。ここを広げると、関係のないファイルまで外に出る。
-const PREFIXES = ["style-guide/", "public/", "src/app/"];
+const PREFIXES = ["style-guide/", "public/", "src/styles/"];
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

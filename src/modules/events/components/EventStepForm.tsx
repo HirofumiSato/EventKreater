@@ -24,6 +24,7 @@ import {
   LocationSection,
   PricePlansSection,
 } from "@/modules/events/components/EventFormSections";
+import { Alert } from "@/components/ui";
 
 interface EventStepFormProps {
   value: EventFormValues;
@@ -312,7 +313,7 @@ export function EventStepForm({
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <Alert tone="error">{error}</Alert>}
       <ol className="event-steps__list">
         {EVENT_STEPS.map((step, index) => {
           const open = openKeys.has(step.key);

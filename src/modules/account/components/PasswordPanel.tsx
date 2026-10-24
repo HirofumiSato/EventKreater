@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { readProblem } from "@/lib/problem";
 import type { AccountProfile } from "@/modules/account/types";
+import { Alert, Field, Panel } from "@/components/ui";
 
 interface Props {
   profile: AccountProfile;
@@ -73,7 +74,7 @@ export function PasswordPanel({ profile, onChange }: Props) {
   };
 
   return (
-    <section className="panel">
+    <Panel>
       <h2 className="panel__title">パスワード</h2>
       <p className="panel__note">
         {profile.hasPassword
@@ -83,10 +84,7 @@ export function PasswordPanel({ profile, onChange }: Props) {
 
       <form className="stack" onSubmit={(event) => void submit(event)}>
         {profile.hasPassword ? (
-          <div className="field">
-            <label className="label" htmlFor="account-current-password">
-              現在のパスワード
-            </label>
+          <Field label="現在のパスワード" htmlFor="account-current-password">
             <input
               id="account-current-password"
               type="password"
@@ -97,12 +95,9 @@ export function PasswordPanel({ profile, onChange }: Props) {
               disabled={busy}
               required
             />
-          </div>
+          </Field>
         ) : (
-          <div className="field">
-            <label className="label" htmlFor="account-password-code">
-              確認番号
-            </label>
+          <Field label="確認番号" htmlFor="account-password-code">
             <input
               id="account-password-code"
               className="input"
@@ -125,13 +120,10 @@ export function PasswordPanel({ profile, onChange }: Props) {
                 {codeSent ? "確認番号を再送する" : "確認番号を送る"}
               </button>
             </div>
-          </div>
+          </Field>
         )}
 
-        <div className="field">
-          <label className="label" htmlFor="account-new-password">
-            新しいパスワード
-          </label>
+        <Field label="新しいパスワード" htmlFor="account-new-password">
           <input
             id="account-new-password"
             type="password"
@@ -144,12 +136,9 @@ export function PasswordPanel({ profile, onChange }: Props) {
             disabled={busy}
             required
           />
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label" htmlFor="account-confirm-password">
-            新しいパスワード（確認）
-          </label>
+        <Field label="新しいパスワード（確認）" htmlFor="account-confirm-password">
           <input
             id="account-confirm-password"
             type="password"
@@ -162,10 +151,10 @@ export function PasswordPanel({ profile, onChange }: Props) {
             disabled={busy}
             required
           />
-        </div>
+        </Field>
 
-        {notice && <p className="alert alert--success">{notice}</p>}
-        {error && <p className="alert alert--error">{error}</p>}
+        {notice && <Alert tone="success">{notice}</Alert>}
+        {error && <Alert tone="error">{error}</Alert>}
 
         <div className="btn-row">
           <button type="submit" className="btn btn--primary" disabled={busy}>
@@ -173,6 +162,6 @@ export function PasswordPanel({ profile, onChange }: Props) {
           </button>
         </div>
       </form>
-    </section>
+    </Panel>
   );
 }

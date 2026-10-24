@@ -1,0 +1,161 @@
+/* ==========================================================================
+   screens/public.css — 画面固有（公開側）。
+
+   もとは 1 枚の attendance.css と deco.css。読み込み順は index.css が持つ。
+   宣言順は元のまま。並べ替えると詳細度の同じ規則どうしが入れ替わり、
+   見た目が変わる。追加はこの層の末尾へ。
+   ========================================================================== */
+
+.poster {
+  overflow: hidden;
+  max-height: 65vh;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background: var(--color-hero);
+}
+
+.poster img {
+  width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+
+
+.sticky-rsvp {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  /* 下を流れる本文を完全には隠さない。紙の上に薄い膜を 1 枚置く。 */
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* 参加人数は札（EventMetaCard）にも出る。狭い画面では重複するので落とし、
+   ボタン 2 つに幅を渡す。広い画面では左に添えて、件数だけを読ませる。 */
+.sticky-rsvp .help {
+  display: none;
+  margin: 0;
+}
+
+.sticky-rsvp .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .sticky-rsvp {
+    padding-inline: 1.5rem;
+  }
+
+  .sticky-rsvp .help {
+    display: block;
+    flex: 0 1 auto;
+    font-size: 0.8125rem;
+  }
+
+  .sticky-rsvp .btn {
+    flex: 0 0 auto;
+  }
+}
+
+
+
+
+
+
+
+
+
+.meter {
+  height: 0.375rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-line);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  background: var(--color-success-line);
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  max-width: 22rem;
+}
+
+
+
+a.card,
+.card a {
+  text-decoration: none;
+}
+
+.quote {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .sticky-rsvp {
+    display: none;
+  }
+}
+
+.receipt {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  background: #fff;
+  border: 1px solid var(--color-line);
+}
+
+
+
+
+
+
+
+
+
+@media print {
+  .site-header,
+  .site-footer,
+  .skip-link,
+  .no-print {
+    display: none !important;
+  }
+
+  .page {
+    padding: 0;
+    max-width: none;
+  }
+
+  .receipt {
+    border: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
+
+/* チラシ候補ウィザード。React が開閉を持つので、checkbox ではなくクラスで出す。 */

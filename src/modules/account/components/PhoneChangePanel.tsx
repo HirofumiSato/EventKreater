@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { readProblem } from "@/lib/problem";
 import type { AccountProfile } from "@/modules/account/types";
+import { Alert, Field } from "@/components/ui";
 
 interface Props {
   profile: AccountProfile;
@@ -125,10 +126,7 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
 
       {open && !smsSent && (
         <form className="stack" onSubmit={(event) => void startChange(event)}>
-          <div className="field">
-            <label className="label" htmlFor="account-phone">
-              新しい電話番号
-            </label>
+          <Field label="新しい電話番号" htmlFor="account-phone">
             <input
               id="account-phone"
               className="input"
@@ -139,13 +137,10 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
               disabled={busy}
               required
             />
-          </div>
+          </Field>
 
           {profile.hasPassword ? (
-            <div className="field">
-              <label className="label" htmlFor="account-phone-password">
-                現在のパスワード
-              </label>
+            <Field label="現在のパスワード" htmlFor="account-phone-password">
               <input
                 id="account-phone-password"
                 type="password"
@@ -156,12 +151,9 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
                 disabled={busy}
                 required
               />
-            </div>
+            </Field>
           ) : (
-            <div className="field">
-              <label className="label" htmlFor="account-phone-code">
-                確認番号
-              </label>
+            <Field label="確認番号" htmlFor="account-phone-code">
               <input
                 id="account-phone-code"
                 className="input"
@@ -186,11 +178,11 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
                   {codeSent ? "確認番号を再送する" : "確認番号を送る"}
                 </button>
               </div>
-            </div>
+            </Field>
           )}
 
-          {notice && <p className="alert alert--info">{notice}</p>}
-          {error && <p className="alert alert--error">{error}</p>}
+          {notice && <Alert tone="info">{notice}</Alert>}
+          {error && <Alert tone="error">{error}</Alert>}
           <div className="btn-row">
             <button type="submit" className="btn btn--primary btn--sm" disabled={busy}>
               {busy ? "送信しています..." : "新しい番号へSMSを送る"}
@@ -204,10 +196,7 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
 
       {open && smsSent && (
         <form className="stack" onSubmit={(event) => void confirm(event)}>
-          <div className="field">
-            <label className="label" htmlFor="account-phone-confirm">
-              新しい番号に届いた確認コード
-            </label>
+          <Field label="新しい番号に届いた確認コード" htmlFor="account-phone-confirm">
             <input
               id="account-phone-confirm"
               className="input"
@@ -219,9 +208,9 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
               disabled={busy}
               required
             />
-          </div>
-          {notice && <p className="alert alert--info">{notice}</p>}
-          {error && <p className="alert alert--error">{error}</p>}
+          </Field>
+          {notice && <Alert tone="info">{notice}</Alert>}
+          {error && <Alert tone="error">{error}</Alert>}
           <div className="btn-row">
             <button type="submit" className="btn btn--primary btn--sm" disabled={busy}>
               {busy ? "確認しています..." : "この番号に変更する"}
@@ -233,8 +222,8 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
         </form>
       )}
 
-      {!open && notice && <p className="alert alert--success">{notice}</p>}
-      {!open && error && <p className="alert alert--error">{error}</p>}
+      {!open && notice && <Alert tone="success">{notice}</Alert>}
+      {!open && error && <Alert tone="error">{error}</Alert>}
     </div>
   );
 }

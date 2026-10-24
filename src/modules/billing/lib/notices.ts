@@ -1,3 +1,4 @@
+import { yen } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/http";
 import { isUniqueViolation } from "@/lib/exceptions";
@@ -51,7 +52,7 @@ function buildMessage(input: {
   const origin = appBaseUrl();
   const when = jstLabel(input.periodEnd);
   const isFree = input.percent >= 100;
-  const price = SUBSCRIPTION_PRICE_JPY.toLocaleString("ja-JP");
+  const price = yen(SUBSCRIPTION_PRICE_JPY);
   const remaining = input.kind === "FREE_PERIOD_ENDING_3D" ? "3日" : "1日";
   const label = isFree ? "無料期間" : "割引期間";
   const campaign = input.campaignName ? `${input.campaignName} の` : "";
@@ -65,8 +66,8 @@ function buildMessage(input: {
     "",
     `${campaign}月額プランの${label}が ${when} に終了します。`,
     isFree
-      ? `終了後は、ご登録のカードへ月額 ${price}円（税込）を自動で請求します。`
-      : `終了後は、月額 ${price}円（税込）の通常料金へ戻ります。`,
+      ? `終了後は、ご登録のカードへ月額 ${price}（税込）を自動で請求します。`
+      : `終了後は、月額 ${price}（税込）の通常料金へ戻ります。`,
     "",
     `継続しない場合は、${label}が終わるまでにマイページの「お支払い管理」から解約してください。`,
     `解約しても、${label}の終了日までは現在の料金でご利用いただけます。`,

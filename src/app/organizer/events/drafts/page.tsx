@@ -9,6 +9,7 @@ import { readProblem } from "@/lib/problem";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import { SITE } from "@/lib/site";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
+import { Alert, Badge, EmptyState, Loading, PageHeader } from "@/components/ui";
 
 /**
  * 下書き一覧。
@@ -62,39 +63,32 @@ export default function OrganizerDraftsPage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">下書き一覧</h1>
-        <p className="page-lead">
-          公開するまで、利用枠は減りません。プレビューで見た目を確かめてから公開できます。
-        </p>
-      </div>
+      <PageHeader eyebrow="主催者" title="下書き一覧" lead="公開するまで、利用枠は減りません。プレビューで見た目を確かめてから公開できます。" />
 
       <OrganizerTabs />
 
       {loading && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       )}
       {error && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href={SITE.nav.organizerLogin.href} className="text-link">
             {SITE.nav.organizerLogin.label}
           </Link>
-        </p>
+        </Alert>
       )}
       {!loading && !error && events.length === 0 && (
-        <div className="empty">
+        <EmptyState as="div">
           <p className="empty__title">下書きはありません。</p>
           <p className="empty__body">
             <Link href={SITE.nav.createEvent.href} className="text-link">
               {SITE.cta.createEventFirst}
             </Link>
           </p>
-        </div>
+        </EmptyState>
       )}
 
       <div className="stack">
@@ -103,9 +97,9 @@ export default function OrganizerDraftsPage() {
             <div>
               <p className="draft-card__title">
                 {event.title}
-                <span className="badge badge--sm badge--neutral">
+                <Badge tone="neutral" small>
                   {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
-                </span>
+                </Badge>
               </p>
               <p className="draft-card__meta">
                 {scheduleLabel(event.schedules)} ／ {event.location || "場所未定"}

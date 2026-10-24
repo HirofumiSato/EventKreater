@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatRsvpDeadlineLabel, priceLabel, scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
+import { Badge } from "@/components/ui";
 
 interface EventCardProps {
   event: OrganizerEvent;
@@ -41,7 +42,7 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
         <div className="event-card__head">
           <h3 className="event-card__title">{event.title}</h3>
           <span className={statusTone(event.status)}>{STATUS_LABELS[event.status]}</span>
-          <span className="badge badge--neutral">{event.role === "OWNER" ? "主催" : "共同主催"}</span>
+          <Badge tone="neutral">{event.role === "OWNER" ? "主催" : "共同主催"}</Badge>
         </div>
 
         <p className="event-card__meta">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Alert, Field } from "@/components/ui";
 
 interface ReceiptIssueModalProps {
   participantName: string;
@@ -46,14 +47,11 @@ export function ReceiptIssueModal({
           宛名、金額、但し書きを入れて発行します。金額は選んだ費用プランから入れています。参加費の決済はこのシステムでは行いません。
         </p>
         {suggestedAmount === 0 && (
-          <p className="alert alert--warning">
+          <Alert tone="warning">
             この費用プランは無料です。領収書が必要かどうか確認してください。
-          </p>
+          </Alert>
         )}
-        <div className="field">
-          <label className="label" htmlFor="receipt-addressee">
-            宛名
-          </label>
+        <Field label="宛名" htmlFor="receipt-addressee">
           <input
             id="receipt-addressee"
             required
@@ -62,11 +60,8 @@ export function ReceiptIssueModal({
             value={addressee}
             onChange={(event) => setAddressee(event.target.value)}
           />
-        </div>
-        <div className="field">
-          <label className="label" htmlFor="receipt-amount">
-            金額（円）
-          </label>
+        </Field>
+        <Field label="金額（円）" htmlFor="receipt-amount">
           <input
             id="receipt-amount"
             required
@@ -78,11 +73,8 @@ export function ReceiptIssueModal({
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
           />
-        </div>
-        <div className="field">
-          <label className="label" htmlFor="receipt-description">
-            但し書き
-          </label>
+        </Field>
+        <Field label="但し書き" htmlFor="receipt-description">
           <input
             id="receipt-description"
             required
@@ -91,7 +83,7 @@ export function ReceiptIssueModal({
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
-        </div>
+        </Field>
         <div className="dialog__actions">
           <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
             {busy ? "発行しています..." : reissue ? "再発行して表示" : "発行して表示"}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
+import { Alert, Badge, EmptyState, Field } from "@/components/ui";
 
 interface AdminUserRow {
   id: string;
@@ -111,7 +112,7 @@ export default function AdminUsersPage() {
   };
 
   if (blocked) {
-    return <p className="empty">このページは利用できません。</p>;
+    return <EmptyState>このページは利用できません。</EmptyState>;
   }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -123,10 +124,7 @@ export default function AdminUsersPage() {
         <p className="page-lead">名前またはメールアドレスで検索し、他の会員の管理者権限を変更できます。</p>
       </div>
       <form className="form" onSubmit={search}>
-        <div className="field">
-          <label className="label" htmlFor="admin-user-q">
-            検索
-          </label>
+        <Field label="検索" htmlFor="admin-user-q">
           <input
             id="admin-user-q"
             value={q}
@@ -134,7 +132,7 @@ export default function AdminUsersPage() {
             placeholder="名前、メールアドレス"
             className="input"
           />
-        </div>
+        </Field>
         <div className="btn-row">
           <button type="submit" className="btn btn--primary">
             検索
@@ -153,7 +151,7 @@ export default function AdminUsersPage() {
           </button>
         </div>
       </form>
-      {error ? <p className="alert alert--error">{error}</p> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
       <p className="help">
         {submittedQ ? `「${submittedQ}」` : "全件"} {total}件
       </p>
@@ -191,7 +189,7 @@ export default function AdminUsersPage() {
                     <tr key={user.id}>
                       <td>
                         {user.name}
-                        {user.withdrawn ? <span className="badge badge--neutral badge--sm">退会済み</span> : null}
+                        {user.withdrawn ? <Badge tone="neutral" small>退会済み</Badge> : null}
                         {mine ? <span className="data__muted"> （自分）</span> : null}
                       </td>
                       <td>

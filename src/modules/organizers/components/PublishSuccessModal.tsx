@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Dialog } from "@/components/ui";
 
 interface PublishSuccessModalProps {
   publicUrl: string;
@@ -18,14 +19,10 @@ export function PublishSuccessModal({ publicUrl, manageUrl, onClose }: PublishSu
   };
 
   return (
-    <div className="modal" style={{ display: "flex" }}>
-      <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
-      <div className="dialog" role="dialog" aria-modal="true">
-        <h3 className="dialog__title">公開完了</h3>
-        <p className="dialog__body">共有リンクを参加者に送って、出欠を集められます。</p>
-        <p className="quote">{absolute}</p>
-        <div className="dialog__actions">
-          <button type="button" onClick={() => void copy()} className="btn btn--primary btn--block">
+    <Dialog
+      title="公開完了"
+      onClose={onClose}
+      actions={<><button type="button" onClick={() => void copy()} className="btn btn--primary btn--block">
             {copied ? "コピーしました" : "共有リンクをコピー"}
           </button>
           <a href={publicUrl} className="btn btn--block">
@@ -36,9 +33,10 @@ export function PublishSuccessModal({ publicUrl, manageUrl, onClose }: PublishSu
           </a>
           <button type="button" onClick={onClose} className="btn btn--ghost btn--block">
             閉じる
-          </button>
-        </div>
-      </div>
-    </div>
+          </button></>}
+    >
+      <p className="dialog__body">共有リンクを参加者に送って、出欠を集められます。</p>
+        <p className="quote">{absolute}</p>
+    </Dialog>
   );
 }

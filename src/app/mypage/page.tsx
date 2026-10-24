@@ -14,6 +14,7 @@ import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import type { OrganizerEvent } from "@/modules/events/types";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
+import { Alert, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 /** ホームに出す主催イベントの件数。全件は主催一覧（SCR-ORG-01）が持つ。 */
 const SUMMARY_LIMIT = 3;
@@ -75,20 +76,19 @@ export default function MyPage() {
 
   if (error) {
     return (
-      <p className="alert alert--warning">
+      <Alert tone="warning">
         {error}{" "}
         <Link href={loginUrl("/mypage")} className="text-link">
           主催者ログイン
         </Link>
-      </p>
+      </Alert>
     );
   }
   if (!profile) {
     return (
-      <p className="loading">
-        <span className="spinner" aria-hidden="true" />
+      <Loading>
         マイページを読み込んでいます
-      </p>
+      </Loading>
     );
   }
 
@@ -98,13 +98,12 @@ export default function MyPage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">主催者</p>
-        <h1 className="page-title">主催者マイページ</h1>
-        <p className="page-lead">
-          {profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="主催者"
+        title="主催者マイページ"
+        lead={<>{profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
+        </>}
+      />
 
       <OrganizerTabs />
 
@@ -138,34 +137,26 @@ export default function MyPage() {
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">直近の催し</h2>
-          <p className="section__note">
-            {SUMMARY_LIMIT}件まで。すべては主催一覧で見られます。
-          </p>
-        </div>
+      <Section>
+        <SectionHead title="直近の催し" note={<>{SUMMARY_LIMIT}件まで。すべては主催一覧で見られます。
+          </>} />
         {events.length === 0 && (
-          <p className="empty">
+          <EmptyState>
             まだ主催イベントはありません。{" "}
             <Link href={SITE.nav.createEvent.href} className="text-link">
               {SITE.cta.createEventFirst}
             </Link>
-          </p>
+          </EmptyState>
         )}
         {events.length > 0 && (
-          <ul className="rows">
+          <Rows>
             {events.slice(0, SUMMARY_LIMIT).map((event) => (
-              <li key={event.id} className="rows__item">
-                <div className="rows__main">
-                  <p className="rows__title">{event.title}</p>
-                  <p className="rows__meta">
-                    {scheduleLabel(event.schedules)} ／ 参加 {event.stats.attendingCount}名
+              <Row
+                title={<>{event.title}</>}
+                meta={<>{scheduleLabel(event.schedules)} ／ 参加 {event.stats.attendingCount}名
                     {event.capacity === null ? " ／ 定員なし" : ` / ${event.capacity}名`} ／{" "}
-                    {priceLabel(event.pricePlans)}
-                  </p>
-                </div>
-                <div className="event-card__actions">
+                    {priceLabel(event.pricePlans)}</>}
+                aside={<><div className="event-card__actions">
                   <Link
                     href={`/organizer/events/${event.id}/participants`}
                     className="btn btn--ghost btn--sm"
@@ -178,10 +169,11 @@ export default function MyPage() {
                   >
                     編集
                   </Link>
-                </div>
-              </li>
+                </div></>}
+                key={event.id}
+              />
             ))}
-          </ul>
+          </Rows>
         )}
         <div className="panel__actions">
           <Link href="/organizer/events" className="btn btn--outline btn--sm">
@@ -191,29 +183,23 @@ export default function MyPage() {
             {SITE.nav.createEvent.label}
           </Link>
         </div>
-      </section>
+      </Section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">利用枠と契約</h2>
-          <p className="section__note">筆頭幹事だけが契約を変えられます。</p>
-        </div>
-        <div className="panel">
+      <Section>
+        <SectionHead title="利用枠と契約" note="筆頭幹事だけが契約を変えられます。" />
+        <Panel as="div">
           <div className="panel__actions">
             <StripePortalButton />
             <Link href="/service#pricing" className="btn btn--ghost btn--sm">
               料金を見る
             </Link>
           </div>
-        </div>
-      </section>
+        </Panel>
+      </Section>
 
       {ownProfile && (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">公開プロフィール</h2>
-            <p className="section__note">参加者が、主催者の人柄を見られる場所です。</p>
-          </div>
+        <Section>
+          <SectionHead title="公開プロフィール" note="参加者が、主催者の人柄を見られる場所です。" />
           <dl className="kv">
             <div className="kv__row">
               <dt>状態</dt>
@@ -237,14 +223,11 @@ export default function MyPage() {
               公開ページを見る
             </a>
           </div>
-        </section>
+        </Section>
       )}
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">アカウント</h2>
-          <p className="section__note">{profile.user.email}</p>
-        </div>
+      <Section>
+        <SectionHead title="アカウント" note={<>{profile.user.email}</>} />
         <div className="panel__actions">
           <Link href="/account" className="btn btn--outline btn--sm">
             アカウント設定
@@ -256,7 +239,7 @@ export default function MyPage() {
             ログアウト
           </button>
         </div>
-      </section>
+      </Section>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

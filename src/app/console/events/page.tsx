@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
+import { Alert, EmptyState, Field } from "@/components/ui";
 
 interface AdminEventRow {
   id: string;
@@ -82,7 +83,7 @@ export default function AdminEventsPage() {
   };
 
   if (blocked) {
-    return <p className="empty">このページは利用できません。</p>;
+    return <EmptyState>このページは利用できません。</EmptyState>;
   }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -94,10 +95,7 @@ export default function AdminEventsPage() {
         <p className="page-lead">催し名、場所、幹事の名前またはメールアドレスで検索します。下書きと削除済みも含みます。</p>
       </div>
       <form className="form" onSubmit={search}>
-        <div className="field">
-          <label className="label" htmlFor="admin-event-q">
-            検索
-          </label>
+        <Field label="検索" htmlFor="admin-event-q">
           <input
             id="admin-event-q"
             value={q}
@@ -105,7 +103,7 @@ export default function AdminEventsPage() {
             placeholder="催し名、場所、幹事"
             className="input"
           />
-        </div>
+        </Field>
         <div className="btn-row">
           <button type="submit" className="btn btn--primary">
             検索
@@ -124,7 +122,7 @@ export default function AdminEventsPage() {
           </button>
         </div>
       </form>
-      {error ? <p className="alert alert--error">{error}</p> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
       <p className="help">
         {submittedQ ? `「${submittedQ}」` : "全件"} {total}件
       </p>

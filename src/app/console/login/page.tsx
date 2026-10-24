@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { readProblem } from "@/lib/problem";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
+import { Alert, Field } from "@/components/ui";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -70,10 +71,7 @@ export default function AdminLoginPage() {
         <p className="page-lead">管理者権限と確認済みの電話番号が必要です。パスワードのあと、登録済みの電話へSMSで確認番号を送ります。主催者向けのログイン画面からは管理者として入れません。</p>
       </div>
       <form onSubmit={submit} className="form">
-        <div className="field">
-          <label className="label" htmlFor="admin-email">
-            メールアドレス
-          </label>
+        <Field label="メールアドレス" htmlFor="admin-email">
           <input
             id="admin-email"
             required
@@ -83,11 +81,8 @@ export default function AdminLoginPage() {
             onChange={(event) => setEmail(event.target.value)}
             className="input"
           />
-        </div>
-        <div className="field">
-          <label className="label" htmlFor="admin-password">
-            パスワード
-          </label>
+        </Field>
+        <Field label="パスワード" htmlFor="admin-password">
           <input
             id="admin-password"
             required
@@ -97,8 +92,8 @@ export default function AdminLoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             className="input"
           />
-        </div>
-        {error ? <p className="alert alert--error">{error}</p> : null}
+        </Field>
+        {error ? <Alert tone="error">{error}</Alert> : null}
         <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
           {submitting ? "確認しています" : "ログイン"}
         </button>

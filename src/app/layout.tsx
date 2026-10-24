@@ -4,10 +4,9 @@ import { SiteChrome } from "@/components/common/SiteChrome";
 import { SITE } from "@/lib/site";
 import { appBaseUrl } from "@/lib/http";
 import "./globals.css";
-import "./attendance.css";
-/* 貼り紙の装飾。attendance.css の骨格の上に、角・影・地紋・書体だけを重ねる。
-   読み込み順が逆になると、骨格側の角と影が勝ってしまう。 */
-import "./deco.css";
+/* 共有スタイルの入口。モック（style-guide/*.html）も同じファイルを読む。
+   層の順番そのものが仕様で、装飾（deco）を最後に置く。 */
+import "@/styles/index.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appBaseUrl()),

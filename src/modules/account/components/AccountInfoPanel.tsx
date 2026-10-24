@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { readProblem } from "@/lib/problem";
 import type { AccountProfile, ReauthChallenge } from "@/modules/account/types";
+import { Alert, Field, Panel } from "@/components/ui";
 
 interface Props {
   profile: AccountProfile;
@@ -104,14 +105,11 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
 
   return (
     <>
-      <section className="panel">
+      <Panel>
         <h2 className="panel__title">表示名</h2>
         <p className="panel__note">名簿と領収書に、この名前が入ります。</p>
         <form className="stack" onSubmit={(event) => void saveName(event)}>
-          <div className="field">
-            <label className="label" htmlFor="account-name">
-              表示名
-            </label>
+          <Field label="表示名" htmlFor="account-name">
             <input
               id="account-name"
               className="input"
@@ -121,18 +119,18 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
               disabled={savingName}
             />
             <p className="help">1〜50文字。領収書の発行者名など、これから作る書類に使われます。</p>
-          </div>
-          {nameError && <p className="alert alert--error">{nameError}</p>}
-          {nameStatus && <p className="alert alert--success">{nameStatus}</p>}
+          </Field>
+          {nameError && <Alert tone="error">{nameError}</Alert>}
+          {nameStatus && <Alert tone="success">{nameStatus}</Alert>}
           <div className="panel__actions">
             <button type="submit" className="btn btn--primary btn--sm" disabled={savingName || !name.trim()}>
               {savingName ? "保存しています..." : "表示名を保存"}
             </button>
           </div>
         </form>
-      </section>
+      </Panel>
 
-      <section className="panel">
+      <Panel>
         <h2 className="panel__title">メールアドレス</h2>
         <p className="panel__note">
           変更すると、新しいアドレスに確認のリンクが届きます。届くまで、変更は確定しません。
@@ -190,10 +188,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
 
           {emailStep === "newEmail" && (
             <form className="stack" onSubmit={(event) => void submitEmail(event)}>
-              <div className="field">
-                <label className="label" htmlFor="email-code">
-                  確認番号
-                </label>
+              <Field label="確認番号" htmlFor="email-code">
                 <input
                   id="email-code"
                   className="input code-input"
@@ -208,11 +203,8 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
                 <p className="help">
                   {emailChallenge ? `${emailChallenge.destinationMask} へ6桁の番号を送りました。` : ""}
                 </p>
-              </div>
-              <div className="field">
-                <label className="label" htmlFor="new-email">
-                  新しいメールアドレス
-                </label>
+              </Field>
+              <Field label="新しいメールアドレス" htmlFor="new-email">
                 <input
                   id="new-email"
                   type="email"
@@ -222,7 +214,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
                   disabled={emailBusy}
                   required
                 />
-              </div>
+              </Field>
               <div className="panel__actions">
                 <button type="submit" className="btn btn--primary btn--sm" disabled={emailBusy}>
                   {emailBusy ? "送信しています..." : "確認リンクを送る"}
@@ -242,10 +234,10 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
             </div>
           )}
 
-          {emailNotice && <p className="alert alert--info">{emailNotice}</p>}
-          {emailError && <p className="alert alert--error">{emailError}</p>}
+          {emailNotice && <Alert tone="info">{emailNotice}</Alert>}
+          {emailError && <Alert tone="error">{emailError}</Alert>}
         </div>
-      </section>
+      </Panel>
     </>
   );
 }

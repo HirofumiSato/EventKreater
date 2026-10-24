@@ -140,7 +140,7 @@ const TABS = [
 
 - 900px 以上は `.calendar-layout` を2列（月 / 一覧）にする。900px 未満は1列で、月の下に一覧を置く。
 - 375px でセルの中身が折り返さないこと。日番号と催し名の帯を縦に積み、帯は1行で省略する（9px、入りきらない分は `+N`）。
-- スタイルは `src/app/attendance.css` に追加する（既存の `panel` / `card` / `chips` と同じ場所、ブレークポイントは 900px に合わせる）。
+- スタイルは `src/styles/components.css` に追加する（既存の `panel` / `card` / `chips` と同じ場所、ブレークポイントは 900px に合わせる）。
 
 ### 4. ホームとサービス紹介
 
@@ -160,7 +160,7 @@ const TABS = [
 <p className="section__note">告知・出欠・集計・お金・運営・日程を、1つのURLにまとめます。</p>
 ```
 
-- `.feature-list` は縦積みで列数を固定していない（`src/app/attendance.css`）。6件でも崩れない。
+- `.feature-list` は縦積みで列数を固定していない（`src/styles/components.css`）。6件でも崩れない。
 - CTA と画像は増やさない（`docs/front_implementation_spec.md` の方針）。
 - カレンダーは会員・ゲストの両方が使えるため、紹介文に会員限定の注記は付けない。
 - `/service` の `capabilities` にも「催しの日程をカレンダーで見る」を追加し、ホームと同じ用語にする（`src/app/service/page.tsx`）。
@@ -235,6 +235,6 @@ const TABS = [
 - `src/modules/events/components/EventCard.tsx` — 一覧カードの文言と導線
 - `src/app/organizer/revenue/page.tsx` — JST の月境界と期間 UI の前例
 - `src/app/page.tsx` / `src/app/service/page.tsx` — ホームとサービス紹介
-- `src/app/attendance.css` — 既存のスタイルとブレークポイント（900px / 768px / 640px）
+- `src/styles/components.css` / `src/styles/screens/organizer.css` — 既存のスタイルとブレークポイント（900px / 768px / 640px）
 - `docs/front_implementation_spec.md` — 画面表、画面カタログ、受け入れ条件
 - `docs/overall_system_requirements_common.md` — 画面カタログとホームの説明

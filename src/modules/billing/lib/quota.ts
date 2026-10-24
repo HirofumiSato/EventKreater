@@ -1,4 +1,5 @@
 import type { Prisma, SubscriptionStatus } from "@prisma/client";
+import { yen } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
@@ -105,7 +106,7 @@ export function quotaExceeded(
     type: "probs/quota-exceeded",
     detail:
       detail ??
-      `無料トライアル枠（${FREE_EVENT_LIMIT}回）が上限に達しています。単発チケット（${single.toLocaleString("ja-JP")}円）または月額プラン（${monthly.toLocaleString("ja-JP")}円）をご利用ください。`,
+      `無料トライアル枠（${FREE_EVENT_LIMIT}回）が上限に達しています。単発チケット（${yen(single)}）または月額プラン（${yen(monthly)}）をご利用ください。`,
     error: "QUOTA_EXCEEDED",
     pricingOptions: pricing,
   });

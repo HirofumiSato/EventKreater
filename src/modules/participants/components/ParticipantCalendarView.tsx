@@ -22,6 +22,7 @@ import type {
 } from "@/modules/participants/types";
 import { readProblem } from "@/lib/problem";
 import { SITE } from "@/lib/site";
+import { Alert, Badge, EmptyState, Loading, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 /** 出欠で選んだ日程の日付に、出席・欠席の両方を置く参加者カレンダー。 */
 export function ParticipantCalendarView() {
@@ -79,34 +80,31 @@ export function ParticipantCalendarView() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">参加者</p>
-        <h1 className="page-title">参加カレンダー</h1>
-        <p className="page-lead">出欠を答えた催しを、開催日ごとに並べます。</p>
-        <div className="panel__actions">
-          <Link href="/participant" className="btn btn--outline btn--sm">
+      <PageHeader
+        eyebrow="参加者"
+        title="参加カレンダー"
+        lead="出欠を答えた催しを、開催日ごとに並べます。"
+        actions={<><Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
           </Link>
           <Link href="/participant/history" className="btn btn--ghost btn--sm">
             参加履歴
-          </Link>
-        </div>
-      </div>
+          </Link></>}
+      />
 
       {error && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href={SITE.nav.participantLogin.href} className="text-link">
             {SITE.nav.participantLogin.label}
           </Link>
-        </p>
+        </Alert>
       )}
 
       {loading && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           読み込んでいます
-        </p>
+        </Loading>
       )}
 
       {!error && (
@@ -147,41 +145,34 @@ export function ParticipantCalendarView() {
       )}
 
       {!error && (
-        <section className="section">
-          <div className="section__head">
-            <h2 className="section__title">{formatDayHeading(selectedDate)}</h2>
-            <p className="section__note">
-              {dayEntries.length > 0
+        <Section>
+          <SectionHead
+            title={<>{formatDayHeading(selectedDate)}</>}
+            note={<>{dayEntries.length > 0
                 ? `この日の催しは ${dayEntries.length}件です。`
-                : "この日に出欠した催しはありません。"}
-            </p>
-          </div>
+                : "この日に出欠した催しはありません。"}</>}
+          />
           {dayEntries.length === 0 ? (
-            <p className="empty">
+            <EmptyState>
               <span className="empty__title">この日は空いています。</span>
               <span className="empty__body">日付を押すと、その日に出欠した催しが出ます。</span>
-            </p>
+            </EmptyState>
           ) : (
-            <ul className="rows">
+            <Rows>
               {dayEntries.map((entry) => (
-                <li key={entry.participantId} className="rows__item">
-                  <div className="rows__main">
-                    <p className="rows__title">
-                      <Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link>
-                    </p>
-                    <p className="rows__meta">
-                      {entry.eventTime || "時刻未定"}
-                      {entry.event.location ? ` ／ ${entry.event.location}` : ""}
-                    </p>
-                  </div>
-                  <span className={`badge badge--sm badge--${rsvpStatusTone(entry.status)}`}>
+                <Row
+                  title={<><Link href={`/events/${entry.event.id}`}>{entry.event.title}</Link></>}
+                  meta={<>{entry.eventTime || "時刻未定"}
+                      {entry.event.location ? ` ／ ${entry.event.location}` : ""}</>}
+                  aside={<><Badge tone={rsvpStatusTone(entry.status)} small>
                     {entry.statusLabel}
-                  </span>
-                </li>
+                  </Badge></>}
+                  key={entry.participantId}
+                />
               ))}
-            </ul>
+            </Rows>
           )}
-        </section>
+        </Section>
       )}
     </div>
   );

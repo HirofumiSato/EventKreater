@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert } from "@/components/ui";
 
 /**
  * 退会直後にトップへ戻したときの案内。
@@ -17,8 +18,8 @@ export function WithdrawnNotice() {
   if (!withdrawn) return null;
 
   return (
-    <p className="alert alert--info">
+    <Alert tone="info">
       退会が完了しました。ご利用ありがとうございました。同じ電話番号で登録し直すと、以前のアカウントを引き継ぎます。
-    </p>
+    </Alert>
   );
 }

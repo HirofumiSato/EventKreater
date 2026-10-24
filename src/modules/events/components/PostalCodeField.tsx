@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatPostalCode, normalizePostalCode } from "@/lib/postal-code";
 import { readProblem } from "@/lib/problem";
+import { Alert } from "@/components/ui";
 
 export interface PostalCodeResult {
   prefecture: string;
@@ -116,7 +117,7 @@ export function PostalCodeField({
           ))}
         </div>
       )}
-      {error && <p className="alert alert--warning">{error}</p>}
+      {error && <Alert tone="warning">{error}</Alert>}
     </div>
   );
 }

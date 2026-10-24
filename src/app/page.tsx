@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
+import { Section, SectionHead } from "@/components/ui";
 
 /*
  * ホームの役割は「初見の幹事が、自分のためのサービスだと理解し、1つ作り始めること」。
@@ -88,11 +89,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">幹事の手間を、6つに減らす</h2>
-          <p className="section__note">案内ページづくりを5分に。出欠・集計・お金・運営・日程も、1つのURLにまとめます。</p>
-        </div>
+      <Section>
+        <SectionHead title="幹事の手間を、6つに減らす" note="案内ページづくりを5分に。出欠・集計・お金・運営・日程も、1つのURLにまとめます。" />
         <ul className="feature-list">
           {capabilities.map(([title, body], index) => (
             <li key={title} className="feature-row">
@@ -104,13 +102,10 @@ export default function HomePage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2 className="section__title">使い方</h2>
-          <p className="section__note">入力から共有まで、5分・3ステップです。</p>
-        </div>
+      <Section>
+        <SectionHead title="使い方" note="入力から共有まで、5分・3ステップです。" />
         <ol className="step-list">
           {steps.map(([, title, body]) => (
             <li key={title} className="step-row">
@@ -119,7 +114,7 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
-      </section>
+      </Section>
 
       <section className="cta-band">
         <div className="cta-band__inner">

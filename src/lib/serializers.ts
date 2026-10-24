@@ -7,6 +7,7 @@ import type {
   RainPolicy,
   RsvpStatus,
 } from "@prisma/client";
+import { formatDateJa, yen } from "@/lib/format";
 import { isGuestOrganizer, organizerLabel } from "@/modules/organizers/lib/names";
 
 export const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -30,7 +31,7 @@ export function audiencesForGender(gender: Gender): PriceAudience[] {
 /** 0 円は「無料」と表示する。 */
 export function formatYen(amount: number): string {
   if (amount === 0) return "無料";
-  return `${amount.toLocaleString("ja-JP")}円`;
+  return yen(amount);
 }
 
 /** 金額と補足から表示文を合成する。例: 3,000円（1ドリンク付） */
@@ -125,20 +126,12 @@ export function parseEventDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
-const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
-
 /**
  * 画面とメールに出す日付。`2026-11-08` → `11月8日（日）`。
  * 保存形式（`formatEventDate`）は API と DB の都合で変えない。
  */
 export function formatEventDateLabel(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return value;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-  return `${month}月${day}日（${weekday}）`;
+  return formatDateJa(value);
 }
 
 const TOKYO_OFFSET_MS = 9 * 60 * 60 * 1000;

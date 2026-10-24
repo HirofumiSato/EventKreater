@@ -1,0 +1,66 @@
+/* ==========================================================================
+   tokens.css — 値だけを持つ層。ここを変えると全画面に効く。
+
+   もとは 1 枚の attendance.css と deco.css。読み込み順は index.css が持つ。
+   宣言順は元のまま。並べ替えると詳細度の同じ規則どうしが入れ替わり、
+   見た目が変わる。追加はこの層の末尾へ。
+   ========================================================================== */
+
+/* 出欠簿。EventKreater の標準スタイル。index.html からこのファイルだけを読み込む。 */
+
+:root {
+  /* 明るい紙のデザインだけを持つ。端末のダーク設定で自動反転させない。 */
+  color-scheme: light;
+  --color-bg: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-text: #1a1916;
+  --color-text-strong: #1a1916;
+  --color-text-muted: #3f3c36;
+  --color-text-subtle: #5c574e;
+  --color-text-faint: #6b655c;
+  --color-border: #d5d0c6;
+  --color-border-strong: #b7b1a6;
+  --color-line: #e4e0d8;
+  --color-primary: #b4332a;
+  --color-primary-hover: #8f241d;
+  --color-primary-ring: #b4332a;
+  --color-primary-soft: #f8e8e6;
+  --color-primary-text: #8f241d;
+  --color-hero: #1a1916;
+  --color-hero-hover: #2c2a26;
+  --color-success-bg: #e7f3ea;
+  --color-success-border: #8fbfa0;
+  --color-success-line: #1f7a45;
+  --color-success-text: #146c3a;
+  --color-warning-bg: #fff4d6;
+  --color-warning-border: #e6c56a;
+  --color-warning-line: #c48a12;
+  --color-warning-text: #7a4e00;
+  --color-warning-deep: #6b4300;
+  --color-warning-solid: #8a5800;
+  --color-warning-solid-hover: #6e4600;
+  --color-danger-bg: #fdecef;
+  --color-danger-border: #e7a8b4;
+  --color-danger-line: #9f2940;
+  --color-danger-text: #8f1d32;
+  --color-danger-solid: #6e1e2a;
+  --color-danger-solid-hover: #541621;
+  --color-slate-100: #eeece7;
+  --color-slate-200-hover: #e4e1da;
+  --shadow-sm: none;
+  --shadow-xl: none;
+  /* 出欠簿は紙と帳票として扱う。角は付けない。 */
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  /* 墨地の上で使う補助文字。--color-text-muted は墨地で読めない。 */
+  --color-ink-soft: #d8d4cc;
+  /* セクション間。一律の gap ではなく、塊ごとに呼吸を作る。 */
+  --space-section: 3.5rem;
+  --width-page: 64rem;
+  --width-content: 42rem;
+  --width-form: 28rem;
+  --font: "Zen Kaku Gothic New", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}

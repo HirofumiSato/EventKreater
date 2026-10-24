@@ -5,6 +5,7 @@ import Link from "next/link";
 import { readProblem } from "@/lib/problem";
 import { rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import type { ParticipationItem, ParticipationListResponse } from "@/modules/participants/types";
+import { Alert, Badge, EmptyState, Loading, PageHeader, Row, Rows } from "@/components/ui";
 
 type StatusFilter = "all" | "ATTENDING" | "WAITLISTED" | "DECLINED";
 type ScopeFilter = "all" | "upcoming" | "past";
@@ -37,27 +38,22 @@ function answeredLabel(iso: string): string {
 
 function HistoryRow({ row }: { row: ParticipationItem }) {
   return (
-    <li className="rows__item">
-      <div className="rows__main">
-        <p className="rows__title">
-          <Link href={`/events/${row.event.id}`}>{row.event.title}</Link>
-        </p>
-        <p className="rows__meta">
-          {row.scheduleLabel ?? row.event.sortDate}
+    <Row
+      title={<><Link href={`/events/${row.event.id}`}>{row.event.title}</Link></>}
+      meta={<>{row.scheduleLabel ?? row.event.sortDate}
           {row.pricePlanLabel ? ` ／ ${row.pricePlanLabel}` : ""}
-          {` ／ ${row.event.location}`}
-        </p>
-        {row.comment && <p className="rows__meta">コメント: {row.comment}</p>}
-        <p className="rows__meta">回答日: {answeredLabel(row.answeredAt)}</p>
-      </div>
-      {row.receiptId ? (
+          {` ／ ${row.event.location}`}</>}
+      aside={<>{row.receiptId ? (
         <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
           領収書
         </Link>
       ) : (
-        <span className={`badge badge--sm badge--${rsvpStatusTone(row.status)}`}>{row.statusLabel}</span>
-      )}
-    </li>
+        <Badge tone={rsvpStatusTone(row.status)} small>{row.statusLabel}</Badge>
+      )}</>}
+    >
+      {row.comment && <p className="rows__meta">コメント: {row.comment}</p>}
+        <p className="rows__meta">回答日: {answeredLabel(row.answeredAt)}</p>
+    </Row>
   );
 }
 
@@ -111,16 +107,14 @@ export default function ParticipantHistoryPage() {
 
   return (
     <div className="stack">
-      <div>
-        <p className="eyebrow">参加者</p>
-        <h1 className="page-title">参加履歴</h1>
-        <p className="page-lead">答えた出欠と、受け取った領収書の一覧です。</p>
-        <div className="panel__actions">
-          <Link href="/participant" className="btn btn--outline btn--sm">
+      <PageHeader
+        eyebrow="参加者"
+        title="参加履歴"
+        lead="答えた出欠と、受け取った領収書の一覧です。"
+        actions={<><Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
-          </Link>
-        </div>
-      </div>
+          </Link></>}
+      />
 
       {summary && (
         <div className="roster-summary">
@@ -185,34 +179,33 @@ export default function ParticipantHistoryPage() {
       </div>
 
       {error && (
-        <p className="alert alert--warning">
+        <Alert tone="warning">
           {error}{" "}
           <Link href="/participant/login" className="text-link">
             参加者ログイン
           </Link>
-        </p>
+        </Alert>
       )}
 
       {loading && !data && (
-        <p className="loading">
-          <span className="spinner" aria-hidden="true" />
+        <Loading>
           参加履歴を読み込んでいます
-        </p>
+        </Loading>
       )}
 
       {data && data.items.length === 0 && !loading && (
-        <p className="empty">
+        <EmptyState>
           <span className="empty__title">条件に合う参加履歴はありません。</span>
           <span className="empty__body">絞り込みを「すべて」に戻すと、答えた出欠がすべて出ます。</span>
-        </p>
+        </EmptyState>
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="rows">
+        <Rows>
           {data.items.map((row) => (
             <HistoryRow key={row.id} row={row} />
           ))}
-        </ul>
+        </Rows>
       )}
 
       {data && data.total > 0 && (
