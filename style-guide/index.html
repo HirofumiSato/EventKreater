@@ -6,7 +6,7 @@
   <title>出欠簿 | 標準スタイルガイド</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style-guide.css">
 </head>
 <body>
@@ -40,13 +40,16 @@
         <a href="#principles">デザインの指針</a>
         <a href="#intent-phone">スマホ</a>
         <a href="#intent-pc">PC</a>
+        <a href="#scopes">用途</a>
         <a href="#colors">色と文字</a>
         <a href="#layout">共通レイアウト</a>
+        <a href="#sections">見出しと進捗</a>
         <a href="#buttons">ボタン</a>
         <a href="#inputs">入力</a>
         <a href="#choices">出欠の選択</a>
         <a href="#feedback">バッジと通知</a>
         <a href="#lists">一覧</a>
+        <a href="#cards">カード</a>
         <a href="#dialogs">ダイアログ</a>
       </nav>
 
@@ -56,11 +59,11 @@
           <p>出欠は名前と選択だけで終わるようにする。会員登録はその後に履歴を残すための手段で、画面の主役にしない。主な画面はスマホです。標準スタイルガイドは、この方式を出欠簿として採用する。</p>
           <div class="sg-style">
             <p class="sg-style__label">デザインスタイル</p>
-            <p class="sg-style__name">出欠簿</p>
-            <p>罫線と朱で、出欠をその場で終わらせる。色を持つのは、進むボタンと出欠の状態だけにする。</p>
+            <p class="sg-style__name">出欠簿 <span>貼り紙</span></p>
+            <p>紙に貼った札として、出欠をその場で終わらせる。朱は押す操作に、山吹は飾りと番号に使う。面は影か罫線のどちらかで分け、用途によって強さを変える。</p>
           </div>
           <h3 class="sg-preface__sub">スタイルの意図</h3>
-          <p>色、文字、角はスマホと PC で同じです。違うのは、部品を置く幅と並びです。</p>
+          <p>色、文字、角、影の段はスマホと PC で同じです。違うのは、部品を置く幅と並びです。</p>
           <div class="sg-intents">
             <article class="sg-intent sg-intent--main" id="intent-phone" aria-labelledby="intent-phone-title">
               <p class="sg-style__label">メイン</p>
@@ -71,7 +74,7 @@
                 <li><strong>進む操作</strong><span>ボタンは幅いっぱい。フォームの最後に置く。親指が届く位置を優先する。</span></li>
                 <li><strong>出欠</strong><span>出席、欠席、未定は横一列のまま。三つを見比べて選べるようにする。</span></li>
                 <li><strong>ヘッダー</strong><span>サービス名と「イベント告知ページを作る」。リンクはメニューに畳む。540px 以下では切り替えリンクもメニュー先頭へ移す。バーの高さは 64px 以内。</span></li>
-                <li><strong>表</strong><span>文字サイズはそのまま。狭いときは表の中だけ横にスクロールする。</span></li>
+                <li><strong>表</strong><span>文字サイズはそのまま。名簿は名前・出欠・人数・支払いの 4 列だけを残し、横に送らせない。ほかの表は表の中だけ横にスクロールする。</span></li>
                 <li><strong>ダイアログ</strong><span>画面幅から左右 1rem を空けた面にする。確認のボタンは縦に積む。</span></li>
               </ul>
             </article>
@@ -84,8 +87,8 @@
                 <li><strong>進む操作</strong><span>朱のボタンは画面につき一つ。幅が広がっても、進むボタンは一つです。</span></li>
                 <li><strong>出欠フォーム</strong><span>入力と出欠は縦一列のまま。説明カードと件数だけ横に並べてよい。</span></li>
                 <li><strong>ヘッダー</strong><span>サービス名、リンク、ログインを一段に並べる。768px 以下ではリンクを、540px 以下では切り替えリンクもメニューに畳む。</span></li>
-                <li><strong>表</strong><span>入る列はそのまま見せる。足りない分は横にスクロールする。</span></li>
-                <li><strong>ダイアログ</strong><span>幅 28rem で中央に置く。ウィンドウいっぱいに引き伸ばさない。</span></li>
+                <li><strong>表</strong><span>名簿は 7 列。入る列はそのまま見せる。足りない分だけ表の中で横にスクロールする。</span></li>
+                <li><strong>ダイアログ</strong><span>幅 28rem、角 20px で中央に置く。ウィンドウいっぱいに引き伸ばさない。</span></li>
               </ul>
             </article>
           </div>
@@ -96,41 +99,158 @@
             </li>
             <li>
               <h3>状態の色は固定</h3>
-              <p>出席は緑、未定は黄、欠席と失敗は赤、注意は黄の地にする。バッジ、選択、通知でこの対応を変えない。</p>
+              <p>出席は緑、未定は黄、欠席と失敗は赤、注意は黄の地にする。山吹と青緑は飾りと進捗にだけ使い、状態には使わない。バッジ、選択、通知でこの対応を変えない。</p>
             </li>
             <li>
-              <h3>面は罫線で分ける</h3>
-              <p>情報の塊は白地に 1px の枠で入れる。影は付けない。ダイアログも同じ枠にする。</p>
+              <h3>面は紙と影で分ける</h3>
+              <p>情報の塊は白い紙に載せる。導入は縁を消して硬い影 3px で浮かせ、管理は 1px の罫線と弱い影で並べる。柔らかい影は、ダイアログのように重なるときだけ。</p>
             </li>
             <li>
-              <h3>書体は一種類</h3>
-              <p>本文も見出しも Zen Kaku Gothic New にする。本文は 400、ボタンとラベルは 500、見出しだけ 700。残り時間のような桁の表示だけ等幅にする。角はすべて 0（直角）にする。</p>
+              <h3>書体は二つ、角は五段</h3>
+              <p>本文は Zen Kaku Gothic New、見出しだけ Zen Maru Gothic。本文は 400、ボタンとラベルは 500、見出しは 700。角は 8 / 14 / 20 / 26px と 999px。角、書体、ヒーロー、ヘッダーは用途で変えない。</p>
             </li>
           </ul>
           <h3 class="sg-preface__sub">採用しているパターン</h3>
           <ul class="sg-patterns">
             <li><strong>ページシェル</strong><span>ヘッダー、本文、フッター。幅と並びは、上のスマホと PC の意図に従う。</span></li>
-            <li><strong>カード</strong><span>白地、1px の枠、角 0（直角）。影は付けない。説明、件数、回答済みをこの面に載せる。</span></li>
+            <li><strong>貼り紙の面</strong><span>白地、角 14px。導入は縁を消して硬い影 3px、管理は罫線 1px と弱い影。説明、件数、回答済みをこの面に載せる。</span></li>
+            <li><strong>節の見出し</strong><span>朱の縦帯と山吹の波線。管理では帯だけ残し、波線は落とす。</span></li>
             <li><strong>フォーム</strong><span>ラベル、入力、補足、エラーを縦に積む。必須はラベルの赤印で示す。</span></li>
-            <li><strong>選択カード</strong><span>出欠のように一つだけ選ぶ項目は、選んだ面だけ色を付ける。角は 0（直角）。</span></li>
-            <li><strong>バッジと通知</strong><span>一件の結果は角 0（直角）のバッジ、画面全体の成否や注意は帯の通知にする。</span></li>
-            <li><strong>チップと表</strong><span>幹事の参加者一覧は、絞り込みチップと表。該当がなければ表の中に一文を出す。</span></li>
-            <li><strong>ダイアログ</strong><span>編集ロックや招待URLのように、今の作業を止めて確認するときだけ使う。枠はカードと同じで、影は付けない。</span></li>
+            <li><strong>選択カード</strong><span>出欠のように一つだけ選ぶ項目は、選んだ面だけ色を付ける。角は 14px。</span></li>
+            <li><strong>バッジと通知</strong><span>一件の結果は角の丸いバッジ、画面全体の成否や注意は帯の通知にする。保存の結果は画面の隅に 5 秒だけ出す。</span></li>
+            <li><strong>名簿の表</strong><span>絞り込みのチップ、5 つの要約、罫線だけの表。縞は使わない。</span></li>
+            <li><strong>進捗カード</strong><span>必須の入力の数を、山吹の帯と点で示す。何が済んだかだけを伝える。</span></li>
+            <li><strong>手順のアコーディオン</strong><span>済んだ段は畳み、次に開く段だけを出す。番号は山吹の札。</span></li>
+            <li><strong>イベントの札</strong><span>チラシの縮小、状態、埋まり具合を 1 行にまとめる。押す面は一つ。</span></li>
+            <li><strong>折りたたみ</strong><span>共有URLのように、普段は閉じておくものだけに使う。</span></li>
+            <li><strong>ダイアログ</strong><span>編集ロックや招待URLのように、今の作業を止めて確認するときだけ使う。角は 20px、柔らかい影。</span></li>
             <li><strong>墨のヒーロー</strong><span>ホームだけ、墨地の帯にコピーとチラシの実物を並べる。告知の成果物を最初に見せ、白地の画面との落差で役割を示す。</span></li>
-            <li><strong>罫線のリスト</strong><span>機能と手順は箱を並べず、横罫線と等幅の番号で区切る。段の高さを揃え、視線を縦に流す。</span></li>
-            <li><strong>朱の帯</strong><span>最後の一押しだけ、朱で全幅を塗る。その画面で最も強い面を一つに限る。</span></li>
+            <li><strong>罫線のリストと朱の帯</strong><span>機能と手順は箱を並べず、罫線と等幅の番号で区切る。最後の一押しだけ、朱で全幅を塗る。</span></li>
+            <li><strong>貼り紙の誘い</strong><span>告知ページの最後に、主催者への誘いを山吹の札と紙の面で置く。主役は出欠なので、朱のボタンにはしない。</span></li>
           </ul>
         </section>
+
         <p class="sg-kicker" id="top">採用した方式</p>
         <h1 class="page-title">出欠簿</h1>
         <p class="page-lead">ここからの色、レイアウト、部品は、出欠簿の見本です。枠の中が部品で、枠の上にクラス名を書いています。</p>
 
-        <section class="sg-section" id="colors" aria-labelledby="colors-title">
-          <h2 id="colors-title">色と文字</h2>
-          <p class="sg-lead">画面の地は紙色、文字は墨です。進む操作は朱、出欠は緑・黄・赤で分けます。本文の書体は Zen Kaku Gothic New です。</p>
+        <section class="sg-section" id="scopes" aria-labelledby="scopes-title">
+          <h2 id="scopes-title">用途は二つ</h2>
+          <p class="sg-lead">同じ紙と部品を使い、影の強さと色の量だけを変えます。初めて触る画面は「影だけ」、毎日見る画面は「静かめ」です。</p>
+
+          <div class="sg-intents">
+            <article class="sg-intent sg-intent--main" id="scope-onboard" aria-labelledby="scope-onboard-title">
+              <p class="sg-style__label">導入</p>
+              <h3 id="scope-onboard-title">影だけ</h3>
+              <p>初めて触る人の画面です。印象を作り、装飾を判断の材料にします。</p>
+              <ul class="sg-patterns">
+                <li><strong>対象</strong><span>ホーム、サービスと料金、利用規約、告知ページ、参加費の領収書、主催者のプロフィール、認証、参加者ホーム、アカウント、新規イベント作成。</span></li>
+                <li><strong>面</strong><span>縁を消し、硬い影 3px で浮かす。角は 14px。</span></li>
+                <li><strong>傾き</strong><span>0.5 度まで。数字とイベントの札だけ。</span></li>
+                <li><strong>地紋</strong><span>16px の方眼を敷く。</span></li>
+                <li><strong>数字</strong><span>山吹の下線。桁は揃える。</span></li>
+                <li><strong>タブ</strong><span>墨で塗った丸。現在地は色で示す。</span></li>
+                <li><strong>見出し</strong><span>朱の縦帯と、山吹の波線。</span></li>
+              </ul>
+            </article>
+            <article class="sg-intent" id="scope-admin" aria-labelledby="scope-admin-title">
+              <p class="sg-style__label">管理</p>
+              <h3 id="scope-admin-title">静かめ</h3>
+              <p>同じ人が毎週開く画面です。数字と行を走査するので、装飾は 2 回目から邪魔になります。</p>
+              <ul class="sg-patterns">
+                <li><strong>対象</strong><span>主催一覧、カレンダー、売上と内訳、イベント編集、下書き、参加者名簿、幹事向け領収書、公開直後の案内、プロフィール編集、マイページ。</span></li>
+                <li><strong>面</strong><span>罫線 1px と、ごく弱い影。輪郭は走査に要るので消さない。</span></li>
+                <li><strong>傾き</strong><span>なし。全行を同じ軸に乗せる。</span></li>
+                <li><strong>地紋</strong><span>無地。数字の後ろで点が動いて見えるため。</span></li>
+                <li><strong>数字</strong><span>墨で置き、丸ゴシックと等幅数字で桁を揃える。</span></li>
+                <li><strong>タブ</strong><span>下線 2px。塗りつぶしの丸は一覧の上でボタンに見える。</span></li>
+                <li><strong>見出し</strong><span>朱の帯だけ。波線は落とす。</span></li>
+              </ul>
+            </article>
+          </div>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption">本文 <code>--font</code> Zen Kaku Gothic New / 等幅 <code>--font-mono</code></figcaption>
+            <figcaption class="sg-caption">同じ部品を、用途だけ変えて並べる。左 <code>.scope-onboard</code> / 右 <code>.scope-admin</code></figcaption>
+            <div class="sg-scope-compare">
+              <div class="scope-demo scope-onboard">
+                <p class="scope-demo__label">影だけ</p>
+                <div class="stat">
+                  <p class="stat__label">出席</p>
+                  <p class="stat__value">12</p>
+                </div>
+                <article class="card">
+                  <h3 class="card__title">名前と出欠だけ</h3>
+                  <p class="card__body">メールもパスワードも不要です。</p>
+                </article>
+              </div>
+              <div class="scope-demo scope-admin">
+                <p class="scope-demo__label">静かめ</p>
+                <div class="stat">
+                  <p class="stat__label">出席</p>
+                  <p class="stat__value">12</p>
+                </div>
+                <article class="card">
+                  <h3 class="card__title">名前と出欠だけ</h3>
+                  <p class="card__body">メールもパスワードも不要です。</p>
+                </article>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">用途で変えるのは 6 つだけ。角・書体・ヒーロー・ヘッダーは共通</figcaption>
+            <div class="sg-diff-wrap">
+              <table class="sg-diff">
+                <thead>
+                  <tr>
+                    <th scope="col">項目</th>
+                    <th scope="col">導入（影だけ）</th>
+                    <th scope="col">管理（静かめ）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">面</th>
+                    <td>縁なし、硬い影 3px</td>
+                    <td>罫線 1px、弱い影 0 1px 2px</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">傾き</th>
+                    <td>0.5 度まで</td>
+                    <td>なし</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">地紋</th>
+                    <td>16px の方眼</td>
+                    <td>無地</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">数字</th>
+                    <td>山吹の下線、桁揃え</td>
+                    <td>墨、丸ゴシック、桁揃え</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">タブ</th>
+                    <td>墨で塗った丸</td>
+                    <td>下線 2px</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">見出し</th>
+                    <td>朱の帯＋山吹の波線</td>
+                    <td>朱の帯だけ</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </figure>
+        </section>
+
+        <section class="sg-section" id="colors" aria-labelledby="colors-title">
+          <h2 id="colors-title">色と文字</h2>
+          <p class="sg-lead">画面の地は紙色、文字は墨です。進む操作は朱、出欠は緑・黄・赤で分けます。飾りには山吹と青緑、桃を足します。</p>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">本文 <code>--font</code> Zen Kaku Gothic New / 見出し <code>--font-maru</code> Zen Maru Gothic / 等幅 <code>--font-mono</code></figcaption>
             <div class="sg-stage">
               <p class="font-sample">あア亜 登録なしで出欠。0123456789</p>
               <ul class="font-weights">
@@ -138,19 +258,20 @@
                 <li class="is-medium">500 Medium ボタン、ラベル、ナビ</li>
                 <li class="is-bold">700 Bold 見出しだけ</li>
               </ul>
+              <p class="font-sample font-sample--maru">見出しは丸ゴシック。あア亜 0123456789</p>
               <p class="font-sample font-sample--mono">02:14</p>
-              <p class="font-note">ボタンとラベルは 500 に留め、見出しだけ 700 にします。残り時間だけ等幅で、ui-monospace、Cascadia Mono、Consolas の順です。</p>
+              <p class="font-note">本文とラベルは Zen Kaku Gothic New、見出しだけ Zen Maru Gothic です。本文は 400、ボタンとラベルは 500、見出しは 700 にします。残り時間と数字の比較だけ等幅・等幅数字（tabular-nums）にします。</p>
             </div>
           </figure>
 
           <ul class="swatches">
             <li class="swatch">
               <span class="swatch__chip swatch__chip--bg"></span>
-              <span class="swatch__meta"><span class="swatch__name">画面の地</span><span class="swatch__value">#f4f3ef</span></span>
+              <span class="swatch__meta"><span class="swatch__name">紙</span><span class="swatch__value">#fdf3e4</span></span>
             </li>
             <li class="swatch">
               <span class="swatch__chip swatch__chip--surface"></span>
-              <span class="swatch__meta"><span class="swatch__name">カード</span><span class="swatch__value">#ffffff</span></span>
+              <span class="swatch__meta"><span class="swatch__name">紙の白</span><span class="swatch__value">#fffdf8</span></span>
             </li>
             <li class="swatch">
               <span class="swatch__chip swatch__chip--text"></span>
@@ -177,6 +298,26 @@
               <span class="swatch__meta"><span class="swatch__name">墨</span><span class="swatch__value">#1a1916</span></span>
             </li>
             <li class="swatch">
+              <span class="swatch__chip swatch__chip--warm"></span>
+              <span class="swatch__meta"><span class="swatch__name">山吹</span><span class="swatch__value">#e09b16</span></span>
+            </li>
+            <li class="swatch">
+              <span class="swatch__chip swatch__chip--warm-tint"></span>
+              <span class="swatch__meta"><span class="swatch__name">山吹の下地</span><span class="swatch__value">#fff3d6</span></span>
+            </li>
+            <li class="swatch">
+              <span class="swatch__chip swatch__chip--cool"></span>
+              <span class="swatch__meta"><span class="swatch__name">青緑</span><span class="swatch__value">#1d7a6b</span></span>
+            </li>
+            <li class="swatch">
+              <span class="swatch__chip swatch__chip--cool-tint"></span>
+              <span class="swatch__meta"><span class="swatch__name">青緑の下地</span><span class="swatch__value">#e4f3ef</span></span>
+            </li>
+            <li class="swatch">
+              <span class="swatch__chip swatch__chip--peach"></span>
+              <span class="swatch__meta"><span class="swatch__name">桃</span><span class="swatch__value">#ffe6d5</span></span>
+            </li>
+            <li class="swatch">
               <span class="swatch__chip swatch__chip--success"></span>
               <span class="swatch__meta"><span class="swatch__name">出席</span><span class="swatch__value">#146c3a</span></span>
             </li>
@@ -189,25 +330,37 @@
               <span class="swatch__meta"><span class="swatch__name">破壊的操作</span><span class="swatch__value">#6e1e2a</span></span>
             </li>
           </ul>
+          <p class="help">山吹に白文字は 2.3:1 です。山吹の面には必ず墨を載せます。青緑と桃は飾りと進捗にだけ使い、出席・未定・欠席の色には使いません。</p>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.page-title</code> <code>.hero__title</code> <code>.panel__title</code> <code>.card__title</code></figcaption>
+            <figcaption class="sg-caption"><code>.page-title</code> <code>.section__title</code> <code>.hero__title</code> <code>.panel__title</code> <code>.card__title</code></figcaption>
             <div class="sg-stage sg-type">
-              <p><span class="sg-type__label">ページ見出し 1.875rem</span><br><span class="page-title">イベントを作成</span></p>
-              <p><span class="sg-type__label">導入の見出し 2.25rem</span><br><span class="hero__title">登録なしで出欠。あとから会員になれる。</span></p>
-              <p><span class="sg-type__label">セクション見出し 1.5rem</span><br><span class="panel__title">金曜の勉強会</span></p>
+              <p><span class="sg-type__label">ページ見出し 1.875rem / 丸ゴシック</span><br><span class="page-title">イベントを作成</span></p>
+              <p><span class="sg-type__label">導入の見出し 2.25rem / 丸ゴシック</span><br><span class="hero__title">登録なしで出欠。あとから会員になれる。</span></p>
+              <p><span class="sg-type__label">セクション見出し 1.5rem / 丸ゴシック</span><br><span class="section__title">主催者のほかの催し</span></p>
               <p><span class="sg-type__label">カード見出し 1rem / 本文 0.875rem</span><br><span class="card__title">名前と出欠だけ</span><br><span class="card__body">メールもパスワードも不要です。</span></p>
             </div>
           </figure>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption">角 <code>--radius-lg</code> から <code>--radius-3xl</code>、および pill 指定。すべて 0（直角）</figcaption>
+            <figcaption class="sg-caption">角 <code>--radius-lg</code> 8px / <code>--radius-xl</code> 14px / <code>--radius-2xl</code> 20px / <code>--radius-3xl</code> 26px / pill <code>--radius-full</code> 999px</figcaption>
             <div class="sg-stage sg-row">
-              <div class="radius-sample radius-sample--lg">0</div>
-              <div class="radius-sample radius-sample--xl">0</div>
-              <div class="radius-sample radius-sample--2xl">0</div>
-              <div class="radius-sample radius-sample--3xl">0</div>
-              <div class="radius-sample radius-sample--full">0</div>
+              <div class="radius-sample radius-sample--lg">8</div>
+              <div class="radius-sample radius-sample--xl">14</div>
+              <div class="radius-sample radius-sample--2xl">20</div>
+              <div class="radius-sample radius-sample--3xl">26</div>
+              <div class="radius-sample radius-sample--full">999</div>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>--shadow-tape</code> 紙の影 / <code>--shadow-sm</code> 弱い影 / <code>--shadow-xl</code> ダイアログ</figcaption>
+            <div class="sg-stage">
+              <div class="sg-shadows">
+                <div class="shadow-sample shadow-sample--tape">3px 3px 0</div>
+                <div class="shadow-sample shadow-sample--soft">0 10px 22px</div>
+                <div class="shadow-sample shadow-sample--dialog">0 20px 48px</div>
+              </div>
             </div>
           </figure>
         </section>
@@ -272,7 +425,7 @@
           </figure>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.hero</code> <code>.card-grid</code> <code>.card</code></figcaption>
+            <figcaption class="sg-caption"><code>.hero</code> <code>.card-grid</code> <code>.card</code> — 白い紙のヒーロー</figcaption>
             <div class="sg-stage stack">
               <section class="hero">
                 <p class="hero__eyebrow">出欠の進め方</p>
@@ -329,7 +482,7 @@
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption">
-              <code>.feature-row</code> <code>.step-row</code> — 箱を並べず、罫線と番号で区切る
+              <code>.feature-row</code> <code>.step-row</code> — 機能は札、手順は罫線と番号で区切る
             </figcaption>
             <div class="sg-stage">
               <ul class="feature-list">
@@ -377,7 +530,7 @@
           </figure>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.stat-grid</code> <code>.stat</code></figcaption>
+            <figcaption class="sg-caption"><code>.stat-grid</code> <code>.stat</code> — 導入では 0.5 度だけ傾く</figcaption>
             <div class="sg-stage">
               <div class="stat-grid">
                 <div class="stat"><p class="stat__label">出席</p><p class="stat__value">12</p></div>
@@ -440,9 +593,127 @@
           </figure>
         </section>
 
+        <section class="sg-section" id="sections" aria-labelledby="sections-title">
+          <h2 id="sections-title">見出しと進捗</h2>
+          <p class="sg-lead">節の始まりは朱の縦帯で示します。導入では山吹の波線を添え、管理では帯だけにします。進捗と手順は、いまどこにいるかだけを伝えます。</p>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.section__head</code> <code>.section__title</code> <code>.section__note</code> — 導入</figcaption>
+            <div class="sg-stage">
+              <section class="section">
+                <div class="section__head">
+                  <h2 class="section__title">主催者のほかの催し</h2>
+                  <p class="section__note">同じ主催者が開くものです。</p>
+                </div>
+              </section>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">同じ見出しを <code>.scope-admin</code> で。帯だけ残す</figcaption>
+            <div class="sg-stage scope-admin">
+              <section class="section">
+                <div class="section__head">
+                  <h2 class="section__title">名簿のあとの作業</h2>
+                  <p class="section__note">ここから先は、当日までの準備です。</p>
+                </div>
+              </section>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.progress-card</code> <code>.progress-dots</code> — 必須の入力の数だけを見る</figcaption>
+            <div class="sg-stage">
+              <div class="progress-card">
+                <div class="progress-card__head">
+                  <span class="progress-card__label">必須の入力</span>
+                  <span class="progress-card__count"><strong>1</strong> / 3 <span>（全 5 ステップ）</span></span>
+                </div>
+                <div class="progress-card__track">
+                  <span class="progress-card__fill" style="width: 33%"></span>
+                </div>
+                <div class="progress-dots" aria-hidden="true">
+                  <span class="progress-dots__dot is-done"></span>
+                  <span class="progress-dots__dot is-current"></span>
+                  <span class="progress-dots__dot"></span>
+                  <span class="progress-dots__dot"></span>
+                  <span class="progress-dots__dot"></span>
+                </div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.event-steps</code> <code>.event-step</code> — 済んだ段は畳み、次に開く段だけを出す</figcaption>
+            <div class="sg-stage">
+              <ol class="event-steps__list">
+                <li class="event-step event-step--done">
+                  <h3 class="event-step__heading">
+                    <button type="button" class="event-step__toggle" aria-expanded="false">
+                      <span class="event-step__number" aria-hidden="true">1</span>
+                      <span class="event-step__labels">
+                        <span class="event-step__title">催しの名前と開催日時 <span class="req">*</span></span>
+                        <span class="event-step__summary">秋の芋煮会 / 11月8日（日）11:00-15:00</span>
+                      </span>
+                      <span class="event-step__state">入力済み</span>
+                    </button>
+                  </h3>
+                  <div class="event-step__body">
+                    <p class="help">入力済みの内容は、開き直したときだけ出します。</p>
+                  </div>
+                </li>
+                <li class="event-step event-step--open">
+                  <h3 class="event-step__heading">
+                    <button type="button" class="event-step__toggle" aria-expanded="true">
+                      <span class="event-step__number" aria-hidden="true">2</span>
+                      <span class="event-step__labels">
+                        <span class="event-step__title">費用プラン <span class="req">*</span></span>
+                        <span class="event-step__summary">参加者が選ぶ金額です。あとから追加できます。</span>
+                      </span>
+                      <span class="event-step__state">未入力</span>
+                    </button>
+                  </h3>
+                  <div class="event-step__body">
+                    <div class="field">
+                      <label class="label" for="sg-plan-name">プラン名</label>
+                      <input class="input" id="sg-plan-name" value="大人">
+                    </div>
+                    <div class="field">
+                      <label class="label" for="sg-plan-amount">金額</label>
+                      <input class="input" id="sg-plan-amount" inputmode="numeric" value="500">
+                    </div>
+                    <div class="event-step__actions">
+                      <button class="btn btn--ghost" type="button">戻る</button>
+                      <button class="btn btn--primary" type="button">次へ</button>
+                    </div>
+                  </div>
+                </li>
+                <li class="event-step">
+                  <h3 class="event-step__heading">
+                    <button type="button" class="event-step__toggle" aria-expanded="false">
+                      <span class="event-step__number" aria-hidden="true">3</span>
+                      <span class="event-step__labels">
+                        <span class="event-step__title">開催場所 <span class="req">*</span></span>
+                        <span class="event-step__summary">会場名だけでも保存できます。雨天時の方針もここで決めます。</span>
+                      </span>
+                      <span class="event-step__state">未入力</span>
+                    </button>
+                  </h3>
+                  <div class="event-step__body">
+                    <div class="field">
+                      <label class="label" for="sg-venue">会場名</label>
+                      <input class="input" id="sg-venue" placeholder="河川敷公園 第2広場">
+                    </div>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </figure>
+        </section>
+
         <section class="sg-section" id="buttons" aria-labelledby="buttons-title">
           <h2 id="buttons-title">ボタン</h2>
-          <p class="sg-lead">主操作は朱、取り消しや補助は白地に墨の枠、削除や編集権の引き継ぎは暗い赤です。リンクにも同じ色を付けます。</p>
+          <p class="sg-lead">主操作は朱で、角は丸、硬い影で浮かせます。取り消しと補助は白地に墨の枠、削除や編集権の引き継ぎは暗い赤です。文字だけの操作には影を付けません。</p>
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption"><code>.btn</code> <code>.btn--primary</code> <code>.btn--dark</code> <code>.btn--outline</code> <code>.btn--ghost</code> <code>.btn--danger</code> <code>.btn--warning</code></figcaption>
@@ -472,11 +743,19 @@
             </div>
           </figure>
 
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">管理では影を付けない。<code>.scope-admin</code> の中の同じボタン</figcaption>
+            <div class="sg-stage scope-admin sg-row">
+              <button class="btn btn--primary" type="button">CSVで書き出す</button>
+              <button class="btn btn--outline" type="button">公開ページ</button>
+              <button class="btn btn--ghost" type="button">キャンセル</button>
+            </div>
+          </figure>
         </section>
 
         <section class="sg-section" id="inputs" aria-labelledby="inputs-title">
           <h2 id="inputs-title">入力</h2>
-          <p class="sg-lead">ラベル、入力、補足、エラーをセットにします。必須はラベルの右に赤の印を付けます。</p>
+          <p class="sg-lead">ラベル、入力、補足、エラーをセットにします。角は 14px。必須はラベルの右に赤の印を付けます。</p>
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption"><code>.form</code> <code>.field</code> <code>.label</code> <code>.input</code> <code>.textarea</code> <code>.select</code> <code>.help</code> <code>.field-error</code></figcaption>
@@ -566,14 +845,16 @@
 
         <section class="sg-section" id="feedback" aria-labelledby="feedback-title">
           <h2 id="feedback-title">バッジと通知</h2>
-          <p class="sg-lead">出欠の結果、エラー、保存できたこと、ゲスト幹事への注意をここで分けます。</p>
+          <p class="sg-lead">出欠の結果、支払いの状態、エラー、保存できたこと、ゲスト幹事への注意をここで分けます。</p>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.badge--attending</code> <code>.badge--declined</code> <code>.badge--tentative</code> <code>.badge--neutral</code></figcaption>
+            <figcaption class="sg-caption"><code>.badge--attending</code> <code>.badge--declined</code> <code>.badge--tentative</code> <code>.badge--success</code> <code>.badge--warning</code> <code>.badge--neutral</code></figcaption>
             <div class="sg-stage sg-row">
               <span class="badge badge--attending">出席</span>
               <span class="badge badge--declined">欠席</span>
               <span class="badge badge--tentative">未定</span>
+              <span class="badge badge--success">受領</span>
+              <span class="badge badge--warning">未払い</span>
               <span class="badge badge--neutral badge--sm">ゲスト</span>
             </div>
           </figure>
@@ -586,6 +867,20 @@
               <p class="alert alert--warning">この端末に未統合のゲスト回答・幹事トークンがあります。</p>
               <p class="alert alert--info">会員登録すると、参加したイベントが一覧化されます。</p>
               <p class="alert alert--error alert--plain" role="alert">タイトルは必須です。</p>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.toast</code> <code>.alert--success</code> — 保存の結果は画面の隅に 5 秒だけ</figcaption>
+            <div class="sg-stage">
+              <div class="toast toast--sample" role="status">
+                <div class="alert alert--success">
+                  <div class="summary">
+                    <p>下書きを保存しました。プレビューで見た目を確認できます。</p>
+                    <button class="btn btn--ghost btn--sm" type="button">閉じる</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </figure>
 
@@ -619,7 +914,7 @@
 
         <section class="sg-section" id="lists" aria-labelledby="lists-title">
           <h2 id="lists-title">一覧</h2>
-          <p class="sg-lead">タブは画面の切り替え、チップは表の絞り込みです。選ぶと色が変わります。表の絞り込み自体は、この見本では動かしません。</p>
+          <p class="sg-lead">タブは画面の切り替え、チップは表の絞り込みです。名簿は罫線だけで区切り、縞は使いません。スマホでは名前・出欠・人数・支払いの 4 列だけを残します。</p>
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption"><code>.segment</code> <code>.segment__item</code></figcaption>
@@ -633,53 +928,129 @@
           </figure>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.table-card</code> <code>.chips</code> <code>.chip</code> <code>.data</code></figcaption>
+            <figcaption class="sg-caption"><code>.organizer-tabs</code> — 管理では下線の現在地</figcaption>
+            <div class="sg-stage scope-admin">
+              <nav class="organizer-tabs" aria-label="主催者">
+                <a class="organizer-tabs__link" href="#lists">主催一覧</a>
+                <a class="organizer-tabs__link" href="#lists">カレンダー</a>
+                <a class="organizer-tabs__link" href="#lists">売上</a>
+                <a class="organizer-tabs__link is-current" href="#lists" aria-current="page">名簿</a>
+              </nav>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.roster-summary</code> — 5 つの要約。数字は丸ゴシックと等幅数字</figcaption>
+            <div class="sg-stage scope-admin">
+              <div class="roster-summary">
+                <div class="roster-summary__item">
+                  <span class="roster-summary__label">回答</span>
+                  <span class="roster-summary__value">34<span>人</span></span>
+                </div>
+                <div class="roster-summary__item">
+                  <span class="roster-summary__label">参加</span>
+                  <span class="roster-summary__value">28<span>人</span></span>
+                </div>
+                <div class="roster-summary__item">
+                  <span class="roster-summary__label">未定</span>
+                  <span class="roster-summary__value">4<span>人</span></span>
+                </div>
+                <div class="roster-summary__item">
+                  <span class="roster-summary__label">欠席</span>
+                  <span class="roster-summary__value">2<span>人</span></span>
+                </div>
+                <div class="roster-summary__item">
+                  <span class="roster-summary__label">集金済み</span>
+                  <span class="roster-summary__value">12,000<span>円</span></span>
+                </div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.table-card</code> <code>.roster-toolbar</code> <code>.roster</code> <code>.roster__name</code> <code>.roster__meta</code></figcaption>
             <div class="sg-stage sg-stage--flush">
               <section class="table-card">
                 <div class="table-card__head">
-                  <h3 class="table-card__title">参加者一覧</h3>
-                  <div class="chips">
-                    <label class="chip"><input type="radio" name="participant-filter" checked>すべて</label>
-                    <label class="chip"><input type="radio" name="participant-filter">出席</label>
-                    <label class="chip"><input type="radio" name="participant-filter">欠席</label>
-                    <label class="chip"><input type="radio" name="participant-filter">未定</label>
+                  <h3 class="table-card__title">回答者 34人</h3>
+                  <div class="panel__actions">
+                    <button class="btn btn--outline btn--sm" type="button">CSVで書き出す</button>
+                    <button class="btn btn--primary btn--sm" type="button">参加者に案内を送る</button>
                   </div>
                 </div>
                 <div class="table-card__search">
-                  <label class="visually-hidden" for="participant-search">名前・コメントで検索</label>
-                  <input class="input" id="participant-search" type="search" placeholder="名前・コメントで検索">
+                  <div class="roster-toolbar">
+                    <div class="segment" role="group" aria-label="出欠で絞り込む">
+                      <button class="segment__item" type="button" aria-pressed="true">すべて 34</button>
+                      <button class="segment__item" type="button" aria-pressed="false">参加 28</button>
+                      <button class="segment__item" type="button" aria-pressed="false">未定 4</button>
+                      <button class="segment__item" type="button" aria-pressed="false">欠席 2</button>
+                    </div>
+                    <label class="roster-toolbar__search">
+                      <span class="visually-hidden">名前で探す</span>
+                      <input class="input input--compact" type="search" placeholder="名前で探す">
+                    </label>
+                  </div>
                 </div>
                 <div class="table-card__scroll">
-                  <table class="data">
+                  <table class="roster">
+                    <caption class="visually-hidden">秋の芋煮会の参加者名簿</caption>
                     <thead>
                       <tr>
-                        <th>名前</th>
-                        <th>出欠</th>
-                        <th>コメント</th>
-                        <th>登録日時</th>
+                        <th scope="col">名前</th>
+                        <th scope="col">出欠</th>
+                        <th scope="col" class="is-num">人数</th>
+                        <th scope="col" class="is-num">費用</th>
+                        <th scope="col">支払い</th>
+                        <th scope="col">回答</th>
+                        <th scope="col">メモ</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td>山田 太郎</td>
-                        <td><span class="badge badge--attending badge--sm">出席</span></td>
-                        <td>少し遅れます</td>
-                        <td class="data__muted">10/18 16:02</td>
+                        <td><span class="roster__name">佐藤 みのり</span></td>
+                        <td><span class="badge badge--attending badge--sm">参加</span></td>
+                        <td class="is-num">2</td>
+                        <td class="is-num">1,000</td>
+                        <td><span class="badge badge--neutral badge--sm">当日</span></td>
+                        <td class="roster__meta">10月20日</td>
+                        <td class="roster__meta">子ども用に椅子を1脚</td>
                       </tr>
                       <tr>
-                        <td>佐藤 花</td>
+                        <td><span class="roster__name">田中 健</span></td>
+                        <td><span class="badge badge--attending badge--sm">参加</span></td>
+                        <td class="is-num">1</td>
+                        <td class="is-num">500</td>
+                        <td><span class="badge badge--success badge--sm">受領</span></td>
+                        <td class="roster__meta">10月20日</td>
+                        <td class="roster__meta">—</td>
+                      </tr>
+                      <tr>
+                        <td><span class="roster__name">鈴木 あやか</span></td>
                         <td><span class="badge badge--tentative badge--sm">未定</span></td>
-                        <td class="data__muted">コメントなし</td>
-                        <td class="data__muted">10/18 15:41</td>
+                        <td class="is-num">1</td>
+                        <td class="is-num">500</td>
+                        <td><span class="badge badge--neutral badge--sm">—</span></td>
+                        <td class="roster__meta">10月19日</td>
+                        <td class="roster__meta">前日に連絡します</td>
                       </tr>
                       <tr>
-                        <td>鈴木 蓮</td>
-                        <td><span class="badge badge--declined badge--sm">欠席</span></td>
-                        <td>先約があります</td>
-                        <td class="data__muted">10/17 21:10</td>
+                        <td><span class="roster__name">高橋 亮</span></td>
+                        <td><span class="badge badge--attending badge--sm">参加</span></td>
+                        <td class="is-num">3</td>
+                        <td class="is-num">1,500</td>
+                        <td><span class="badge badge--warning badge--sm">未払い</span></td>
+                        <td class="roster__meta">10月19日</td>
+                        <td class="roster__meta">車で来ます</td>
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <div class="table-card__foot">
+                  <p class="help">
+                    未払いの 2人に、当日の案内とあわせて支払いの連絡を送れます。
+                    名簿は回答順です。並び替えは見出しを押してください。
+                  </p>
                 </div>
               </section>
             </div>
@@ -690,10 +1061,10 @@
             <div class="sg-stage sg-stage--flush">
               <section class="table-card">
                 <div class="table-card__scroll">
-                  <table class="data">
+                  <table class="roster">
                     <tbody>
                       <tr>
-                        <td class="data__empty" colspan="4">表示できる参加者はいません。</td>
+                        <td class="data__empty" colspan="7">表示できる参加者はいません。</td>
                       </tr>
                     </tbody>
                   </table>
@@ -703,9 +1074,85 @@
           </figure>
         </section>
 
+        <section class="sg-section" id="cards" aria-labelledby="cards-title">
+          <h2 id="cards-title">カード</h2>
+          <p class="sg-lead">イベントの札、折りたたみ、主催者への誘い。どれも紙の面に載せ、押す面は一つにします。</p>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.event-card</code> <code>.event-card__thumb</code> <code>.event-card__meter-label</code> <code>.meter</code> — 導入</figcaption>
+            <div class="sg-stage">
+              <article class="event-card">
+                <div class="event-card__thumb">9:16</div>
+                <div>
+                  <div class="event-card__head">
+                    <h3 class="event-card__title">秋の芋煮会</h3>
+                    <span class="badge badge--attending badge--sm">公開中</span>
+                  </div>
+                  <p class="event-card__meta">11月8日（日）11:00–15:00 / 河川敷公園 第2広場</p>
+                  <p class="event-card__meter-label"><span>回答 34 / 定員 40</span><span>85%</span></p>
+                  <div class="meter"><span style="width: 85%"></span></div>
+                </div>
+                <div class="panel__actions">
+                  <button class="btn btn--outline btn--sm" type="button">名簿</button>
+                  <button class="btn btn--primary btn--sm" type="button">編集する</button>
+                </div>
+              </article>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">同じ札を <code>.scope-admin</code> で。罫線と弱い影、傾きなし</figcaption>
+            <div class="sg-stage scope-admin">
+              <article class="event-card">
+                <div class="event-card__thumb">9:16</div>
+                <div>
+                  <div class="event-card__head">
+                    <h3 class="event-card__title">秋の芋煮会</h3>
+                    <span class="badge badge--attending badge--sm">公開中</span>
+                  </div>
+                  <p class="event-card__meta">11月8日（日）11:00–15:00 / 河川敷公園 第2広場</p>
+                  <p class="event-card__meter-label"><span>回答 34 / 定員 40</span><span>85%</span></p>
+                  <div class="meter"><span style="width: 85%"></span></div>
+                </div>
+                <div class="panel__actions">
+                  <button class="btn btn--outline btn--sm" type="button">名簿</button>
+                  <button class="btn btn--primary btn--sm" type="button">編集する</button>
+                </div>
+              </article>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.fold</code> <code>.fold__summary</code> — 共有URLのように、普段は閉じておくもの</figcaption>
+            <div class="sg-stage">
+              <details class="fold">
+                <summary class="fold__summary">
+                  共同幹事の招待URL
+                  <span class="help">知っている人だけが共同幹事になれます</span>
+                </summary>
+                <div class="fold__body">
+                  <p class="quote">https://example.com/invitations/abc123</p>
+                </div>
+              </details>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption"><code>.org-invite</code> <code>.org-invite__tag</code> — 告知ページの最後に置く</figcaption>
+            <div class="sg-stage">
+              <section class="org-invite" aria-labelledby="sg-org-invite-title">
+                <p class="org-invite__tag">無料ではじめられます</p>
+                <h3 class="org-invite__title" id="sg-org-invite-title">あなたも、催しを開いてみませんか。</h3>
+                <p class="org-invite__note">このページと同じチラシと告知ページを、5 分で作れます。最初の 2 回は無料です。</p>
+                <a class="btn btn--outline" href="#inputs">自分も開いてみる</a>
+              </section>
+            </div>
+          </figure>
+        </section>
+
         <section class="sg-section" id="dialogs" aria-labelledby="dialogs-title">
           <h2 id="dialogs-title">ダイアログ</h2>
-          <p class="sg-lead">中身は <code>.dialog</code> です。画面の上に出すときは、チェックボックスとラベルだけで開閉します。</p>
+          <p class="sg-lead">中身は <code>.dialog</code> です。角は 20px、柔らかい影。画面の上に出すときは、チェックボックスとラベルだけで開閉します。</p>
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption"><code>.dialog</code> <code>.countdown</code> <code>.dialog__actions</code></figcaption>
@@ -757,11 +1204,11 @@
     <div class="site-footer__inner">
       <p>出欠簿 標準スタイルガイド</p>
       <ul class="site-footer__links">
+        <li><a href="#scopes">用途</a></li>
         <li><a href="#colors">色と文字</a></li>
-        <li><a href="#layout">共通レイアウト</a></li>
-        <li><a href="#buttons">ボタン</a></li>
-        <li><a href="#inputs">入力</a></li>
+        <li><a href="#sections">見出しと進捗</a></li>
         <li><a href="mock-index.html">装飾のモック（提案）</a></li>
+        <li><a href="mock-compare.html">比較</a></li>
       </ul>
     </div>
   </footer>
@@ -773,6 +1220,16 @@
         const header = toggle.closest(".site-header");
         const open = header.dataset.menuOpen !== "true";
         header.dataset.menuOpen = String(open);
+        toggle.setAttribute("aria-expanded", String(open));
+      });
+    }
+
+    // 手順のアコーディオン。実装は EventStepForm が状態を持つ。
+    for (const toggle of document.querySelectorAll(".event-step__toggle")) {
+      toggle.addEventListener("click", () => {
+        const step = toggle.closest(".event-step");
+        const open = !step.classList.contains("event-step--open");
+        step.classList.toggle("event-step--open", open);
         toggle.setAttribute("aria-expanded", String(open));
       });
     }

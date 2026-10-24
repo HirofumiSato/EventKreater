@@ -1,20 +1,21 @@
 /* 出欠簿。イベント出欠の標準スタイル。index.html からこのファイルだけを読み込む。 */
 
 :root {
-  --color-bg: #f4f3ef;
-  --color-surface: #ffffff;
+  /* 紙。貼り紙の地と、その上に置く白。 */
+  --color-bg: #fdf3e4;
+  --color-surface: #fffdf8;
   --color-text: #1a1916;
   --color-text-strong: #1a1916;
   --color-text-muted: #3f3c36;
   --color-text-subtle: #5c574e;
   --color-text-faint: #6b655c;
-  --color-border: #d5d0c6;
+  --color-border: #e6d7be;
   --color-border-strong: #b7b1a6;
-  --color-line: #e4e0d8;
+  --color-line: #efe3d0;
   --color-primary: #b4332a;
   --color-primary-hover: #8f241d;
   --color-primary-ring: #b4332a;
-  --color-primary-soft: #f8e8e6;
+  --color-primary-soft: #ffe8de;
   --color-primary-text: #8f241d;
   --color-hero: #1a1916;
   --color-hero-hover: #2c2a26;
@@ -35,15 +36,33 @@
   --color-danger-text: #8f1d32;
   --color-danger-solid: #6e1e2a;
   --color-danger-solid-hover: #541621;
-  --color-slate-100: #eeece7;
-  --color-slate-200-hover: #e4e1da;
-  --shadow-sm: none;
-  --shadow-xl: none;
-  /* 出欠簿は紙と帳票として扱う。角は付けない。 */
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
-  --radius-3xl: 0;
+  --color-slate-100: #f1ece2;
+  --color-slate-200-hover: #e7dfd2;
+  /* 意味を持たない色。状態色（出席・未定・欠席）には使わない。 */
+  --pop-warm: #e09b16;
+  --pop-warm-deep: #8a5800;
+  --pop-warm-tint: #fff3d6;
+  --pop-cool: #1d7a6b;
+  --pop-cool-text: #16695b;
+  --pop-cool-tint: #e4f3ef;
+  --pop-peach: #ffe6d5;
+  --pop-peach-deep: #a8452a;
+  --tape-ink: #1a1916;
+  /* 静かめ（管理）で使う罫線と地。 */
+  --quiet-line: #e3d9c8;
+  --quiet-line-strong: #c6bba7;
+  --quiet-wash: #fbf7f0;
+  --quiet-hover: #f7f1e6;
+  /* 影は 3 段。紙が浮く硬い影、弱い影、ダイアログの柔らかい影。 */
+  --shadow-tape: 3px 3px 0 rgb(26 25 22 / 0.15);
+  --shadow-sm: 0 2px 0 rgb(26 25 22 / 0.03), 0 10px 22px -12px rgb(26 25 22 / 0.18);
+  --shadow-xl: 0 20px 48px -16px rgb(26 25 22 / 0.28);
+  /* 角は 5 段。用途で変えない。 */
+  --radius-lg: 8px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+  --radius-3xl: 26px;
+  --radius-full: 999px;
   /* 墨地の上で使う補助文字。--color-text-muted は墨地で読めない。 */
   --color-ink-soft: #d8d4cc;
   /* セクション間。一律の gap ではなく、塊ごとに呼吸を作る。 */
@@ -52,6 +71,7 @@
   --width-content: 42rem;
   --width-form: 28rem;
   --font: "Zen Kaku Gothic New", sans-serif;
+  --font-maru: "Zen Maru Gothic", "Zen Kaku Gothic New", sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
@@ -1459,6 +1479,11 @@ fieldset.field {
 .swatch__chip--border { background: var(--color-border-strong); }
 .swatch__chip--primary { background: var(--color-primary); }
 .swatch__chip--hero { background: var(--color-hero); }
+.swatch__chip--warm { background: var(--pop-warm); }
+.swatch__chip--warm-tint { background: var(--pop-warm-tint); box-shadow: inset 0 0 0 1px var(--color-border); }
+.swatch__chip--cool { background: var(--pop-cool); }
+.swatch__chip--cool-tint { background: var(--pop-cool-tint); box-shadow: inset 0 0 0 1px var(--color-border); }
+.swatch__chip--peach { background: var(--pop-peach); box-shadow: inset 0 0 0 1px var(--color-border); }
 .swatch__chip--success { background: var(--color-success-text); }
 .swatch__chip--warning { background: var(--color-warning-solid); }
 .swatch__chip--danger { background: var(--color-danger-solid); }
@@ -1663,6 +1688,11 @@ fieldset.field {
   display: block;
 }
 
+/* ヒーローの文面は、チラシに押されても縮める。 */
+.hero__copy {
+  min-width: 0;
+}
+
 .hero__poster {
   display: none;
   margin: 0;
@@ -1851,5 +1881,1299 @@ fieldset.field {
 
   .step-row__body {
     margin-top: 0;
+  }
+}
+
+/* ==========================================================================
+   ここから、装飾モックで決めた基準を標準へ反映した分。
+
+   決めたこと
+     1. 紙（#fdf3e4）に白い紙を載せ、影と罫線で浮かせる。
+     2. 角は 8 / 14 / 20 / 26px と 999px。書体は本文 Zen Kaku、見出し Zen Maru。
+     3. 用途で 2 つに分ける。導入は「影だけ」、管理は「静かめ」。
+        変えるのは面・傾き・地紋・数字・タブ・見出しの 6 つだけ。
+     4. 朱は押す操作に、山吹は飾りと番号に使う。状態色は変えない。
+   ========================================================================== */
+
+/* 紙の方眼。導入の地。数字を走査する画面では scope-admin が外す。 */
+body {
+  background-color: var(--color-bg);
+  background-image: radial-gradient(rgb(26 25 22 / 0.045) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* 見出しだけ丸ゴシック。本文は Zen Kaku Gothic New のまま。 */
+h1,
+h2,
+h3,
+.page-title,
+.section__title,
+.hero__title,
+.panel__title,
+.card__title,
+.feature-row__title,
+.step-row__title,
+.event-step__title,
+.event-card__title,
+.table-card__title,
+.summary__name,
+.dialog__title,
+.sg-preface > h2,
+.sg-preface__sub,
+.sg-intent h3,
+.sg-style__name,
+.sg-section > h2 {
+  font-family: var(--font-maru);
+  letter-spacing: 0.01em;
+}
+
+/* 数字は桁を揃える。0 と 8 の幅が違うと、比較のたびに目が滑る。 */
+.stat__value,
+.progress-card__count,
+.roster td.is-num,
+.roster th.is-num,
+.countdown__time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   節の見出し。導入は朱の縦帯＋山吹の波線、管理は帯だけ。
+   -------------------------------------------------------------------------- */
+
+.section__head {
+  padding-bottom: 0;
+  padding-left: 1rem;
+  border-bottom: 0;
+  border-left: 5px solid var(--color-primary);
+}
+
+.section__title {
+  display: inline-block;
+  padding-bottom: 0.15rem;
+  text-decoration: underline wavy var(--pop-warm) 3px;
+  text-underline-offset: 0.42em;
+}
+
+.section__note {
+  margin-top: 0.5rem;
+}
+
+.sg-stage .section {
+  margin-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   面。角 14px。導入は縁を消して硬い影 3px、管理は罫線 1px と弱い影。
+   -------------------------------------------------------------------------- */
+
+.card,
+.stat,
+.panel,
+.table-card,
+.event-step,
+.event-card,
+.progress-card,
+.fold {
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tape);
+}
+
+/* --------------------------------------------------------------------------
+   ボタン。角は丸。押すものだけが浮く。
+   -------------------------------------------------------------------------- */
+
+.btn {
+  padding: 0.5625rem 1.125rem;
+  border-radius: var(--radius-full);
+}
+
+.btn--sm {
+  padding: 0.375rem 0.875rem;
+}
+
+.btn--lg {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+}
+
+.btn--pill {
+  border-radius: var(--radius-full);
+}
+
+.btn--primary {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-tape);
+}
+
+/* 文字だけの操作は浮かせない。ghost は「押す面」ではなく「行き先」。 */
+.btn--outline {
+  border-color: var(--color-border-strong);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.1);
+}
+
+.btn--ghost {
+  box-shadow: none;
+}
+
+/* ヘッダーは全画面で同じ。影を付けるとバーが浮いてしまう。 */
+.site-header .btn {
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   入力。角 14px。押した欄だけ山吹ではなく朱の輪で示す。
+   -------------------------------------------------------------------------- */
+
+.input,
+.textarea,
+.select {
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-xl);
+  background: #fff;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: 3px solid var(--color-primary-soft);
+  outline-offset: 0;
+  border-color: var(--color-primary);
+}
+
+.label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+
+.field {
+  gap: 0.3125rem;
+}
+
+/* 名簿の絞り込みなど、横に並べる短い欄。 */
+.input--compact {
+  width: auto;
+  min-width: 8rem;
+}
+
+/* --------------------------------------------------------------------------
+   通知。左端の 3px だけ色を残す。面は角 14px。
+   -------------------------------------------------------------------------- */
+
+.alert {
+  border-radius: var(--radius-xl);
+  border-left: 3px solid currentColor;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.06);
+}
+
+.alert--plain {
+  border-left: 0;
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   バッジ・チップ・タブ。角は丸。導入では札として 2px 浮かす。
+   -------------------------------------------------------------------------- */
+
+.badge,
+.chip,
+.segment__item {
+  border-radius: var(--radius-full);
+}
+
+.chip,
+.segment__item {
+  padding-inline: 0.875rem;
+}
+
+.badge {
+  border: 0;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.1);
+}
+
+.badge--success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.badge--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* --------------------------------------------------------------------------
+   進捗。必須の入力の数だけを見る。帯は山吹の斜線で伸ばす。
+   -------------------------------------------------------------------------- */
+
+.progress-card {
+  padding: 1rem 1.125rem;
+}
+
+.progress-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.progress-card__label {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.progress-card__count {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.progress-card__count span {
+  color: var(--color-text-subtle);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.progress-card__track {
+  position: relative;
+  height: 0.625rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+
+.progress-card__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: repeating-linear-gradient(-45deg, var(--pop-warm) 0 7px, #f4bd54 7px 14px);
+  transition: width 320ms cubic-bezier(0.2, 0.9, 0.25, 1.06);
+}
+
+.progress-dots {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+}
+
+.progress-dots__dot {
+  flex: 1;
+  height: 0.3125rem;
+  border-radius: var(--radius-full);
+  background: var(--color-line);
+  transition: background-color 180ms ease;
+}
+
+.progress-dots__dot.is-done {
+  background: var(--pop-cool);
+}
+
+.progress-dots__dot.is-current {
+  background: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   手順のアコーディオン。済んだ段は畳み、いま開く段だけを出す。
+   番号は文字ではなく山吹の札。丸数字のままにしない。
+   -------------------------------------------------------------------------- */
+
+.event-steps__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-step__toggle {
+  border-radius: var(--radius-xl);
+}
+
+/* 見出しはボタンを包むだけ。余白と字の大きさは内側で決める。 */
+.event-step__heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* 題名と補足は縦に積む。横に並べると、長い題名で状態が押し出される。 */
+.event-step__labels {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.event-step__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.event-step--open {
+  border-color: transparent;
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.16);
+}
+
+/* モックは DOM を残す。標準の見本でも、閉じた段の中身は隠す。 */
+.event-step:not(.event-step--open) > .event-step__body {
+  display: none;
+}
+
+.event-step__number {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-5deg);
+}
+
+.event-step--done .event-step__number {
+  background: var(--color-primary);
+  color: #fff;
+  transform: none;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.22);
+}
+
+.event-step--open .event-step__number {
+  border: 0;
+  color: var(--tape-ink);
+  font-weight: 700;
+}
+
+.event-step__summary {
+  color: var(--color-text-subtle);
+}
+
+.event-step__state {
+  color: var(--color-text-subtle);
+}
+
+.event-step--done .event-step__state {
+  color: var(--pop-cool-text);
+}
+
+.event-step__body {
+  border-top: 1px dashed var(--color-border);
+}
+
+/* --------------------------------------------------------------------------
+   イベントの札。チラシの縮小、状態、埋まり具合を 1 行にまとめる。
+   -------------------------------------------------------------------------- */
+
+.event-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.event-card__thumb {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 6rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+}
+
+.event-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+}
+
+.event-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.event-card__meta {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.event-card__meter-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.meter {
+  height: 0.375rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-line);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-success-line);
+}
+
+/* 導入では、札ごと 0.5 度だけ傾ける。1 度を超えると行が揃って見えない。 */
+.sg-stage .event-card:nth-of-type(odd),
+.scope-onboard .event-card:nth-of-type(odd) {
+  transform: rotate(-0.45deg);
+}
+
+.sg-stage .event-card:nth-of-type(even),
+.scope-onboard .event-card:nth-of-type(even) {
+  transform: rotate(0.45deg);
+}
+
+/* --------------------------------------------------------------------------
+   折りたたみ。共有 URL など、普段は閉じておくもの。
+   -------------------------------------------------------------------------- */
+
+.fold {
+  overflow: hidden;
+}
+
+.fold__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fold__summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold__summary::after {
+  content: "＋";
+  margin-left: auto;
+  color: var(--color-text-subtle);
+}
+
+.fold[open] .fold__summary::after {
+  content: "−";
+}
+
+.fold[open] > .fold__summary {
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.fold__body {
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   名簿。罫線だけで区切る。縞は使わない（行の対応を見失う）。
+   -------------------------------------------------------------------------- */
+
+.roster-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.roster-summary__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 0.875rem;
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tape);
+}
+
+.roster-summary__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.roster-summary__value {
+  color: var(--color-text);
+  font-family: var(--font-maru);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.roster-summary__value span {
+  margin-left: 0.125rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.roster-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.roster-toolbar__search {
+  flex: 0 1 16rem;
+}
+
+.roster-toolbar__search .input {
+  width: 100%;
+}
+
+.table-card__foot {
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.table-card__foot .help {
+  margin: 0;
+}
+
+.roster {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster th {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-strong);
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.roster td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.roster th.is-num,
+.roster td.is-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.roster__name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.roster__meta {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.roster tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   主催者画面の本文内サブタブ。導入は札、管理は下線。
+   -------------------------------------------------------------------------- */
+
+.organizer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.organizer-tabs__link {
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.organizer-tabs__link:hover {
+  color: var(--color-text);
+}
+
+.organizer-tabs__link.is-current {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.sg-stage .organizer-tabs__link {
+  border: 0;
+  background: #fff;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.12);
+}
+
+.sg-stage .organizer-tabs__link.is-current {
+  background: var(--color-text);
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--pop-warm);
+}
+
+/* --------------------------------------------------------------------------
+   通知の帯。保存できたことを、画面の隅に 5 秒だけ出す。
+   -------------------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  max-width: 22rem;
+}
+
+.toast--sample {
+  position: static;
+  max-width: 100%;
+}
+
+.toast .alert {
+  box-shadow: var(--shadow-xl);
+}
+
+.toast .summary {
+  gap: 0.75rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   告知ページの最後に置く、主催者への誘い。主役は出欠なので、
+   朱のボタンではなく、山吹の札と紙の面で存在だけを残す。
+   -------------------------------------------------------------------------- */
+
+.org-invite {
+  padding: 1.5rem 1.25rem;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
+}
+
+.org-invite__tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 1px 1px 0 rgb(26 25 22 / 0.2);
+  transform: rotate(-2deg);
+}
+
+.org-invite__title {
+  margin-top: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.org-invite__note {
+  margin-top: 0.375rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.75;
+}
+
+.org-invite .btn {
+  margin-top: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   ヒーロー。導入も管理も同じ。墨地・山吹の札・傾いたチラシ。
+   ここを用途に従わせると、比較のたびに第一印象が動く。
+   -------------------------------------------------------------------------- */
+
+.hero--stage {
+  background:
+    radial-gradient(60rem 24rem at 82% -10%, rgb(180 51 42 / 0.26), transparent 70%),
+    radial-gradient(40rem 18rem at 8% 110%, rgb(224 155 22 / 0.14), transparent 70%),
+    #221f1b;
+}
+
+.hero--stage .hero__eyebrow {
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-full);
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  transform: rotate(-2.5deg);
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
+}
+
+.hero--stage .btn--primary {
+  border: 2px solid #fff;
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 5px 5px 0 var(--pop-warm);
+}
+
+.hero__poster-placeholder {
+  border-radius: var(--radius-xl);
+  box-shadow: 8px 10px 0 rgb(0 0 0 / 0.35);
+  transform: rotate(-3.5deg);
+}
+
+.hero__poster {
+  position: relative;
+}
+
+.hero__poster img {
+  transform: rotate(-3.5deg);
+  border: 4px solid var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: 8px 10px 0 rgb(0 0 0 / 0.35);
+}
+
+/* チラシを止めている養生テープ。 */
+.hero__poster::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -0.6rem;
+  left: 50%;
+  width: 5rem;
+  height: 1.4rem;
+  border-radius: 2px;
+  background: rgb(255 243 214 / 0.78);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.28);
+  transform: translateX(-58%) rotate(-5deg);
+}
+
+.hero__poster figcaption {
+  color: #f0e6d6;
+}
+
+/* スマホでは札をやめ、ヒーローの幅いっぱいに横断させる。 */
+@media (max-width: 899px) {
+  .hero--stage {
+    overflow: hidden;
+  }
+
+  .hero--stage .hero__eyebrow {
+    display: block;
+    margin-inline: calc(50% - 50vw);
+    padding: 0.4375rem 0.75rem;
+    font-size: clamp(0.5625rem, 2.84vw, 0.75rem);
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    white-space: nowrap;
+    text-align: center;
+    border-radius: 0;
+    transform: rotate(-2.5deg);
+    box-shadow: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   導入の細部。番号と統計は札と下線で示す。
+   -------------------------------------------------------------------------- */
+
+.eyebrow {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.16);
+  transform: rotate(-1.5deg);
+}
+
+.eyebrow--muted {
+  background: var(--color-slate-100);
+  color: var(--color-text-subtle);
+  box-shadow: none;
+  transform: none;
+}
+
+.stat__value {
+  display: inline-block;
+  padding-bottom: 0.1rem;
+  border-bottom: 3px solid var(--pop-warm);
+}
+
+.sg-stage .stat:nth-child(odd),
+.scope-onboard .stat:nth-child(odd) {
+  transform: rotate(-0.5deg);
+}
+
+.sg-stage .stat:nth-child(even),
+.scope-onboard .stat:nth-child(even) {
+  transform: rotate(0.5deg);
+}
+
+.feature-list,
+.step-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.feature-row {
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tape);
+  padding: 1rem 1.125rem;
+}
+
+/* 番号は文字ではなく札。文字幅に引きずられると、列からはみ出して見える。 */
+.feature-row__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  width: 2rem;
+  height: 2rem;
+  padding-top: 0;
+  border-radius: var(--radius-lg);
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  line-height: 1;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-5deg);
+}
+
+/* 手順の番号も同じ大きさの札に揃える。36px の数字は行の頭で重い。 */
+.step-row::before {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-4deg);
+}
+
+/* 最後の一押しだけ、朱で面を塗る。 */
+.cta-band {
+  border-radius: var(--radius-3xl);
+  box-shadow: 6px 6px 0 rgb(26 25 22 / 0.18);
+}
+
+/* 文面が伸びても、ボタンは縮めない。 */
+.cta-band__actions {
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   管理（静かめ）。罫線 1px・弱い影・傾きなし・墨の数字。
+   ここから下は .scope-admin の中だけで効く。
+   -------------------------------------------------------------------------- */
+
+.scope-admin {
+  --color-bg: var(--quiet-wash);
+  --color-border: var(--quiet-line);
+  --color-border-strong: var(--quiet-line-strong);
+  --color-line: #efe6d7;
+}
+
+/* ページ全体を管理にするときは、地紋を外す。数字の後ろで点が動いて見える。 */
+body.scope-admin {
+  background-color: var(--quiet-wash);
+  background-image: none;
+}
+
+.scope-admin .section__head {
+  padding-left: 0.875rem;
+  border-left: 4px solid var(--color-primary);
+}
+
+.scope-admin .section__title {
+  padding-bottom: 0;
+  text-decoration: none;
+}
+
+.scope-admin .card,
+.scope-admin .stat,
+.scope-admin .panel,
+.scope-admin .table-card,
+.scope-admin .event-step,
+.scope-admin .event-card,
+.scope-admin .progress-card,
+.scope-admin .fold,
+.scope-admin .feature-row,
+.scope-admin .roster-summary__item {
+  border: 1px solid var(--quiet-line);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+  transform: none;
+}
+
+.scope-admin .stat {
+  padding: 1rem 1.125rem;
+}
+
+.scope-admin .stat__label {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.scope-admin .stat__value {
+  display: block;
+  margin-top: 0.25rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: var(--color-text);
+  font-family: var(--font-maru);
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.scope-admin .btn--primary {
+  border: 1px solid var(--color-primary);
+  box-shadow: none;
+}
+
+.scope-admin .btn--outline,
+.scope-admin .btn--ghost {
+  border: 1px solid var(--quiet-line-strong);
+  background: transparent;
+  box-shadow: none;
+}
+
+.scope-admin .eyebrow {
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-subtle);
+  box-shadow: none;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  transform: none;
+}
+
+.scope-admin .input,
+.scope-admin .textarea,
+.scope-admin .select {
+  border: 1px solid var(--quiet-line-strong);
+  background: #fff;
+}
+
+.scope-admin .input:focus,
+.scope-admin .textarea:focus,
+.scope-admin .select:focus {
+  outline: 3px solid var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.scope-admin .alert {
+  border: 1px solid var(--quiet-line);
+  border-left: 3px solid currentColor;
+  box-shadow: none;
+}
+
+.scope-admin .badge,
+.scope-admin .chip {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.scope-admin .organizer-tabs {
+  gap: 0.125rem;
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--quiet-line-strong);
+}
+
+.scope-admin .organizer-tabs__link {
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-muted);
+}
+
+.scope-admin .organizer-tabs__link:hover {
+  background: var(--quiet-hover);
+  color: var(--color-text);
+}
+
+.scope-admin .organizer-tabs__link.is-current {
+  border-bottom-color: var(--color-text);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.scope-admin .progress-card__track {
+  background: var(--color-slate-100);
+  box-shadow: none;
+}
+
+.scope-admin .progress-card__fill {
+  background: var(--pop-cool);
+}
+
+.scope-admin .fold__summary {
+  padding: 0.75rem 1rem;
+}
+
+.scope-admin .fold__summary:hover {
+  background: var(--quiet-hover);
+}
+
+.scope-admin .fold[open] > .fold__summary {
+  border-bottom: 1px solid var(--quiet-line);
+}
+
+.scope-admin .roster th {
+  border-bottom-color: var(--quiet-line-strong);
+}
+
+.scope-admin .roster td {
+  border-bottom-color: var(--quiet-line);
+}
+
+.scope-admin .roster tbody tr:hover {
+  background: var(--quiet-hover);
+}
+
+.scope-admin .meter {
+  height: 0.375rem;
+  background: var(--color-slate-100);
+}
+
+.scope-admin .event-card__thumb {
+  border-radius: 6px;
+}
+
+.scope-admin .event-card__title {
+  font-size: 0.9375rem;
+}
+
+.scope-admin .org-invite {
+  border: 1px solid var(--quiet-line);
+  box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
+}
+
+.scope-admin .org-invite__tag {
+  box-shadow: none;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   スタイルガイドの見本。用途を並べる枠と、変わらない 6 つの表。
+   -------------------------------------------------------------------------- */
+
+.sg-scope-compare {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.scope-demo {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+}
+
+.scope-demo__label {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.scope-demo > * + * {
+  margin-top: 0.75rem;
+}
+
+.scope-demo .card,
+.scope-demo .stat {
+  padding: 1rem;
+}
+
+.sg-diff-wrap {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+}
+
+.sg-diff {
+  width: 100%;
+  min-width: 26rem;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.sg-diff th,
+.sg-diff td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.sg-diff thead th {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sg-diff tbody th {
+  color: var(--color-text-strong);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sg-shadows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.shadow-sample {
+  display: grid;
+  place-items: center;
+  min-height: 5rem;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.shadow-sample--tape {
+  box-shadow: var(--shadow-tape);
+}
+
+.shadow-sample--soft {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-sample--dialog {
+  box-shadow: var(--shadow-xl);
+}
+
+.font-sample--maru {
+  margin-top: 1rem;
+  font-family: var(--font-maru);
+  font-weight: 700;
+}
+
+.radius-sample--full {
+  border-radius: var(--radius-full);
+}
+
+/* --------------------------------------------------------------------------
+   幅ごとの調整。
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 640px) {
+  .roster-summary {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .event-card {
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+
+@media (min-width: 900px) {
+  .sg-scope-compare {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 639px) {
+  .roster th,
+  .roster td {
+    padding-inline: 0.5rem;
+  }
+
+  /* スマホでは、名前・出欠・人数・支払いだけを残す。横に送らせない。
+     費用・回答・メモは、開いた詳細で読む。 */
+  .roster th:nth-child(4),
+  .roster td:nth-child(4),
+  .roster th:nth-child(6),
+  .roster td:nth-child(6),
+  .roster th:nth-child(7),
+  .roster td:nth-child(7) {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   動き。ばねは 1 種類、速さは 180 / 260ms。用途で変えない。
+   管理では「動くな」ではなく「短く返す」。
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn,
+  .card,
+  .stat,
+  .panel,
+  .event-step,
+  .event-card,
+  .feature-row,
+  .roster tbody tr,
+  .fold {
+    transition:
+      transform 180ms cubic-bezier(0.2, 0.9, 0.25, 1.06),
+      box-shadow 180ms ease,
+      border-color 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(2px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-card__fill,
+  .progress-dots__dot {
+    transition: none;
   }
 }
