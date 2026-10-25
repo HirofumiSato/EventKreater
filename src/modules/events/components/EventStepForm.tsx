@@ -385,37 +385,7 @@ export function EventStepForm({
                         戻る
                       </button>
                     )}
-                    {step.key === "flyer" && canSaveDraft ? (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn--outline"
-                          disabled={locked}
-                          onClick={saveDraft}
-                        >
-                          {savingDraft ? "保存中..." : "下書き保存"}
-                        </button>
-                        <button
-                          type="submit"
-                          className="btn btn--primary"
-                          disabled={locked}
-                        >
-                          {submitting ? "移動中..." : "プレビューを見る"}
-                        </button>
-                      </>
-                    ) : step.key === "flyer" ? (
-                      <button
-                        type="submit"
-                        className="btn btn--primary"
-                        disabled={locked}
-                      >
-                        {submitting
-                          ? "送信中..."
-                          : value.flyerAssetId
-                            ? "公開する"
-                            : "チラシなしで公開する"}
-                      </button>
-                    ) : (
+                    {step.key !== "flyer" && (
                       <button
                         type="button"
                         className="btn btn--primary event-step__next"
@@ -432,6 +402,44 @@ export function EventStepForm({
           );
         })}
       </ol>
+      {/* 最後の操作はステップの中に入れない。閉じたステップに隠れると、
+          どこを開けば保存・公開できるのか分からなくなる。 */}
+      <div className="form-final">
+        <p className="form-final__note">
+          {requiredRemaining === 0 ? (
+            "必須の入力はそろいました。"
+          ) : (
+            <>
+              必須の入力はあと <strong>{requiredRemaining}</strong> つです。
+            </>
+          )}
+        </p>
+        <div className="form-final__actions">
+          {canSaveDraft ? (
+            <>
+              <button
+                type="button"
+                className="btn btn--outline"
+                disabled={locked}
+                onClick={saveDraft}
+              >
+                {savingDraft ? "保存中..." : "下書き保存"}
+              </button>
+              <button type="submit" className="btn btn--primary" disabled={locked}>
+                {submitting ? "移動中..." : "プレビューを見る"}
+              </button>
+            </>
+          ) : (
+            <button type="submit" className="btn btn--primary" disabled={locked}>
+              {submitting
+                ? "送信中..."
+                : value.flyerAssetId
+                  ? "公開する"
+                  : "チラシなしで公開する"}
+            </button>
+          )}
+        </div>
+      </div>
       {voiceSlot?.(voiceApi)}
     </form>
     </div>

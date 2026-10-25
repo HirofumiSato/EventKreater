@@ -121,7 +121,7 @@
 | 18 | 主催カレンダー | mock-organizer-calendar.html | `/organizer/calendar` | src/app/organizer/calendar/page.tsx | CalendarView | quiet | /organizer/events、月移動、日別一覧 | 1画面 | 検証済 |
 | 19 | 売上 | mock-revenue.html | `/organizer/revenue` | src/app/organizer/revenue/page.tsx | OrganizerTabs, RevenueSummaryLedger | quiet | 期間絞り込み、合計、イベント別、未選択プラン | 1画面 | 検証済 |
 | 20 | 売上の内訳 | mock-revenue-detail.html | `/organizer/events/[id]/revenue` | src/app/organizer/events/[id]/revenue/page.tsx | OrganizerTabs, RevenueSummaryLedger, RevenueAllocationSection | quiet | プラン別、開催回別、按分 | 1画面 | 検証済 |
-| 21 | 新規イベント作成 | mock-create.html | `/organizer/events/new` | src/app/organizer/events/new/page.tsx | EventForm, FlyerGeneratePanel, FlyerSelectModal, QuotaStatusBanner, PricingModal | pop | 5ステップ、下書き保存、公開、ゲスト枠 | 1画面 | 検証済 |
+| 21 | 新規イベント作成 | mock-create.html | `/organizer/events/new` | src/app/organizer/events/new/page.tsx | EventStepForm, VoiceInputDock, FlyerGeneratePanel, FlyerSelectModal, QuotaStatusBanner, PricingModal | pop | 5ステップ、下書き保存、公開、ゲスト枠、音声入力 | 1画面 | 検証済 |
 | 22 | イベントの編集 | mock-edit.html | `/organizer/events/[id]/edit` | src/app/organizer/events/[id]/edit/page.tsx | EventForm, CoHostPanel, useEditLock, LockConflictModal, FlyerGeneratePanel | quiet | 排他ロック、共同幹事、保存、402 | 1画面 | 検証済 |
 | 23 | 下書き一覧 | mock-drafts.html | `/organizer/events/drafts` | src/app/organizer/events/drafts/page.tsx | OrganizerTabs, EventLifecycleModal, Toast | quiet | status=DRAFT のみ、削除 | 1画面 | 検証済 |
 | 24 | 下書きのプレビュー | mock-preview.html | `/organizer/events/[id]/preview` | src/app/organizer/events/[id]/preview/page.tsx | PreviewClient, PosterHero, EventMetaCard, QuotaStatusBanner | quiet | 下書き、公開、403/409/402 | 1画面 | 検証済 |
@@ -873,7 +873,7 @@
 
 **実装の機能台帳**
 
-- `EventForm`（5 ステップ、`event-steps`）。
+- `EventStepForm`（5 ステップ、`event-steps`）。
 - 下書き保存: `POST /api/v1/organizer/events/[id]/draft`（新規時は `/api/v1/public/events`）。
 - 公開: `POST /api/v1/organizer/events/[id]/publish`、402 は `PricingModal`、403 は `register-required` / `phoneVerifyUrl`。
 - `FlyerGeneratePanel`、`FlyerSelectModal`、`flyerDraftKey`。
@@ -892,22 +892,27 @@
 
 - `progress-card` / `progress-dots`（必須 3 つぶんのドットだけ。見出しの文字とバーは持たない）。
 - `event-step` / `event-step__heading` / `event-step__toggle` / `event-step__number` / `event-step__labels` / `event-step__summary` / `event-step__state` / `event-step__body` / `event-step__actions`。
+- `form-final` / `form-final__note` / `form-final__actions`（最後の操作をステップの外へ出し、必須の残り数を添える）。
+- `voice-panel` の REC の印・1 行に収める指示・アイコンだけの操作（`voice-icon-btn`）。指示は `fitPrompt` で字を詰める。
 - `repeat-block` / `repeat-row--schedule`。
 
 **クラス対応（mock → 既存）**
 
-- `EventForm` の既存ステップ構造 → `event-step` へ。`aria-expanded` と開閉状態は既存ロジックを維持。
+- `EventStepForm` の既存ステップ構造 → `event-step` へ。`aria-expanded` と開閉状態は既存ロジックを維持。
 - 進捗は `event-step__state`（未入力 / 入力済み）から算出する。**新しい state を足さない**。
 
 **リスク**
 
-- ステップの開閉は `EventForm` のロジック。**マークアップだけ**替える。
+- ステップの開閉は `EventStepForm` のロジック。**マークアップだけ**替える。
 - 下書き保存のタイミング（`onChange` デバウンス）を変えない。
 - 進捗のドット 3 つは実装の必須判定と一致させる。**独自の数え方をしない**。
+- `form-final` の操作はフォームの送信を保つ。ステップの中へ戻さない。
+- 音声パネルの指示は 1 行。長い文言で折り返さず、字を詰める。
 
 **完了条件**
 
-- 5 ステップの開閉・下書き・公開・402/403・チラシが動く。
+- 5 ステップの開閉・下書き・公開・402/403・チラシ・音声入力が動く。
+- 最後の操作（`form-final`）が、閉じたステップに関係なく押せる。
 
 ### 22 イベントの編集（`/organizer/events/[id]/edit`）
 

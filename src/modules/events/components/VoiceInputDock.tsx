@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mic, X } from "lucide-react";
+import { ChevronLeft, ChevronsRight, Loader2, Mic, Square, X } from "lucide-react";
 import type { VoiceStepApi } from "@/modules/events/components/EventStepForm";
 import {
   isRecordingSupported,
@@ -86,6 +86,8 @@ export function VoiceInputDock({
   const [autoAdvance, setAutoAdvance] = useState(true);
   // 入力できる欄が尽きた印。「入力完了！」を出してから 3 秒で音声モードを抜ける。
   const [complete, setComplete] = useState(false);
+  // 録音の印を止めた瞬間だけ少し縮ませる。押した手応えを残すため。
+  const [statusStopping, setStatusStopping] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   // 覆いからくり抜く位置。対象の欄が見つからないときは null で、覆いを出さない。
@@ -104,6 +106,9 @@ export function VoiceInputDock({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const completeTimerRef = useRef<number | null>(null);
+  const statusTimerRef = useRef<number | null>(null);
+  // 指示は 1 行に収める。収まる中でいちばん大きい字を選ぶ。
+  const promptRef = useRef<HTMLParagraphElement | null>(null);
   // 録音の開始は commit からも呼ぶ。互いを依存に持つと循環するので控えを挟む。
   const startRecordingRef = useRef<() => void>(() => {});
   const mountedRef = useRef(true);
@@ -163,6 +168,13 @@ export function VoiceInputDock({
     }
   }, []);
 
+  const clearStatusTimer = useCallback(() => {
+    if (statusTimerRef.current !== null) {
+      window.clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = null;
+    }
+  }, []);
+
   const markTouched = useCallback((key: VoiceFieldKey) => {
     const next = new Set(touchedRef.current);
     next.add(key);
@@ -174,6 +186,8 @@ export function VoiceInputDock({
   const stopSession = useCallback(() => {
     clearTimer();
     clearCompleteTimer();
+    clearStatusTimer();
+    setStatusStopping(false);
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
@@ -189,7 +203,7 @@ export function VoiceInputDock({
     setTranscript(null);
     cursorRef.current = null;
     setCursor(null);
-  }, [clearCompleteTimer, clearTimer, releaseStream]);
+  }, [clearCompleteTimer, clearStatusTimer, clearTimer, releaseStream]);
 
   /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
   const finishSession = useCallback(() => {
@@ -197,14 +211,16 @@ export function VoiceInputDock({
     setCursor(null);
     setComplete(true);
     setPhase("armed");
+    setStatusStopping(false);
     setMessage(null);
+    clearStatusTimer();
     api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
     clearCompleteTimer();
     completeTimerRef.current = window.setTimeout(() => {
       completeTimerRef.current = null;
       stopSession();
     }, 3000);
-  }, [api, clearCompleteTimer, stopSession]);
+  }, [api, clearCompleteTimer, clearStatusTimer, stopSession]);
 
   /**
    * 郵便番号が入ったら、既存の検索 API で住所を補完する。失敗しても手入力に任せる。
@@ -325,8 +341,15 @@ export function VoiceInputDock({
     const recorder = recorderRef.current;
     if (!recorder || recorder.state === "inactive") return;
     setPhase("transcribing");
+    // 印は止めた瞬間に少し縮んで消える。消えるだけより、押した手応えが残る。
+    clearStatusTimer();
+    setStatusStopping(true);
+    statusTimerRef.current = window.setTimeout(() => {
+      statusTimerRef.current = null;
+      setStatusStopping(false);
+    }, 200);
     recorder.stop();
-  }, [clearTimer]);
+  }, [clearStatusTimer, clearTimer]);
 
   const startRecording = useCallback(async () => {
     // 入力完了の待ちに入っていたら、もう録音しない。
@@ -340,6 +363,8 @@ export function VoiceInputDock({
       return;
     }
     setMessage(null);
+    clearStatusTimer();
+    setStatusStopping(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -371,7 +396,7 @@ export function VoiceInputDock({
         "マイクを使えませんでした。ブラウザの設定でマイクを許可するか、手で入力してください。",
       );
     }
-  }, [finishRecording, finishSession, releaseStream, stopRecording]);
+  }, [clearStatusTimer, finishRecording, finishSession, releaseStream, stopRecording]);
 
   useEffect(() => {
     startRecordingRef.current = () => {
@@ -395,13 +420,14 @@ export function VoiceInputDock({
   useEffect(() => () => {
     clearTimer();
     clearCompleteTimer();
+    clearStatusTimer();
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
       recorder.stop();
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
-  }, [clearCompleteTimer, clearTimer]);
+  }, [clearCompleteTimer, clearStatusTimer, clearTimer]);
 
   const startSession = useCallback(() => {
     if (disabled) return;
@@ -418,6 +444,8 @@ export function VoiceInputDock({
     setPhase("armed");
     setComplete(false);
     clearCompleteTimer();
+    clearStatusTimer();
+    setStatusStopping(false);
     setTranscript(null);
     cursorRef.current = first?.key ?? null;
     setCursor(first?.key ?? null);
@@ -432,7 +460,7 @@ export function VoiceInputDock({
       void startRecording();
     }
     api.openStep(first?.step ?? "basic");
-  }, [api, clearCompleteTimer, disabled, showOrganizerName, startRecording]);
+  }, [api, clearCompleteTimer, clearStatusTimer, disabled, showOrganizerName, startRecording]);
 
   // 対象の欄を強調し、画面内へ寄せる。DOM フォーカスは動かさない。
   useEffect(() => {
@@ -595,6 +623,46 @@ export function VoiceInputDock({
   const currentValue = field ? describeFieldValue(field, value) : null;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
+  const promptText = complete
+    ? "入力完了！"
+    : transcribing
+      ? "文字にする"
+      : (field?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
+  const showStatus = listening || statusStopping;
+  const talkLabel = listening
+    ? "録音を停止"
+    : transcribing
+      ? "文字にしています…"
+      : currentValue
+        ? "言い直す"
+        : "話す";
+
+  // 指示は 1 行に収める。収まる中でいちばん大きい字を選び、短い文ほど大きく見せる。
+  // 幅は CSS で 1 行に固定してあるので、はみ出すかどうかだけで判定できる。
+  const fitPrompt = useCallback(() => {
+    const element = promptRef.current;
+    if (!element) return;
+    let size = 36;
+    element.style.fontSize = `${size}px`;
+    while (size > 15 && element.scrollWidth > element.clientWidth + 1) {
+      size -= 1;
+      element.style.fontSize = `${size}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    let frame = window.requestAnimationFrame(fitPrompt);
+    const onResize = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(fitPrompt);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [active, fitPrompt, promptText]);
 
   const goPrevious = () => {
     if (!previous) return;
@@ -621,9 +689,9 @@ export function VoiceInputDock({
   /** 覆いは操作を止めるだけなので、押されたら抜け方を伝える。 */
   const explainScrim = () => {
     setMessage(
-      "音声モード中は、いま聞いている欄のまわりだけ操作できます。「終了」か Esc で元に戻ります。",
+      "音声モード中は、いま聞いている欄のまわりだけ操作できます。右上の×か Esc で元に戻ります。",
     );
-    api.announce("音声モード中です。終了するには、終了ボタンかエスケープキーを押してください。");
+    api.announce("音声モード中です。終了するには、右上の閉じるボタンかエスケープキーを押してください。");
   };
 
   return (
@@ -645,41 +713,57 @@ export function VoiceInputDock({
         disabled={disabled}
         onClick={() => (active ? stopSession() : startSession())}
       >
-        {active ? <X aria-hidden="true" size={22} /> : <Mic aria-hidden="true" size={22} />}
+        {active ? (
+          <X className="icon" aria-hidden="true" size={22} />
+        ) : (
+          <Mic className="icon" aria-hidden="true" size={22} />
+        )}
       </button>
 
       {active && (
-        <section className="voice-panel" aria-label="音声入力">
+        <section
+          className={[
+            "voice-panel",
+            listening ? "is-listening" : "",
+            transcribing ? "is-transcribing" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-label="音声入力"
+        >
           <div className="voice-panel__head">
-            <p className="voice-panel__title">
-              {listening ? "聞いています" : transcribing ? "文字にしています" : "音声入力"}
+            {/* 録音中かどうかは文字ではなく印で示す。質問文は録音中も消さない。
+                何を話すかを目で追いながら話せるようにするため。 */}
+            {showStatus && (
+              <p
+                className={`voice-panel__status${statusStopping ? " is-stopping" : ""}`}
+                role="status"
+              >
+                <span className="voice-rec" aria-hidden="true">
+                  <span className="voice-rec__dot" />
+                  REC
+                </span>
+                <span className="voice-panel__state">録音中</span>
+              </p>
+            )}
+            <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
+              {promptText}
             </p>
-            <button type="button" className="voice-panel__close" onClick={stopSession}>
-              終了
+            <button
+              type="button"
+              className="voice-panel__close"
+              aria-label="音声入力を終了"
+              title="音声入力を終了"
+              onClick={stopSession}
+            >
+              <X className="icon" aria-hidden="true" />
             </button>
           </div>
 
-          {complete ? (
-            <>
-              <p className="voice-panel__prompt" aria-live="polite">
-                入力完了！
-              </p>
-              <p className="voice-panel__hint">3秒後に音声入力を終了します。</p>
-            </>
-          ) : field ? (
-            <>
-              <p className="voice-panel__field">{field.label}</p>
-              <p className="voice-panel__prompt" aria-live="polite">
-                {listening ? "話し終えたら「停止して入力」を押してください。" : field.prompt}
-              </p>
-              <p className="voice-panel__hint">
-                例: {field.example}
-                {currentValue ? ` ／ いまの値: ${currentValue}` : ""}
-              </p>
-            </>
-          ) : (
-            <p className="voice-panel__prompt" aria-live="polite">
-              入力できる欄がすべて埋まりました。内容を確認してください。
+          {!complete && field && (
+            <p className="voice-panel__hint">
+              例: {field.example}
+              {currentValue ? ` ／ いまの値: ${currentValue}` : ""}
             </p>
           )}
 
@@ -691,39 +775,43 @@ export function VoiceInputDock({
           )}
 
           <div className="voice-panel__actions">
-            {listening ? (
-              <button
-                type="button"
-                className="btn btn--primary btn--sm"
-                onClick={stopRecording}
-              >
-                停止して入力
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn--primary btn--sm"
-                disabled={!field || transcribing || disabled || complete}
-                onClick={() => void startRecording()}
-              >
-                {transcribing ? "文字にしています…" : currentValue ? "言い直す" : "話す"}
-              </button>
-            )}
+            {/* 文字ではなくアイコンで置き、意味は aria-label と title で補う。 */}
             <button
               type="button"
-              className="btn btn--ghost btn--sm"
-              disabled={!previous || listening || transcribing || complete}
-              onClick={goPrevious}
+              className="voice-icon-btn voice-icon-btn--primary"
+              data-state={listening ? "stop" : transcribing ? "busy" : "mic"}
+              aria-label={talkLabel}
+              title={talkLabel}
+              disabled={!listening && (!field || transcribing || disabled || complete)}
+              onClick={listening ? stopRecording : () => void startRecording()}
             >
-              戻る
+              {listening ? (
+                <Square className="icon" aria-hidden="true" />
+              ) : transcribing ? (
+                <Loader2 className="icon" aria-hidden="true" />
+              ) : (
+                <Mic className="icon" aria-hidden="true" />
+              )}
             </button>
             <button
               type="button"
-              className="btn btn--ghost btn--sm"
+              className="voice-icon-btn"
+              aria-label="戻る"
+              title="戻る"
+              disabled={!previous || listening || transcribing || complete}
+              onClick={goPrevious}
+            >
+              <ChevronLeft className="icon" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="voice-icon-btn"
+              aria-label="スキップ"
+              title="スキップ"
               disabled={!field || listening || transcribing || complete}
               onClick={skip}
             >
-              スキップ
+              <ChevronsRight className="icon" aria-hidden="true" />
             </button>
           </div>
 
@@ -746,9 +834,6 @@ export function VoiceInputDock({
               自動遷移
             </label>
           </div>
-          <p className="voice-panel__note">
-            いま聞いている欄は、そのまま手で直せます。ほかの欄を直すときは、いったん終了してください。
-          </p>
         </section>
       )}
     </>
