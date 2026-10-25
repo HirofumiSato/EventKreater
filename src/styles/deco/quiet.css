@@ -232,15 +232,6 @@
   box-shadow: none;
 }
 
-.deco.deco--tape-quiet .progress-card__track {
-  background: var(--color-slate-100);
-  box-shadow: none;
-}
-
-.deco.deco--tape-quiet .progress-card__fill {
-  background: var(--pop-cool);
-}
-
 /* カレンダーも静かめ。面の影を消し、罫線だけにする。
    セルの中は短冊（催し名）で示すので、点は描かない。 */
 .deco.deco--tape-quiet .cal {

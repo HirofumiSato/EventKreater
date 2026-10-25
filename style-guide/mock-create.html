@@ -21,42 +21,43 @@
       <div>
         <p class="eyebrow">5ステップ</p>
         <h1 class="page-title">新規イベント作成</h1>
-        <p class="page-lead">
-          済んだステップは畳まれます。次に入れるものだけが開きます。
-        </p>
       </div>
 
+      <!-- 進み具合は必須 3 つぶんのドットだけで見せる。文字で残数を書くと、
+           見出しの「5ステップ」と数が食い違って読める。 -->
       <div class="progress-card">
-        <div class="progress-card__head">
-          <span class="progress-card__label">必須の入力</span>
-          <span class="progress-card__count"><strong id="progress-done">0</strong> / 3 <span>（全 5 ステップ）</span></span>
-        </div>
-        <div class="progress-card__track">
-          <span class="progress-card__fill" id="progress-fill" style="width: 0%"></span>
-        </div>
-        <div class="progress-dots" id="progress-dots" aria-hidden="true">
+        <p class="visually-hidden" id="progress-remaining">必須の入力はあと 3 つです。</p>
+        <div class="progress-dots" aria-hidden="true">
           <span class="progress-dots__dot is-current"></span>
           <span class="progress-dots__dot"></span>
           <span class="progress-dots__dot"></span>
-          <span class="progress-dots__dot"></span>
-          <span class="progress-dots__dot"></span>
         </div>
       </div>
 
-      <p class="alert alert--success">無料トライアル残り 2回</p>
+      <!-- 残り回数は通知ではなく「回数券」。緑の帯だと他の通知と同じに見え、
+           何の数字か読み取りにくい。 -->
+      <aside class="trial-ticket" aria-label="無料トライアルの残り回数">
+        <p class="trial-ticket__label">
+          <svg class="icon trial-ticket__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 9a3 3 0 0 1 0 6v2a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a3 3 0 0 1 0-6V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1Z"></path>
+            <path d="M13 5v2"></path>
+            <path d="M13 11v2"></path>
+            <path d="M13 17v2"></path>
+          </svg>
+          無料トライアル
+        </p>
+        <p class="trial-ticket__value">残り <strong>2</strong> 回</p>
+      </aside>
 
       <form class="form event-steps" novalidate>
         <ol class="event-steps__list">
 
-          <li class="event-step event-step--open" data-step="basic"
-              data-hint="何をいつ開くか。チラシにも告知ページにも出ます。"
-              data-summary="秋の芋煮会 / 11月8日（日）11:00-15:00">
+          <li class="event-step event-step--open" data-step="basic">
             <h2 class="event-step__heading">
               <button type="button" class="event-step__toggle" aria-expanded="true">
                 <span class="event-step__number" aria-hidden="true">1</span>
                 <span class="event-step__labels">
-                  <span class="event-step__title">催しの名前と開催日時 <span class="req">*</span></span>
-                  <span class="event-step__summary">何をいつ開くか。チラシにも告知ページにも出ます。</span>
+                  <span class="event-step__title">催しの名前と開催日時 <span class="event-step__req">必須</span></span>
                 </span>
                 <span class="event-step__state">未入力</span>
               </button>
@@ -70,15 +71,33 @@
                 <div class="repeat-row repeat-row--schedule">
                   <div class="field">
                     <label class="label" for="mc-date">開催日</label>
-                    <input class="input" id="mc-date" type="date" value="2026-11-08">
+                    <!-- 製品の type="date" は閲覧環境の言語で表示が変わる。
+                         モックでは YYYYMMDD 固定で見せる。 -->
+                    <input
+                      class="input"
+                      id="mc-date"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      maxlength="8"
+                      pattern="[0-9]{8}"
+                      value="20261108"
+                      placeholder="20261108"
+                    >
                   </div>
                   <div class="field">
                     <label class="label" for="mc-start">開始</label>
-                    <input class="input" id="mc-start" type="time" value="11:00">
+                    <!-- 24時間表示を固定するため、モックでは 5 分刻みの選択にする。
+                         製品の type="time" は環境によって AM/PM 表示になる。 -->
+                    <select class="input" id="mc-start">
+                      <option value="12:00" selected>12:00</option>
+                    </select>
                   </div>
                   <div class="field">
                     <label class="label" for="mc-end">終了</label>
-                    <input class="input" id="mc-end" type="time" value="15:00">
+                    <select class="input" id="mc-end">
+                      <option value="15:00" selected>15:00</option>
+                    </select>
                   </div>
                   <button type="button" class="btn btn--ghost btn--sm" disabled>削除</button>
                 </div>
@@ -89,15 +108,12 @@
             </div>
           </li>
 
-          <li class="event-step" data-step="pricing"
-              data-hint="参加者が選ぶ金額です。あとから追加できます。"
-              data-summary="大人 500円 / 子ども 無料">
+          <li class="event-step" data-step="pricing">
             <h2 class="event-step__heading">
               <button type="button" class="event-step__toggle" aria-expanded="false">
                 <span class="event-step__number" aria-hidden="true">2</span>
                 <span class="event-step__labels">
-                  <span class="event-step__title">費用プラン <span class="req">*</span></span>
-                  <span class="event-step__summary">参加者が選ぶ金額です。あとから追加できます。</span>
+                  <span class="event-step__title">費用プラン <span class="event-step__req">必須</span></span>
                 </span>
                 <span class="event-step__state">未入力</span>
               </button>
@@ -126,24 +142,75 @@
             </div>
           </li>
 
-          <li class="event-step" data-step="location"
-              data-hint="会場名だけでも保存できます。雨天時の方針もここで決めます。"
-              data-summary="河川敷公園 第2広場 / 雨天決行">
+          <li class="event-step" data-step="location">
             <h2 class="event-step__heading">
               <button type="button" class="event-step__toggle" aria-expanded="false">
                 <span class="event-step__number" aria-hidden="true">3</span>
                 <span class="event-step__labels">
-                  <span class="event-step__title">開催場所 <span class="req">*</span></span>
-                  <span class="event-step__summary">会場名だけでも保存できます。雨天時の方針もここで決めます。</span>
+                  <span class="event-step__title">開催場所 <span class="event-step__req">必須</span></span>
                 </span>
                 <span class="event-step__state">未入力</span>
               </button>
             </h2>
             <div class="event-step__body">
-              <div class="field">
-                <label class="label" for="mc-venue">会場名</label>
-                <input class="input" id="mc-venue" value="河川敷公園 第2広場">
-              </div>
+              <fieldset class="field">
+                <legend class="label">開催場所 <span class="req">*</span></legend>
+                <div class="field">
+                  <label class="label" for="mc-venue">会場名</label>
+                  <input class="input" id="mc-venue" value="渋谷ホール" placeholder="○○ホール">
+                </div>
+
+                <!-- 実装の PostalCodeField と同じ並び。郵便番号から都道府県・市区町村・町域を入れる。 -->
+                <div class="field postal-field">
+                  <label class="label" for="mc-postal">郵便番号から住所を入れる</label>
+                  <div class="input-row">
+                    <input
+                      class="input"
+                      id="mc-postal"
+                      inputmode="numeric"
+                      autocomplete="postal-code"
+                      maxlength="8"
+                      value="150-0001"
+                      placeholder="1500001"
+                    >
+                    <button type="button" class="btn btn--outline btn--sm" id="mc-postal-search">住所を検索</button>
+                  </div>
+                  <p class="help" id="mc-postal-help" role="status">
+                    7桁の数字（ハイフン可）を入れて検索すると、都道府県・市区町村・町域が入ります。見つからないときは手入力してください。
+                  </p>
+                </div>
+
+                <div class="repeat-row repeat-row--address">
+                  <div class="field">
+                    <label class="label" for="mc-prefecture">都道府県</label>
+                    <input class="input" id="mc-prefecture" maxlength="20" value="東京都" placeholder="東京都">
+                  </div>
+                  <div class="field">
+                    <label class="label" for="mc-city">市区町村</label>
+                    <input class="input" id="mc-city" maxlength="100" value="渋谷区" placeholder="渋谷区">
+                  </div>
+                </div>
+
+                <div class="repeat-row repeat-row--address">
+                  <div class="field">
+                    <label class="label" for="mc-town">町域</label>
+                    <input class="input" id="mc-town" maxlength="100" value="神宮前" placeholder="神宮前">
+                  </div>
+                  <div class="field">
+                    <label class="label" for="mc-address-line">番地</label>
+                    <input class="input" id="mc-address-line" maxlength="200" value="1-2-3" placeholder="1-2-3">
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label class="label" for="mc-building">建物名・階数（任意）</label>
+                  <input class="input" id="mc-building" maxlength="150" value="○○ビル3F" placeholder="○○ビル3F">
+                </div>
+
+                <p class="help" id="mc-location-preview">公開ページの表示: 渋谷ホール 東京都渋谷区神宮前1-2-3 ○○ビル3F</p>
+              </fieldset>
+
+              <!-- 雨天時の方針は開催場所の一部だが、優先度が低いので最後に置く。 -->
               <div class="field">
                 <label class="label" for="mc-rain">雨天時の方針</label>
                 <select class="select" id="mc-rain">
@@ -159,15 +226,12 @@
             </div>
           </li>
 
-          <li class="event-step" data-step="capacity"
-              data-hint="どちらも任意です。空欄なら制限なしで受け付けます。"
-              data-summary="定員 40名 / 期限 11月5日 23:59">
+          <li class="event-step" data-step="capacity">
             <h2 class="event-step__heading">
               <button type="button" class="event-step__toggle" aria-expanded="false">
                 <span class="event-step__number" aria-hidden="true">4</span>
                 <span class="event-step__labels">
                   <span class="event-step__title">定員と申し込み期限</span>
-                  <span class="event-step__summary">どちらも任意です。空欄なら制限なしで受け付けます。</span>
                 </span>
                 <span class="event-step__state">任意</span>
               </button>
@@ -179,7 +243,16 @@
               </div>
               <div class="field">
                 <label class="label" for="mc-deadline">申し込み期限</label>
-                <input class="input" id="mc-deadline" type="datetime-local" value="2026-11-05T23:59">
+                <!-- 製品の type="datetime-local" は閲覧環境の言語で並びが変わる。
+                     モックでは yyyy/m/d h:mm の文字で見せる。 -->
+                <input
+                  class="input"
+                  id="mc-deadline"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="2026/11/5 23:59"
+                  value="2026/11/5 23:59"
+                >
               </div>
               <div class="event-step__actions">
                 <button type="button" class="btn btn--ghost" data-back="capacity">戻る</button>
@@ -188,15 +261,12 @@
             </div>
           </li>
 
-          <li class="event-step" data-step="flyer"
-              data-hint="作らなくても公開できます。あとから作り直せます。"
-              data-summary="チラシなし">
+          <li class="event-step" data-step="flyer">
             <h2 class="event-step__heading">
               <button type="button" class="event-step__toggle" aria-expanded="false">
                 <span class="event-step__number" aria-hidden="true">5</span>
                 <span class="event-step__labels">
                   <span class="event-step__title">チラシ生成</span>
-                  <span class="event-step__summary">作らなくても公開できます。あとから作り直せます。</span>
                 </span>
                 <span class="event-step__state">任意</span>
               </button>
@@ -205,20 +275,32 @@
               <p class="help">入力した内容から、縦長のチラシを生成します。告知ページの先頭に載ります。</p>
               <div class="event-step__actions">
                 <button type="button" class="btn btn--ghost" data-back="flyer">戻る</button>
-                <button type="button" class="btn btn--outline" data-save>下書き保存</button>
-                <button type="button" class="btn btn--primary" data-preview>プレビューを見る</button>
               </div>
             </div>
           </li>
 
         </ol>
+
+        <!-- 最後の操作はステップの中に入れない。閉じたステップに隠れると、
+             どこを開けば公開できるのか分からなくなる。 -->
+        <div class="form-final">
+          <p class="form-final__note">
+            <span id="form-final-remaining">必須の入力はあと <strong>3</strong> つです。</span>
+            <span id="form-final-ready" hidden>必須の入力はそろいました。</span>
+          </p>
+          <div class="form-final__actions">
+            <button type="button" class="btn btn--outline" data-save>下書き保存</button>
+            <button type="button" class="btn btn--primary" data-preview>プレビューを見る</button>
+          </div>
+        </div>
       </form>
 
     </div>
   </main>
 
   <!-- 音声入力。本体の VoiceInputDock と同じ markup と CSS（src/styles/）を使う。
-       ここでは見た目と、押したときの流れだけを再現する。 -->
+       ここでは見た目と、押したときの流れだけを再現する。
+       「次へ」「プレビュー」と並ぶので、文字を出さずアイコンだけの丸ボタンにする。 -->
   <div class="voice-scrim" id="voice-scrim" aria-hidden="true" hidden></div>
 
   <button
@@ -226,40 +308,90 @@
     class="voice-fab"
     id="voice-fab"
     aria-label="音声入力を開始"
+    title="音声入力を開始"
     aria-pressed="false"
   >
-    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <svg class="icon" id="voice-fab-icon-mic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
       <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
       <path d="M12 19v3"></path>
     </svg>
-    <span class="voice-fab__label">音声入力</span>
+    <svg class="icon" id="voice-fab-icon-close" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" hidden>
+      <path d="M6 6l12 12"></path>
+      <path d="M18 6L6 18"></path>
+    </svg>
   </button>
 
   <section class="voice-panel" id="voice-panel" aria-label="音声入力" hidden>
     <div class="voice-panel__head">
-      <p class="voice-panel__title" id="voice-title">音声入力</p>
-      <button type="button" class="voice-panel__close" id="voice-close">終了</button>
+      <!-- 録音中かどうかは文字ではなく印で示す。質問文は録音中も消さない。
+           何を話すかを目で追いながら話せるようにするため。 -->
+      <p class="voice-panel__status" id="voice-status" role="status" hidden>
+        <span class="voice-rec" aria-hidden="true"><span class="voice-rec__dot"></span>REC</span>
+        <span class="voice-panel__state">録音中</span>
+      </p>
+      <!-- 何を話すかが最初に目に入るように、指示をいちばん上へ置く。
+           幅いっぱいを使い、文字は 1 行に収まる最大の大きさにする（fitVoicePrompt）。 -->
+      <p class="voice-panel__prompt" id="voice-prompt" aria-live="polite">催しの名前は？</p>
+      <button
+        type="button"
+        class="voice-panel__close"
+        id="voice-close"
+        aria-label="音声入力を終了"
+        title="音声入力を終了"
+      >
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12"></path>
+          <path d="M18 6L6 18"></path>
+        </svg>
+      </button>
     </div>
-    <p class="voice-panel__field" id="voice-field">催しの名前</p>
-    <p class="voice-panel__prompt" id="voice-prompt" aria-live="polite">
-      催しの名前を話してください。
-    </p>
     <p class="voice-panel__hint" id="voice-hint">例: 忘年会</p>
-    <p class="voice-panel__transcript" id="voice-transcript" hidden></p>
-    <p class="voice-panel__message" id="voice-message" role="status" hidden></p>
     <div class="voice-panel__actions">
-      <button type="button" class="btn btn--primary btn--sm" id="voice-talk">話す</button>
-      <button type="button" class="btn btn--ghost btn--sm" id="voice-prev">戻る</button>
-      <button type="button" class="btn btn--ghost btn--sm" id="voice-skip">スキップ</button>
+      <!-- 文字ではなくアイコンで置き、意味は aria-label と title で補う。 -->
+      <button
+        type="button"
+        class="voice-icon-btn voice-icon-btn--primary"
+        id="voice-talk"
+        data-state="mic"
+        aria-label="話す"
+        title="話す"
+      >
+        <svg class="icon" id="voice-icon-mic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <path d="M12 19v3"></path>
+        </svg>
+        <svg class="icon" id="voice-icon-stop" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" hidden>
+          <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+        </svg>
+        <svg class="icon" id="voice-icon-busy" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" hidden>
+          <circle cx="12" cy="12" r="8" stroke-dasharray="34 16"></circle>
+        </svg>
+      </button>
+      <button type="button" class="voice-icon-btn" id="voice-prev" aria-label="戻る" title="戻る">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H6"></path>
+          <path d="M12 18l-6-6 6-6"></path>
+        </svg>
+      </button>
+      <button type="button" class="voice-icon-btn" id="voice-skip" aria-label="スキップ" title="スキップ">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l6 6-6 6"></path>
+          <path d="M13 6l6 6-6 6"></path>
+        </svg>
+      </button>
     </div>
-    <label class="check voice-panel__optional">
-      <input type="checkbox" id="voice-optional" />
-      任意の項目も聞く
-    </label>
-    <p class="voice-panel__note">
-      いま聞いている欄は、そのまま手で直せます。ほかの欄を直すときは、いったん終了してください。
-    </p>
+    <div class="voice-panel__options">
+      <label class="check voice-panel__optional">
+        <input type="checkbox" id="voice-optional" />
+        任意の項目も聞く
+      </label>
+      <label class="check voice-panel__optional">
+        <input type="checkbox" id="voice-auto" checked />
+        自動遷移
+      </label>
+    </div>
   </section>
 
   <script src="mock-theme.js"></script>
@@ -276,7 +408,41 @@
     };
 
     let openKey = "basic";
+    // 「次へ」で確定したステップ。
     let done = new Set();
+    // 手か音声で触ったステップ。見本として入れてある初期値は数えない。
+    const touched = new Set();
+
+    // ステップごとの、埋まっていれば完了とみなす欄。
+    // 必須は「すべて」、任意は「どれか1つ」埋まれば完了にする。
+    const STEP_FIELDS = {
+      basic: ["mc-title", "mc-date", "mc-start", "mc-end"],
+      pricing: ["mc-plan-name", "mc-plan-amount"],
+      location: ["mc-venue"],
+      capacity: ["mc-capacity", "mc-deadline"],
+      flyer: [],
+    };
+    const OPTIONAL_STEPS = new Set(["capacity", "flyer"]);
+
+    function isFilled(id) {
+      return (document.getElementById(id)?.value ?? "").trim() !== "";
+    }
+
+    // 入力欄から数えた「入力完了」。件数・ドット・バーはこの 1 つだけを見る。
+    function completedKeys() {
+      const keys = new Set(done);
+      for (const key of STEPS) {
+        if (!touched.has(key)) continue;
+        const fields = STEP_FIELDS[key] ?? [];
+        // 入力欄を持たないステップ（チラシ）は「次へ」でだけ完了になる。
+        if (fields.length === 0) continue;
+        const complete = OPTIONAL_STEPS.has(key)
+          ? fields.some(isFilled)
+          : fields.every(isFilled);
+        if (complete) keys.add(key);
+      }
+      return keys;
+    }
 
     // 途中の状態で開く。比較用に ?step=2..5 を受ける。製品には要らない。
     const stepParam = Number(new URLSearchParams(location.search).get("step"));
@@ -308,15 +474,13 @@
     }
 
     function render() {
+      const completed = completedKeys();
       for (const [key, li] of items) {
         const open = key === openKey;
-        const isDone = done.has(key);
+        const isDone = completed.has(key);
         li.classList.toggle("event-step--open", open);
         li.classList.toggle("event-step--done", isDone);
         li.querySelector(".event-step__toggle").setAttribute("aria-expanded", String(open));
-        li.querySelector(".event-step__summary").textContent = open
-          ? li.dataset.hint
-          : (isDone ? li.dataset.summary : li.dataset.hint);
         const state = li.querySelector(".event-step__state");
         if (MANDATORY.includes(key)) {
           state.textContent = isDone ? "入力済み" : "未入力";
@@ -325,15 +489,29 @@
         }
       }
 
-      const count = MANDATORY.filter((key) => done.has(key)).length;
-      document.getElementById("progress-done").textContent = String(count);
-      document.getElementById("progress-fill").style.width = `${(count / MANDATORY.length) * 100}%`;
+      // 進み具合は必須の 3 つだけを数える。ドットもその 3 つぶんだけ置いてある。
+      const remaining = MANDATORY.filter((key) => !completed.has(key)).length;
+      document.getElementById("progress-remaining").textContent =
+        remaining === 0 ? "必須の入力はそろいました。" : `必須の入力はあと ${remaining} つです。`;
+
+      // 最後の操作の前に、あと何が要るかだけを出す。数が減るのは必須の3つだけ。
+      const remainingText = document.getElementById("form-final-remaining");
+      const readyText = document.getElementById("form-final-ready");
+      remainingText.hidden = remaining === 0;
+      readyText.hidden = remaining !== 0;
+      if (remaining > 0) {
+        remainingText.replaceChildren(
+          document.createTextNode("必須の入力はあと "),
+          Object.assign(document.createElement("strong"), { textContent: String(remaining) }),
+          document.createTextNode(" つです。"),
+        );
+      }
 
       const dots = document.querySelectorAll(".progress-dots__dot");
       dots.forEach((dot, index) => {
-        const key = STEPS[index];
-        dot.classList.toggle("is-done", done.has(key));
-        dot.classList.toggle("is-current", key === openKey && !done.has(key));
+        const key = MANDATORY[index];
+        dot.classList.toggle("is-done", completed.has(key));
+        dot.classList.toggle("is-current", key === openKey && !completed.has(key));
       });
 
       for (const [key, li] of items) {
@@ -343,6 +521,20 @@
         setTimeout(() => li.classList.remove("event-step--just-done"), 300);
       }
     }
+
+    // 入力欄に触れた時点で完了の候補にする。音声入力も input を投げるので同じ道を通る。
+    document.addEventListener("input", (event) => {
+      const step = event.target?.closest?.(".event-step");
+      if (!step) return;
+      touched.add(step.dataset.step);
+      render();
+    });
+    document.addEventListener("change", (event) => {
+      const step = event.target?.closest?.(".event-step");
+      if (!step) return;
+      touched.add(step.dataset.step);
+      render();
+    });
 
     function goNext(key) {
       done.add(key);
@@ -376,58 +568,231 @@
     document.querySelector("[data-save]").addEventListener("click", () =>
       showToast("下書きを保存しました。プレビューで見た目を確認できます。"),
     );
-    document.querySelector("[data-preview]").addEventListener("click", () =>
-      showToast("公開の準備ができました。プレビューを開きます。"),
-    );
+    document.querySelector("[data-preview]").addEventListener("click", () => {
+      // 最後のステップは入力欄を持たない。プレビューまで進めたら完了として数える。
+      done.add("flyer");
+      render();
+      showToast("公開の準備ができました。プレビューを開きます。");
+    });
+
+    // 5 分刻み・24 時間表示。製品の type="time" は閲覧環境の言語で AM/PM になるため、
+    // モックでは選択肢を自前で持ち、24 時間表記に固定する。
+    function fillTimeOptions(select) {
+      const current = select.value || "00:00";
+      select.replaceChildren();
+      for (let minutes = 0; minutes < 24 * 60; minutes += 5) {
+        const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+        const mm = String(minutes % 60).padStart(2, "0");
+        const option = document.createElement("option");
+        option.value = `${hh}:${mm}`;
+        option.textContent = `${hh}:${mm}`;
+        select.append(option);
+      }
+      select.value = current;
+      if (!select.value) select.selectedIndex = 0;
+    }
+
+    fillTimeOptions(document.getElementById("mc-start"));
+    fillTimeOptions(document.getElementById("mc-end"));
 
     render();
 
     // -------------------------------------------------------------------
-    // 音声入力。本体の VoiceInputDock の流れを見た目だけでなぞる。
-    // 上から順に欄を指し、話したことにする。値は変えない。
+    // 郵便番号検索。実装の PostalCodeField と同じ流れを、モックのサンプル住所で再現する。
     // -------------------------------------------------------------------
-    const VOICE_STEPS = {
-      basic: [
-        ["mc-title", "催しの名前", "催しの名前を話してください。", "忘年会"],
-        ["mc-date", "開催日", "開催日を話してください。", "12月5日"],
-        ["mc-start", "開始時刻", "開始時刻を話してください。", "18時"],
-        ["mc-end", "終了時刻", "終了時刻を話してください。", "20時"],
-      ],
-      pricing: [
-        ["mc-plan-name", "費用プランの名前", "費用プランの名前を話してください。", "一般"],
-        ["mc-plan-amount", "金額", "金額を円で話してください。", "3000円"],
-        ["mc-plan-note", "費用の補足", "費用の補足があれば話してください。無ければ「スキップ」を押します。", "1ドリンク付"],
-      ],
-      location: [
-        ["mc-venue", "会場名", "会場名を話してください。", "渋谷ホール"],
-        ["mc-rain", "雨天時の方針", "雨天のときの方を話してください。", "雨天決行"],
-      ],
-      capacity: [
-        ["mc-capacity", "定員", "定員を話してください。「無制限」でも構いません。", "30人"],
-        ["mc-deadline", "申し込み期限", "申し込みの期限を話してください。「なし」でも構いません。", "12月1日23時59分"],
-      ],
-      flyer: [],
+    const POSTAL_SAMPLES = {
+      "1500001": ["東京都", "渋谷区", "神宮前"],
+      "5300001": ["大阪府", "大阪市北区", "梅田"],
+      "0600000": ["北海道", "札幌市中央区", "北一条西"],
     };
+
+    const postalInput = document.getElementById("mc-postal");
+    const postalSearch = document.getElementById("mc-postal-search");
+    const postalHelp = document.getElementById("mc-postal-help");
+    const locationPreview = document.getElementById("mc-location-preview");
+    const venueInput = document.getElementById("mc-venue");
+    const prefectureInput = document.getElementById("mc-prefecture");
+    const cityInput = document.getElementById("mc-city");
+    const townInput = document.getElementById("mc-town");
+    const addressLineInput = document.getElementById("mc-address-line");
+    const buildingInput = document.getElementById("mc-building");
+
+    function flashFilled(element) {
+      if (!element) return;
+      element.classList.remove("is-voice-filled");
+      // 同じ欄を続けて直したときも、もう一度光らせる。
+      void element.offsetWidth;
+      element.classList.add("is-voice-filled");
+      window.setTimeout(() => element.classList.remove("is-voice-filled"), 750);
+    }
+
+    function updateLocationPreview() {
+      const read = (element) => element?.value?.trim() ?? "";
+      const address = [read(prefectureInput), read(cityInput), read(townInput), read(addressLineInput)].join("");
+      const structured = [read(venueInput), address, read(buildingInput)].filter(Boolean).join(" ");
+      locationPreview.textContent = structured ? `公開ページの表示: ${structured}` : "公開ページの表示: 未入力";
+    }
+
+    function fillAddressFromPostal(code) {
+      const hit = POSTAL_SAMPLES[String(code).replace(/\D/g, "")];
+      if (!hit) return false;
+      prefectureInput.value = hit[0];
+      cityInput.value = hit[1];
+      townInput.value = hit[2];
+      [prefectureInput, cityInput, townInput].forEach(flashFilled);
+      updateLocationPreview();
+      return true;
+    }
+
+    function searchPostal() {
+      const code = postalInput.value.replace(/\D/g, "");
+      if (code.length !== 7) {
+        postalHelp.classList.add("field-error");
+        postalHelp.textContent = "郵便番号は7桁の数字で入力してください。";
+        return;
+      }
+      const hit = POSTAL_SAMPLES[code];
+      if (!hit) {
+        postalHelp.classList.add("field-error");
+        postalHelp.textContent = "この郵便番号の住所はモックにありません。手入力してください。";
+        return;
+      }
+      postalHelp.classList.remove("field-error");
+      postalInput.value = `${code.slice(0, 3)}-${code.slice(3)}`;
+      fillAddressFromPostal(code);
+      postalHelp.textContent = `住所を「${hit.join("")}」で入れました。`;
+    }
+
+    postalSearch.addEventListener("click", searchPostal);
+    postalInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      searchPostal();
+    });
+    [venueInput, prefectureInput, cityInput, townInput, addressLineInput, buildingInput].forEach((element) => {
+      element.addEventListener("input", updateLocationPreview);
+    });
+    updateLocationPreview();
+
+    // -------------------------------------------------------------------
+    // 音声入力。本体の VoiceInputDock の流れを見た目だけでなぞる。
+    // 欄を指し、聞き取りの結果を実際の欄へ入れてから次へ進む。
+    // -------------------------------------------------------------------
+    const VOICE_FIELDS = [
+      { step: "basic", id: "mc-title", prompt: "催しの名前は？", example: "忘年会", value: "忘年会" },
+      { step: "basic", id: "mc-date", prompt: "開催日は？", example: "12月5日", value: "20261205" },
+      { step: "basic", id: "mc-start", prompt: "何時に始まる？", example: "18時", value: "18:00" },
+      { step: "basic", id: "mc-end", prompt: "何時に終わる？", example: "20時", value: "20:00" },
+      { step: "pricing", id: "mc-plan-name", prompt: "プラン名は？", example: "一般", value: "一般" },
+      { step: "pricing", id: "mc-plan-amount", prompt: "金額は？", example: "3000円", value: "3000" },
+      { step: "pricing", id: "mc-plan-note", prompt: "補足は？", example: "1ドリンク付", value: "1ドリンク付" },
+      { step: "location", id: "mc-venue", prompt: "会場は？", example: "渋谷ホール", value: "渋谷ホール" },
+      { step: "location", id: "mc-postal", prompt: "郵便番号は？", example: "150-0001", value: "1500001" },
+      { step: "location", id: "mc-prefecture", prompt: "都道府県は？", example: "東京都", value: "東京都" },
+      { step: "location", id: "mc-city", prompt: "市区町村は？", example: "渋谷区", value: "渋谷区" },
+      { step: "location", id: "mc-town", prompt: "町名は？", example: "神宮前", value: "神宮前" },
+      { step: "location", id: "mc-address-line", prompt: "番地は？", example: "1-2-3", value: "1-2-3" },
+      { step: "location", id: "mc-rain", prompt: "雨ならどうする？", example: "雨天決行", value: "雨天決行" },
+      { step: "capacity", id: "mc-capacity", prompt: "定員は？", example: "30人", value: "30" },
+      { step: "capacity", id: "mc-deadline", prompt: "締め切りは？", example: "12月1日23時59分", value: "2026/12/1 23:59" },
+    ];
 
     const voiceFab = document.getElementById("voice-fab");
     const voicePanel = document.getElementById("voice-panel");
     const voiceScrim = document.getElementById("voice-scrim");
-    const voiceTitle = document.getElementById("voice-title");
-    const voiceField = document.getElementById("voice-field");
     const voicePrompt = document.getElementById("voice-prompt");
     const voiceHint = document.getElementById("voice-hint");
-    const voiceTranscript = document.getElementById("voice-transcript");
-    const voiceMessage = document.getElementById("voice-message");
+    const voiceStatus = document.getElementById("voice-status");
+
+    // 指示は 1 行に収める。収まる中でいちばん大きい字を選び、短い文ほど大きく見せる。
+    // 幅は CSS で 1 行に固定してあるので、はみ出すかどうかだけで判定できる。
+    function fitVoicePrompt() {
+      let size = 36;
+      voicePrompt.style.fontSize = `${size}px`;
+      while (size > 15 && voicePrompt.scrollWidth > voicePrompt.clientWidth + 1) {
+        size -= 1;
+        voicePrompt.style.fontSize = `${size}px`;
+      }
+    }
+
+    function setVoicePrompt(text) {
+      voicePrompt.textContent = text;
+      fitVoicePrompt();
+    }
     const voiceTalk = document.getElementById("voice-talk");
+    const voiceIconMic = document.getElementById("voice-icon-mic");
+    const voiceIconStop = document.getElementById("voice-icon-stop");
+    const voiceIconBusy = document.getElementById("voice-icon-busy");
     const voiceOptional = document.getElementById("voice-optional");
+    const voiceAuto = document.getElementById("voice-auto");
+    const voiceFabIconMic = document.getElementById("voice-fab-icon-mic");
+    const voiceFabIconClose = document.getElementById("voice-fab-icon-close");
+
+    // SVG は hidden プロパティを持たないので、属性で出し入れする。
+    function showIcon(element, on) {
+      if (on) element.removeAttribute("hidden");
+      else element.setAttribute("hidden", "");
+    }
+
+
+    // アイコンだけのボタンなので、押すと何が起きるかを aria-label と title に持たせる。
+    function setTalkButton(label, icon) {
+      voiceTalk.dataset.state = icon;
+      voiceTalk.setAttribute("aria-label", label);
+      voiceTalk.setAttribute("title", label);
+      showIcon(voiceIconMic, icon === "mic");
+      showIcon(voiceIconStop, icon === "stop");
+      showIcon(voiceIconBusy, icon === "busy");
+    }
 
     let voiceOn = false;
     let voiceListening = false;
+    let voiceTranscribing = false;
     let voiceCursor = 0;
     let voiceTarget = null;
+    let voiceTimer = null;
+    let voiceApplyTimer = null;
+    let voiceStatusTimer = null;
+    // 入力完了を出してから、音声モードを自動で抜けるまでの待ち。
+    let voiceCompleteTimer = null;
+    // 音声を押す前に選んでいた入力欄。あればその欄から始める。
+    let voiceLastFocusedId = null;
 
-    const voiceList = () => VOICE_STEPS[openKey] ?? [];
-    const voiceEntry = () => voiceList()[voiceCursor] ?? null;
+    const voiceEntry = () => VOICE_FIELDS[voiceCursor] ?? null;
+
+
+    // 録音の印は、止めたときだけ少し縮んで消える。押した手応えを残すため。
+    function showVoiceStatus() {
+      if (voiceStatusTimer) window.clearTimeout(voiceStatusTimer);
+      voiceStatusTimer = null;
+      voiceStatus.classList.remove("is-stopping");
+      voiceStatus.hidden = false;
+    }
+
+    function hideVoiceStatus(animate) {
+      if (voiceStatusTimer) window.clearTimeout(voiceStatusTimer);
+      voiceStatusTimer = null;
+      if (!animate) {
+        voiceStatus.classList.remove("is-stopping");
+        voiceStatus.hidden = true;
+        return;
+      }
+      voiceStatus.classList.add("is-stopping");
+      voiceStatusTimer = window.setTimeout(() => {
+        voiceStatusTimer = null;
+        voiceStatus.classList.remove("is-stopping");
+        voiceStatus.hidden = true;
+      }, 200);
+    }
+
+    function clearVoiceTimers() {
+      if (voiceTimer) window.clearTimeout(voiceTimer);
+      if (voiceApplyTimer) window.clearTimeout(voiceApplyTimer);
+      if (voiceCompleteTimer) window.clearTimeout(voiceCompleteTimer);
+      voiceTimer = null;
+      voiceApplyTimer = null;
+      voiceCompleteTimer = null;
+    }
 
     // いま聞いている欄のまわりだけを覆いからくり抜く。clip-path は当たり判定にも効く。
     function measureVoiceSpotlight() {
@@ -444,46 +809,121 @@
         `${right}px ${top}px, ${left}px ${top}px)`;
     }
 
-    function showVoiceMessage(text) {
-      voiceMessage.textContent = text;
-      voiceMessage.hidden = !text;
-    }
-
     function pointVoiceAt(index) {
+      clearVoiceTimers();
+      voiceListening = false;
+      voiceTranscribing = false;
+      hideVoiceStatus(false);
+      voicePanel.classList.remove("is-listening", "is-transcribing");
+      voiceTalk.disabled = false;
       voiceTarget?.removeAttribute("data-voice-target");
       voiceTarget = null;
-      voiceListening = false;
-      voiceTitle.textContent = "音声入力";
 
-      const list = voiceList();
-      if (!list.length) {
-        voiceField.textContent = "入力できる欄がすべて埋まりました";
-        voicePrompt.textContent = "内容を確認してください。";
-        voiceHint.hidden = true;
-        voiceTalk.disabled = true;
-        voiceTalk.textContent = "話す";
-        measureVoiceSpotlight();
+      if (index < 0 || index >= VOICE_FIELDS.length) {
+        showVoiceComplete();
         return;
       }
 
-      voiceCursor = Math.max(0, Math.min(index, list.length - 1));
-      const [id, label, prompt, example] = list[voiceCursor];
-      const target = document.getElementById(id);
+      voiceCursor = index;
+      const field = VOICE_FIELDS[voiceCursor];
+      // 別のステップの欄なら、そのステップを開いてから指す。
+      if (field.step !== openKey) {
+        openKey = field.step;
+        render();
+      }
+      const target = document.getElementById(field.id);
       voiceTarget = target;
       target?.setAttribute("data-voice-target", "true");
 
       const current = target?.value?.trim();
-      voiceField.textContent = label;
-      voicePrompt.textContent = prompt;
+      setVoicePrompt(field.prompt);
       voiceHint.hidden = false;
-      voiceHint.textContent = `例: ${example}${current ? ` ／ いまの値: ${current}` : ""}`;
-      voiceTalk.disabled = false;
-      voiceTalk.textContent = current ? "言い直す" : "話す";
-      showVoiceMessage("");
-      voiceTranscript.hidden = true;
+      voiceHint.textContent = `例: ${field.example}${current ? ` ／ いまの値: ${current}` : ""}`;
+      setTalkButton(current ? "言い直す" : "話す", "mic");
 
       target?.scrollIntoView({ block: "center", behavior: "smooth" });
       measureVoiceSpotlight();
+    }
+
+    // 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから、音声モードを抜ける。
+    function showVoiceComplete() {
+      voiceCursor = VOICE_FIELDS.length;
+      setVoicePrompt("入力完了！");
+      voiceHint.hidden = true;
+      hideVoiceStatus(false);
+      voiceTalk.disabled = true;
+      setTalkButton("話す", "mic");
+      voiceTarget?.removeAttribute("data-voice-target");
+      voiceTarget = null;
+      measureVoiceSpotlight();
+      if (voiceCompleteTimer) window.clearTimeout(voiceCompleteTimer);
+      voiceCompleteTimer = window.setTimeout(() => {
+        voiceCompleteTimer = null;
+        setVoice(false);
+      }, 3000);
+    }
+
+    function startVoiceListening() {
+      const field = voiceEntry();
+      if (!field) return;
+      voiceListening = true;
+      voiceTranscribing = false;
+      voicePanel.classList.add("is-listening");
+      voicePanel.classList.remove("is-transcribing");
+      // 質問文は消さない。REC と「録音中」で状態は伝わるので、
+      // 話す内容が目に入ったままのほうが話しやすい。
+      showVoiceStatus();
+      setTalkButton("録音を停止", "stop");
+      // モックでは 2.6 秒で話し終えたことにして、停止を押さなくても次へ進める。
+      voiceTimer = window.setTimeout(finishVoiceListening, 2600);
+    }
+
+    function finishVoiceListening() {
+      if (!voiceListening) return;
+      clearVoiceTimers();
+      voiceListening = false;
+      voiceTranscribing = true;
+      hideVoiceStatus(true);
+      voicePanel.classList.remove("is-listening");
+      voicePanel.classList.add("is-transcribing");
+      setVoicePrompt("文字にする…");
+      voiceTalk.disabled = true;
+      setTalkButton("文字にしています…", "busy");
+      // 一瞬だけ「文字にしています」を見せてから、実際に欄へ入れる。
+      voiceApplyTimer = window.setTimeout(() => {
+        voiceApplyTimer = null;
+        voiceTranscribing = false;
+        voicePanel.classList.remove("is-transcribing");
+        voiceTalk.disabled = false;
+        applyVoice(voiceEntry());
+      }, 700);
+    }
+
+    function applyVoice(field) {
+      if (!field) return;
+      const target = document.getElementById(field.id);
+      if (target) {
+        target.value = field.value;
+        target.dispatchEvent(new Event("input", { bubbles: true }));
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+        flashFilled(target);
+        if (field.id === "mc-postal") fillAddressFromPostal(field.value);
+      }
+
+      const next = VOICE_FIELDS[voiceCursor + 1] ?? null;
+      if (!next) {
+        showVoiceComplete();
+        return;
+      }
+      // 自動遷移が外れているときは、同じ欄に留まって録音も止める。
+      // もう一度話したいときは「言い直す」を押す。
+      if (!voiceAuto.checked) {
+        pointVoiceAt(voiceCursor);
+        return;
+      }
+      // 自動で次へ移ったら、その瞬間から録音を始める。もう一度押させない。
+      pointVoiceAt(voiceCursor + 1);
+      startVoiceListening();
     }
 
     function setVoice(on) {
@@ -491,68 +931,75 @@
       voiceFab.classList.toggle("voice-fab--active", on);
       voiceFab.setAttribute("aria-pressed", String(on));
       voiceFab.setAttribute("aria-label", on ? "音声入力を終了" : "音声入力を開始");
-      voiceFab.querySelector(".voice-fab__label").textContent = on ? "終了" : "音声入力";
+      voiceFab.setAttribute("title", on ? "音声入力を終了" : "音声入力を開始");
+      // 終わるときはマイク、音声中は閉じるの印にする。
+      showIcon(voiceFabIconMic, !on);
+      showIcon(voiceFabIconClose, on);
       voicePanel.hidden = !on;
       voiceScrim.hidden = !on;
 
       if (!on) {
+        clearVoiceTimers();
+        voiceListening = false;
+        voiceTranscribing = false;
+        hideVoiceStatus(false);
+        voicePanel.classList.remove("is-listening", "is-transcribing");
+        voiceTalk.disabled = false;
+        setTalkButton("話す", "mic");
         voiceTarget?.removeAttribute("data-voice-target");
         voiceTarget = null;
-        voiceListening = false;
         return;
       }
 
-      // 閉じているステップなら、最初の未入力のステップを開く。
+      // 閉じているステップなら、最初の未完了のステップを開く。
       if (!openKey || !items.get(openKey)?.classList.contains("event-step--open")) {
-        openKey = STEPS.find((key) => !done.has(key)) ?? "basic";
+        const completed = completedKeys();
+        openKey = STEPS.find((key) => !completed.has(key)) ?? "basic";
         render();
       }
-      pointVoiceAt(0);
+      fitVoicePrompt();
+
+      // 音声を押す前に選んでいた欄があれば、そこから始める。無ければ先頭から。
+      const focused = VOICE_FIELDS.findIndex((field) => field.id === voiceLastFocusedId);
+      pointVoiceAt(focused >= 0 ? focused : 0);
+      // 音声モードに入ったら、そのまま録音を始める。もう一度押させない。
+      startVoiceListening();
     }
+
+    // 押していた入力欄を覚えておく。FAB を押した時点のフォーカスは FAB に移るので、
+    // その場で読むのではなく、直前の focusin を控える。
+    document.addEventListener("focusin", (event) => {
+      const id = event.target?.id;
+      if (!id) return;
+      if (VOICE_FIELDS.some((field) => field.id === id)) voiceLastFocusedId = id;
+    });
 
     voiceFab.addEventListener("click", () => setVoice(!voiceOn));
     document.getElementById("voice-close").addEventListener("click", () => setVoice(false));
-    document.getElementById("voice-prev").addEventListener("click", () => pointVoiceAt(voiceCursor - 1));
-    document.getElementById("voice-skip").addEventListener("click", () => pointVoiceAt(voiceCursor + 1));
+    document.getElementById("voice-prev").addEventListener("click", () => {
+      if (voiceListening || voiceTranscribing) return;
+      pointVoiceAt(voiceCursor - 1);
+    });
+    document.getElementById("voice-skip").addEventListener("click", () => {
+      if (voiceListening || voiceTranscribing) return;
+      pointVoiceAt(voiceCursor + 1);
+    });
 
     voiceOptional.addEventListener("change", () => {
+      // チェックの意味はラベルで足りる。パネル内の文言は増やさない。
       if (!voiceOn) return;
-      showVoiceMessage(voiceOptional.checked ? "任意の項目も、続けて聞きます。" : "必須の項目だけを聞きます。");
+      pointVoiceAt(voiceCursor);
     });
 
     voiceTalk.addEventListener("click", () => {
-      const entry = voiceEntry();
-      if (!entry) return;
-      if (!voiceListening) {
-        voiceListening = true;
-        voiceTitle.textContent = "聞いています";
-        voicePrompt.textContent = "話し終えたら「停止して入力」を押してください。";
-        voiceTalk.textContent = "停止して入力";
-        showVoiceMessage("");
-        return;
-      }
-
-      // 聞き取りの結果。本体では、ここで欄に値が入る。
-      const [, label, , example] = entry;
-      const next = voiceList()[voiceCursor + 1];
-      voiceListening = false;
-      voiceTitle.textContent = "音声入力";
-      if (next) pointVoiceAt(voiceCursor + 1);
-      else voiceTalk.textContent = "言い直す";
-      voiceTranscript.hidden = false;
-      voiceTranscript.textContent = `聞き取り: ${example}`;
-      showVoiceMessage(
-        next
-          ? `${label}を「${example}」で入力しました。次は${next[1]}です。`
-          : `${label}を「${example}」で入力しました。音声で入力できる欄がすべて埋まりました。`,
-      );
+      if (voiceTranscribing) return;
+      if (voiceListening) finishVoiceListening();
+      else startVoiceListening();
     });
 
-    voiceScrim.addEventListener("click", () =>
-      showVoiceMessage(
-        "音声モード中は、いま聞いている欄のまわりだけ操作できます。「終了」か Esc で元に戻ります。",
-      ),
-    );
+    voiceScrim.addEventListener("click", () => {
+      // 覆いは操作を止めるだけ。説明はパネルの指示に任せ、ここでは何もしない。
+    });
 
     document.addEventListener("keydown", (event) => {
       if (!voiceOn || event.key !== "Escape") return;
@@ -569,7 +1016,10 @@
       });
     };
     window.addEventListener("scroll", scheduleVoiceMeasure, { capture: true, passive: true });
-    window.addEventListener("resize", scheduleVoiceMeasure);
+    window.addEventListener("resize", () => {
+      scheduleVoiceMeasure();
+      fitVoicePrompt();
+    });
   </script>
 </body>
 </html>

@@ -1572,67 +1572,17 @@
   gap: 0.375rem;
 }
 
-/* 入力の進み具合。必須 3 つを数える。 */
+/* 入力の進み具合。必須 3 つを数える。文字は置かず、ドットだけで示す。 */
 .progress-card {
-  padding: 1rem 1.125rem;
+  padding: 0.75rem 1.125rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
   background: var(--color-surface);
 }
 
-.progress-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-  margin-bottom: 0.625rem;
-}
-
-.progress-card__label {
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-}
-
-.progress-card__count {
-  font-size: 1.125rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.progress-card__count span {
-  color: var(--color-text-subtle);
-  font-family: var(--font);
-  font-size: 0.8125rem;
-  font-weight: 400;
-}
-
-.progress-card__track {
-  position: relative;
-  height: 0.625rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--color-slate-100);
-}
-
-.progress-card__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--pop-warm), var(--color-primary));
-  transition: width 320ms cubic-bezier(0.2, 0.9, 0.25, 1.06);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .progress-card__fill {
-    transition: none;
-  }
-}
-
 .progress-dots {
   display: flex;
   gap: 0.375rem;
-  margin-top: 0.625rem;
 }
 
 .progress-dots__dot {

@@ -71,6 +71,19 @@
 .deco .step-list {
   display: grid;
   gap: 0.75rem;
+  /* 見出しのすぐ下から札が始まると、見出しと 1 行目がくっついて見える。
+     行の間だけを広げても、この隙間は空かない。 */
+  margin-block-start: 1.5rem;
+}
+
+/* 影で浮かせる行は、文字を札の縁から離す。左右 0 のままだと番号が縁に
+   貼り付き、本文も右端で折り返して見える。行の間も少し広げる。 */
+.deco .feature-row {
+  padding-inline: 1.25rem;
+}
+
+.deco .feature-list {
+  gap: 1.25rem;
 }
 
 /* 番号は文字ではなく札。文字の幅に引きずられると、列からはみ出して
@@ -140,6 +153,30 @@
   transform: rotate(-1.5deg);
 }
 
+/* 新規作成の見出しは、ホームの FV と同じ「斜めの帯」で画面を貫く。
+   フォーム幅に閉じると札が途中で切れ、ホームと別の部品に見える。
+   画面端まで伸ばし、文字だけを中央に置く。
+   帯は墨で塗り、文字は白抜きの太字にする。暖色の帯に白を置くと
+   コントラストが足りず、隣の見出しと競って読みにくかった。
+   対象はステップ形式の作成フォームだけ。ログインや設定の見出しは
+   同じ page--form でも帯にしない。 */
+.deco.deco--tape-shadow .page--form:has(.event-step) .eyebrow {
+  /* 傾けた分だけ上下にはみ出す。見出しに重ならないよう、下に余白を足す。 */
+  margin-block: 0.5rem 2.25rem;
+  margin-inline: calc(50% - 50vw);
+  padding-block: 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--tape-ink);
+  color: #fff;
+  box-shadow: none;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+  transform: rotate(-2.5deg);
+}
+
 .deco.deco--tape-shadow .event-step__number {
   border: 0;
   border-radius: 9px;
@@ -147,6 +184,12 @@
   color: var(--tape-ink);
   transform: rotate(-5deg);
   box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+}
+
+/* 必須の札も、貼ったラベルのように少し傾ける。 */
+.deco.deco--tape-shadow .event-step__req {
+  transform: rotate(-2deg);
+  box-shadow: 1.5px 1.5px 0 rgb(26 25 22 / 0.22);
 }
 
 .deco.deco--tape-shadow .event-step--done .event-step__number {
@@ -186,17 +229,6 @@
   background: #fff;
 }
 
-.deco.deco--tape-shadow .progress-card__track {
-  background: #fff;
-  box-shadow: inset 0 0 0 1px var(--color-border-strong);
-}
-
-.deco.deco--tape-shadow .progress-card__fill {
-  background: repeating-linear-gradient(-45deg, var(--pop-warm) 0 7px, #f4bd54 7px 14px);
-}
-
-
-
 .deco.deco--tape-shadow .organizer-tabs__link.is-current {
   border: 0;
   background: var(--color-text);
@@ -205,6 +237,9 @@
 }
 
 .deco.deco--tape-shadow .cta-band {
+  /* 角と影を持つ帯を画面端まで伸ばすと、角が見えず、左右の余白もなくなる。
+     本文と同じ幅に収めて、紙の札として置く。 */
+  margin-inline: 0;
   border: 0;
   border-radius: var(--radius-3xl);
   box-shadow: 6px 6px 0 rgb(26 25 22 / 0.18);
@@ -221,7 +256,7 @@
    押すと上に紙が開く。本体（attendance.css）の形は変えず、角と影だけ足す。 */
 .deco .voice-fab {
   border-radius: 999px;
-  padding: 0.8125rem 1.25rem;
+  padding: 0;
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.26);
 }
 
@@ -305,4 +340,17 @@
   border: 0;
   border-left: 3px solid currentColor;
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.1);
+}
+
+/* トライアルの回数券は、紙が 1 枚置いてあるように見せる。 */
+.deco.deco--tape-shadow .trial-ticket {
+  border-color: var(--pop-warm-deep);
+  background: var(--pop-warm-tint);
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.12);
+  transform: rotate(-0.5deg);
+}
+
+/* 最後の操作も、他の面と同じ厚みで置く。 */
+.deco.deco--tape-shadow .form-final {
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.12);
 }

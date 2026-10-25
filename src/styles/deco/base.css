@@ -55,7 +55,6 @@
 
 /* 数字は桁を揃える。0 と 8 の幅が違うと、比較のたびに目が滑る。 */
 .deco .stat__value,
-.deco .progress-card__count,
 .deco .meter-label,
 .deco .event-card__meter-label,
 .deco .roster td.is-num,
@@ -237,20 +236,6 @@
 .deco .chip,
 .deco .segment__item {
   padding-inline: 0.875rem;
-}
-
-.deco .progress-card__count {
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.deco .progress-card__track {
-  height: 0.625rem;
-  border-radius: 999px;
-}
-
-.deco .progress-card__fill {
-  border-radius: 999px;
 }
 
 /* --------------------------------------------------------------------------

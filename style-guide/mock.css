@@ -1411,3 +1411,189 @@ body.deco .mock-index__title {
   display: flex;
   justify-content: center;
 }
+
+/* ==========================================================================
+   画面ごとの調整。製品へは移さない。
+   ========================================================================== */
+
+/* ホームは LP として、ヒーローを画面のいちばん上に置く。
+   共通ヘッダーを出さない分、本文の上余白も落とす。 */
+.mock-home .page {
+  padding-block-start: 0;
+}
+
+/* 音声入力の見た目だけの動き。録音中は枠も REC と同じ赤に寄せ、
+   パネル全体が「いま聞いている」ことを示す。 */
+.voice-panel.is-listening {
+  border-color: var(--color-danger-border);
+  box-shadow: 0 0 0 3px var(--color-danger-bg), 5px 5px 0 rgb(26 25 22 / 0.18);
+}
+
+/* 見出しの段は印・指示・閉じる。指示に幅を全部あけ、閉じるは隅へ重ねる。
+   幅を奪い合うと 1 行に収まらず、文字を小さくするしかなくなる。
+   共有 CSS の align-items: center を打ち消して、幅いっぱいに広げる。 */
+.voice-panel__head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.375rem;
+  padding-inline-end: 2.5rem;
+}
+
+.voice-panel__prompt {
+  /* 1 行に固定し、はみ出す分だけ JS（fitVoicePrompt）が字を詰める。
+     折り返すと読み口が増え、いま何を話すのかがぼやける。 */
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+/* 閉じるはアイコン。文字の「終了」は指示と同じ行で幅を食う。 */
+.voice-panel__close {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: var(--color-text-subtle);
+  text-decoration: none;
+}
+
+.voice-panel__close:hover {
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+}
+
+.voice-panel__close .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* 音声パネルの操作はアイコンだけ。文字が入らないぶん、押せる大きさを確保する。 */
+.voice-panel__actions {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.voice-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.12);
+  cursor: pointer;
+}
+
+.voice-icon-btn:hover {
+  background: var(--color-bg);
+}
+
+.voice-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.voice-icon-btn--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.voice-icon-btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.voice-icon-btn .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* SVG には hidden 属性の UA 既定が効かない。状態で切り替えるので自前で消す。 */
+.voice-icon-btn .icon[hidden] {
+  display: none;
+}
+
+.voice-icon-btn[data-state="busy"] .icon {
+  animation: mock-voice-spin 900ms linear infinite;
+}
+
+@keyframes mock-voice-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 録音中は停止ボタンを赤にし、REC の点と同じ 1.2 秒で輪を広げる。
+   押す前に「これを押せば止まる」が動きで分かる。 */
+.voice-icon-btn[data-state="stop"] {
+  border-color: var(--color-danger-solid);
+  background: var(--color-danger-solid);
+  color: #fff;
+  animation: mock-voice-stop-ring 1.2s ease-out infinite;
+}
+
+.voice-icon-btn[data-state="stop"]:hover {
+  border-color: var(--color-danger-solid-hover);
+  background: var(--color-danger-solid-hover);
+}
+
+/* 押した瞬間に沈ませる。輪が消えて、止まったことが手応えとして返る。 */
+.voice-icon-btn[data-state="stop"]:active {
+  transform: translateY(1px) scale(0.92);
+  animation: none;
+}
+
+@keyframes mock-voice-stop-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(110 30 42 / 0.45), 2px 2px 0 rgb(26 25 22 / 0.12);
+  }
+
+  70% {
+    box-shadow: 0 0 0 0.5rem rgb(110 30 42 / 0), 2px 2px 0 rgb(26 25 22 / 0.12);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(110 30 42 / 0), 2px 2px 0 rgb(26 25 22 / 0.12);
+  }
+}
+
+.voice-panel.is-transcribing .voice-panel__prompt::after {
+  content: "…";
+}
+
+/* 音声で値が入った欄を、一瞬だけ山吹にする。 */
+.is-voice-filled {
+  animation: mock-voice-filled 700ms ease-out;
+}
+
+@keyframes mock-voice-filled {
+  from {
+    background: var(--pop-warm-tint);
+  }
+
+  to {
+    background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-rec__dot,
+  .voice-panel__status.is-stopping,
+  .voice-icon-btn[data-state="stop"],
+  .is-voice-filled,
+  .voice-icon-btn[data-state="busy"] .icon {
+    animation: none;
+  }
+}
