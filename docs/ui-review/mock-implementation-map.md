@@ -890,7 +890,7 @@
 
 **モックにしかない構造（移植する）**
 
-- `progress-card` / `progress-card__head` / `progress-card__track` / `progress-card__fill` / `progress-dots`。
+- `progress-card` / `progress-dots`（必須 3 つぶんのドットだけ。見出しの文字とバーは持たない）。
 - `event-step` / `event-step__heading` / `event-step__toggle` / `event-step__number` / `event-step__labels` / `event-step__summary` / `event-step__state` / `event-step__body` / `event-step__actions`。
 - `repeat-block` / `repeat-row--schedule`。
 
@@ -903,7 +903,7 @@
 
 - ステップの開閉は `EventForm` のロジック。**マークアップだけ**替える。
 - 下書き保存のタイミング（`onChange` デバウンス）を変えない。
-- 進捗の「必須 3 / 全 5」は実装の必須判定と一致させる。**独自の数え方をしない**。
+- 進捗のドット 3 つは実装の必須判定と一致させる。**独自の数え方をしない**。
 
 **完了条件**
 

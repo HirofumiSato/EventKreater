@@ -256,32 +256,20 @@ export function EventStepForm({
 
   const requiredSteps = EVENT_STEPS.filter((step) => step.mandatory);
   const requiredDone = requiredSteps.filter((step) => isComplete(step.key)).length;
-  const progressPercent = requiredSteps.length
-    ? Math.round((requiredDone / requiredSteps.length) * 100)
-    : 0;
+  const requiredRemaining = requiredSteps.length - requiredDone;
 
   return (
     <div className="stack">
+      {/* 進み具合は必須ステップぶんのドットだけで見せる。文字を並べると、
+          ステップ数の見出しと数が食い違って読みにくい。残りは読み上げにだけ流す。 */}
       <div className="progress-card">
-        <div className="progress-card__head">
-          <span className="progress-card__label">必須の入力</span>
-          <span className="progress-card__count">
-            <strong>{requiredDone}</strong> / {requiredSteps.length}{" "}
-            <span>（全 {EVENT_STEPS.length} ステップ）</span>
-          </span>
-        </div>
-        <div
-          className="progress-card__track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={requiredSteps.length}
-          aria-valuenow={requiredDone}
-          aria-label="必須の入力の進み具合"
-        >
-          <span className="progress-card__fill" style={{ width: `${progressPercent}%` }} />
-        </div>
+        <p className="visually-hidden">
+          {requiredRemaining === 0
+            ? "必須の入力はそろいました。"
+            : `必須の入力はあと ${requiredRemaining} つです。`}
+        </p>
         <div className="progress-dots" aria-hidden="true">
-          {EVENT_STEPS.map((step) => (
+          {requiredSteps.map((step) => (
             <span
               key={step.key}
               className={[
@@ -348,7 +336,7 @@ export function EventStepForm({
                   <span className="event-step__labels">
                     <span className="event-step__title">
                       {step.title}
-                      {step.mandatory ? <span className="req"> *</span> : null}
+                      {step.mandatory ? <span className="event-step__req">必須</span> : null}
                     </span>
                     <span className="event-step__summary">{open ? step.hint : (summary ?? step.hint)}</span>
                   </span>

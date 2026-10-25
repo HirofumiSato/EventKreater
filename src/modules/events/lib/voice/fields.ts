@@ -288,6 +288,20 @@ export function firstNeededField(
   return voiceFieldOrder(value, scope).find((field) => isFieldNeeded(field, value, scope)) ?? null;
 }
 
+/**
+ * 音声モードを始める欄。
+ * 直前に選んでいた入力欄があればそこから、無ければ上から見て最初の空欄から始める。
+ * 手で押した欄は、既定で巡回しない任意の欄でも対象にする（`fieldForDomId` と同じ扱い）。
+ */
+export function startFieldFor(
+  value: EventFormValues,
+  scope: VoiceFieldScope,
+  domId: string | null,
+): VoiceField | null {
+  const focused = domId ? fieldForDomId(domId, value, scope) : null;
+  return focused ?? firstNeededField(value, scope);
+}
+
 /** `cursor` の次に埋めるべき欄。後ろに無ければ null（＝音声入力の完了）。 */
 export function nextNeededField(
   value: EventFormValues,

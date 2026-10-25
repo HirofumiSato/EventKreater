@@ -7,6 +7,7 @@ import {
   isFieldNeeded,
   nextNeededField,
   previousField,
+  startFieldFor,
   voiceFieldByKey,
   voiceFieldOrder,
   VOICE_FIELDS,
@@ -120,6 +121,26 @@ describe("任意の欄", () => {
     expect(field && isFieldNeeded(field, filledForm(), scope({ includeOptional: true, touched }))).toBe(
       false,
     );
+  });
+});
+
+describe("音声を始める欄", () => {
+  it("直前に選んでいた欄から始まる", () => {
+    const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
+    expect(startFieldFor(value, scope(), "event-venue-name")?.key).toBe("venueName");
+  });
+
+  it("選んでいた欄が無ければ最初の空欄から始まる", () => {
+    const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
+    expect(startFieldFor(value, scope(), null)?.key).toBe("scheduleDate");
+  });
+
+  it("選んでいた欄が画面に無ければ最初の空欄から始まる", () => {
+    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "something-else")?.key).toBe("title");
+  });
+
+  it("既定で巡回しない任意の欄も、選んでいればそこから始まる", () => {
+    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "event-capacity")?.key).toBe("capacity");
   });
 });
 

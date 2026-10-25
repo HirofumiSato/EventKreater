@@ -147,7 +147,7 @@
 
 .. count-start
 
-51 ファイル、``it`` は 622 件です。内訳は ``tests/unit/`` が 39 ファイル 553 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+51 ファイル、``it`` は 626 件です。内訳は ``tests/unit/`` が 39 ファイル 557 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -284,7 +284,7 @@
      - 音声の文字をフォームの値へ変える規則。全角の正規化、漢数字と桁の混在、日付の年解決、時刻の範囲、金額、定員、郵便番号、都道府県、番地、雨天時の方針、申し込み期限
      - SCR-ORG-02
    * - ``tests/unit/voice-fields.test.ts``
-     - 20
+     - 24
      - 音声で埋める欄の並びと巡回。空欄の飛ばし方、未登録の幹事の主催者名、任意の欄、戻る、入力欄の id からの逆引き、パッチの適用
      - SCR-ORG-02
    * - ``tests/unit/voice-mock.test.ts``
@@ -366,7 +366,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 553、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 553 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 557、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 557 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mic } from "lucide-react";
+import { Mic, X } from "lucide-react";
 import type { VoiceStepApi } from "@/modules/events/components/EventStepForm";
 import {
   isRecordingSupported,
@@ -12,10 +12,9 @@ import {
   applyVoicePatch,
   describeFieldValue,
   fieldForDomId,
-  firstNeededField,
-  isFieldNeeded,
   nextNeededField,
   previousField,
+  startFieldFor,
   voiceFieldByKey,
 } from "@/modules/events/lib/voice/fields";
 import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
@@ -65,9 +64,11 @@ interface VoiceInputDockProps {
 /**
  * 右下に固定する音声入力の入口。
  *
- * 押すと音声モードに入り、上から順に空欄へ「見た目だけのフォーカス」を当てる。
+ * 押すと音声モードに入り、そのまま録音を始める。直前に選んでいた入力欄があれば
+ * その欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てる。
  * 入力欄の DOM フォーカスは動かさない。日付・時刻の入力欄に実フォーカスを当てると
  * OS のピッカーが開き、マイクを止めてしまうためである。
+ * 入力できる欄が尽きたら「入力完了！」を出し、3 秒後に音声モードを抜ける。
  */
 export function VoiceInputDock({
   value,
@@ -81,6 +82,10 @@ export function VoiceInputDock({
   const [cursor, setCursor] = useState<VoiceFieldKey | null>(null);
   const [touched, setTouched] = useState<ReadonlySet<VoiceFieldKey>>(new Set());
   const [includeOptional, setIncludeOptional] = useState(false);
+  // 1 欄入れたら次の欄へ移るか。既定はオン。オフなら同じ欄に留めて言い直しを待つ。
+  const [autoAdvance, setAutoAdvance] = useState(true);
+  // 入力できる欄が尽きた印。「入力完了！」を出してから 3 秒で音声モードを抜ける。
+  const [complete, setComplete] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   // 覆いからくり抜く位置。対象の欄が見つからないときは null で、覆いを出さない。
@@ -91,10 +96,16 @@ export function VoiceInputDock({
   const cursorRef = useRef<VoiceFieldKey | null>(null);
   const touchedRef = useRef<ReadonlySet<VoiceFieldKey>>(new Set());
   const includeOptionalRef = useRef(includeOptional);
+  const autoAdvanceRef = useRef(autoAdvance);
+  // 音声を押す前に選んでいた入力欄。あればその欄から始める。
+  const lastFocusedIdRef = useRef<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const completeTimerRef = useRef<number | null>(null);
+  // 録音の開始は commit からも呼ぶ。互いを依存に持つと循環するので控えを挟む。
+  const startRecordingRef = useRef<() => void>(() => {});
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -112,6 +123,10 @@ export function VoiceInputDock({
   useEffect(() => {
     includeOptionalRef.current = includeOptional;
   }, [includeOptional]);
+
+  useEffect(() => {
+    autoAdvanceRef.current = autoAdvance;
+  }, [autoAdvance]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -141,6 +156,13 @@ export function VoiceInputDock({
     }
   }, []);
 
+  const clearCompleteTimer = useCallback(() => {
+    if (completeTimerRef.current !== null) {
+      window.clearTimeout(completeTimerRef.current);
+      completeTimerRef.current = null;
+    }
+  }, []);
+
   const markTouched = useCallback((key: VoiceFieldKey) => {
     const next = new Set(touchedRef.current);
     next.add(key);
@@ -148,9 +170,48 @@ export function VoiceInputDock({
     setTouched(next);
   }, []);
 
-  /** 郵便番号が入ったら、既存の検索 API で住所を補完する。失敗しても手入力に任せる。 */
+  /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
+  const stopSession = useCallback(() => {
+    clearTimer();
+    clearCompleteTimer();
+    const recorder = recorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.onstop = null;
+      recorder.stop();
+    }
+    recorderRef.current = null;
+    chunksRef.current = [];
+    releaseStream();
+    setActive(false);
+    setPhase("armed");
+    setComplete(false);
+    setMessage(null);
+    setTranscript(null);
+    cursorRef.current = null;
+    setCursor(null);
+  }, [clearCompleteTimer, clearTimer, releaseStream]);
+
+  /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
+  const finishSession = useCallback(() => {
+    cursorRef.current = null;
+    setCursor(null);
+    setComplete(true);
+    setPhase("armed");
+    setMessage(null);
+    api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
+    clearCompleteTimer();
+    completeTimerRef.current = window.setTimeout(() => {
+      completeTimerRef.current = null;
+      stopSession();
+    }, 3000);
+  }, [api, clearCompleteTimer, stopSession]);
+
+  /**
+   * 郵便番号が入ったら、既存の検索 API で住所を補完する。失敗しても手入力に任せる。
+   * カーソルは動かさない。呼び出し元が補完後の値を見て次の欄を決める。
+   */
   const fillAddressFromPostalCode = useCallback(
-    async (postalCode: string, from: VoiceField) => {
+    async (postalCode: string) => {
       try {
         const response = await fetch(`/api/v1/geo/postal-codes/${postalCode}`);
         if (!response.ok) return;
@@ -167,24 +228,15 @@ export function VoiceInputDock({
         };
         valueRef.current = nextValue;
         onChange(nextValue);
-        setMessage(`住所を「${first.prefecture}${first.city}${first.town}」で入れました。`);
-        // 補完で埋まった欄へカーソルが残っていたら、次の空欄へ送る。
-        const currentKey = cursorRef.current;
-        const currentField = currentKey ? voiceFieldByKey(currentKey) : null;
-        if (currentField && !isFieldNeeded(currentField, nextValue, scopeNow())) {
-          const next = nextNeededField(nextValue, currentField.key, scopeNow());
-          cursorRef.current = next?.key ?? null;
-          setCursor(next?.key ?? null);
-        }
       } catch {
         // 住所の補完は補助。取れなくても郵便番号だけで保存できる。
       }
     },
-    [onChange, scopeNow],
+    [onChange],
   );
 
   const commit = useCallback(
-    (field: VoiceField, text: string) => {
+    async (field: VoiceField, text: string) => {
       const context = { now: new Date(), value: valueRef.current };
       const patch = field.parse(text, context);
       if (!patch) {
@@ -199,23 +251,35 @@ export function VoiceInputDock({
       markTouched(field.key);
       setTranscript(text);
 
-      const next = nextNeededField(nextValue, field.key, scopeNow());
-      cursorRef.current = next?.key ?? null;
-      setCursor(next?.key ?? null);
-      if (next) {
-        setMessage(null);
-        api.announce(`${field.label}を「${text}」で入力しました。次は${next.label}です。`);
-      } else {
-        setMessage("入力できる欄がすべて埋まりました。内容を確認してください。");
-        api.announce("音声で入力できる欄がすべて埋まりました。");
+      // 郵便番号は住所の補完を待ってから次の欄を決める。先に進めると、
+      // 補完で埋まった都道府県・市区町村をもう一度聞いてしまう。
+      if (field.key === "postalCode" && patch.postalCode) {
+        await fillAddressFromPostalCode(patch.postalCode);
       }
 
-      if (field.key === "postalCode" && patch.postalCode) {
-        void fillAddressFromPostalCode(patch.postalCode, field);
+      // 自動遷移が外れているときは同じ欄に留める。録音は止めて、言い直しを待つ。
+      if (!autoAdvanceRef.current) {
+        cursorRef.current = field.key;
+        setCursor(field.key);
+        setMessage(`「${text}」で入力しました。続けて直すときは「言い直す」を押してください。`);
+        api.announce(`${field.label}を「${text}」で入力しました。`);
+        return true;
       }
+
+      const next = nextNeededField(valueRef.current, field.key, scopeNow());
+      cursorRef.current = next?.key ?? null;
+      setCursor(next?.key ?? null);
+      if (!next) {
+        finishSession();
+        return true;
+      }
+      setMessage(null);
+      api.announce(`${field.label}を「${text}」で入力しました。次は${next.label}です。`);
+      // 次の欄へ移ったら、その瞬間から録音を始める。もう一度押させない。
+      startRecordingRef.current();
       return true;
     },
-    [api, fillAddressFromPostalCode, markTouched, onChange, scopeNow],
+    [api, fillAddressFromPostalCode, finishSession, markTouched, onChange, scopeNow],
   );
 
   const finishRecording = useCallback(
@@ -236,7 +300,7 @@ export function VoiceInputDock({
       const field = key ? voiceFieldByKey(key) : null;
       if (!field) {
         setPhase("armed");
-        setMessage("入力できる欄がすべて埋まりました。");
+        finishSession();
         return;
       }
 
@@ -244,7 +308,7 @@ export function VoiceInputDock({
         const result = await transcribeVoiceClip({ blob, field: field.key });
         if (!mountedRef.current) return;
         setPhase("armed");
-        commit(field, result.text);
+        await commit(field, result.text);
       } catch (error) {
         if (!mountedRef.current) return;
         setPhase("armed");
@@ -253,7 +317,7 @@ export function VoiceInputDock({
         );
       }
     },
-    [commit, releaseStream],
+    [commit, finishSession, releaseStream],
   );
 
   const stopRecording = useCallback(() => {
@@ -265,8 +329,10 @@ export function VoiceInputDock({
   }, [clearTimer]);
 
   const startRecording = useCallback(async () => {
+    // 入力完了の待ちに入っていたら、もう録音しない。
+    if (completeTimerRef.current !== null) return;
     if (!cursorRef.current) {
-      setMessage("入力できる欄がすべて埋まりました。内容を確認してください。");
+      finishSession();
       return;
     }
     if (!isRecordingSupported()) {
@@ -305,47 +371,53 @@ export function VoiceInputDock({
         "マイクを使えませんでした。ブラウザの設定でマイクを許可するか、手で入力してください。",
       );
     }
-  }, [finishRecording, releaseStream, stopRecording]);
+  }, [finishRecording, finishSession, releaseStream, stopRecording]);
 
-  const stopSession = useCallback(() => {
-    clearTimer();
-    const recorder = recorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.onstop = null;
-      recorder.stop();
-    }
-    recorderRef.current = null;
-    chunksRef.current = [];
-    releaseStream();
-    setActive(false);
-    setPhase("armed");
-    setMessage(null);
-    setTranscript(null);
-    cursorRef.current = null;
-    setCursor(null);
-  }, [clearTimer, releaseStream]);
+  useEffect(() => {
+    startRecordingRef.current = () => {
+      void startRecording();
+    };
+  }, [startRecording]);
+
+  // 音声を押す前に選んでいた欄を覚える。音声モード中は DOM フォーカスを動かさないので、
+  // ここで控えた最後の欄が、そのまま「どこから始めるか」になる。
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const id = (event.target as HTMLElement | null)?.id;
+      if (!id) return;
+      const field = fieldForDomId(id, valueRef.current, scopeNow());
+      if (field) lastFocusedIdRef.current = id;
+    };
+    document.addEventListener("focusin", handler);
+    return () => document.removeEventListener("focusin", handler);
+  }, [scopeNow]);
 
   useEffect(() => () => {
     clearTimer();
+    clearCompleteTimer();
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
       recorder.stop();
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
-  }, [clearTimer]);
+  }, [clearCompleteTimer, clearTimer]);
 
   const startSession = useCallback(() => {
     if (disabled) return;
-    const first = firstNeededField(valueRef.current, {
+    const scope = {
       showOrganizerName,
       includeOptional: includeOptionalRef.current,
-      touched: new Set(),
-    });
+      touched: new Set<VoiceFieldKey>(),
+    };
+    // 直前に選んでいた欄があればそこから。無ければ最初の空欄から。
+    const first = startFieldFor(valueRef.current, scope, lastFocusedIdRef.current);
     touchedRef.current = new Set();
     setTouched(new Set());
     setActive(true);
     setPhase("armed");
+    setComplete(false);
+    clearCompleteTimer();
     setTranscript(null);
     cursorRef.current = first?.key ?? null;
     setCursor(first?.key ?? null);
@@ -354,9 +426,13 @@ export function VoiceInputDock({
         ? null
         : "空欄がありません。手で直したい欄を押すと、その欄を音声で入れ直せます。",
     );
-    if (first) api.announce(`音声入力を始めます。${first.prompt}`);
+    if (first) {
+      api.announce(`音声入力を始めます。${first.prompt}`);
+      // 音声モードに入ったら、そのまま録音を始める。もう一度押させない。
+      void startRecording();
+    }
     api.openStep(first?.step ?? "basic");
-  }, [api, disabled, showOrganizerName]);
+  }, [api, clearCompleteTimer, disabled, showOrganizerName, startRecording]);
 
   // 対象の欄を強調し、画面内へ寄せる。DOM フォーカスは動かさない。
   useEffect(() => {
@@ -534,8 +610,12 @@ export function VoiceInputDock({
     const next = nextNeededField(valueRef.current, cursor, scopeNow());
     cursorRef.current = next?.key ?? null;
     setCursor(next?.key ?? null);
-    setMessage(next ? null : "入力できる欄がすべて埋まりました。内容を確認してください。");
-    if (next) api.announce(`次は${next.label}です。`);
+    if (next) {
+      setMessage(null);
+      api.announce(`次は${next.label}です。`);
+    } else {
+      finishSession();
+    }
   };
 
   /** 覆いは操作を止めるだけなので、押されたら抜け方を伝える。 */
@@ -560,12 +640,12 @@ export function VoiceInputDock({
         type="button"
         className={`voice-fab${active ? " voice-fab--active" : ""}`}
         aria-label={active ? "音声入力を終了" : "音声入力を開始"}
+        title={active ? "音声入力を終了" : "音声入力を開始"}
         aria-pressed={active}
         disabled={disabled}
         onClick={() => (active ? stopSession() : startSession())}
       >
-        <Mic aria-hidden="true" size={22} />
-        <span className="voice-fab__label">{active ? "終了" : "音声入力"}</span>
+        {active ? <X aria-hidden="true" size={22} /> : <Mic aria-hidden="true" size={22} />}
       </button>
 
       {active && (
@@ -579,7 +659,14 @@ export function VoiceInputDock({
             </button>
           </div>
 
-          {field ? (
+          {complete ? (
+            <>
+              <p className="voice-panel__prompt" aria-live="polite">
+                入力完了！
+              </p>
+              <p className="voice-panel__hint">3秒後に音声入力を終了します。</p>
+            </>
+          ) : field ? (
             <>
               <p className="voice-panel__field">{field.label}</p>
               <p className="voice-panel__prompt" aria-live="polite">
@@ -605,14 +692,18 @@ export function VoiceInputDock({
 
           <div className="voice-panel__actions">
             {listening ? (
-              <button type="button" className="btn btn--primary btn--sm" onClick={stopRecording}>
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={stopRecording}
+              >
                 停止して入力
               </button>
             ) : (
               <button
                 type="button"
                 className="btn btn--primary btn--sm"
-                disabled={!field || transcribing || disabled}
+                disabled={!field || transcribing || disabled || complete}
                 onClick={() => void startRecording()}
               >
                 {transcribing ? "文字にしています…" : currentValue ? "言い直す" : "話す"}
@@ -621,7 +712,7 @@ export function VoiceInputDock({
             <button
               type="button"
               className="btn btn--ghost btn--sm"
-              disabled={!previous || listening || transcribing}
+              disabled={!previous || listening || transcribing || complete}
               onClick={goPrevious}
             >
               戻る
@@ -629,22 +720,32 @@ export function VoiceInputDock({
             <button
               type="button"
               className="btn btn--ghost btn--sm"
-              disabled={!field || listening || transcribing}
+              disabled={!field || listening || transcribing || complete}
               onClick={skip}
             >
               スキップ
             </button>
           </div>
 
-          <label className="check voice-panel__optional">
-            <input
-              type="checkbox"
-              checked={includeOptional}
-              disabled={listening || transcribing}
-              onChange={(event) => setIncludeOptional(event.target.checked)}
-            />
-            任意の項目も聞く
-          </label>
+          <div className="voice-panel__options">
+            <label className="check voice-panel__optional">
+              <input
+                type="checkbox"
+                checked={includeOptional}
+                disabled={listening || transcribing}
+                onChange={(event) => setIncludeOptional(event.target.checked)}
+              />
+              任意の項目も聞く
+            </label>
+            <label className="check voice-panel__optional">
+              <input
+                type="checkbox"
+                checked={autoAdvance}
+                onChange={(event) => setAutoAdvance(event.target.checked)}
+              />
+              自動遷移
+            </label>
+          </div>
           <p className="voice-panel__note">
             いま聞いている欄は、そのまま手で直せます。ほかの欄を直すときは、いったん終了してください。
           </p>
