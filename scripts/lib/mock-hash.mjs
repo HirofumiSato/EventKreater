@@ -34,8 +34,7 @@ const FILES = [
   "postcss.config.js",
 ];
 
-/** 指紋の対象になるファイル（リポジトリからの相対パス、`/` 区切り、辞書順）。 */
-export function uiSourceFiles(root) {
+/** 指紋の対象になるファイル（リポジトリからの相対パス、`/` 区切り、辞書順）。 */export function uiSourceFiles(root) {
   const found = [];
 
   const walk = (dir, accept) => {
@@ -83,6 +82,27 @@ export function uiSourceFiles(root) {
 }
 
 /**
+ * 改行を LF にそろえる。
+ *
+ * 指紋は OS をまたいで同じでなければならない。Windows の作業ツリーには
+ * CRLF のファイルが混ざる（`.gitattributes` の `eol=lf` を経由せずに書かれた
+ * ファイルなど）ので、中身を比べる前に改行だけを落とす。CI は LF で checkout
+ * するため、ここをそろえないと「手元では通るのに CI だけ落ちる」になる。
+ */
+export function normalizeNewlines(buffer) {
+  if (!buffer.includes(0x0d)) return buffer;
+  const out = Buffer.allocUnsafe(buffer.length);
+  let length = 0;
+  for (let index = 0; index < buffer.length; index += 1) {
+    const byte = buffer[index];
+    if (byte === 0x0d && buffer[index + 1] === 0x0a) continue;
+    out[length] = byte;
+    length += 1;
+  }
+  return out.subarray(0, length);
+}
+
+/**
  * 指紋。パスと中身を並べて 1 つの sha256 にする。
  * ファイル名を変えただけでも変わる（リンクの対応表が変わるため）。
  */
@@ -91,7 +111,7 @@ export function computeUiHash(root) {
   for (const file of uiSourceFiles(root)) {
     hash.update(file);
     hash.update("\0");
-    hash.update(readFileSync(path.join(root, ...file.split("/"))));
+    hash.update(normalizeNewlines(readFileSync(path.join(root, ...file.split("/")))));
     hash.update("\0");
   }
   return hash.digest("hex");

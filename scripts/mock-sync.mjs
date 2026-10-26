@@ -26,7 +26,7 @@ import {
   stylesheetHrefs,
   withNotice,
 } from "./lib/mock-html.mjs";
-import { computeUiHash } from "./lib/mock-hash.mjs";
+import { computeUiHash, normalizeNewlines } from "./lib/mock-hash.mjs";
 import { escapeHtml, frameHtml, frameUrl } from "./lib/mock-frame.mjs";
 import {
   buildScreens,
@@ -313,7 +313,7 @@ async function captureRow(page, row, linkTargets) {
       label: row.label,
       file: row.file,
       path: pathFor(row, WIDE.width),
-      hash: createHash("sha256").update(html.content).digest("hex"),
+      hash: createHash("sha256").update(normalizeNewlines(Buffer.from(html.content))).digest("hex"),
     },
   };
 }

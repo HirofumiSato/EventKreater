@@ -10524,7 +10524,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 148,
+      "lineCount": 151,
       "headings": [
         {
           "level": 1,

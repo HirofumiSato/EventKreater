@@ -20,7 +20,7 @@ import {
   stylesheetHrefs,
   withNotice,
 } from "../../scripts/lib/mock-html.mjs";
-import { computeUiHash, uiSourceFiles } from "../../scripts/lib/mock-hash.mjs";
+import { computeUiHash, normalizeNewlines, uiSourceFiles } from "../../scripts/lib/mock-hash.mjs";
 import {
   expectedFiles,
   pageFileFor,
@@ -181,6 +181,19 @@ describe("UI ソースの指紋", () => {
     const first = computeUiHash(root);
     writeFileSync(path.join(root, "src/modules/events/lib/calc.ts"), "export const calc = () => 2;\n");
     expect(computeUiHash(root)).toBe(first);
+  });
+
+  it("改行が CRLF でも LF でも同じ指紋になる", () => {
+    const root = makeTree();
+    const first = computeUiHash(root);
+    writeFileSync(path.join(root, "src/app/page.tsx"), "export default () => null;\r\n");
+    expect(computeUiHash(root)).toBe(first);
+  });
+
+  it("改行を落とすのは CRLF だけで、他のバイトは変えない", () => {
+    expect(normalizeNewlines(Buffer.from("a\r\nb\rc\nd"))).toEqual(Buffer.from("a\nb\rc\nd"));
+    const plain = Buffer.from("a\nb");
+    expect(normalizeNewlines(plain)).toBe(plain);
   });
 });
 

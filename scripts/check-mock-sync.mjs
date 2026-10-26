@@ -16,7 +16,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { computeUiHash } from "./lib/mock-hash.mjs";
+import { computeUiHash, normalizeNewlines } from "./lib/mock-hash.mjs";
 import { expectedFiles } from "./lib/mock-screens.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,7 +104,7 @@ async function readManifest() {
 
 async function hashOf(file) {
   try {
-    return sha256(await readFile(file));
+    return sha256(normalizeNewlines(await readFile(file)));
   } catch {
     return null;
   }
