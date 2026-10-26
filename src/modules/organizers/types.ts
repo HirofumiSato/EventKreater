@@ -30,11 +30,10 @@ export const PROFILE_TAG_LABELS: Record<ProfileTag, string> = {
 /** 1人の主催者が選べるジャンルの上限。 */
 export const MAX_PROFILE_TAGS = 3;
 
+/** 公開ページに出すリンク。Webサイトと LINE は出さない。 */
 export const PROFILE_LINK_LABELS = {
   X: "X",
   INSTAGRAM: "Instagram",
-  WEBSITE: "Webサイト",
-  LINE: "LINE",
 } as const;
 
 export type ProfileLinkKind = keyof typeof PROFILE_LINK_LABELS;

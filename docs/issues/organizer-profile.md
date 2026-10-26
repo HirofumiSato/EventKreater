@@ -2,7 +2,7 @@
 
 > 主催者の催しページ（[#21](https://github.com/HirofumiSato/EventKreater/issues/21) / [public-organizer-page.md](public-organizer-page.md)）から、対外的なプロフィールを分離した issue。
 >
-> **その後の変更:** プロフィールと催しは1画面に統合し、`/organizers/[userId]`（SCR-PUB-14）の上からプロフィール、カレンダー、一覧を縦に並べる。旧 `/organizers/[userId]/events` は統合ページへの `permanentRedirect` にした。`eventsPath` は廃止し、`?view` も持たない。以下の決定は統合前の記録として残す。
+> **その後の変更:** プロフィールと催しは1画面に統合し、`/organizers/[userId]`（SCR-PUB-14）の上からプロフィール、カレンダー、一覧を縦に並べる。旧 `/organizers/[userId]/events` は統合ページへの `permanentRedirect` にした。`eventsPath` は廃止し、`?view` も持たない。公開ページの共通ヘッダーは出さない。リンクは X と Instagram のアイコンだけを出し、Webサイトと LINE は公開しない。未ログインの催しは、飾りのカレンダーの上に白塗りを重ねて案内する。以下の決定は統合前の記録として残す。
 
 ## 背景
 

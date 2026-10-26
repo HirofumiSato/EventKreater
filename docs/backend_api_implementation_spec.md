@@ -1222,10 +1222,10 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `bio` | 400文字まで。`\r\n` は `\n` に揃える。空なら null |
 | `area` | 50文字まで。空なら null |
 | `tags` | 固定リストのみ。3つまで。重複は落とす |
-| `xUrl` | `https` のみ。ホストは `x.com` / `twitter.com` |
-| `instagramUrl` | `https` のみ。ホストは `instagram.com` |
-| `websiteUrl` | `https` のみ。ホストは問わない |
-| `lineUrl` | `https` のみ。ホストは `lin.ee` / `line.me` |
+| `xUrl` | `https` のみ。ホストは `x.com` / `twitter.com`。公開ページに出す |
+| `instagramUrl` | `https` のみ。ホストは `instagram.com`。公開ページに出す |
+| `websiteUrl` | `https` のみ。ホストは問わない。後方互換のため受け付けるが、公開ページには出さない |
+| `lineUrl` | `https` のみ。ホストは `lin.ee` / `line.me`。後方互換のため受け付けるが、公開ページには出さない |
 | `isPublished` / `showStats` | 真偽値。既定は false |
 
 URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。

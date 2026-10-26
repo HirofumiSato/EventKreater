@@ -1,10 +1,12 @@
 /**
  * 公開クロム（ヘッダー・フッター）と上端の余白を、パスだけから決める純関数。
  *
- * - `/console` … 管理コンソール。公開ヘッダーもフッターも出さない。
- * - `/`       … ホーム LP。初見の幹事にヒーローだけを見せるため、ヘッダーを出さず、
- *               上端の余白も落とす。ログインの導線はヒーローとフッターが持つ。
- * - それ以外 … 公開ヘッダーとフッターを出す。
+ * - `/console`     … 管理コンソール。公開ヘッダーもフッターも出さない。
+ * - `/`            … ホーム LP。初見の幹事にヒーローだけを見せるため、ヘッダーを出さず、
+ *                    上端の余白も落とす。ログインの導線はヒーローとフッターが持つ。
+ * - `/organizers/` … 主催者の公開ページ。プロフィールと催しに集中させるため、
+ *                    共通ヘッダーは出さない。フッターは残す。
+ * - それ以外       … 公開ヘッダーとフッターを出す。
  *
  * 判定を `SiteChrome` の中に置くと、増えたときに分岐が散る。ここ 1 か所に集める。
  */
@@ -22,12 +24,20 @@ function inConsole(pathname: string): boolean {
   return pathname === "/console" || pathname.startsWith("/console/");
 }
 
+/** 主催者の公開ページ。`/organizer`（主催者エリア）とは別のプレフィックス。 */
+function inOrganizerPublic(pathname: string): boolean {
+  return pathname === "/organizers" || pathname.startsWith("/organizers/");
+}
+
 export function siteChrome(pathname: string): SiteChromeState {
   if (inConsole(pathname)) {
     return { header: false, footer: false, flushTop: false };
   }
   if (pathname === "/") {
     return { header: false, footer: true, flushTop: true };
+  }
+  if (inOrganizerPublic(pathname)) {
+    return { header: false, footer: true, flushTop: false };
   }
   return { header: true, footer: true, flushTop: false };
 }

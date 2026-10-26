@@ -18,12 +18,13 @@ import {
 
 type ProfileUrlKey = "xUrl" | "instagramUrl" | "websiteUrl" | "lineUrl";
 
-/** リンクの並び順と、許可するホスト。空配列は「ホストを問わない」。 */
+/**
+ * 公開ページに出すリンクの並びと、許可するホスト。
+ * Webサイトと LINE は DB に残すが、公開ページと編集画面には出さない。
+ */
 const LINK_RULES: { kind: OrganizerProfileLink["kind"]; key: ProfileUrlKey; hosts: string[] }[] = [
   { kind: "X", key: "xUrl", hosts: ["x.com", "twitter.com"] },
   { kind: "INSTAGRAM", key: "instagramUrl", hosts: ["instagram.com"] },
-  { kind: "WEBSITE", key: "websiteUrl", hosts: [] },
-  { kind: "LINE", key: "lineUrl", hosts: ["lin.ee", "line.me"] },
 ];
 
 /** 保存されている値が固定リストのどれか。壊れた値は落とす。 */

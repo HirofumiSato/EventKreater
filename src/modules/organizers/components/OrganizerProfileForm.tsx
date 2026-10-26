@@ -306,31 +306,7 @@ export function OrganizerProfileForm() {
             onChange={(event) => update("instagramUrl", event.target.value)}
             placeholder="https://www.instagram.com/example"
           />
-        </Field>
-
-        <Field label="Webサイト" htmlFor="profile-website">
-          <input
-            id="profile-website"
-            className="input"
-            inputMode="url"
-            maxLength={200}
-            value={draft.websiteUrl}
-            onChange={(event) => update("websiteUrl", event.target.value)}
-            placeholder="https://example.com"
-          />
-        </Field>
-
-        <Field label="LINE" htmlFor="profile-line">
-          <input
-            id="profile-line"
-            className="input"
-            inputMode="url"
-            maxLength={200}
-            value={draft.lineUrl}
-            onChange={(event) => update("lineUrl", event.target.value)}
-            placeholder="https://lin.ee/xxxxxxx"
-          />
-          <p className="help">lin.ee か line.me のURLだけを載せられます。</p>
+          <p className="help">公開ページではアイコンで出ます。押すと新しいウィンドウで開きます。</p>
         </Field>
 
         <fieldset className="field">

@@ -1,5 +1,9 @@
 import { profileInitial } from "@/modules/organizers/lib/profile";
-import { PROFILE_TAG_LABELS, type OrganizerProfileContent } from "@/modules/organizers/types";
+import {
+  PROFILE_TAG_LABELS,
+  type OrganizerProfileContent,
+  type ProfileLinkKind,
+} from "@/modules/organizers/types";
 import { Alert, EmptyState } from "@/components/ui";
 
 interface OrganizerProfileViewProps {
@@ -79,8 +83,14 @@ export function OrganizerProfileView({
         <ul className="profile-links" aria-label="主催者のリンク">
           {profile.links.map((link) => (
             <li key={link.kind}>
-              <a href={link.url} target="_blank" rel="noopener noreferrer nofollow">
-                {link.label}
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                title={link.label}
+              >
+                <ProfileLinkIcon kind={link.kind} />
+                <span className="visually-hidden">{link.label}</span>
               </a>
             </li>
           ))}
@@ -95,5 +105,27 @@ export function OrganizerProfileView({
         プロフィールを公開していない主催者は、名前だけを出します。この画面は検索には出しません。
       </p>
     </div>
+  );
+}
+
+/** X / Instagram のブランドマーク。文字ラベルは visually-hidden で残す。 */
+function ProfileLinkIcon({ kind }: { kind: ProfileLinkKind }) {
+  if (kind === "INSTAGRAM") {
+    return (
+      <svg viewBox="0 0 24 24" className="profile-links__icon" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M7 3.5h10A3.5 3.5 0 0 1 20.5 7v10a3.5 3.5 0 0 1-3.5 3.5H7A3.5 3.5 0 0 1 3.5 17V7A3.5 3.5 0 0 1 7 3.5zm0 1.5A2 2 0 0 0 5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7zm10.25 1.25a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 1.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" className="profile-links__icon" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M14.6 3.5h2.72l-5.95 6.8 7.01 10.2h-5.48l-4.29-5.86-4.91 5.86H1l6.36-7.58L.7 3.5h5.62l3.88 5.38 4.4-5.38zm-.95 15.27h1.51L6.42 5.15H4.8l8.85 13.62z"
+      />
+    </svg>
   );
 }

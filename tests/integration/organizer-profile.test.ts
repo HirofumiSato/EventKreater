@@ -121,7 +121,7 @@ describeDb("主催者の公開プロフィール（結合）", () => {
       area: "東京都渋谷区",
       tags: ["LEARNING", "LOCAL"],
     });
-    expect(body.profile.links.map((link: { kind: string }) => link.kind)).toEqual(["X", "WEBSITE"]);
+    expect(body.profile.links.map((link: { kind: string }) => link.kind)).toEqual(["X"]);
   });
 
   it("非公開に戻すと、保存した内容も出さない", async () => {

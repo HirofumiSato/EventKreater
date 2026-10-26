@@ -25,8 +25,18 @@ describe("公開クロムの出し分け", () => {
     expect(siteChrome("/events/abc")).toEqual({ header: true, footer: true, flushTop: false });
   });
 
+  it("主催者の公開ページは共通ヘッダーを出さない", () => {
+    expect(siteChrome("/organizers/abc")).toEqual({
+      header: false,
+      footer: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/organizers")).toEqual({ header: false, footer: true, flushTop: false });
+  });
+
   it("区切りを跨いだ前方一致をしない", () => {
     expect(siteChrome("/consolelike")).toEqual({ header: true, footer: true, flushTop: false });
+    expect(siteChrome("/organizerslike")).toEqual({ header: true, footer: true, flushTop: false });
   });
 
   it("パスが空でも通常の画面として扱う", () => {

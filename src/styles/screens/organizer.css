@@ -380,36 +380,56 @@
   }
 }
 
-/* Organizer public page: blurred skeleton while logged out. */
+/* 未ログインの催し。裏にカレンダーの骨格を置き、白塗りを重ねて案内する。 */
 .organizer-locked {
   position: relative;
   min-height: 18rem;
 }
 
 .organizer-locked__ghost {
-  display: grid;
-  gap: 1rem;
-  filter: blur(10px);
-  opacity: 0.5;
   pointer-events: none;
   user-select: none;
 }
 
-.organizer-locked__card {
-  min-height: 9rem;
+.organizer-locked__ghost .cal__nav span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-faint);
+}
+
+.organizer-locked__ghost .cal__event {
+  min-height: 0.875rem;
+  pointer-events: none;
 }
 
 .organizer-locked__notice {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgb(255 255 255 / 0.58);
+}
+
+.organizer-locked__panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.75rem;
-  padding: 1.5rem;
+  width: min(100%, 28rem);
+  padding: 1.25rem 1.5rem;
   text-align: center;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.96));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
 }
 
 
@@ -445,10 +465,12 @@
 .profile-links a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
   border: 1px solid var(--color-border);
-  padding: 0.375rem 0.75rem;
   color: var(--color-text-strong);
-  font-size: 0.8125rem;
 }
 
 .profile-links a:hover {

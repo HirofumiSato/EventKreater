@@ -255,7 +255,7 @@ try {
     });
   }
 
-  // 公開プロフィール。タグは 3 つまで。リンクは 4 種を埋める。
+  // 公開プロフィール。タグは 3 つまで。公開ページに出すのは X と Instagram。
   await prisma.organizerProfile.upsert({
     where: { userId: organizer.id },
     create: {

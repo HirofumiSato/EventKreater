@@ -20,7 +20,7 @@ function draft(overrides: Partial<OrganizerProfileDraft> = {}): OrganizerProfile
 }
 
 describe("profileLinks", () => {
-  it("X・Instagram・Web・LINE の順に並べる", () => {
+  it("X・Instagram の順に並べ、Webサイトと LINE は出さない", () => {
     const links = profileLinks({
       xUrl: "https://x.com/example",
       instagramUrl: "https://www.instagram.com/example",
@@ -28,8 +28,8 @@ describe("profileLinks", () => {
       lineUrl: "https://lin.ee/abc",
     });
 
-    expect(links.map((link) => link.kind)).toEqual(["X", "INSTAGRAM", "WEBSITE", "LINE"]);
-    expect(links.map((link) => link.label)).toEqual(["X", "Instagram", "Webサイト", "LINE"]);
+    expect(links.map((link) => link.kind)).toEqual(["X", "INSTAGRAM"]);
+    expect(links.map((link) => link.label)).toEqual(["X", "Instagram"]);
   });
 
   it("未入力と空白だけの項目は飛ばす", () => {

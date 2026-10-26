@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid } from "@/components/common/CalendarMonth";
 import {
+  WEEKDAY_LABELS,
   buildMonthGrid,
   countMonthEntries,
   defaultSelectedDate,
   entriesForDate,
   formatDayHeading,
+  formatMonthTitle,
   isMonthKey,
+  monthRange,
   shiftMonth,
   todayInTokyo,
 } from "@/lib/calendar";
@@ -33,7 +36,7 @@ interface OrganizerPageViewProps {
   userId: string;
   /**
    * プレビューでは、主催者本人が見ている前提で中身だけを出す。
-   * 未ログインのぼかし表示はプレビューに含めない。
+   * 未ログインの白塗り表示はプレビューに含めない。
    */
   preview?: boolean;
 }
@@ -42,7 +45,8 @@ interface OrganizerPageViewProps {
  * 主催者の公開ページの催し部分（SCR-PUB-14）。
  *
  * プロフィールの下に、カレンダーと一覧を縦に並べる。タブは持たない。
- * 未ログインではAPIが 403 を返すので、中身は描かずに骨組みをぼかして案内を重ねる。
+ * 未ログインではAPIが 403 を返すので、本物の催しは描かない。
+ * 代わりに飾りのカレンダーを置き、白塗りを重ねて案内する。
  * サーバー側でも催しを返さないため、DOM を見ても内容は分からない。
  *
  * 月だけを URL のクエリ（`month`）と連動させる。
@@ -223,34 +227,93 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
 }
 
 /**
- * 未ログインの案内。本物の催しはAPIが返さないので、ここには飾りの骨組みだけを置く。
+ * 未ログインの案内。本物の催しはAPIが返さないので、ここには飾りのカレンダーだけを置く。
  * 中身が読めないよう `aria-hidden` にして、案内だけを読み上げさせる。
  */
 function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: boolean }) {
   if (preview) return null;
   const loginHref = `${SITE.nav.participantLogin.href}?next=${encodeURIComponent(nextPath)}`;
+  const today = todayInTokyo();
   return (
     <section className="organizer-locked">
       <div className="organizer-locked__ghost" aria-hidden="true">
-        <div className="card organizer-locked__card" />
-        <div className="card organizer-locked__card" />
-        <div className="card organizer-locked__card" />
+        <LockedCalendarGhost month={today.slice(0, 7)} today={today} />
       </div>
       <div className="organizer-locked__notice">
-        <p className="panel__title">催しの予定は参加者登録・ログイン後に閲覧できます</p>
-        <p className="help">
-          主催者が開く催しをカレンダーと一覧で見るには、参加者として登録するかログインしてください。
-        </p>
-        <div className="btn-row">
-          <Link href={loginHref} className="btn btn--primary">
-            {SITE.nav.participantLogin.label}
-          </Link>
-          <Link href={loginHref} className="btn btn--outline">
-            参加者として登録する
-          </Link>
+        <div className="organizer-locked__panel">
+          <p className="panel__title">催しの予定は参加者登録・ログイン後に閲覧できます</p>
+          <p className="help">
+            主催者が開く催しをカレンダーと一覧で見るには、参加者として登録するかログインしてください。
+          </p>
+          <div className="btn-row">
+            <Link href={loginHref} className="btn btn--primary">
+              {SITE.nav.participantLogin.label}
+            </Link>
+            <Link href={loginHref} className="btn btn--outline">
+              参加者として登録する
+            </Link>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/** ログイン後のカレンダーと同じ骨格。短冊は飾りで、催し名は出さない。 */
+function LockedCalendarGhost({ month, today }: { month: string; today: string }) {
+  const cells = buildMonthGrid(month);
+  const { days } = monthRange(month);
+  const barDays = new Set(
+    [3, 8, 14, 21, 27]
+      .filter((day) => day <= days)
+      .map((day) => `${month}-${String(day).padStart(2, "0")}`),
+  );
+  const doubleBarDay = days >= 14 ? `${month}-14` : null;
+
+  return (
+    <div className="cal">
+      <div className="cal__head">
+        <p className="cal__month">{formatMonthTitle(month)}</p>
+        <div className="cal__nav">
+          <span>‹</span>
+          <span>›</span>
+        </div>
+      </div>
+      <div className="cal__weekday">
+        {WEEKDAY_LABELS.map((label, index) => (
+          <span key={label} className={index === 0 ? "is-sunday" : undefined}>
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="cal__grid">
+        {cells.map((cell) => {
+          const classes = ["cal__day"];
+          if (cell.isOutside) classes.push("is-outside");
+          if (cell.date === today) classes.push("is-today");
+          const barCount = cell.isOutside
+            ? 0
+            : cell.date === doubleBarDay
+              ? 2
+              : barDays.has(cell.date)
+                ? 1
+                : 0;
+          if (barCount > 0) classes.push("has-event");
+          return (
+            <div key={cell.date} className={classes.join(" ")}>
+              <span className="cal__day-number">{Number(cell.date.slice(8, 10))}</span>
+              {barCount > 0 ? (
+                <span className="cal__events">
+                  {Array.from({ length: barCount }, (_, index) => (
+                    <span key={index} className="cal__event" />
+                  ))}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
