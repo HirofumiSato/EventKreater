@@ -43,6 +43,32 @@ describe("公開クロムの出し分け", () => {
     });
   });
 
+  it("下書きプレビューはヘッダーを出したまま上端の余白を落とす", () => {
+    expect(siteChrome("/organizer/events/abc/preview")).toEqual({
+      header: true,
+      footer: true,
+      flushTop: true,
+    });
+    expect(siteChrome("/organizer/events/abc/preview/")).toEqual({
+      header: true,
+      footer: true,
+      flushTop: true,
+    });
+  });
+
+  it("プレビュー以外の主催者画面は余白を落とさない", () => {
+    expect(siteChrome("/organizer/events/abc/edit")).toEqual({
+      header: true,
+      footer: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/organizer/events/preview")).toEqual({
+      header: true,
+      footer: true,
+      flushTop: false,
+    });
+  });
+
   it("区切りを跨いだ前方一致をしない", () => {
     expect(siteChrome("/consolelike")).toEqual({ header: true, footer: true, flushTop: false });
     expect(siteChrome("/organizerslike")).toEqual({ header: true, footer: true, flushTop: false });

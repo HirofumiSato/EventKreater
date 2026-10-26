@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PreviewClient from "./PreviewClient";
 
 /**
- * 下書きのプレビュー。告知ページと同じ部品で見た目を確かめ、ここから公開する。
+ * 下書きのプレビュー。ヘッダー直下の編集バーから公開し、告知ページと同じ部品で見た目を確かめる。
  * 未公開の内容を検索に載せない。
  */
 export const metadata: Metadata = {

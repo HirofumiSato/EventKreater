@@ -269,7 +269,7 @@ export function buildScreens(demo) {
       name: "下書きのプレビュー",
       path: `/organizer/events/${demo.events.draft}/preview`,
       auth: "organizer",
-      note: "告知ページと同じ見た目。出欠フォームは出さない。",
+      note: "ヘッダー直下の編集バーと、告知ページのプレビュー。出欠フォームは見た目だけ。",
     },
     {
       no: "24",

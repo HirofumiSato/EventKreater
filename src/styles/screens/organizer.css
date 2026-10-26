@@ -939,3 +939,77 @@
     gap: 0.125rem 0.5rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   下書きプレビュー。共通ヘッダー直下に編集バーを置き、その下を告知ページの写しにする。
+   -------------------------------------------------------------------------- */
+
+.preview-screen__status {
+  padding-block: 2rem 3rem;
+}
+
+.preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  margin-inline: calc(50% - 50vw);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preview-toolbar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  width: min(100%, var(--width-page));
+  margin-inline: auto;
+  padding: 0.625rem 1rem;
+}
+
+.preview-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preview-toolbar__note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.preview-toolbar__status {
+  width: min(100%, var(--width-content));
+  margin-inline: auto;
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.preview-screen__banners {
+  padding-block: 0.75rem 0;
+}
+
+.preview-canvas__label {
+  margin-inline: calc(50% - 50vw);
+  padding: 0.5rem 1rem;
+  border-block: 1px solid var(--color-warning-border);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.preview-rsvp {
+  pointer-events: none;
+}
+
+.preview-rsvp__note {
+  margin-bottom: 0.75rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
