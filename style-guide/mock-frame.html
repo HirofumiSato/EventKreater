@@ -1,161 +1,433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>モック | 端末の幅で見る</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../src/styles/index.css">
-  <link rel="stylesheet" href="mock.css">
-  <link rel="stylesheet" href="mock-states.css">
+  <title>画面モック | 端末の幅で見る</title>
+  <style>
+    :root { color-scheme: light; --bar: #1c1917; --line: #e7e5e4; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; flex-direction: column; font-family: system-ui, sans-serif; color: #1c1917; background: #f0efed; }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .5rem 1rem; background: var(--bar); color: #faf9f7; font-size: .85rem; }
+    .bar a { color: #faf9f7; text-decoration: none; opacity: .8; }
+    .bar a:hover, .bar a[aria-current="true"] { opacity: 1; text-decoration: underline; }
+    .bar__name { font-weight: 600; }
+    .bar__path { color: #a8a29e; font-family: ui-monospace, monospace; font-size: .78rem; }
+    .bar__group { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+    select { font: inherit; padding: .2rem .35rem; max-width: 22rem; }
+    .stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 1rem; }
+    .device { position: relative; overflow: hidden; background: #fff; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(28, 25, 23, .12); }
+    iframe { position: absolute; top: 0; left: 0; border: 0; background: #fff; transform-origin: top left; }
+    .hint { margin: 0; padding: 0 1rem .75rem; color: #57534e; font-size: .78rem; text-align: center; }
+  </style>
 </head>
-<body class="frame-page">
-  <div class="frame-bar" role="group" aria-label="表示の切り替え">
-    <span class="frame-bar__name" id="frame-name">画面</span>
-    <span class="frame-bar__path" id="frame-path"></span>
-    <div class="frame-bar__group">
-      <label class="frame-bar__pick">
-        <span>画面</span>
-        <select id="pick-screen" aria-label="画面を選ぶ"></select>
+<body>
+  <header class="bar">
+    <span class="bar__name" id="name">画面</span>
+    <span class="bar__path" id="path"></span>
+    <div class="bar__group">
+      <label>画面
+        <select id="pick">
+      <optgroup label="公開">
+        <option value="mock-home.html">01 ホーム</option>
+        <option value="mock-service.html">02 サービスと料金</option>
+        <option value="mock-terms.html">03 利用規約</option>
+        <option value="mock-event.html">04 イベント告知・出欠（未ログイン）</option>
+        <option value="mock-event-member.html">04 イベント告知・出欠（ログイン済み）</option>
+        <option value="mock-event-full.html">04 イベント告知・出欠（満員）</option>
+        <option value="mock-event-closed.html">04 イベント告知・出欠（受付停止）</option>
+        <option value="mock-event-receipt.html">05 参加費の領収書</option>
+        <option value="mock-organizer-public.html">06 主催者のプロフィール</option>
+        <option value="mock-organizer-public-events.html">07 主催者の催し</option>
+      </optgroup>
+      <optgroup label="認証・設定">
+        <option value="mock-register.html">08 主催者のログイン・登録</option>
+        <option value="mock-verify.html">09 メールの確認</option>
+        <option value="mock-participant-login.html">10 参加者ログイン</option>
+        <option value="mock-invitation.html">11 共同幹事の招待</option>
+        <option value="mock-account.html">12 アカウント設定</option>
+        <option value="mock-account-verify.html">13 メールアドレスの確定</option>
+      </optgroup>
+      <optgroup label="参加者">
+        <option value="mock-participant.html">14 参加者ホーム</option>
+        <option value="mock-participant-calendar.html">15 参加カレンダー</option>
+        <option value="mock-participant-history.html">16 参加履歴（履歴あり）</option>
+        <option value="mock-participant-history-empty.html">16 参加履歴（履歴なし）</option>
+      </optgroup>
+      <optgroup label="主催者">
+        <option value="mock-organizer.html">17 主催一覧</option>
+        <option value="mock-organizer-calendar.html">18 主催カレンダー</option>
+        <option value="mock-revenue.html">19 売上</option>
+        <option value="mock-revenue-detail.html">20 売上の内訳</option>
+        <option value="mock-create.html">21 新規イベント作成</option>
+        <option value="mock-edit.html">22 イベントの編集</option>
+        <option value="mock-drafts.html">23 下書き一覧</option>
+        <option value="mock-preview.html">24 下書きのプレビュー</option>
+        <option value="mock-roster.html">25 参加者名簿</option>
+        <option value="mock-receipt.html">26 幹事向け領収書</option>
+        <option value="mock-register-required.html">27 公開直後の案内</option>
+        <option value="mock-organizer-profile.html">28 公開プロフィールの編集</option>
+        <option value="mock-mypage.html">29 主催者マイページ</option>
+      </optgroup>
+        </select>
       </label>
-      <a id="to-prev" href="#">← 前</a>
-      <a id="to-next" href="#">次 →</a>
-      <span>幅</span>
-      <a id="to-390" href="#" aria-current="false">スマホ 390</a>
-      <a id="to-1280" href="#" aria-current="false">PC 1280</a>
-      <span id="frame-states" style="display: contents"></span>
-      <a id="to-raw" href="#">この幅のまま開く</a>
+      <a href="#" id="prev">← 前</a>
+      <a href="#" id="next">次 →</a>
+      <a href="#" data-width="390" aria-current="true">スマホ 390</a>
+      <a href="#" data-width="1280" aria-current="false">PC 1280</a>
+      <a href="#" id="raw">HTML をそのまま開く</a>
       <a href="mock-index.html">一覧</a>
     </div>
-  </div>
+  </header>
 
-  <div class="frame-stage">
-    <div class="frame-device" id="device">
+  <main class="stage" id="stage">
+    <div class="device" id="device">
       <iframe id="frame" title="画面モック" src="about:blank"></iframe>
     </div>
-  </div>
+  </main>
 
-  <p class="frame-hint">
-    枠の中は実物と同じ CSS で描いています。幅を変えると、メディアクエリもその幅で効きます。
-    390 はスマホ（iPhone 相当）、1280 は PC です。操作は枠の中にそのまま届きます。
-  </p>
+  <p class="hint">枠の中は製品と同じ CSS で描いています。幅を変えるとメディアクエリもその幅で効きます。← → キーでも画面を送れます。</p>
 
-  <script src="mock-screens-data.js"></script>
   <script>
+    const SCREENS = [
+      {
+        "file": "mock-home.html",
+        "no": "01",
+        "name": "ホーム",
+        "label": "",
+        "path": "/",
+        "group": "public"
+      },
+      {
+        "file": "mock-service.html",
+        "no": "02",
+        "name": "サービスと料金",
+        "label": "",
+        "path": "/service",
+        "group": "public"
+      },
+      {
+        "file": "mock-terms.html",
+        "no": "03",
+        "name": "利用規約",
+        "label": "",
+        "path": "/terms",
+        "group": "public"
+      },
+      {
+        "file": "mock-event.html",
+        "no": "04",
+        "name": "イベント告知・出欠",
+        "label": "未ログイン",
+        "path": "/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df",
+        "group": "public"
+      },
+      {
+        "file": "mock-event-member.html",
+        "no": "04",
+        "name": "イベント告知・出欠",
+        "label": "ログイン済み",
+        "path": "/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df",
+        "group": "public"
+      },
+      {
+        "file": "mock-event-full.html",
+        "no": "04",
+        "name": "イベント告知・出欠",
+        "label": "満員",
+        "path": "/events/4bd042af-bf41-4c20-8be2-0116d25c4f45",
+        "group": "public"
+      },
+      {
+        "file": "mock-event-closed.html",
+        "no": "04",
+        "name": "イベント告知・出欠",
+        "label": "受付停止",
+        "path": "/events/23f05aee-4075-4837-abd3-e82226c4e243",
+        "group": "public"
+      },
+      {
+        "file": "mock-event-receipt.html",
+        "no": "05",
+        "name": "参加費の領収書",
+        "label": "",
+        "path": "/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df/receipt",
+        "group": "public"
+      },
+      {
+        "file": "mock-organizer-public.html",
+        "no": "06",
+        "name": "主催者のプロフィール",
+        "label": "",
+        "path": "/organizers/4bc075bc-52a3-40cd-9efe-03bd31cb6050",
+        "group": "public"
+      },
+      {
+        "file": "mock-organizer-public-events.html",
+        "no": "07",
+        "name": "主催者の催し",
+        "label": "",
+        "path": "/organizers/4bc075bc-52a3-40cd-9efe-03bd31cb6050/events",
+        "group": "public"
+      },
+      {
+        "file": "mock-register.html",
+        "no": "08",
+        "name": "主催者のログイン・登録",
+        "label": "",
+        "path": "/auth/register",
+        "group": "auth"
+      },
+      {
+        "file": "mock-verify.html",
+        "no": "09",
+        "name": "メールの確認",
+        "label": "",
+        "path": "/auth/verify?token=ui-demo-email-verify-token",
+        "group": "auth"
+      },
+      {
+        "file": "mock-participant-login.html",
+        "no": "10",
+        "name": "参加者ログイン",
+        "label": "",
+        "path": "/participant/login",
+        "group": "auth"
+      },
+      {
+        "file": "mock-invitation.html",
+        "no": "11",
+        "name": "共同幹事の招待",
+        "label": "",
+        "path": "/invitations/ui-demo-cohost-invite-code",
+        "group": "auth"
+      },
+      {
+        "file": "mock-account.html",
+        "no": "12",
+        "name": "アカウント設定",
+        "label": "",
+        "path": "/account",
+        "group": "auth"
+      },
+      {
+        "file": "mock-account-verify.html",
+        "no": "13",
+        "name": "メールアドレスの確定",
+        "label": "",
+        "path": "/account/email/verify?token=ui-demo-email-change-token-1280",
+        "group": "auth"
+      },
+      {
+        "file": "mock-participant.html",
+        "no": "14",
+        "name": "参加者ホーム",
+        "label": "",
+        "path": "/participant",
+        "group": "participant"
+      },
+      {
+        "file": "mock-participant-calendar.html",
+        "no": "15",
+        "name": "参加カレンダー",
+        "label": "",
+        "path": "/participant/calendar",
+        "group": "participant"
+      },
+      {
+        "file": "mock-participant-history.html",
+        "no": "16",
+        "name": "参加履歴",
+        "label": "履歴あり",
+        "path": "/participant/history",
+        "group": "participant"
+      },
+      {
+        "file": "mock-participant-history-empty.html",
+        "no": "16",
+        "name": "参加履歴",
+        "label": "履歴なし",
+        "path": "/participant/history",
+        "group": "participant"
+      },
+      {
+        "file": "mock-organizer.html",
+        "no": "17",
+        "name": "主催一覧",
+        "label": "",
+        "path": "/organizer/events",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-organizer-calendar.html",
+        "no": "18",
+        "name": "主催カレンダー",
+        "label": "",
+        "path": "/organizer/calendar",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-revenue.html",
+        "no": "19",
+        "name": "売上",
+        "label": "",
+        "path": "/organizer/revenue",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-revenue-detail.html",
+        "no": "20",
+        "name": "売上の内訳",
+        "label": "",
+        "path": "/organizer/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df/revenue",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-create.html",
+        "no": "21",
+        "name": "新規イベント作成",
+        "label": "",
+        "path": "/organizer/events/new",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-edit.html",
+        "no": "22",
+        "name": "イベントの編集",
+        "label": "",
+        "path": "/organizer/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df/edit",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-drafts.html",
+        "no": "23",
+        "name": "下書き一覧",
+        "label": "",
+        "path": "/organizer/events/drafts",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-preview.html",
+        "no": "24",
+        "name": "下書きのプレビュー",
+        "label": "",
+        "path": "/organizer/events/c3fbb9d7-1258-43a5-987d-a95e7d661372/preview",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-roster.html",
+        "no": "25",
+        "name": "参加者名簿",
+        "label": "",
+        "path": "/organizer/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df/participants",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-receipt.html",
+        "no": "26",
+        "name": "幹事向け領収書",
+        "label": "",
+        "path": "/organizer/events/75dd2f4b-e79a-46c1-818b-ac541fe1c9df/receipts/7aa7e017-6f93-4aa0-9141-8b4917e033d3",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-register-required.html",
+        "no": "27",
+        "name": "公開直後の案内",
+        "label": "",
+        "path": "/organizer/register-required?event=75dd2f4b-e79a-46c1-818b-ac541fe1c9df",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-organizer-profile.html",
+        "no": "28",
+        "name": "公開プロフィールの編集",
+        "label": "",
+        "path": "/organizer/profile",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-mypage.html",
+        "no": "29",
+        "name": "主催者マイページ",
+        "label": "",
+        "path": "/mypage",
+        "group": "organizer"
+      }
+    ];
+    const HEIGHTS = {"390":844,"1280":900};
     const params = new URLSearchParams(location.search);
-    const screens = window.MOCK_SCREENS || [];
-    const page = params.get("p") || "mock-home.html";
-    const width = params.get("w") === "1280" ? 1280 : 390;
-    const deco = params.get("t") || "";
-    // 画面ごとの状態（告知ページの「ログイン済み」「満員」など）。s=member,full
-    const statesParam = params.get("s") || "";
-    const onStates = new Set(statesParam.split(",").filter(Boolean));
-
-    const height = width === 390 ? 844 : 900;
+    const widthOf = (value) => (HEIGHTS[value] ? Number(value) : 390);
+    const fileOf = (value) => (SCREENS.some((s) => s.file === value) ? value : SCREENS[0]?.file ?? "");
 
     const frame = document.getElementById("frame");
-    const query = new URLSearchParams({ embed: "1" });
-    if (deco) query.set("t", deco);
-    if (statesParam) query.set("s", statesParam);
-    frame.src = `${page}?${query.toString()}`;
-    frame.width = String(width);
-    frame.height = String(height);
+    const device = document.getElementById("device");
+    const stage = document.getElementById("stage");
+    const pick = document.getElementById("pick");
 
-    document.getElementById("device").style.width = `${width}px`;
+    let file = fileOf(params.get("p"));
+    let width = widthOf(params.get("w"));
 
-    // いまどの画面か。番号・名前・パスを帯に出す。
-    const current = screens.find((s) => s.file === page);
-    const index = screens.findIndex((s) => s.file === page);
-
-    document.getElementById("frame-name").textContent = current
-      ? `${current.no} ${current.name}`
-      : page;
-    document.getElementById("frame-path").textContent = current
-      ? `${current.path} / ${current.scope === "quiet" ? "静かめ" : "影だけ"}`
-      : "";
-
-    // 幅と装飾を保ったまま、画面だけ差し替える。
-    function link(file, w) {
-      const next = new URLSearchParams({ p: file, w: String(w) });
-      if (deco) next.set("t", deco);
-      if (statesParam) next.set("s", statesParam);
-      return `mock-frame.html?${next.toString()}`;
+    function urlFor(nextFile, nextWidth) {
+      return "mock-frame.html?" + new URLSearchParams({ p: nextFile, w: String(nextWidth) });
     }
 
-    // 29 画面を順に送る。端では反対側へ回る。
-    if (index >= 0) {
-      const prev = screens[(index - 1 + screens.length) % screens.length];
-      const next = screens[(index + 1) % screens.length];
-      const toPrev = document.getElementById("to-prev");
-      const toNext = document.getElementById("to-next");
-      toPrev.href = link(prev.file, width);
-      toNext.href = link(next.file, width);
-      toPrev.title = prev.name;
-      toNext.title = next.name;
-    }
-
-    // 画面の選択。区分ごとにまとめる。
-    const pick = document.getElementById("pick-screen");
-    for (const group of window.MOCK_GROUPS || []) {
-      const items = screens.filter((s) => s.group === group.key);
-      if (!items.length) continue;
-      const optgroup = document.createElement("optgroup");
-      optgroup.label = group.title;
-      for (const s of items) {
-        const option = document.createElement("option");
-        option.value = s.file;
-        option.textContent = `${s.no} ${s.name}`;
-        optgroup.append(option);
+    function show() {
+      const screen = SCREENS.find((s) => s.file === file);
+      const height = HEIGHTS[width];
+      frame.src = file;
+      frame.width = String(width);
+      frame.height = String(height);
+      document.getElementById("name").textContent = screen ? screen.no + " " + screen.name : file;
+      document.getElementById("path").textContent = screen ? screen.path : "";
+      pick.value = file;
+      document.getElementById("raw").href = file;
+      for (const link of document.querySelectorAll("[data-width]")) {
+        link.setAttribute("aria-current", Number(link.dataset.width) === width ? "true" : "false");
+        link.href = urlFor(file, Number(link.dataset.width));
       }
-      pick.append(optgroup);
+      const index = SCREENS.findIndex((s) => s.file === file);
+      const prev = SCREENS[(index - 1 + SCREENS.length) % SCREENS.length];
+      const next = SCREENS[(index + 1) % SCREENS.length];
+      document.getElementById("prev").href = urlFor(prev.file, width);
+      document.getElementById("next").href = urlFor(next.file, width);
+      document.title = (screen ? screen.no + " " + screen.name : file) + " | 画面モック";
+      history.replaceState(null, "", urlFor(file, width));
+      fit();
     }
-    if (current) pick.value = current.file;
+
+    // 1280 を狭い窓でも見られるように、収まる倍率まで縮める。
+    function fit() {
+      const scale = Math.min(1, (stage.clientWidth - 32) / frame.width, (stage.clientHeight - 24) / frame.height);
+      frame.style.transform = "scale(" + scale + ")";
+      device.style.width = Math.round(frame.width * scale) + "px";
+      device.style.height = Math.round(frame.height * scale) + "px";
+    }
+
     pick.addEventListener("change", () => {
-      location.href = link(pick.value, width);
+      file = pick.value;
+      show();
     });
-
-    const a390 = document.getElementById("to-390");
-    const a1280 = document.getElementById("to-1280");
-    a390.href = link(page, 390);
-    a1280.href = link(page, 1280);
-    // 空の aria-current では CSS が拾えない。[aria-current="true"] で揃える。
-    const markCurrent = (el, on) => {
-      if (on) el.setAttribute("aria-current", "true");
-      else el.removeAttribute("aria-current");
-    };
-    markCurrent(a390, width === 390);
-    markCurrent(a1280, width === 1280);
-
-    // 画面ごとの状態。押すと URL の s を書き換え、枠の中の状態が変わる。
-    const stateHost = document.getElementById("frame-states");
-    for (const state of current?.states ?? []) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = state.label;
-      button.setAttribute("aria-pressed", String(onStates.has(state.key)));
-      button.addEventListener("click", () => {
-        const next = new URLSearchParams({ p: page, w: String(width) });
-        if (deco) next.set("t", deco);
-        const picked = new Set(onStates);
-        if (picked.has(state.key)) {
-          picked.delete(state.key);
-        } else {
-          picked.add(state.key);
-        }
-        if (picked.size) next.set("s", [...picked].join(","));
-        location.href = `mock-frame.html?${next.toString()}`;
+    for (const link of document.querySelectorAll("[data-width]")) {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        width = Number(link.dataset.width);
+        show();
       });
-      stateHost.append(button);
     }
-
-    const raw = new URLSearchParams();
-    if (deco) raw.set("t", deco);
-    if (statesParam) raw.set("s", statesParam);
-    const rawQuery = raw.toString();
-    document.getElementById("to-raw").href = `${page}${rawQuery ? `?${rawQuery}` : ""}`;
+    addEventListener("keydown", (event) => {
+      if (event.target.closest("select, input, textarea")) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      const index = SCREENS.findIndex((s) => s.file === file);
+      file = SCREENS[(index + step + SCREENS.length) % SCREENS.length].file;
+      show();
+    });
+    addEventListener("resize", fit);
+    if (SCREENS.length > 0) show();
   </script>
 </body>
 </html>

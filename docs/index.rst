@@ -77,7 +77,7 @@
    :caption: UI 監査
 
    ui-review/home-audit
-   ui-review/mock-implementation-map
+   ui-review/mock-sync
 
 .. toctree::
    :maxdepth: 2

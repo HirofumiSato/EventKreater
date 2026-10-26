@@ -12,6 +12,7 @@
 | API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 73 ルートの照合 |
 | 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 35 ページの照合 |
 | チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 66 件 + `mypy`（src の strict） |
+| モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run check`（ソースの指紋と `mock-manifest.json` の一致）。生成は `npm run mock:sync` |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |
 
 ## 既知の乖離（2026-10-22 時点）
@@ -25,11 +26,11 @@
 | パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
 | 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
 
-テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
+テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
 
 ## 生成された索引
 
-`npm run docs:gen` が次の 4 つを作ります。`npm run check` は、テストの件数が原稿と合っているかも見ます。どちらも手で編集しないでください。CI は生成後に差分が出ないことを確かめます。
+`npm run docs:gen` が次の 4 つを作ります。`npm run check:full` は、テストの件数が原稿と合っているかも見ます。どちらも手で編集しないでください。CI は生成後に差分が出ないことを確かめます。
 
 | ファイル | 内容 |
 | --- | --- |
@@ -61,4 +62,23 @@ npm run docs:links   # 本文中の src/ tests/ prisma/ などのパスの実在
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 ```
 
+### `npm run check` の意味（2026-10-26 に変わった点）
+
+`npm run check` は **速い検査**（eslint のキャッシュ実行・`tsc --noEmit`・UI の静的検査）だけを走らせ、
+Vitest とこの「テスト件数の照合」は走らせません。保存のたびに回せる重さに保つためです。
+**テスト込みの判定は `npm run check:full`** で、CI はこちらを呼びます。PR の前には `check:full` を通してください。
+
+テストを足したら、これまでどおり `npm run docs:counts` で [testing/scope.rst](testing/scope.rst) を
+書き戻してから `npm run check:full` を実行します（件数の照合は `check:full` の中で走ります）。
+
 `docs:links` は [../scripts/check-doc-links.mjs](../scripts/check-doc-links.mjs) が担当します。`docs/**` に加えて、`AGENTS.md`、`README.md`、`llms.txt`、`services/flyer/AGENTS.md`、`services/flyer/README.md` も検査します。パスの拾い方と免除リストは [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) に共通化しています。
+
+### `npm run mock:sync`（モックを撮り直すとき）
+
+モックは製品の DOM を写した生成物です。画面を直したら `npm run mock:sync` を実行し、
+`style-guide/mock-*.html` を同じ PR でコミットしてください。同期漏れは `npm run check` が
+（ブラウザも DB も使わずに）止めます。手順は [ui-review/mock-sync.md](ui-review/mock-sync.md) が正です。
+
+既定は `.next-ui-prod` に本番ビルドして別ポート（3014）で配るので、動いている `npm run dev` の
+`.next` は壊しません。ビルドは `src` が変わったときだけ 1 回走ります。実測は全 33 画面で
+**30〜35 秒**（ビルドを含めると 1〜2 分）、1 画面だけなら `-- --only=21` で **5 秒前後**です。

@@ -40,8 +40,8 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 | 画面のクライアント側 | 同じディレクトリの `*Client.tsx` | サーバーは OGP・初期データのみ |
 | 純ロジック | `src/modules/<機能>/lib/*.ts` | DOM と Next に依存しない。テスト対象 |
 | UI | `src/modules/<機能>/components/` | ロジックを持たない |
-| 共通 UI 部品 | `src/components/ui/` | `PageHeader`、`Section`、`Panel`、`Rows`、`Alert`、`Loading`、`EmptyState`、`Badge`、`Dialog`、`Field`。モックのブロックを直すときはここを 1 回直す |
-| 共有スタイル | `src/styles/` | `index.css` が入口。`tokens` → `base` → `components` → `screens` → `deco`（最後）の順。モックも同じファイルを読む |
+| 共通 UI 部品 | `src/components/ui/` | `PageHeader`、`Section`、`Panel`、`Rows`、`Alert`、`Loading`、`EmptyState`、`Badge`、`Dialog`、`Field`。ブロックを直すときはここを 1 回直す |
+| 共有スタイル | `src/styles/` | `index.css` が入口。`tokens` → `base` → `components` → `screens` → `deco`（最後）の順 |
 | 横断ユーティリティ | `src/lib/` | `schemas.ts`（zod）、`serializers.ts`、`problem.ts`（RFC 7807）、`format.ts`（金額・日付） |
 | DB | `prisma/schema.prisma` | 変更は `prisma/migrations/` に追加 |
 | 振る舞いの仕様 | `tests/**/*.test.ts` | テスト名が日本語の仕様文になっている |
@@ -51,19 +51,40 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 ## コマンド
 
 ```powershell
-npm run check        # lint + tsc --noEmit + Vitest（+ docs のテスト件数の照合）
-npm run ui:css       # TSX とモックのクラスが CSS に揃っているか（未定義・未使用）
-npm run ui:map       # 29 画面とモックの対応表が壊れていないか
-npm run ui:shots     # 390 / 1280 のスクリーンショットと report.json を撮り直す
+npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit + mock-sync（同期漏れ）
+npm run check:full   # 上に Vitest と docs のテスト件数照合を足す（CI と PR の前）
+npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=21 / --no-shots / --dev）
+npm run mock:check   # モックが製品のソースと同期しているかだけを見る
+npm run mock:serve   # 生成したモックを 127.0.0.1:4321 で配信
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
 npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
-npm run mock:serve   # 装飾モック（style-guide/）を 127.0.0.1:4321 で配信
 cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ```
+
+## 製品→モックの同期（必須ループ）
+
+**製品が正**です。`style-guide/mock-*.html` は製品の DOM を写した生成物で、手で編集しません。
+比較（parity）はしません。見た目を変えたら、次を同じ PR で終わらせます。
+
+```powershell
+npm run db:seed:ui   # 初回と、データを作り直すときだけ
+npm run mock:sync    # 全 33 画面を撮り直す（既定は本番ビルド。30〜35 秒＋ビルド）
+npm run mock:sync -- --only=21,25   # 直した画面だけ（1 画面 5 秒前後）
+npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）
+npm run check:full   # PR の直前に 1 回（Vitest 込み）
+```
+
+1. 製品を直す（`src/styles/**` → `src/components/ui/**` → 画面 TSX の順）
+2. `npm run mock:sync` でモックを差し替える。部分同期で済ませたときは、コミット前に全体を回す
+3. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
+4. PNG（`storage/mock-shots/`）はコミットしない
+
+同期漏れは `npm run check` が止めます。どうしても通すときだけ `MOCK_SYNC_ALLOW_STALE=1` を付け、
+PR に理由を書きます。手順の正は `docs/ui-review/mock-sync.md` です。
 
 ## 規約
 
@@ -71,7 +92,7 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 - 見た目の変更は `src/styles/**` の 1 箇所、ブロック構造の変更は `src/components/ui/**` の 1 箇所で済ませます。ページ側に同じクラスの組み立てを書き戻さないでください。
 - 金額と日付の文字列は `src/lib/format.ts` を通します。`toLocaleString` を画面に直書きしません（通貨が JPY でない管理画面など、意図がある場所はコメントを残します）。
 - `docs/doc-index.json`、`docs/api-routes.md`、`docs/traceability.md`、`llms.txt` は `npm run docs:gen` の生成物です。手で編集せず、原稿かコードを直してから再生成してください。
-- テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check` がずれを検出します。テストを足したら件数も更新してください。
+- テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出します。テストを足したら件数も更新してください。
 - ルートビルドで有効な Sphinx の設定は `docs/conf.py` だけです。`docs/{event-page,flyer,user-management}/conf.py` は単独ビルド用です。
 - `.env` は読みません。`.env.example` を見てください。
 - 生成物と巨大な依存は読みません: `docs/_build`, `.next`, `node_modules`, `.venv-docs`, `storage`, `logs`。

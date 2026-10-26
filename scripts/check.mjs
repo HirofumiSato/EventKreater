@@ -1,12 +1,21 @@
-// lint・型検査・テストを並列で走らせる。
+// lint・型検査・テスト・UI の静的な検査を並列で走らせる。
 //
-//   npm run check
+//   npm run check       # 速い検査。保存のたびに回す（目標 10 秒台）
+//   npm run check:full  # 上に Vitest と docs の件数照合を足す。CI と PR の前
 //
-// 逐次だと 3 つの合計時間がそのまま待ち時間になる。互いに依存しないので同時に走らせ、
+// 2 段に分けるのは、待ち時間の大半が Vitest と lint の起動で決まるため。
+// 見た目を 1 つ直すたびに全テストを待つ必要はなく、逆に PR の前は
+// 全部を通したい。既定は速い方で、遅い方は名前で選ぶ。
+//
+// 逐次だと合計時間がそのまま待ち時間になる。互いに依存しないので同時に走らせ、
 // 全部終わってから結果をまとめて出す。落ちたものが複数あっても 1 回で分かる。
 //
-// npm run を 3 回呼ばず、各ツールの JS を直接 node で起動する。npm の起動だけで
+// npm run を何回も呼ばず、各ツールの JS を直接 node で起動する。npm の起動だけで
 // 1 回あたり数秒かかり、その待ちは検査そのものより長いことがあるため。
+//
+// lint は `next lint` ではなく eslint を直接起動する。`next lint` は 58 秒かかり、
+// eslint を --cache 付きで直接呼ぶと 5 秒で終わる（規則は next/core-web-vitals のまま）。
+// キャッシュは node_modules/.cache/eslint/ に置く。
 //
 // 出力は各タスクごとに溜め、失敗したときだけ中身を出す。並列のままだと 3 つの
 // 出力が混ざって読めない。
@@ -30,18 +39,46 @@ function entry(specifier) {
   return fileURLToPath(import.meta.resolve(specifier));
 }
 
-const TASKS = [
-  { label: "lint", module: "next/dist/bin/next", args: ["lint"] },
-  { label: "typecheck", module: "typescript/bin/tsc", args: ["--noEmit"] },
+/** eslint の CLI 本体。パッケージの入口は lib/api.js なので、bin を自分で組み立てる。 */
+function eslintEntry() {
+  return path.resolve(path.dirname(entry("eslint")), "..", "bin", "eslint.js");
+}
+
+const LINT_CACHE = path.join(root, "node_modules", ".cache", "eslint", ".eslintcache");
+fs.mkdirSync(path.dirname(LINT_CACHE), { recursive: true });
+
+const FAST = process.argv.includes("--fast");
+const FULL = process.argv.includes("--full");
+if (FAST && FULL) {
+  console.error("--fast と --full は同時に指定できません。");
+  process.exit(1);
+}
+// 明示が無ければ速い方。`npm run check` は保存のたびに回すもの、という既定にする。
+const full = FULL;
+
+const STATIC_TASKS = [
   {
-    label: "test",
-    module: "vitest/vitest.mjs",
-    args: ["run", "--reporter=default", "--reporter=json", `--outputFile.json=${vitestReport}`],
+    label: "lint",
+    entry: eslintEntry(),
+    args: [".", "--ext", ".ts,.tsx,.mjs", "--cache", "--cache-location", LINT_CACHE],
   },
+  { label: "typecheck", module: "typescript/bin/tsc", args: ["--noEmit"] },
   // リポジトリ内のスクリプトは import.meta.resolve を通さず、パスで直接起動する。
-  { label: "ui-map", script: "scripts/check-ui-map.mjs", args: [] },
-  { label: "ui-css", script: "scripts/check-ui-css.mjs", args: [] },
+  // 製品の UI ソースを変えたのに `npm run mock:sync` を回していない状態を、
+  // ブラウザも DB も使わずに（ハッシュ比較だけで）止める。
+  { label: "mock-sync", script: "scripts/check-mock-sync.mjs", args: [] },
 ];
+
+const TASKS = full
+  ? [
+      ...STATIC_TASKS,
+      {
+        label: "test",
+        module: "vitest/vitest.mjs",
+        args: ["run", "--reporter=default", "--reporter=json", `--outputFile.json=${vitestReport}`],
+      },
+    ]
+  : STATIC_TASKS;
 
 function run(task) {
   return new Promise((resolve) => {
@@ -49,7 +86,11 @@ function run(task) {
     const chunks = [];
     let child;
     try {
-      const script = task.script ? path.join(root, task.script) : entry(task.module);
+      const script = task.entry
+        ? task.entry
+        : task.script
+          ? path.join(root, task.script)
+          : entry(task.module);
       child = spawn(process.execPath, [script, ...task.args], {
         cwd: root,
         stdio: ["ignore", "pipe", "pipe"],
@@ -93,7 +134,7 @@ function checkDocCounts() {
 
   const lines = [
     "docs/testing/scope.rst の件数が実測と合っていません。",
-    "npm run docs:counts で書き戻してから、もう一度 npm run check を実行してください。",
+    "npm run docs:counts で書き戻してから、もう一度 npm run check:full を実行してください。",
     ...inspected.stale.map((line) => `  ${line}`),
   ];
   return { ok: false, note, output: lines.join("\n") };
@@ -118,6 +159,13 @@ if (failed.length > 0) {
 }
 
 // テストが落ちているときは件数を見ても意味がないので、通ったときだけ照合する。
+// 速い方ではテストを走らせないため、照合そのものが無い。
+if (!full) {
+  console.log(`\nすべて通りました（${((Date.now() - started) / 1000).toFixed(1)}s）`);
+  console.log("テストは走らせていません。PR の前に `npm run check:full` を実行してください。");
+  process.exit(0);
+}
+
 const docs = checkDocCounts();
 console.log(`${docs.ok ? "ok" : "NG"} ${"docs-count".padEnd(10)} ${docs.note}`);
 if (!docs.ok) {

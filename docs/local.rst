@@ -285,7 +285,9 @@ npm scripts
    * - ``npm run lint``
      - ESLint
    * - ``npm run check``
-     - ESLint・``tsc --noEmit``・Vitest を並列で走らせ、全部の結果をまとめて出す。1 つでも落ちれば終了コード 1
+     - ESLint（キャッシュ）・``tsc --noEmit``・モックの同期検査を並列で走らせ、全部の結果をまとめて出す。1 つでも落ちれば終了コード 1。Vitest は走らない
+   * - ``npm run check:full``
+     - 上に Vitest と ``docs/testing/scope.rst`` の件数照合を足したもの。CI と PR の前
    * - ``npm run check:serial``
      - 同じ 3 つを順に走らせる。並列で落ちたときに、単体で再現させるため
    * - ``npm run db:migrate``

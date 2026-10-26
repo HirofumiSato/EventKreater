@@ -627,6 +627,12 @@ try {
     inviteCode: INVITE_CODE,
     emailVerifyToken: EMAIL_VERIFY_TOKEN,
     emailChangeTokens: EMAIL_CHANGE_TOKENS,
+    // 確認後に表示されるアドレス。同期のたびにトークンを発行し直すので、
+    // 同じアドレスを渡して、モックの見た目が実行ごとに変わらないようにする。
+    emailChangeTargets: {
+      "390": VERIFY_USER.confirmedEmail,
+      "1280": VERIFY_USER.confirmedEmailWide,
+    },
   };
 
   await mkdir(STORAGE, { recursive: true });

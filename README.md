@@ -18,7 +18,8 @@ DB の作成とマイグレーションは [docs/local.rst](docs/local.rst) の�
 ## 検証
 
 ```powershell
-npm run check        # lint + tsc --noEmit + Vitest
+npm run check        # 速い検査: lint + tsc --noEmit + モックの同期検査（mock:sync）
+npm run check:full   # 上に Vitest と docs のテスト件数の照合を足したもの（CI・PR の前）
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認

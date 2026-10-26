@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-ui-prod
 out
 dist
 .prisma
@@ -7,9 +8,15 @@ coverage
 *.log
 .env
 .env.local
+# 検査のキャッシュ。消しても次の実行で作り直すだけ。
+node_modules/.cache/
 storage/flyers
 # 撮影用の JWT とデモ会員の控え。`npm run db:seed:ui` が作り直す。
 storage/ui-demo.json
+# mock:sync の撮影（390 / 1280）。目視用で、コミットしない。
+storage/mock-shots/
+# 作業中の一時ファイル（src の退避、dev のログなど）。リポジトリ直下だけを見る。
+/.tmp-*
 .DS_Store
 tsconfig.tsbuildinfo
 .venv-docs

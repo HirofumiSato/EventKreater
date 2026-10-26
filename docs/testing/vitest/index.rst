@@ -109,7 +109,9 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
    * - コマンド
      - いつ使うか
    * - ``npm run check``
-     - 一区切りの確認。ESLint、``tsc --noEmit``、データベース不要のテストを並列で走らせる
+     - 保存のたびの確認。ESLint（キャッシュ）、``tsc --noEmit``、UI の静的検査を並列で走らせる。**テストは走らせない**
+   * - ``npm run check:full``
+     - PR の前と CI。``check`` に Vitest と ``docs/testing/scope.rst`` の件数照合を足したもの
    * - ``npm run check:serial``
      - 同じ 3 つを順に走らせる。並列で落ちたときに、単体で再現させるため
    * - ``npm test``

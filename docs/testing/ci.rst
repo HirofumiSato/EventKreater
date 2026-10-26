@@ -20,8 +20,8 @@ CI への接続
      - 呼ぶコマンド
      - 見ているもの
    * - ``check``
-     - ``npm ci``（キャッシュヒット時は ``npx prisma generate``）のあと ``npm run check``
-     - ESLint、``tsc --noEmit``、``tests/unit/`` のすべて、``docs/testing/scope.rst`` の件数の照合
+     - ``npm ci``（キャッシュヒット時は ``npx prisma generate``）のあと ``npm run check:full``
+     - ESLint（キャッシュ）、``tsc --noEmit``、モックの同期検査（``mock-sync``）、``tests/unit/`` のすべて、``docs/testing/scope.rst`` の件数の照合
    * - ``db``
      - ``npm ci``、``prisma migrate deploy``、``npm run test:db``
      - ``tests/integration/`` のすべて。テスト専用の PostgreSQL をサービスとして立てる
@@ -117,9 +117,9 @@ apt での取得は 8 秒前後かかり、ミラーが遅い日はここで数�
 
 * **``check`` は ``TEST_DATABASE_URL`` を渡していません。** DB を見る試験は ``db`` ジョブに分けています。``check`` を速いまま保つためで、``check`` が緑でも DB の試験は走っていません。
 * ``npm ci`` は ``package-lock.json`` と ``package.json`` がずれていると落ちます。依存を足したら、lock も同じコミットに入れます。
-* ``next lint`` は初回に ``.eslintrc.json`` を探します。設定ファイルを消したり移動したりすると、CI だけ落ちます。
+* ``next lint`` は初回に ``.eslintrc.json`` を探します。設定ファイルを消したり移動したりすると、CI だけ落ちます。いまの ``npm run lint`` は ``next lint`` ではなく eslint を直接呼びます（``--cache`` 付き）。
 * 索引は ``docs:gen`` の生成物です。原稿を足して再生成を忘れると、``docs`` ジョブの ``git diff --exit-code`` が落ちます。手元で ``npm run docs:gen`` を実行し、差分ごとコミットします。
-* テストの件数は ``docs/testing/scope.rst`` だけが持ちます。``npm run check`` の最後に ``docs-count`` が照合し、ずれていれば終了コード 1 にします。テストを足したら ``npm run docs:counts`` で書き戻します。``docs`` ジョブではなく ``check`` に置いたのは、Vitest の結果をそのまま使えて、テストをもう一度走らせずに済むためです。
+* テストの件数は ``docs/testing/scope.rst`` だけが持ちます。``npm run check:full`` の最後に ``docs-count`` が照合し、ずれていれば終了コード 1 にします。テストを足したら ``npm run docs:counts`` で書き戻します。``docs`` ジョブではなく ``check`` に置いたのは、Vitest の結果をそのまま使えて、テストをもう一度走らせずに済むためです。
 * ``docs`` ジョブは Sphinx もビルドします。``docs/_build/`` は ``.gitignore`` にあるので、HTML は成果物として残しません。
 * ``docs`` ジョブは依存を入れません。生成スクリプトは ``node:fs`` と ``node:path`` しか import しないため、``npm ci`` を省けます。新しいライブラリを生成スクリプトから使うときは、この前提が崩れるので ``npm ci`` を戻します。
 * ``node_modules`` のキャッシュが壊れたと疑ったら、GitHub の Actions の Caches から鍵ごと消して再実行します。鍵は ``package-lock.json`` と ``prisma/schema.prisma`` のハッシュなので、依存かスキーマを変えれば自動的に外れます。

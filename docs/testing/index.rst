@@ -64,13 +64,13 @@
 
 .. rubric:: 今の到達点
 
-自動実行の入口は、リポジトリ直下の ``npm run check`` です。中身は ``lint``、``tsc --noEmit``、Vitest です。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
+自動実行の入口は、リポジトリ直下の ``npm run check``（速い方）と ``npm run check:full``（PR の前と CI）です。``check`` の中身は ESLint（キャッシュ）・``tsc --noEmit``・モックの同期検査（``mock-sync``）で、``check:full`` がそれに Vitest を足します。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
 
-テストのファイル数と件数、内訳は :doc:`scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/integration/`` が skip され、``tests/unit/`` だけが実行されます。``npm test`` は 6 秒前後、``npm run check`` は 15 秒前後で終わります。``check`` は ESLint・``tsc``・Vitest を並列で走らせます。
+テストのファイル数と件数、内訳は :doc:`scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/integration/`` が skip され、``tests/unit/`` だけが実行されます。``npm test`` は 6 秒前後、``npm run check`` は 10 秒前後、``npm run check:full`` は 30 秒前後で終わります。
 
-PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は ``.github/workflows/ci.yml`` が、手元と同じ ``npm run check`` を呼びます。
+PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は ``.github/workflows/ci.yml`` が ``npm run check:full`` を呼びます。
 
-現在の ``package.json`` にある自動実行は ``npm run lint``、``npm run typecheck``、``npm test``、``npm run test:watch``、``npm run test:db``、``npm run check`` です。``npm test`` は ``tests/`` の ``.test.ts`` 全体を集めます。``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ中身が走り、無ければ skip されます。**skip は成功と同じ終了コードです。**
+現在の ``package.json`` にある自動実行は ``npm run lint``、``npm run typecheck``、``npm test``、``npm run test:watch``、``npm run test:db``、``npm run check``、``npm run check:full`` です。``npm test`` は ``tests/`` の ``.test.ts`` 全体を集めます。``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ中身が走り、無ければ skip されます。**skip は成功と同じ終了コードです。**
 
 .. rubric:: これから書く順
 

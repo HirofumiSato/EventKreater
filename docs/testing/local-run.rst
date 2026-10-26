@@ -6,7 +6,7 @@
 前提
 ----
 
-Node.js 24、npm、リポジトリ直下で ``npm install`` が終わっていることです。``package.json`` には :doc:`vitest/index` の ``typecheck``、``test``、``test:watch``、``test:db``、``check`` が入っています。
+Node.js 24、npm、リポジトリ直下で ``npm install`` が終わっていることです。``package.json`` には :doc:`vitest/index` の ``typecheck``、``test``、``test:watch``、``test:db``、``check``、``check:full`` が入っています。
 
 開始条件は、依存のインストールが終わり、``@/*`` が ``src/`` を指せることです。終了条件は、収集されたテストがすべて成功し、:doc:`ideas` の数値を変えて通していないことです。
 
@@ -16,10 +16,11 @@ Node.js 24、npm、リポジトリ直下で ``npm install`` が終わってい�
 .. code-block:: powershell
 
    npm run check
+   npm run check:full   # PR の前。Vitest と docs の件数照合まで含む
 
-一区切りの確認です。ESLint、``tsc --noEmit``、データベース不要の Vitest が並列で走ります。終わってから 3 つの結果がまとめて出るので、落ちたものが複数あっても 1 回で分かります。並列のまま出力が混ざらないよう、各コマンドの出力は失敗したときだけ表示します。手元の実測は 16 秒前後です（順に走らせていたころは 34 秒でした）。並列で落ちたときは ``npm run check:serial`` で 1 つずつ再現します。
+一区切りの確認です。``check`` は ESLint（キャッシュ）・``tsc --noEmit``・UI の静的検査を並列で走らせます。終わってから結果がまとめて出るので、落ちたものが複数あっても 1 回で分かります。並列のまま出力が混ざらないよう、各コマンドの出力は失敗したときだけ表示します。手元の実測は 9 秒前後です（Vitest まで走らせていたころは 34 秒でした）。並列で落ちたときは ``npm run check:serial`` で 1 つずつ再現します。
 
-テストが通ると、最後に ``docs-count`` が走ります。``docs/testing/scope.rst`` に書いた件数が実測と合っているかを見て、ずれていれば終了コード 1 にします。件数は手で合わせず、``npm run docs:counts`` で書き戻してください。テストを書いた、消したときに必要になります。
+**Vitest は ``check`` では走りません。** テスト込みの判定は ``check:full`` で、CI はこちらを呼びます。テストが通ると、最後に ``docs-count`` が走ります。``docs/testing/scope.rst`` に書いた件数が実測と合っているかを見て、ずれていれば終了コード 1 にします。件数は手で合わせず、``npm run docs:counts`` で書き戻してください。テストを書いた、消したときに必要になります。
 
 実装中は、関連ファイルの保存で再実行します。
 

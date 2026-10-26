@@ -3,7 +3,8 @@
 **対象:** `/`（`src/app/page.tsx`）
 **計測日時:** 2026-10-21 12:27 JST
 **計測方法:** DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび `style-guide/index.html` との突き合わせ
-**証拠画像:** `docs/ui-review/before/`（`home-390-fv.png`、`home-390-full.png`、`home-768-full.png`、`home-1440-full.png`）
+**証拠画像:** 監査時の比較画像（`before/`・`after/`）は parity 廃止に伴って削除しました。同じ絵は
+`npm run mock:sync -- --only=1` で撮り直せます（`storage/mock-shots/` の 390 / 1280）。
 
 この文書は、指摘を「症状 → 原因 → 該当箇所 → 重大度 → 受入基準」で固定するためのものである。改善案の採否は別途決める。
 
@@ -223,12 +224,11 @@ P0 だけで「何の画面か」はほぼ解消する。P1 までで対外に�
 
 ### 7.1. 診断モデルに渡すセット
 
-1. `docs/ui-review/before/home-390-fv.png`
-2. `docs/ui-review/before/home-390-full.png`
-3. `docs/ui-review/before/home-1440-full.png`
-4. `src/app/page.tsx` 全文
-5. `src/styles/components.css` のレイアウトとヒーロー、`.card-grid` のグリッド
-6. 本文書の第2節（制約）
+1. `storage/mock-shots/1-home-390.png`（`npm run mock:sync -- --only=1` で再生成）
+2. `storage/mock-shots/1-home-1280.png`
+3. `src/app/page.tsx` 全文
+4. `src/styles/components.css` のレイアウトとヒーロー、`.card-grid` のグリッド
+5. 本文書の第2節（制約）
 
 ### 7.2. 固定する質問
 
@@ -252,7 +252,8 @@ P0 だけで「何の画面か」はほぼ解消する。P1 までで対外に�
 
 **実施日:** 2026-10-21
 **変更:** `src/app/page.tsx`、`src/lib/site.ts`、`src/components/common/Navbar.tsx`、`src/styles/components.css`（`.hero__actions` の `align-items`）
-**before / after 画像:** `docs/ui-review/before/` と `docs/ui-review/after/`
+**before / after 画像:** 比較画像は parity 廃止に伴って削除しました。現在の見た目は
+`npm run mock:sync -- --only=1` の `storage/mock-shots/1-home-390.png` / `1-home-1280.png` で確認できます。
 
 ### 8.1. 差分
 
@@ -367,16 +368,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 - `npm run lint`: 新規の警告なし
 - 角の実測: `.btn` / `.card` / `.hero` の `border-radius` はすべて `0px`
 - 320px / 390px / 1440px で `document.documentElement.scrollWidth === innerWidth`
-- スクリーンショット: `docs/ui-review/after/` 配下
-  - `home-1440-final.png`（ホーム全体の最終形）
-  - `home-1440-hero-final.png`（ヒーローの最終形）
-  - `home-1440-full-v4b.png`（ホーム全体）
-  - `home-390-final.png`（ホーム全体の最終形・スマホ）
-  - `home-390-v5.png`（ヒーロー・スマホ）
-  - `home-390-full-v4.png`（ホーム全体・スマホ）
-  - `home-1440-steps.png`（手順と朱の帯）
-  - `service-1440.png`、`register-1440.png`（回帰確認）
-  - `styleguide-home-patterns.png`（スタイルガイドの追記分）
+- スクリーンショット: `npm run mock:sync` の `storage/mock-shots/`（390 / 1280）。比較用の `after/` は削除しました
 
 ### 9.5. 残した判断
 
@@ -404,9 +396,11 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 
 ### 10.2. 残る制約
 
-- 機能・リンク・遷移・状態・UX の正は**実装のまま**です。モックは静的 HTML で、認証・ローディング・エラー・空・満員・締切後を持ちません。
+- 機能・リンク・遷移・状態・UX の正は**実装のまま**です。モックは `npm run mock:sync` が写した生成物で、
+  `storage/mock-shots/` に 390 / 1280 の撮影が残ります（コミットしません）。
 - 2.1 の C1〜C8（一覧・検索を置かない、主操作を絞る、`SITE.nav` を正とする、など）は**そのまま有効**です。
-- 画面ごとの機能台帳と差分は `docs/ui-review/mock-implementation-map.md` に移しました。移行の進み具合はそちらだけが持ちます。
+- 画面と実装の対応は `scripts/lib/mock-screens.mjs` の目録 1 か所が持ちます。撮り直しの手順は
+  [mock-sync.md](mock-sync.md) です。
 
 
 

@@ -15,7 +15,9 @@ permissions:
   pull-requests: read
 
 jobs:
-  # 手元の `npm run check` と同じ。lint、tsc --noEmit、DB を使わない Vitest。
+  # 手元の `npm run check:full` と同じ。lint、tsc --noEmit、DB を使わない Vitest、
+  # モックの同期漏れの検査。
+  # 手元の既定 `npm run check` は Vitest を省いた速い方なので、CI ではこちらを呼ぶ。
   # tests/setup/db.ts は TEST_DATABASE_URL が無ければ何も差し替えないため、
   # DATABASE_URL はダミーで足りる。PostgreSQL も Stripe も呼ばない。
   check:
@@ -59,7 +61,7 @@ jobs:
         run: npx prisma generate
 
       - if: steps.scope.outputs.code != 'false'
-        run: npm run check
+        run: npm run check:full
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci_placeholder
           JWT_SECRET: ci-only-placeholder-secret-value-not-used

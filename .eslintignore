@@ -1,0 +1,9 @@
+.tmp-src-backup
+.next
+.next-ui-prod
+docs/_build
+node_modules
+storage
+coverage
+services/flyer/.venv
+.venv-docs
