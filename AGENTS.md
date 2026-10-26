@@ -53,7 +53,7 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 ```powershell
 npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit + mock-sync（同期漏れ）
 npm run check:full   # 上に Vitest と docs のテスト件数照合を足す（CI と PR の前）
-npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=21 / --no-shots / --dev）
+npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=20 / --no-shots / --dev）
 npm run mock:check   # モックが製品のソースと同期しているかだけを見る
 npm run mock:serve   # 生成したモックを 127.0.0.1:4321 で配信
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
@@ -73,7 +73,7 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
 npm run mock:sync    # 全 33 画面を撮り直す（既定は本番ビルド。30〜35 秒＋ビルド）
-npm run mock:sync -- --only=21,25   # 直した画面だけ（1 画面 5 秒前後）
+npm run mock:sync -- --only=20,24   # 直した画面だけ（1 画面 5 秒前後）
 npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）
 npm run check:full   # PR の直前に 1 回（Vitest 込み）
 ```

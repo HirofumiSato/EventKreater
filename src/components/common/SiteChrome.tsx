@@ -5,22 +5,24 @@ import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/common/Navbar";
 import { SITE } from "@/lib/site";
 import { decoClassName, designScope } from "@/lib/design-scope";
+import { siteChrome } from "@/lib/site-chrome";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const concealed = pathname.startsWith("/console");
-  // 装飾のスコープもパスだけで決まる。usePathname は初回描画から値を持つので、
+  // クロムの出し分けもパスだけで決まる。usePathname は初回描画から値を持つので、
   // サーバーとクライアントで同じクラスになり、色のちらつきが出ない。
+  const chrome = siteChrome(pathname);
+  // 装飾のスコープもパスだけで決まる。
   const scope = designScope(pathname);
   const deco = decoClassName(scope);
 
   return (
     <div className={deco || undefined}>
-      {concealed ? null : <Navbar />}
-      <main id="main" className="page">
+      {chrome.header ? <Navbar /> : null}
+      <main id="main" className={chrome.flushTop ? "page page--flush" : "page"}>
         {children}
       </main>
-      {concealed ? null : (
+      {chrome.footer ? (
         <footer className="site-footer">
           <div className="site-footer__inner">
             <p>{SITE.name}</p>
@@ -46,7 +48,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
             </ul>
           </div>
         </footer>
-      )}
+      ) : null}
     </div>
   );
 }

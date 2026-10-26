@@ -1,14 +1,10 @@
-import Link from "next/link";
 import { profileInitial } from "@/modules/organizers/lib/profile";
 import { PROFILE_TAG_LABELS, type OrganizerProfileContent } from "@/modules/organizers/types";
-import { Alert, EmptyState, Section, SectionHead } from "@/components/ui";
+import { Alert, EmptyState } from "@/components/ui";
 
 interface OrganizerProfileViewProps {
-  userId: string;
   name: string;
   profile: OrganizerProfileContent;
-  /** 催しページの URL。プレビューでは保存済みの URL を渡す。 */
-  eventsPath?: string;
   /**
    * 編集画面のプレビュー。非公開でも中身を描き、公開したときの見え方を確かめられる。
    */
@@ -16,21 +12,18 @@ interface OrganizerProfileViewProps {
 }
 
 /**
- * 主催者の公開プロフィール（SCR-PUB-14）。
+ * 主催者の公開ページ（SCR-PUB-14）のプロフィール部分。
  *
  * サーバーコンポーネントからも、編集画面のプレビューからも同じ見た目で使う。
- * 非公開の会員は名前と催しへの導線だけを出す（自己紹介・リンク・実績は出さない）。
- * ここでは催しを取得しない。一覧は催しページに任せ、この画面は人物 1 枚に絞る。
+ * 非公開の会員は名前だけを出す（自己紹介・リンク・実績は出さない）。
+ * 催し（カレンダーと一覧）は同じページの下に置き、ここでは人物 1 枚に絞る。
  */
 export function OrganizerProfileView({
-  userId,
   name,
   profile,
-  eventsPath,
   preview = false,
 }: OrganizerProfileViewProps) {
   const showContent = profile.isPublished || preview;
-  const eventsHref = eventsPath ?? `/organizers/${userId}/events`;
 
   return (
     <div className="stack">
@@ -98,17 +91,8 @@ export function OrganizerProfileView({
         <EmptyState>この主催者は、まだプロフィールを公開していません。</EmptyState>
       )}
 
-      <Section>
-        <SectionHead title={<>{name}さんの催し</>} note="これから開催される催しの日程と会場を確認できます。" />
-        <div className="panel__actions">
-          <Link href={eventsHref} className="btn btn--primary">
-            催しを見る
-          </Link>
-        </div>
-      </Section>
-
       <p className="screen-note">
-        プロフィールを公開していない主催者は、名前と催しへの導線だけを出します。この画面は検索には出しません。
+        プロフィールを公開していない主催者は、名前だけを出します。この画面は検索には出しません。
       </p>
     </div>
   );

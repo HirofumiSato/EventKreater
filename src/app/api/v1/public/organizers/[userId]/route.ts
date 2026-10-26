@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { isUserId } from "@/lib/ids";
-import { organizerEventsPath } from "@/modules/organizers/lib/public-page";
 import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-store";
 import type { PublicOrganizerProfileResponse } from "@/modules/organizers/types";
 
@@ -43,7 +42,6 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       userId: loaded.userId,
       name: loaded.name,
       profile: loaded.profile,
-      eventsPath: organizerEventsPath(loaded.userId),
     };
     return NextResponse.json(body);
   } catch (error) {

@@ -33,7 +33,6 @@ export function OrganizerProfileForm() {
   const [name, setName] = useState("");
   const [stats, setStats] = useState<OrganizerProfileStats | null>(null);
   const [homePath, setHomePath] = useState("");
-  const [eventsPath, setEventsPath] = useState("");
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -45,7 +44,6 @@ export function OrganizerProfileForm() {
     setDraft(data.profile);
     setStats(data.stats);
     setHomePath(data.homePath);
-    setEventsPath(data.eventsPath);
   }, []);
 
   const load = useCallback(async () => {
@@ -178,10 +176,8 @@ export function OrganizerProfileForm() {
           </div>
         </Panel>
         <OrganizerProfileView
-          userId="preview"
           name={name}
           profile={profileContentFromDraft(draft, stats)}
-          eventsPath={eventsPath || undefined}
           preview
         />
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
@@ -206,11 +202,6 @@ export function OrganizerProfileForm() {
           {homePath && (
             <a href={homePath} target="_blank" rel="noopener noreferrer" className="btn btn--outline">
               公開ページを開く
-            </a>
-          )}
-          {eventsPath && (
-            <a href={eventsPath} target="_blank" rel="noopener noreferrer" className="btn btn--outline">
-              催しページを開く
             </a>
           )}
         </div>

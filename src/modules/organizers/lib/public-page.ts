@@ -140,12 +140,23 @@ export function clampMonth(month: string | null | undefined, minMonth: string): 
   return month < minMonth ? minMonth : month;
 }
 
-/** 主催者の公開プロフィールの URL。告知ページの主催者名はここへ送る。 */
+/** 主催者の公開ページの URL。プロフィールと催しを同じ画面に置く。 */
 export function organizerProfilePath(userId: string): string {
   return `/organizers/${userId}`;
 }
 
-/** 主催者の催し（カレンダー・一覧）の URL。プロフィールの下の節に置く。 */
-export function organizerEventsPath(userId: string): string {
-  return `/organizers/${userId}/events`;
+/**
+ * 旧 `/organizers/[userId]/events` から統合ページへ送るときの URL。
+ *
+ * 画面の表示はもうタブを持たないが、ブックマークと共有された URL のために
+ * 月（`?month=YYYY-MM`）だけを引き継ぐ。壊れた値は捨てる。
+ */
+export function organizerProfileRedirectPath(
+  userId: string,
+  month: string | string[] | null | undefined,
+): string {
+  const base = organizerProfilePath(userId);
+  const value = Array.isArray(month) ? month[0] : month;
+  if (!isMonthKey(value)) return base;
+  return `${base}?month=${encodeURIComponent(value)}`;
 }

@@ -46,8 +46,8 @@ flowchart TD
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/events/[id]/receipt` | GET | SCR-PUB-04 | 出欠 Cookie または会員 | 自分の参加費領収書 |
 | `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績を空にする。会員が無い・退会済み・催しが0件は 404 |
-| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-13 | 参加者（会員） | 主催者の催し。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
-| `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページと催しページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
+| `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | GET | SCR-ORG-09 | 幹事（会員のみ） | 発行済み領収書の取得。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -1154,7 +1154,7 @@ POST /api/v1/organizer/events/[id]/reminders
 
 ### 5.12. GET `/api/v1/public/organizers/[userId]`（主催者の公開プロフィール）
 
-対象画面は SCR-PUB-14。認証は要らない。`userId` が UUID でない場合は DB を触らず 404。
+対象画面は SCR-PUB-14（プロフィール部分）。認証は要らない。`userId` が UUID でない場合は DB を触らず 404。
 
 - 会員が無い、`users.deleted_at` が立っている、`event_organizers` の先の催しがすべて削除済みのいずれかなら 404 `主催者が見つかりません。`
 - `organizer_profiles` の行が無い、または `is_published = false` のときも 200。ただし `profile` は `isPublished: false` と null・空配列だけにし、保存値は返さない。
@@ -1174,14 +1174,13 @@ POST /api/v1/organizer/events/[id]/reminders
     "tags": ["LEARNING"],
     "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
     "stats": { "eventCount": 12, "sinceYear": 2019 }
-  },
-  "eventsPath": "/organizers/{userId}/events"
+  }
 }
 ```
 
-### 5.13. GET `/api/v1/public/organizers/[userId]/events`（主催者の催し）
+### 5.13. GET `/api/v1/public/organizers/[userId]/events`（主催者のページの催し）
 
-対象画面は SCR-PUB-13。`resolveOptionalUserId` で Cookie を見る。Cookie が壊れていても 401 にはせず、未ログインとして 403 `LOGIN_REQUIRED` を返す。
+対象画面は SCR-PUB-14（カレンダーと一覧の部分）。`resolveOptionalUserId` で Cookie を見る。Cookie が壊れていても 401 にはせず、未ログインとして 403 `LOGIN_REQUIRED` を返す。
 
 - 筆頭幹事（`OWNER`）と共同主催（`CO_HOST`）の両方の催しを集める。
 - 掲載条件は `isDeleted = false`、`status = PUBLISHED`、申し込み期限内、今日以降の開催日があること。満員でも返す（参加要望を受け付けるため）。
@@ -1211,8 +1210,7 @@ GET の応答:
     "showStats": false
   },
   "stats": { "eventCount": 3, "sinceYear": 2024 },
-  "homePath": "/organizers/{userId}",
-  "eventsPath": "/organizers/{userId}/events"
+  "homePath": "/organizers/{userId}"
 }
 ```
 
@@ -1826,7 +1824,7 @@ export interface ProblemDetails {
 
 ### 8.1. GET `/api/v1/auth/google`（認可開始）
 
-クエリ `next` はサインイン後の相対パス。許可するのは `/mypage`、`/organizer`、`/invitations`、`/events` と、その直下だけである。それ以外は `/mypage` に置き換える。
+クエリ `next` はサインイン後の相対パス。許可するのは `/mypage`、`/organizer`、`/invitations`、`/events`、`/participant`、`/organizers` と、その直下だけである。それ以外は `/mypage` に置き換える。
 
 `GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` が無いときは `/auth/register?error=google_config` へ戻す。あるときは `state` と `nonce` を生成し、次の Cookie を 10 分で保存して Google の認可 URL へリダイレクトする。
 

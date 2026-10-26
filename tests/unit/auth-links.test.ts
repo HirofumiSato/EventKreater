@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loginUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
+import { safeNextPath } from "@/modules/auth/lib/google-auth";
 
 describe("認証への導線", () => {
   it("戻り先をエンコードして mode を付ける", () => {
@@ -19,5 +20,15 @@ describe("認証への導線", () => {
     expect(phoneVerifyUrl("/organizer/events/new?ref=abc")).toBe(
       "/auth/register?step=phone&next=%2Forganizer%2Fevents%2Fnew%3Fref%3Dabc",
     );
+  });
+
+  it("主催者の公開ページへ戻れる（統合したので /organizers も許可する）", () => {
+    expect(safeNextPath("/organizers/u1")).toBe("/organizers/u1");
+    expect(safeNextPath("/organizers/u1?month=2026-11")).toBe("/organizers/u1?month=2026-11");
+  });
+
+  it("許可していないパスは既定の着地へ落とす", () => {
+    expect(safeNextPath("/console")).toBe("/mypage");
+    expect(safeNextPath("/organizersx")).toBe("/mypage");
   });
 });

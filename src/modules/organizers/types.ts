@@ -82,7 +82,6 @@ export interface OrganizerProfileDraftResponse {
   profile: OrganizerProfileDraft;
   stats: OrganizerProfileStats | null;
   homePath: string;
-  eventsPath: string;
 }
 
 /** 公開プロフィール API の応答。 */
@@ -90,7 +89,6 @@ export interface PublicOrganizerProfileResponse {
   userId: string;
   name: string;
   profile: OrganizerProfileContent;
-  eventsPath: string;
 }
 
 export const EMPTY_PROFILE_DRAFT: OrganizerProfileDraft = {

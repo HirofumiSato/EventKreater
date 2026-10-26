@@ -402,5 +402,22 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 - 画面と実装の対応は `scripts/lib/mock-screens.mjs` の目録 1 か所が持ちます。撮り直しの手順は
   [mock-sync.md](mock-sync.md) です。
 
+---
+
+## 11. ホームのヘッダー廃止（2026-10-26）
+
+ホームは LP として扱い、**共通ヘッダーを出さない**ことにしました。ヘッダー 60px と `main` の上端
+余白 2rem が、墨地のヒーローの上に暖色の方眼を 1 本見せていたためです。
+
+| 項目 | 変更 | 正 |
+| --- | --- | --- |
+| クロムの出し分け | `SiteChrome` の `/console` 判定を、パスだけの純関数 `siteChrome()` へ移した。`/` は `header: false` / `footer: true` / `flushTop: true` | `src/lib/site-chrome.ts` |
+| `main` の上端 | ホームだけ `padding-block-start: 0`（`.page--flush`） | `src/styles/base.css` |
+| 参加者の入口 | ヒーローの `.hero__actions` に「参加者ログイン」のテキストリンクを足した | `src/app/page.tsx` |
+| 主催者の入口 | 従来どおりフッターの「主催者ログイン」が持つ | `src/components/common/SiteChrome.tsx` |
+
+FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッター、その他の公開画面はヘッダーに 2 本」へ
+読み替えます。判定は `tests/unit/site-chrome.test.ts` が固定します。
+
 
 

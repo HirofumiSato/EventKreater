@@ -39,7 +39,7 @@ export function googleRedirectUri(): string {
   return `${appBaseUrl()}/api/v1/auth/google/callback`;
 }
 
-const NEXT_PREFIXES = ["/mypage", "/organizer", "/invitations", "/events", "/participant"];
+const NEXT_PREFIXES = ["/mypage", "/organizer", "/invitations", "/events", "/participant", "/organizers"];
 
 /** ログイン後の戻り先として安全なパスだけを通す。不正なら fallback（入口ごとの既定）へ。 */
 export function safeNextPath(value: string | null | undefined, fallback = "/mypage"): string {

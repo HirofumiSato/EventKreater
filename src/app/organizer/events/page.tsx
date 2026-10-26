@@ -7,7 +7,7 @@ import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
-import { organizerEventsPath, organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
@@ -98,7 +98,7 @@ function OrganizerEventsScreen() {
   const copyPublicPageUrl = async () => {
     if (!viewer?.userId) return;
     await navigator.clipboard.writeText(`${window.location.origin}${organizerProfilePath(viewer.userId)}`);
-    setToast("プロフィールのURLをコピーしました。参加者に配れます。");
+    setToast("公開ページのURLをコピーしました。参加者に配れます。");
   };
 
   const runLifecycle = async (id: string, action: "close" | "delete") => {    setBusyId(id);
@@ -138,7 +138,7 @@ function OrganizerEventsScreen() {
               rel="noreferrer"
               className="btn btn--outline btn--sm"
             >
-              プロフィール
+              公開ページ
             </Link>
             <Link href="/organizer/profile" className="btn btn--outline btn--sm">
               プロフィールを編集
@@ -216,14 +216,6 @@ function OrganizerEventsScreen() {
               告知ページの主催者名から、プロフィールと催しのページへ移動できます。
             </p>
             <div className="panel__actions">
-              <Link
-                href={organizerEventsPath(viewer.userId)}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn--outline btn--sm"
-              >
-                催しページを開く
-              </Link>
               <button type="button" className="btn btn--outline btn--sm" onClick={() => setPreviewOpen(true)}>
                 プレビュー
               </button>

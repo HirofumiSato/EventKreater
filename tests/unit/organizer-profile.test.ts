@@ -10,7 +10,7 @@ import {
   profileStats,
   profileUrlProblem,
 } from "@/modules/organizers/lib/profile";
-import { organizerEventsPath, organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { organizerProfileRedirectPath } from "@/modules/organizers/lib/public-page";
 import { EMPTY_PROFILE_DRAFT, type OrganizerProfileDraft } from "@/modules/organizers/types";
 
 const TODAY = "2026-10-22";
@@ -198,9 +198,8 @@ describe("profileInitial", () => {
 });
 
 describe("公開ページの URL", () => {
-  it("プロフィールと催しを別の階層に置く", () => {
-    expect(organizerProfilePath("user-123")).toBe("/organizers/user-123");
-    expect(organizerEventsPath("user-123")).toBe("/organizers/user-123/events");
+  it("旧・催しページの月を、統合ページのクエリへ引き継ぐ", () => {
+    expect(organizerProfileRedirectPath("user-123", "2026-11")).toBe("/organizers/user-123?month=2026-11");
   });
 });
 

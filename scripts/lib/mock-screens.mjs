@@ -94,23 +94,24 @@ export function buildScreens(demo) {
       no: "06",
       group: "public",
       slug: "organizer-public",
-      name: "主催者のプロフィール",
+      name: "主催者のページ",
       path: `/organizers/${demo.organizerId}`,
+      // プロフィールは誰でも読めるが、催しは参加者のログインが要る。
+      // 未ログインで開くと、カレンダーと一覧は骨組みだけになる。
       auth: null,
-      note: "顔、肩書き、自己紹介、ジャンル、リンク、実績。",
+      note: "プロフィールの下に、カレンダーと一覧。未ログインでは催しをぼかす。",
+      states: [
+        { key: "guest", label: "未ログイン", path: `/organizers/${demo.organizerId}`, auth: null },
+        {
+          key: "member",
+          label: "ログイン済み",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+        },
+      ],
     },
     {
       no: "07",
-      group: "public",
-      slug: "organizer-public-events",
-      name: "主催者の催し",
-      path: `/organizers/${demo.organizerId}/events`,
-      // 催しの一覧は参加者のログインが要る。未ログインで開くと骨組みだけになる。
-      auth: "participant",
-      note: "一覧とカレンダーの切り替え。未ログインでは骨組みをぼかす。",
-    },
-    {
-      no: "08",
       group: "auth",
       slug: "register",
       name: "主催者のログイン・登録",
@@ -119,7 +120,7 @@ export function buildScreens(demo) {
       note: "パスワードと、確認番号の 2 経路。Google も同じ画面。",
     },
     {
-      no: "09",
+      no: "08",
       group: "auth",
       slug: "verify",
       name: "メールの確認",
@@ -128,7 +129,7 @@ export function buildScreens(demo) {
       note: "確認メールのリンクを開いたあと。次は電話番号の確認。",
     },
     {
-      no: "10",
+      no: "09",
       group: "auth",
       slug: "participant-login",
       name: "参加者ログイン",
@@ -137,7 +138,7 @@ export function buildScreens(demo) {
       note: "電話番号と確認番号だけ。パスワードは要らない。",
     },
     {
-      no: "11",
+      no: "10",
       group: "auth",
       slug: "invitation",
       name: "共同幹事の招待",
@@ -146,7 +147,7 @@ export function buildScreens(demo) {
       note: "できること・できないことを並べ、加わるかどうかを取る。",
     },
     {
-      no: "12",
+      no: "11",
       group: "auth",
       slug: "account",
       name: "アカウント設定",
@@ -155,7 +156,7 @@ export function buildScreens(demo) {
       note: "表示名、メール、電話、パスワード、退会。主催者と参加者で共通。",
     },
     {
-      no: "13",
+      no: "12",
       group: "auth",
       slug: "account-verify",
       name: "メールアドレスの確定",
@@ -166,7 +167,7 @@ export function buildScreens(demo) {
       note: "新しいアドレスの確認。成功したら設定へ戻す。",
     },
     {
-      no: "14",
+      no: "13",
       group: "participant",
       slug: "participant",
       name: "参加者ホーム",
@@ -175,7 +176,7 @@ export function buildScreens(demo) {
       note: "これからの参加、出席と欠席の件数、次の催し、履歴への導線。",
     },
     {
-      no: "15",
+      no: "14",
       group: "participant",
       slug: "participant-calendar",
       name: "参加カレンダー",
@@ -184,7 +185,7 @@ export function buildScreens(demo) {
       note: "答えた催しを開催日に置く。出席・要望・欠席を点で分ける。",
     },
     {
-      no: "16",
+      no: "15",
       group: "participant",
       slug: "participant-history",
       name: "参加履歴",
@@ -196,7 +197,7 @@ export function buildScreens(demo) {
       ],
     },
     {
-      no: "17",
+      no: "16",
       group: "organizer",
       slug: "organizer",
       name: "主催一覧",
@@ -205,7 +206,7 @@ export function buildScreens(demo) {
       note: "公開中と受付停止だけ。下書きは件数だけを添えて分ける。",
     },
     {
-      no: "18",
+      no: "17",
       group: "organizer",
       slug: "organizer-calendar",
       name: "主催カレンダー",
@@ -214,7 +215,7 @@ export function buildScreens(demo) {
       note: "月グリッドと、選んだ日の催し。複数の開催日はすべて出す。",
     },
     {
-      no: "19",
+      no: "18",
       group: "organizer",
       slug: "revenue",
       name: "売上",
@@ -223,7 +224,7 @@ export function buildScreens(demo) {
       note: "見込み・発行額・差額・平均単価。催し別の一覧が続く。",
     },
     {
-      no: "20",
+      no: "19",
       group: "organizer",
       slug: "revenue-detail",
       name: "売上の内訳",
@@ -232,7 +233,7 @@ export function buildScreens(demo) {
       note: "プラン別と開催回別。プラン未選択の案内を出す。",
     },
     {
-      no: "21",
+      no: "20",
       group: "organizer",
       slug: "create",
       name: "新規イベント作成",
@@ -241,7 +242,7 @@ export function buildScreens(demo) {
       note: "5ステップのアコーディオン。次へで畳まれ、次が開く。",
     },
     {
-      no: "22",
+      no: "21",
       group: "organizer",
       slug: "edit",
       name: "イベントの編集",
@@ -253,7 +254,7 @@ export function buildScreens(demo) {
       serial: true,
     },
     {
-      no: "23",
+      no: "22",
       group: "organizer",
       slug: "drafts",
       name: "下書き一覧",
@@ -262,7 +263,7 @@ export function buildScreens(demo) {
       note: "自分の下書きだけ。プレビュー・編集・削除。",
     },
     {
-      no: "24",
+      no: "23",
       group: "organizer",
       slug: "preview",
       name: "下書きのプレビュー",
@@ -271,7 +272,7 @@ export function buildScreens(demo) {
       note: "告知ページと同じ見た目。出欠フォームは出さない。",
     },
     {
-      no: "25",
+      no: "24",
       group: "organizer",
       slug: "roster",
       name: "参加者名簿",
@@ -280,7 +281,7 @@ export function buildScreens(demo) {
       note: "表。行の軸が揃っていることが機能そのもの。",
     },
     {
-      no: "26",
+      no: "25",
       group: "organizer",
       slug: "receipt",
       name: "幹事向け領収書",
@@ -289,7 +290,7 @@ export function buildScreens(demo) {
       note: "再発行と印刷。番号は変わらず、発行日だけが進む。",
     },
     {
-      no: "27",
+      no: "26",
       group: "organizer",
       slug: "register-required",
       name: "公開直後の案内",
@@ -298,7 +299,7 @@ export function buildScreens(demo) {
       note: "共有 URL と、登録後にできること。未登録の幹事にだけ出す。",
     },
     {
-      no: "28",
+      no: "27",
       group: "organizer",
       slug: "organizer-profile",
       name: "公開プロフィールの編集",
@@ -307,7 +308,7 @@ export function buildScreens(demo) {
       note: "公開の可否、肩書き、自己紹介、エリア、ジャンル、SNS。",
     },
     {
-      no: "29",
+      no: "28",
       group: "organizer",
       slug: "mypage",
       name: "主催者マイページ",
@@ -362,7 +363,7 @@ export function pathFor(row, width) {
 }
 
 /**
- * `--only=21,25`・`--only=1`・`--only=04-event-member`・`--only=create` のどれでも絞れる。
+ * `--only=20,24`・`--only=1`・`--only=04-event-member`・`--only=create` のどれでも絞れる。
  *
  * 目録の No は 2 桁なので、`--only=1` は 01 としても読む。`mock-` は付けても付けなくてもよい。
  */

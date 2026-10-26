@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2432,
+      "lineCount": 2430,
       "headings": [
         {
           "level": 1,
@@ -2172,7 +2172,7 @@
         },
         {
           "level": 3,
-          "text": "5.13. GET /api/v1/public/organizers/[userId]/events（主催者の催し）"
+          "text": "5.13. GET /api/v1/public/organizers/[userId]/events（主催者のページの催し）"
         },
         {
           "level": 3,
@@ -5261,7 +5261,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1773,
+      "lineCount": 1771,
       "headings": [
         {
           "level": 1,
@@ -5465,7 +5465,7 @@
         },
         {
           "level": 2,
-          "text": "14. 主催者の公開ページ（SCR-PUB-14 / SCR-PUB-13）"
+          "text": "14. 主催者のページ（SCR-PUB-14）"
         },
         {
           "level": 3,
@@ -5563,10 +5563,6 @@
           "exists": true
         },
         {
-          "path": "src/app/organizers/[userId]/events/page.tsx",
-          "exists": true
-        },
-        {
           "path": "src/app/organizers/[userId]/page.tsx",
           "exists": true
         },
@@ -5608,6 +5604,10 @@
         },
         {
           "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-chrome.ts",
           "exists": true
         },
         {
@@ -7405,9 +7405,9 @@
       "sphinxDoc": "issues/organizer-profile",
       "format": "markdown",
       "title": "主催者自身の紹介ページと、その入力・編集画面を作る",
-      "summary": "> 主催者の催しページ（[#21](https://github.com/HirofumiSato/EventKreater/issues/21) / [public-organizer-page.md](public-organizer-page.md)）から、対外的なプロフィールを分離した issue。",
+      "summary": "> 主催者の催しページ（[#21](https://github.com/HirofumiSato/EventKreater/issues/21) / [public-organizer-page.md](public-organizer-page.md)）から、対外的なプロフィールを分離した issue。 > > その後の変更: プロフィールと催しは1画面に統合し、/organizers/[userId]（SCR-PUB-14）の上からプロフィール、カレンダー、一覧を縦に並べる。旧 /organizers/[userId]/events は統合ページへの permanentRedirect にした。eventsPath は廃止し、?view も持たない。以下の決定は統合前の記録として残す。",
       "preImplementation": false,
-      "lineCount": 177,
+      "lineCount": 179,
       "headings": [
         {
           "level": 1,
@@ -7884,9 +7884,9 @@
       "sphinxDoc": "issues/public-organizer-page",
       "format": "markdown",
       "title": "参加者が主催者のイベントカレンダー・一覧を見られる公開ページを作る",
-      "summary": "> 起票済み: [#21](https://github.com/HirofumiSato/EventKreater/issues/21)。このファイルは設計の記録として残す。 > > その後、主催者自身の紹介ページを別 issue（[organizer-profile.md](organizer-profile.md)）に分離した。本 issue の催しページは /organizers/[userId]/events へ移し、/organizers/[userId] はプロフィールが使う。",
+      "summary": "> 起票済み: [#21](https://github.com/HirofumiSato/EventKreater/issues/21)。このファイルは設計の記録として残す。 > > その後、主催者自身の紹介ページを別 issue（[organizer-profile.md](organizer-profile.md)）に分離した。本 issue の催しページは /organizers/[userId]/events へ移し、/organizers/[userId] はプロフィールが使う。 > > その後の変更: プロフィールと催しは1画面に統合し、/organizers/[userId] を正とした。旧 /organizers/[userId]/events は permanentRedirect で統合ページへ送り、?month だけを引き継ぐ。以下の決定は統合前の記録として残す。",
       "preImplementation": false,
-      "lineCount": 161,
+      "lineCount": 163,
       "headings": [
         {
           "level": 1,
@@ -8341,7 +8341,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 320,
+      "lineCount": 322,
       "headings": [
         {
           "level": 1,
@@ -8656,7 +8656,7 @@
       "title": "全体システム要件定義書（機能横断・共通編）",
       "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1113,
+      "lineCount": 1107,
       "headings": [
         {
           "level": 1,
@@ -8875,6 +8875,10 @@
       "codePaths": [
         {
           "path": "src/lib/prisma.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-chrome.ts",
           "exists": true
         },
         {
@@ -9730,7 +9734,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 482,
+      "lineCount": 486,
       "headings": [
         {
           "level": 1,
@@ -9969,6 +9973,10 @@
         },
         {
           "path": "tests/unit/rsvp-status.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-chrome.test.ts",
           "exists": true
         },
         {
@@ -10287,7 +10295,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 407,
+      "lineCount": 424,
       "headings": [
         {
           "level": 1,
@@ -10456,6 +10464,10 @@
         {
           "level": 3,
           "text": "10.2. 残る制約"
+        },
+        {
+          "level": 2,
+          "text": "11. ホームのヘッダー廃止（2026-10-26）"
         }
       ],
       "toctree": [],
@@ -10489,7 +10501,15 @@
           "exists": true
         },
         {
+          "path": "src/components/common/SiteChrome.tsx",
+          "exists": true
+        },
+        {
           "path": "src/lib/design-scope.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-chrome.ts",
           "exists": true
         },
         {
@@ -10510,6 +10530,10 @@
         },
         {
           "path": "src/styles/tokens.css",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-chrome.test.ts",
           "exists": true
         }
       ],

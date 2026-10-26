@@ -77,7 +77,6 @@ describeDb("主催者の公開プロフィール（結合）", () => {
     expect(body).toMatchObject({
       userId: organizer.id,
       name: "未設定の主催者",
-      eventsPath: `/organizers/${organizer.id}/events`,
       profile: {
         isPublished: false,
         headline: null,
@@ -246,7 +245,6 @@ describeDb("主催者の公開プロフィール（結合）", () => {
     expect(status).toBe(200);
     expect(body.name).toBe("下書きを読む主催者");
     expect(body.homePath).toBe(`/organizers/${organizer.id}`);
-    expect(body.eventsPath).toBe(`/organizers/${organizer.id}/events`);
     expect(body.profile).toMatchObject({ isPublished: false, tags: [], xUrl: "" });
     expect(body.stats).toEqual({ eventCount: 1, sinceYear: 2025 });
   });

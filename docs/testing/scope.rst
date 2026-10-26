@@ -147,7 +147,7 @@
 
 .. count-start
 
-51 ファイル、``it`` は 636 件です。内訳は ``tests/unit/`` が 39 ファイル 567 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+52 ファイル、``it`` は 647 件です。内訳は ``tests/unit/`` が 40 ファイル 578 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -228,7 +228,7 @@
      - 均等割と比率割の計算、端数の寄せ先、領収書発行額の按分、未割当の扱い、割合と人数の検証
      - SCR-ORG-12
    * - ``tests/unit/auth-links.test.ts``
-     - 3
+     - 5
      - 戻り先をエンコードして保つ。電話番号の確認へ進んでも戻り先を失わない
      - SCR-PUB-02
    * - ``tests/unit/auth-landing.test.ts``
@@ -316,7 +316,7 @@
      - 参加者カレンダーの日付の決め方、1 日 3 行への収め方、欠席の見せ方、主催者と参加者の遷移先
      - SCR-PUB-04
    * - ``tests/unit/public-organizer-page.test.ts``
-     - 30
+     - 34
      - 主催者ページの掲載条件、開催日の絞り込みと並び順、満員の色、公開 URL の組み立て
      - SCR-PUB-03
    * - ``tests/unit/rsvp-status.test.ts``
@@ -326,6 +326,10 @@
    * - ``tests/unit/design-scope.test.ts``
      - 8
      - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
+     - 全画面の共通レイアウト
+   * - ``tests/unit/site-chrome.test.ts``
+     - 5
+     - パスから公開クロムの出し分けを決める。ホームはヘッダーを出さず上端の余白も落とす、``/console`` はヘッダーもフッターも出さない、その他は両方出す、``/consolelike`` を誤認しない
      - 全画面の共通レイアウト
    * - ``tests/unit/format.test.ts``
      - 10
@@ -366,7 +370,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 567、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 567 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 578、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 578 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

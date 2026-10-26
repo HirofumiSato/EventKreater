@@ -1207,12 +1207,7 @@
   line-height: 1.9;
 }
 
-/* 主催者の催し。見出しの下に、切替と戻り先を 1 行で置く。 */
-.organizer-head {
-  display: grid;
-  gap: 1rem;
-}
-
+/* 主催者の催しの一覧で、絞り込みと並べ替えを 1 行に置く。 */
 .roster-toolbar {
   display: flex;
   flex-wrap: wrap;
