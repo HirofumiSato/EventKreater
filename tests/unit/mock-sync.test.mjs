@@ -8,8 +8,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { evaluateSync, sha256, TOOL_FILES } from "../../scripts/check-mock-sync.mjs";
-import { frameHtml, frameUrl } from "../../scripts/lib/mock-frame.mjs";
+import { evaluateSync, missingShell, sha256, TOOL_FILES } from "../../scripts/check-mock-sync.mjs";
+import { frameHtml, frameSrc, frameUrl } from "../../scripts/lib/mock-frame.mjs";
+import { indexHtml, scopeOfHtml } from "../../scripts/lib/mock-index.mjs";
 import {
   applyAssetMap,
   assetName,
@@ -18,6 +19,7 @@ import {
   rewriteInternalLinks,
   sanitizeHtml,
   stylesheetHrefs,
+  withMockShell,
   withNotice,
 } from "../../scripts/lib/mock-html.mjs";
 import { computeUiHash, normalizeNewlines, uiSourceFiles } from "../../scripts/lib/mock-hash.mjs";
@@ -136,6 +138,137 @@ describe("製品の HTML をモックに整える", () => {
     expect(first).toBe(assetName(Buffer.from("one"), ".css"));
     expect(first).not.toBe(assetName(Buffer.from("two"), ".css"));
     expect(first).toMatch(/^[0-9a-f]{16}\.css$/);
+  });
+});
+
+describe("モックだけの帯", () => {
+  const html = "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"></head><body><main>本文</main></body></html>";
+
+  it("head に CSS、body の末尾に data 付きの script を 1 つずつ足す", () => {
+    const out = withMockShell(html, {
+      file: "mock-home.html",
+      name: "01 ホーム",
+      path: "/",
+      frame390: "mock-frame.html?p=mock-home.html&w=390",
+      frame1280: "mock-frame.html?p=mock-home.html&w=1280",
+    });
+
+    expect(out).toContain('<link rel="stylesheet" href="mock-shell.css">');
+    expect(out.match(/data-mock-shell/g)).toHaveLength(1);
+    expect(out).toContain('src="mock-shell.js"');
+    expect(out).toContain('data-name="01 ホーム"');
+    expect(out).toContain('data-frame390="mock-frame.html?p=mock-home.html&amp;w=390"');
+    // script は body の閉じタグの直前、CSS は head の閉じタグの直前。
+    expect(out.indexOf("mock-shell.css")).toBeLessThan(out.indexOf("</head>"));
+    expect(out.indexOf("mock-shell.js")).toBeLessThan(out.indexOf("</body>"));
+  });
+
+  it("二重には足さない", () => {
+    const once = withMockShell(html, { file: "mock-a.html", name: "A" });
+    const twice = withMockShell(once, { file: "mock-a.html", name: "A" });
+    expect(twice).toBe(once);
+  });
+
+  it("画面名の記号を属性として壊さない", () => {
+    const out = withMockShell(html, { file: 'mock-a.html"x', name: '<img src=x onerror=1>' });
+    expect(out).not.toContain("<img src=x");
+    expect(out).toContain('data-name="&lt;img src=x onerror=1&gt;"');
+  });
+
+  it("帯が無い HTML を検出する", () => {
+    const contents = new Map([
+      ["mock-home.html", withMockShell(html, { name: "01 ホーム" })],
+      ["mock-service.html", html],
+    ]);
+    const problems = missingShell(["mock-home.html", "mock-service.html"], contents);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("mock-service.html");
+    expect(problems[0]).toContain("mock:sync");
+  });
+});
+
+describe("画面の一覧", () => {
+  const widths = [
+    { width: 390, height: 844 },
+    { width: 1280, height: 900 },
+  ];
+  const groups = [
+    { key: "public", title: "公開", note: "誰でも開ける画面。" },
+    { key: "organizer", title: "主催者", note: "運営する側の画面。" },
+  ];
+  const entries = [
+    { no: "01", group: "public", name: "ホーム", label: "", file: "mock-home.html", path: "/", note: "最初の画面。" },
+    {
+      no: "04",
+      group: "public",
+      name: "イベント告知・出欠",
+      label: "満員",
+      file: "mock-event-full.html",
+      path: "/events/abc",
+      note: "参加者が見る。",
+    },
+    {
+      no: "16",
+      group: "organizer",
+      name: "主催一覧",
+      label: "",
+      file: "mock-organizer.html",
+      path: "/organizer/events",
+      note: "公開中と受付停止。",
+    },
+  ];
+  const scopes = { "mock-home.html": "pop", "mock-organizer.html": "quiet" };
+  const html = indexHtml(entries, {
+    groups,
+    widths,
+    stylesheets: ["assets/aaa.css"],
+    scopeOf: (file) => scopes[file] ?? "none",
+  });
+
+  it("区分ごとの見出しと件数を出す", () => {
+    expect(html).toContain("公開");
+    expect(html).toContain("2 画面");
+    expect(html).toContain("主催者");
+    expect(html).toContain("1 画面");
+  });
+
+  it("名前は枠で開き、幅は切り替えで足す", () => {
+    expect(html).toContain('data-open-width="390"');
+    expect(html).toContain('data-open-width="1280"');
+    expect(html).toContain(
+      'data-frame="mock-frame.html?p=mock-home.html"',
+    );
+    expect(html).toContain(
+      'href="mock-frame.html?p=mock-home.html&amp;w=390"',
+    );
+  });
+
+  it("行ごとにスマホ・PC・HTML のリンクを持つ", () => {
+    expect(html).toContain('href="mock-frame.html?p=mock-organizer.html&amp;w=390"');
+    expect(html).toContain('href="mock-frame.html?p=mock-organizer.html&amp;w=1280"');
+    expect(html).toContain('href="mock-organizer.html"');
+  });
+
+  it("状態はバッジで出し、装飾のスコープを添える", () => {
+    expect(html).toContain("満員");
+    expect(html).toContain("scope-tag scope-tag--pop");
+    expect(html).toContain("scope-tag scope-tag--quiet");
+    expect(html).toContain('<link rel="stylesheet" href="assets/aaa.css">');
+  });
+
+  it("画面名の記号をそのまま HTML にしない", () => {
+    const one = indexHtml(
+      [{ ...entries[0], name: "<img src=x onerror=alert(1)>" }],
+      { groups, widths },
+    );
+    expect(one).not.toContain("<img src=x");
+    expect(one).toContain("&lt;img src=x");
+  });
+
+  it("装飾のスコープは生成した HTML のクラスから読む", () => {
+    expect(scopeOfHtml('<div class="deco deco--tape deco--tape-shadow">')).toBe("pop");
+    expect(scopeOfHtml('<div class="deco deco--tape deco--tape-quiet">')).toBe("quiet");
+    expect(scopeOfHtml('<div class="page">')).toBe("none");
   });
 });
 
@@ -266,6 +399,13 @@ describe("端末の幅で見る枠", () => {
     expect(frameUrl("a b.html", 1280)).toBe("mock-frame.html?p=a%20b.html&w=1280");
   });
 
+  it("枠の中で読み込む URL は帯を出さない（embed=1）", () => {
+    expect(frameSrc("mock-home.html")).toBe("mock-home.html?embed=1");
+    expect(frameSrc("mock-home.html?v=1")).toBe("mock-home.html?v=1&embed=1");
+    const html = frameHtml(entries, { widths, groups });
+    expect(html).toContain('"mock-home.html": "mock-home.html?embed=1"');
+  });
+
   it("iframe と幅の切り替えを持ち、画面はすべて選択肢に入る", () => {
     const html = frameHtml(entries, { widths, groups });
     expect(html).toContain('<iframe id="frame"');
@@ -293,13 +433,16 @@ describe("端末の幅で見る枠", () => {
 
   it("一覧と枠が欠けていれば止める", () => {
     const files = ["mock-home.html"];
+    const tools = Object.fromEntries(
+      TOOL_FILES.filter((name) => name !== "mock-frame.html").map((name) => [name, sha256(name)]),
+    );
     const problems = evaluateSync({
       manifest: { uiHash: "ui-1", screens: [{ file: "mock-home.html", hash: sha256("mock-home.html") }] },
       expected: files,
       uiHash: "ui-1",
       fileHashes: new Map([
         ["mock-home.html", sha256("mock-home.html")],
-        ["mock-index.html", sha256("index")],
+        ...Object.entries(tools),
       ]),
       tools: TOOL_FILES,
       extraFiles: [...files, ...TOOL_FILES],

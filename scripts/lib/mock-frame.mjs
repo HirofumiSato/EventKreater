@@ -11,6 +11,14 @@ export function frameUrl(file, width) {
   return `mock-frame.html?p=${encodeURIComponent(file)}&w=${width}`;
 }
 
+/**
+ * 枠の中に読み込む URL。帯を出さないよう `embed=1` を付ける。
+ * 枠は本文だけを見るためのものなので、中に帯があると二重になる。
+ */
+export function frameSrc(file) {
+  return `${file}${file.includes("?") ? "&" : "?"}embed=1`;
+}
+
 export function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -68,6 +76,8 @@ export function frameHtml(entries, { widths, groups = [] }) {
 
   // 目録の順（No・状態の順）で前後に送る。端では反対側へ回る。
   const order = screens.map((screen) => screen.file);
+  // 枠の中では帯を出さない。URL の組み立てはここ 1 か所（frameSrc）に任せる。
+  const sources = Object.fromEntries(screens.map((screen) => [screen.file, frameSrc(screen.file)]));
 
   return `<!doctype html>
 <html lang="ja">
@@ -122,6 +132,7 @@ ${sizeLinks}
 
   <script>
     const SCREENS = ${JSON.stringify(screens, null, 2).replace(/</g, "\\u003c").replace(/\n/g, "\n    ")};
+    const SOURCES = ${JSON.stringify(sources, null, 2).replace(/</g, "\\u003c").replace(/\n/g, "\n    ")};
     const HEIGHTS = ${JSON.stringify(heightOf)};
     const params = new URLSearchParams(location.search);
     const widthOf = (value) => (HEIGHTS[value] ? Number(value) : ${sizes[0]});
@@ -142,7 +153,7 @@ ${sizeLinks}
     function show() {
       const screen = SCREENS.find((s) => s.file === file);
       const height = HEIGHTS[width];
-      frame.src = file;
+      frame.src = SOURCES[file] ?? file;
       frame.width = String(width);
       frame.height = String(height);
       document.getElementById("name").textContent = screen ? screen.no + " " + screen.name : file;

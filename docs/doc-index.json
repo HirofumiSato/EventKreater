@@ -10548,7 +10548,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 151,
+      "lineCount": 175,
       "headings": [
         {
           "level": 1,
@@ -10577,6 +10577,10 @@
         {
           "level": 2,
           "text": "コマンド"
+        },
+        {
+          "level": 2,
+          "text": "モックだけが持つもの"
         },
         {
           "level": 2,
@@ -10614,11 +10618,19 @@
           "exists": true
         },
         {
+          "path": "scripts/lib/mock-frame.mjs",
+          "exists": true
+        },
+        {
           "path": "scripts/lib/mock-hash.mjs",
           "exists": true
         },
         {
           "path": "scripts/lib/mock-html.mjs",
+          "exists": true
+        },
+        {
+          "path": "scripts/lib/mock-index.mjs",
           "exists": true
         },
         {
