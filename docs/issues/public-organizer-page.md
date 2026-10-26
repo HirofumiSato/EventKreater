@@ -3,6 +3,8 @@
 > 起票済み: [#21](https://github.com/HirofumiSato/EventKreater/issues/21)。このファイルは設計の記録として残す。
 >
 > その後、主催者自身の紹介ページを別 issue（[organizer-profile.md](organizer-profile.md)）に分離した。本 issue の催しページは `/organizers/[userId]/events` へ移し、`/organizers/[userId]` はプロフィールが使う。
+>
+> **その後の変更:** プロフィールと催しは1画面に統合し、`/organizers/[userId]` を正とした。旧 `/organizers/[userId]/events` は `permanentRedirect` で統合ページへ送り、`?month` だけを引き継ぐ。以下の決定は統合前の記録として残す。
 
 ## 背景
 

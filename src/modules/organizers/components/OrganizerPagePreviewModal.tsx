@@ -1,6 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { OrganizerPageView } from "./OrganizerPageView";
+import { OrganizerProfileView } from "./OrganizerProfileView";
+import type { OrganizerProfileContent, PublicOrganizerProfileResponse } from "@/modules/organizers/types";
+import { Loading } from "@/components/ui";
 
 interface OrganizerPagePreviewModalProps {
   userId: string;
@@ -11,10 +15,26 @@ interface OrganizerPagePreviewModalProps {
 /**
  * 主催者が、参加者から見た自分の公開ページを確認するモーダル。
  *
+ * 統合ページと同じく、プロフィールの下に催しを並べる。
  * 中身はログイン済みの見え方だけを出す（未ログインのぼかし表示は出さない）。
- * タブの切り替えや月の移動はURLへ書かず、モーダルの中で完結させる。
+ * 月の移動はURLへ書かず、モーダルの中で完結させる。
  */
 export function OrganizerPagePreviewModal({ userId, organizerName, onClose }: OrganizerPagePreviewModalProps) {
+  const [profile, setProfile] = useState<OrganizerProfileContent | null>(null);
+  const [name, setName] = useState(organizerName);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/v1/public/organizers/${userId}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as PublicOrganizerProfileResponse;
+    setName(data.name);
+    setProfile(data.profile);
+  }, [userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   return (
     <div className="modal" style={{ display: "flex" }}>
       <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
@@ -31,7 +51,16 @@ export function OrganizerPagePreviewModal({ userId, organizerName, onClose }: Or
             閉じる
           </button>
         </div>
-        <OrganizerPageView userId={userId} preview />
+        <div className="stack">
+          {profile ? (
+            <OrganizerProfileView name={name} profile={profile} />
+          ) : (
+            <Loading>
+              読み込んでいます
+            </Loading>
+          )}
+          <OrganizerPageView userId={userId} preview />
+        </div>
       </div>
     </div>
   );

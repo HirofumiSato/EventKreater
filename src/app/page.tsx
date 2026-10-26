@@ -80,6 +80,11 @@ export default function HomePage() {
               <Link href={SITE.nav.service.href} className="text-link">
                 料金を見る
               </Link>
+              {/* ホームは共通ヘッダーを出さない。参加者の入口はヒーローに残す。
+                  主催者の入口はフッターが持つ。 */}
+              <Link href={SITE.nav.participantLogin.href} className="text-link">
+                {SITE.nav.participantLogin.label}
+              </Link>
             </div>
           </div>
           <figure className="hero__poster">

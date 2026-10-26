@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { cache } from "react";
+import { Suspense, cache } from "react";
+import { Loading } from "@/components/ui";
 import { isUserId } from "@/lib/ids";
+import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileBioExcerpt } from "@/modules/organizers/lib/profile";
 import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-store";
 
 /**
- * 主催者の公開プロフィール（SCR-PUB-14）。
+ * 主催者の公開ページ（SCR-PUB-14）。プロフィールと催しを1画面に置く。
  *
  * 参加者が告知ページの主催者名から開くページ。検索結果には出さない。
+ * プロフィールは誰でも読めるが、カレンダーと一覧は参加者のログインが要る。
  * 会員が無い・退会済み・催しが0件のときだけ 404。
  */
 
@@ -48,7 +51,19 @@ export default async function OrganizerProfilePage({ params }: PageProps) {
 
   return (
     <div className="page--narrow">
-      <OrganizerProfileView userId={loaded.userId} name={loaded.name} profile={loaded.profile} />
+      <div className="stack">
+        <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
+        {/* 催しは useSearchParams を読むため、Suspense で包む。 */}
+        <Suspense
+          fallback={
+            <Loading>
+              読み込んでいます
+            </Loading>
+          }
+        >
+          <OrganizerPageView userId={loaded.userId} />
+        </Suspense>
+      </div>
     </div>
   );
 }

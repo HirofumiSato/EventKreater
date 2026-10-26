@@ -1,6 +1,8 @@
 # 主催者自身の紹介ページと、その入力・編集画面を作る
 
 > 主催者の催しページ（[#21](https://github.com/HirofumiSato/EventKreater/issues/21) / [public-organizer-page.md](public-organizer-page.md)）から、対外的なプロフィールを分離した issue。
+>
+> **その後の変更:** プロフィールと催しは1画面に統合し、`/organizers/[userId]`（SCR-PUB-14）の上からプロフィール、カレンダー、一覧を縦に並べる。旧 `/organizers/[userId]/events` は統合ページへの `permanentRedirect` にした。`eventsPath` は廃止し、`?view` も持たない。以下の決定は統合前の記録として残す。
 
 ## 背景
 

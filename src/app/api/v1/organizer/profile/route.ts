@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { toErrorResponse } from "@/lib/http";
 import { OrganizerProfileSchema } from "@/lib/schemas";
 import { requireOrganizerAccount } from "@/modules/auth/lib/guards";
-import { organizerEventsPath, organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import {
   assertOrganizerMember,
   readOrganizerProfileDraft,
@@ -32,7 +32,6 @@ async function loadResponse(userId: string): Promise<OrganizerProfileDraftRespon
     profile,
     stats,
     homePath: organizerProfilePath(userId),
-    eventsPath: organizerEventsPath(userId),
   };
 }
 

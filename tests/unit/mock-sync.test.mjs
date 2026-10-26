@@ -233,7 +233,7 @@ describe("画面の目録", () => {
     const rows = placeholderScreens();
     expect(selectRows(rows, ["1"]).map((row) => row.no)).toEqual(["01"]);
     expect(selectRows(rows, ["01"]).map((row) => row.no)).toEqual(["01"]);
-    expect(selectRows(rows, ["21-create"]).map((row) => row.file)).toEqual(["mock-create.html"]);
+    expect(selectRows(rows, ["20-create"]).map((row) => row.file)).toEqual(["mock-create.html"]);
     expect(selectRows(rows, ["99"])).toHaveLength(0);
     expect(selectRows(rows, null)).toBe(rows);
   });

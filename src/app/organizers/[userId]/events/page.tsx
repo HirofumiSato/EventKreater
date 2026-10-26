@@ -1,28 +1,22 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
-import { Loading } from "@/components/ui";
+import { permanentRedirect } from "next/navigation";
+import { organizerProfileRedirectPath } from "@/modules/organizers/lib/public-page";
 
 /** 参加者向けのページなので、検索結果には出さない。 */
 export const metadata: Metadata = {
-  title: "主催者の催し",
+  title: "主催者のページ",
   robots: { index: false, follow: false },
 };
 
-export const dynamic = "force-dynamic";
+interface PageProps {
+  params: { userId: string };
+  searchParams: { month?: string | string[] };
+}
 
-export default function OrganizerEventsPage({ params }: { params: { userId: string } }) {
-  return (
-    <div className="page--narrow">
-      <Suspense
-        fallback={
-          <Loading>
-            読み込んでいます
-          </Loading>
-        }
-      >
-        <OrganizerPageView userId={params.userId} />
-      </Suspense>
-    </div>
-  );
+/**
+ * 旧・主催者の催しページ。プロフィールと1画面に統合したので、
+ * 統合ページ（`/organizers/[userId]`）へ恒久的に送る。月だけを引き継ぐ。
+ */
+export default function OrganizerEventsPage({ params, searchParams }: PageProps) {
+  permanentRedirect(organizerProfileRedirectPath(params.userId, searchParams.month));
 }

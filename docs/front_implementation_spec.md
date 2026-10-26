@@ -44,7 +44,7 @@ flowchart TD
 
 | パス | 画面ID | 対象アクター | 認可・アクセス条件 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`飯フェス、タコパ、ライブ、占い、撮影会などの主催者様へ。`）、見出しは `SITE.tagline`（チラシと告知WEBページを5分で作る）。未ログイン時のボタンは「主催者ログイン」。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
+| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`飯フェス、タコパ、ライブ、占い、撮影会などの主催者様へ。`）、見出しは `SITE.tagline`（チラシと告知WEBページを5分で作る）。LP として扱い、共通ヘッダーは出さない。墨地のヒーローを画面の上端から始め、メインの上端の余白も 0 にする（`siteChrome("/")` の `flushTop`）。ログインの入口は、ヒーローに「参加者ログイン」、フッターに「主催者ログイン」を置く。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
 | `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円月額の自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する |
@@ -67,8 +67,8 @@ flowchart TD
 | `/participant` | SCR-PUB-08 | 参加者（ログイン会員） | 会員JWT必須 | 参加者ホーム。これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には `/mypage` への切り替えを出す |
 | `/participant/calendar` | SCR-PUB-12 | 参加者（ログイン会員） | 会員JWT必須 | 参加カレンダー（`GET /api/v1/user/calendar`）。出欠を答えた催しを、選んだ日程の日付に置く（未選択ならイベントの代表日）。出席・欠席・参加要望を出し、欠席は控えめに、参加要望はアンバーで表示する。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。一覧・検索は持たない |
 | `/participant/history` | SCR-PUB-09 | 参加者（ログイン会員） | 会員JWT必須 | 参加履歴（`GET /api/v1/user/participations`）。出欠（出席・参加要望・欠席）・時期の絞り込み、ページ送り、領収書へのリンク。集計に参加要望を出す。主催イベントの情報は出さない |
-| `/organizers/[userId]` | SCR-PUB-14 | 誰でも（未ログイン可） | なし（公開） | 主催者のプロフィール。`GET /api/v1/public/organizers/[userId]`。名前、頭文字、肩書き、自己紹介、活動エリア、ジャンル、X・Instagram・Webサイト・LINE、任意の実績。未作成・非公開なら名前と催しへの導線だけを出す（404 にしない）。催しが0件・退会済み・会員が無いときだけ 404。`noindex` |
-| `/organizers/[userId]/events` | SCR-PUB-13 | 参加者（ログイン会員） | 会員JWT必須（未ログインは 403 `LOGIN_REQUIRED`） | 主催者の催し（`GET /api/v1/public/organizers/[userId]/events`）。カレンダーと一覧を `?view=calendar\|list` で切り替える。月は `?month=YYYY-MM` に持ち、今月より前へは戻れない。未ログインでは骨組みをぼかして参加者ログインへ送る。主催者は SCR-ORG-01 のプレビューで同じ内容を確認できる。`noindex` |
+| `/organizers/[userId]` | SCR-PUB-14 | 誰でも（未ログイン可）。催しは参加者（ログイン会員） | なし（公開）。催しは `GET /api/v1/public/organizers/[userId]/events` が未ログインに 403 `LOGIN_REQUIRED` | 主催者のページ。プロフィール（`GET /api/v1/public/organizers/[userId]`）の下に、カレンダーと一覧を縦に並べる。名前、頭文字、肩書き、自己紹介、活動エリア、ジャンル、X・Instagram・Webサイト・LINE、任意の実績。未作成・非公開なら名前だけを出す（404 にしない）。催しが0件・退会済み・会員が無いときだけ 404。催しは未ログインでは骨組みをぼかして参加者ログインへ送り、月は `?month=YYYY-MM` に持つ（今月より前へは戻れない）。主催者は SCR-ORG-01 のプレビューで同じ内容を確認できる。`noindex` |
+| `/organizers/[userId]/events` | — | — | — | 画面ではない。統合したので `/organizers/[userId]` へ `permanentRedirect`（`?month` だけ引き継ぐ） |
 | `/account` | SCR-PUB-11 | 主催者・参加者（ログイン会員） | 会員JWT必須 | アカウント設定。表示名、メールアドレス、電話番号、パスワード、退会を縦に並べる。冒頭 `h1` は「アカウント設定」。主催者と参加者で同じ画面を使う |
 | `/account/email/verify` | SCR-PUB-11 | 確認リンクを開いた会員 | 確認トークン（ログインは不要） | 新しいメールアドレスの確定。成功したら `/account` へ戻す。無効・期限切れは理由を出す |
 | `/auth/register` | SCR-PUB-02 | 未ログインの幹事 | 未ログイン、または電話未確認の会員。管理者は不可（HTTP 403 `ADMIN_CONSOLE_REQUIRED`） | 主催者のローカル会員登録と Google サインイン（`GET /api/v1/auth/google`）。パスワード登録は確認メール後に電話番号を確認する。`?step=phone` が電話番号確認。`?step=login-code` がログイン確認番号。着地は `/mypage`、`/organizer`、`/invitations`、`/events`、`/participant` だけ。管理者が資格情報を送ると `/console/login` へのリンクだけを出す。有効なセッションがあればフォームを出さずに着地へ送り（第9節）、`?switch=1` のときだけフォームを出す |
@@ -100,8 +100,7 @@ flowchart TD
 | 会員 | SCR-PUB-08 | 参加者ホーム | `/participant` | これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線 |
 | 会員 | SCR-PUB-12 | 参加カレンダー | `/participant/calendar` | 出欠を答えた催しを月グリッドに置く。出席・欠席・参加要望。日付を選ぶとその日の催しが出る |
 | 会員 | SCR-PUB-09 | 参加履歴 | `/participant/history` | 出欠と領収書の一覧。出欠・時期で絞り込み、ページ送りする |
-| 誰でも | SCR-PUB-14 | 主催者のプロフィール | `/organizers/[userId]` | 主催者の自己紹介・ジャンル・リンク・実績。非公開なら名前と催しへの導線だけを出す |
-| 会員 | SCR-PUB-13 | 主催者の催し | `/organizers/[userId]/events` | 主催者の催しをカレンダーと一覧で見る。未ログインではぼかした骨組みだけを出す。満員は参加要望受付中 |
+| 誰でも／会員 | SCR-PUB-14 | 主催者のページ | `/organizers/[userId]` | プロフィール（自己紹介・ジャンル・リンク・実績）の下に、カレンダーと一覧。非公開なら名前だけを出す。未ログインでは催しをぼかした骨組みにし、参加者ログインへ送る。満員は参加要望受付中 |
 | 会員 | SCR-PUB-11 | アカウント設定 | `/account`（メール確認は `/account/email/verify`） | 表示名、メールアドレス、電話番号、パスワード、退会。変更の前に確認番号を出し、メールは新しいアドレスへのリンクで確定する。管理者は対象外 |
 | 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待、ポータル導線。下書きは出さず、件数だけを「下書き一覧」に添える。`?registered=1` で登録完了トーストを出す |
 | 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
@@ -171,8 +170,7 @@ graph TD
         PUB10["SCR-PUB-10: 利用規約<br/>/terms"]:::public
         PUB01["SCR-PUB-01: イベント告知・出欠画面<br/>/events/[id]"]:::public
         PUB04["SCR-PUB-04: 参加者向け領収書<br/>/events/[id]/receipt"]:::public
-        PUB14["SCR-PUB-14: 主催者のプロフィール<br/>/organizers/[userId]"]:::public
-        PUB13["SCR-PUB-13: 主催者の催し<br/>/organizers/[userId]/events"]:::member
+        PUB14["SCR-PUB-14: 主催者のページ<br/>/organizers/[userId]"]:::public
         PUB07["SCR-PUB-07: 参加者の会員登録・ログイン<br/>/participant/login"]:::member
         PUB08["SCR-PUB-08: 参加者ホーム<br/>/participant"]:::member
         PUB12["SCR-PUB-12: 参加カレンダー<br/>/participant/calendar"]:::member
@@ -285,11 +283,9 @@ graph TD
     PUB11 -->|参加者ホーム| PUB08
     PUB11 -.->|新しいメールアドレスの確認リンク| PUB11
     PUB11 -->|退会: セッション失効| PUB00
-    PUB14 -->|催しを見る| PUB13
-    PUB13 -->|公開プロフィール| PUB14
-    PUB13 -->|催しを開く| PUB01
-    PUB13 -->|参加者ホームへ| PUB08
-    PUB13 -.->|未ログイン 403 LOGIN_REQUIRED| PUB07
+    PUB14 -->|催しを開く| PUB01
+    PUB14 -->|参加者ホームへ| PUB08
+    PUB14 -.->|未ログイン 403 LOGIN_REQUIRED| PUB07
 
     %% 主催者
     PUB03 -->|イベントをすべて見る| ORG01
@@ -307,8 +303,7 @@ graph TD
     ORG01 -->|売上を見る| ORG11
     ORG01 -->|カレンダー| ORG13
     ORG01 -->|プロフィールを編集| ORG14
-    ORG01 -->|公開プロフィール| PUB14
-    ORG01 -->|催しページを開く・プレビュー| PUB13
+    ORG01 -->|公開ページを開く・プレビュー| PUB14
     ORG01 -->|筆頭幹事の契約管理| ST_PORTAL
     ORG01 -->|削除・受付停止| MOD03
     ORG01 -->|複製: 枠不足 HTTP 402| MOD01
@@ -404,7 +399,7 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 確認メールのリンクは SCR-PUB-05 に着地する。確認が済むと SCR-PUB-02 の電話番号確認（`?step=phone`）へ進み、既に会員ならログインへ戻る。参加者の入口から始めた登録は `?audience=participant` で SCR-PUB-07 の電話番号確認へ進む。
 
-主催者の公開プロフィール（SCR-PUB-14）と催し（SCR-PUB-13）は、告知ページ（SCR-PUB-01）の主催者名、参加者ホーム（SCR-PUB-08）の参加カード、主催一覧（SCR-ORG-01）、公開プロフィール編集（SCR-ORG-14）から開く。プロフィールから催しへ、催しからプロフィールへ戻れる。プロフィールは誰でも読めるが、催しの一覧は参加者のログインが要り、未ログインでは骨組みだけを出して SCR-PUB-07 へ送る。主催者が未作成・非公開のときと、催しが0件のときは、名前と催しへの導線だけを出す（404 にしない）。会員が存在しない・退会済みのときだけ 404 とする。
+主催者のページ（SCR-PUB-14）は、告知ページ（SCR-PUB-01）の主催者名、参加者ホーム（SCR-PUB-08）の参加カード、主催一覧（SCR-ORG-01）、公開プロフィール編集（SCR-ORG-14）から開く。プロフィールと催しは同じ画面に置き、催しはカレンダーと一覧を縦に並べる。プロフィールは誰でも読めるが、催しは参加者のログインが要り、未ログインでは骨組みだけを出して SCR-PUB-07 へ送る。主催者が未作成・非公開のときと、催しが0件のときは、名前だけを出す（404 にしない）。会員が存在しない・退会済みのときだけ 404 とする。
 
 アカウント（SCR-PUB-11）は、主催者画面と参加者画面の共通ヘッダーから開く。退会するとセッションが消え、`/?withdrawn=1` でホームへ戻る。メールアドレスの変更だけは、確認リンクの SCR-PUB-11（`/account/email/verify`）を経由してから `/account` へ戻る。
 
@@ -435,8 +430,8 @@ src/
 │   │   ├── page.tsx                          # SCR-PUB-01 (公開告知・出欠。期限後は新規と変更を止める)
 │   │   └── receipt/page.tsx                  # SCR-PUB-04 (参加者向け領収書)
 │   ├── organizers/[userId]/
-│   │   ├── page.tsx                          # SCR-PUB-14 (主催者のプロフィール。サーバーでDBを読む)
-│   │   └── events/page.tsx                   # SCR-PUB-13 (主催者の催し。カレンダーと一覧)
+│   │   ├── page.tsx                          # SCR-PUB-14 (主催者のページ。プロフィール＋カレンダー＋一覧)
+│   │   └── events/page.tsx                   # 画面ではない。統合ページへ permanentRedirect する
 │   ├── organizer/
 │   │   ├── events/
 │   │   │   ├── page.tsx                      # SCR-ORG-01 (主催イベント一覧・クォータ残数・ポータル)
@@ -473,7 +468,7 @@ src/
 ├── components/common/
 │   ├── Navbar.tsx                    # 共通ヘッダー。役割と画面領域で機能を出し分ける（3.1）
 │   ├── SiteChrome.tsx                # 公開ヘッダーとフッター。`/console` では隠す
-│   ├── CalendarMonth.tsx             # 月グリッド（SCR-ORG-13 / SCR-PUB-12 / SCR-PUB-13 で共用）
+│   ├── CalendarMonth.tsx             # 月グリッド（SCR-ORG-13 / SCR-PUB-12 / SCR-PUB-14 で共用）
 │   ├── CalendarEventModal.tsx        # カレンダーの予定の詳細
 │   └── Toast.tsx                     # トースト通知
 ├── lib/
@@ -492,11 +487,11 @@ src/
 │   ├── billing/                      # SCR-MOD-01。PricingModal・QuotaStatusBanner・StripePortalButton・plans/pricing/quota
 │   ├── events/                       # SCR-PUB-01 / SCR-ORG-01 / 02 / 05。EventCard・EventForm・EventMetaCard・OrganizerInviteCard・PosterHero
 │   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal・FlyerUploadButton
-│   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-13 / 14
+│   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-14
 │   │   ├── components/OrganizerTabs.tsx         # 主催一覧 / カレンダー / 売上 / プロフィール（本文内サブタブ）
 │   │   ├── components/OrganizerProfileForm.tsx  # SCR-ORG-14（保存前プレビュー）
-│   │   ├── components/OrganizerProfileView.tsx  # SCR-PUB-14（公開ページとプレビューで共用）
-│   │   ├── components/OrganizerPageView.tsx     # SCR-PUB-13（カレンダーと一覧・未ログインの骨組み）
+│   │   ├── components/OrganizerProfileView.tsx  # SCR-PUB-14（プロフィール。公開ページとプレビューで共用）
+│   │   ├── components/OrganizerPageView.tsx     # SCR-PUB-14（カレンダーと一覧・未ログインの骨組み）
 │   │   ├── components/OrganizerPagePreviewModal.tsx # SCR-ORG-01 のプレビュー
 │   │   ├── components/CalendarView.tsx          # SCR-ORG-13（月グリッドと選んだ日の予定）
 │   │   ├── components/CoHostPanel.tsx           # SCR-ORG-05 の幹事パネル（招待URLの発行）
@@ -519,6 +514,8 @@ src/
 ### 3.1. 共通ヘッダーのステークホルダー別出し分け
 
 要件は共通編の第2.4.1節を正とする。`src/components/common/Navbar.tsx` は、`GET /api/v1/user/profile` の `isOrganizer` と `usePathname()` の 2 つだけで表示を決める。ログインし直さずに役割を切り替えられる。
+
+**ホーム（`/`）はヘッダーを出さない。** 系列は `src/lib/site-chrome.ts` の `siteChrome()` がパスだけで決め、`SiteChrome` が 1 回だけ呼ぶ。`/` は LP としてヒーローを画面の上端から始め（`main.page--flush`）、参加者の入口はヒーローの「参加者ログイン」、主催者の入口はフッターが持つ。`/console` はヘッダーもフッターも出さない。それ以外は下の表に従う。
 
 | 状態 | 判定 | 並べる機能 |
 | :--- | :--- | :--- |
@@ -1204,7 +1201,7 @@ export interface PricingOption {
 | **FE-ORG-16** | **下書きの公開ボタン** | 下書きの編集画面と主催一覧を開く | 編集画面では「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、枠が無ければ `PricingModal` が出ること。一覧の下書きカードには「公開ページ」を出さないこと |
 | **FE-ORG-17** | **チラシのダウンロードとアップロード** | 作成画面で手元の JPEG をアップロードし、プレビューの「ダウンロード」を押す。続けて「過去のチラシから選ぶ」を開く | アップロード後にプレビューが出て、作成フォームの `flyerAssetId` がそのチラシになること。ダウンロードが `チラシ-{催し名}.jpg` の名前で保存され、回数（quota）が減らないこと。選択モーダルにアップロードしたチラシが並び、各カードからもダウンロードできること。PNG・WebP も同じように扱え、GIF や 8MB 超はエラーになること |
 | **FE-PUB-00** | **サービス名** | 公開画面のヘッダーとフッター | 表示が `SITE.name`（いまは `EventKreater`）であること |
-| **FE-PUB-01** | **未ログインのヘッダー** | 未ログインでホーム、ヘッダー、フッターを見る | ヘッダーに「参加者ログイン」（`/participant/login`）と「主催者ログイン」（`/auth/register`）があること。管理者ログインへのリンクは無いこと |
+| **FE-PUB-01** | **未ログインの導線** | 未ログインでホーム、`/service`、フッターを見る | ホームには共通ヘッダーが無く、ヒーローに「参加者ログイン」（`/participant/login`）、フッターに「主催者ログイン」（`/auth/register`）があること。`/service` のヘッダーには「参加者ログイン」と「主催者ログイン」の 2 本があること。管理者ログインへのリンクはどこにも無いこと |
 | **FE-PUB-02** | **参加者のヘッダー** | 主催イベントを持たない会員でログインし、`/participant` を開く | ヘッダーが「参加者ホーム」「参加カレンダー」「参加履歴」「主催者として使う」だけで、「イベント告知ページを作る」「主催一覧」「イベントを探す」が無いこと。「主催者として使う」の着地が `/organizer/events` であること |
 | **FE-PUB-03** | **主催者のヘッダー切り替え** | 主催者で `/organizer/events` を開き、続けて `/participant` を開く | 主催者画面では「主催一覧」「イベント告知ページを作る」「主催者マイページ」「参加者として見る」だけで、「参加者ホーム」「参加カレンダー」「参加履歴」が無いこと。参加者画面では「参加者ホーム」「参加カレンダー」「参加履歴」「主催者マイページ」だけで、「主催一覧」「イベント告知ページを作る」が無いこと |
 | **FE-PUB-04** | **現在地の表示** | `/participant/calendar`、`/participant/history`、`/organizer/events` を開く | それぞれ「参加カレンダー」「参加履歴」「主催一覧」だけに `aria-current="page"` と `is-current` が付き、`/participant` の「参加者ホーム」には付かないこと |
@@ -1636,22 +1633,22 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 ---
 
-## 14. 主催者の公開ページ（SCR-PUB-14 / SCR-PUB-13）
+## 14. 主催者のページ（SCR-PUB-14）
 
-告知ページの「主催」欄から、その主催者のプロフィール（SCR-PUB-14）を開き、そこから催しのカレンダーと一覧（SCR-PUB-13）へ進む。プロフィールは誰でも読めるが、催しの中身は参加者のログインを必須にする。プロフィールの本文は主催者が SCR-ORG-14 で書き、未作成・非公開なら名前と催しへの導線だけを出す。
+告知ページの「主催」欄から、その主催者のページ（SCR-PUB-14）を開く。1画面の上から、プロフィール、カレンダー、一覧の順に並べる。プロフィールは誰でも読めるが、催しの中身は参加者のログインを必須にする。プロフィールの本文は主催者が SCR-ORG-14 で書き、未作成・非公開なら名前だけを出す。
 
 ### 14.1. 画面と権限
 
-| 項目 | プロフィール（SCR-PUB-14） | 催し（SCR-PUB-13） |
-| :---- | :---- | :---- |
-| パス | `/organizers/[userId]`（`userId` は会員の UUID） | `/organizers/[userId]/events` |
-| アクター | 誰でも（未ログイン可） | 参加者（ログイン会員）。主催者も参加者として見られる |
-| サーバー | `src/app/organizers/[userId]/page.tsx`（サーバーコンポーネント。DB を直接読む） | `src/app/organizers/[userId]/events/page.tsx` が `metadata.robots` を `noindex, nofollow` にし、`<Suspense>` で `OrganizerPageView` を包む |
-| 認可 | なし（公開） | `GET /api/v1/public/organizers/[userId]/events` が未ログインに 403 `LOGIN_REQUIRED` を返す。画面は骨組みだけをぼかして出す |
-| 検索 | `metadata.robots` を `noindex, nofollow`。`src/app/robots.ts` の `disallow` に `/organizers/` を足す | 同左 |
-| 見つからない | 会員が無い、`users.deleted_at` が立っている、催しが0件のときは 404 と「主催者が見つかりません。」**プロフィール未作成・非公開では 404 にしない** | 同左 |
+| 項目 | 内容 |
+| :---- | :---- |
+| パス | `/organizers/[userId]`（`userId` は会員の UUID）。旧 `/organizers/[userId]/events` は `permanentRedirect` でここへ送る |
+| アクター | プロフィールは誰でも（未ログイン可）。カレンダーと一覧は参加者（ログイン会員）。主催者も参加者として見られる |
+| サーバー | `src/app/organizers/[userId]/page.tsx`（サーバーコンポーネント。DB を直接読む）。催しは `<Suspense>` で `OrganizerPageView`（クライアント）を包む |
+| 認可 | プロフィールはなし（公開）。催しは `GET /api/v1/public/organizers/[userId]/events` が未ログインに 403 `LOGIN_REQUIRED` を返し、画面は骨組みだけをぼかして出す |
+| 検索 | `metadata.robots` を `noindex, nofollow`。`src/app/robots.ts` の `disallow` に `/organizers/` を足す |
+| 見つからない | 会員が無い、`users.deleted_at` が立っている、催しが0件のときは 404 と「主催者が見つかりません。」**プロフィール未作成・非公開では 404 にしない** |
 
-未ログインでは、本物の催しを1件も返さない。画面は `.organizer-locked` の骨組みを `aria-hidden` にし、`.organizer-locked__notice` に「このページは参加者登録・ログイン後に閲覧できます」と出す。ボタンは `SITE.nav.participantLogin`（`?next=/organizers/[userId]/events` 付き）と参加者登録へのリンクである。DOM を見ても主催者名と催しは分からない。
+未ログインでは、本物の催しを1件も返さない。画面は `.organizer-locked` の骨組みを `aria-hidden` にし、`.organizer-locked__notice` に「催しの予定は参加者登録・ログイン後に閲覧できます」と出す。ボタンは `SITE.nav.participantLogin`（`?next=/organizers/[userId]` 付き）と参加者登録へのリンクである。DOM を見ても催しは分からない。
 
 ### 14.2. 取得 API
 
@@ -1669,8 +1666,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
     "tags": ["LEARNING", "LOCAL"],
     "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
     "stats": { "eventCount": 12, "sinceYear": 2019 }
-  },
-  "eventsPath": "/organizers/{userId}/events"
+  }
 }
 ```
 
@@ -1718,34 +1714,36 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * `toOrganizerCellItem`: カレンダーの短冊。`isFull` なら `tone: "waitlist"`、そうでなければ `default`。詳細は `時刻 · 場所 · 参加/定員名`。
 * `clampMonth(month, minMonth)`: 壊れた値と今月より前を今月へ寄せる。
 * `organizerProfilePath(userId)`: `/organizers/${userId}`。
-* `organizerEventsPath(userId)`: `/organizers/${userId}/events`。
+* `organizerProfileRedirectPath(userId, month)`: 旧 `/organizers/${userId}/events` からの転送先。`isMonthKey` を通った月だけをクエリに残す。
 
 ### 14.4. 画面の構成
 
+画面は上から、プロフィール、カレンダー、一覧の順に並べる。タブは持たない。
+
 **プロフィール:** `src/modules/organizers/components/OrganizerProfileView.tsx`。サーバーコンポーネントからも編集画面のプレビューからも同じ部品を使う。
 
-* `.profile-hero` に頭文字のモノグラム、`h1`（主催者名）、肩書き、活動エリア、ジャンルの `.profile-tag`、リンクの `.profile-links` を出す。リンクは `target="_blank"` と `rel="noopener noreferrer nofollow"`。
+* `.profile-head` に頭文字のモノグラム、`h1`（主催者名）、肩書き、活動エリア、ジャンルの `.chip`、リンクの `.profile-links` を出す。リンクは `target="_blank"` と `rel="noopener noreferrer nofollow"`。
 * 自己紹介は `.profile-bio` で改行を保持する（`white-space: pre-wrap`）。
 * 実績は `showStats` がオンのときだけ「主催 N回」「YYYY年から」を出す。
-* 未作成・非公開では「この主催者は、まだプロフィールを公開していません。」だけを出し、名前・モノグラム・催しへの導線は残す。
+* 未作成・非公開では「この主催者は、まだプロフィールを公開していません。」だけを出し、名前とモノグラムは残す。
 * `preview` では非公開でも中身を描き、注意書きを添える。
 
-**催し:** `src/modules/organizers/components/OrganizerPageView.tsx`（クライアント）。
+**カレンダーと一覧:** `src/modules/organizers/components/OrganizerPageView.tsx`（クライアント）。
 
-* 冒頭は主催者名の `h1`（「〇〇さんの催し」）と、「公開プロフィール」（`/organizers/[userId]`）・参加者ホームへの導線。未ログイン・読み込み中・エラーでは名前を出さない。
-* タブは `.segment` のラジオで「カレンダー」「一覧」。切り替えは `?view=calendar|list` に持ち、`router.replace(..., { scroll: false })` で戻る・進むに追従する。プレビューでは URL を変えない。
-* カレンダーは `CalendarMonthGrid` と `CalendarToolbar` を使う。初期表示は JST の今月で、前月・次月・今月で移動する。前月は今月で止める（`clampMonth`）。月は `?month=YYYY-MM` に持つ。
-* 選んだ日の `h2` と催しの一覧を右に出す。催しが無い日と月には空の案内を出す。
-* 一覧はカードで、チラシのサムネイル、催し名、今日以降の全開催日、費用、場所、参加人数と定員、充足率の `.meter` を出す。満員かつ `acceptsWaitlist` なら `badge--waitlist` の「参加要望受付中」、満員で受付終了なら `badge--declined` の「満員」、空きがあれば「残り N 名」を出す。
+* タブは無い。`Section` の「カレンダー」と「一覧」を縦に置く。
+* カレンダーは `CalendarMonthGrid` を使う。初期表示は JST の今月で、前月・次月・今月で移動する。前月は今月で止める（`clampMonth`）。月は `?month=YYYY-MM` に持つ。プレビューでは URL を変えない。
+* 選んだ日の `h2` と催しの一覧を出す。催しが無い日と月には空の案内を出す。
+* 一覧は「次に開催される日が近い順」の全件。催し名、今日以降の全開催日、費用、場所、参加人数と定員、充足率の `.meter` を出す。満員かつ `acceptsWaitlist` なら `badge--waitlist` の「参加要望受付中」、満員で受付終了なら `badge--declined` の「満員」、空きがあれば「残り N 名」を出す。
 * どちらの表示からも催しは `/events/[id]` へ進む。ボタンの文言は満員なら「参加要望を出す」、それ以外は「出欠を答える」。
+* 催しが0件のときは「これから開催される催しはありません。」だけを出す。
 
 ### 14.5. 主催者側のプレビューと導線
 
 * `GET /api/v1/organizer/events` は各イベントに `ownerUserId` を、レスポンスに `viewer: { userId, name }` を足す。`serializeOrganizerListItem` は筆頭幹事の `userId` を受け取る。
-* `/organizer/events`（SCR-ORG-01）に「プロフィール」「プロフィールを編集」を置き、「参加者に見えるページ」の節に「催しページを開く」「プレビュー」「URLをコピー」をまとめる。コピーする URL は `organizerProfilePath(viewer.userId)` である。
+* `/organizer/events`（SCR-ORG-01）に「公開ページ」「プロフィールを編集」を置き、「主催者ページ」の節に「プレビュー」「URLをコピー」をまとめる。コピーする URL は `organizerProfilePath(viewer.userId)` である。
 * `/mypage`（SCR-PUB-03）に公開状態（公開中／非公開）と「プロフィールを編集」「公開ページを開く」を出す。`GET /api/v1/organizer/profile` が 403 のとき（催しが0件）は節ごと出さない。
 * `/mypage` の主催イベントは直近3件だけを出す。並びは主催一覧と同じで、上部に「すべて見る」を置き `/organizer/events` へ送る。残りは主催一覧で見せる。参加履歴（`/participant/history`）は出さない。
-* プレビューは `OrganizerPagePreviewModal` で開く。中身はログイン済みの表示だけを出し、未ログインのぼかしは出さない。ページの `?view` と `?month` は変えず、閉じると元の一覧に戻る。
+* プレビューは `OrganizerPagePreviewModal` で開く。公開プロフィール API を読み、統合ページと同じくプロフィールの下に催しを並べる。中身はログイン済みの表示だけを出し、未ログインのぼかしは出さない。`?month` は変えず、閉じると元の一覧に戻る。
 * 告知ページの主催者名は、`userId` があるときだけ `/organizers/[userId]` へのリンクにする（`EventMetaCard`。名前だけをリンクにし、「さんの催しを見る」は添えない）。`serializePublicOrganizerList` は `userId` を返す。
 * 参加者ホームの参加カードに「主催者のページ」を出し、`event.ownerUserId` があるときだけ `/organizers/[userId]` へリンクする（`serializeParticipation` / `participationInclude`）。
 
@@ -1756,7 +1754,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 | パス | `/organizer/profile` |
 | 画面 | `src/app/organizer/profile/page.tsx`（サーバー）→ `OrganizerProfileForm`（クライアント） |
 | 認可 | `requireOrganizerAccount`（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`）＋ `assertOrganizerMember`（催し0件は 403 `NOT_ORGANIZER`） |
-| 取得・保存 | `GET` / `PUT /api/v1/organizer/profile`。応答は `{ name, profile, stats, homePath, eventsPath }` |
+| 取得・保存 | `GET` / `PUT /api/v1/organizer/profile`。応答は `{ name, profile, stats, homePath }` |
 | 入力 | 公開/非公開、肩書き60、自己紹介400、活動エリア50、ジャンル3つまで、X・Instagram・Webサイト・LINE、実績の表示可否 |
 | プレビュー | 保存前の下書きを `profileContentFromDraft` で組み立て、`OrganizerProfileView` を `preview` で描く。実績は `stats` を使う |
 | 導線 | 主催者サブタブ、`/mypage`、`/organizer/events` |
@@ -1765,8 +1763,8 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 ### 14.7. テスト
 
-* 単体（`tests/unit/public-organizer-page.test.ts`、30件）: 今日以降の絞り込み、次の開催日、掲載条件（下書き・締切・削除・過去日・満員）、並びと同点の決め方、候補日ごとのまとめ、短冊の色と詳細、月の下限、URL。
-* 単体（`tests/unit/organizer-profile.test.ts`、36件）: リンクの順序と URL の検査、実績の数え方、下書きから表示への組み立て、ジャンルの正規化、自己紹介の省略、`OrganizerProfileSchema` の上限・URL・厳格さ。
+* 単体（`tests/unit/public-organizer-page.test.ts`、34件）: 今日以降の絞り込み、次の開催日、掲載条件（下書き・締切・削除・過去日・満員）、並びと同点の決め方、候補日ごとのまとめ、短冊の色と詳細、月の下限、公開ページと旧 URL の転送先。
+* 単体（`tests/unit/organizer-profile.test.ts`、36件）: リンクの順序と URL の検査、実績の数え方、下書きから表示への組み立て、ジャンルの正規化、自己紹介の省略、旧 URL の月の引き継ぎ、`OrganizerProfileSchema` の上限・URL・厳格さ。
 * 結合（`tests/integration/public-organizer-page.test.ts`、8件）: 未ログインの 403 `LOGIN_REQUIRED`、存在しない・退会済みの 404、筆頭幹事と共同主催の掲載対象、開催日の文字列化、複数候補日の並び、満員と参加要望の数え方、締切済みの除外。`TEST_DATABASE_URL` があるときだけ走る。
 * 結合（`tests/integration/organizer-profile.test.ts`、12件）: 未設定でも名前だけ返す、保存内容の公開、非公開に戻すと隠す、upsert が1行にまとまる、催し0件・退会・不正な UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。
 * 表示の確認は第7節 FE-ORG-08 / 09 / 10 / 15 に従う。

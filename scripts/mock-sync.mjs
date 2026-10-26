@@ -1,7 +1,7 @@
 // 製品の画面を開いて、モック（style-guide/mock-*.html）を丸ごと差し替える。
 //
 //   npm run mock:sync                  # 全画面。本番ビルドを配って撮る（既定）
-//   npm run mock:sync -- --only=21,25  # No. で絞る（画面 1 枚 5 秒前後）
+//   npm run mock:sync -- --only=20,24  # No. で絞る（画面 1 枚 5 秒前後）
 //   npm run mock:sync -- --no-shots    # HTML だけ（PNG を撮らない）
 //   npm run mock:sync -- --dev         # 開発サーバーで撮る（保存がそのまま出る）
 //

@@ -111,7 +111,7 @@ Stripe の鍵、テストカード、Webhook の注意は :doc:`stripe` です�
 * ``next`` を指定した会員は、そのパスへ移動します
 * 管理者は ``/auth/register`` から入れません。着地は常に ``/console`` （管理者ホーム）で、入口は ``/console/login`` だけです
 
-``next`` に使えるのは ``/mypage`` 、 ``/organizer`` 、 ``/invitations`` 、 ``/events`` の配下だけです。電話番号が未確認のまま主催画面を使おうとしたときは ``next=/organizer/events`` または ``next=/organizer/events/new`` が付きます。
+``next`` に使えるのは ``/mypage`` 、 ``/organizer`` 、 ``/invitations`` 、 ``/events`` 、 ``/participant`` 、 ``/organizers`` の配下だけです。電話番号が未確認のまま主催画面を使おうとしたときは ``next=/organizer/events`` または ``next=/organizer/events/new`` が付きます。
 
 別の会員を管理者にする場合は ``npm run admin:promote -- user@example.com`` です。管理者ログインには、確認済みの電話番号とパスワードを持つ会員であることが要ります。
 
@@ -228,6 +228,8 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
      - 共同幹事受諾。催し名はリード
    * - ``/events/{id}``
      - 公開ページと出欠
+   * - ``/organizers/{userId}``
+     - 主催者のページ。プロフィールの下にカレンダーと一覧を縦に並べる。催しは参加者ログインが必要。旧 ``/organizers/{userId}/events`` はここへ転送する
    * - ``/console/login``
      - 管理者ログイン。パスワードのあと確認番号。確認済み電話が必須。公開ナビには出さない。冒頭見出しは画面名
    * - ``/console``

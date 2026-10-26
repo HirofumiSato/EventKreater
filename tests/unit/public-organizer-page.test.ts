@@ -6,6 +6,7 @@ import {
   isPubliclyListed,
   nextScheduleDate,
   organizerProfilePath,
+  organizerProfileRedirectPath,
   sortOrganizerEvents,
   toOrganizerCellItem,
   upcomingSchedules,
@@ -286,5 +287,28 @@ describe("clampMonth", () => {
 describe("organizerProfilePath", () => {
   it("主催者の公開ページの URL を組み立てる", () => {
     expect(organizerProfilePath("user-123")).toBe("/organizers/user-123");
+  });
+});
+
+describe("organizerProfileRedirectPath", () => {
+  it("旧・催しページから、統合ページへ月を引き継ぐ", () => {
+    expect(organizerProfileRedirectPath("user-123", "2026-11")).toBe("/organizers/user-123?month=2026-11");
+  });
+
+  it("月の指定が無ければ統合ページだけを返す", () => {
+    expect(organizerProfileRedirectPath("user-123", null)).toBe("/organizers/user-123");
+    expect(organizerProfileRedirectPath("user-123", undefined)).toBe("/organizers/user-123");
+    expect(organizerProfileRedirectPath("user-123", "")).toBe("/organizers/user-123");
+  });
+
+  it("壊れた月は捨てる", () => {
+    expect(organizerProfileRedirectPath("user-123", "2026-13")).toBe("/organizers/user-123");
+    expect(organizerProfileRedirectPath("user-123", "next")).toBe("/organizers/user-123");
+  });
+
+  it("同じ月が複数あれば先頭を使う", () => {
+    expect(organizerProfileRedirectPath("user-123", ["2026-11", "2026-12"])).toBe(
+      "/organizers/user-123?month=2026-11",
+    );
   });
 });

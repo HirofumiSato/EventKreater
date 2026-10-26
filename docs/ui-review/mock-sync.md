@@ -39,8 +39,8 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 | コマンド | 何をするか |
 | --- | --- |
-| `npm run mock:sync` | 全 33 画面（29 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
-| `npm run mock:sync -- --only=21,25` | No. で絞る（1 画面 5 秒前後）。`--only=04-event-member` でも絞れる |
+| `npm run mock:sync` | 全 33 画面（28 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
+| `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。`--only=04-event-member` でも絞れる |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
 | `npm run mock:sync -- --dev` | 開発サーバー（3012）で撮る。保存がそのまま出るが、CSS の当たり方が本番とずれることがある |
 | `npm run mock:check` | 同期の判定だけ（`npm run check` の中でも走る） |
@@ -137,7 +137,7 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 | `storage/ui-demo.json が読めません` | `npm run db:seed:ui` |
 | `本番ビルドに失敗しました` | `node_modules/.cache/ui-harness/next-build.log` |
 | `next start が終了しました` | `node_modules/.cache/ui-harness/next-start.log` |
-| 画面が「他の人が編集中」になる | `mock:sync` がロックを消せていない。`npm run mock:sync -- --only=22` で撮り直す |
+| 画面が「他の人が編集中」になる | `mock:sync` がロックを消せていない。`npm run mock:sync -- --only=21` で撮り直す |
 | 1 画面だけ `NG` と出る | その画面の API かデモデータ。`manifest` は前回のままなので、直してから全体を回す |
 | CSS が当たらない（`--dev`） | 本番ビルドで撮り直す（`--dev` は開発サーバーの都合で CSS が `<link>` にならないことがある） |
 | 枠ページが「画面」だけになる | `mock-frame.html` が古い。`npm run mock:sync` で作り直す |
