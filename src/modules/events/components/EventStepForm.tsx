@@ -15,7 +15,6 @@ import {
   isPricingStepComplete,
   isStepComplete,
   resumeStepKey,
-  summarizeStep,
   type EventStepKey,
 } from "@/modules/events/lib/steps";
 import {
@@ -306,7 +305,6 @@ export function EventStepForm({
         {EVENT_STEPS.map((step, index) => {
           const open = openKeys.has(step.key);
           const complete = isComplete(step.key);
-          const summary = summarizeStep(step.key, value);
           // 任意のステップは、入っていても「任意」と出す。必須だけ完了・未完了を出す。
           const stateLabel = step.mandatory ? (complete ? "入力済み" : "未入力") : "任意";
           return (
@@ -338,7 +336,6 @@ export function EventStepForm({
                       {step.title}
                       {step.mandatory ? <span className="event-step__req">必須</span> : null}
                     </span>
-                    <span className="event-step__summary">{open ? step.hint : (summary ?? step.hint)}</span>
                   </span>
                   <span className="event-step__state">{stateLabel}</span>
                 </button>

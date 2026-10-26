@@ -78,7 +78,7 @@ export default function ParticipantHomePage() {
     <div className="stack">
       <PageHeader
         eyebrow="参加者"
-        title={<>こんにちは、{profile.user.name} さん</>}
+        title={<>こんにちは、{profile.user.name}さん</>}
         lead={<>{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</>}
         actions={<><button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
             ログアウト

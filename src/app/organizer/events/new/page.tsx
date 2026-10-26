@@ -306,7 +306,7 @@ function NewEventScreen() {
 
   return (
     <div className="page--form stack">
-      <PageHeader eyebrow="5ステップ" title="新規イベント作成" lead="済んだステップは畳まれます。次に入れるものだけが開きます。日時と費用プランは複数登録できます。" />
+      <PageHeader eyebrow="5ステップ" title="新規イベント作成" />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {draftId && !restoring && (
         <Alert tone="success">

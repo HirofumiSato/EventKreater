@@ -52,7 +52,7 @@ export function BasicSection({
 
   return (
     <>
-      <Field label={<>催しの名前 <span className="req">*</span></>} htmlFor="event-title">
+      <Field label="催しの名前" htmlFor="event-title">
         <input
           id="event-title"
           required
@@ -80,9 +80,7 @@ export function BasicSection({
         </Field>
       )}
       <fieldset className="field" disabled={disabled}>
-        <legend className="label">
-          開催日時 <span className="req">*</span>
-        </legend>
+        <legend className="label">開催日時</legend>
         <div className="repeat-block">
           {value.schedules.map((row, index) => {
             const overnight = Boolean(row.startTime && row.endTime && row.endTime < row.startTime);
