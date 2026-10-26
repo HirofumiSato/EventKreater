@@ -147,7 +147,7 @@
 
 .. count-start
 
-52 ファイル、``it`` は 659 件です。内訳は ``tests/unit/`` が 40 ファイル 590 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+52 ファイル、``it`` は 660 件です。内訳は ``tests/unit/`` が 40 ファイル 591 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -328,8 +328,8 @@
      - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
      - 全画面の共通レイアウト
    * - ``tests/unit/site-chrome.test.ts``
-     - 6
-     - パスから公開クロムの出し分けを決める。ホームはヘッダーを出さず上端の余白も落とす、``/console`` はヘッダーもフッターも出さない、主催者の公開ページはヘッダーだけ出さない、その他は両方出す、``/consolelike`` を誤認しない
+     - 7
+     - パスから公開クロムの出し分けを決める。ホームはヘッダーを出さず上端の余白も落とす、``/console`` はヘッダーもフッターも出さない、主催者の公開ページはヘッダーだけ出さない、告知ページはヘッダーを出さずチラシを上端から始める、領収書はヘッダーだけ出さない、その他は両方出す、``/consolelike`` を誤認しない
      - 全画面の共通レイアウト
    * - ``tests/unit/format.test.ts``
      - 10
@@ -370,7 +370,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 590、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 590 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 591、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 591 件を実行して 69 件を skip します。
 
 .. breakdown-end
 

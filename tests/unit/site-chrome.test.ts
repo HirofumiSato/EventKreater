@@ -22,7 +22,6 @@ describe("公開クロムの出し分け", () => {
       footer: true,
       flushTop: false,
     });
-    expect(siteChrome("/events/abc")).toEqual({ header: true, footer: true, flushTop: false });
   });
 
   it("主催者の公開ページは共通ヘッダーを出さない", () => {
@@ -34,9 +33,20 @@ describe("公開クロムの出し分け", () => {
     expect(siteChrome("/organizers")).toEqual({ header: false, footer: true, flushTop: false });
   });
 
+  it("告知ページは共通ヘッダーを出さず、チラシを画面の上端から始める", () => {
+    expect(siteChrome("/events/abc")).toEqual({ header: false, footer: true, flushTop: true });
+    expect(siteChrome("/events")).toEqual({ header: false, footer: true, flushTop: false });
+    expect(siteChrome("/events/abc/receipt")).toEqual({
+      header: false,
+      footer: true,
+      flushTop: false,
+    });
+  });
+
   it("区切りを跨いだ前方一致をしない", () => {
     expect(siteChrome("/consolelike")).toEqual({ header: true, footer: true, flushTop: false });
     expect(siteChrome("/organizerslike")).toEqual({ header: true, footer: true, flushTop: false });
+    expect(siteChrome("/eventslike")).toEqual({ header: true, footer: true, flushTop: false });
   });
 
   it("パスが空でも通常の画面として扱う", () => {
