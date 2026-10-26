@@ -50,6 +50,24 @@ PNG（`storage/mock-shots/`）はコミットしません。
 「同期済み」に見えてしまうためです。**コミットの前は必ず全体を回してください**（部分同期の
 あとは `npm run check` が通りません）。
 
+## モックだけが持つもの
+
+モックは製品の写しですが、**製品に存在しない**ものが 3 つだけあります。どれも `npm run mock:sync` が
+毎回書き出すので、撮り直しても消えません。手で `mock-*.html` を直さないでください。
+
+| もの | どこが作るか | 何のために |
+| --- | --- | --- |
+| 画面下部の帯（← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。製品には無い |
+| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 33 画面の入口。製品には無い |
+| 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
+
+帯の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
+巻き込まれて消えます。`scripts/check-mock-sync.mjs` は、目録の各 HTML に `data-mock-shell` が
+無ければ `npm run check` を止めます。
+
+枠の中では帯を出しません（`mock-shell.js` が `?embed=1` を見て省きます）。
+`HTML をそのまま開く` は `embed` を付けないので、帯つきで開きます。
+
 ## 端末の幅で見る（`mock-frame.html`）
 
 `style-guide/mock-frame.html` は、モックを iframe に入れて 390 / 1280 を切り替える枠ページです。
@@ -63,10 +81,10 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 - `← 前` / `次 →` と ← → キーで、目録の順に送れる
 - `スマホ 390` / `PC 1280` で幅を切り替える。iframe の幅がそのまま画面の幅になるので、
   メディアクエリもその幅で効く（窓が狭いときは、はみ出さない倍率まで縮めて表示する）
-- `HTML をそのまま開く` で、枠なしのモックを開く
-- 一覧（`mock-index.html`）の画面名もこの枠へ入る。行の右端の `390` / `1280` / `HTML` で直接開ける
+- `HTML をそのまま開く` で、枠なしのモックを開く（帯つき）
+- 一覧（`mock-index.html`）の画面名もこの枠へ入る。行の「スマホ」「PC」「HTML」で直接開ける
 
-枠ページと一覧は、`mock:sync` のたびに存在を確認します（消えていれば `npm run check` が止めます）。
+枠ページ・一覧・帯の 3 ファイルは、`mock:sync` のたびに存在を確認します（消えていれば `npm run check` が止めます）。
 
 ## 生成物
 
@@ -77,6 +95,9 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 | `style-guide/mock-manifest.json` | する | 画面の一覧、各 HTML の指紋、UI ソースの指紋（`uiHash`） |
 | `style-guide/mock-index.html` | する | モックの一覧ページ（生成物） |
 | `style-guide/mock-frame.html` | する | 幅を選んで見る枠ページ（生成物。iframe で 390 / 1280） |
+| `style-guide/mock-shell.js` | する | 帯を組み立てる（**手で保守する**。製品は読まない） |
+| `style-guide/mock-shell.css` | する | 帯の見た目（手で保守する。`html.is-embed .mockbar` で枠の中は隠す） |
+| `style-guide/mock-guide.css` | する | 一覧の行と幅の切り替え（手で保守する） |
 | `storage/mock-shots/*.png` | しない | 390 / 1280 の撮影と `index.html`。目視用 |
 
 `style-guide/index.html` と `style-guide.css` は**部品見本**で、同期の対象外です。
@@ -112,7 +133,10 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 2. 目録にある画面の HTML がそろっているか
 3. 書き出した HTML が manifest の指紋のままか（手で直していないか）
 
-加えて、一覧（`mock-index.html`）と枠（`mock-frame.html`）が実在するかも見ます。
+加えて、次の 2 つも見ます。
+
+- 一覧（`mock-index.html`）・枠（`mock-frame.html`）・帯の 3 ファイル（`mock-shell.js` / `mock-shell.css` / `mock-guide.css`）が実在するか
+- 目録の各 HTML に、帯の差し込み（`data-mock-shell`）があるか
 
 `uiHash` の対象は次のとおりです（`scripts/lib/mock-hash.mjs`）。
 

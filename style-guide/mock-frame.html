@@ -357,6 +357,41 @@
         "group": "organizer"
       }
     ];
+    const SOURCES = {
+      "mock-home.html": "mock-home.html?embed=1",
+      "mock-service.html": "mock-service.html?embed=1",
+      "mock-terms.html": "mock-terms.html?embed=1",
+      "mock-event.html": "mock-event.html?embed=1",
+      "mock-event-member.html": "mock-event-member.html?embed=1",
+      "mock-event-full.html": "mock-event-full.html?embed=1",
+      "mock-event-closed.html": "mock-event-closed.html?embed=1",
+      "mock-event-receipt.html": "mock-event-receipt.html?embed=1",
+      "mock-organizer-public.html": "mock-organizer-public.html?embed=1",
+      "mock-organizer-public-member.html": "mock-organizer-public-member.html?embed=1",
+      "mock-register.html": "mock-register.html?embed=1",
+      "mock-verify.html": "mock-verify.html?embed=1",
+      "mock-participant-login.html": "mock-participant-login.html?embed=1",
+      "mock-invitation.html": "mock-invitation.html?embed=1",
+      "mock-account.html": "mock-account.html?embed=1",
+      "mock-account-verify.html": "mock-account-verify.html?embed=1",
+      "mock-participant.html": "mock-participant.html?embed=1",
+      "mock-participant-calendar.html": "mock-participant-calendar.html?embed=1",
+      "mock-participant-history.html": "mock-participant-history.html?embed=1",
+      "mock-participant-history-empty.html": "mock-participant-history-empty.html?embed=1",
+      "mock-organizer.html": "mock-organizer.html?embed=1",
+      "mock-organizer-calendar.html": "mock-organizer-calendar.html?embed=1",
+      "mock-revenue.html": "mock-revenue.html?embed=1",
+      "mock-revenue-detail.html": "mock-revenue-detail.html?embed=1",
+      "mock-create.html": "mock-create.html?embed=1",
+      "mock-edit.html": "mock-edit.html?embed=1",
+      "mock-drafts.html": "mock-drafts.html?embed=1",
+      "mock-preview.html": "mock-preview.html?embed=1",
+      "mock-roster.html": "mock-roster.html?embed=1",
+      "mock-receipt.html": "mock-receipt.html?embed=1",
+      "mock-register-required.html": "mock-register-required.html?embed=1",
+      "mock-organizer-profile.html": "mock-organizer-profile.html?embed=1",
+      "mock-mypage.html": "mock-mypage.html?embed=1"
+    };
     const HEIGHTS = {"390":844,"1280":900};
     const params = new URLSearchParams(location.search);
     const widthOf = (value) => (HEIGHTS[value] ? Number(value) : 390);
@@ -377,7 +412,7 @@
     function show() {
       const screen = SCREENS.find((s) => s.file === file);
       const height = HEIGHTS[width];
-      frame.src = file;
+      frame.src = SOURCES[file] ?? file;
       frame.width = String(width);
       frame.height = String(height);
       document.getElementById("name").textContent = screen ? screen.no + " " + screen.name : file;

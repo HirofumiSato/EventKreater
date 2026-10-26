@@ -3,83 +3,530 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
   <title>画面モック一覧</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin: 0 auto; max-width: 60rem; padding: 2.5rem 1.25rem 4rem; font-family: system-ui, sans-serif; line-height: 1.7; color: #1c1917; background: #faf9f7; }
-    h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
-    h2 { font-size: 1.1rem; margin: 2.5rem 0 .25rem; border-bottom: 1px solid #e7e5e4; padding-bottom: .35rem; }
-    .lead { margin: 0 0 .75rem; color: #57534e; font-size: .9rem; }
-    ul { list-style: none; margin: 0; padding: 0; }
-    li { display: grid; grid-template-columns: 16rem 5rem 1fr 7rem; gap: .75rem; align-items: baseline; padding: .5rem 0; border-bottom: 1px solid #f0efed; }
-    a { color: #b91c1c; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .state { font-size: .75rem; color: #57534e; background: #f0efed; border-radius: 999px; padding: .1rem .5rem; }
-    .note { color: #57534e; font-size: .85rem; }
-    .links { display: flex; gap: .6rem; font-size: .8rem; }
-    footer { margin-top: 3rem; color: #78716c; font-size: .8rem; }
-  </style>
+  <link rel="stylesheet" href="assets/aa2532d66bef5303.css">
+  <link rel="stylesheet" href="assets/37cbf93c5087d20e.css">
+  <link rel="stylesheet" href="mock-guide.css">
+  <link rel="stylesheet" href="mock-shell.css">
 </head>
-<body>
-  <h1>画面モック</h1>
-  <p class="lead">製品の DOM から <code>npm run mock:sync</code> が書き出した生成物です。手で編集しないでください。撮り直しは <code>npm run mock:sync</code>。<a href="mock-frame.html">幅を選んで見る</a>と、390 / 1280 の枠に入れて並べて確かめられます。</p>
-  <section>
-    <h2>公開</h2>
-    <p class="lead">誰でも開ける画面。初めて触る人が最初に見る。</p>
-    <ul>
-      <li><a href="mock-frame.html?p=mock-home.html&amp;w=1280">01 ホーム</a><span class="note">墨地のヒーロー、機能 3行、使い方、朱の帯。第一印象を作る画面。</span><span class="links"><a href="mock-frame.html?p=mock-home.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-home.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-home.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-service.html&amp;w=1280">02 サービスと料金</a><span class="note">無料 2回、単発 299円、月額 980円。ここから支払いは始めない。</span><span class="links"><a href="mock-frame.html?p=mock-service.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-service.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-service.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-terms.html&amp;w=1280">03 利用規約</a><span class="note">料金、キャンペーン、0円の条件、通知、解約と返金。</span><span class="links"><a href="mock-frame.html?p=mock-terms.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-terms.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-terms.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-event.html&amp;w=1280">04 イベント告知・出欠</a> <span class="state">未ログイン</span><span class="note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</span><span class="links"><a href="mock-frame.html?p=mock-event.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-event.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-event.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-event-member.html&amp;w=1280">04 イベント告知・出欠</a> <span class="state">ログイン済み</span><span class="note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</span><span class="links"><a href="mock-frame.html?p=mock-event-member.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-event-member.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-event-member.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-event-full.html&amp;w=1280">04 イベント告知・出欠</a> <span class="state">満員</span><span class="note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</span><span class="links"><a href="mock-frame.html?p=mock-event-full.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-event-full.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-event-full.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-event-closed.html&amp;w=1280">04 イベント告知・出欠</a> <span class="state">受付停止</span><span class="note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</span><span class="links"><a href="mock-frame.html?p=mock-event-closed.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-event-closed.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-event-closed.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-event-receipt.html&amp;w=1280">05 参加費の領収書</a><span class="note">参加者本人の領収書。印刷して渡せる形。</span><span class="links"><a href="mock-frame.html?p=mock-event-receipt.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-event-receipt.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-event-receipt.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-organizer-public.html&amp;w=1280">06 主催者のページ</a> <span class="state">未ログイン</span><span class="note">プロフィールの下に、カレンダーと一覧。未ログインでは催しをぼかす。</span><span class="links"><a href="mock-frame.html?p=mock-organizer-public.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-organizer-public.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-organizer-public.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=1280">06 主催者のページ</a> <span class="state">ログイン済み</span><span class="note">プロフィールの下に、カレンダーと一覧。未ログインでは催しをぼかす。</span><span class="links"><a href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-organizer-public-member.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
+<body class="deco deco--tape deco--tape-shadow">
+  <a class="skip-link" href="#main">本文へ</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-brand" href="mock-index.html">EventKreater</a>
+      <div class="site-header__actions">
+        <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-home.html&amp;w=390">スマホで見る</a>
+        <a class="btn btn--primary btn--sm" href="mock-frame.html?p=mock-home.html&amp;w=1280">PC で見る</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="page">
+    <div class="stack">
+
+      <div>
+        <p class="eyebrow">画面モック</p>
+        <h1 class="page-title">全 33 画面。</h1>
+        <p class="page-lead">
+          製品の DOM から <code>npm run mock:sync</code> が書き出した生成物です。手で編集しないでください。
+          画面名を押すと枠（iframe）で開きます。幅は下の切り替え、または行ごとの「スマホ」「PC」から選べます。
+        </p>
+        <div class="panel__actions" style="margin-top: 1rem">
+          <a class="btn btn--primary btn--sm" href="mock-frame.html">枠で見る</a>
+          <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-home.html&amp;w=390">ホーム（スマホ）</a>
+        </div>
+      </div>
+
+      <p class="device-note">
+        既定はスマホ 390px。PC は 1280px の枠で開きます。枠の中は製品と同じ CSS で描くので、
+        メディアクエリもその幅で効きます。撮った PNG（390 / 1280）は <code>storage/mock-shots/</code> にあり、コミットしません。
+      </p>
+
+      <div class="guide-segment" role="group" aria-label="名前を押したときに開く幅">
+        <span class="guide-segment__label">名前を押したときの幅</span>
+        <button class="guide-segment__item" type="button" data-open-width="390" aria-pressed="true">スマホ 390</button>
+        <button class="guide-segment__item" type="button" data-open-width="1280" aria-pressed="false">PC 1280</button>
+      </div>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title">公開<span class="screen-group__count">10 画面</span></h2>
+      <p class="section__note">誰でも開ける画面。初めて触る人が最初に見る。</p>
+    </div>
+    <ul class="screen-list">
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">01</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-home.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-home.html">ホーム</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">墨地のヒーロー、機能 3行、使い方、朱の帯。第一印象を作る画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-home.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-home.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-home.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">02</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-service.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-service.html">サービスと料金</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/service</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">無料 2回、単発 299円、月額 980円。ここから支払いは始めない。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-service.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-service.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-service.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">03</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-terms.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-terms.html">利用規約</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/terms</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">料金、キャンペーン、0円の条件、通知、解約と返金。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-terms.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-terms.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-terms.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">04</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-event.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-event.html">イベント告知・出欠</a> <span class="badge badge--neutral badge--sm">未ログイン</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/events/18f18976-d943-4323-925a-5ba1e1479527</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-event.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-event.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-event.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">04</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-event-member.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-event-member.html">イベント告知・出欠</a> <span class="badge badge--neutral badge--sm">ログイン済み</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/events/18f18976-d943-4323-925a-5ba1e1479527</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-event-member.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-event-member.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-event-member.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">04</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-event-full.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-event-full.html">イベント告知・出欠</a> <span class="badge badge--neutral badge--sm">満員</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/events/240a9f54-205b-444e-b8b5-8bb12e049457</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-event-full.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-event-full.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-event-full.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">04</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-event-closed.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-event-closed.html">イベント告知・出欠</a> <span class="badge badge--neutral badge--sm">受付停止</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/events/d71672db-dd04-469f-b1d9-0f0bcd71b4f5</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">チラシを先頭に、その下で出欠。参加者が最初に見る画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-event-closed.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-event-closed.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-event-closed.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">05</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-event-receipt.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-event-receipt.html">参加費の領収書</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/events/18f18976-d943-4323-925a-5ba1e1479527/receipt</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">参加者本人の領収書。印刷して渡せる形。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-event-receipt.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-event-receipt.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-event-receipt.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">06</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-organizer-public.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-organizer-public.html">主催者のページ</a> <span class="badge badge--neutral badge--sm">未ログイン</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizers/4bc075bc-52a3-40cd-9efe-03bd31cb6050</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">プロフィールの下に、カレンダーと一覧。未ログインでは催しをぼかす。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-organizer-public.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-organizer-public.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-organizer-public.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">06</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-organizer-public-member.html">主催者のページ</a> <span class="badge badge--neutral badge--sm">ログイン済み</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizers/4bc075bc-52a3-40cd-9efe-03bd31cb6050</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">プロフィールの下に、カレンダーと一覧。未ログインでは催しをぼかす。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-organizer-public-member.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-organizer-public-member.html">HTML</a>
+          </p>
+        </div>
+      </li>
     </ul>
   </section>
-  <section>
-    <h2>認証・設定</h2>
-    <p class="lead">入る前と、入ったあとの手続き。</p>
-    <ul>
-      <li><a href="mock-frame.html?p=mock-register.html&amp;w=1280">07 主催者のログイン・登録</a><span class="note">パスワードと、確認番号の 2 経路。Google も同じ画面。</span><span class="links"><a href="mock-frame.html?p=mock-register.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-register.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-register.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-verify.html&amp;w=1280">08 メールの確認</a><span class="note">確認メールのリンクを開いたあと。次は電話番号の確認。</span><span class="links"><a href="mock-frame.html?p=mock-verify.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-verify.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-verify.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-participant-login.html&amp;w=1280">09 参加者ログイン</a><span class="note">電話番号と確認番号だけ。パスワードは要らない。</span><span class="links"><a href="mock-frame.html?p=mock-participant-login.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-participant-login.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-participant-login.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-invitation.html&amp;w=1280">10 共同幹事の招待</a><span class="note">できること・できないことを並べ、加わるかどうかを取る。</span><span class="links"><a href="mock-frame.html?p=mock-invitation.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-invitation.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-invitation.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-account.html&amp;w=1280">11 アカウント設定</a><span class="note">表示名、メール、電話、パスワード、退会。主催者と参加者で共通。</span><span class="links"><a href="mock-frame.html?p=mock-account.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-account.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-account.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-account-verify.html&amp;w=1280">12 メールアドレスの確定</a><span class="note">新しいアドレスの確認。成功したら設定へ戻す。</span><span class="links"><a href="mock-frame.html?p=mock-account-verify.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-account-verify.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-account-verify.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title">認証・設定<span class="screen-group__count">6 画面</span></h2>
+      <p class="section__note">入る前と、入ったあとの手続き。</p>
+    </div>
+    <ul class="screen-list">
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">07</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-register.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-register.html">主催者のログイン・登録</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/auth/register</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">パスワードと、確認番号の 2 経路。Google も同じ画面。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-register.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-register.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-register.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">08</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-verify.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-verify.html">メールの確認</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/auth/verify?token=ui-demo-email-verify-token</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">確認メールのリンクを開いたあと。次は電話番号の確認。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-verify.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-verify.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-verify.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">09</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-participant-login.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-participant-login.html">参加者ログイン</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/participant/login</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">電話番号と確認番号だけ。パスワードは要らない。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-participant-login.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-participant-login.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-participant-login.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">10</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-invitation.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-invitation.html">共同幹事の招待</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/invitations/ui-demo-cohost-invite-code</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">できること・できないことを並べ、加わるかどうかを取る。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-invitation.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-invitation.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-invitation.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">11</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-account.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-account.html">アカウント設定</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/account</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">表示名、メール、電話、パスワード、退会。主催者と参加者で共通。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-account.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-account.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-account.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">12</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-account-verify.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-account-verify.html">メールアドレスの確定</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/account/email/verify?token=ui-demo-email-change-token-1280</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">新しいアドレスの確認。成功したら設定へ戻す。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-account-verify.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-account-verify.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-account-verify.html">HTML</a>
+          </p>
+        </div>
+      </li>
     </ul>
   </section>
-  <section>
-    <h2>参加者</h2>
-    <p class="lead">参加する側の画面。催しを思い出すために開く。</p>
-    <ul>
-      <li><a href="mock-frame.html?p=mock-participant.html&amp;w=1280">13 参加者ホーム</a><span class="note">これからの参加、出席と欠席の件数、次の催し、履歴への導線。</span><span class="links"><a href="mock-frame.html?p=mock-participant.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-participant.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-participant.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-participant-calendar.html&amp;w=1280">14 参加カレンダー</a><span class="note">答えた催しを開催日に置く。出席・要望・欠席を点で分ける。</span><span class="links"><a href="mock-frame.html?p=mock-participant-calendar.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-participant-calendar.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-participant-calendar.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-participant-history.html&amp;w=1280">15 参加履歴</a> <span class="state">履歴あり</span><span class="note">出欠と領収書の一覧。主催している催しは出さない。</span><span class="links"><a href="mock-frame.html?p=mock-participant-history.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-participant-history.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-participant-history.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=1280">15 参加履歴</a> <span class="state">履歴なし</span><span class="note">出欠と領収書の一覧。主催している催しは出さない。</span><span class="links"><a href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-participant-history-empty.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title">参加者<span class="screen-group__count">4 画面</span></h2>
+      <p class="section__note">参加する側の画面。催しを思い出すために開く。</p>
+    </div>
+    <ul class="screen-list">
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">13</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-participant.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-participant.html">参加者ホーム</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/participant</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">これからの参加、出席と欠席の件数、次の催し、履歴への導線。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-participant.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-participant.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-participant.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">14</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-participant-calendar.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-participant-calendar.html">参加カレンダー</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/participant/calendar</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">答えた催しを開催日に置く。出席・要望・欠席を点で分ける。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-participant-calendar.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-participant-calendar.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-participant-calendar.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">15</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-participant-history.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-participant-history.html">参加履歴</a> <span class="badge badge--neutral badge--sm">履歴あり</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/participant/history</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">出欠と領収書の一覧。主催している催しは出さない。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-participant-history.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-participant-history.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-participant-history.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">15</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-participant-history-empty.html">参加履歴</a> <span class="badge badge--neutral badge--sm">履歴なし</span></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/participant/history</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">出欠と領収書の一覧。主催している催しは出さない。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-participant-history-empty.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-participant-history-empty.html">HTML</a>
+          </p>
+        </div>
+      </li>
     </ul>
   </section>
-  <section>
-    <h2>主催者</h2>
-    <p class="lead">運営する側の画面。数字と行を追う。</p>
-    <ul>
-      <li><a href="mock-frame.html?p=mock-organizer.html&amp;w=1280">16 主催一覧</a><span class="note">公開中と受付停止だけ。下書きは件数だけを添えて分ける。</span><span class="links"><a href="mock-frame.html?p=mock-organizer.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-organizer.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-organizer.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=1280">17 主催カレンダー</a><span class="note">月グリッドと、選んだ日の催し。複数の開催日はすべて出す。</span><span class="links"><a href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-organizer-calendar.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-revenue.html&amp;w=1280">18 売上</a><span class="note">見込み・発行額・差額・平均単価。催し別の一覧が続く。</span><span class="links"><a href="mock-frame.html?p=mock-revenue.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-revenue.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-revenue.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-revenue-detail.html&amp;w=1280">19 売上の内訳</a><span class="note">プラン別と開催回別。プラン未選択の案内を出す。</span><span class="links"><a href="mock-frame.html?p=mock-revenue-detail.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-revenue-detail.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-revenue-detail.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-create.html&amp;w=1280">20 新規イベント作成</a><span class="note">5ステップのアコーディオン。次へで畳まれ、次が開く。</span><span class="links"><a href="mock-frame.html?p=mock-create.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-create.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-create.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-edit.html&amp;w=1280">21 イベントの編集</a><span class="note">排他ロックの残り時間と、共同幹事の一覧・解除。</span><span class="links"><a href="mock-frame.html?p=mock-edit.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-edit.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-edit.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-drafts.html&amp;w=1280">22 下書き一覧</a><span class="note">自分の下書きだけ。プレビュー・編集・削除。</span><span class="links"><a href="mock-frame.html?p=mock-drafts.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-drafts.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-drafts.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-preview.html&amp;w=1280">23 下書きのプレビュー</a><span class="note">告知ページと同じ見た目。出欠フォームは出さない。</span><span class="links"><a href="mock-frame.html?p=mock-preview.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-preview.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-preview.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-roster.html&amp;w=1280">24 参加者名簿</a><span class="note">表。行の軸が揃っていることが機能そのもの。</span><span class="links"><a href="mock-frame.html?p=mock-roster.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-roster.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-roster.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-receipt.html&amp;w=1280">25 幹事向け領収書</a><span class="note">再発行と印刷。番号は変わらず、発行日だけが進む。</span><span class="links"><a href="mock-frame.html?p=mock-receipt.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-receipt.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-receipt.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-register-required.html&amp;w=1280">26 公開直後の案内</a><span class="note">共有 URL と、登録後にできること。未登録の幹事にだけ出す。</span><span class="links"><a href="mock-frame.html?p=mock-register-required.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-register-required.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-register-required.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-organizer-profile.html&amp;w=1280">27 公開プロフィールの編集</a><span class="note">公開の可否、肩書き、自己紹介、エリア、ジャンル、SNS。</span><span class="links"><a href="mock-frame.html?p=mock-organizer-profile.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-organizer-profile.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-organizer-profile.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
-      <li><a href="mock-frame.html?p=mock-mypage.html&amp;w=1280">28 主催者マイページ</a><span class="note">直近 3件、利用枠と契約、プロフィールの状態、ログアウト。</span><span class="links"><a href="mock-frame.html?p=mock-mypage.html&amp;w=390" title="スマホの幅で見る">390</a><a href="mock-frame.html?p=mock-mypage.html&amp;w=1280" title="PC の幅で見る">1280</a><a href="mock-mypage.html" title="モックの HTML をそのまま開く">HTML</a></span></li>
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title">主催者<span class="screen-group__count">13 画面</span></h2>
+      <p class="section__note">運営する側の画面。数字と行を追う。</p>
+    </div>
+    <ul class="screen-list">
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">16</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-organizer.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-organizer.html">主催一覧</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">公開中と受付停止だけ。下書きは件数だけを添えて分ける。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-organizer.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-organizer.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-organizer.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">17</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-organizer-calendar.html">主催カレンダー</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/calendar</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">月グリッドと、選んだ日の催し。複数の開催日はすべて出す。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-organizer-calendar.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-organizer-calendar.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">18</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-revenue.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-revenue.html">売上</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/revenue</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">見込み・発行額・差額・平均単価。催し別の一覧が続く。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-revenue.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-revenue.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-revenue.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">19</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-revenue-detail.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-revenue-detail.html">売上の内訳</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/18f18976-d943-4323-925a-5ba1e1479527/revenue</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">プラン別と開催回別。プラン未選択の案内を出す。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-revenue-detail.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-revenue-detail.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-revenue-detail.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">20</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-create.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-create.html">新規イベント作成</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/new</span><span class="scope-tag scope-tag--pop">影だけ</span></p>
+          <p class="screen-row__note">5ステップのアコーディオン。次へで畳まれ、次が開く。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-create.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-create.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-create.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">21</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-edit.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-edit.html">イベントの編集</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/18f18976-d943-4323-925a-5ba1e1479527/edit</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">排他ロックの残り時間と、共同幹事の一覧・解除。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-edit.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-edit.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-edit.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">22</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-drafts.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-drafts.html">下書き一覧</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/drafts</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">自分の下書きだけ。プレビュー・編集・削除。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-drafts.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-drafts.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-drafts.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">23</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-preview.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-preview.html">下書きのプレビュー</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/ce1882bd-21f1-43cc-a79e-e9acfae8d279/preview</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">告知ページと同じ見た目。出欠フォームは出さない。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-preview.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-preview.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-preview.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">24</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-roster.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-roster.html">参加者名簿</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/18f18976-d943-4323-925a-5ba1e1479527/participants</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">表。行の軸が揃っていることが機能そのもの。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-roster.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-roster.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-roster.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">25</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-receipt.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-receipt.html">幹事向け領収書</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/events/18f18976-d943-4323-925a-5ba1e1479527/receipts/a7657865-312f-478d-8a20-a4eab2323f55</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">再発行と印刷。番号は変わらず、発行日だけが進む。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-receipt.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-receipt.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-receipt.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">26</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-register-required.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-register-required.html">公開直後の案内</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/register-required?event=18f18976-d943-4323-925a-5ba1e1479527</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">共有 URL と、登録後にできること。未登録の幹事にだけ出す。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-register-required.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-register-required.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-register-required.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">27</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-organizer-profile.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-organizer-profile.html">公開プロフィールの編集</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/organizer/profile</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">公開の可否、肩書き、自己紹介、エリア、ジャンル、SNS。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-organizer-profile.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-organizer-profile.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-organizer-profile.html">HTML</a>
+          </p>
+        </div>
+      </li>
+      <li class="screen-row">
+        <span class="screen-row__no" aria-hidden="true">28</span>
+        <div>
+          <p class="screen-row__title"><a href="mock-frame.html?p=mock-mypage.html&amp;w=390" data-screen-link data-frame="mock-frame.html?p=mock-mypage.html">主催者マイページ</a></p>
+          <p class="screen-row__meta"><span class="screen-row__path">/mypage</span><span class="scope-tag scope-tag--quiet">静かめ</span></p>
+          <p class="screen-row__note">直近 3件、利用枠と契約、プロフィールの状態、ログアウト。</p>
+          <p class="screen-row__act">
+            <a class="btn btn--outline btn--sm" href="mock-frame.html?p=mock-mypage.html&amp;w=390">スマホ</a>
+            <a class="btn btn--ghost btn--sm" href="mock-frame.html?p=mock-mypage.html&amp;w=1280">PC</a>
+            <a class="btn btn--ghost btn--sm" href="mock-mypage.html">HTML</a>
+          </p>
+        </div>
+      </li>
     </ul>
   </section>
-  <footer>PNG（390 / 1280）は storage/mock-shots/ にあります（コミット対象外）。</footer>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>EventKreater / 画面モック</p>
+      <ul class="site-footer__links">
+        <li><a href="mock-frame.html">枠で見る</a></li>
+        <li><a href="mock-home.html">ホーム</a></li>
+        <li><a href="mock-service.html">サービスと料金</a></li>
+        <li><a href="mock-terms.html">利用規約</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="mock-shell.js" defer></script>
 </body>
 </html>

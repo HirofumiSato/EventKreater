@@ -28,7 +28,33 @@ export function sha256(value) {
 }
 
 /** 目録とは別に、毎回そろっていなければならない生成物。 */
-export const TOOL_FILES = ["mock-index.html", "mock-frame.html"];
+export const TOOL_FILES = [
+  "mock-index.html",
+  "mock-frame.html",
+  "mock-shell.js",
+  "mock-shell.css",
+  "mock-guide.css",
+];
+
+/**
+ * 各モックに「モックだけの帯」が入っているか。
+ *
+ * 帯は製品の DOM に無いので、`withMockShell` を通さずに書き出すと消える。
+ * 消えたことに気づかないままコミットしないよう、ここで止める。
+ */
+export function missingShell(names, contents) {
+  const problems = [];
+  for (const name of names) {
+    const html = contents.get(name);
+    // ファイルごと無い場合は evaluateSync が言う。ここでは二重に出さない。
+    if (html === undefined) continue;
+    if (html.includes("data-mock-shell")) continue;
+    problems.push(
+      `style-guide/${name} にモックの帯がありません。\`npm run mock:sync\` を実行してください。`,
+    );
+  }
+  return problems;
+}
 
 /**
  * 同期しているかを判定する。ブラウザもファイルも触らない純ロジック（テスト対象）。
@@ -102,9 +128,13 @@ async function readManifest() {
   }
 }
 
-async function hashOf(file) {
+function hashOf(buffer) {
+  return buffer ? sha256(normalizeNewlines(buffer)) : null;
+}
+
+async function readBytes(file) {
   try {
-    return sha256(normalizeNewlines(await readFile(file)));
+    return await readFile(file);
   } catch {
     return null;
   }
@@ -114,19 +144,25 @@ export async function collect() {
   const manifest = await readManifest();
   const expected = expectedFiles();
   const fileHashes = new Map();
+  const contents = new Map();
   for (const file of [...expected, ...TOOL_FILES]) {
-    fileHashes.set(file, await hashOf(path.join(STYLE_DIR, file)));
+    const buffer = await readBytes(path.join(STYLE_DIR, file));
+    fileHashes.set(file, hashOf(buffer));
+    if (buffer && file.endsWith(".html")) contents.set(file, buffer.toString("utf8"));
   }
   const extraFiles = await readdir(STYLE_DIR).catch(() => []);
   return {
-    problems: evaluateSync({
-      manifest,
-      expected,
-      uiHash: computeUiHash(ROOT),
-      fileHashes,
-      extraFiles,
-      tools: TOOL_FILES,
-    }),
+    problems: [
+      ...evaluateSync({
+        manifest,
+        expected,
+        uiHash: computeUiHash(ROOT),
+        fileHashes,
+        extraFiles,
+        tools: TOOL_FILES,
+      }),
+      ...missingShell(expected, contents),
+    ],
     expected,
   };
 }

@@ -70,6 +70,11 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 **製品が正**です。`style-guide/mock-*.html` は製品の DOM を写した生成物で、手で編集しません。
 比較（parity）はしません。見た目を変えたら、次を同じ PR で終わらせます。
 
+モックだけが持つものは 3 つです。画面下部の帯（`style-guide/mock-shell.js` / `mock-shell.css`）、
+画面の一覧（`style-guide/mock-index.html`）、幅の枠（`style-guide/mock-frame.html`）。
+帯は `scripts/lib/mock-html.mjs` の `withMockShell` が `sanitizeHtml` のあとに差し込むので、
+撮り直しても消えません。消せば `npm run check` が止まります。帯と一覧の CSS/JS だけは手で保守します。
+
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
 npm run mock:sync    # 全 33 画面を撮り直す（既定は本番ビルド。30〜35 秒＋ビルド）

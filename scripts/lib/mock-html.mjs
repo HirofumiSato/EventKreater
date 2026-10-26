@@ -59,6 +59,44 @@ export function withNotice(html, meta) {
   return withDoctype.replace(/^<!doctype html>/i, (match) => `${match}\n${notice}`);
 }
 
+/**
+ * モックだけが持つ帯（画面一覧・幅・HTML への行き来）を差し込む。
+ *
+ * 帯は製品に無いので、製品の DOM を写すだけでは消える。ここで毎回足すことで、
+ * 次に誰が `npm run mock:sync` を回しても残る。**sanitizeHtml のあとに呼ぶこと。**
+ * 先に呼ぶと、製品側の `<script>` を落とす処理に巻き込まれる。
+ *
+ * 中身は `style-guide/mock-shell.js` が data 属性から組み立てる。HTML に焼き込まないのは、
+ * 帯の文言や並びを 1 か所（js）で直せるようにするため。
+ */
+export function withMockShell(html, { file = "", name = "", path = "", frame390 = "", frame1280 = "" } = {}) {
+  if (html.includes("data-mock-shell")) return html;
+
+  const data = [
+    "data-mock-shell",
+    `data-file="${escapeAttribute(file)}"`,
+    `data-name="${escapeAttribute(name)}"`,
+    `data-path="${escapeAttribute(path)}"`,
+    `data-frame390="${escapeAttribute(frame390)}"`,
+    `data-frame1280="${escapeAttribute(frame1280)}"`,
+  ].join(" ");
+  const script = `<script src="mock-shell.js" defer ${data}></script>`;
+  const stylesheet = '<link rel="stylesheet" href="mock-shell.css">';
+
+  const withStylesheet = insertBeforeClosing(html, "head", stylesheet);
+  return insertBeforeClosing(withStylesheet, "body", script);
+}
+
+/** 閉じタグの直前に 1 行足す。閉じタグが無ければ開きタグの直後に置く。 */
+function insertBeforeClosing(html, tag, content) {
+  const closing = new RegExp(`</${tag}>`, "i");
+  if (closing.test(html)) return html.replace(closing, `  ${content}\n</${tag}>`);
+
+  const open = new RegExp(`<${tag}(?:\\s[^>]*)?>`, "i");
+  if (open.test(html)) return html.replace(open, (match) => `${match}\n  ${content}`);
+  return html;
+}
+
 /** 読み込む CSS の href。Next が吐いた `<link rel="stylesheet">` を拾う。 */
 export function stylesheetHrefs(html) {
   const hrefs = [];
@@ -185,7 +223,11 @@ function replaceAttribute(tag, name, value) {
 }
 
 function escapeAttribute(value) {
-  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function decodeEntities(value) {

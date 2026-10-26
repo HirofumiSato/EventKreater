@@ -24,9 +24,11 @@ import {
   rewriteInternalLinks,
   sanitizeHtml,
   stylesheetHrefs,
+  withMockShell,
   withNotice,
 } from "./lib/mock-html.mjs";
 import { computeUiHash, normalizeNewlines } from "./lib/mock-hash.mjs";
+import { indexHtml, scopeOfHtml } from "./lib/mock-index.mjs";
 import { escapeHtml, frameHtml, frameUrl } from "./lib/mock-frame.mjs";
 import {
   buildScreens,
@@ -343,7 +345,20 @@ async function buildHtml(page, raw, row, linkTargets) {
   let html = applyAssetMap(clean, { stylesheets, images });
   html = rewriteInternalLinks(html, linkTargets);
   html = withNotice(html, { name: row.name, path: pathFor(row, WIDE.width) });
+  // 帯は製品に無い。sanitizeHtml のあとで足す（先に足すと script が落とされる）。
+  html = withMockShell(html, {
+    file: row.file,
+    name: labelOf(row),
+    path: pathFor(row, WIDE.width),
+    frame390: frameUrl(row.file, WIDTHS[0].width),
+    frame1280: frameUrl(row.file, WIDE.width),
+  });
   return { content: `${html}\n`, assets };
+}
+
+/** 帯に出す画面名。状態つきは括弧で添える（例: 04 イベント告知・出欠（満員））。 */
+function labelOf(row) {
+  return row.label ? `${row.no} ${row.name}（${row.label}）` : `${row.no} ${row.name}`;
 }
 
 async function saveAsset(page, url, assets) {
@@ -366,60 +381,37 @@ async function saveAsset(page, url, assets) {
 
 /** 一覧ページ。モック同士の行き来だけを載せる（画像はローカルの PNG 側）。 */
 async function writeIndex(entries) {
-  const byGroup = new Map(MOCK_GROUPS.map((group) => [group.key, []]));
+  const stylesheets = await productStylesheets(entries);
+  const scopes = new Map();
   for (const entry of entries) {
-    const list = byGroup.get(entry.group) ?? [];
-    list.push(entry);
+    const html = await readFile(path.join(STYLE_DIR, entry.file), "utf8").catch(() => "");
+    scopes.set(entry.file, scopeOfHtml(html));
   }
 
-  const sections = MOCK_GROUPS.map((group) => {
-    const rows = byGroup.get(group.key) ?? [];
-    if (rows.length === 0) return "";
-    const items = rows
-      .map((entry) => {
-        const label = entry.label ? ` <span class="state">${escapeHtml(entry.label)}</span>` : "";
-        const frame = (width) =>
-          escapeHtml(frameUrl(entry.file, width));
-        const links = `<span class="links"><a href="${frame(NARROW.width)}" title="スマホの幅で見る">390</a><a href="${frame(WIDE.width)}" title="PC の幅で見る">1280</a><a href="${escapeHtml(entry.file)}" title="モックの HTML をそのまま開く">HTML</a></span>`;
-        return `      <li><a href="${frame(WIDE.width)}">${entry.no} ${escapeHtml(entry.name)}</a>${label}<span class="note">${escapeHtml(entry.note)}</span>${links}</li>`;
-      })
-      .join("\n");
-    return `  <section>\n    <h2>${escapeHtml(group.title)}</h2>\n    <p class="lead">${escapeHtml(group.note)}</p>\n    <ul>\n${items}\n    </ul>\n  </section>`;
-  })
-    .filter(Boolean)
-    .join("\n");
+  const html = indexHtml(entries, {
+    groups: MOCK_GROUPS,
+    widths: WIDTHS,
+    stylesheets,
+    scopeOf: (file) => scopes.get(file) ?? "none",
+  });
 
-  const html = `<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>画面モック一覧</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin: 0 auto; max-width: 60rem; padding: 2.5rem 1.25rem 4rem; font-family: system-ui, sans-serif; line-height: 1.7; color: #1c1917; background: #faf9f7; }
-    h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
-    h2 { font-size: 1.1rem; margin: 2.5rem 0 .25rem; border-bottom: 1px solid #e7e5e4; padding-bottom: .35rem; }
-    .lead { margin: 0 0 .75rem; color: #57534e; font-size: .9rem; }
-    ul { list-style: none; margin: 0; padding: 0; }
-    li { display: grid; grid-template-columns: 16rem 5rem 1fr 7rem; gap: .75rem; align-items: baseline; padding: .5rem 0; border-bottom: 1px solid #f0efed; }
-    a { color: #b91c1c; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .state { font-size: .75rem; color: #57534e; background: #f0efed; border-radius: 999px; padding: .1rem .5rem; }
-    .note { color: #57534e; font-size: .85rem; }
-    .links { display: flex; gap: .6rem; font-size: .8rem; }
-    footer { margin-top: 3rem; color: #78716c; font-size: .8rem; }
-  </style>
-</head>
-<body>
-  <h1>画面モック</h1>
-  <p class="lead">製品の DOM から <code>npm run mock:sync</code> が書き出した生成物です。手で編集しないでください。撮り直しは <code>npm run mock:sync</code>。<a href="mock-frame.html">幅を選んで見る</a>と、390 / 1280 の枠に入れて並べて確かめられます。</p>
-${sections}
-  <footer>PNG（390 / 1280）は storage/mock-shots/ にあります（コミット対象外）。</footer>
-</body>
-</html>
-`;
   return (await writeIfChanged(path.join(STYLE_DIR, "mock-index.html"), html)) ? 1 : 0;
+}
+
+/**
+ * 一覧が読み込む製品の CSS。生成済みの画面から拾う。
+ *
+ * 一覧は製品の画面ではないが、見出しやボタンは製品と同じ見た目にしたい。
+ * 撮った画面がすでに `assets/<hash>.css` を指しているので、その href を使い回す。
+ */
+async function productStylesheets(entries) {
+  for (const entry of entries) {
+    const html = await readFile(path.join(STYLE_DIR, entry.file), "utf8").catch(() => null);
+    if (!html) continue;
+    const hrefs = stylesheetHrefs(html).filter((href) => href.startsWith("assets/"));
+    if (hrefs.length > 0) return hrefs;
+  }
+  return [];
 }
 
 /** 端末の幅で見る枠ページ。`mock-index.html` と同じく生成物。 */
