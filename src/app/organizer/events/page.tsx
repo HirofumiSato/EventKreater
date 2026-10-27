@@ -5,11 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
-import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
-import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
-import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
@@ -17,7 +14,8 @@ import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import type { OrganizerEvent } from "@/modules/events/types";
-import { Alert, EmptyState, Loading, PageHeader, Panel, Section, SectionHead } from "@/components/ui";
+import { Alert, EmptyState, Loading, PageHeader, Section, SectionHead } from "@/components/ui";
+
 
 function OrganizerEventsScreen() {
   const router = useRouter();
@@ -31,8 +29,6 @@ function OrganizerEventsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [managingId, setManagingId] = useState<string | null>(null);
-  const [viewer, setViewer] = useState<{ userId: string | null; name: string | null } | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events");
@@ -45,14 +41,10 @@ function OrganizerEventsScreen() {
       setError(await readProblem(res));
       return;
     }
-    const data = (await res.json()) as {
-      events: OrganizerEvent[];
-      viewer?: { userId: string | null; name: string | null };
-    };
+    const data = (await res.json()) as { events: OrganizerEvent[] };
     // 一覧 API は全件を返す。マイページとカレンダーが全件前提なので、絞り込みは画面側で行う。
     setEvents(data.events.filter((event) => event.status !== "DRAFT"));
     setDraftCount(data.events.filter((event) => event.status === "DRAFT").length);
-    setViewer(data.viewer ?? null);
     setError(null);
   }, []);
 
@@ -94,12 +86,6 @@ function OrganizerEventsScreen() {
     }
   };
 
-  const copyPublicPageUrl = async () => {
-    if (!viewer?.userId) return;
-    await navigator.clipboard.writeText(`${window.location.origin}${organizerProfilePath(viewer.userId)}`);
-    setToast("公開ページのURLをコピーしました。参加者に配れます。");
-  };
-
   const runLifecycle = async (id: string, action: "close" | "delete") => {    setBusyId(id);
     try {
       const res = await fetch(`/api/v1/organizer/events/${id}/lifecycle`, {
@@ -126,28 +112,10 @@ function OrganizerEventsScreen() {
     <div className="stack">
       <PageHeader eyebrow="主催者" title="主催イベント一覧" lead="作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。" />
 
+      {/* 主催一覧・カレンダー・売上・プロフィールは主催者の節（org-subnav）と重ねない。 */}
       <div className="panel__actions">
-        {viewer?.userId && (
-          <>
-            <Link
-              href={organizerProfilePath(viewer.userId)}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn--outline btn--sm"
-            >
-              公開ページ
-            </Link>
-            <Link href="/organizer/profile" className="btn btn--outline btn--sm">
-              プロフィールを編集
-            </Link>
-          </>
-        )}
-        <StripePortalButton />
         <Link href="/organizer/events/drafts" className="btn btn--outline btn--sm">
           下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
-        </Link>
-        <Link href="/organizer/revenue" className="btn btn--outline btn--sm">
-          売上を見る
         </Link>
         <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
           新規作成
@@ -205,28 +173,8 @@ function OrganizerEventsScreen() {
         </div>
       )}
 
-      {viewer?.userId && (
-        <Section>
-          <SectionHead title="主催者ページ" note="参加者に見えるページです。URLを配って集客にも使えます。" />
-          <Panel as="div" style={{ marginTop: "0.75rem" }}>
-            <p className="panel__note">
-              告知ページの主催者名から、プロフィールと催しのページへ移動できます。
-            </p>
-            <div className="panel__actions">
-              <button type="button" className="btn btn--outline btn--sm" onClick={() => setPreviewOpen(true)}>
-                プレビュー
-              </button>
-              <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicPageUrl()}>
-                URLをコピー
-              </button>
-            </div>
-          </Panel>
-        </Section>
-      )}
-
       <Section>
-        <SectionHead title="公開中" note={<>{events.length}件。出欠の集計、編集、複製はここから行います。
-          </>} />
+        <SectionHead title="公開中" />
         {!loading && !error && events.length === 0 && (
           <EmptyState as="div" style={{ marginTop: "1rem" }}>
             <p className="empty__title">
@@ -272,13 +220,6 @@ function OrganizerEventsScreen() {
           onClose={() => setManagingId(null)}
           onStop={() => void runLifecycle(managingId, "close")}
           onDelete={() => void runLifecycle(managingId, "delete")}
-        />
-      )}
-      {previewOpen && viewer?.userId && (
-        <OrganizerPagePreviewModal
-          userId={viewer.userId}
-          organizerName={viewer.name ?? "主催者"}
-          onClose={() => setPreviewOpen(false)}
         />
       )}
       {toast && (

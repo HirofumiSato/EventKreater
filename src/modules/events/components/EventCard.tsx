@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatRsvpDeadlineLabel, priceLabel, scheduleLabel } from "@/lib/serializers";
+import { formatRsvpDeadlineLabel, scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import { Badge } from "@/components/ui";
 
@@ -45,10 +45,9 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
           <Badge tone="neutral">{event.role === "OWNER" ? "主催" : "共同主催"}</Badge>
         </div>
 
+        {/* 料金プランと主催者名は一覧では持たない。金額は名簿と告知ページで確かめる。 */}
         <p className="event-card__meta">
           {scheduleLabel(event.schedules)} ／ {event.location}
-          <br />
-          {priceLabel(event.pricePlans)}
           {event.rsvpDeadline ? (
             <>
               {" "}
@@ -56,10 +55,6 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
               {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
             </>
           ) : null}
-        </p>
-        <p className="event-card__meta">
-          主催: {event.ownerName}
-          {event.role === "CO_HOST" ? "（あなたは共同主催）" : ""}
         </p>
 
         <div className="event-card__meter-label">
@@ -96,7 +91,6 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
                   onFocus={(input) => input.currentTarget.select()}
                 />
               </div>
-              <p className="help">このURLを開いた人は、登録なしで出欠を答えられます。</p>
               <div className="panel__actions">
                 <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicUrl()}>
                   {copied ? "コピーしました" : "URLをコピー"}
@@ -124,12 +118,15 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
             公開ページ
           </Link>
         )}
-        <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
-          編集
-        </Link>
-        <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
-          コピー作成
-        </button>
+        {/* 編集にかかわる操作は右端に寄せ、罫線で見るだけの操作と分ける。 */}
+        <div className="event-card__actions-edit">
+          <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
+            編集
+          </Link>
+          <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
+            コピー作成
+          </button>
+        </div>
       </div>
     </article>
   );
