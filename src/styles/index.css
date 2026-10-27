@@ -1,6 +1,12 @@
 /* 共有スタイルの入口。モックと本体はこの 1 ファイルだけを読む。
    順番が仕様。値 → 土台 → 部品 → 画面 → 装飾（最後）の順で、後ろほど優先される。
-   モック（style-guide/*.html）も同じファイルを読むので、直すのは 1 箇所で済む。 */
+   モック（style-guide/*.html）も同じファイルを読むので、直すのは 1 箇所で済む。
+
+   幅の段もここが仕様。スマホ（390px）が既定で、広い画面向けの差分だけを min-width で足す。
+     広げる: 640 / 768 / 900 / 1024（min-width）
+     狭める: 360 / 400 / 480 / 540（max-width。狭い画面だけを詰める）
+     min-width の対: 639 / 767 / 899 / 1023（max-width）
+   表に無い値は tests/unit/style-breakpoints.test.mjs が止める。増やすときは表も直す。 */
 @import "./tokens.css";
 @import "./base.css";
 @import "./components.css";

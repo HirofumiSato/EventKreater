@@ -128,8 +128,12 @@
   min-width: 0;
 }
 
+/* スマホはコピーの下にチラシを置き、画面の続きを覗かせる。これが既定。
+   高さで切ると枠だけが大きくなり、チラシの左右に余白ができる。幅で決める。 */
 .hero__poster {
-  display: none;
+  display: block;
+  width: min(50vw, 12.5rem);
+  margin: 2rem auto 0;
 }
 
 @media (min-width: 900px) {
@@ -148,11 +152,12 @@
     font-size: clamp(2.5rem, 3.4vw, 3.25rem);
   }
 
+  /* 広い画面ではコピーの右に、札として置く。 */
   .hero__poster {
-    display: block;
     justify-self: end;
     width: 100%;
     max-width: 19rem;
+    margin: 0;
   }
 }
 
@@ -167,20 +172,6 @@
   color: var(--color-ink-soft);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-}
-
-/* モバイルはコピーの下に置き、画面の続きを覗かせる。
-   高さで切ると枠だけが大きくなり、チラシの左右に余白ができる。幅で決める。 */
-@media (max-width: 899px) {
-  .hero__poster {
-    display: block;
-    width: min(50vw, 12.5rem);
-    margin: 2rem auto 0;
-  }
-
-  .hero__poster img {
-    max-height: none;
-  }
 }
 
 .card-grid,
@@ -355,8 +346,14 @@
   opacity: 0.9;
 }
 
+/* スマホは帯の幅いっぱいに広げる。広い画面では min-width: 900px で戻す。 */
 .cta-band__actions {
   flex-shrink: 0;
+  width: 100%;
+}
+
+.cta-band__actions .btn {
+  width: 100%;
 }
 
 .btn--inverse {
@@ -383,6 +380,12 @@
 @media (min-width: 900px) {
   .cta-band {
     padding: 3.5rem 1.5rem;
+  }
+
+  /* 文とボタンが 1 行に並ぶ幅なので、ボタンは中身の幅に戻す。 */
+  .cta-band__actions,
+  .cta-band__actions .btn {
+    width: auto;
   }
 
   .cta-band__title {
@@ -424,13 +427,6 @@
 
   .step-row__body {
     margin-top: 0;
-  }
-}
-
-@media (max-width: 899px) {
-  .cta-band__actions,
-  .cta-band__actions .btn {
-    width: 100%;
   }
 }
 
@@ -862,7 +858,7 @@ fieldset.field {
   margin-inline-start: auto;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .event-step__toggle {
     padding: 0.875rem 1rem;
   }
@@ -995,7 +991,7 @@ fieldset.field {
   gap: 0.5rem;
 }
 
-@media (max-width: 780px) {
+@media (max-width: 767px) {
   .repeat-row,
   .repeat-row--plan,
   .repeat-row--plan-common,
@@ -1695,7 +1691,7 @@ fieldset.field {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 767px) {
   
 
   

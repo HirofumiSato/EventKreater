@@ -5278,7 +5278,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1845,
+      "lineCount": 1853,
       "headings": [
         {
           "level": 1,
@@ -5295,6 +5295,10 @@
         {
           "level": 3,
           "text": "1.1. 5大設計原則"
+        },
+        {
+          "level": 3,
+          "text": "1.2. レスポンシブの基準（スマホが先）"
         },
         {
           "level": 2,
@@ -5728,6 +5732,10 @@
           "exists": true
         },
         {
+          "path": "src/styles/index.css",
+          "exists": true
+        },
+        {
           "path": "src/types/event.ts",
           "exists": false
         },
@@ -5765,6 +5773,10 @@
         },
         {
           "path": "tests/unit/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/style-breakpoints.test.mjs",
           "exists": true
         }
       ],
@@ -9751,7 +9763,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 498,
+      "lineCount": 502,
       "headings": [
         {
           "level": 1,
@@ -10002,6 +10014,10 @@
         },
         {
           "path": "tests/unit/site-chrome.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/style-breakpoints.test.mjs",
           "exists": true
         },
         {
@@ -10581,7 +10597,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 175,
+      "lineCount": 184,
       "headings": [
         {
           "level": 1,
@@ -10618,6 +10634,10 @@
         {
           "level": 2,
           "text": "端末の幅で見る（mock-frame.html）"
+        },
+        {
+          "level": 3,
+          "text": "撮るときの幅は 1280、見る既定は 390"
         },
         {
           "level": 2,

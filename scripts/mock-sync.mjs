@@ -47,6 +47,7 @@ import {
   openCapturePage,
   readHtml,
   reissueEmailChangeTokens,
+  reissueVerifyUserSession,
   settle,
 } from "./lib/capture-core.mjs";
 import { ensureHarness, prewarm, sleep } from "./lib/ui-harness.mjs";
@@ -126,6 +127,14 @@ async function main() {
     const reissued = await reissueEmailChangeTokens(demo);
     if (!reissued) {
       log("メールアドレス変更のトークンを発行し直せませんでした（db:seed:ui をやり直してください）");
+    }
+    // 変更は他の端末のセッションを失効させる。同じ会員のセッションも撮る前に
+    // 発行し直さないと、2 回目からヘッダーだけ未ログインの絵になる。
+    const session = await reissueVerifyUserSession(demo);
+    if (session) {
+      demo.tokens.verifyUser = session;
+    } else {
+      log("確認用の会員のセッションを発行し直せませんでした（.env の JWT_SECRET を確認してください）");
     }
   }
 

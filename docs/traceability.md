@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 101（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 296
+- 文書から参照されているコードパス: 298
 - API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -249,6 +249,7 @@
 | `src/styles/base.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/components.css` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/deco/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/styles/index.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/styles/screens/organizer.css` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/styles/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
@@ -305,6 +306,7 @@
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/site-chrome.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `tests/unit/style-breakpoints.test.mjs` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
