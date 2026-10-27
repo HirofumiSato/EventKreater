@@ -251,9 +251,15 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    * - ``STRIPE_WEBHOOK_SECRET``
      - 必須
      - Webhook の署名シークレット。違うと ``/api/v1/webhooks/stripe`` が 400 を返します
-   * - ``STRIPE_PRICE_ID_MONTHLY_980``
+   * - ``STRIPE_PRICE_ID_MONTHLY_8``
      - 必須
-     - 月額の Price ID
+     - 月8回プランの Price ID
+   * - ``STRIPE_PRICE_ID_UNLIMITED``
+     - 必須
+     - 作り放題の Price ID
+   * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
+     - 任意
+     - 値上げ前に加入した 980 円の作り放題の Price ID。既存契約の検証だけに使います
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 必須
      - 単発の Price ID
@@ -284,7 +290,8 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      JWT_SECRET="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")" `
      STRIPE_SECRET_KEY="sk_live_..." `
      STRIPE_WEBHOOK_SECRET="whsec_..." `
-     STRIPE_PRICE_ID_MONTHLY_980="price_..." `
+     STRIPE_PRICE_ID_MONTHLY_8="price_..." `
+     STRIPE_PRICE_ID_UNLIMITED="price_..." `
      STRIPE_PRICE_ID_ONE_TIME="price_..." `
      GOOGLE_CLIENT_ID="..." `
      GOOGLE_CLIENT_SECRET="..." `
@@ -342,7 +349,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
 4. Stripe を本番に向ける
 ------------------------
 
-1. Stripe の Dashboard で本番モードに切り替え、Price を 2 つ作ります（月額 980 円、単発 299 円）。
+1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（月8回プラン 980 円、作り放題 2,980 円、単発 299 円）。
 2. Webhook のエンドポイントを ``https://example.com/api/v1/webhooks/stripe`` にします。
 3. 受け取るイベントは、テストモードで使ったものと同じにします。署名シークレットを ``STRIPE_WEBHOOK_SECRET`` に入れます。
 4. 返金は Dashboard から行います。アプリに返金の口はありません。

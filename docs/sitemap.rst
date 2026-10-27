@@ -175,7 +175,7 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - ページ
      - 中身
    * - :doc:`billing_and_quota_planning_requirements`
-     - 企画要件。無料 2 回、単発 299 円、月額 980 円
+     - 企画要件。無料 2 回、単発 299 円、月8回 980 円、作り放題 2,980 円
    * - :doc:`billing_and_quota_system_requirements`
      - システム要件。Checkout、Webhook、冪等性
    * - :doc:`pricing_campaign_requirements`

@@ -100,24 +100,27 @@ export function useEventQuota() {
     throw new Error("単発決済セッション作成に失敗しました");
   }, [fetchQuota]);
 
-  const startSubscriptionCheckout = useCallback(async (override?: CheckoutIntent) => {
-    const intent = override ?? intentRef.current;
-    const res = await fetch("/api/v1/billing/checkout/subscription", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": crypto.randomUUID(),
-      },
-      body: checkoutBody(intent),
-    });
-    if (!res.ok) {
-      throw new Error(problemMessage(await readProblemBody(res), "サブスクセッション作成に失敗しました"));
-    }
-    const data = (await res.json()) as { checkoutUrl?: string };
-    if (data.checkoutUrl) {
-      window.location.href = data.checkoutUrl;
-    }
-  }, []);
+  const startSubscriptionCheckout = useCallback(
+    async (plan: "MONTHLY_8" | "UNLIMITED", override?: CheckoutIntent) => {
+      const intent = override ?? intentRef.current;
+      const res = await fetch("/api/v1/billing/checkout/subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({ ...(intent ?? {}), plan }),
+      });
+      if (!res.ok) {
+        throw new Error(problemMessage(await readProblemBody(res), "サブスクセッション作成に失敗しました"));
+      }
+      const data = (await res.json()) as { checkoutUrl?: string };
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    },
+    [],
+  );
 
   const openCustomerPortal = useCallback(async () => {
     const res = await fetch("/api/v1/billing/portal", { method: "POST" });

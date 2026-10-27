@@ -15,7 +15,7 @@
 3. **PostgreSQL固有のアトミック排他制御（Pessimistic Lease Lock）:**
    - 共同幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
 4. **マネタイズ基盤（課金クォータ・Stripe連携）の完全統合:**
-   - 主催者の利用枠（累計2回無料、単発299円クレジット、月額980円サブスクリプション）を `user_usage_quotas` テーブルで管理。
+   - 主催者の利用枠（累計2回無料、単発299円クレジット、月8回980円・作り放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。
    - 決済監査ログ（`billing_transactions`）および Webhook冪等性制御（`stripe_webhook_events`）を統合し、二重課金・二重付与を物理遮断する。
 5. **筆頭作成者（オーナー）のみ枠消費ルール:**
    - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）の枠は消費しない。
@@ -104,7 +104,8 @@ erDiagram
 | 列挙型名 | 定義値 | 概要 |
 | :---- | :---- | :---- |
 | **SubscriptionStatus** | `NONE`, `ACTIVE`, `PAST_DUE`, `CANCELED`, `INCOMPLETE` | サブスクリプション契約状態 |
-| **PaymentType** | `ONE_TIME`, `SUBSCRIPTION` | 決済種別（単発299円 / 月額980円） |
+| **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（月8回980円 / 作り放題2980円 / 未加入） |
+| **PaymentType** | `ONE_TIME`, `SUBSCRIPTION` | 決済種別（単発299円 / 月額） |
 | **PaymentStatus** | `PENDING`, `SUCCEEDED`, `FAILED`, `REFUNDED`, `DISPUTED` | 決済ステータス。`DISPUTED` は異議申立 |
 | **RainPolicy** | `RAIN_OR_SHINE`, `CANCEL_ON_RAIN`, `POSTPONE_ON_RAIN`, `INDOOR` | 雨天時の催行方針 |
 | **EventStatus** | `DRAFT`, `PUBLISHED`, `CLOSED` | イベント公開状態 |
@@ -116,7 +117,7 @@ erDiagram
 | **LoginChallengeChannel** | `SMS`, `EMAIL` | ログイン確認番号の届け方。既定はSMS |
 | **LoginChallengePurpose** | `MEMBER`, `ADMIN`, `PARTICIPANT` | 主催者入口か管理者入口か参加者入口か。`PARTICIPANT` は管理者も通り抜けられる |
 | **SignupAudience** | `ORGANIZER`, `PARTICIPANT` | 登録を始めた入口。確認メール後の着地を分ける。既定は `ORGANIZER` |
-| **PricingTarget** | `ONE_TIME`, `SUBSCRIPTION`, `BOTH` | 価格キャンペーンの適用対象 |
+| **PricingTarget** | `ONE_TIME`, `SUBSCRIPTION`, `SUBSCRIPTION_8`, `SUBSCRIPTION_UNLIMITED`, `BOTH` | 価格キャンペーンの適用対象（`SUBSCRIPTION` は定額2階層の両方、`BOTH` は単発と定額すべて） |
 | **DiscountKind** | `PERCENT`, `FREE` | 割引の種類。`FREE` は `percent = 100` の別名 |
 | **BillingNoticeKind** | `FREE_PERIOD_ENDING_3D`, `FREE_PERIOD_ENDING_1D` | 0 円月額の終了前に送る案内の種別 |
 | **RsvpStatus** | `ATTENDING`, `DECLINED` | 出欠意思表示（参加 / 不参加） |
@@ -334,6 +335,12 @@ model UserUsageQuota {
   freeEventCount       Int                @default(0) @map("free_event_count") @db.SmallInt
   paidCredits          Int                @default(0) @map("paid_credits") @db.Integer
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
+  /// 加入中の定額プラン。subscription_status が ACTIVE のときだけ意味を持つ。
+  subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
+  /// MONTHLY_8 で今月すでに公開した回数。暦月（JST）が変わったら作り直す。
+  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
+  /// monthly_event_count を数えた暦月（例 "2026-10"）。NULL はまだ数えていない。
+  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -678,6 +685,8 @@ model OrganizerProfile {
 -- 列挙型の作成
 CREATE TYPE subscription_status_enum AS ENUM ('NONE', 'ACTIVE', 'PAST_DUE', 'CANCELED', 'INCOMPLETE');
 
+CREATE TYPE subscription_plan_enum AS ENUM ('NONE', 'MONTHLY_8', 'UNLIMITED');
+
 CREATE TYPE payment_type_enum AS ENUM ('ONE_TIME', 'SUBSCRIPTION');
 
 CREATE TYPE payment_status_enum AS ENUM ('PENDING', 'SUCCEEDED', 'FAILED', 'REFUNDED', 'DISPUTED');
@@ -804,6 +813,9 @@ CREATE TABLE user_usage_quotas (
     free_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (free_event_count >= 0),
     paid_credits INT NOT NULL DEFAULT 0 CHECK (paid_credits >= 0),
     subscription_status subscription_status_enum NOT NULL DEFAULT 'NONE',
+    subscription_plan subscription_plan_enum NOT NULL DEFAULT 'NONE',
+    monthly_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (monthly_event_count >= 0),
+    monthly_period_key VARCHAR(7) NULL,
     current_period_end TIMESTAMPTZ NULL,
     stripe_customer_id VARCHAR(255) UNIQUE NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NULL,
@@ -1153,9 +1165,11 @@ model PricingCampaignCoupon {
   version        Int
   months         Int          @db.SmallInt
   kind           DiscountKind
+  /// 対象プラン。BOTH キャンペーンは対象プランごとに 1 行ずつ作るため、行ごとに具体値が入る。
+  plan           PricingTarget
   stripeCouponId String       @unique @map("stripe_coupon_id") @db.VarChar(255)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  @@unique([campaignId, version, months, kind])
+  @@unique([campaignId, version, months, kind, plan])
   @@map("pricing_campaign_coupons")
 }
 

@@ -48,8 +48,12 @@
      - テストモードの秘密鍵（ ``sk_test_`` で始まる）
    * - ``STRIPE_WEBHOOK_SECRET``
      - Webhook 署名検証用（ ``whsec_`` で始まる）。Stripe CLI の表示値を入れる
-   * - ``STRIPE_PRICE_ID_MONTHLY_980``
-     - 月額 980 円プランの Price ID（ ``price_`` で始まる）。テストモードで作る
+   * - ``STRIPE_PRICE_ID_MONTHLY_8``
+     - 月8回プラン 980 円の Price ID（ ``price_`` で始まる）。テストモードで作る
+   * - ``STRIPE_PRICE_ID_UNLIMITED``
+     - 作り放題 2,980 円の Price ID（ ``price_`` で始まる）。テストモードで作る
+   * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
+     - 任意。値上げ前に加入した 980 円の作り放題の Price ID。既存契約の検証だけに使う
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 任意。単発 299 円の Price ID。空なら Checkout が 299 円の ``price_data`` を作る
    * - ``NEXT_PUBLIC_APP_URL``
@@ -199,7 +203,7 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
    * - ``/``
      - トップ。ヘッダーのサービス名は ``EventKreater``（ ``src/lib/site.ts`` の ``SITE.name`` ）。未ログイン時のボタンは「主催者ログイン」（ ``SITE.nav.organizerLogin`` ）。サービス紹介と使い方、サービスと料金へのリンク。イベントの一覧・検索は無い
    * - ``/service``
-     - サービスと料金。無料2回、単発299円、月額980円。キャンペーン中は販売価格と定価を併記する。支払いボタンは無い
+     - サービスと料金。無料2回、単発299円、月8回980円、作り放題2980円。キャンペーン中は販売価格と定価を併記する。支払いボタンは無い
    * - ``/terms``
      - 利用規約。料金、自動更新、無料期間の終了前通知、解約、返金
    * - ``/auth/register``
@@ -255,15 +259,18 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
 イベント作成時の判定は ``src/modules/billing/lib/quota.ts`` にあります。優先順は次のとおりです。
 
 1. ``subscription_status`` が ``PAST_DUE`` なら作成できない
-2. ``ACTIVE`` かつ ``current_period_end`` が現在より未来なら、枠を消費せず作成できる
+2. ``ACTIVE`` かつ ``current_period_end`` が現在より未来なら、加入した階層で決める
+
+   * 作り放題（ ``UNLIMITED`` ）は枠を消費せず作成できる
+   * 月8回プラン（ ``MONTHLY_8`` ）は暦月（JST）で 8 回まで。 ``monthly_event_count`` を 1 増やして作成する。月が変わると 0 に戻る
 3. ``paid_credits`` が 1 以上なら 1 減らして作成する
 4. ``free_event_count`` が 2 未満で、電話番号が確認済みなら 1 増やして作成する（無料は 2 回まで）
 5. 無料枠は残っているが電話番号が未確認なら HTTP 403
 6. どれも使えなければ HTTP 402
 
-料金は単発 299 円、月額 980 円です。単発は Checkout の ``price_data`` で金額を指定します。月額は Stripe 上の Price ID を ``STRIPE_PRICE_ID_MONTHLY_980`` から読みます。
+料金は単発 299 円、月8回プラン 980 円、作り放題 2,980 円です。単発は Checkout の ``price_data`` で金額を指定します。定額は Stripe 上の Price ID を ``STRIPE_PRICE_ID_MONTHLY_8`` か ``STRIPE_PRICE_ID_UNLIMITED`` から読みます。
 
-販売価格は ``/console/pricing`` の期間キャンペーンで変わります。単発が 0 円のときは Stripe を通さず、確認済み電話番号の会員へその場で 1 回分を付与します。月額が 0 円のときは 100% off の繰り返しクーポンを付け、カード登録を必須にします。無料期間が終わると定価で自動請求します。終了の 3 日前と 1 日前のメールは ``npm run billing:notices``、または ``POST /api/v1/internal/billing/notices`` を日次で叩いて送ります。``BILLING_NOTICE_SECRET`` が要ります。
+販売価格は ``/console/pricing`` の期間キャンペーンで変わります。単発が 0 円のときは Stripe を通さず、確認済み電話番号の会員へその場で 1 回分を付与します。定額が 0 円のときは 100% off の繰り返しクーポンを付け、カード登録を必須にします。無料期間が終わると定価で自動請求します。終了の 3 日前と 1 日前のメールは ``npm run billing:notices``、または ``POST /api/v1/internal/billing/notices`` を日次で叩いて送ります。``BILLING_NOTICE_SECRET`` が要ります。
 
 npm scripts
 -----------
@@ -311,7 +318,7 @@ Stripe をローカルで試す
 
 要点だけ次です。
 
-* Dashboard はテストデータ側にする。月額 980 円（JPY、月次）の Price ID を ``STRIPE_PRICE_ID_MONTHLY_980`` に入れる
+* Dashboard はテストデータ側にする。月8回プラン 980 円と作り放題 2,980 円（どちらも JPY、月次）の Price ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる
 * テストカードは ``4242 4242 4242 4242``
 * 付与経路は Checkout 戻り先の ``POST /api/v1/billing/checkout/verify`` と、Webhook の ``POST /api/v1/webhooks/stripe`` の 2 つ
 * CLI の転送先ポートは ``NEXT_PUBLIC_APP_URL`` に合わせる。``.env.example`` なら 3012

@@ -1,5 +1,9 @@
 import type { DiscountKind, PricingTarget } from "@prisma/client";
-import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import {
+  ONE_TIME_PRICE_JPY,
+  SUBSCRIPTION_8_PRICE_JPY,
+  SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+} from "@/modules/billing/lib/plans";
 
 /**
  * 価格キャンペーンの計算だけを持つ純粋関数。
@@ -14,7 +18,14 @@ export const MAX_CAMPAIGN_MONTHS = 12;
 
 export type CampaignStatus = "SCHEDULED" | "ACTIVE" | "ENDED" | "STOPPED";
 
-export type PricingKind = "ONE_TIME" | "SUBSCRIPTION";
+/**
+ * 販売する商品。定額プランが 2 段階になったので、月額は 2 つに分かれる。
+ * DB の PricingTarget とは別で、こちらは「いくらで売るか」の単位。
+ */
+export type PricingKind = "ONE_TIME" | "SUBSCRIPTION_8" | "SUBSCRIPTION_UNLIMITED";
+
+/** 定額プランのうち、契約として選べるもの。DB の SubscriptionPlan から NONE を除いた形。 */
+export type SubscriptionProduct = "MONTHLY_8" | "UNLIMITED";
 
 export interface CampaignDefinition {
   id: string;
@@ -50,11 +61,26 @@ export interface PricingQuote {
 }
 
 export function listPriceFor(target: PricingKind): number {
-  return target === "ONE_TIME" ? ONE_TIME_PRICE_JPY : SUBSCRIPTION_PRICE_JPY;
+  switch (target) {
+    case "ONE_TIME":
+      return ONE_TIME_PRICE_JPY;
+    case "SUBSCRIPTION_8":
+      return SUBSCRIPTION_8_PRICE_JPY;
+    case "SUBSCRIPTION_UNLIMITED":
+      return SUBSCRIPTION_UNLIMITED_PRICE_JPY;
+  }
 }
 
-export function otherTarget(target: PricingKind): PricingKind {
-  return target === "ONE_TIME" ? "SUBSCRIPTION" : "ONE_TIME";
+/** 定額プラン（契約）から、販売商品を引く。 */
+export function pricingKindOfPlan(plan: SubscriptionProduct): PricingKind {
+  return plan === "MONTHLY_8" ? "SUBSCRIPTION_8" : "SUBSCRIPTION_UNLIMITED";
+}
+
+/** 販売商品から、定額プラン（契約）を引く。単発なら null。 */
+export function planOfPricingKind(kind: PricingKind): SubscriptionProduct | null {
+  if (kind === "SUBSCRIPTION_8") return "MONTHLY_8";
+  if (kind === "SUBSCRIPTION_UNLIMITED") return "UNLIMITED";
+  return null;
 }
 
 /**
@@ -81,8 +107,23 @@ export function campaignStatus(campaign: CampaignDefinition, now: Date): Campaig
   return "ACTIVE";
 }
 
+/**
+ * キャンペーンの対象が、この販売商品に効くか。
+ * 旧来の SUBSCRIPTION は「定額プランの両方」の意味で残している。
+ */
 export function campaignAppliesTo(campaign: CampaignDefinition, target: PricingKind): boolean {
-  return campaign.target === "BOTH" || campaign.target === target;
+  switch (campaign.target) {
+    case "BOTH":
+      return true;
+    case "SUBSCRIPTION":
+      return target === "SUBSCRIPTION_8" || target === "SUBSCRIPTION_UNLIMITED";
+    case "ONE_TIME":
+      return target === "ONE_TIME";
+    case "SUBSCRIPTION_8":
+      return target === "SUBSCRIPTION_8";
+    case "SUBSCRIPTION_UNLIMITED":
+      return target === "SUBSCRIPTION_UNLIMITED";
+  }
 }
 
 /** 有効なキャンペーンのうち、優先度が高く、同じなら新しいものを1つ選ぶ。 */
@@ -142,13 +183,15 @@ export function quoteFor(
   };
 }
 
-export function quoteBoth(campaigns: readonly CampaignDefinition[], now: Date): {
+export function quoteAll(campaigns: readonly CampaignDefinition[], now: Date): {
   oneTime: PricingQuote;
-  subscription: PricingQuote;
+  subscription8: PricingQuote;
+  subscriptionUnlimited: PricingQuote;
 } {
   return {
     oneTime: quoteFor("ONE_TIME", campaigns, now),
-    subscription: quoteFor("SUBSCRIPTION", campaigns, now),
+    subscription8: quoteFor("SUBSCRIPTION_8", campaigns, now),
+    subscriptionUnlimited: quoteFor("SUBSCRIPTION_UNLIMITED", campaigns, now),
   };
 }
 

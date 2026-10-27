@@ -66,7 +66,7 @@
    * - 引数なしの ``quotaExceeded()``
      - status 402、``error`` は ``QUOTA_EXCEEDED``、``type`` は ``probs/quota-exceeded``
    * - 料金の選択肢
-     - 単発 ``SINGLE`` が 299 円、月額 ``SUBSCRIPTION`` が 980 円で ``interval`` は ``month``
+     - 単発 ``SINGLE`` が 299 円、月8回 ``SUBSCRIPTION_8`` が 980 円、作り放題 ``SUBSCRIPTION_UNLIMITED`` が 2,980 円で、定額の ``interval`` は ``month``
 
 チラシへ渡す形と、認証の入口もデータベース不要です。
 

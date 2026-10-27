@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
-import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import {
+  ONE_TIME_PRICE_JPY,
+  SUBSCRIPTION_8_PRICE_JPY,
+  SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+} from "@/modules/billing/lib/plans";
 import { roundChargedPrice } from "@/modules/billing/lib/pricing";
 import { yenMark } from "@/lib/format";
 import { Alert, EmptyState, Field } from "@/components/ui";
@@ -13,7 +17,7 @@ import { Alert, EmptyState, Field } from "@/components/ui";
 interface CampaignRow {
   id: string;
   name: string;
-  target: "ONE_TIME" | "SUBSCRIPTION" | "BOTH";
+  target: CampaignTarget;
   discountKind: "PERCENT" | "FREE";
   percent: number;
   startsAt: string;
@@ -29,9 +33,17 @@ interface CampaignRow {
   stats: { paidCount: number; revenue: number; discountTotal: number };
 }
 
+/** キャンペーンの適用対象。SUBSCRIPTION は旧来の「定額プランの両方」。 */
+type CampaignTarget =
+  | "ONE_TIME"
+  | "SUBSCRIPTION"
+  | "SUBSCRIPTION_8"
+  | "SUBSCRIPTION_UNLIMITED"
+  | "BOTH";
+
 interface FormValues {
   name: string;
-  target: "ONE_TIME" | "SUBSCRIPTION" | "BOTH";
+  target: CampaignTarget;
   discountKind: "PERCENT" | "FREE";
   percent: string;
   startsAt: string;
@@ -41,11 +53,13 @@ interface FormValues {
   isEnabled: boolean;
 }
 
-const TARGET_LABEL = {
+const TARGET_LABEL: Record<CampaignTarget, string> = {
   ONE_TIME: "単発のみ",
-  SUBSCRIPTION: "月額のみ",
-  BOTH: "単発と月額",
-} as const;
+  SUBSCRIPTION: "定額プランの両方",
+  SUBSCRIPTION_8: "月8回プランのみ",
+  SUBSCRIPTION_UNLIMITED: "作り放題のみ",
+  BOTH: "すべて",
+};
 
 const STATUS_LABEL = {
   SCHEDULED: "開始前",
@@ -165,9 +179,12 @@ export default function AdminPricingPage() {
   const previewOneTime = Number.isFinite(percentValue)
     ? roundChargedPrice(ONE_TIME_PRICE_JPY, percentValue)
     : ONE_TIME_PRICE_JPY;
-  const previewSubscription = Number.isFinite(percentValue)
-    ? roundChargedPrice(SUBSCRIPTION_PRICE_JPY, percentValue)
-    : SUBSCRIPTION_PRICE_JPY;
+  const previewSubscription8 = Number.isFinite(percentValue)
+    ? roundChargedPrice(SUBSCRIPTION_8_PRICE_JPY, percentValue)
+    : SUBSCRIPTION_8_PRICE_JPY;
+  const previewUnlimited = Number.isFinite(percentValue)
+    ? roundChargedPrice(SUBSCRIPTION_UNLIMITED_PRICE_JPY, percentValue)
+    : SUBSCRIPTION_UNLIMITED_PRICE_JPY;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -281,9 +298,11 @@ export default function AdminPricingPage() {
               value={form.target}
               onChange={(event) => setForm({ ...form, target: event.target.value as FormValues["target"] })}
             >
-              <option value="BOTH">単発と月額</option>
+              <option value="BOTH">すべて（単発と定額プラン）</option>
               <option value="ONE_TIME">単発のみ</option>
-              <option value="SUBSCRIPTION">月額のみ</option>
+              <option value="SUBSCRIPTION">定額プランの両方</option>
+              <option value="SUBSCRIPTION_8">月8回プランのみ</option>
+              <option value="SUBSCRIPTION_UNLIMITED">作り放題のみ</option>
             </select>
           </Field>
           <Field label="割引の種類" htmlFor="campaign-kind">
@@ -370,9 +389,15 @@ export default function AdminPricingPage() {
           <Alert tone="info" as="div">
             <p>
               販売価格のプレビュー: 単発 {yenMark(previewOneTime)}
-              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yenMark(ONE_TIME_PRICE_JPY)}）` : ""} / 月額{" "}
-              {yenMark(previewSubscription)}
-              {previewSubscription !== SUBSCRIPTION_PRICE_JPY ? `（定価 ${yenMark(SUBSCRIPTION_PRICE_JPY)}）` : ""}
+              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yenMark(ONE_TIME_PRICE_JPY)}）` : ""} / 月8回{" "}
+              {yenMark(previewSubscription8)}
+              {previewSubscription8 !== SUBSCRIPTION_8_PRICE_JPY
+                ? `（定価 ${yenMark(SUBSCRIPTION_8_PRICE_JPY)}）`
+                : ""}{" "}
+              / 作り放題 {yenMark(previewUnlimited)}
+              {previewUnlimited !== SUBSCRIPTION_UNLIMITED_PRICE_JPY
+                ? `（定価 ${yenMark(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}）`
+                : ""}
             </p>
           </Alert>
 
@@ -437,10 +462,14 @@ export default function AdminPricingPage() {
                       {row.discountKind === "FREE" ? "無料（0円）" : `${row.percent}%OFF`}
                       <div className="data__muted">
                         {row.discountKind === "PERCENT"
-                          ? `単発 ${yenMark(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 月額 ${yenMark(
-                              roundChargedPrice(SUBSCRIPTION_PRICE_JPY, row.percent),
+                          ? `単発 ${yenMark(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 月8回 ${yenMark(
+                              roundChargedPrice(SUBSCRIPTION_8_PRICE_JPY, row.percent),
+                            )} / 作り放題 ${yenMark(
+                              roundChargedPrice(SUBSCRIPTION_UNLIMITED_PRICE_JPY, row.percent),
                             )}`
-                          : row.target === "SUBSCRIPTION"
+                          : row.target === "SUBSCRIPTION" ||
+                              row.target === "SUBSCRIPTION_8" ||
+                              row.target === "SUBSCRIPTION_UNLIMITED"
                             ? "月額は初回0円のクーポンで対応"
                             : row.target === "ONE_TIME"
                               ? "0円チケットは付与で対応"

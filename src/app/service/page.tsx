@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { buildServicePlans } from "@/modules/billing/lib/plans";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
-import { quoteBoth } from "@/modules/billing/lib/pricing";
+import { quoteAll } from "@/modules/billing/lib/pricing";
 import { SITE } from "@/lib/site";
 import { Alert, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
@@ -30,6 +30,10 @@ const faqs = [
     "キャンペーン価格は、あとから変わりますか",
     "すでに購入した回の金額は変わりません。実施中のキャンペーンは、購入前に販売価格と定価を並べて表示します。",
   ],
+  [
+    "月8回プランと作り放題の違いは",
+    "公開できる回数だけです。月8回プランは暦月に8回までで、回数は毎月1日（日本時間）に戻ります。作り放題は契約が有効なあいだ回数を数えません。含まれる機能は同じです。",
+  ],
 ];
 
 function priceLabel(priceYen: number): string {
@@ -51,9 +55,13 @@ function endsAtLabel(iso: string | null): string | null {
 
 export default async function ServicePage() {
   const now = new Date();
-  const quotes = quoteBoth(await loadActiveCampaigns(now), now);
+  const quotes = quoteAll(await loadActiveCampaigns(now), now);
   const plans = buildServicePlans(quotes);
-  const campaignDeadline = endsAtLabel(quotes.subscription.campaignEndsAt ?? quotes.oneTime.campaignEndsAt);
+  const campaignDeadline = endsAtLabel(
+    quotes.subscriptionUnlimited.campaignEndsAt ??
+      quotes.subscription8.campaignEndsAt ??
+      quotes.oneTime.campaignEndsAt,
+  );
 
   return (
     <div className="stack">
@@ -138,7 +146,7 @@ export default async function ServicePage() {
       </div>
 
       <p className="screen-note">
-        月額の解約とカードの変更は、加入したあと主催一覧から行います。このページでは支払いは始まりません。枠が足りなくなったとき、作成画面で単発か月額を選びます。
+        月額の解約とカードの変更は、加入したあと主催一覧から行います。このページでは支払いは始まりません。枠が足りなくなったとき、作成画面で単発・月8回プラン・作り放題から選びます。
         0円の月額プランは、無料期間の終了後に自動で有料へ切り替わります。終了の3日前と1日前にメールでお知らせします。詳しい条件は
         <Link href={SITE.nav.terms.href} className="text-link">
           {SITE.nav.terms.label}

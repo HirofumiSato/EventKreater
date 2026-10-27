@@ -3,9 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { requireUserId } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
-import { FREE_EVENT_LIMIT, isSubscriptionActive } from "@/modules/billing/lib/quota";
+import {
+  FREE_EVENT_LIMIT,
+  SUBSCRIPTION_EVENT_LIMIT,
+  isSubscriptionActive,
+  jstMonthKey,
+  monthlyRemaining,
+} from "@/modules/billing/lib/quota";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
-import { quoteBoth } from "@/modules/billing/lib/pricing";
+import { quoteAll } from "@/modules/billing/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,16 +40,31 @@ export async function GET(req: NextRequest) {
     const isSubActive = isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now);
     const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
     const phoneVerified = Boolean(user?.phoneVerifiedAt);
+    const capped = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
+    const monthlyUsed = quota.monthlyPeriodKey === jstMonthKey(now) ? quota.monthlyEventCount : 0;
+    const remainingMonthly = monthlyRemaining(
+      quota.monthlyPeriodKey,
+      quota.monthlyEventCount,
+      now,
+    );
     const canCreate =
       quota.subscriptionStatus !== "PAST_DUE" &&
-      (isSubActive || quota.paidCredits > 0 || (remainingFree > 0 && phoneVerified));
+      ((isSubActive && (!capped || remainingMonthly > 0)) ||
+        quota.paidCredits > 0 ||
+        (remainingFree > 0 && phoneVerified));
 
-    let planType: "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION" | "NONE" = "NONE";
-    if (isSubActive) planType = "SUBSCRIPTION";
-    else if (quota.paidCredits > 0) planType = "PAID_CREDIT";
+    let planType:
+      | "FREE_TRIAL"
+      | "PAID_CREDIT"
+      | "SUBSCRIPTION_MONTHLY_8"
+      | "SUBSCRIPTION_UNLIMITED"
+      | "NONE" = "NONE";
+    if (isSubActive) {
+      planType = quota.subscriptionPlan === "MONTHLY_8" ? "SUBSCRIPTION_MONTHLY_8" : "SUBSCRIPTION_UNLIMITED";
+    } else if (quota.paidCredits > 0) planType = "PAID_CREDIT";
     else if (remainingFree > 0) planType = "FREE_TRIAL";
 
-    const pricing = quoteBoth(campaigns, now);
+    const pricing = quoteAll(campaigns, now);
 
     // 0円の単発チケットを、この人があと何回受け取れるか。
     let freeGrantRemaining = 0;
@@ -76,6 +97,10 @@ export async function GET(req: NextRequest) {
       remainingFree,
       paidCredits: quota.paidCredits,
       subscriptionStatus: quota.subscriptionStatus,
+      subscriptionPlan: quota.subscriptionPlan,
+      monthlyEventCount: monthlyUsed,
+      monthlyLimit: SUBSCRIPTION_EVENT_LIMIT,
+      remainingMonthly: quota.subscriptionPlan === "MONTHLY_8" ? remainingMonthly : null,
       currentPeriodEnd: quota.currentPeriodEnd ? quota.currentPeriodEnd.toISOString() : null,
       canCreate,
       planType,

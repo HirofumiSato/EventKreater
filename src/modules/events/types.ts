@@ -28,7 +28,7 @@ export interface FlyerAsset {
 }
 
 export interface PricingQuote {
-  target: "ONE_TIME" | "SUBSCRIPTION";
+  target: "ONE_TIME" | "SUBSCRIPTION_8" | "SUBSCRIPTION_UNLIMITED";
   listPrice: number;
   chargedPrice: number;
   discountAmount: number;
@@ -48,20 +48,36 @@ export interface ActiveDiscount {
   campaignName: string | null;
 }
 
+/** 加入中の定額プラン。NONE は未加入。 */
+export type UserSubscriptionPlan = "NONE" | "MONTHLY_8" | "UNLIMITED";
+
 export interface UserQuota {
   freeEventCount: number;
   freeLimit: number;
   remainingFree: number;
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
+  subscriptionPlan?: UserSubscriptionPlan;
+  /** 月8回プランで、今月すでに公開した回数。 */
+  monthlyEventCount?: number;
+  /** 月8回プランの上限（8）。 */
+  monthlyLimit?: number;
+  /** 月8回プランで、今月あと何回公開できるか。作り放題では null。 */
+  remainingMonthly?: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
-  planType: "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION" | "NONE";
+  planType:
+    | "FREE_TRIAL"
+    | "PAID_CREDIT"
+    | "SUBSCRIPTION_MONTHLY_8"
+    | "SUBSCRIPTION_UNLIMITED"
+    | "NONE";
   phoneVerified?: boolean;
   /** いま適用される販売価格。キャンペーンが無ければ定価。 */
   pricing?: {
     oneTime: PricingQuote;
-    subscription: PricingQuote;
+    subscription8: PricingQuote;
+    subscriptionUnlimited: PricingQuote;
   };
   /** 0円の単発チケットを、この人があと何回受け取れるか。 */
   freeGrantRemaining?: number;
@@ -70,7 +86,7 @@ export interface UserQuota {
 }
 
 export interface PricingOption {
-  type: "SINGLE" | "SUBSCRIPTION";
+  type: "SINGLE" | "SUBSCRIPTION_8" | "SUBSCRIPTION_UNLIMITED";
   name: string;
   price: number;
   listPrice?: number;
@@ -78,6 +94,8 @@ export interface PricingOption {
   campaignName?: string | null;
   currency: string;
   interval?: string;
+  /** 月8回プランだけが持つ上限。 */
+  eventLimit?: number;
 }
 
 export interface EventScheduleOption {

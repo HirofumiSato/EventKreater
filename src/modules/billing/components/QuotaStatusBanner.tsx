@@ -20,6 +20,23 @@ function dateLabel(iso: string): string {
   }).format(new Date(iso));
 }
 
+function subscribedMessage(quota: UserQuota, discountLabel: string | null): string {
+  const price = quota.subscriptionPlan === "MONTHLY_8" ? "980円" : "2,980円";
+  const detail = discountLabel
+    ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
+    : `毎月の自動更新です。解約するまで継続します。`;
+  if (quota.subscriptionPlan === "MONTHLY_8") {
+    const remaining = Math.max(0, quota.remainingMonthly ?? 0);
+    const used = `今月は ${quota.monthlyEventCount ?? 0}/${quota.monthlyLimit ?? 8} 回`;
+    const tail =
+      remaining === 0
+        ? "今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
+        : `あと ${remaining}回つくれます。`;
+    return `月8回プランに加入中です。${used}。${tail}${detail}`;
+  }
+  return `作り放題に加入中です。イベント作成の回数は数えません。${detail}`;
+}
+
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
   if (!quota) return null;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
@@ -42,9 +59,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
     : quota.subscriptionStatus === "PAST_DUE"
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
-        ? discountLabel
-          ? `月額プラン加入中です。${discountLabel}。終了後は月額980円を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
-          : "月額プラン加入中です。イベント生成は無制限です。"
+        ? subscribedMessage(quota, discountLabel)
         : `無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;

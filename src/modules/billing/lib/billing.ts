@@ -1,10 +1,15 @@
-import type { Prisma, SubscriptionStatus } from "@prisma/client";
+import type { Prisma, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException, isUniqueViolation } from "@/lib/exceptions";
 import { getStripe, stripeExpectsLive, stripeResourceId } from "@/modules/billing/lib/stripe";
-import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/quota";
-import { discountEndsAt } from "@/modules/billing/lib/pricing";
+import { ONE_TIME_PRICE_JPY } from "@/modules/billing/lib/plans";
+import {
+  discountEndsAt,
+  listPriceFor,
+  pricingKindOfPlan,
+  type SubscriptionProduct,
+} from "@/modules/billing/lib/pricing";
 
 export async function ensureStripeCustomer(userId: string): Promise<string> {
   const quota = await prisma.userUsageQuota.findUnique({ where: { userId } });
@@ -115,6 +120,7 @@ export async function activateSubscription(
     customerId?: string | null;
     subscriptionId?: string | null;
     periodEnd?: Date | null;
+    plan?: SubscriptionProduct | null;
   },
 ): Promise<void> {
   const data: Prisma.UserUsageQuotaUpdateManyMutationInput = {
@@ -123,6 +129,7 @@ export async function activateSubscription(
   if (input.subscriptionId) data.stripeSubscriptionId = input.subscriptionId;
   if (input.customerId) data.stripeCustomerId = input.customerId;
   if (input.periodEnd) data.currentPeriodEnd = input.periodEnd;
+  if (input.plan) data.subscriptionPlan = input.plan;
 
   if (input.userId) {
     await tx.userUsageQuota.update({
@@ -215,8 +222,38 @@ export class PaymentRejected extends Error {
   }
 }
 
-function monthlyPriceId(): string | null {
-  return process.env.STRIPE_PRICE_ID_MONTHLY_980 ?? null;
+function envPrice(name: string): string | null {
+  const value = process.env[name];
+  return value && value.trim().length > 0 ? value.trim() : null;
+}
+
+/** 新規申込に使う、定額プランの Price ID。 */
+export function priceIdForPlan(plan: SubscriptionProduct): string | null {
+  return plan === "MONTHLY_8"
+    ? envPrice("STRIPE_PRICE_ID_MONTHLY_8")
+    : envPrice("STRIPE_PRICE_ID_UNLIMITED");
+}
+
+/**
+ * 旧・980 円の作り放題 Price。値上げ前に加入した人は、この Price のまま
+ * 回数を数えない契約を続ける。新規の申込には使わない。
+ */
+export function legacyUnlimitedPriceId(): string | null {
+  return envPrice("STRIPE_PRICE_ID_MONTHLY_980_LEGACY") ?? envPrice("STRIPE_PRICE_ID_MONTHLY_980");
+}
+
+/** Price ID から、どの定額プランの契約かを引く。知らない Price は null。 */
+export function planForPriceId(priceId: string | null | undefined): SubscriptionProduct | null {
+  if (!priceId) return null;
+  if (priceId === priceIdForPlan("MONTHLY_8")) return "MONTHLY_8";
+  if (priceId === priceIdForPlan("UNLIMITED")) return "UNLIMITED";
+  if (priceId === legacyUnlimitedPriceId()) return "UNLIMITED";
+  return null;
+}
+
+/** DB の加入プランから、契約の種類を引く。未設定（NONE）は作り放題として扱う。 */
+export function planOfQuota(plan: SubscriptionPlan): SubscriptionProduct {
+  return plan === "MONTHLY_8" ? "MONTHLY_8" : "UNLIMITED";
 }
 
 function oneTimePriceId(): string | null {
@@ -252,6 +289,8 @@ export interface PayableCheckout {
   subscriptionId: string | null;
   invoiceId: string | null;
   amount: number;
+  /** 月額のときだけ、どの定額プランの契約か。 */
+  plan: SubscriptionProduct | null;
   /** 申込時に控えたキャンペーン。会計記録と割引期間の記録に使う。 */
   campaignId: string | null;
   appliedPercent: number | null;
@@ -308,6 +347,7 @@ export async function loadPayableCheckout(
       subscriptionId: null,
       invoiceId,
       amount: session.amount_total,
+      plan: null,
       campaignId: pending?.campaignId ?? session.metadata?.campaignId ?? null,
       appliedPercent: pending?.appliedPercent ?? null,
       couponId,
@@ -317,12 +357,12 @@ export async function loadPayableCheckout(
   if (session.mode !== "subscription") throw new PaymentRejected("invalid");
 
   const subscriptionId = stripeResourceId(session.subscription);
-  const expectedPrice = monthlyPriceId();
-  if (!subscriptionId || !expectedPrice) throw new PaymentRejected("invalid");
+  if (!subscriptionId) throw new PaymentRejected("invalid");
   const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-  if (subscription.items.data[0]?.price?.id !== expectedPrice) throw new PaymentRejected("invalid");
+  const plan = planForPriceId(subscription.items.data[0]?.price?.id);
+  if (!plan) throw new PaymentRejected("invalid");
 
-  const expected = pending?.amount ?? SUBSCRIPTION_PRICE_JPY;
+  const expected = pending?.amount ?? listPriceFor(pricingKindOfPlan(plan));
   // 100% クーポンだと初回請求は 0 円で、amount_total が null のことがある。
   const paid = session.amount_total ?? (expected === 0 ? 0 : null);
   if (paid == null || paid !== expected) throw new PaymentRejected("invalid");
@@ -339,6 +379,7 @@ export async function loadPayableCheckout(
     subscriptionId,
     invoiceId,
     amount: paid,
+    plan,
     campaignId: pending?.campaignId ?? session.metadata?.campaignId ?? null,
     appliedPercent: pending?.appliedPercent ?? null,
     couponId: couponId ?? pending?.stripeCouponId ?? null,
@@ -364,7 +405,10 @@ export async function fulfillPaidCheckout(session: Stripe.Checkout.Session, user
         customerId: payable.customerId,
         subscriptionId: payable.subscriptionId,
         periodEnd,
+        plan: payable.plan,
       });
+      const listPrice =
+        payable.plan === null ? payable.amount : listPriceFor(pricingKindOfPlan(payable.plan));
       await tx.billingTransaction.updateMany({
         where: {
           stripeCheckoutSessionId: session.id,
@@ -373,7 +417,8 @@ export async function fulfillPaidCheckout(session: Stripe.Checkout.Session, user
         data: {
           paymentStatus: "SUCCEEDED",
           amount: payable.amount,
-          discountAmount: SUBSCRIPTION_PRICE_JPY - payable.amount,
+          listAmount: listPrice,
+          discountAmount: Math.max(0, listPrice - payable.amount),
           ...(payable.paymentIntentId ? { stripePaymentIntentId: payable.paymentIntentId } : {}),
           ...(payable.invoiceId ? { stripeInvoiceId: payable.invoiceId } : {}),
         },
@@ -438,18 +483,18 @@ export async function recordSubscriptionInvoice(
   const quota = await findQuotaByStripe(customerId, subscriptionId);
   if (!quota || !invoice.id) return;
 
+  let plan: SubscriptionProduct | null = null;
   if (status === "SUCCEEDED") {
     if ((invoice.currency ?? "").toLowerCase() !== "jpy") return;
     if (typeof invoice.amount_paid !== "number") return;
-    if (invoice.amount_paid > SUBSCRIPTION_PRICE_JPY) return;
     if (!subscriptionId) return;
-    // 定価より安い請求は、このアプリが発行したクーポンが付いているときだけ通す。
-    if (invoice.amount_paid < SUBSCRIPTION_PRICE_JPY && !invoiceHasDiscount(invoice)) return;
-
-    const expectedPrice = monthlyPriceId();
-    if (!expectedPrice) return;
     const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-    if (subscription.items.data[0]?.price?.id !== expectedPrice) return;
+    plan = planForPriceId(subscription.items.data[0]?.price?.id);
+    if (!plan) return;
+    const listPrice = listPriceFor(pricingKindOfPlan(plan));
+    if (invoice.amount_paid > listPrice) return;
+    // 定価より安い請求は、このアプリが発行したクーポンが付いているときだけ通す。
+    if (invoice.amount_paid < listPrice && !invoiceHasDiscount(invoice)) return;
   }
 
   const amount = status === "SUCCEEDED" ? (invoice.amount_paid ?? 0) : (invoice.amount_due ?? 0);
@@ -457,7 +502,9 @@ export async function recordSubscriptionInvoice(
   const periodEnd = invoicePeriodEnd(invoice);
   const couponId = invoiceCouponId(invoice);
   const fromCoupon = status === "SUCCEEDED" ? await campaignFromCoupon(couponId) : null;
-  const discountAmount = Math.max(0, SUBSCRIPTION_PRICE_JPY - amount);
+  const billingPlan = plan ?? planOfQuota(quota.subscriptionPlan);
+  const listPrice = listPriceFor(pricingKindOfPlan(billingPlan));
+  const discountAmount = Math.max(0, listPrice - amount);
   const campaignId = fromCoupon?.campaignId ?? quota.pricingCampaignId;
   const appliedPercent =
     fromCoupon?.percent ?? (discountAmount > 0 ? quota.discountPercent : null);
@@ -475,7 +522,7 @@ export async function recordSubscriptionInvoice(
           amount,
           ...(status === "SUCCEEDED"
             ? {
-                listAmount: SUBSCRIPTION_PRICE_JPY,
+                listAmount: listPrice,
                 discountAmount,
                 campaignId,
                 appliedPercent,
@@ -501,7 +548,7 @@ export async function recordSubscriptionInvoice(
           data: {
             paymentStatus: "SUCCEEDED",
             amount,
-            listAmount: SUBSCRIPTION_PRICE_JPY,
+            listAmount: listPrice,
             discountAmount,
             campaignId: campaignId ?? open.campaignId,
             appliedPercent: appliedPercent ?? open.appliedPercent,
@@ -517,7 +564,7 @@ export async function recordSubscriptionInvoice(
             paymentType: "SUBSCRIPTION",
             paymentStatus: "SUCCEEDED",
             amount,
-            listAmount: SUBSCRIPTION_PRICE_JPY,
+            listAmount: listPrice,
             discountAmount,
             campaignId,
             appliedPercent,
@@ -535,7 +582,7 @@ export async function recordSubscriptionInvoice(
           paymentType: "SUBSCRIPTION",
           paymentStatus: status,
           amount,
-          listAmount: SUBSCRIPTION_PRICE_JPY,
+          listAmount: listPrice,
           discountAmount: status === "SUCCEEDED" ? discountAmount : 0,
           campaignId: status === "SUCCEEDED" ? campaignId : null,
           appliedPercent: status === "SUCCEEDED" ? appliedPercent : null,
@@ -580,13 +627,14 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
   const quota = await findQuotaByStripe(customerId, subscription.id);
   if (!quota) return;
   const nextStatus = mapStripeSubscriptionStatus(subscription.status);
-  const expectedPrice = monthlyPriceId();
   const priceId = subscription.items.data[0]?.price?.id;
-  if (nextStatus === "ACTIVE" && (!expectedPrice || priceId !== expectedPrice)) return;
+  const plan = planForPriceId(priceId);
+  if (nextStatus === "ACTIVE" && !plan) return;
   await prisma.userUsageQuota.update({
     where: { userId: quota.userId },
     data: {
       subscriptionStatus: nextStatus,
+      ...(plan ? { subscriptionPlan: plan } : {}),
       stripeSubscriptionId: subscription.id,
       ...(customerId ? { stripeCustomerId: customerId } : {}),
       ...(subscription.current_period_end
