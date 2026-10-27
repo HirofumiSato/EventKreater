@@ -1,6 +1,6 @@
 # AIチラシ自動生成
 
-小規模店舗やイベント主催者向けの Web API です。催しの事実情報とテンプレートから、縦長（9:16）の告知画像を返します。背景は言語モデルと画像生成、文字は Pillow が描きます。
+小規模店舗やイベント主催者向けの Web API です。催しの事実情報とテンプレートから、A4 縦（1080×1528）の告知画像を返します。背景は言語モデルと画像生成、文字は Pillow が描きます。
 
 ## 必要環境
 
@@ -44,7 +44,7 @@ start docs\flyer\_build\html\index.html
 | [Uvicorn](../../docs/flyer/libraries/uvicorn.rst) | FastAPI を ASGI サーバーとして起動する | プロジェクトルートで `python -m uvicorn src.main:app --reload` を実行し、`/health` と `/docs` を開く |
 | [Pydantic](../../docs/flyer/libraries/pydantic.rst) | 入出力と LLM の構造化出力を同じスキーマで検証する | `src/domain/models.py` のモデルをリクエスト、`response_format`、描画メタデータに使う |
 | [pydantic-settings](../../docs/flyer/libraries/pydantic_settings.rst) | API キーや TTL などの設定を環境変数から読む | `Settings` を参照する。キーが空ならモックアダプターになる |
-| [Pillow](../../docs/flyer/libraries/pillow.rst) | 背景の上に文字と遮光を決定論的に描く | `src/adapters/renderer/` が 1080×1920 の JPEG を返す。この層から外部 API は呼ばない |
+| [Pillow](../../docs/flyer/libraries/pillow.rst) | 背景の上に文字と遮光を決定論的に描く | `src/adapters/renderer/` が 1080×1528（A4 縦）の JPEG を返す。この層から外部 API は呼ばない |
 | [OpenAI](../../docs/flyer/libraries/openai.rst) | 背景用プロンプトの構造化と DALL-E 3 による画像取得を行う | `gpt-4o-mini` の `beta.chat.completions.parse` と `dall-e-3` を、キーがあるときだけ使う |
 | [HTTPX](../../docs/flyer/libraries/httpx.rst) | 生成画像の URL からバイト列を取得する | `download_image` が残り時間をタイムアウトにして取得する。テストは `MockTransport` を渡す |
 | [pytest](../../docs/flyer/libraries/pytest.rst) | 外部 API なしで単体テストと結合テストを実行する | プロジェクトルートで `python -m pytest tests/ -v` を実行する |

@@ -46,7 +46,7 @@ async function saveWithQuota(
               ownerTokenHash: owner.ownerTokenHash,
               externalFlyerId: generationId,
               imageUrl: `/api/v1/flyer-assets/${id}/image`,
-              aspectRatio: "9:16",
+              aspectRatio: "A4",
               title: input.title,
               eventDate: parseEventDate(input.eventDate),
               eventTime: input.eventTime,

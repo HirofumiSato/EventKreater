@@ -67,7 +67,7 @@ def test_generate_then_download_portrait_jpeg(tmp_path: Path) -> None:
         assert download.status_code == 200
         assert download.headers["content-type"].startswith("image/jpeg")
         image = Image.open(BytesIO(download.content))
-        assert image.size == (1080, 1920)
+        assert image.size == (1080, 1528)
 
 
 def test_invalid_input_returns_422(tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ def test_image_timeout_uses_static_fallback(tmp_path: Path) -> None:
         assert body["status"] == "fallback_used"
         download = client.get(body["image_url"])
         assert download.status_code == 200
-        assert Image.open(BytesIO(download.content)).size == (1080, 1920)
+        assert Image.open(BytesIO(download.content)).size == (1080, 1528)
 
 
 def test_render_failure_returns_500(tmp_path: Path) -> None:

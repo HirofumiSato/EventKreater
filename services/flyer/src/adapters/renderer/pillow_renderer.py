@@ -407,7 +407,7 @@ def _to_jpeg(canvas: Image.Image) -> bytes:
 
 
 class PillowFlyerRenderer(FlyerRendererPort):
-    """1080×1920 のグリッドへテンプレート別スタイルで文字を合成する。"""
+    """1080×1528（A4 縦）のグリッドへテンプレート別スタイルで文字を合成する。"""
 
     def __init__(self, font_resolver: FontResolver | None = None) -> None:
         self._fonts = font_resolver or FontResolver()

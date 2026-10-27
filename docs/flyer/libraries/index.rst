@@ -24,7 +24,7 @@
      - :class:`src.infrastructure.config.Settings` を参照する。キーが空ならモックアダプターになる
    * - :doc:`Pillow <pillow>`
      - 背景の上に文字と遮光を決定論的に描く
-     - ``src/adapters/renderer/`` が 1080×1920 の JPEG を返す。この層から外部 API は呼ばない
+     - ``src/adapters/renderer/`` が 1080×1528（A4 縦）の JPEG を返す。この層から外部 API は呼ばない
    * - :doc:`OpenAI <openai>`
      - 背景用プロンプトの構造化と DALL-E 3 による画像取得を行う
      - ``gpt-4o-mini`` の ``beta.chat.completions.parse`` と ``dall-e-3`` を、キーがあるときだけ使う

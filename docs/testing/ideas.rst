@@ -49,7 +49,7 @@
 チラシ生成との分担
 ------------------
 
-1080×1920 の描画、コントラスト、OpenAI を模したアダプターは、:doc:`/flyer/testing/index` の pytest が確認します。
+1080×1528 の描画、コントラスト、OpenAI を模したアダプターは、:doc:`/flyer/testing/index` の pytest が確認します。
 
 Next.js 側が持つ範囲は次の二つです。
 

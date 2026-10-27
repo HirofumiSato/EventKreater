@@ -33,7 +33,7 @@ _VARIANTS: tuple[tuple[float, float, str, str], ...] = (
     (7.0, 0.78, "深め", "深みのある暗い背景"),
 )
 
-_SIZE: tuple[int, int] = (1080, 1920)
+_SIZE: tuple[int, int] = (1080, 1528)
 
 
 def _shift(rgb: _RGB, hue_degrees: float, value_scale: float) -> _RGB:

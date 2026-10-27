@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     candidate_ttl_seconds: int = 3600
     #: アップロード画像の上限。BFF と同じ 8MB。
     upload_max_bytes: int = 8 * 1024 * 1024
-    #: デコード爆弾を避けるための画素数上限。1080×1920 の約 19 倍。
+    #: デコード爆弾を避けるための画素数上限。1080×1528 の約 24 倍。
     upload_max_pixels: int = 40_000_000
 
     @field_validator("openai_api_key", mode="before")

@@ -19,7 +19,7 @@
         │                                  └─ スタイル付加パラメータ (HEX, 透過度)
         ▼
 [Backend Step 3: 背景画像生成エンジン] ── (DALL-E 3 / Stable Diffusion API)
-        │                                  └─ 未加工背景画像 (1080x1920 RGB)
+        │                                  └─ 未加工背景画像 (1080x1792 RGB / A4 へクロップ)
         ▼
 [Backend Step 4: 決定論的文字合成エンジン]
         │  ├─ PIL/Pillow による商用フリーフォント読み込み・自動サイズ収束
@@ -152,32 +152,32 @@ Output MUST be strict JSON adhering to the provided schema.
 
 ## 3. 決定論的文字合成・幾何学レイアウトエンジン仕様
 
-すべてのレンダリングは、**基準解像度 $1080 \times 1920\text{ px}$（9:16 / スマートフォン全画面ポスター規格）** を絶対座標系として計算する。
+すべてのレンダリングは、**基準解像度 $1080 \times 1528\text{ px}$（A4 縦 210:297 / 画面・簡易印刷向け）** を絶対座標系として計算する。
 
 ### 3.1. 幾何学座標系とレイアウトグリッド
 
 ```text
 (0,0) ────────────────────────────────────────────── (1080, 0)
  │                                                       │
- │  [Margin Top: 160px]                                  │
+ │  [Margin Top: 128px]                                  │
  │  ───────────────────────────────────────────────────  │
- │  [Zone A: Category / Catchphrase]  (H: 60px)          │  Y: 160 ~ 220
+ │  [Zone A: Category / Catchphrase]  (H: 48px)          │  Y: 128 ~ 176
  │  ───────────────────────────────────────────────────  │
- │  [Zone B: Main Title Area]         (H: 420px, Max 3L) │  Y: 240 ~ 660
+ │  [Zone B: Main Title Area]         (H: 336px, Max 3L) │  Y: 192 ~ 528
  │  ───────────────────────────────────────────────────  │
- │  [Zone C: Key Information Box]     (H: 260px)         │  Y: 720 ~ 980
+ │  [Zone C: Key Information Box]     (H: 208px)         │  Y: 576 ~ 784
  │    ├ Date & Time (Large Display)                      │
  │    └ Rain Policy Tag                                  │
  │  ───────────────────────────────────────────────────  │
- │  [Zone D: Detail Specifications]   (H: 480px)         │  Y: 1040 ~ 1520
+ │  [Zone D: Detail Specifications]   (H: 384px)         │  Y: 828 ~ 1212
  │    ├ Location / Venue (Icon + Text)                   │
  │    ├ Admission / Price (Icon + Text)                  │
  │    └ Capacity / Reservation Info                      │
  │  ───────────────────────────────────────────────────  │
- │  [Zone E: Footer / Safe Area]      (H: 140px)         │  Y: 1620 ~ 1760
+ │  [Zone E: Footer / Safe Area]      (H: 112px)         │  Y: 1290 ~ 1402
  │  ───────────────────────────────────────────────────  │
- │  [Margin Bottom: 160px]                               │
-(0,1920) ────────────────────────────────────────── (1080, 1920)
+ │  [Margin Bottom: 126px]                               │
+(0,1528) ────────────────────────────────────────── (1080, 1528)
 ```
 
 ---
@@ -196,7 +196,7 @@ Output MUST be strict JSON adhering to the provided schema.
 
 ### 3.3. 動的文字スケーリング・折り返しアルゴリズム
 
-タイトルが指定矩形領域（幅 $W_{\max} = 920\text{ px}$, 高さ $H_{\max} = 420\text{ px}$）をはみ出さないよう、**二分探索（Binary Search）によるフォントサイズ自動収束アルゴリズム**を適用する。
+タイトルが指定矩形領域（幅 $W_{\max} = 920\text{ px}$, 高さ $H_{\max} = 336\text{ px}$）をはみ出さないよう、**二分探索（Binary Search）によるフォントサイズ自動収束アルゴリズム**を適用する。
 
 $$S \in [S_{\min}, S_{\max}] \quad (S_{\min}=48\text{ px}, S_{\max}=96\text{ px})$$
 
@@ -209,7 +209,7 @@ def calculate_optimal_font_and_lines(
     font_path: str,
     draw: ImageDraw.ImageDraw,
     max_w: int = 920,
-    max_h: int = 420,
+    max_h: int = 336,
     min_size: int = 44,
     max_size: int = 92,
     line_spacing_ratio: float = 1.3,

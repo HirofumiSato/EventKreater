@@ -12,6 +12,7 @@ import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
+import { flyerPdfDownloadHref } from "@/modules/flyers/lib/pdf-link";
 import type {
   EventOrganizerList,
   EventPricePlanOption,
@@ -158,6 +159,14 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
               {publishing ? "公開中..." : "公開する"}
             </button>
           )}
+          {event.status === "PUBLISHED" && event.flyerAsset && (
+            <a
+              href={flyerPdfDownloadHref(event.flyerAsset.id, event.id)}
+              className="btn btn--primary btn--sm"
+            >
+              PDFでダウンロード
+            </a>
+          )}
           <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--outline btn--sm">
             編集に戻る
           </Link>
@@ -204,7 +213,6 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
           rsvpDeadline: event.rsvpDeadline,
           rsvpOpen: event.rsvpOpen,
           attendingCount: stats.attendingCount,
-          waitlistCount: stats.waitlistedCount,
           organizers,
         }}
       />

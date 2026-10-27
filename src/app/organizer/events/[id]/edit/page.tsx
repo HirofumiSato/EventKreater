@@ -215,6 +215,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
               flyerAssetId={form.flyerAssetId}
               draftScope={`event:${params.id}`}
               eventId={params.id}
+              published={form.status === "PUBLISHED"}
               onGenerated={(asset) => {
                 setForm((current) => ({ ...current, flyerAssetId: asset.id }));
                 setFlyerPreview(asset.imageUrl);

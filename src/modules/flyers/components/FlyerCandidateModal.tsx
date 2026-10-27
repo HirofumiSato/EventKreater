@@ -417,7 +417,7 @@ export function FlyerCandidateModal({
                   <img src={uploaded.imageUrl} alt={uploaded.label} />
                 ) : (
                   <span className="candidate-upload__empty" aria-hidden="true">
-                    9:16
+                    A4
                   </span>
                 )}
               </div>
@@ -425,8 +425,8 @@ export function FlyerCandidateModal({
                 <p className="candidate-upload__title">自分の写真</p>
                 <p className="candidate-upload__hint">
                   {uploaded
-                    ? "中央を9:16で切り抜いた範囲が、そのまま背景になります。"
-                    : "JPEG / PNG / WebP、8MBまで。中央を9:16で切り抜きます。"}
+                    ? "中央をA4縦で切り抜いた範囲が、そのまま背景になります。"
+                    : "JPEG / PNG / WebP、8MBまで。中央をA4縦で切り抜きます。"}
                 </p>
                 <div className="candidate-upload__actions">
                   {uploaded && !uploadSelected && (

@@ -78,7 +78,7 @@ def test_upload_becomes_background_candidate(tmp_path: Path) -> None:
                 ).content
             )
         )
-        assert image.size == (1080, 1920)
+        assert image.size == (1080, 1528)
 
         store = client.app.state.candidate_store  # type: ignore[attr-defined]
         meta = store.load_meta(candidate["candidate_id"])
@@ -88,7 +88,7 @@ def test_upload_becomes_background_candidate(tmp_path: Path) -> None:
         # 保存する背景は PNG で、EXIF を持たない。
         background = Image.open(BytesIO(store.load_background(candidate["candidate_id"])))
         assert background.format == "PNG"
-        assert background.size == (1080, 1920)
+        assert background.size == (1080, 1528)
         assert len(background.getexif()) == 0
 
 

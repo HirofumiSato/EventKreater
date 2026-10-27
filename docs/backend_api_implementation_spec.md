@@ -117,6 +117,7 @@ flowchart TD
 | `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
 | `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
+| `/api/v1/flyer-assets/[id]/pdf` | GET | SCR-ORG-05 / SCR-ORG-16 | 不要 | 公開済みイベントのチラシを A4 PDF で返す。`?eventId=` が公開済みで、そのチラシを掲載しているときだけ。告知ページの QR を右下に入れる |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
@@ -695,7 +696,7 @@ export const CreateEventSchema = z.object({
       "id": "f5b82c1a-9a8b-4c7d-8e9f-0123456789ab",
       "imageUrl": "/uploads/flyers/acoustic_live.webp",
       "lqipDataUrl": "data:image/webp;base64,UklGRl...",
-      "aspectRatio": "9:16"
+      "aspectRatio": "A4"
     }
   },
   "guestOrganizerToken": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -777,7 +778,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
   "flyerAsset": {
     "imageUrl": "/uploads/flyers/acoustic_live.webp",
     "lqipDataUrl": "data:image/webp;base64,UklGRl...",
-    "aspectRatio": "9:16"
+    "aspectRatio": "A4"
   },
   "myRsvp": {
     "id": "p1a2b3c4-1111-2222-3333-444455556666",
@@ -2058,7 +2059,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 `FLYER_API_URL` の `POST /api/v1/flyers/generate` は次の順で処理する。
 
 1. **プロンプト解釈。** 入力から英語の背景プロンプト、除外プロンプト、アクセント色、遮光の不透明度を作る。利用者の文章はシステムプロンプトへ混ぜない。画像プロンプトには文字、数字、ロゴを描かないことを求め、テンプレートごとの余白を指定する。この段の失敗は背景へすり替えず、サービスは 503 を返す。
-2. **背景の取得。** アスペクト比 `9:16` で背景画像を得る。画像生成が時間切れ、または画像でなかった場合は、静的なテンプレート背景へ切り替え、状態を `fallback_used` にする。利用者へ空の失敗応答は返さない。
+2. **背景の取得。** 縦長 `9:16` で背景画像を得る（画像生成 API に A4 相当のサイズが無いため）。画像生成が時間切れ、または画像でなかった場合は、静的なテンプレート背景へ切り替え、状態を `fallback_used` にする。利用者へ空の失敗応答は返さない。
 3. **文字合成。** 背景の上に、日付、料金、場所、タイトルをサーバー側の描画で載せる。画像モデルには日本語と数字を書かせない。
 4. **一時保存。** 生成 ID をファイル名にし、`image_url` として `/api/v1/flyers/{generation_id}` を返す。HTTP は成功時 200。フォールバック時も 200 で、`status` は `fallback_used` である。
 
@@ -2096,7 +2097,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ボディはステップ 1・2 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、ステップ 2 はさらに `count`（1〜16、既定 8）を足す。保存済みイベントの編集では `eventId` も添える。ステップ 3・4 は本文不要で、親候補の ID だけをパスに置く。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。
 
-アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、9:16 の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
+アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、A4 縦（1080×1528）の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
 
 候補の参照範囲は端末で絞る。BFF は候補 API と画像取得に `X-Flyer-Owner`（`owner_token_hash`）を付け、サービスは候補メタに記録した値と照合する。一致しない候補は、期限切れと同じ 404 `CANDIDATE_EXPIRED` にする。ログイン済みでも未ログインでも、Cookie `flyer_owner` の端末トークンが単位である。
 
@@ -2131,7 +2132,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
     "id": "uuid",
     "imageUrl": "/api/v1/flyer-assets/{id}/image",
     "lqipDataUrl": null,
-    "aspectRatio": "9:16"
+    "aspectRatio": "A4"
   },
   "generationStatus": "ok",
   "quota": { "limit": 3, "used": 1, "remaining": 2, "anonymous": false }
@@ -2146,7 +2147,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 2. サービスの応答 `image_url` から JPEG を 15 秒以内に取得する。空、8 MiB 超、JPEG シグネチャでないバイト列は拒否する。
 3. 新しい UUID を `flyer_assets.id` とファイル名に使う。
 4. `storage/flyers/{id}.jpg` に JPEG を書く。
-5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `9:16`。
+5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `A4`。
 6. `flyer_generation_logs` に 1 行足す。`draft_key`、`event_id`（保存済みイベントを編集しているとき。新規作成は NULL）、`user_id`、`owner_token_hash`、`template_id`、`layout_id`、`palette_id`、`flyer_asset_id`。
 7. 行の作成に失敗したら、書いたファイルを削除する。
 
@@ -2162,7 +2163,23 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 - 既定の `Cache-Control` は `public, max-age=31536000, immutable`。
 - `?download=1` を付けると `Content-Disposition: attachment` を付け、`Cache-Control: private, no-store` にする。ファイル名は `flyer_assets.title` から `チラシ-{催し名}.{拡張子}` を作る。空なら `flyer-{id}.{拡張子}`。日本語は RFC 5987 の `filename*` で送り、ASCII の `filename` も併記する。
 
-### 9.5. POST `/api/v1/flyer-assets`（アップロードしたチラシの保存）
+### 9.5. GET `/api/v1/flyer-assets/[id]/pdf`（QR 付き A4 PDF）
+
+公開済みイベントのチラシを、A4 縦 1 ページの PDF にして返す。対象は SCR-ORG-05 / SCR-ORG-16。認証は不要で、`?eventId=` が次のすべてを満たすときだけ返す。
+
+- イベントが存在し、`isDeleted` が false
+- `status` が `PUBLISHED`
+- `events.flyer_asset_id` がパスの `id` と一致する
+
+満たさないとき、`eventId` が UUID でないとき、`id` が UUID でないときは 404（「公開済みのチラシが見つかりません。」）。
+
+- ページは A4 縦（595.28 × 841.89 pt）。保存したチラシを縦横比を保って中央へ置く（contain）。アップロード画像が A4 比でなくても歪めない。
+- 右下に白地のパネルを作り、告知ページ `{NEXT_PUBLIC_APP_URL}/events/{eventId}` の QR コードと、同じ URL を小さく刷る。QR は `qrcode`、PDF は `pdf-lib`、WebP のチラシだけ `sharp` で JPEG にしてから埋め込む（`src/modules/flyers/lib/pdf.ts`）。
+- `Content-Type: application/pdf`、`Content-Disposition: attachment`（`チラシ-{催し名}.pdf`、9.4 と同じ RFC 5987）、`Cache-Control: private, no-store`。
+
+QR を焼き込むのはダウンロード時である。下書きの時点では告知 URL が確定しないため、生成した画像そのものには入れない。画面のダウンロード（画像・PDF）は、`PUBLISHED` のときだけ出す。
+
+### 9.6. POST `/api/v1/flyer-assets`（アップロードしたチラシの保存）
 
 手元の完成済み画像を、そのままチラシとして保存する。対象は SCR-ORG-02 / SCR-ORG-05 / SCR-ORG-03。認証は不要で、Cookie `flyer_owner` の端末トークンを単位に所有者を決める。**生成ではないため、利用枠（quota）と `flyer_generation_logs` は使わない。**
 

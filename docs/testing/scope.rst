@@ -147,7 +147,7 @@
 
 .. count-start
 
-52 ファイル、``it`` は 660 件です。内訳は ``tests/unit/`` が 40 ファイル 591 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+53 ファイル、``it`` は 671 件です。内訳は ``tests/unit/`` が 41 ファイル 602 件、``tests/integration/`` が 12 ファイル 69 件です。結合の 69 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -267,6 +267,10 @@
      - 11
      - ダウンロードの URL と ``Content-Disposition``、拡張子の対応、ファイル名の整形と長さの上限
      - SCR-ORG-08
+   * - ``tests/unit/flyer-pdf.test.ts``
+     - 11
+     - A4 PDF のページ寸法、チラシ画像と QR の埋め込み、WebP の変換、PDF の URL とファイル名
+     - SCR-ORG-05 / SCR-ORG-16
    * - ``tests/unit/flyer-scope.test.ts``
      - 3
      - チラシの利用枠の対象判定。公開前の下書き、幹事以外は 403、ゲスト幹事のトークン
@@ -370,7 +374,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 591、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 591 件を実行して 69 件を skip します。
+件数の内訳は ``tests/unit/`` が 602、``tests/integration/`` が 69 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 602 件を実行して 69 件を skip します。
 
 .. breakdown-end
 
@@ -467,7 +471,7 @@
 
 * Stripe Hosted Checkout と Customer Portal の実画面
 * Google サインイン
-* チラシの見た目（1080×1920 の描画は :doc:`/flyer/testing/index` の pytest）
+* チラシの見た目（1080×1528 の描画は :doc:`/flyer/testing/index` の pytest）
 * 管理画面の各一覧
 
 図を直すとき

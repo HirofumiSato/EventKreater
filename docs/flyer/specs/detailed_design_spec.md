@@ -299,7 +299,7 @@ static/candidates/
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
 *   **課金・回数:** 候補の生成では消費しない。回数は Next.js の BFF が `flyer_generation_logs` で数える。
-*   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1920 の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
+*   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1528（A4 縦）の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
 *   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・配置・配色・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 
 ### 5.4. 文字配置プリセット
@@ -308,12 +308,12 @@ static/candidates/
 まとめて動かす。要素単位の微調整は許さない。座標を動かすとコントラスト保証と
 自動縮小の前提が崩れるためである。
 
-| `layout_id` | 意図 | 文字が載る範囲（1080×1920） |
+| `layout_id` | 意図 | 文字が載る範囲（1080×1528） |
 | :--- | :--- | :--- |
-| `classic` | 上から順に詰める。既定値 | y 160〜1760 |
-| `top_stack` | 下半分を空け、下に被写体を置ける | y 110〜1430 |
-| `center_stack` | 中央にまとめ、上下に余白を残す | y 420〜1610 |
-| `bottom_stack` | 上半分を空け、上に被写体を置ける | y 700〜1880 |
+| `classic` | 上から順に詰める。既定値 | y 128〜1402 |
+| `top_stack` | 下半分を空け、下に被写体を置ける | y 88〜1138 |
+| `center_stack` | 中央にまとめ、上下に余白を残す | y 334〜1282 |
+| `bottom_stack` | 上半分を空け、上に被写体を置ける | y 558〜1496 |
 
 背景の遮光グラデーションは文字の側を濃くする（`top_stack` は上、`center_stack` は
 中央、`bottom_stack` は下）。`style_2_warm_earth` の白カードも文字範囲に合わせて縮む。

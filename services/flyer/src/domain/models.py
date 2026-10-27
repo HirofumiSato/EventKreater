@@ -148,7 +148,7 @@ class RenderMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     canvas_width: int = Field(default=1080, ge=1)
-    canvas_height: int = Field(default=1920, ge=1)
+    canvas_height: int = Field(default=1528, ge=1)
     template_id: TemplateId
     layout_id: TextLayout = TextLayout.CLASSIC
     accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")

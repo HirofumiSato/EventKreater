@@ -135,7 +135,7 @@ class ProposeCandidatesUseCase:
     ) -> CandidateItem:
         """ステップ 2。持ち込まれた写真を 1 枚の背景候補にする。
 
-        形式検証・EXIF 除去・9:16 の中央クロップは `ImageUploadPort` が行う。
+        形式検証・EXIF 除去・A4 縦（1080×1528）の中央クロップは `ImageUploadPort` が行う。
         候補を作るだけなので、生成回数は消費しない。
         """
         background = self._uploads.normalize(payload)
@@ -150,7 +150,7 @@ class ProposeCandidatesUseCase:
             layout=request.layout_id,
             parent_id=None,
             label="自分の写真",
-            description="中央を9:16で切り抜いた背景",
+            description="中央をA4縦で切り抜いた背景",
             owner_token_hash=owner_token_hash,
             source="upload",
         )

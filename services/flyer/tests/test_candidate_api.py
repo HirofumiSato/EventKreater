@@ -53,7 +53,7 @@ def test_type_step_returns_three_rendered_templates(tmp_path: Path) -> None:
         assert all(item["kind"] == "type" for item in candidates)
         for item in candidates:
             image = _image(client, item["image_url"])
-            assert image.size == (1080, 1920)
+            assert image.size == (1080, 1528)
 
 
 def test_wizard_chain_produces_selectable_candidate(tmp_path: Path) -> None:

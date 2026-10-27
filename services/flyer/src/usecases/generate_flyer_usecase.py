@@ -57,6 +57,8 @@ class GenerateFlyerUseCase:
         _select_template(self._fallback_images, request.template_id)
         status = FlyerStatus.SUCCESS
         try:
+            # 画像生成 API に A4 相当のサイズは無い。縦長（9:16）で生成し、
+            # レンダラーが A4 縦（1080×1528）へ cover で切り抜く。
             background = await self._image_generator.generate_background(
                 prompt=context.image_prompt_en,
                 negative_prompt=context.negative_prompt_en,
@@ -106,6 +108,7 @@ class GenerateFlyerUseCase:
         )
 
     async def _load_fallback(self, prompt: str, negative_prompt: str) -> bytes:
+        # 静的背景も縦長で作り、レンダラーが A4 縦へ切り抜く。
         return await self._fallback_images.generate_background(
             prompt=prompt,
             negative_prompt=negative_prompt,

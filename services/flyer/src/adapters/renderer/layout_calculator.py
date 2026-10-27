@@ -12,10 +12,11 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageStat
 
 from src.domain.exceptions import FontRenderError
 
+#: A4 縦（210:297）を幅 1080 で表した寸法。1080 * 297 / 210 ≒ 1527.4 を偶数に丸める。
 CANVAS_WIDTH: int = 1080
-CANVAS_HEIGHT: int = 1920
+CANVAS_HEIGHT: int = 1528
 TITLE_MAX_WIDTH: int = 920
-TITLE_MAX_HEIGHT: int = 420
+TITLE_MAX_HEIGHT: int = 336
 TITLE_MIN_FONT_SIZE: int = 44
 TITLE_MAX_FONT_SIZE: int = 92
 TITLE_MAX_LINES: int = 3
@@ -43,11 +44,11 @@ class Zone:
         return (self.x, self.y, self.x + self.width, self.y + self.height)
 
 
-ZONE_A = Zone("A", 80, 160, TITLE_MAX_WIDTH, 60)
-ZONE_B = Zone("B", 80, 240, TITLE_MAX_WIDTH, TITLE_MAX_HEIGHT)
-ZONE_C = Zone("C", 80, 720, TITLE_MAX_WIDTH, 260)
-ZONE_D = Zone("D", 80, 1040, TITLE_MAX_WIDTH, 480)
-ZONE_E = Zone("E", 80, 1620, TITLE_MAX_WIDTH, 140)
+ZONE_A = Zone("A", 80, 128, TITLE_MAX_WIDTH, 48)
+ZONE_B = Zone("B", 80, 192, TITLE_MAX_WIDTH, TITLE_MAX_HEIGHT)
+ZONE_C = Zone("C", 80, 576, TITLE_MAX_WIDTH, 208)
+ZONE_D = Zone("D", 80, 828, TITLE_MAX_WIDTH, 384)
+ZONE_E = Zone("E", 80, 1290, TITLE_MAX_WIDTH, 112)
 
 
 def load_font(font_path: str, size: int) -> ImageFont.FreeTypeFont:

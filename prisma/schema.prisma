@@ -483,7 +483,7 @@ model FlyerAsset {
   externalFlyerId String?     @map("external_flyer_id") @db.VarChar(100)
   imageUrl        String      @map("image_url") @db.Text
   lqipDataUrl     String?     @map("lqip_data_url") @db.Text
-  aspectRatio     String      @default("9:16") @map("aspect_ratio") @db.VarChar(10)
+  aspectRatio     String      @default("A4") @map("aspect_ratio") @db.VarChar(10)
   title           String?     @db.VarChar(100)
   eventDate       DateTime?   @map("event_date") @db.Date
   eventTime       String?     @map("event_time") @db.VarChar(50)

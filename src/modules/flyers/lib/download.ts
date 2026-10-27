@@ -13,21 +13,27 @@ const INVALID_FILENAME = /[\\/:*?"<>|\u0000-\u001f]/g;
 const MAX_TITLE_LENGTH = 60;
 
 /**
- * ダウンロード時のファイル名。`チラシ-忘年会2026.jpg` の形。
+ * ファイル名の共通部分。`チラシ-忘年会2026` の形で、拡張子は付けない。
  * 催し名が無い・禁止文字だけのときは ID で作る。
+ */
+export function flyerFileBase(title: string | null | undefined, id: string): string {
+  const cleaned = Array.from((title ?? "").replace(INVALID_FILENAME, " "))
+    .slice(0, MAX_TITLE_LENGTH)
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned ? `チラシ-${cleaned}` : `flyer-${id}`;
+}
+
+/**
+ * ダウンロード時のファイル名。`チラシ-忘年会2026.jpg` の形。
  */
 export function flyerDownloadFilename(
   title: string | null | undefined,
   kind: UploadImageKind,
   id: string,
 ): string {
-  const cleaned = Array.from((title ?? "").replace(INVALID_FILENAME, " "))
-    .slice(0, MAX_TITLE_LENGTH)
-    .join("")
-    .replace(/\s+/g, " ")
-    .trim();
-  const base = cleaned ? `チラシ-${cleaned}` : `flyer-${id}`;
-  return `${base}.${imageExtension(kind)}`;
+  return `${flyerFileBase(title, id)}.${imageExtension(kind)}`;
 }
 
 /** RFC 5987。`'` `(` `)` `*` は encodeURIComponent が残すため個別に潰す。 */

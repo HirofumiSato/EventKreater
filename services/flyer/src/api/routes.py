@@ -74,7 +74,7 @@ async def upload_background(
     """ステップ 2。持ち込まれた写真を背景候補 1 枚にする。
 
     8MB を超える画像は読み切らずに弾く。形式・破損・画素数は
-    `ImageUploadPort` が検証し、EXIF を落として 9:16 に切り抜く。
+    `ImageUploadPort` が検証し、EXIF を落として A4 縦に切り抜く。
     """
     settings = request.app.state.settings
     data = await file.read(settings.upload_max_bytes + 1)

@@ -64,7 +64,7 @@ HTML は ``docs/_build/html/`` に出ます。このディレクトリは生成�
    * - :doc:`http_api`
      - エンドポイント、リクエスト例、HTTP ステータス。
    * - :doc:`rendering`
-     - 1080×1920 のゾーン、フォントサイズ、コントラスト。
+     - 1080×1528 のゾーン、フォントサイズ、コントラスト。
    * - :doc:`configuration`
      - 環境変数と TTL、保存先。
    * - :doc:`local_run`

@@ -254,7 +254,7 @@ export async function proposePaletteCandidates(
 
 /**
  * ステップ 2。持ち込まれた写真を 1 枚の背景候補にする。
- * multipart で送り、flyer サービスが EXIF 除去と 9:16 の中央クロップを行う。
+ * multipart で送り、flyer サービスが EXIF 除去と A4 縦の中央クロップを行う。
  */
 export async function uploadBackgroundCandidate(input: {
   bytes: Buffer;

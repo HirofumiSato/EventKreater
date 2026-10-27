@@ -53,7 +53,7 @@
    * - ``test_calculator_keeps_extreme_titles_inside_the_title_box``
      - ``JAZZ`` と「あ」40 字が幅 920、高さ 420、3 行以内、44 px 以上
    * - ``test_solid_background_renders_portrait_canvas``
-     - 3 テンプレートとも 1080×1920 の JPEG で、コントラスト 4.5 以上
+     - 3 テンプレートとも 1080×1528 の JPEG で、コントラスト 4.5 以上
    * - ``test_extreme_titles_render_inside_zone_b``
      - 短いタイトルは字間 15。40 字は字間 0。いずれも枠内
    * - ``test_high_frequency_background_still_renders``
@@ -93,7 +93,7 @@
    * - ``test_dalle_retries_then_succeeds``
      - 1 回失敗したあと 2 回目で成功し、フォールバックしない
    * - ``test_dalle_timeout_delegates_to_static_fallback``
-     - 予算超過で静的背景になり、1080×1920 のファイルが残る
+     - 予算超過で静的背景になり、1080×1528 のファイルが残る
    * - ``test_download_image_rejects_non_image``
      - HTML 応答は画像生成エラー
 
@@ -109,7 +109,7 @@ API とストレージ
    * - テスト
      - 期待
    * - ``test_generate_then_download_portrait_jpeg``
-     - ``/health`` と ``/docs`` が 200。生成の ``image_url`` から 1080×1920 の JPEG を取得できる
+     - ``/health`` と ``/docs`` が 200。生成の ``image_url`` から 1080×1528 の JPEG を取得できる
    * - ``test_invalid_input_returns_422``
      - 短すぎるタイトルは ``INVALID_INPUT`` と決まった日本語
    * - ``test_rate_limit_returns_429``

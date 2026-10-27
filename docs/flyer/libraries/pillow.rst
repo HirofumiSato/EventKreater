@@ -12,7 +12,7 @@ Pillow
 実装は ``src/adapters/renderer/`` です。
 
 * ``layout_calculator.py`` がフォントサイズの二分探索、相対輝度、コントラスト比、高周波の判定を持ちます。
-* ``PillowFlyerRenderer.render_flyer`` が 1080×1920 の JPEG バイト列を返します。
+* ``PillowFlyerRenderer.render_flyer`` が 1080×1528（A4 縦）の JPEG バイト列を返します。
 
 タイトル枠は幅 920 px、高さ 420 px、最大 3 行です。探索するフォントサイズは 44 px から 92 px です。
 

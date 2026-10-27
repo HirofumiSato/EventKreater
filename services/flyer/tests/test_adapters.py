@@ -131,7 +131,7 @@ def test_mock_image_generator_returns_portrait_png() -> None:
     generator = MockImageGenerator()
     payload = asyncio.run(generator.generate_background("a saxophone", "text", "9:16"))
     image = Image.open(BytesIO(payload))
-    assert image.size == (1080, 1920)
+    assert image.size == (1080, 1528)
     assert payload.startswith(b"\x89PNG")
 
 
@@ -292,7 +292,7 @@ def test_dalle_timeout_delegates_to_static_fallback(tmp_path: Path) -> None:
     payload = asyncio.run(generator.generate_background("prompt", "text", "9:16"))
     image = Image.open(BytesIO(payload))
     assert generator.used_fallback is True
-    assert image.size == (1080, 1920)
+    assert image.size == (1080, 1528)
     assert (tmp_path / "style_3_vibrant_pop_default.png").is_file()
 
 

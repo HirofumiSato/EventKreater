@@ -5,6 +5,7 @@ import type { EventFormValues } from "@/modules/events/types";
 import { buildFlyerFormPayload, validateFlyerForm } from "@/modules/flyers/lib/form";
 import { readFlyerDraftKey, resetFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { flyerDownloadHref } from "@/modules/flyers/lib/download";
+import { flyerPdfDownloadHref } from "@/modules/flyers/lib/pdf-link";
 import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
 import type { FlyerQuota, SelectableFlyer } from "@/modules/flyers/types";
 import { FlyerCandidateModal } from "./FlyerCandidateModal";
@@ -21,6 +22,11 @@ interface FlyerGeneratePanelProps {
   draftScope: string;
   /** 保存済みイベントの ID。共同主催者と同じ回数枠を数えるために送る。 */
   eventId?: string | null;
+  /**
+   * チラシを掲載しているイベントが公開済みか。
+   * ダウンロードは告知 URL が確定してから出す（PDF の QR に焼き込むため）。
+   */
+  published?: boolean;
   onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
   onClear: () => void;
 }
@@ -32,6 +38,7 @@ export function FlyerGeneratePanel({
   flyerAssetId = null,
   draftScope,
   eventId = null,
+  published = false,
   onGenerated,
   onClear,
 }: FlyerGeneratePanelProps) {
@@ -136,10 +143,20 @@ export function FlyerGeneratePanel({
         >
           {previewUrl ? "作り直す" : "チラシを作る"}
         </button>
-        {previewUrl && flyerAssetId && (
-          <a href={flyerDownloadHref(flyerAssetId)} className="btn btn--ghost btn--sm">
-            ダウンロード
-          </a>
+        {previewUrl && flyerAssetId && published && (
+          <>
+            <a href={flyerDownloadHref(flyerAssetId)} className="btn btn--ghost btn--sm">
+              画像でダウンロード
+            </a>
+            {eventId && (
+              <a
+                href={flyerPdfDownloadHref(flyerAssetId, eventId)}
+                className="btn btn--ghost btn--sm"
+              >
+                PDFでダウンロード
+              </a>
+            )}
+          </>
         )}
         {previewUrl && (
           <button
@@ -164,6 +181,11 @@ export function FlyerGeneratePanel({
           onError={setError}
         />
       </div>
+      {previewUrl && flyerAssetId && !published && (
+        <p className="help">
+          公開すると、告知ページの QR コードを入れた A4 PDF をダウンロードできます。
+        </p>
+      )}
       <p className="help">
         Canva などで作った画像（JPEG / PNG / WebP、8MBまで）を、そのままチラシにできます。縦長の画像をおすすめします。
       </p>

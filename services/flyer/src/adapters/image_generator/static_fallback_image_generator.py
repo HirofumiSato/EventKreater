@@ -41,7 +41,7 @@ class StaticFallbackImageGenerator(ImageGeneratorPort):
         if path.is_file() and path.stat().st_size > 0:
             return path.read_bytes()
         top, bottom = _TEMPLATE_STOPS[template_id]
-        payload = render_gradient_png((1080, 1920), top, bottom)
+        payload = render_gradient_png((1080, 1528), top, bottom)
         temporary = path.with_name(f".{path.name}.tmp.{uuid4().hex}")
         temporary.write_bytes(payload)
         os.replace(temporary, path)

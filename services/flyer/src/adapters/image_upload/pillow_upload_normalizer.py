@@ -1,4 +1,4 @@
-"""Pillow でアップロード画像を検証し、9:16 の背景 PNG に揃えるアダプター。"""
+"""Pillow でアップロード画像を検証し、A4 縦（1080×1528）の背景 PNG に揃えるアダプター。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from src.domain.exceptions import ImageTooLargeError, ImageUploadError
 from src.ports.image_upload_port import ImageUploadPort
 
 CANVAS_WIDTH = 1080
-CANVAS_HEIGHT = 1920
+CANVAS_HEIGHT = 1528
 
 #: 受け入れる形式。SVG・GIF・アニメーション画像は対象外。
 ALLOWED_FORMATS = frozenset({"JPEG", "PNG", "WEBP"})

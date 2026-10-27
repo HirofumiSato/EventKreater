@@ -221,7 +221,7 @@ async function createFlyer(userId, title) {
       id,
       userId,
       imageUrl: `/api/v1/flyer-assets/${id}/image`,
-      aspectRatio: "9:16",
+      aspectRatio: "A4",
       title,
     },
   });

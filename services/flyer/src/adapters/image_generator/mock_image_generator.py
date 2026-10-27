@@ -23,5 +23,5 @@ class MockImageGenerator(ImageGeneratorPort):
         if aspect_ratio == "1:1":
             size = (1080, 1080)
         else:
-            size = (1080, 1920)
+            size = (1080, 1528)
         return render_gradient_png(size, top, bottom)
