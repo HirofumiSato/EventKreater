@@ -1451,23 +1451,6 @@ fieldset.field {
   box-shadow: var(--shadow-xl);
 }
 
-
-
-/* ???????????????????????????????????????? */
-.dialog--preview {
-  width: min(100%, 52rem);
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-}
-
-.organizer-preview__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
 /* カレンダーの短冊から開くモーダル。催し名が長いので左揃えにする。 */
 .dialog--calendar-event .eyebrow,
 .dialog--calendar-event .dialog__title,
