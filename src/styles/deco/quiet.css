@@ -123,7 +123,7 @@
 }
 
 .deco.deco--tape-quiet .event-card__actions-edit {
-  border-left-color: var(--quiet-line-strong);
+  border-left-color: var(--quiet-line);
 }
 
 /* --------------------------------------------------------------------------
