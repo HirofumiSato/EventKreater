@@ -1451,6 +1451,16 @@
   gap: 0.375rem;
 }
 
+/* 編集にかかわる操作は、見るだけの操作と混ぜない。右端へ寄せ、罫線で区切る。 */
+.event-card__actions-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-left: auto;
+  padding-left: 0.625rem;
+  border-left: 1px solid var(--color-border);
+}
+
 /* 名簿の要約。数は 1 か所にまとめ、表と二重に置かない。 */
 .roster-summary {
   display: grid;
