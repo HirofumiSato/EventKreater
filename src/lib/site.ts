@@ -32,6 +32,18 @@ export const SITE = {
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。
     organizerSwitch: { href: "/organizer/events", label: "主催者として使う" },
     participantSwitch: { href: "/participant", label: "参加者として見る" },
+    // 管理者だけに出す。公開画面からは辿れない（`/console` は noindex）。
+    console: { href: "/console", label: "管理コンソール" },
+  },
+  // 共通ヘッダーのログイン状態。誰として入っているかを 1 語で示す。
+  // 「主催者」は参加者も兼ねる（同じ会員が画面を切り替える）ので、いま見ている画面で決める。
+  role: {
+    participant: "参加者",
+    organizer: "主催者",
+    admin: "管理者",
+  },
+  action: {
+    logout: "ログアウト",
   },
   // 作成画面への誘導文。ラベル側を変えれば、ここも追随する。
   cta: {

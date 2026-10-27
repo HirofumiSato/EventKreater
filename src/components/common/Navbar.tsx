@@ -1,87 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SITE } from "@/lib/site";
-
-interface Viewer {
-  name: string;
-  isOrganizer: boolean;
-}
-
-interface NavLink {
-  href: string;
-  label: string;
-}
-
-/**
- * links はメニューに入るテキストリンク、primary はバーに常時出す主要な入口、
- * action は切り替えリンク。primary と action がそろうと、幅が足りない端末では
- * action だけをメニュー先頭へ退避させる。
- */
-interface NavConfig {
-  links: readonly NavLink[];
-  primary?: NavLink;
-  action?: NavLink;
-}
-
-/** 主催者向けの画面。ここでは参加者の機能を並べず、切り替えリンク 1 本に留める。 */
-const ORGANIZER_AREA_PREFIXES = ["/mypage", "/organizer", "/invitations"] as const;
-
-function inOrganizerArea(pathname: string): boolean {
-  return ORGANIZER_AREA_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
-
-function participantConfig(viewer: Viewer): NavConfig {
-  return {
-    links: [
-      SITE.nav.participantHome,
-      SITE.nav.participantCalendar,
-      SITE.nav.participantHistory,
-      SITE.nav.account,
-      ...(viewer.isOrganizer ? [SITE.nav.mypage] : []),
-    ],
-    // 主催者としても使える人には切り替えを出さない。行き来は主催者画面側の 1 本だけ。
-    action: viewer.isOrganizer ? undefined : SITE.nav.organizerSwitch,
-  };
-}
-
-/**
- * 経路から並べる機能を決める。
- * 主催者の機能と参加者の機能は同じ並びに混ぜない。
- */
-function navConfig(pathname: string, viewer: Viewer | null): NavConfig {
-  if (!viewer) {
-    return {
-      links: [SITE.nav.service, SITE.nav.participantLogin],
-      primary: SITE.nav.createEvent,
-      action: SITE.nav.organizerLogin,
-    };
-  }
-  const organizer: NavConfig = {
-    links: [SITE.nav.organizerList, SITE.nav.mypage, SITE.nav.account],
-    primary: SITE.nav.createEvent,
-    action: SITE.nav.participantSwitch,
-  };
-  if (pathname === SITE.nav.account.href) {
-    return viewer.isOrganizer ? organizer : participantConfig(viewer);
-  }
-  return inOrganizerArea(pathname) ? organizer : participantConfig(viewer);
-}
+import { type Viewer, siteNavConfig, viewerInitial, viewerRole, viewerRoleLabel } from "@/lib/site-nav";
 
 /**
  * 共通ヘッダー。
- * 未ログイン、参加者、主催者（参加者画面）、主催者（主催者画面）の 4 通りで
- * 並べる機能を変える。「イベント告知ページを作る」はバーに常時出す。
- * 768px 以下ではリンク群を、540px 以下では切り替えリンクもメニューへ畳む。
+ *
+ * 並べる機能は `src/lib/site-nav.ts` の `siteNavConfig` が、会員の状態とパスだけで決める。
+ * この部品は、決まった並びを描くことと、メニューの開閉だけを持つ。
+ * 「未ログイン／参加者／主催者（参加者画面・主催者画面）／管理者」の 4 通りで
+ * 並びが変わる。ログイン中はスマホのバーに頭文字の札を出し、誰として入っているかは
+ * 役割の札と、メニューの中の名前で示す。
+ *
+ * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字・メニュー」で
+ * 埋まるため、名前・役割・ログアウトはメニューの中に置く。1024px 以上のバーに余白が
+ * できたら、頭文字・役割の札・ログアウトをバーへ開く。768〜1023px はナビと作成と
+ * 切り替えで埋まっていて、頭文字 1 つでもナビが折り返すため、ヘッダーには出さない。
  */
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -89,12 +33,21 @@ export function Navbar() {
     void fetch("/api/v1/user/profile")
       .then(async (res) => {
         if (!res.ok) return null;
-        return (await res.json()) as { user: { name: string }; isOrganizer?: boolean };
+        return (await res.json()) as {
+          user: { name: string; platformRole?: string };
+          isOrganizer?: boolean;
+        };
       })
       .then((data) => {
         if (!active) return;
         setViewer(
-          data ? { name: data.user.name, isOrganizer: Boolean(data.isOrganizer) } : null,
+          data
+            ? {
+                name: data.user.name,
+                isOrganizer: Boolean(data.isOrganizer),
+                platformRole: data.user.platformRole === "ADMIN" ? "ADMIN" : "MEMBER",
+              }
+            : null,
         );
       })
       .catch(() => {
@@ -128,22 +81,54 @@ export function Navbar() {
     };
   }, [menuOpen]);
 
-  const { links, primary, action } = navConfig(pathname, viewer);
+  const { links, primary, action } = siteNavConfig(pathname, viewer);
   // 主要な入口と切り替えリンクが並ぶときだけ、切り替えを狭い幅でメニューへ退避させる。
   const compactAction = Boolean(primary && action);
   const menuAction = compactAction ? action : undefined;
+  const role = viewer ? viewerRole(pathname, viewer) : null;
+  const roleLabel = role ? viewerRoleLabel(role) : "";
+  const initial = viewer ? viewerInitial(viewer.name) : "";
+
+  /** ログアウト。管理者も同じ会員セッションなので、公開側の入口 1 本で足りる。 */
+  const logout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      setViewer(null);
+      setMenuOpen(false);
+      router.replace("/");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
-    <header
-      className="site-header"
-      ref={headerRef}
-      data-menu-open={menuOpen ? "true" : "false"}
-    >
+    <header className="site-header" ref={headerRef} data-menu-open={menuOpen ? "true" : "false"}>
       <div className="site-header__inner">
         <Link href={SITE.nav.home.href} className="site-brand">
           {SITE.name}
         </Link>
         <nav id="site-nav" className="site-nav" aria-label="サイト">
+          {viewer ? (
+            // スマホのメニュー先頭。誰として入っているかとログアウトをまとめる。
+            <div className="site-nav__user">
+              <span className="site-user__avatar" aria-hidden="true">
+                {initial}
+              </span>
+              <span className="site-nav__user-name">{viewer.name}</span>
+              <span className="site-user__role">{roleLabel}</span>
+              <button
+                type="button"
+                className="btn btn--outline btn--sm site-nav__logout"
+                onClick={() => void logout()}
+                disabled={loggingOut}
+              >
+                {SITE.action.logout}
+              </button>
+            </div>
+          ) : null}
           {menuAction ? (
             // 540px 以下でだけ出す。バーの幅が足りない端末の受け皿。
             <div className="site-nav__action">
@@ -176,6 +161,24 @@ export function Navbar() {
             >
               {action.label}
             </Link>
+          ) : null}
+          {viewer ? (
+            // スマホでは頭文字だけ。役割の札とログアウトは 1024px 以上で開く。
+            <div className="site-header__user">
+              <span className="site-user__avatar" aria-hidden="true">
+                {initial}
+              </span>
+              <span className="visually-hidden">{viewer.name}</span>
+              <span className="site-user__role">{roleLabel}</span>
+              <button
+                type="button"
+                className="btn btn--outline btn--sm site-header__logout"
+                onClick={() => void logout()}
+                disabled={loggingOut}
+              >
+                {SITE.action.logout}
+              </button>
+            </div>
           ) : null}
           <button
             type="button"

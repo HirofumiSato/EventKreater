@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
         passwordHash: true,
         phoneE164: true,
         phoneVerifiedAt: true,
+        // 共通ヘッダーの出し分けに使う。管理者は主催者・参加者とは別の並びにする。
+        platformRole: true,
       },
     });
     if (!user) {
@@ -52,6 +54,8 @@ export async function GET(req: NextRequest) {
         // 生の番号は返さない。画面には下4桁だけを出す。
         phoneMasked: user.phoneE164 ? maskPhone(user.phoneE164) : null,
         hasPassword: Boolean(user.passwordHash),
+        // 共通ヘッダーの出し分け用。`MEMBER` / `ADMIN`。
+        platformRole: user.platformRole,
       },
       isOrganizer: organizerCount > 0,
       organizerCount,

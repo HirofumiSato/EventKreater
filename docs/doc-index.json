@@ -5278,7 +5278,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1853,
+      "lineCount": 1861,
       "headings": [
         {
           "level": 1,
@@ -5604,10 +5604,6 @@
           "exists": true
         },
         {
-          "path": "src/components/common/Navbar.tsx",
-          "exists": true
-        },
-        {
           "path": "src/components/common/SiteChrome.tsx",
           "exists": true
         },
@@ -5629,6 +5625,10 @@
         },
         {
           "path": "src/lib/site-chrome.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-nav.ts",
           "exists": true
         },
         {
@@ -8685,7 +8685,7 @@
       "title": "全体システム要件定義書（機能横断・共通編）",
       "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1108,
+      "lineCount": 1110,
       "headings": [
         {
           "level": 1,
@@ -8908,6 +8908,10 @@
         },
         {
           "path": "src/lib/site-chrome.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-nav.ts",
           "exists": true
         },
         {
@@ -9763,7 +9767,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 502,
+      "lineCount": 506,
       "headings": [
         {
           "level": 1,
@@ -10014,6 +10018,10 @@
         },
         {
           "path": "tests/unit/site-chrome.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-nav.test.ts",
           "exists": true
         },
         {
