@@ -33,6 +33,9 @@ export interface NavLink {
  * links はメニューに入るテキストリンク、primary はバーに常時出す主要な入口、
  * action は切り替えリンク。primary と action がそろうと、幅が足りない端末では
  * action だけをメニュー先頭へ退避させる。
+ *
+ * `アカウント` はここに入れない。誰として入っているかとログアウトをまとめた
+ * 頭文字のメニュー（`Navbar`）が持つ。同じ行き先をナビにも置くと、現在地が 2 つになる。
  */
 export interface NavConfig {
   links: readonly NavLink[];
@@ -80,7 +83,6 @@ function participantConfig(viewer: Viewer): NavConfig {
       SITE.nav.participantHome,
       SITE.nav.participantCalendar,
       SITE.nav.participantHistory,
-      SITE.nav.account,
       ...(viewer.isOrganizer ? [SITE.nav.mypage] : []),
     ],
     // 主催者としても使える人には切り替えを出さない。行き来は主催者画面側の 1 本だけ。
@@ -88,9 +90,14 @@ function participantConfig(viewer: Viewer): NavConfig {
   };
 }
 
+/**
+ * 主催者画面。行き先はヘッダー直下の節（`OrganizerTabs`）がすべて持つので、
+ * バーのナビには何も並べない。バーに残すのは「作る」と頭文字の札だけにして、
+ * 現在地は節の 1 か所だけが示す。
+ */
 function organizerConfig(): NavConfig {
   return {
-    links: [SITE.nav.organizerList, SITE.nav.mypage, SITE.nav.account],
+    links: [],
     primary: SITE.nav.createEvent,
     action: SITE.nav.participantSwitch,
   };
@@ -99,6 +106,15 @@ function organizerConfig(): NavConfig {
 /** 管理者。公開画面からは辿れない管理コンソールへの 1 本だけを出す。 */
 function adminConfig(): NavConfig {
   return { links: [SITE.nav.console] };
+}
+
+/**
+ * アカウント設定。主催者・参加者のどちらの立場でも開く画面で、
+ * 戻り先は本文が「主催者マイページへ／参加者ホームへ」として持つ。
+ * バーのナビから同じ行き先を重ねない。
+ */
+function accountConfig(): NavConfig {
+  return { links: [] };
 }
 
 /** 未ログイン。サービス紹介と、主催者・参加者それぞれの入口。 */
@@ -117,9 +133,6 @@ function anonymousConfig(): NavConfig {
 export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfig {
   if (!viewer) return anonymousConfig();
   if (viewer.platformRole === "ADMIN") return adminConfig();
-  // アカウントは主催者・参加者のどちらからも開く。会員の属性で並びを決める。
-  if (pathname === SITE.nav.account.href) {
-    return viewer.isOrganizer ? organizerConfig() : participantConfig(viewer);
-  }
+  if (pathname === SITE.nav.account.href) return accountConfig();
   return inOrganizerArea(pathname) ? organizerConfig() : participantConfig(viewer);
 }

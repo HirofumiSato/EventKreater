@@ -28,7 +28,6 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
       SITE.nav.participantHome,
       SITE.nav.participantCalendar,
       SITE.nav.participantHistory,
-      SITE.nav.account,
     ]);
     // 作成の入口は参加者画面に出さない。
     expect(config.primary).toBeUndefined();
@@ -42,7 +41,6 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
       SITE.nav.participantHome,
       SITE.nav.participantCalendar,
       SITE.nav.participantHistory,
-      SITE.nav.account,
       SITE.nav.mypage,
     ]);
     expect(config.primary).toBeUndefined();
@@ -50,12 +48,20 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
     expect(config.action).toBeUndefined();
   });
 
-  it("主催者画面では主催者の機能を並べ、参加者として見る切り替えを持つ", () => {
+  it("主催者画面はバーのナビを持たず、作成と参加者への切り替えだけを持つ", () => {
     const config = siteNavConfig("/organizer/events", organizer);
 
-    expect(config.links).toEqual([SITE.nav.organizerList, SITE.nav.mypage, SITE.nav.account]);
+    // 行き先はヘッダー直下の節（OrganizerTabs）が持つ。バーには重ねない。
+    expect(config.links).toEqual([]);
     expect(config.primary).toEqual(SITE.nav.createEvent);
     expect(config.action).toEqual(SITE.nav.participantSwitch);
+  });
+
+  it("アカウントは頭文字のメニューが持つので、どの並びにも入れない", () => {
+    for (const pathname of ["/participant", "/participant/calendar", "/organizer/events", "/account"]) {
+      expect(siteNavConfig(pathname, organizer).links).not.toContainEqual(SITE.nav.account);
+      expect(siteNavConfig(pathname, participant).links).not.toContainEqual(SITE.nav.account);
+    }
   });
 
   it("主催者画面は /mypage と /invitations も同じ並びにする", () => {
@@ -69,9 +75,14 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
     expect(siteNavConfig("/mypagelike", organizer)).toEqual(siteNavConfig("/participant", organizer));
   });
 
-  it("アカウントは会員の属性で並びを決める", () => {
-    expect(siteNavConfig("/account", participant).action).toEqual(SITE.nav.organizerSwitch);
-    expect(siteNavConfig("/account", organizer).action).toEqual(SITE.nav.participantSwitch);
+  it("アカウントはバーのナビを持たず、戻り先は本文に任せる", () => {
+    for (const viewer of [participant, organizer]) {
+      const config = siteNavConfig("/account", viewer);
+
+      expect(config.links).toEqual([]);
+      expect(config.primary).toBeUndefined();
+      expect(config.action).toBeUndefined();
+    }
   });
 
   it("管理者は管理コンソールだけを出し、主催者・参加者の機能を並べない", () => {
