@@ -11,7 +11,6 @@ import { readProblem } from "@/lib/problem";
 import { loginUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import type { OrganizerEvent } from "@/modules/events/types";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
 import { Alert, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
@@ -104,8 +103,6 @@ export default function MyPage() {
         lead={<>{profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
         </>}
       />
-
-      <OrganizerTabs />
 
       <div className="roster-summary">
         <div className="roster-summary__item">

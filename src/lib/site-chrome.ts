@@ -66,3 +66,31 @@ export function siteChrome(pathname: string): SiteChromeState {
   }
   return { header: true, footer: true, flushTop: false };
 }
+
+/**
+ * 主催者の節（`OrganizerTabs`）を出すか。パスだけから決める純関数。
+ *
+ * 主催者管理の入口画面（主催一覧・カレンダー・売上・下書き・プロフィール・マイページ）と、
+ * イベント単位の名簿・売上だけに出す。作成・編集・プレビュー・領収書・登録案内といった
+ * 作業画面では本文に集中させるため出さない。判定を `SiteChrome` の中に置くと分岐が散るので、
+ * `siteChrome` と同じくここ 1 か所に集める。
+ */
+export function showOrganizerTabs(pathname: string): boolean {
+  switch (pathname) {
+    case "/mypage":
+    case "/organizer/events":
+    case "/organizer/events/drafts":
+    case "/organizer/revenue":
+    case "/organizer/calendar":
+    case "/organizer/profile":
+      return true;
+    default:
+      break;
+  }
+  // イベント単位の名簿・売上（`/organizer/events/[id]/participants` と `[id]/revenue`）。
+  // 末尾で判定すると、編集・プレビュー・領収書は自然に外れる。
+  return (
+    pathname.startsWith("/organizer/events/") &&
+    (pathname.endsWith("/participants") || pathname.endsWith("/revenue"))
+  );
+}

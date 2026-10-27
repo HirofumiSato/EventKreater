@@ -20,23 +20,25 @@ export function OrganizerTabs() {
   const pathname = usePathname();
   return (
     <nav className="org-subnav" aria-label="主催者の節">
-      {TABS.map((tab) => {
-        // 下書きは配下の画面（プレビューなど）でも現在地にする。
-        const current =
-          tab.href === "/organizer/events"
-            ? pathname === tab.href
-            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={current ? "is-current" : undefined}
-            aria-current={current ? "page" : undefined}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
+      <div className="org-subnav__inner">
+        {TABS.map((tab) => {
+          // 下書きは配下の画面（プレビューなど）でも現在地にする。
+          const current =
+            tab.href === "/organizer/events"
+              ? pathname === tab.href
+              : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={current ? "is-current" : undefined}
+              aria-current={current ? "page" : undefined}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

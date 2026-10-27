@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { siteChrome } from "@/lib/site-chrome";
+import { showOrganizerTabs, siteChrome } from "@/lib/site-chrome";
 
 describe("公開クロムの出し分け", () => {
   it("ホームは LP として扱い、ヘッダーを出さず上端の余白も落とす", () => {
@@ -51,5 +51,38 @@ describe("公開クロムの出し分け", () => {
 
   it("パスが空でも通常の画面として扱う", () => {
     expect(siteChrome("")).toEqual({ header: true, footer: true, flushTop: false });
+  });
+});
+
+describe("主催者の節（OrganizerTabs）の出し分け", () => {
+  it("主催者管理の入口画面では出す", () => {
+    expect(showOrganizerTabs("/mypage")).toBe(true);
+    expect(showOrganizerTabs("/organizer/events")).toBe(true);
+    expect(showOrganizerTabs("/organizer/events/drafts")).toBe(true);
+    expect(showOrganizerTabs("/organizer/revenue")).toBe(true);
+    expect(showOrganizerTabs("/organizer/calendar")).toBe(true);
+    expect(showOrganizerTabs("/organizer/profile")).toBe(true);
+  });
+
+  it("イベント単位の名簿と売上では出す", () => {
+    expect(showOrganizerTabs("/organizer/events/abc/participants")).toBe(true);
+    expect(showOrganizerTabs("/organizer/events/abc/revenue")).toBe(true);
+  });
+
+  it("作成・編集・プレビュー・領収書・登録案内では出さない", () => {
+    expect(showOrganizerTabs("/organizer/events/new")).toBe(false);
+    expect(showOrganizerTabs("/organizer/events/abc")).toBe(false);
+    expect(showOrganizerTabs("/organizer/events/abc/edit")).toBe(false);
+    expect(showOrganizerTabs("/organizer/events/abc/preview")).toBe(false);
+    expect(showOrganizerTabs("/organizer/events/abc/receipts/xyz")).toBe(false);
+    expect(showOrganizerTabs("/organizer/register-required")).toBe(false);
+  });
+
+  it("主催者エリア以外では出さない", () => {
+    expect(showOrganizerTabs("/organizer/events/revenueish")).toBe(false);
+    expect(showOrganizerTabs("/participant")).toBe(false);
+    expect(showOrganizerTabs("/service")).toBe(false);
+    expect(showOrganizerTabs("/")).toBe(false);
+    expect(showOrganizerTabs("")).toBe(false);
   });
 });

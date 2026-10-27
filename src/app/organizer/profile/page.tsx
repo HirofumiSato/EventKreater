@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OrganizerProfileForm } from "@/modules/organizers/components/OrganizerProfileForm";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -22,7 +21,6 @@ export default function OrganizerProfilePage() {
         title="公開プロフィール"
         lead="参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。"
       />
-      <OrganizerTabs />
       <OrganizerProfileForm />
       <p className="screen-note">
         表示名は

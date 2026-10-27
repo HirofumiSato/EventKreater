@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { currentMonthBounds, yen } from "@/lib/format";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { isRegisterRequired, readProblemBody } from "@/lib/problem";
 import { registerUrl } from "@/lib/auth-links";
@@ -97,8 +96,6 @@ export default function OrganizerRevenuePage() {
             新規作成
           </Link></>}
       />
-
-      <OrganizerTabs />
 
       <Panel>
         <PanelHead title="期間" note="開催日で絞り込みます。初期表示は全期間です。" />

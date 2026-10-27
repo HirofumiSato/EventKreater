@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { yen } from "@/lib/format";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
 import { RevenueAllocationSection } from "@/modules/revenue/components/RevenueAllocationSection";
 import {
@@ -88,8 +87,6 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
             売上一覧へ
           </Link></>}
       />
-
-      <OrganizerTabs />
 
       <Panel>
         <RevenueSummaryLedger summary={summary} />

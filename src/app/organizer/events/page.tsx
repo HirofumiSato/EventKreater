@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { OrganizerPagePreviewModal } from "@/modules/organizers/components/OrganizerPagePreviewModal";
 import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
@@ -126,8 +125,6 @@ function OrganizerEventsScreen() {
   return (
     <div className="stack">
       <PageHeader eyebrow="主催者" title="主催イベント一覧" lead="作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。" />
-
-      <OrganizerTabs />
 
       <div className="panel__actions">
         {viewer?.userId && (

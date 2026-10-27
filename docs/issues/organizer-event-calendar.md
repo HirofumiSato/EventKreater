@@ -27,7 +27,7 @@
 ### 方針との関係
 
 - このアプリは不特定多数向けのイベント一覧・検索を持たない（`docs/overall_system_requirements_common.md:56`）。公開一覧 API も置かない（同 `:74`）。今回のカレンダーは自分が幹事のイベントだけを対象にし、この方針を変えない。
-- ヘッダーのナビは増やさない。売上と同じく本文冒頭の `OrganizerTabs` で行き来する（`docs/front_implementation_spec.md`）。
+- ヘッダーのナビは増やさない。売上と同じくヘッダー直下の `OrganizerTabs` で行き来する（`docs/front_implementation_spec.md`）。
 
 ## 今回の決定
 

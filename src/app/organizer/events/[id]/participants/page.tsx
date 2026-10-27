@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ParticipantListTable } from "@/modules/attendance/components/ParticipantListTable";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { ReceiptIssueModal } from "@/modules/receipts/components/ReceiptIssueModal";
 import { Toast } from "@/components/common/Toast";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
@@ -181,8 +180,6 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   return (
     <div className="stack">
       <PageHeader eyebrow="主催者" title="参加者名簿" lead={<>{data.event.title}</>} />
-
-      <OrganizerTabs />
 
       <div className="roster-summary">
         <div className="roster-summary__item">

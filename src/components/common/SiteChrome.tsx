@@ -3,9 +3,10 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/common/Navbar";
+import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { SITE } from "@/lib/site";
 import { decoClassName, designScope } from "@/lib/design-scope";
-import { siteChrome } from "@/lib/site-chrome";
+import { showOrganizerTabs, siteChrome } from "@/lib/site-chrome";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -19,6 +20,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   return (
     <div className={deco || undefined}>
       {chrome.header ? <Navbar /> : null}
+      {chrome.header && showOrganizerTabs(pathname) ? <OrganizerTabs /> : null}
       <main id="main" className={chrome.flushTop ? "page page--flush" : "page"}>
         {children}
       </main>

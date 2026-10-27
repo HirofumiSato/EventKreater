@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid, CalendarToolbar } from "@/components/common/CalendarMonth";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import {
@@ -82,8 +81,6 @@ export function CalendarView() {
   return (
     <div className="stack">
       <PageHeader eyebrow="主催者" title="カレンダー" lead="開催日ごとに並びます。日付を押すと、その日の催しが出ます。" />
-
-      <OrganizerTabs />
 
       {error && (
         <Alert tone="warning">

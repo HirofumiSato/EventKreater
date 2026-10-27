@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { OrganizerTabs } from "@/modules/organizers/components/OrganizerTabs";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { Toast } from "@/components/common/Toast";
 import { readProblem } from "@/lib/problem";
@@ -64,8 +63,6 @@ export default function OrganizerDraftsPage() {
   return (
     <div className="stack">
       <PageHeader eyebrow="主催者" title="下書き一覧" lead="公開するまで、利用枠は減りません。プレビューで見た目を確かめてから公開できます。" />
-
-      <OrganizerTabs />
 
       {loading && (
         <Loading>
