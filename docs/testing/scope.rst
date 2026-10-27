@@ -147,7 +147,7 @@
 
 .. count-start
 
-57 ファイル、``it`` は 712 件です。内訳は ``tests/unit/`` が 44 ファイル 638 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+58 ファイル、``it`` は 718 件です。内訳は ``tests/unit/`` が 45 ファイル 644 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -303,6 +303,10 @@
      - 16
      - 課金せずに試すためのモック。有効判定（本番では無効）、全欄の入力例が読めること、鍵なしで外部を呼ばないこと、API の応答と回数制限の扱い、起動ログの出し分けと 1 度だけ出すこと
      - SCR-ORG-02
+   * - ``tests/unit/voice-spotlight.test.ts``
+     - 6
+     - 音声モードの覆いの穴。高さが欄に追従せず固定であること、欄の中央への寄せ、画面端でのクランプ、幅と左の余白、くり抜きの描き順
+     - SCR-ORG-02
    * - ``tests/unit/guest-draft.test.ts``
      - 3
      - 未登録は下書きを作れず 403 ``REGISTER_REQUIRED``。公開済みは告知 URL とゲスト幹事トークンを返す
@@ -390,7 +394,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 638、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 638 件を実行して 74 件を skip します。
+件数の内訳は ``tests/unit/`` が 644、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 644 件を実行して 74 件を skip します。
 
 .. breakdown-end
 

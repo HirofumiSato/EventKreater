@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 101（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 300
+- 文書から参照されているコードパス: 302
 - API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -215,6 +215,7 @@
 | `src/modules/events/lib/voice/openai.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/parse.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/rate-limit.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/spotlight.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/transcribe.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/types.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/types.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
@@ -314,6 +315,7 @@
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-spotlight.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 
 ## 文書が指すが実在しないパス
 

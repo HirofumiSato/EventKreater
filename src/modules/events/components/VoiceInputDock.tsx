@@ -17,6 +17,11 @@ import {
   startFieldFor,
   voiceFieldByKey,
 } from "@/modules/events/lib/voice/fields";
+import {
+  spotlightClipPath,
+  spotlightFor,
+  type VoiceSpotlight,
+} from "@/modules/events/lib/voice/spotlight";
 import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
 import type {
   VoiceField,
@@ -26,31 +31,6 @@ import type {
 import type { EventFormValues } from "@/modules/events/types";
 
 type VoicePhase = "armed" | "listening" | "transcribing";
-
-/** 音声モードの覆いからくり抜く矩形。ビューポート座標。 */
-interface VoiceSpotlight {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
-/** 強調の枠（outline 3px + 余白 2px）が隠れないように、矩形を外側へ広げる量。 */
-const SPOTLIGHT_PADDING = 6;
-
-/**
- * 矩形の外側を覆い、内側だけをくり抜く clip-path を作る。
- * 外周を時計回り、穴を反時計回りに描くと、既定の nonzero 規則で穴になる。
- */
-function spotlightClipPath({ top, left, width, height }: VoiceSpotlight): string {
-  const right = left + width;
-  const bottom = top + height;
-  return (
-    "polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, " +
-    `${left}px ${top}px, ${left}px ${bottom}px, ${right}px ${bottom}px, ` +
-    `${right}px ${top}px, ${left}px ${top}px)`
-  );
-}
 
 interface VoiceInputDockProps {
   value: EventFormValues;
@@ -503,6 +483,7 @@ export function VoiceInputDock({
   // 音声モードの間、いま聞いている欄だけを残して画面全体を覆う。
   // 覆いはそのまま操作を止めるので、スクロールやステップの開閉に合わせて穴を追いかける。
   // 追いかけは毎フレームではなく、位置が動く合図（スクロール・リサイズ・DOM の変化）でだけ測り直す。
+  // 穴の高さは固定し（spotlightFor）、スクロールで欄の中央を穴の中央へ寄せる。幅だけ欄に合わせる。
   useEffect(() => {
     if (!active) {
       setSpotlight(null);
@@ -535,12 +516,8 @@ export function VoiceInputDock({
         resizeObserver?.observe(target);
       }
       const rect = target.getBoundingClientRect();
-      const next: VoiceSpotlight = {
-        top: Math.max(0, rect.top - SPOTLIGHT_PADDING),
-        left: Math.max(0, rect.left - SPOTLIGHT_PADDING),
-        width: rect.width + SPOTLIGHT_PADDING * 2,
-        height: rect.height + SPOTLIGHT_PADDING * 2,
-      };
+      // 高さは固定。欄の中央がビューポートの中央に来るよう穴を置く（画面端ではクランプ）。
+      const next = spotlightFor(rect, window.innerHeight);
       const key = `${next.top}:${next.left}:${next.width}:${next.height}`;
       if (key !== previous) {
         previous = key;
