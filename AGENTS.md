@@ -65,6 +65,20 @@ cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ```
 
+## 作業ツリー
+
+既定は「作業ブランチを 1 本切り、1 つのツリーで進める」です。`main` へは PR で入れます。
+必須チェック（`check` / `db` / `flyer`）は PR でしかゲートにならないためです（`docs/testing/ci.rst`）。
+
+1. 作業を始める前に、前の作業をコミットする。`style-guide/**` の生成物はコミットまでを 1 セットにする
+2. `main` から `feat/...` か `fix/...` を切る。実装・`mock:sync`・検証はそのブランチで行う
+3. PR を出し、必須チェックが緑になってからマージする
+
+`git worktree` は、未コミットを残したまま並行作業が要るときだけ使います。
+OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` が二重になります。
+マージしたら `git worktree remove` で片付け、ブランチも消します。残すのは今触っている 1 つだけです。
+`main` に未コミットが残っている状態で別件を始めるときは、worktree ではなくまずコミットします。
+
 ## 製品→モックの同期（必須ループ）
 
 **製品が正**です。`style-guide/mock-*.html` は製品の DOM を写した生成物で、手で編集しません。
