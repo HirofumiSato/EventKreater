@@ -75,40 +75,45 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
           </div>
         )}
 
+        {/* 普段は使わない共有と停止だけを畳む。編集への入口は下の操作列が持つので、
+            ここには重ねない（同じ行き先のボタンが 2 つ並ぶと、どちらが編集か決められない）。 */}
         {event.status !== "DRAFT" && (
-          <details className="fold" style={{ marginTop: "0.875rem" }}>
+          <details className="fold event-card__fold">
             <summary className="fold__summary">共有と設定</summary>
             <div className="fold__body stack">
               <div className="field">
                 <label className="label" htmlFor={`share-url-${event.id}`}>
                   参加者に送るURL
                 </label>
-                <input
-                  className="input"
-                  id={`share-url-${event.id}`}
-                  readOnly
-                  value={`/events/${event.id}`}
-                  onFocus={(input) => input.currentTarget.select()}
-                />
+                <div className="input-row">
+                  <input
+                    className="input"
+                    id={`share-url-${event.id}`}
+                    readOnly
+                    value={publicPath}
+                    onFocus={(input) => input.currentTarget.select()}
+                  />
+                  <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicUrl()}>
+                    {copied ? "コピーしました" : "URLをコピー"}
+                  </button>
+                </div>
               </div>
-              <div className="panel__actions">
-                <button type="button" className="btn btn--outline btn--sm" onClick={() => void copyPublicUrl()}>
-                  {copied ? "コピーしました" : "URLをコピー"}
-                </button>
-                <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
-                  チラシを作り直す
-                </Link>
-                {event.role === "OWNER" && (
+              {event.role === "OWNER" && (
+                <div className="event-card__danger">
+                  <p className="help">
+                    公開をやめると告知ページは見られなくなります。削除すると元に戻せません。
+                  </p>
                   <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
                     公開をやめる・削除
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </details>
         )}
       </div>
 
+      {/* 見る系と編集系。幅に応じて 1 段か 2×2 に並ぶ（段数は CSS の格子が決める）。 */}
       <div className="event-card__actions">
         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
           名簿を見る
@@ -118,7 +123,6 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
             公開ページ
           </Link>
         )}
-        {/* 編集にかかわる操作は右端に寄せ、罫線で見るだけの操作と分ける。 */}
         <div className="event-card__actions-edit">
           <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--ghost btn--sm">
             編集

@@ -180,6 +180,11 @@
   gap: 1rem;
 }
 
+/* 主催一覧の要約。件数だけなので、狭い画面でも 2 つを横に並べて縦を取らない。 */
+.stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .card,
 .stat,
 .panel,
@@ -1661,12 +1666,6 @@ fieldset.field {
 
 
 
-
-@media (min-width: 640px) {
-  .stat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 @media (min-width: 768px) {
   .card-grid {
