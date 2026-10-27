@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "62a3ef1b0d61cf4b5152601816ed025b1165a9fe3805f58bb5a306e1c26fff3e",
+  "uiHash": "a8cd1178490831340402c4841f66352f6157d21c1c41e6eb0a5c93f3f2258730",
   "screens": [
     {
       "no": "01",
@@ -17,7 +17,7 @@
       "label": "",
       "file": "mock-home.html",
       "path": "/",
-      "hash": "92e91d0f805a1ece2f5de13f0f71dd8beb38493ccab156d9f365382e6b62625b"
+      "hash": "c7accdf32e0015727399d547af92a06ccbddbef54136c77c9e2b31c1786f657c"
     },
     {
       "no": "02",

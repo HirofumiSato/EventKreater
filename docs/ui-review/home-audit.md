@@ -414,10 +414,25 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/flyers/generate" -Method PO
 | クロムの出し分け | `SiteChrome` の `/console` 判定を、パスだけの純関数 `siteChrome()` へ移した。`/` は `header: false` / `footer: true` / `flushTop: true` | `src/lib/site-chrome.ts` |
 | `main` の上端 | ホームだけ `padding-block-start: 0`（`.page--flush`） | `src/styles/base.css` |
 | 参加者の入口 | ヒーローの `.hero__actions` に「参加者ログイン」のテキストリンクを足した | `src/app/page.tsx` |
-| 主催者の入口 | 従来どおりフッターの「主催者ログイン」が持つ | `src/components/common/SiteChrome.tsx` |
+| 主催者の入口 | 当初はフッターの「主催者ログイン」だけが持っていた。2026-10-28 にヒーローへ移し、「料金を見る」と入れ替えた（第 12 節） | `src/app/page.tsx` |
 
 FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッター、その他の公開画面はヘッダーに 2 本」へ
 読み替えます。判定は `tests/unit/site-chrome.test.ts` が固定します。
+
+---
+
+## 12. ヒーローの導線をログイン 2 本に整理（2026-10-28）
+
+ヒーローの `.hero__actions` は「主ボタン + テキストリンク 2 本」のままにし、中身を
+**主催者ログイン**と**参加者ログイン**へ入れ替えました。「料金を見る」は外しています。
+
+| 項目 | 変更 | 正 |
+| --- | --- | --- |
+| ヒーローのリンク | 「料金を見る」（`/service`）を外し、その位置に「主催者ログイン」（`/auth/register`）を置いた。並びは 主ボタン → 主催者ログイン → 参加者ログイン | `src/app/page.tsx` |
+| 料金への導線 | ホームのヒーローには置かない。フッターの「サービスと料金」が持つ | `src/components/common/SiteChrome.tsx` |
+| 文言 | `SITE.nav.organizerLogin` / `SITE.nav.participantLogin` を参照し、直書きしない | `src/lib/site.ts` |
+
+ログインの 2 本は、ヒーローとフッターの両方に出ます。FE-PUB-01 の受入基準もこの並びへ直しました。
 
 
 

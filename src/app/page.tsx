@@ -77,11 +77,10 @@ export default function HomePage() {
               <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
                 {SITE.cta.createEventFree}
               </Link>
-              <Link href={SITE.nav.service.href} className="text-link">
-                料金を見る
+              {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
+              <Link href={SITE.nav.organizerLogin.href} className="text-link">
+                {SITE.nav.organizerLogin.label}
               </Link>
-              {/* ホームは共通ヘッダーを出さない。参加者の入口はヒーローに残す。
-                  主催者の入口はフッターが持つ。 */}
               <Link href={SITE.nav.participantLogin.href} className="text-link">
                 {SITE.nav.participantLogin.label}
               </Link>
