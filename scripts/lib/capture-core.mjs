@@ -7,6 +7,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { createHash } from "node:crypto";
+import { SignJWT } from "jose";
 
 import { openTarget, sleep } from "./ui-browser.mjs";
 
@@ -41,6 +42,24 @@ export async function clearEventLock(eventId) {
 }
 
 /**
+ * 確認用の会員を探す。
+ *
+ * 一度撮ると、その会員のアドレスは `emailChangeTargets` のどれかへ変わっている。
+ * 元のアドレスだけで探すと 2 回目から見つからない。
+ */
+async function findVerifyUser(prisma, demo) {
+  const emails = [
+    demo.accounts?.verifyUser?.email,
+    ...Object.values(demo.emailChangeTargets ?? {}),
+  ].filter(Boolean);
+  if (emails.length === 0) return null;
+  return prisma.user.findFirst({
+    where: { email: { in: emails } },
+    select: { id: true, email: true },
+  });
+}
+
+/**
  * メールアドレス変更の確認トークンを発行し直す。
  *
  * この画面は開いた時点でトークンを消費する（1 回しか使えない）。そのまま 2 回
@@ -54,10 +73,7 @@ export async function reissueEmailChangeTokens(demo) {
 
   const prisma = new PrismaClient();
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: demo.accounts.verifyUser.email },
-      select: { id: true },
-    });
+    const user = await findVerifyUser(prisma, demo);
     if (!user) return false;
 
     const hashes = Object.values(tokens).map(sha256);
@@ -71,6 +87,41 @@ export async function reissueEmailChangeTokens(demo) {
       })),
     });
     return true;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * 確認用の会員のセッションを 1 本発行し直す。
+ *
+ * メールアドレスの変更は、他の端末のセッションを失効させる。撮るたびに
+ * `storage/ui-demo.json` の `tokens.verifyUser` が死に、12 のヘッダーだけが
+ * 未ログインの見た目になる。撮る前に同じ会員で発行し直して、これを防ぐ。
+ * 返すのは Cookie に入れる生のトークン（DB には jti で行だけ作る）。
+ */
+export async function reissueVerifyUserSession(demo) {
+  const secret = process.env.JWT_SECRET;
+  const userIdFromDemo = demo.accounts?.verifyUser?.email;
+  if (!userIdFromDemo || !secret || secret.length < 32) return null;
+
+  const prisma = new PrismaClient();
+  try {
+    const user = await findVerifyUser(prisma, demo);
+    if (!user) return null;
+
+    // 撮るたびに 1 本増えるので、前の回のぶんは消す（この会員は 12 専用）。
+    await prisma.authSession.deleteMany({ where: { userId: user.id } });
+    const session = await prisma.authSession.create({
+      data: { userId: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    });
+    return await new SignJWT({ userId: user.id, email: user.email })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(user.id)
+      .setJti(session.id)
+      .setIssuedAt()
+      .setExpirationTime("7d")
+      .sign(new TextEncoder().encode(secret));
   } finally {
     await prisma.$disconnect();
   }

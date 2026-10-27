@@ -194,7 +194,7 @@ svg {
 }
 
 /* 768px 以下はリンク群をハンバーガーに畳む。切り替えリンクはバーに残す。 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .site-header__inner {
     /* height で固定しない。文字拡大や訳文の伸長で中身が切れないようにする。
        4rem ではなく 3.75rem: 下辺の 1px 罫線を含めて 64px 以内に収める。 */

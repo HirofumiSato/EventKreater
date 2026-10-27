@@ -121,7 +121,7 @@
   color: var(--color-primary);
 }
 
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   .plan-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
@@ -908,7 +908,7 @@
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.15);
 }
 
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   /* 横に広いときは選択肢を 2 列に。縦 2 段のままだと、札が間延びする。 */
   .rsvp__choices {
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));

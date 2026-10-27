@@ -147,7 +147,7 @@
 
 .. count-start
 
-55 ファイル、``it`` は 694 件です。内訳は ``tests/unit/`` が 42 ファイル 620 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+56 ファイル、``it`` は 698 件です。内訳は ``tests/unit/`` が 43 ファイル 624 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -339,6 +339,10 @@
      - 8
      - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
      - 全画面の共通レイアウト
+   * - ``tests/unit/style-breakpoints.test.mjs``
+     - 4
+     - 画面の幅の段（``min-width`` が 640 / 768 / 900 / 1024、``max-width`` が 360 / 400 / 480 / 540 と 1px 手前の対）と、幅の指定が px 付きの ``min-width`` / ``max-width`` だけで書かれていることを確かめる
+     - 全画面の共通レイアウト
    * - ``tests/unit/site-chrome.test.ts``
      - 13
      - パスから公開クロムの出し分けを決める。ホームはヘッダーを出さず上端の余白も落とす、``/console`` はヘッダーもフッターも出さない、主催者の公開ページはヘッダーだけ出さない、告知ページはヘッダーを出さずチラシを上端から始める、領収書はヘッダーだけ出さない、下書きプレビューはヘッダーを出したまま上端の余白だけ落とす、その他は両方出す、``/consolelike`` を誤認しない。主催者の節（``OrganizerTabs``）を主催者管理の入口画面とイベント単位の名簿・売上だけに出し、作成・編集・プレビュー・領収書・登録案内には出さない
@@ -382,7 +386,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 620、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 620 件を実行して 74 件を skip します。
+件数の内訳は ``tests/unit/`` が 624、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 624 件を実行して 74 件を skip します。
 
 .. breakdown-end
 

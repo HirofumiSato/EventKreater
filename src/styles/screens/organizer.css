@@ -324,7 +324,7 @@
 
 
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .cal__grid {
     gap: 1px;
   }
