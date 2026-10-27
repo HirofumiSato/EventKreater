@@ -186,7 +186,6 @@
 }
 
 .card,
-.stat,
 .panel,
 .table-card {
   border: 1px solid var(--color-border);
@@ -195,9 +194,22 @@
   box-shadow: var(--shadow-sm);
 }
 
-.card,
-.stat {
+.card {
   padding: 1.25rem;
+}
+
+/* 件数の札。数字は 1 行で足りるので、名前と横に並べ、縦を取らない。
+   一覧の上に置くもので、読ませるのは数字だけ。 */
+.stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 
@@ -221,6 +233,12 @@
 /* ホームのセクション。箱を並べるのをやめ、罫線と余白で区切る。 */
 .section {
   margin-top: var(--space-section);
+}
+
+/* 画面の主役が 1 つだけのとき（主催一覧）は、`stack` の間隔だけで足りる。
+   3.5rem 空けると、見出しと一覧のあいだが 1 画面ぶんに近づく。 */
+.section--tight {
+  margin-top: 0;
 }
 
 .section__head {
@@ -441,9 +459,9 @@
 }
 
 .stat__value {
-  margin-top: 0.25rem;
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 
@@ -594,17 +612,17 @@
 }
 
 /* 一覧の中で 1 つだけ目立たせる操作（主催一覧の「編集」）。
-   主ボタン（朱塗り・白文字）と同じ濃さにすると画面の主操作と競合するので、
-   塗りは淡く、文字と縁だけを主色にする。 */
+   一覧の行をなぞるだけの画面なので、押す前に「どれが編集か」が決まるよう、
+   既定から塗っておく。ホバーでは濃くなるだけで、塗りの有無は変えない。 */
 .btn--accent {
   border-color: var(--color-primary);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btn--accent:hover {
   border-color: var(--color-primary-hover);
-  background: var(--color-primary);
+  background: var(--color-primary-hover);
   color: #fff;
 }
 
@@ -1239,6 +1257,23 @@ fieldset.field {
   padding: 0.75rem 1rem;
   border-radius: var(--radius-lg);
   font-size: 0.875rem;
+}
+
+/* 1 行で足りる案内（加入中のプランなど）。縦を詰めて、一覧の場所を奪わない。
+   右端には行動のボタンを置けるよう、中身は横並びにする。 */
+.alert--compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
+}
+
+.alert--compact > p {
+  margin: 0;
+  flex: 1 1 auto;
 }
 
 .alert--error {

@@ -1013,3 +1013,135 @@
   font-size: 0.8125rem;
   line-height: 1.6;
 }
+
+/* ==========================================================================
+   主催一覧（SCR-ORG-01）。溜まった催しを探す道具と、主要な操作の置き場所。
+   ========================================================================== */
+
+/* 画面下に固定する操作の帯。本文の最後に、帯の高さぶんの余白を残す。 */
+.has-action-dock {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+
+/* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空けて、
+   帯がフッターの文字に重ならないようにする。 */
+body:has(.action-dock) .site-footer {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+
+.action-dock {
+  position: fixed;
+  z-index: 40;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 -10px 24px -20px rgb(26 25 22 / 0.5);
+}
+
+.action-dock__inner {
+  display: flex;
+  gap: 0.5rem;
+  width: min(100%, var(--width-page));
+  margin: 0 auto;
+  padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* 390px では 2 つで 1 段。作成は主の操作なので広く取る。 */
+.action-dock .btn {
+  flex: 1 1 0;
+  min-height: 2.5rem;
+}
+
+.action-dock .btn--primary {
+  flex-grow: 1.4;
+}
+
+@media (min-width: 640px) {
+  .action-dock__inner {
+    justify-content: flex-end;
+  }
+
+  .action-dock .btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* 一覧の絞り込み。状態・開催日の範囲・過去の表示をまとめる。
+   狭い画面では 2 列に折り返し、640px からは 1 行に並べる。 */
+.list-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.list-filters__field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.list-filters__label {
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.list-filters__check {
+  align-self: center;
+  font-size: 0.8125rem;
+}
+
+@media (min-width: 640px) {
+  .list-filters {
+    grid-template-columns: repeat(4, minmax(0, max-content));
+    justify-content: start;
+    align-items: end;
+    gap: 0.75rem;
+  }
+
+  .list-filters__field .select,
+  .list-filters__field .input {
+    width: auto;
+    min-width: 9.5rem;
+  }
+
+  .list-filters__check {
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* 一覧の下余白。見出しと絞り込みの下に、カードと空状態を続ける。 */
+.section > .event-card-grid,
+.section > .empty {
+  margin-top: 0.75rem;
+}
+
+/* ページャー。件数の説明と、前後の移動を 1 行に置く。 */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pager__status {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.pager__buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pager__count {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}

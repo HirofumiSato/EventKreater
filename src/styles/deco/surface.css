@@ -1481,11 +1481,14 @@
   border-top: 1px solid var(--color-line);
 }
 
-/* 指で押す一覧なので、狭い幅でも的は 36px 以上にする。
+/* 指で押す一覧なので、狭い幅でも的は 28px を下回らせない。
+   一覧は 1 枚あたりの情報が多く、操作の帯が高いと催しの情報が押し出される。
+   文字を 1 段小さくし、上下の余白を詰めて 1 段ぶんの高さに収める。
    左右の余白は最小にする。390px では 1 マス 78px で、12px の「参加者を見る」が
    72px を占めるため、4px ずつ取ると文字が枠からはみ出す。 */
 .event-card > .event-card__actions .btn {
-  min-height: 2.25rem;
+  min-height: 1.75rem;
+  padding-block: 0.0625rem;
   padding-inline: 0.125rem;
   font-size: 0.75rem;
   white-space: nowrap;
@@ -1553,13 +1556,20 @@
   padding: 0.75rem 0 0;
 }
 
-/* 取り消せない操作。共有の設定と同じ列に置かず、罫線で分ける。 */
+/* 取り消せない操作。共有の設定と同じ列に置かず、罫線で分ける。
+   一時停止（戻せる）と削除（戻せない）は、ボタンの色を変えて並べる。 */
 .event-card__danger {
   display: grid;
   gap: 0.5rem;
   justify-items: start;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-line);
+}
+
+.event-card__danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 /* 名簿の要約。数は 1 か所にまとめ、表と二重に置かない。 */

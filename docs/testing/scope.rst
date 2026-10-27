@@ -147,7 +147,7 @@
 
 .. count-start
 
-58 ファイル、``it`` は 718 件です。内訳は ``tests/unit/`` が 45 ファイル 644 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+59 ファイル、``it`` は 730 件です。内訳は ``tests/unit/`` が 46 ファイル 656 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -264,13 +264,17 @@
      - 接続元 IP の採り方。``cf-connecting-ip`` → ``fly-client-ip`` → ``x-forwarded-for`` の末尾、詐称の無視
      - 該当なし（共通処理）
    * - ``tests/unit/draft-lifecycle.test.ts``
-     - 2
-     - 下書きは受付停止にできない（409 ``DRAFT_CANNOT_STOP``）
-     - SCR-ORG-02
+     - 4
+     - 下書きは受付停止にできない（409 ``DRAFT_CANNOT_STOP``）。公開の再開は受付停止だけ（409 ``NOT_CLOSED``）
+     - SCR-ORG-02 / SCR-ORG-01
    * - ``tests/unit/draft-save.test.ts``
      - 12
      - 下書き保存の必須項目、保存と同時の公開状態の変更を断る、次に開くステップの判定
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/event-filters.test.ts``
+     - 10
+     - 主催一覧の絞り込み（状態・過去・開催日）、10 件ずつのページ割り、日本時間の今日
+     - SCR-ORG-01
    * - ``tests/unit/flyer-download.test.ts``
      - 11
      - ダウンロードの URL と ``Content-Disposition``、拡張子の対応、ファイル名の整形と長さの上限
@@ -394,7 +398,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 644、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 644 件を実行して 74 件を skip します。
+件数の内訳は ``tests/unit/`` が 656、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 656 件を実行して 74 件を skip します。
 
 .. breakdown-end
 

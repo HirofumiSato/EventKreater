@@ -60,7 +60,7 @@
    -------------------------------------------------------------------------- */
 
 .deco.deco--tape-quiet .stat {
-  padding: 1rem 1.125rem;
+  padding: 0.375rem 0.75rem;
 }
 
 .deco.deco--tape-quiet .stat__label {
@@ -70,12 +70,12 @@
 }
 
 .deco.deco--tape-quiet .stat__value {
-  margin-top: 0.25rem;
+  margin-top: 0;
   color: var(--color-text);
   font-family: var(--font-maru), var(--font);
-  font-size: 1.625rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   border-bottom: 0;
 }
 
@@ -220,11 +220,36 @@
   background: var(--quiet-hover);
 }
 
-/* 状態の色は薄めず、面を白く抜く。色が意味を持つ行なので、地の色に負けさせない。 */
-.deco.deco--tape-quiet .badge,
+/* 状態の色は薄めず、面を白く抜く。色が意味を持つ行なので、地の色に負けさせない。
+   ただし枠と丸みは持たせない。押せるもの（`.btn`）は枠・塗り・丸みを持つので、
+   札が同じ形だと、押せるのか読めない。札は「小さな文字の色札」として置く。 */
+.deco.deco--tape-quiet .badge {
+  padding: 0.0625rem 0.375rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.deco.deco--tape-quiet .badge--sm {
+  padding: 0.0625rem 0.25rem;
+  font-size: 0.6875rem;
+}
+
 .deco.deco--tape-quiet .chip {
   border-width: 1px;
   box-shadow: none;
+}
+
+/* 主催一覧の絞り込み。一覧を読む前の道具なので、入力は 1 段小さくして
+   一覧の場所を奪わない（`.deco .input` の余白をここで上書きする）。 */
+.deco.deco--tape-quiet .list-filters .select,
+.deco.deco--tape-quiet .list-filters .input {
+  padding: 0.3125rem 0.5rem;
+  font-size: 0.8125rem;
 }
 
 .deco.deco--tape-quiet .roster-summary__item {

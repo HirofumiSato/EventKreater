@@ -144,7 +144,6 @@ export default function OrganizerDraftsPage() {
           status="DRAFT"
           busy={busyId === deletingId}
           onClose={() => setDeletingId(null)}
-          onStop={() => undefined}
           onDelete={() => void removeDraft(deletingId)}
         />
       )}

@@ -34,6 +34,16 @@ html.has-mockbar body {
   padding-bottom: 4.5rem;
 }
 
+/* 製品が画面下に固定の操作の帯（`.action-dock`）を持つ画面では、帯をその上へ逃がす。
+   製品の帯は本物の位置（画面の最下部）のまま撮り、モックの帯だけをよける。 */
+html.has-mockbar:not(.is-embed):has(.action-dock) body {
+  padding-bottom: 7rem;
+}
+
+html.has-mockbar:not(.is-embed):has(.action-dock) .mockbar {
+  bottom: 4.25rem;
+}
+
 /* 枠の中では帯を出さない。枠は本文だけを見るためのもの。 */
 html.is-embed .mockbar {
   display: none;

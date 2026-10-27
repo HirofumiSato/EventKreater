@@ -174,20 +174,25 @@ svg {
 /* ログイン中の利用者。
    スマホのバーには頭文字の札だけを出す。390px のバーは「ブランド・作成・メニュー」で
    埋まっているので、ここに名前や札を足すと横スクロールになる。
-   名前・役割・ログアウトはメニューの中に置き、余白のできる 1024px 以上でバーに開く。 */
+   名前・役割・ログアウトはメニューの中に置き、余白のできる 1024px 以上でバーに開く。
+
+   札はアカウントの顔なので、地を墨で塗り、文字を紙色で抜く。淡い山吹の丸だと
+   小さな点にしか見えず、押せる場所だと分からない。押している間（開いている間）は
+   朱に変えて、いま誰のメニューが開いているかを色でも示す。 */
 .site-user__avatar {
   display: inline-grid;
   flex: none;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 999px;
-  background: var(--pop-warm);
-  color: var(--tape-ink);
+  background: var(--color-text);
+  color: var(--color-surface);
   font-family: var(--font-maru), var(--font);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 /* 役割の札。色だけで区別せず、文字でも読ませる。 */
@@ -228,10 +233,14 @@ svg {
 }
 
 .site-user__button:hover .site-user__avatar {
-  box-shadow: 0 0 0 2px var(--color-border-strong);
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
 }
 
 .site-user__button[aria-expanded="true"] .site-user__avatar {
+  background: var(--color-primary);
+  color: #fff;
   box-shadow: 0 0 0 2px var(--color-text);
 }
 
