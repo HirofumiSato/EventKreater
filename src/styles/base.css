@@ -171,6 +171,77 @@ svg {
   display: none;
 }
 
+/* ログイン中の利用者。
+   スマホのバーには頭文字の札だけを出す。390px のバーは「ブランド・作成・メニュー」で
+   埋まっているので、ここに名前や札を足すと横スクロールになる。
+   名前・役割・ログアウトはメニューの中に置き、余白のできる 1024px 以上でバーに開く。 */
+.site-user__avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-family: var(--font-maru), var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 役割の札。色だけで区別せず、文字でも読ませる。 */
+.site-user__role {
+  display: inline-block;
+  flex: none;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--pop-warm-tint);
+  color: var(--pop-warm-deep);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.site-header__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+/* スマホのバーは頭文字だけで足りる。名前と札はメニュー側が持つ。 */
+.site-header__user > .site-user__role {
+  display: none;
+}
+
+/* `.btn` の display を打ち消すため、親を 1 段添える。 */
+.site-header__actions .site-header__logout {
+  display: none;
+}
+
+/* メニューの中の利用者。名前と札とログアウトを 1 行に置く。
+   上の罫線は `.site-nav` が持つので、ここでは引かない（二重線になる）。 */
+.site-nav__user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.75rem;
+}
+
+.site-nav__user-name {
+  font-weight: 500;
+}
+
+.site-nav__logout {
+  margin-inline-start: auto;
+  /* 指の的は 44px を下回らせない。`.btn--sm` のままだと 32px になる。 */
+  min-height: 2.75rem;
+}
+
 .site-menu-toggle {
   display: none;
   flex-direction: column;
@@ -297,6 +368,35 @@ svg {
     display: block;
     padding-block: 0.5rem;
     border-top: 1px solid var(--color-line);
+  }
+}
+
+/* 768px 以上はメニューが横に開く。メニュー側の利用者の行は隠す
+   （同じ内容を 2 か所に出さない）。768〜1023px のバーは
+   「ブランド・ナビ・作成・切り替え」で埋まっていて、頭文字 1 つでも
+   ナビが折り返してヘッダーが 2 段になるため、ここでは何も足さない。 */
+@media (min-width: 768px) {
+  .site-nav__user {
+    display: none;
+  }
+
+  .site-header__user {
+    display: none;
+  }
+}
+
+/* 1024px 以上。バーに余白ができるので、誰として入っているかを開く。 */
+@media (min-width: 1024px) {
+  .site-header__user {
+    display: inline-flex;
+  }
+
+  .site-header__user > .site-user__role {
+    display: inline-block;
+  }
+
+  .site-header__actions .site-header__logout {
+    display: inline-flex;
   }
 }
 

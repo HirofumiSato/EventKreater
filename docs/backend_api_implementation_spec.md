@@ -82,7 +82,7 @@ flowchart TD
 | `/api/v1/auth/google` | GET | SCR-PUB-02 | 不要 | Google 認可画面へリダイレクト（state と nonce を Cookie に保存）。`next` は許可した相対パスだけ |
 | `/api/v1/auth/google/callback` | GET | SCR-PUB-02 | Google 認可コード | ID トークン検証。同じ確認済みメールの会員へ `googleSub` を結ぶ。会員が無ければ電話番号確認へ進む |
 | `/api/v1/auth/logout` | POST | SCR-PUB-02 | 不要 | セッション行を失効させ、会員 Cookie を削除する |
-| `/api/v1/user/profile` | GET | SCR-PUB-03、SCR-PUB-08、SCR-PUB-11 | 会員必須 | 会員プロフィールと、主催者として使えるか（`isOrganizer` / `organizerCount`）。参加履歴は含めない |
+| `/api/v1/user/profile` | GET | SCR-PUB-03、SCR-PUB-08、SCR-PUB-11 | 会員必須 | 会員プロフィールと、主催者として使えるか（`isOrganizer` / `organizerCount`）、ヘッダーの出し分けに使う `platformRole`。参加履歴は含めない |
 | `/api/v1/user/profile` | PATCH | SCR-PUB-11 | 会員必須 | 表示名の変更。過去の参加者名と領収書の宛名は変えない |
 | `/api/v1/user/reauth` | POST | SCR-PUB-11 | 会員必須 | アカウント操作の確認番号を、登録済みのSMSまたはメールへ送る。セッションは発行しない |
 | `/api/v1/user/password` | POST | SCR-PUB-11 | 会員必須 | パスワードの変更。Google のみの会員は最初の設定に使う。他の端末のログインを切る |
@@ -1909,7 +1909,7 @@ export interface ProblemDetails {
 
 ### 8.4. GET `/api/v1/user/profile`（プロフィール）
 
-`auth_token` から会員 ID を取る。会員が無ければ 404。レスポンスは `user`（`id`、`email`、`name`、`createdAt`、`phoneVerified`、`phoneMasked`、`hasPassword`）と、幹事として 1 件でもイベントを持つか（`isOrganizer`）、その件数（`organizerCount`）である。主催者かどうかは `platformRole` ではなく、所有するイベントの有無で決める。`phoneMasked` は下4桁だけを出し（例 `090****1234`）、生の番号は返さない。`hasPassword` は Google のみの会員と、パスワードを設定済みの会員を画面で分けるために使う。
+`auth_token` から会員 ID を取る。会員が無ければ 404。レスポンスは `user`（`id`、`email`、`name`、`createdAt`、`phoneVerified`、`phoneMasked`、`hasPassword`、`platformRole`）と、幹事として 1 件でもイベントを持つか（`isOrganizer`）、その件数（`organizerCount`）である。主催者かどうかは `platformRole` ではなく、所有するイベントの有無で決める。`platformRole`（`MEMBER` / `ADMIN`）は、共通ヘッダーが管理者を別の並びにするためだけに返す。`phoneMasked` は下4桁だけを出し（例 `090****1234`）、生の番号は返さない。`hasPassword` は Google のみの会員と、パスワードを設定済みの会員を画面で分けるために使う。
 
 このエンドポイントは参加履歴を返さない。主催者用の画面（SCR-PUB-03）に、他会主催イベントへの参加履歴が混ざるのを防ぐためで、参加履歴は 8.4.1 の専用エンドポイントから取得する。
 
