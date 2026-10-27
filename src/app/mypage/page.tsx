@@ -98,7 +98,6 @@ export default function MyPage() {
   return (
     <div className="stack">
       <PageHeader
-        eyebrow="主催者"
         title="主催者マイページ"
         lead={<>{profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
         </>}
@@ -229,8 +228,8 @@ export default function MyPage() {
           <Link href="/account" className="btn btn--outline btn--sm">
             アカウント設定
           </Link>
-          <Link href="/participant" className="btn btn--outline btn--sm">
-            参加者として見る
+          <Link href={SITE.nav.participantSwitch.href} className="btn btn--outline btn--sm">
+            {SITE.nav.participantSwitch.label}
           </Link>
           <button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
             ログアウト

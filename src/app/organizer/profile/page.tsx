@@ -17,7 +17,6 @@ export default function OrganizerProfilePage() {
   return (
     <div className="stack">
       <PageHeader
-        eyebrow="主催者"
         title="公開プロフィール"
         lead="参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。"
       />

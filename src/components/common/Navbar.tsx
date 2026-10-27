@@ -4,7 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SITE } from "@/lib/site";
-import { type Viewer, siteNavConfig, viewerInitial, viewerRole, viewerRoleLabel } from "@/lib/site-nav";
+import {
+  type NavLink,
+  type Viewer,
+  siteNavConfig,
+  viewerInitial,
+  viewerRole,
+  viewerRoleLabel,
+} from "@/lib/site-nav";
 
 /**
  * 共通ヘッダー。
@@ -13,18 +20,20 @@ import { type Viewer, siteNavConfig, viewerInitial, viewerRole, viewerRoleLabel 
  * この部品は、決まった並びを描くことと、メニューの開閉だけを持つ。
  * 「未ログイン／参加者／主催者（参加者画面・主催者画面）／管理者」の 4 通りで
  * 並びが変わる。ログイン中はスマホのバーに頭文字の札を出し、誰として入っているかは
- * 役割の札と、メニューの中の名前で示す。
+ * 札を押して開くメニュー（名前・役割・行き先・ログアウト）で示す。
  *
- * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字・メニュー」で
- * 埋まるため、名前・役割・ログアウトはメニューの中に置く。1024px 以上のバーに余白が
- * できたら、頭文字・役割の札・ログアウトをバーへ開く。768〜1023px はナビと作成と
- * 切り替えで埋まっていて、頭文字 1 つでもナビが折り返すため、ヘッダーには出さない。
+ * 主催者画面はヘッダー直下の節（`OrganizerTabs`）が移動を担うので、バーのナビと
+ * 開閉ボタンは置かない。同じ行き先を 2 か所に出すと、どちらが現在地か読めなくなる。
+ *
+ * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字」で
+ * 埋まる。参加者画面と未ログインは、これにナビと開閉ボタンが加わる。
  */
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -61,17 +70,23 @@ export function Navbar() {
   // 画面を移ったらメニューは閉じる。
   useEffect(() => {
     setMenuOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
 
   // 開いている間だけ Esc と外側クリックを拾う。
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !userMenuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      setUserMenuOpen(false);
     };
     const onPointerDown = (event: PointerEvent) => {
       const header = headerRef.current;
-      if (header && !header.contains(event.target as Node)) setMenuOpen(false);
+      if (header && !header.contains(event.target as Node)) {
+        setMenuOpen(false);
+        setUserMenuOpen(false);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
@@ -79,15 +94,42 @@ export function Navbar() {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [menuOpen]);
+  }, [menuOpen, userMenuOpen]);
 
   const { links, primary, action } = siteNavConfig(pathname, viewer);
-  // 主要な入口と切り替えリンクが並ぶときだけ、切り替えを狭い幅でメニューへ退避させる。
-  const compactAction = Boolean(primary && action);
-  const menuAction = compactAction ? action : undefined;
   const role = viewer ? viewerRole(pathname, viewer) : null;
   const roleLabel = role ? viewerRoleLabel(role) : "";
   const initial = viewer ? viewerInitial(viewer.name) : "";
+  // 主催者画面は節（org-subnav）が移動を担う。バーのナビは重ねない。
+  const organizerView = role === "organizer";
+  // 並べる行き先が無い画面（主催者画面・アカウント設定）では、ナビと開閉ボタンを出さない。
+  const showNav = links.length > 0;
+  // 主要な入口と切り替えリンクが並ぶときだけ、切り替えを狭い幅でメニューへ退避させる。
+  const compactAction = Boolean(primary && action) && showNav && !organizerView;
+  const menuAction = compactAction ? action : undefined;
+
+  /**
+   * 頭文字の札を押して開くメニューの中身。
+   * 主催者画面では、バーから外した「参加者として見る」と「主催者マイページ」をここが受ける。
+   * 管理者は管理コンソールしか持たないので、会員向けの行き先を出さない。
+   */
+  const userMenuLinks: NavLink[] = [];
+  if (organizerView) {
+    if (action) userMenuLinks.push(action);
+    userMenuLinks.push(SITE.nav.mypage);
+  }
+  if (role !== "admin") userMenuLinks.push(SITE.nav.account);
+
+  /** 2 つのメニューは同時に開かない。開けると帯が重なって読めなくなる。 */
+  const toggleNav = () => {
+    setUserMenuOpen(false);
+    setMenuOpen((open) => !open);
+  };
+
+  const toggleUserMenu = () => {
+    setMenuOpen(false);
+    setUserMenuOpen((open) => !open);
+  };
 
   /** ログアウト。管理者も同じ会員セッションなので、公開側の入口 1 本で足りる。 */
   const logout = async () => {
@@ -97,6 +139,7 @@ export function Navbar() {
       await fetch("/api/v1/auth/logout", { method: "POST" });
       setViewer(null);
       setMenuOpen(false);
+      setUserMenuOpen(false);
       router.replace("/");
       router.refresh();
     } finally {
@@ -110,51 +153,35 @@ export function Navbar() {
         <Link href={SITE.nav.home.href} className="site-brand">
           {SITE.name}
         </Link>
-        <nav id="site-nav" className="site-nav" aria-label="サイト">
-          {viewer ? (
-            // スマホのメニュー先頭。誰として入っているかとログアウトをまとめる。
-            <div className="site-nav__user">
-              <span className="site-user__avatar" aria-hidden="true">
-                {initial}
-              </span>
-              <span className="site-nav__user-name">{viewer.name}</span>
-              <span className="site-user__role">{roleLabel}</span>
-              <button
-                type="button"
-                className="btn btn--outline btn--sm site-nav__logout"
-                onClick={() => void logout()}
-                disabled={loggingOut}
+        {showNav ? (
+          <nav id="site-nav" className="site-nav" aria-label="サイト">
+            {menuAction ? (
+              // 540px 以下でだけ出す。バーの幅が足りない端末の受け皿。
+              <div className="site-nav__action">
+                <Link href={menuAction.href} className="btn btn--outline btn--sm btn--block">
+                  {menuAction.label}
+                </Link>
+              </div>
+            ) : null}
+            {links.map((nav) => (
+              <Link
+                key={nav.href + nav.label}
+                href={nav.href}
+                className={`site-nav__link${pathname === nav.href ? " is-current" : ""}`}
+                aria-current={pathname === nav.href ? "page" : undefined}
               >
-                {SITE.action.logout}
-              </button>
-            </div>
-          ) : null}
-          {menuAction ? (
-            // 540px 以下でだけ出す。バーの幅が足りない端末の受け皿。
-            <div className="site-nav__action">
-              <Link href={menuAction.href} className="btn btn--outline btn--sm btn--block">
-                {menuAction.label}
+                {nav.label}
               </Link>
-            </div>
-          ) : null}
-          {links.map((nav) => (
-            <Link
-              key={nav.href + nav.label}
-              href={nav.href}
-              className={`site-nav__link${pathname === nav.href ? " is-current" : ""}`}
-              aria-current={pathname === nav.href ? "page" : undefined}
-            >
-              {nav.label}
-            </Link>
-          ))}
-        </nav>
+            ))}
+          </nav>
+        ) : null}
         <div className="site-header__actions">
           {primary ? (
             <Link href={primary.href} className="btn btn--outline btn--sm">
               {primary.label}
             </Link>
           ) : null}
-          {action ? (
+          {action && !organizerView ? (
             <Link
               href={action.href}
               className={`btn btn--outline btn--sm${compactAction ? " site-header__action" : ""}`}
@@ -163,35 +190,66 @@ export function Navbar() {
             </Link>
           ) : null}
           {viewer ? (
-            // スマホでは頭文字だけ。役割の札とログアウトは 1024px 以上で開く。
-            <div className="site-header__user">
-              <span className="site-user__avatar" aria-hidden="true">
-                {initial}
-              </span>
-              <span className="visually-hidden">{viewer.name}</span>
-              <span className="site-user__role">{roleLabel}</span>
+            <div className="site-user">
               <button
                 type="button"
-                className="btn btn--outline btn--sm site-header__logout"
-                onClick={() => void logout()}
-                disabled={loggingOut}
+                className="site-user__button"
+                aria-expanded={userMenuOpen}
+                aria-controls="site-user-menu"
+                aria-label={`${viewer.name}（${roleLabel}）のメニュー`}
+                onClick={toggleUserMenu}
               >
-                {SITE.action.logout}
+                <span className="site-user__avatar" aria-hidden="true">
+                  {initial}
+                </span>
               </button>
+              <div className="site-user-menu" id="site-user-menu" data-open={userMenuOpen ? "true" : "false"}>
+                <p className="site-user-menu__head">
+                  <span className="site-user__avatar" aria-hidden="true">
+                    {initial}
+                  </span>
+                  <span className="site-user-menu__name">{viewer.name}</span>
+                  <span className="site-user__role">{roleLabel}</span>
+                </p>
+                {userMenuLinks.length > 0 ? (
+                  <nav className="site-user-menu__links" aria-label="アカウント">
+                    {userMenuLinks.map((nav) => (
+                      <Link
+                        key={nav.href + nav.label}
+                        href={nav.href}
+                        className="site-user-menu__link"
+                        aria-current={pathname === nav.href ? "page" : undefined}
+                      >
+                        {nav.label}
+                      </Link>
+                    ))}
+                  </nav>
+                ) : null}
+                <button
+                  type="button"
+                  className="site-user-menu__logout"
+                  onClick={() => void logout()}
+                  disabled={loggingOut}
+                >
+                  {SITE.action.logout}
+                </button>
+              </div>
             </div>
           ) : null}
-          <button
-            type="button"
-            className="site-menu-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="site-nav"
-            aria-label="メニュー"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span className="site-menu-toggle__bar" aria-hidden="true" />
-            <span className="site-menu-toggle__bar" aria-hidden="true" />
-            <span className="site-menu-toggle__bar" aria-hidden="true" />
-          </button>
+          {showNav ? (
+            <button
+              type="button"
+              className="site-menu-toggle"
+              aria-expanded={menuOpen}
+              aria-controls="site-nav"
+              aria-label="メニュー"
+              onClick={toggleNav}
+            >
+              <span className="site-menu-toggle__bar" aria-hidden="true" />
+              <span className="site-menu-toggle__bar" aria-hidden="true" />
+              <span className="site-menu-toggle__bar" aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
       </div>
     </header>

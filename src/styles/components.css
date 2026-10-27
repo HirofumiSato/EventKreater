@@ -180,6 +180,11 @@
   gap: 1rem;
 }
 
+/* 主催一覧の要約。件数だけなので、狭い画面でも 2 つを横に並べて縦を取らない。 */
+.stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .card,
 .stat,
 .panel,
@@ -586,6 +591,21 @@
 .btn--ghost:hover {
   background: transparent;
   color: var(--color-text);
+}
+
+/* 一覧の中で 1 つだけ目立たせる操作（主催一覧の「編集」）。
+   主ボタン（朱塗り・白文字）と同じ濃さにすると画面の主操作と競合するので、
+   塗りは淡く、文字と縁だけを主色にする。 */
+.btn--accent {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.btn--accent:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btn--danger {
@@ -1661,12 +1681,6 @@ fieldset.field {
 
 
 
-
-@media (min-width: 640px) {
-  .stat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 @media (min-width: 768px) {
   .card-grid {

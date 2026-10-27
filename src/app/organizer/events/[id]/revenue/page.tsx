@@ -74,7 +74,6 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
   return (
     <div className="stack">
       <PageHeader
-        eyebrow="主催者"
         title="売上の内訳"
         lead={<>{event.title}。{event.sortDate} 開催・{STATUS_LABELS[event.status]}</>}
         actions={<><Link

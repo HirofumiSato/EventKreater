@@ -86,7 +86,6 @@ export default function OrganizerRevenuePage() {
   return (
     <div className="stack">
       <PageHeader
-        eyebrow="主催者"
         title="売上"
         lead="出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。"
         actions={<><Link href="/organizer/events" className="btn btn--outline btn--sm">

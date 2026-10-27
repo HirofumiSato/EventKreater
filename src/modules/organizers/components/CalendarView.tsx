@@ -80,7 +80,7 @@ export function CalendarView() {
 
   return (
     <div className="stack">
-      <PageHeader eyebrow="主催者" title="カレンダー" lead="開催日ごとに並びます。日付を押すと、その日の催しが出ます。" />
+      <PageHeader title="カレンダー" lead="開催日ごとに並びます。日付を押すと、その日の催しが出ます。" />
 
       {error && (
         <Alert tone="warning">

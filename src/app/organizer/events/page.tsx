@@ -106,11 +106,10 @@ function OrganizerEventsScreen() {
 
   const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
   const closedCount = events.filter((event) => event.status === "CLOSED").length;
-  const attendingTotal = events.reduce((total, event) => total + event.stats.attendingCount, 0);
 
   return (
     <div className="stack">
-      <PageHeader eyebrow="主催者" title="主催イベント一覧" lead="作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。" />
+      <PageHeader title="主催イベント一覧" />
 
       {/* 主催一覧・カレンダー・売上・プロフィールは主催者の節（org-subnav）と重ねない。 */}
       <div className="panel__actions">
@@ -163,22 +162,17 @@ function OrganizerEventsScreen() {
               <span className="stat__unit">件</span>
             </p>
           </div>
-          <div className="stat">
-            <p className="stat__label">参加</p>
-            <p className="stat__value">
-              {attendingTotal}
-              <span className="stat__unit">人</span>
-            </p>
-          </div>
         </div>
       )}
 
       <Section>
-        <SectionHead title="公開中" />
+        <SectionHead title="一覧" />
         {!loading && !error && events.length === 0 && (
           <EmptyState as="div" style={{ marginTop: "1rem" }}>
             <p className="empty__title">
-              {draftCount > 0 ? `公開中の催しはありません。下書きが${draftCount}件あります。` : "まだ主催イベントがありません。"}
+              {draftCount > 0
+                ? `公開中・受付停止の催しはありません。下書きが${draftCount}件あります。`
+                : "まだ主催イベントがありません。"}
             </p>
             {draftCount > 0 && (
               <p className="empty__body">
@@ -190,7 +184,7 @@ function OrganizerEventsScreen() {
             )}
           </EmptyState>
         )}
-        <div className="card-grid" style={{ marginTop: "1rem" }}>
+        <div className="event-card-grid" style={{ marginTop: "1rem" }}>
           {events.map((event) => (
             <EventCard
               key={event.id}

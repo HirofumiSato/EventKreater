@@ -44,11 +44,6 @@ export default function ParticipantHomePage() {
     };
   }, []);
 
-  const logout = async () => {
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
-
   if (error) {
     return (
       <div className="page--narrow stack">
@@ -80,9 +75,6 @@ export default function ParticipantHomePage() {
         eyebrow="参加者"
         title={<>こんにちは、{profile.user.name}さん</>}
         lead={<>{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</>}
-        actions={<><button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
-            ログアウト
-          </button></>}
       />
 
       {/* 数は 4 つ。モックの「次の支払い」は実装に持つ金額が無いので出さない。 */}

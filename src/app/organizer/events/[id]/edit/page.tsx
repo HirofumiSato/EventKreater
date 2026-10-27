@@ -161,7 +161,6 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
   return (
     <div className="page--form stack">
       <div>
-        <p className="eyebrow">主催者</p>
         <h1 className="page-title">イベントの編集</h1>
         {form.title ? (
           <p className="page-lead">

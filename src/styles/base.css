@@ -205,41 +205,128 @@ svg {
   white-space: nowrap;
 }
 
-.site-header__user {
+/* ログイン中の利用者。頭文字の札を押すと、アカウントの用事をまとめたメニューが開く。
+   バーに置くのは札 1 つだけにして、名前・役割・行き先・ログアウトはメニューの中へ収める。
+   名前と役割をバーに出さないので、狭い端末でもヘッダーが 1 段のまま収まる。 */
+.site-user {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  min-width: 0;
 }
 
-/* スマホのバーは頭文字だけで足りる。名前と札はメニュー側が持つ。 */
-.site-header__user > .site-user__role {
+/* 札は 1.75rem のままだと指の的が 28px になる。押せる範囲だけ 44px に広げる。 */
+.site-user__button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+}
+
+.site-user__button:hover .site-user__avatar {
+  box-shadow: 0 0 0 2px var(--color-border-strong);
+}
+
+.site-user__button[aria-expanded="true"] .site-user__avatar {
+  box-shadow: 0 0 0 2px var(--color-text);
+}
+
+.site-user__button:focus-visible {
+  outline-offset: -2px;
+}
+
+/* メニューは札の真下に、右端を揃えて開く。狭い端末で画面からはみ出さないよう、
+   幅は 15rem を上限に、余白の分だけ縮める。 */
+.site-user-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 0.25rem);
+  right: 0;
   display: none;
+  width: min(15rem, calc(100vw - 2rem));
+  padding: 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
 }
 
-/* `.btn` の display を打ち消すため、親を 1 段添える。 */
-.site-header__actions .site-header__logout {
-  display: none;
+.site-user-menu[data-open="true"] {
+  display: block;
 }
 
-/* メニューの中の利用者。名前と札とログアウトを 1 行に置く。
-   上の罫線は `.site-nav` が持つので、ここでは引かない（二重線になる）。 */
-.site-nav__user {
+.site-user-menu__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.375rem;
-  padding-block: 0.75rem;
+  padding: 0.25rem 0.25rem 0.625rem;
+  border-bottom: 1px solid var(--color-line);
 }
 
-.site-nav__user-name {
+.site-user-menu__name {
+  /* 長い名前でも札を押し出さない。折り返して 2 行にしてよい。 */
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: 500;
 }
 
-.site-nav__logout {
-  margin-inline-start: auto;
-  /* 指の的は 44px を下回らせない。`.btn--sm` のままだと 32px になる。 */
+.site-user-menu__links {
+  display: grid;
+  gap: 0.125rem;
+  padding-block: 0.375rem;
+}
+
+.site-user-menu__link {
+  display: flex;
+  align-items: center;
   min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.site-user-menu__link:hover,
+.site-user-menu__link[aria-current="page"] {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.site-user-menu__link[aria-current="page"] {
+  font-weight: 700;
+}
+
+/* ログアウトだけは行き先ではなく操作なので、罫線で分ける。 */
+.site-user-menu__logout {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.125rem;
+  padding-inline: 0.5rem;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.site-user-menu__logout:hover {
+  color: var(--color-text);
+}
+
+.site-user-menu__logout:disabled {
+  color: var(--color-text-faint);
+  cursor: not-allowed;
 }
 
 .site-menu-toggle {
@@ -368,35 +455,6 @@ svg {
     display: block;
     padding-block: 0.5rem;
     border-top: 1px solid var(--color-line);
-  }
-}
-
-/* 768px 以上はメニューが横に開く。メニュー側の利用者の行は隠す
-   （同じ内容を 2 か所に出さない）。768〜1023px のバーは
-   「ブランド・ナビ・作成・切り替え」で埋まっていて、頭文字 1 つでも
-   ナビが折り返してヘッダーが 2 段になるため、ここでは何も足さない。 */
-@media (min-width: 768px) {
-  .site-nav__user {
-    display: none;
-  }
-
-  .site-header__user {
-    display: none;
-  }
-}
-
-/* 1024px 以上。バーに余白ができるので、誰として入っているかを開く。 */
-@media (min-width: 1024px) {
-  .site-header__user {
-    display: inline-flex;
-  }
-
-  .site-header__user > .site-user__role {
-    display: inline-block;
-  }
-
-  .site-header__actions .site-header__logout {
-    display: inline-flex;
   }
 }
 

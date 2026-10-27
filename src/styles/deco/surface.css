@@ -1383,6 +1383,20 @@
   background: var(--color-surface);
 }
 
+/* 主催一覧の並び。チラシの列（4.5rem）と本文を並べても詰まらない幅で、2 枚ずつ置く。
+   3 列にすると 768〜1023px でカードが 224〜309px になり、チラシの隣の本文が
+   100px 台まで潰れて、催し名も操作も折り返す。 */
+.event-card-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .event-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 640px) {
   .event-card {
     grid-template-columns: 4.5rem minmax(0, 1fr);
@@ -1445,20 +1459,107 @@
   font-size: 0.75rem;
 }
 
+/* 行（`Rows` の aside）に置く操作。ボタンを横に並べ、幅が足りなければ折り返す。 */
 .event-card__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-/* 編集にかかわる操作は、見るだけの操作と混ぜない。右端へ寄せ、罫線で区切る。 */
+/* カードの操作。押す的を揃え、段数はカードの幅で決める。
+   スマホ（390px でカード 358px）は 4 つを 1 段に収める。2×2 にすると操作列だけで
+   80px を超え、催しの情報より操作が場所を取る。文字を 1 段小さくし、左右の余白を詰める。
+   カードが 1 枚で全幅になる 640〜899px は、標準の大きさのまま 4 つを 1 段。
+   一覧が 2 列になる 900px 以上（カード 410〜488px）は、標準の大きさでは 1 段に
+   収まらないので 2×2 に戻す。
+   `.event-card__actions` は行（`Rows` の aside）でも使うので、カード直下だけに効かせる。 */
+.event-card > .event-card__actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-line);
+}
+
+/* 指で押す一覧なので、狭い幅でも的は 36px 以上にする。
+   左右の余白は最小にする。390px では 1 マス 78px で、12px の「参加者を見る」が
+   72px を占めるため、4px ずつ取ると文字が枠からはみ出す。 */
+.event-card > .event-card__actions .btn {
+  min-height: 2.25rem;
+  padding-inline: 0.125rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .event-card > .event-card__actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .event-card > .event-card__actions .btn {
+    min-height: 2.5rem;
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .event-card > .event-card__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 折りたたみは操作の下に置く。チラシがある幅では本文の列に揃え、
+   チラシが無い（1 列の）カードでは全幅に置く。 */
+@media (min-width: 640px) {
+  .event-card > .event-card__fold {
+    grid-column: 2;
+  }
+
+  .event-card--no-thumb > .event-card__fold {
+    grid-column: 1;
+  }
+}
+
+/* 見る系と編集系のまとまりは DOM（親）が持っている。格子の中では箱を作らず、
+   4 つを同じ大きさの升として並べる。右寄せと縦罫線は、折り返した瞬間に
+   片側だけ線が残って崩れるので使わない。 */
 .event-card__actions-edit {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  margin-left: auto;
-  padding-left: 0.625rem;
-  border-left: 1px solid var(--color-border);
+  display: contents;
+}
+
+/* カードの中の折りたたみ。面を重ねず、補助操作の 1 行として置く。
+   箱を重ねると、どこまでが催しの情報か読めなくなる。 */
+.deco .event-card .fold {
+  margin-top: 0.875rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.deco .event-card .fold__summary {
+  padding: 0.5rem 0;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.deco .event-card .fold[open] > .fold__summary {
+  border-bottom: 0;
+}
+
+.deco .event-card .fold__body {
+  padding: 0.75rem 0 0;
+}
+
+/* 取り消せない操作。共有の設定と同じ列に置かず、罫線で分ける。 */
+.event-card__danger {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
 }
 
 /* 名簿の要約。数は 1 か所にまとめ、表と二重に置かない。 */
