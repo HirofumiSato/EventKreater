@@ -1467,21 +1467,40 @@
 }
 
 /* カードの操作。押す的を揃え、段数はカードの幅で決める。
-   390px（カード 358px）は 2×2、カードが 1 枚で全幅になる 640〜899px は 4 つを 1 段、
-   一覧が 2 列になる 900px 以上（カード 410〜488px）は 2×2 に戻す。
-   auto-fit に任せると、4 つのうち 3 つが 1 段目・1 つだけが 2 段目に落ちる幅が出る。
+   スマホ（390px でカード 358px）は 4 つを 1 段に収める。2×2 にすると操作列だけで
+   80px を超え、催しの情報より操作が場所を取る。文字を 1 段小さくし、左右の余白を詰める。
+   カードが 1 枚で全幅になる 640〜899px は、標準の大きさのまま 4 つを 1 段。
+   一覧が 2 列になる 900px 以上（カード 410〜488px）は、標準の大きさでは 1 段に
+   収まらないので 2×2 に戻す。
    `.event-card__actions` は行（`Rows` の aside）でも使うので、カード直下だけに効かせる。 */
 .event-card > .event-card__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
   padding-top: 0.875rem;
   border-top: 1px solid var(--color-line);
+}
+
+/* 指で押す一覧なので、狭い幅でも的は 36px 以上にする。
+   左右の余白は最小にする。390px では 1 マス 78px で、12px の「参加者を見る」が
+   72px を占めるため、4px ずつ取ると文字が枠からはみ出す。 */
+.event-card > .event-card__actions .btn {
+  min-height: 2.25rem;
+  padding-inline: 0.125rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 @media (min-width: 640px) {
   .event-card > .event-card__actions {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .event-card > .event-card__actions .btn {
+    min-height: 2.5rem;
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -1491,9 +1510,16 @@
   }
 }
 
-/* 指で押す一覧なので、狭い幅でも的を 40px 以上にする。 */
-.event-card > .event-card__actions .btn {
-  min-height: 2.5rem;
+/* 折りたたみは操作の下に置く。チラシがある幅では本文の列に揃え、
+   チラシが無い（1 列の）カードでは全幅に置く。 */
+@media (min-width: 640px) {
+  .event-card > .event-card__fold {
+    grid-column: 2;
+  }
+
+  .event-card--no-thumb > .event-card__fold {
+    grid-column: 1;
+  }
 }
 
 /* 見る系と編集系のまとまりは DOM（親）が持っている。格子の中では箱を作らず、

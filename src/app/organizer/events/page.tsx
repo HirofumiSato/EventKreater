@@ -109,7 +109,7 @@ function OrganizerEventsScreen() {
 
   return (
     <div className="stack">
-      <PageHeader eyebrow="主催者" title="主催イベント一覧" lead="作ったイベントと、参加者の出欠をまとめて見られます。下書きは「下書き」に分けています。" />
+      <PageHeader title="主催イベント一覧" />
 
       {/* 主催一覧・カレンダー・売上・プロフィールは主催者の節（org-subnav）と重ねない。 */}
       <div className="panel__actions">
@@ -166,7 +166,7 @@ function OrganizerEventsScreen() {
       )}
 
       <Section>
-        <SectionHead title="一覧" note="公開中と受付停止を、作った新しい順に並べます。" />
+        <SectionHead title="一覧" />
         {!loading && !error && events.length === 0 && (
           <EmptyState as="div" style={{ marginTop: "1rem" }}>
             <p className="empty__title">

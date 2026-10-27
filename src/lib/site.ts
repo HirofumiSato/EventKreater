@@ -31,7 +31,7 @@ export const SITE = {
     terms: { href: "/terms", label: "利用規約" },
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。
     organizerSwitch: { href: "/organizer/events", label: "主催者として使う" },
-    participantSwitch: { href: "/participant", label: "参加者として見る" },
+    participantSwitch: { href: "/participant", label: "参加者ログイン" },
     // 管理者だけに出す。公開画面からは辿れない（`/console` は noindex）。
     console: { href: "/console", label: "管理コンソール" },
   },

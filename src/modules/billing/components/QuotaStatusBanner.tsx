@@ -22,17 +22,18 @@ function dateLabel(iso: string): string {
 
 function subscribedMessage(quota: UserQuota, discountLabel: string | null): string {
   const price = quota.subscriptionPlan === "MONTHLY_8" ? "980円" : "2,980円";
+  // 日付入りの割引は、いつまで何円で使えるかが要るので残す。通常の自動更新は
+  // 一覧の見出しでは繰り返さない（解約の条件は契約の画面が持つ）。
   const detail = discountLabel
     ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
-    : `毎月の自動更新です。解約するまで継続します。`;
+    : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
     const remaining = Math.max(0, quota.remainingMonthly ?? 0);
-    const used = `今月は ${quota.monthlyEventCount ?? 0}/${quota.monthlyLimit ?? 8} 回`;
-    const tail =
+    const head =
       remaining === 0
-        ? "今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
-        : `あと ${remaining}回つくれます。`;
-    return `月8回プランに加入中です。${used}。${tail}${detail}`;
+        ? "月8回プランに加入中。今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
+        : `月8回プランに加入中。今月は残り ${remaining} 回です。`;
+    return `${head}${detail}`;
   }
   return `作り放題に加入中です。イベント作成の回数は数えません。${detail}`;
 }

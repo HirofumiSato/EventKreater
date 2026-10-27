@@ -593,6 +593,21 @@
   color: var(--color-text);
 }
 
+/* 一覧の中で 1 つだけ目立たせる操作（主催一覧の「編集」）。
+   主ボタン（朱塗り・白文字）と同じ濃さにすると画面の主操作と競合するので、
+   塗りは淡く、文字と縁だけを主色にする。 */
+.btn--accent {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.btn--accent:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .btn--danger {
   border-color: var(--color-danger-solid);
   background: var(--color-danger-solid);

@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 
 type PageHeaderProps = {
-  /** 画面の種類（「主催者」「参加者」など）。 */
-  eyebrow: ReactNode;
+  /**
+   * 画面の種類（「主催者」「参加者」など）。
+   * 主催者画面はヘッダー直下の節（`OrganizerTabs`）が役割を示すので、省く。
+   */
+  eyebrow?: ReactNode;
   /** `h1` に出す題。 */
   title: ReactNode;
   /** 題の下の説明。 */
@@ -20,7 +23,7 @@ type PageHeaderProps = {
 export function PageHeader({ eyebrow, title, lead, actions }: PageHeaderProps) {
   return (
     <div>
-      <p className="eyebrow">{eyebrow}</p>
+      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
       <h1 className="page-title">{title}</h1>
       {lead ? <p className="page-lead">{lead}</p> : null}
       {actions ? <div className="panel__actions">{actions}</div> : null}

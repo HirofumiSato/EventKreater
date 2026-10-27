@@ -179,7 +179,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
   return (
     <div className="stack">
-      <PageHeader eyebrow="主催者" title="参加者名簿" lead={<>{data.event.title}</>} />
+      <PageHeader title="参加者名簿" lead={<>{data.event.title}</>} />
 
       <div className="roster-summary">
         <div className="roster-summary__item">

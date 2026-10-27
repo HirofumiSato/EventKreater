@@ -72,7 +72,6 @@ export default function OrganizerReceiptPage({ params }: { params: { id: string;
   return (
     <div className="stack">
       <div className="no-print">
-        <p className="eyebrow">主催者</p>
         <h1 className="page-title">領収書</h1>
         <p className="page-lead">
           {receipt.eventTitle} ／ {receipt.addressee} さん
