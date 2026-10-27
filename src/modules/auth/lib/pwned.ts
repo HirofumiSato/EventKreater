@@ -24,7 +24,7 @@ export async function assertPasswordNotBreached(password: string): Promise<void>
       throw new ProblemDetailException({
         status: 400,
         title: "Validation Error",
-        detail: "このパスワードは漏えいが確認されています。別のパスワードを使ってください。",
+        detail: "このパスワードは流出が確認されています。別のパスワードを使ってください。",
       });
     }
   } catch (error) {

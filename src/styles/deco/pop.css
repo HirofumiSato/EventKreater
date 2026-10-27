@@ -145,11 +145,19 @@
   box-shadow: 2px 2px 0 rgb(26 25 22 / 0.1);
 }
 
+/* 「出欠」などの小見出しは、紙に貼った小さな札にする。
+   <p> のまま塗ると横幅いっぱいの帯になり、見出しと競ってしまう。 */
 .deco.deco--tape-shadow .eyebrow {
+  display: inline-block;
   border: 0;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 4px;
   background: var(--pop-warm);
   color: var(--tape-ink);
   box-shadow: 2px 2px 0 rgb(26 25 22 / 0.16);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
   transform: rotate(-1.5deg);
 }
 
@@ -162,9 +170,11 @@
    同じ page--form でも帯にしない。 */
 .deco.deco--tape-shadow .page--form:has(.event-step) .eyebrow {
   /* 傾けた分だけ上下にはみ出す。見出しに重ならないよう、下に余白を足す。 */
+  display: block;
   margin-block: 0.5rem 2.25rem;
   margin-inline: calc(50% - 50vw);
   padding-block: 0.5rem;
+  padding-inline: 0;
   border: 0;
   border-radius: 0;
   background: var(--tape-ink);
@@ -246,9 +256,10 @@
 }
 
 /* 告知ページの最後に置く主催者への誘い。主役は出欠なので、
-   朱のボタンではなく、山吹の札と紙の面で存在だけを残す。 */
+   朱のボタンではなく、山吹の札と白い紙の面で存在だけを残す。
+   枠を消すとクリームの地に沈むため、ここでは border を残す。 */
 .deco .org-invite {
-  border: 0;
+  border: 1px solid var(--color-border-strong);
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
 }
 

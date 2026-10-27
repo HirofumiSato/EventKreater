@@ -669,7 +669,8 @@
   line-height: 1.35;
 }
 
-/* 主催者名はプロフィールへの入口。青は使わず、下線だけで押せることを示す。 */
+/* 主催者名はプロフィールへの入口。リンクだと分かるよう、青文字にする。
+   クリーム地でも読める濃さを選び、色だけでなく下線も残す。 */
 .event-sheet__host {
   margin-top: 0.25rem;
   color: var(--color-text-subtle);
@@ -679,15 +680,15 @@
 
 .event-sheet__host a,
 .event-sheet__host a:visited {
-  color: inherit;
+  color: #1565c0;
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: var(--color-border-strong);
+  text-decoration-color: currentColor;
   text-underline-offset: 0.22em;
 }
 
 .event-sheet__host a:hover {
-  color: var(--color-text);
+  color: #0d47a1;
   text-decoration-color: currentColor;
 }
 
@@ -756,6 +757,11 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background: var(--color-surface);
+}
+
+/* 見出しに貼る札は傾いている。下の見出しと重ならないよう、間を空ける。 */
+.rsvp .eyebrow {
+  margin-bottom: 0.5rem;
 }
 
 .rsvp__title {
@@ -1055,14 +1061,15 @@
 }
 
 /* 主催者への誘い。出欠と共有の邪魔をしないよう、本文の最後に 1 枚だけ置く。
-   弱すぎると気づかれず、強すぎると出欠の導線と競合する。 */
+   弱すぎると気づかれず、強すぎると出欠の導線と競合する。
+   地のクリームと近い色で塗ると境目が消えるので、白い紙にして枠で立たせる。 */
 .org-invite {
   margin-top: 2rem;
   margin-bottom: 1rem;
   padding: 1.125rem 1.125rem 1.25rem;
-  border: 1px solid #ecd8b4;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-2xl);
-  background: linear-gradient(180deg, #fff8e9, #fff3dc);
+  background: #fff;
 }
 
 .org-invite__tag {

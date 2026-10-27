@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 78
-- エンドポイント（メソッド × パス）: 94
-- 仕様書に記載: 88
+- ルートファイル: 79
+- エンドポイント（メソッド × パス）: 95
+- 仕様書に記載: 89
 - 実装のみ（仕様書に記載なし）: 6
 - 仕様書のみ（実装なし）: 0
 
@@ -48,6 +48,7 @@
 | POST | `/api/v1/flyer-assets` | なし | あり | `src/app/api/v1/flyer-assets/route.ts` |
 | DELETE | `/api/v1/flyer-assets/[id]` | なし | なし | `src/app/api/v1/flyer-assets/[id]/route.ts` |
 | GET | `/api/v1/flyer-assets/[id]/image` | なし | あり | `src/app/api/v1/flyer-assets/[id]/image/route.ts` |
+| GET | `/api/v1/flyer-assets/[id]/pdf` | なし | あり | `src/app/api/v1/flyer-assets/[id]/pdf/route.ts` |
 | POST | `/api/v1/flyers/candidates` | なし | あり | `src/app/api/v1/flyers/candidates/route.ts` |
 | GET | `/api/v1/flyers/candidates/[id]` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/route.ts` |
 | POST | `/api/v1/flyers/candidates/[id]/layouts` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/layouts/route.ts` |

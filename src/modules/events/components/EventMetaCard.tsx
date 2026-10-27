@@ -15,7 +15,6 @@ interface EventMetaCardProps {
     | "rainPolicy"
     | "capacity"
     | "attendingCount"
-    | "waitlistCount"
     | "status"
     | "rsvpDeadline"
     | "rsvpOpen"
@@ -28,7 +27,6 @@ interface EventMetaCardProps {
 export function EventMetaCard({ event }: EventMetaCardProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
   const remaining = event.capacity === null ? null : Math.max(0, event.capacity - event.attendingCount);
-  const ratio = event.capacity ? Math.min(100, Math.round((event.attendingCount / event.capacity) * 100)) : null;
   const owner = event.organizers.owner;
   const coHosts = event.organizers.coHosts;
 
@@ -130,21 +128,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             {remaining === 0 && "（満員）"}
           </dd>
         </div>
-        {event.waitlistCount > 0 && (
-          <div className="event-facts__row">
-            <dt>参加要望</dt>
-            <dd>
-              {event.waitlistCount}名
-              {remaining === 0 && event.rsvpOpen && "（空きが出たら幹事が順番に承認します）"}
-            </dd>
-          </div>
-        )}
       </dl>
-      {ratio !== null && (
-        <div className="meter" aria-hidden="true">
-          <span style={{ width: `${ratio}%` }} />
-        </div>
-      )}
     </section>
   );
 }

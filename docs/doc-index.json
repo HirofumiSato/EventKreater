@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2430,
+      "lineCount": 2447,
       "headings": [
         {
           "level": 1,
@@ -2320,7 +2320,11 @@
         },
         {
           "level": 3,
-          "text": "9.5. POST /api/v1/flyer-assets（アップロードしたチラシの保存）"
+          "text": "9.5. GET /api/v1/flyer-assets/[id]/pdf（QR 付き A4 PDF）"
+        },
+        {
+          "level": 3,
+          "text": "9.6. POST /api/v1/flyer-assets（アップロードしたチラシの保存）"
         },
         {
           "level": 2,
@@ -2471,6 +2475,10 @@
         },
         {
           "path": "src/modules/events/lib/voice/parse.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/pdf.ts",
           "exists": true
         },
         {
@@ -3698,7 +3706,7 @@
       "sphinxDoc": "flyer/index",
       "format": "rst",
       "title": "AIチラシ自動生成",
-      "summary": "小規模店舗やイベント主催者が、催しの事実情報とデザインの型を渡すだけで、縦長（9:16）の告知画像を受け取れる Web API です。",
+      "summary": "小規模店舗やイベント主催者が、催しの事実情報とデザインの型を渡すだけで、A4 縦（1080×1528）の告知画像を受け取れる Web API です。",
       "preImplementation": false,
       "lineCount": 47,
       "headings": [
@@ -4492,7 +4500,7 @@
       "sphinxDoc": "flyer/rendering",
       "format": "rst",
       "title": "文字合成",
-      "summary": "基準キャンバスは 1080×1920 px です。背景が別サイズでも、中央を基準に覆うように拡大してからこのサイズへ切り出します。出力は品質 90 の JPEG です。",
+      "summary": "基準キャンバスは 1080×1528 px（A4 縦 210:297）です。背景が別サイズでも、中央を基準に覆うように拡大してからこのサイズへ切り出します。出力は品質 90 の JPEG です。",
       "preImplementation": false,
       "lineCount": 52,
       "headings": [
@@ -4783,7 +4791,7 @@
       "title": "プロジェクト企画要件定義書",
       "summary": "本ドキュメントは、システム要件定義および実装仕様の策定に先立ち、プロダクトの「目的関数（Evaluation Function）」を定義するものである。上位の企画要件を固定化することで、後続フェーズにおける機能の取捨選択と非機能要件の境界設定を可能にする。",
       "preImplementation": false,
-      "lineCount": 127,
+      "lineCount": 128,
       "headings": [
         {
           "level": 1,
@@ -4877,7 +4885,7 @@
       "sphinxDoc": "flyer/specs/system_requirements",
       "format": "markdown",
       "title": "システム要件定義書",
-      "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみでSNS告知に適した高品質チラシ画像（9:16 / 1:1）を即座に取得できるWebアプリケーションである。",
+      "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
       "lineCount": 287,
       "headings": [
@@ -5261,7 +5269,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1771,
+      "lineCount": 1772,
       "headings": [
         {
           "level": 1,
@@ -8132,7 +8140,7 @@
       "title": "定員に達した催しを「参加要望」として受け付け、幹事が承認できるようにする",
       "summary": "> 起票済み: [#20](https://github.com/HirofumiSato/EventKreater/issues/20)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 298,
+      "lineCount": 299,
       "headings": [
         {
           "level": 1,
@@ -9734,7 +9742,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 486,
+      "lineCount": 490,
       "headings": [
         {
           "level": 1,
@@ -9897,6 +9905,10 @@
         },
         {
           "path": "tests/unit/flyer-download.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-pdf.test.ts",
           "exists": true
         },
         {

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
@@ -45,12 +46,26 @@ function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
+function flyerPython() {
+  const win = process.platform === "win32";
+  const venvPython = path.join(
+    root,
+    "services",
+    "flyer",
+    ".venv",
+    win ? "Scripts" : "bin",
+    win ? "python.exe" : "python",
+  );
+  // パスに空白や日本語が混ざるので、venv があるときは引用符で囲む。
+  return existsSync(venvPython) ? JSON.stringify(venvPython) : "python";
+}
+
 if (await listening(8000)) {
   console.log("[flyer] 127.0.0.1:8000 は既に起動しています。そのまま使います（Docker の flyer かもしれません）");
 } else {
   launch(
     "flyer",
-    "python -m uvicorn src.main:app --host 127.0.0.1 --port 8000",
+    `${flyerPython()} -m uvicorn src.main:app --host 127.0.0.1 --port 8000`,
     path.join(root, "services", "flyer"),
   );
 }

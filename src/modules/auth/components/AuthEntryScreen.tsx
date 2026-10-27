@@ -47,7 +47,7 @@ const COPY: Record<
     lead: `${SITE.nav.createEvent.label}幹事の入口です。新規登録は、確認メールのリンクを開いたあと電話番号を確認します。同じ電話番号の会員が既にあるときは、新しいアカウントは作りません。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。`,
     submit: { register: "登録してはじめる", login: "ログイン" },
     switchToOther: { href: "/participant/login", label: "参加者としてログイン" },
-    otherLabel: "参加した催しの履歴を残したいだけなら",
+    otherLabel: "出欠の履歴を残すなら、",
   },
   participant: {
     title: { register: "参加者の会員登録", login: "参加者ログイン" },
@@ -55,7 +55,7 @@ const COPY: Record<
       "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠と領収書を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
     submit: { register: "登録して履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
-    otherLabel: "催しを開く幹事なら",
+    otherLabel: "催しを開く幹事なら、",
   },
 };
 
@@ -291,7 +291,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
               onChange={(event) => setPassword(event.target.value)}
               className="input"
             />
-            {mode === "register" && <p className="help">8文字以上。漏えいが確認されているパスワードは使えません。</p>}
+            {mode === "register" && <p className="help">8文字以上。流出が確認されたパスワードは使えません。</p>}
           </Field>
           {notice && <Alert tone="success">{notice}</Alert>}
           {error && <Alert tone="error">{error}</Alert>}
@@ -318,7 +318,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
           </a>
         </div>
         <div className="auth-alt">
-          {copy.otherLabel}{" "}
+          {copy.otherLabel}
           <Link href={copy.switchToOther.href} className="text-link">
             {copy.switchToOther.label}
           </Link>

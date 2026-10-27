@@ -232,33 +232,42 @@ export function DynamicRsvpBox({
                 <p className="help">性別によって選べる費用プランが変わります。</p>
               </fieldset>
             )}
-            <fieldset className="field">
-              <legend className="label">出席する日時</legend>
-              <div className="choice-group choice-group--stack">
-                {schedules.map((row) => (
-                  <label key={row.id} className="choice choice--left">
-                    <input
-                      type="radio"
-                      name="schedule"
-                      required
-                      checked={scheduleId === row.id}
-                      disabled={closed || isSubmitting}
-                      onChange={() => setScheduleId(row.id)}
-                    />
-                    {row.eventDate} {row.eventTime}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset className="field">
-              <legend className="label">費用プラン</legend>
-              {availablePlans.length === 0 ? (
+            {/* 日時が 1 件だけなら選ぶ余地がない。state の初期値（唯一の日時）を
+                そのまま送り、読み手の判断を増やさない。 */}
+            {schedules.length > 1 && (
+              <fieldset className="field">
+                <legend className="label">出席する日時</legend>
+                <div className="choice-group choice-group--stack">
+                  {schedules.map((row) => (
+                    <label key={row.id} className="choice choice--left">
+                      <input
+                        type="radio"
+                        name="schedule"
+                        required
+                        checked={scheduleId === row.id}
+                        disabled={closed || isSubmitting}
+                        onChange={() => setScheduleId(row.id)}
+                      />
+                      {row.eventDate} {row.eventTime}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            {/* 0 件は選べないので案内だけ出す。1 件は selectedPlanId が唯一のプランを指す。 */}
+            {availablePlans.length === 0 && (
+              <fieldset className="field">
+                <legend className="label">費用プラン</legend>
                 <Alert tone="warning">
                   {gender
                     ? "この性別で選べる費用プランがありません。幹事に確認してください。"
                     : "性別を選ぶと費用プランが表示されます。"}
                 </Alert>
-              ) : (
+              </fieldset>
+            )}
+            {availablePlans.length > 1 && (
+              <fieldset className="field">
+                <legend className="label">費用プラン</legend>
                 <div className="choice-group choice-group--stack">
                   {availablePlans.map((row) => (
                     <label key={row.id} className="choice choice--left">
@@ -275,8 +284,8 @@ export function DynamicRsvpBox({
                     </label>
                   ))}
                 </div>
-              )}
-            </fieldset>
+              </fieldset>
+            )}
           </>
         )}
         <div className="field">

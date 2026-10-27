@@ -6,8 +6,8 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 101（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 292
-- API ルート: 78（どの文書にも URL が無いもの 0）
+- 文書から参照されているコードパス: 294
+- API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -220,6 +220,7 @@
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/flyers/lib/ownership.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/modules/flyers/lib/pdf.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/flyers/lib/upload-limit.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/media/lib/listings.ts` | [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/organizers/components/CalendarView.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
@@ -282,6 +283,7 @@
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-upload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

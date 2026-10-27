@@ -36,7 +36,7 @@
 
 ## チラシ生成（Python マイクロサービス）
 
-- [AIチラシ自動生成](docs/flyer/index.rst): 小規模店舗やイベント主催者が、催しの事実情報とデザインの型を渡すだけで、縦長（9:16）の告知画像を受け取れる Web API です。
+- [AIチラシ自動生成](docs/flyer/index.rst): 小規模店舗やイベント主催者が、催しの事実情報とデザインの型を渡すだけで、A4 縦（1080×1528）の告知画像を受け取れる Web API です。
 - [アーキテクチャ](docs/flyer/architecture.rst): 依存の向きは Ports & Adapters です。ユースケースはポート（抽象）だけを知り、OpenAI や Pillow の具象は src/main.py の組み立て時に注入します。
 - [仕様書](docs/flyer/specs/index.rst): 企画から詳細設計までの上流文書です。ガイドはこれらを読みやすく言い換えたもので、数式・座標・クラス契約が衝突したときは、ここに置いた原文を正とします。とくに implementation_spec と detailed_design_spec が実装の真実の源です。
 - [AGENTS.md](services/flyer/AGENTS.md): Python 側の設計規約（Ports & Adapters、例外、描画境界、pytest）

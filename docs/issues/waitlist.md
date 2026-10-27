@@ -182,7 +182,8 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 - 要望では名前とコメントだけを入力する。性別・日時・費用プランは出さない。
 - 送信後は「参加要望を受け付けました。空きが出たら幹事が承認します。（N番目）」。
 - 自分が `WAITLISTED` のときは現在の状態と順番を出し、取り消しと欠席への変更を選べる。
-- `EventMetaCard` の参加欄は「参加 2名 / 定員 2名（満員・参加要望を受付中）」。
+- `EventMetaCard` の事実欄は「参加 2名 / 定員 2名（満員）」までを出す。参加要望の件数は出欠フォームと `StickyRsvpBar`（「要望 3名」）に任せる。
+- 出席の日時・費用プランは、候補が 1 件だけなら選ばせず、その値をそのまま送る（増えるのは候補が 2 件以上のときだけ）。
 - `StickyRsvpBar` は「参加 2名 · 要望 3名 · 定員 2名」。
 
 **名簿（`ParticipantListTable`）**
