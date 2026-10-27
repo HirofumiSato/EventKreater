@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PosterHero } from "@/modules/events/components/PosterHero";
 import { EventMetaCard } from "@/modules/events/components/EventMetaCard";
+import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -22,7 +23,7 @@ import type {
   OrganizerRole,
   RainPolicy,
 } from "@/modules/events/types";
-import { Alert, EmptyState, Loading, Panel } from "@/components/ui";
+import { Alert, Loading } from "@/components/ui";
 
 interface PreviewResponse {
   event: {
@@ -55,9 +56,9 @@ const DRAFT_LIST_PATH = "/organizer/events/drafts";
 /**
  * 下書きのプレビュー。告知ページ（SCR-PUB-01）と同じ部品で見た目を確かめる。
  *
- * 出欠フォーム・参加履歴・主催者の勧誘カードは出さない。まだ公開していない催しに
- * 参加者の導線を見せても意味がなく、押すと 404 になるため。
- * 公開はこの画面の「公開する」からだけ行い、完了すると告知ページへ移る。
+ * 公開操作は共通ヘッダー直下の全幅バーから行う。チラシ以降は参加者が見る画面の
+ * プレビューで、出欠フォームの見た目も出すが操作はできない。
+ * 参加履歴・主催者の勧誘カードは出さない。公開が完了すると告知ページへ移る。
  */
 export default function PreviewClient({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -125,7 +126,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
 
   if (error) {
     return (
-      <div className="stack">
+      <div className="preview-screen__status stack">
         <Alert tone="error">{error}</Alert>
         <Link href="/organizer/events" className="btn btn--outline">
           主催一覧へ戻る
@@ -135,9 +136,11 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
   }
   if (!detail) {
     return (
-      <Loading>
-        プレビューを読み込んでいます
-      </Loading>
+      <div className="preview-screen__status">
+        <Loading>
+          プレビューを読み込んでいます
+        </Loading>
+      </div>
     );
   }
 
@@ -146,83 +149,100 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
   const canPublish = isDraft && registered && role === "OWNER";
 
   return (
-    <div className="page--narrow stack">
-      <div className="notice">
-        <strong>下書きのプレビューです。</strong> 参加者には見えていません。出欠フォームは出ません。
-        公開すると、この内容で URL が発行されます。
+    <div className="preview-screen">
+      <div className="preview-toolbar">
+        <div className="preview-toolbar__inner">
+          <div className="preview-toolbar__actions">
+            {canPublish && (
+              <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
+                {publishing ? "公開中..." : "公開する"}
+              </button>
+            )}
+            {event.status === "PUBLISHED" && event.flyerAsset && (
+              <a
+                href={flyerPdfDownloadHref(event.flyerAsset.id, event.id)}
+                className="btn btn--primary btn--sm"
+              >
+                PDFでダウンロード
+              </a>
+            )}
+            <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--outline btn--sm">
+              編集に戻る
+            </Link>
+            <Link href={DRAFT_LIST_PATH} className="btn btn--ghost btn--sm">
+              下書き一覧
+            </Link>
+          </div>
+          <p className="preview-toolbar__note">
+            公開には、利用枠を 1回使います。公開すると、告知URLが有効になり出欠を受け付けます。
+          </p>
+        </div>
       </div>
 
-      <Panel>
-        <div className="panel__actions">
-          {canPublish && (
-            <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
-              {publishing ? "公開中..." : "公開する"}
-            </button>
+      {(!isDraft || (isDraft && (!registered || role !== "OWNER"))) && (
+        <div className="preview-toolbar__status">
+          {!isDraft && (
+            <Alert tone="success">
+              このイベントは公開済みです。{" "}
+              <Link href={`/events/${params.id}`} className="text-link">
+                告知ページを開く
+              </Link>
+            </Alert>
           )}
-          {event.status === "PUBLISHED" && event.flyerAsset && (
-            <a
-              href={flyerPdfDownloadHref(event.flyerAsset.id, event.id)}
-              className="btn btn--primary btn--sm"
-            >
-              PDFでダウンロード
-            </a>
+          {isDraft && (!registered || role !== "OWNER") && (
+            <Alert tone="warning">
+              公開は筆頭幹事（オーナー）の会員だけが行えます。内容の確認と編集はこのまま続けられます。
+            </Alert>
           )}
-          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--outline btn--sm">
-            編集に戻る
-          </Link>
-          <Link href={DRAFT_LIST_PATH} className="btn btn--ghost btn--sm">
-            下書き一覧
-          </Link>
         </div>
-        <p className="screen-note">
-          公開には、利用枠を 1回使います。公開すると、告知URLが有効になり出欠を受け付けます。
-        </p>
+      )}
 
-        {!isDraft && (
-          <Alert tone="success">
-            このイベントは公開済みです。{" "}
-            <Link href={`/events/${params.id}`} className="text-link">
-              告知ページを開く
-            </Link>
-          </Alert>
-        )}
-        {isDraft && (!registered || role !== "OWNER") && (
-          <Alert tone="warning">
-            公開は筆頭幹事（オーナー）の会員だけが行えます。内容の確認と編集はこのまま続けられます。
-          </Alert>
-        )}
-      </Panel>
+      <div className="preview-screen__banners page--narrow stack">
+        <QuotaStatusBanner
+          quota={quotaState.quota}
+          onOpenPricing={() => quotaState.openPricingModal({ draftId: params.id, returnTo })}
+          nextPath={returnTo}
+        />
+        <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
+      </div>
 
-      <QuotaStatusBanner
-        quota={quotaState.quota}
-        onOpenPricing={() => quotaState.openPricingModal({ draftId: params.id, returnTo })}
-        nextPath={returnTo}
-      />
-      <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
-
-      <PosterHero title={event.title} flyer={event.flyerAsset} />
-      <EventMetaCard
-        event={{
-          title: event.title,
-          schedules: event.schedules,
-          pricePlans: event.pricePlans,
-          location: event.location,
-          rainPolicy: event.rainPolicy,
-          capacity: event.capacity,
-          status: event.status,
-          rsvpDeadline: event.rsvpDeadline,
-          rsvpOpen: event.rsvpOpen,
-          attendingCount: stats.attendingCount,
-          organizers,
-        }}
-      />
-
-      <EmptyState as="div">
-        <p className="empty__title">出欠フォームは出ません</p>
-        <p className="empty__body">
-          公開すると、ここに出欠の受付が入ります。プレビューでは見た目だけを確かめます。
-        </p>
-      </EmptyState>
+      <p className="preview-canvas__label">プレビュー — 参加者が見る画面です。</p>
+      <div className="page--narrow event-page">
+        <PosterHero title={event.title} flyer={event.flyerAsset} stamp="プレビュー" />
+        <EventMetaCard
+          event={{
+            title: event.title,
+            schedules: event.schedules,
+            pricePlans: event.pricePlans,
+            location: event.location,
+            rainPolicy: event.rainPolicy,
+            capacity: event.capacity,
+            status: event.status,
+            rsvpDeadline: event.rsvpDeadline,
+            rsvpOpen: event.rsvpOpen,
+            attendingCount: stats.attendingCount,
+            organizers,
+          }}
+        />
+        <div className="event-body">
+          <div className="preview-rsvp">
+            <p className="preview-rsvp__note">プレビューのため送信できません。</p>
+            <DynamicRsvpBox
+              eventId={event.id}
+              schedules={event.schedules}
+              pricePlans={event.pricePlans}
+              initialRsvp={null}
+              capacity={event.capacity}
+              attendingCount={stats.attendingCount}
+              waitlistCount={stats.waitlistedCount}
+              closed={false}
+              preview
+              loginHref={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`}
+              onCountChange={() => {}}
+            />
+          </div>
+        </div>
+      </div>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

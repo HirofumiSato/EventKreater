@@ -29,6 +29,11 @@ interface DynamicRsvpBoxProps {
   memberName?: string | null;
   /** ログイン導線。今の告知ページへ戻れるよう、呼び出し側が next を付ける。 */
   loginHref?: string;
+  /**
+   * 下書きプレビュー。見た目だけ出し、送信もフォーカスもさせない。
+   * RSVP API は呼ばない。
+   */
+  preview?: boolean;
   onCountChange: (count: number) => void;
   onWaitlistCountChange?: (count: number) => void;
 }
@@ -47,10 +52,12 @@ export function DynamicRsvpBox({
   closedMessage = "このイベントは出欠を受け付けていません。",
   memberName = null,
   loginHref,
+  preview = false,
   onCountChange,
   onWaitlistCountChange,
 }: DynamicRsvpBoxProps) {
   const { myRsvp, submit, cancel, isSubmitting, error } = useRsvp(eventId, initialRsvp);
+  const locked = closed || isSubmitting || preview;
   /**
    * 満員なら「出席」の代わりに「参加要望」を出す。
    * 席を確保済みの出席者は、満員になっても出席のまま変更できる。
@@ -107,6 +114,7 @@ export function DynamicRsvpBox({
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (preview) return;
     const result = await submit({
       name: name.trim(),
       status,
@@ -121,6 +129,7 @@ export function DynamicRsvpBox({
   };
 
   const onCancel = async () => {
+    if (preview) return;
     const result = await cancel();
     if (typeof result.attendingCount === "number") onCountChange(result.attendingCount);
     if (typeof result.waitlistCount === "number") onWaitlistCountChange?.(result.waitlistCount);
@@ -132,6 +141,17 @@ export function DynamicRsvpBox({
     setPricePlanId("");
     setSaved(false);
   };
+
+  const loginLabel = preview ? (
+    <span>ログイン</span>
+  ) : loginHref ? (
+    <Link href={loginHref}>ログイン</Link>
+  ) : null;
+  const switchLabel = preview ? (
+    <span>アカウントを切り替える</span>
+  ) : loginHref ? (
+    <Link href={loginHref}>アカウントを切り替える</Link>
+  ) : null;
 
   return (
     <section id="rsvp" className="rsvp">
@@ -151,8 +171,7 @@ export function DynamicRsvpBox({
       {/* ログインは必須ではない。持っている人にだけ、あとから変えられることを添える。 */}
       {!memberName && loginHref && (
         <p className="rsvp__login">
-          参加者アカウントをお持ちなら{" "}
-          <Link href={loginHref}>ログイン</Link> すると、あとから答えを変えられます。
+          参加者アカウントをお持ちなら {loginLabel} すると、あとから答えを変えられます。
         </p>
       )}
       {myRsvp?.status === "WAITLISTED" && (
@@ -167,7 +186,7 @@ export function DynamicRsvpBox({
         {memberName && (
           <p className="rsvp__member">
             <span>{memberName} さんとして答えます</span>
-            {loginHref && <Link href={loginHref}>アカウントを切り替える</Link>}
+            {loginHref && switchLabel}
           </p>
         )}
         <fieldset className="field">
@@ -178,7 +197,7 @@ export function DynamicRsvpBox({
                 type="radio"
                 name="rsvp"
                 checked={status === attendValue}
-                disabled={closed || isSubmitting}
+                disabled={locked}
                 onChange={() => setStatus(attendValue)}
               />
               <span>
@@ -191,7 +210,7 @@ export function DynamicRsvpBox({
                 type="radio"
                 name="rsvp"
                 checked={status === "DECLINED"}
-                disabled={closed || isSubmitting}
+                disabled={locked}
                 onChange={() => setStatus("DECLINED")}
               />
               <span>
@@ -222,7 +241,7 @@ export function DynamicRsvpBox({
                         name="gender"
                         required
                         checked={gender === value}
-                        disabled={closed || isSubmitting}
+                        disabled={locked}
                         onChange={() => setGender(value)}
                       />
                       {GENDER_LABELS[value]}
@@ -245,7 +264,7 @@ export function DynamicRsvpBox({
                         name="schedule"
                         required
                         checked={scheduleId === row.id}
-                        disabled={closed || isSubmitting}
+                        disabled={locked}
                         onChange={() => setScheduleId(row.id)}
                       />
                       {row.eventDate} {row.eventTime}
@@ -276,7 +295,7 @@ export function DynamicRsvpBox({
                         name="price-plan"
                         required
                         checked={selectedPlanId === row.id}
-                        disabled={closed || isSubmitting}
+                        disabled={locked}
                         onChange={() => setPricePlanId(row.id)}
                       />
                       {row.audience === "ANY" ? "" : `${PRICE_AUDIENCE_LABELS[row.audience]} `}
@@ -296,7 +315,7 @@ export function DynamicRsvpBox({
             required
             maxLength={50}
             value={name}
-            disabled={closed || isSubmitting}
+            disabled={locked}
             onChange={(event) => setName(event.target.value)}
             className="input"
             placeholder="佐藤"
@@ -307,7 +326,7 @@ export function DynamicRsvpBox({
           <textarea
             maxLength={500}
             value={comment}
-            disabled={closed || isSubmitting}
+            disabled={locked}
             onChange={(event) => setComment(event.target.value)}
             rows={3}
             className="textarea"
@@ -329,7 +348,7 @@ export function DynamicRsvpBox({
         <div className="rsvp__foot">
           <button
             type="submit"
-            disabled={closed || isSubmitting || (status === "ATTENDING" && availablePlans.length === 0)}
+            disabled={locked || (status === "ATTENDING" && availablePlans.length === 0)}
             className="btn btn--primary btn--block"
           >
             {isSubmitting
@@ -342,11 +361,11 @@ export function DynamicRsvpBox({
           </button>
         </div>
         {myRsvp && (
-          <button type="button" onClick={() => void onCancel()} disabled={isSubmitting} className="btn btn--ghost btn--block">
+          <button type="button" onClick={() => void onCancel()} disabled={locked} className="btn btn--ghost btn--block">
             回答を取り消す
           </button>
         )}
-        {closed && <Alert tone="warning">{closedMessage}</Alert>}
+        {closed && !preview && <Alert tone="warning">{closedMessage}</Alert>}
       </form>
     </section>
   );

@@ -9,6 +9,8 @@
  *                    画面の上端から始める。`/organizer/events/` は主催者エリアなので対象外。
  * - `/organizers/` … 主催者の公開ページ。プロフィールと催しに集中させるため、
  *                    共通ヘッダーは出さない。フッターは残す。
+ * - `/organizer/events/:id/preview` … 下書きプレビュー。ヘッダー直下に編集バーを置くため、
+ *                    上端の余白を落とす。ヘッダーとフッターは出す。
  * - それ以外       … 公開ヘッダーとフッターを出す。
  *
  * 判定を `SiteChrome` の中に置くと、増えたときに分岐が散る。ここ 1 か所に集める。
@@ -18,7 +20,7 @@ export interface SiteChromeState {
   readonly header: boolean;
   /** フッターを出すか。 */
   readonly footer: boolean;
-  /** `main` の上端の余白を落とすか。ヘッダーを出さない画面だけが true。 */
+  /** `main` の上端の余白を落とすか。ヘッダーのない LP と、ヘッダー直下に全幅帯を置く画面。 */
   readonly flushTop: boolean;
 }
 
@@ -47,6 +49,11 @@ function inEventAnnouncement(pathname: string): boolean {
   return rest.length > 0 && !rest.includes("/");
 }
 
+/** 下書きプレビュー。`/organizer/events/preview` のような ID なしのパスは対象外。 */
+function isEventPreview(pathname: string): boolean {
+  return /^\/organizer\/events\/[^/]+\/preview\/?$/.test(pathname);
+}
+
 export function siteChrome(pathname: string): SiteChromeState {
   if (inConsole(pathname)) {
     return { header: false, footer: false, flushTop: false };
@@ -63,6 +70,9 @@ export function siteChrome(pathname: string): SiteChromeState {
       footer: true,
       flushTop: inEventAnnouncement(pathname),
     };
+  }
+  if (isEventPreview(pathname)) {
+    return { header: true, footer: true, flushTop: true };
   }
   return { header: true, footer: true, flushTop: false };
 }
