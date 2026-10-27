@@ -6,8 +6,8 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 101（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 292
-- API ルート: 78（どの文書にも URL が無いもの 0）
+- 文書から参照されているコードパス: 296
+- API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -187,7 +187,7 @@
 | `src/modules/billing/lib/notices.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/lib/plans.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/billing/lib/pricing.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
-| `src/modules/billing/lib/quota.ts` | [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
+| `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/modules/billing/lib/stripe.ts` | [docs/stripe.rst](stripe.rst) |
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
@@ -220,6 +220,7 @@
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/flyers/lib/ownership.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/modules/flyers/lib/pdf.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/flyers/lib/upload-limit.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/media/lib/listings.ts` | [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/organizers/components/CalendarView.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
@@ -262,6 +263,7 @@
 | `tests/integration/organizers.test.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/subscription-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/waitlist.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/setup/db.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
@@ -282,6 +284,7 @@
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-upload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -302,6 +305,7 @@
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/site-chrome.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |

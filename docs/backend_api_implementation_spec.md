@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月額980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月8回980円/作り放題2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・API境界・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計（DBschema.md）】<br>PostgreSQL 16・Prismaスキーマ・アトミック排他クエリ・クォータ/決済テーブル"]
     D["【本設計書：バックエンドAPI実装仕様】<br>全エンドポイント定義・Mermaidシーケンス・Zod検証・Stripe Webhook冪等処理"]
@@ -105,7 +105,7 @@ flowchart TD
 | `/api/v1/admin/pricing-campaigns/[id]` | PATCH | SCR-ADM-05 | 管理者必須 | 編集。価格に関わる変更は版を上げる |
 | `/api/v1/admin/pricing-campaigns/[id]/stop` | POST | SCR-ADM-05 | 管理者必須 | 新規申込の停止。既存購入者の割引は継続 |
 | `/api/v1/public/pricing` | GET | SCR-PUB-06 | 不要 | 現在の販売価格と実施中キャンペーン |
-| `/api/v1/internal/billing/notices` | POST | - | `BILLING_NOTICE_SECRET` | 0円月額の 3 日前・1 日前の通知バッチ |
+| `/api/v1/internal/billing/notices` | POST | - | `BILLING_NOTICE_SECRET` | 0円の定額プランの 3 日前・1 日前の通知バッチ |
 | `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | イベント（公開前は下書き）の残り作成回数。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 テンプレートの完成イメージ |
 | `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 8 枚返す |
@@ -117,12 +117,13 @@ flowchart TD
 | `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
 | `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
+| `/api/v1/flyer-assets/[id]/pdf` | GET | SCR-ORG-05 / SCR-ORG-16 | 不要 | 公開済みイベントのチラシを A4 PDF で返す。`?eventId=` が公開済みで、そのチラシを掲載しているときだけ。告知ページの QR を右下に入れる |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
-| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 月額定期の加入。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
+| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
 | `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・枠反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
 | `/api/v1/billing/portal` | POST | SCR-ORG-01 | 会員必須 | Stripe Customer Portal（解約・カード変更）遷移URL発行 |
 | `/api/v1/webhooks/stripe` | POST | - | Stripe署名検証 | Stripe Webhook 受信ハンドラー（二重処理遮断） |
@@ -161,7 +162,7 @@ sequenceDiagram
             Client->>Route: POST /api/v1/public/events { status: "DRAFT" }
             Route->>DB: INSERT INTO events (7項目, status: DRAFT, quota_charged_at: NULL)
             Route-->>Client: HTTP 201 Created<br/>{ event, publicUrl: null, manageUrl }
-            Client->>Organizer: 課金モーダル表示 (SCR-MOD-01: 299円 / 980円)
+            Client->>Organizer: 課金モーダル表示 (SCR-MOD-01: 299円 / 980円 / 2980円)
             Organizer->>Client: Stripe Checkout で支払う
             Stripe-->>Client: /organizer/events/new?session_id=..&draftId=..
             Client->>Route: POST /api/v1/billing/checkout/verify { sessionId }
@@ -230,9 +231,9 @@ sequenceDiagram
 
 ---
 
-### 3.3. 月額サブスクリプション（980円/月）ライフサイクルシーケンス
+### 3.3. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス
 
-初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。
+初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout の `plan` で選び、Webhook では Price ID から `subscription_plan` を決める。
 
 ```mermaid
 sequenceDiagram
@@ -242,11 +243,11 @@ sequenceDiagram
     participant DB as クォータ DB
     participant Stripe as Stripe API / Billing
     Note over Organizer, Stripe: 【1. 初回サブスクリプション加入】
-    Organizer->>BE: POST /api/v1/billing/checkout/subscription
-    BE->>Stripe: checkout.sessions.create (mode: subscription, price: 'price_980_month')
+    Organizer->>BE: POST /api/v1/billing/checkout/subscription { plan: "MONTHLY_8" | "UNLIMITED" }
+    BE->>Stripe: checkout.sessions.create (mode: subscription, price: 階層の Price ID)
     Stripe-->>Organizer: Stripe Checkout でカード入力・加入完了
     Stripe->>BE: Webhook: checkout.session.completed
-    BE->>DB: subscription_status = 'ACTIVE', stripe_subscription_id 保存
+    BE->>DB: subscription_status = 'ACTIVE', subscription_plan = 階層, stripe_subscription_id 保存
     BE-->>Stripe: HTTP 200 OK
     Note over Stripe, DB: 【2. 翌月次自動更新 (Recurring Charge)】
     Stripe->>Stripe: 翌月自動請求成功
@@ -572,60 +573,78 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 ### 4.3. イベント作成認可ミドルウェア (`assertCanCreateEvent`)
 
 ```ts
-export async function assertCanCreateEvent(userId: string) {
-  const quota = await prisma.userUsageQuota.findUnique({
-    where: { userId },
-  });
-  if (!quota) {
-    throw new ProblemDetailException({
-      status: 404,
-      title: 'Quota Not Found',
-      detail: '主催者の利用枠情報が存在しません。',
-    });
-  }
+import { SUBSCRIPTION_EVENT_LIMIT } from '@/modules/billing/lib/plans';
+
+/** 暦月のキー（日本時間）。月8回プランの数え直しはこの値が変わったときに行う。 */
+export function jstMonthKey(now: Date): string {
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * 消費の入口。行をロックしてから、`monthly_period_key` が今月と違えば 0 回から数え直す。
+ * 参照だけの `assertCanCreateEvent` は同じ判定を読み取りで行う。
+ */
+export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: string) {
+  const quota = await lockAndReadQuota(tx, userId);
   const now = new Date();
-  // 1. サブスクリプション有効チェック (最優先・枠消費なし)
-  if (
+  const subscriptionActive =
     quota.subscriptionStatus === 'ACTIVE' &&
-    quota.currentPeriodEnd &&
-    quota.currentPeriodEnd > now
-  ) {
-    return { type: 'SUBSCRIPTION_UNLIMITED', consume: async () => {} };
+    quota.currentPeriodEnd !== null &&
+    quota.currentPeriodEnd > now;
+
+  // 1. 作り放題（回数を数えない）
+  if (subscriptionActive && quota.subscriptionPlan !== 'MONTHLY_8') {
+    return 'SUBSCRIPTION_UNLIMITED';
   }
-  // 2. 単発クレジットチェック (第2優先・クレジットを1デクリメント)
+  // 2. 月8回プラン（暦月で数え直す）
+  if (subscriptionActive) {
+    const key = jstMonthKey(now);
+    const used = quota.monthlyPeriodKey === key ? quota.monthlyEventCount : 0;
+    if (used < SUBSCRIPTION_EVENT_LIMIT) {
+      await tx.userUsageQuota.update({
+        where: { userId },
+        data: { monthlyPeriodKey: key, monthlyEventCount: used + 1 },
+      });
+      return 'SUBSCRIPTION_MONTHLY_8';
+    }
+  }
+  // 3. 単発クレジット
   if (quota.paidCredits >= 1) {
-    return {
-      type: 'PAID_CREDIT',
-      consume: async (tx: any) => {
-        await tx.userUsageQuota.update({
-          where: { userId },
-          data: { paidCredits: { decrement: 1 } },
-        });
-      },
-    };
+    await tx.userUsageQuota.update({
+      where: { userId },
+      data: { paidCredits: { decrement: 1 } },
+    });
+    return 'PAID_CREDIT';
   }
-  // 3. 無料トライアルチェック (2回まで・利用累計+1)
-  if (quota.freeEventCount < 2) {
-    return {
-      type: 'FREE_TRIAL',
-      consume: async (tx: any) => {
-        await tx.userUsageQuota.update({
-          where: { userId },
-          data: { freeEventCount: { increment: 1 } },
-        });
-      },
-    };
+  // 4. 無料トライアル。加入中は、上限に達しても無料枠では抜けない。
+  if (!subscriptionActive && quota.freeEventCount < FREE_EVENT_LIMIT) {
+    if (!(await hasVerifiedPhone(tx, userId))) throw phoneRequired();
+    await tx.userUsageQuota.update({
+      where: { userId },
+      data: { freeEventCount: { increment: 1 } },
+    });
+    return 'FREE_TRIAL';
   }
-  // 4. 上限超過 (402 Payment Required)
-  throw new ProblemDetailException({
-    status: 402,
-    title: 'Payment Required',
-    detail: '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）または月額プラン（980円）をご利用ください。',
-    pricingOptions: [
-      { type: 'SINGLE', name: '単発生成チケット', price: 299, currency: 'JPY' },
-      { type: 'SUBSCRIPTION', name: '月額使い放題プラン', price: 980, currency: 'JPY', interval: 'month' },
-    ],
-  });
+  // 5. 上限超過 (402)。月8回の上限だけが理由なら作り放題への変更を案内する。
+  throw monthlyExhausted(quota, now) ? monthlyLimitExceeded() : quotaExceeded();
+}
+```
+
+402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。
+
+```json
+{
+  "type": "probs/quota-exceeded",
+  "title": "Payment Required",
+  "status": 402,
+  "detail": "無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月8回プラン（980円）、作り放題（2,980円）のいずれかをご利用ください。",
+  "error": "QUOTA_EXCEEDED",
+  "pricingOptions": [
+    { "type": "SINGLE", "name": "単発生成チケット", "price": 299, "listPrice": 299, "currency": "JPY" },
+    { "type": "SUBSCRIPTION_8", "name": "月8回プラン", "price": 980, "listPrice": 980, "currency": "JPY", "interval": "month", "eventLimit": 8 },
+    { "type": "SUBSCRIPTION_UNLIMITED", "name": "作り放題", "price": 2980, "listPrice": 2980, "currency": "JPY", "interval": "month" }
+  ]
 }
 ```
 
@@ -695,7 +714,7 @@ export const CreateEventSchema = z.object({
       "id": "f5b82c1a-9a8b-4c7d-8e9f-0123456789ab",
       "imageUrl": "/uploads/flyers/acoustic_live.webp",
       "lqipDataUrl": "data:image/webp;base64,UklGRl...",
-      "aspectRatio": "9:16"
+      "aspectRatio": "A4"
     }
   },
   "guestOrganizerToken": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -777,7 +796,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
   "flyerAsset": {
     "imageUrl": "/uploads/flyers/acoustic_live.webp",
     "lqipDataUrl": "data:image/webp;base64,UklGRl...",
-    "aspectRatio": "9:16"
+    "aspectRatio": "A4"
   },
   "myRsvp": {
     "id": "p1a2b3c4-1111-2222-3333-444455556666",
@@ -1446,17 +1465,19 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### 6.3. POST `/api/v1/billing/checkout/subscription`（月額980円サブスク加入セッション発行）
+### 6.3. POST `/api/v1/billing/checkout/subscription`（定額プラン加入セッション発行）
 
-主催者が使い放題プラン（月額980円）に加入するための Stripe Hosted Checkout URL を発行する。
+主催者が月8回プラン（980円/月）または作り放題（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
-- **リクエスト Body（任意）:** 単発と同じ `CheckoutIntentSchema`（`draftId` / `returnTo`）。扱いも同じで、`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。
+- **リクエスト Body:** `SubscriptionCheckoutSchema` = `CheckoutIntentSchema` + `plan`（`"MONTHLY_8"` / `"UNLIMITED"`）。`plan` を省略したときは `UNLIMITED`。`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。既に有効な定額契約があるときは 409 `ALREADY_SUBSCRIBED`。
 - **レスポンス (200 OK):**
 
 ```json
 {
-  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]"
+  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]",
+  "plan": "MONTHLY_8",
+  "pricing": { "target": "SUBSCRIPTION_8", "listPrice": 980, "chargedPrice": 980, "discountPercent": 0 }
 }
 ```
 
@@ -1467,8 +1488,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { resolveAuthContext } from '@/lib/guards';
-import { CheckoutIntentSchema } from '@/lib/schemas';
+import { SubscriptionCheckoutSchema } from '@/lib/schemas';
 import { DEFAULT_CHECKOUT_RETURN_TO, assertOwnDraft, checkoutReturnUrls } from '@/modules/billing/lib/checkout-intent';
+import { priceIdForPlan } from '@/modules/billing/lib/billing';
+import { pricingKindOfPlan, quoteFor } from '@/modules/billing/lib/pricing';
+import { loadActiveCampaigns } from '@/modules/billing/lib/campaigns';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -1482,31 +1506,61 @@ export async function POST(req: NextRequest) {
   const quota = await prisma.userUsageQuota.findUniqueOrThrow({
     where: { userId },
   });
+  const body = SubscriptionCheckoutSchema.parse(await req.json().catch(() => ({})));
+  const plan = body.plan ?? 'UNLIMITED';
+  const priceId = priceIdForPlan(plan);
+  if (!priceId) {
+    return NextResponse.json({ error: 'PRICE_ID_MISSING' }, { status: 500 });
+  }
+  const now = new Date();
+  if (
+    quota.subscriptionStatus === 'ACTIVE' &&
+    quota.currentPeriodEnd &&
+    quota.currentPeriodEnd > now
+  ) {
+    return NextResponse.json({ error: 'ALREADY_SUBSCRIBED' }, { status: 409 });
+  }
+  const quote = quoteFor(pricingKindOfPlan(plan), await loadActiveCampaigns(now), now);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+  const intent = body;
   const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
   if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
   const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     customer: quota.stripeCustomerId || undefined,
-    line_items: [
-      {
-        price: process.env.STRIPE_PRICE_ID_MONTHLY_980!,
-        quantity: 1,
-      },
-    ],
+    line_items: [{ price: priceId, quantity: 1 }],
     mode: 'subscription',
+    // 0円の無料期間でもカードを登録させ、期間終了後に自動で請求する。
+    payment_method_collection: 'always',
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: {
       userId,
       paymentType: 'SUBSCRIPTION',
+      plan,
       ...(intent.draftId ? { draftId: intent.draftId } : {}),
-      ...(intent.returnTo ? { returnTo } : {}),
+      ...(intent.returnTo ? { returnTo: intent.returnTo } : {}),
+      ...(quote.campaignId ? { campaignId: quote.campaignId } : {}),
     },
+    subscription_data: { metadata: { userId, plan } },
   });
-  return NextResponse.json({ checkoutUrl: session.url });
+  await prisma.billingTransaction.upsert({
+    where: { stripeCheckoutSessionId: session.id },
+    create: {
+      userId,
+      paymentType: 'SUBSCRIPTION',
+      paymentStatus: 'PENDING',
+      amount: quote.chargedPrice,
+      listAmount: quote.listPrice,
+      discountAmount: quote.discountAmount,
+      campaignId: quote.campaignId,
+      appliedPercent: quote.discountPercent > 0 ? quote.discountPercent : null,
+      stripeCheckoutSessionId: session.id,
+    },
+    update: { amount: quote.chargedPrice, listAmount: quote.listPrice },
+  });
+  return NextResponse.json({ checkoutUrl: session.url, plan, pricing: quote });
 }
 ```
 
@@ -1654,9 +1708,9 @@ export async function POST(req: NextRequest) {
 
 ### 6.6. POST `/api/v1/webhooks/stripe`（Stripe Webhook 受信ハンドラー）
 
-Stripe から送信される非同期イベントを受信し、署名検証と冪等性トランザクションを実行する。付与するのは、`paid`、通貨 `jpy`、単発 299 円または月額 980 円かつ `STRIPE_PRICE_ID_MONTHLY_980`、`livemode` が秘密鍵と一致、`metadata.userId` と Stripe 顧客 ID がその会員の利用枠と一致するときだけである。署名失敗の応答は `INVALID_SIGNATURE` のみとし、検証ライブラリのメッセージは返さない。
+Stripe から送信される非同期イベントを受信し、署名検証と冪等性トランザクションを実行する。付与するのは、`paid`、通貨 `jpy`、単発 299 円または定額（980 円 / 2,980 円のいずれか）かつ Price が `STRIPE_PRICE_ID_MONTHLY_8` か `STRIPE_PRICE_ID_UNLIMITED`（既存加入者は `STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）、`livemode` が秘密鍵と一致、`metadata.userId` と Stripe 顧客 ID がその会員の利用枠と一致するときだけである。署名失敗の応答は `INVALID_SIGNATURE` のみとし、検証ライブラリのメッセージは返さない。
 
-受け付けるイベントは `checkout.session.completed`、`invoice.payment_succeeded`、`invoice.payment_failed`、`customer.subscription.updated`、`customer.subscription.deleted`、`charge.refunded`、`charge.dispute.created` である。月額の更新請求と、失敗、全額返金、異議申立は `billing_transactions` に残す。全額返金と異議申立では、単発の未使用クレジットが残っていれば 1 つ戻し、月額は `CANCELED` にする。使い切ったあとの公開済みイベントは自動では消さない。
+受け付けるイベントは `checkout.session.completed`、`invoice.payment_succeeded`、`invoice.payment_failed`、`customer.subscription.updated`、`customer.subscription.deleted`、`charge.refunded`、`charge.dispute.created` である。定額の更新請求と、失敗、全額返金、異議申立は `billing_transactions` に残す。全額返金と異議申立では、単発の未使用クレジットが残っていれば 1 つ戻し、定額は `CANCELED` にする。使い切ったあとの公開済みイベントは自動では消さない。
 
 - **認証方式:** `stripe-signature` ヘッダーによる HMAC-SHA256 署名検証
 - **リクエスト Body:** Raw Buffer
@@ -1801,7 +1855,7 @@ export interface ProblemDetails {
 | :---- | :---- | :---- |
 | **400** | `probs/validation-error` | 入力パラメータの Zod スキーマ検証違反、Stripe 署名不正 |
 | **401** | `probs/unauthorized` | 有効な認証情報（JWT/トークン）の欠落 |
-| **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月額980円） |
+| **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月8回980円/作り放題2980円）。月8回の上限だけが理由なら `MONTHLY_LIMIT_EXCEEDED` |
 | **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料枠消費（`PHONE_REQUIRED`） |
 | **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・リマインド・領収書・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
@@ -2058,7 +2112,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 `FLYER_API_URL` の `POST /api/v1/flyers/generate` は次の順で処理する。
 
 1. **プロンプト解釈。** 入力から英語の背景プロンプト、除外プロンプト、アクセント色、遮光の不透明度を作る。利用者の文章はシステムプロンプトへ混ぜない。画像プロンプトには文字、数字、ロゴを描かないことを求め、テンプレートごとの余白を指定する。この段の失敗は背景へすり替えず、サービスは 503 を返す。
-2. **背景の取得。** アスペクト比 `9:16` で背景画像を得る。画像生成が時間切れ、または画像でなかった場合は、静的なテンプレート背景へ切り替え、状態を `fallback_used` にする。利用者へ空の失敗応答は返さない。
+2. **背景の取得。** 縦長 `9:16` で背景画像を得る（画像生成 API に A4 相当のサイズが無いため）。画像生成が時間切れ、または画像でなかった場合は、静的なテンプレート背景へ切り替え、状態を `fallback_used` にする。利用者へ空の失敗応答は返さない。
 3. **文字合成。** 背景の上に、日付、料金、場所、タイトルをサーバー側の描画で載せる。画像モデルには日本語と数字を書かせない。
 4. **一時保存。** 生成 ID をファイル名にし、`image_url` として `/api/v1/flyers/{generation_id}` を返す。HTTP は成功時 200。フォールバック時も 200 で、`status` は `fallback_used` である。
 
@@ -2096,7 +2150,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ボディはステップ 1・2 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、ステップ 2 はさらに `count`（1〜16、既定 8）を足す。保存済みイベントの編集では `eventId` も添える。ステップ 3・4 は本文不要で、親候補の ID だけをパスに置く。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。
 
-アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、9:16 の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
+アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、A4 縦（1080×1528）の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
 
 候補の参照範囲は端末で絞る。BFF は候補 API と画像取得に `X-Flyer-Owner`（`owner_token_hash`）を付け、サービスは候補メタに記録した値と照合する。一致しない候補は、期限切れと同じ 404 `CANDIDATE_EXPIRED` にする。ログイン済みでも未ログインでも、Cookie `flyer_owner` の端末トークンが単位である。
 
@@ -2131,7 +2185,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
     "id": "uuid",
     "imageUrl": "/api/v1/flyer-assets/{id}/image",
     "lqipDataUrl": null,
-    "aspectRatio": "9:16"
+    "aspectRatio": "A4"
   },
   "generationStatus": "ok",
   "quota": { "limit": 3, "used": 1, "remaining": 2, "anonymous": false }
@@ -2146,7 +2200,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 2. サービスの応答 `image_url` から JPEG を 15 秒以内に取得する。空、8 MiB 超、JPEG シグネチャでないバイト列は拒否する。
 3. 新しい UUID を `flyer_assets.id` とファイル名に使う。
 4. `storage/flyers/{id}.jpg` に JPEG を書く。
-5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `9:16`。
+5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `A4`。
 6. `flyer_generation_logs` に 1 行足す。`draft_key`、`event_id`（保存済みイベントを編集しているとき。新規作成は NULL）、`user_id`、`owner_token_hash`、`template_id`、`layout_id`、`palette_id`、`flyer_asset_id`。
 7. 行の作成に失敗したら、書いたファイルを削除する。
 
@@ -2162,7 +2216,23 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 - 既定の `Cache-Control` は `public, max-age=31536000, immutable`。
 - `?download=1` を付けると `Content-Disposition: attachment` を付け、`Cache-Control: private, no-store` にする。ファイル名は `flyer_assets.title` から `チラシ-{催し名}.{拡張子}` を作る。空なら `flyer-{id}.{拡張子}`。日本語は RFC 5987 の `filename*` で送り、ASCII の `filename` も併記する。
 
-### 9.5. POST `/api/v1/flyer-assets`（アップロードしたチラシの保存）
+### 9.5. GET `/api/v1/flyer-assets/[id]/pdf`（QR 付き A4 PDF）
+
+公開済みイベントのチラシを、A4 縦 1 ページの PDF にして返す。対象は SCR-ORG-05 / SCR-ORG-16。認証は不要で、`?eventId=` が次のすべてを満たすときだけ返す。
+
+- イベントが存在し、`isDeleted` が false
+- `status` が `PUBLISHED`
+- `events.flyer_asset_id` がパスの `id` と一致する
+
+満たさないとき、`eventId` が UUID でないとき、`id` が UUID でないときは 404（「公開済みのチラシが見つかりません。」）。
+
+- ページは A4 縦（595.28 × 841.89 pt）。保存したチラシを縦横比を保って中央へ置く（contain）。アップロード画像が A4 比でなくても歪めない。
+- 右下に白地のパネルを作り、告知ページ `{NEXT_PUBLIC_APP_URL}/events/{eventId}` の QR コードと、同じ URL を小さく刷る。QR は `qrcode`、PDF は `pdf-lib`、WebP のチラシだけ `sharp` で JPEG にしてから埋め込む（`src/modules/flyers/lib/pdf.ts`）。
+- `Content-Type: application/pdf`、`Content-Disposition: attachment`（`チラシ-{催し名}.pdf`、9.4 と同じ RFC 5987）、`Cache-Control: private, no-store`。
+
+QR を焼き込むのはダウンロード時である。下書きの時点では告知 URL が確定しないため、生成した画像そのものには入れない。画面のダウンロード（画像・PDF）は、`PUBLISHED` のときだけ出す。
+
+### 9.6. POST `/api/v1/flyer-assets`（アップロードしたチラシの保存）
 
 手元の完成済み画像を、そのままチラシとして保存する。対象は SCR-ORG-02 / SCR-ORG-05 / SCR-ORG-03。認証は不要で、Cookie `flyer_owner` の端末トークンを単位に所有者を決める。**生成ではないため、利用枠（quota）と `flyer_generation_logs` は使わない。**
 
@@ -2337,7 +2407,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 - `startsAt` / `endsAt` は JST の `datetime-local` 文字列として解釈する（`+09:00` を補う）。
 - `endsAt > startsAt`、期間は最大 12 か月。
 - `discountKind = "FREE"` は `percent = 100` に固定する。
-- 単発・月額それぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
+- 単発・月8回・作り放題それぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
 - 成功時は 201 と `{ "campaign": { ... } }`。監査ログを 1 行作る。
 
 ### 11.3. PATCH `/api/v1/admin/pricing-campaigns/[id]`
@@ -2368,7 +2438,8 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
       "campaignEndsAt": "2026-11-30T14:59:00.000Z",
       "freePerUserLimit": 1
     },
-    "subscription": { "target": "SUBSCRIPTION", "listPrice": 980, "chargedPrice": 690, "...": "..." }
+    "subscription8": { "target": "SUBSCRIPTION_8", "listPrice": 980, "chargedPrice": 690, "...": "..." },
+    "subscriptionUnlimited": { "target": "SUBSCRIPTION_UNLIMITED", "listPrice": 2980, "chargedPrice": 2090, "...": "..." }
   },
   "campaigns": [{ "id": "uuid", "name": "...", "target": "BOTH", "percent": 30, "endsAt": "...", "status": "ACTIVE" }],
   "fetchedAt": "2026-10-21T02:00:00.000Z"
@@ -2381,7 +2452,15 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ```json
 {
-  "pricing": { "oneTime": { "...": "..." }, "subscription": { "...": "..." } },
+  "pricing": {
+    "oneTime": { "...": "..." },
+    "subscription8": { "...": "..." },
+    "subscriptionUnlimited": { "...": "..." }
+  },
+  "subscriptionPlan": "MONTHLY_8",
+  "monthlyEventCount": 3,
+  "monthlyLimit": 8,
+  "remainingMonthly": 5,
   "freeGrantRemaining": 1,
   "discount": {
     "percent": 100,
@@ -2414,10 +2493,11 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ### 11.8. POST `/api/v1/billing/checkout/subscription` の割引
 
-- `ACTIVE` の月額契約がある場合は `409 ALREADY_SUBSCRIBED`。
+- `ACTIVE` の定額契約がある場合は `409 ALREADY_SUBSCRIBED`。
+- ボディの `plan`（`MONTHLY_8` / `UNLIMITED`、省略時 `UNLIMITED`）で Price ID を選ぶ。
 - 割引中は `discounts: [{ "coupon": "..." }]` を付け、`payment_method_collection: "always"` を指定する。
-- クーポンは `pricing_campaign_coupons` に保存し、同じ `(campaignId, version, months, kind)` は再利用する。
-- `metadata` と `subscription_data.metadata` に `campaignId` を残す。
+- クーポンは `pricing_campaign_coupons` に保存し、同じ `(campaignId, version, months, kind, plan)` は再利用する。
+- `metadata` と `subscription_data.metadata` に `plan` と `campaignId` を残す。
 
 ### 11.9. POST `/api/v1/internal/billing/notices`
 

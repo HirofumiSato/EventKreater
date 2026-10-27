@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { toErrorResponse } from "@/lib/http";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
-import { campaignStatus, quoteBoth } from "@/modules/billing/lib/pricing";
+import { campaignStatus, quoteAll } from "@/modules/billing/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const now = new Date();
     const campaigns = await loadActiveCampaigns(now);
-    const quotes = quoteBoth(campaigns, now);
+    const quotes = quoteAll(campaigns, now);
     return NextResponse.json({
       pricing: quotes,
       campaigns: campaigns.map((campaign) => ({

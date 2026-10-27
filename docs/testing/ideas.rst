@@ -23,7 +23,7 @@
 
 * 無料枠は 2 回（``FREE_EVENT_LIMIT``）
 * 上限到達は HTTP 402、``error`` は ``QUOTA_EXCEEDED``
-* 単発は 299 円、月額は 980 円
+* 単発は 299 円、月8回プランは 980 円、作り放題は 2,980 円（``SUBSCRIPTION_8_PRICE_JPY`` / ``SUBSCRIPTION_UNLIMITED_PRICE_JPY``）
 * 排他編集ロックは期限を持たない
 * 会員登録のパスワードは 8 文字以上
 * Webhook は、署名が無い、または検証に失敗すると 400。同じイベント ID の再送は本体処理をしない
@@ -49,7 +49,7 @@
 チラシ生成との分担
 ------------------
 
-1080×1920 の描画、コントラスト、OpenAI を模したアダプターは、:doc:`/flyer/testing/index` の pytest が確認します。
+1080×1528 の描画、コントラスト、OpenAI を模したアダプターは、:doc:`/flyer/testing/index` の pytest が確認します。
 
 Next.js 側が持つ範囲は次の二つです。
 

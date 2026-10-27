@@ -2,18 +2,30 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import {
+  ONE_TIME_PRICE_JPY,
+  SUBSCRIPTION_8_PRICE_JPY,
+  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+} from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
 import { yenMark } from "@/lib/format";
 import { Alert, Dialog } from "@/components/ui";
+
+/** 申し込む定額プラン。DB の SubscriptionPlan から NONE を除いた形。 */
+export type SubscriptionChoice = "MONTHLY_8" | "UNLIMITED";
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectOneTime: () => Promise<unknown>;
-  onSelectSubscription: () => Promise<unknown>;
+  onSelectSubscription: (plan: SubscriptionChoice) => Promise<unknown>;
   /** いまの販売価格。無いときは定価で表示する。 */
-  quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
+  quotes?: {
+    oneTime: PricingQuote;
+    subscription8: PricingQuote;
+    subscriptionUnlimited: PricingQuote;
+  } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
@@ -71,7 +83,7 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
       {discounted && deadline && (
         <p className="help">
           {quote?.campaignEndsAt ? `${endsAtLabel(quote.campaignEndsAt)} まで` : ""}
-          {quote?.target === "SUBSCRIPTION" ? "（加入から割引月数ぶん適用）" : ""}
+          {quote && quote.target !== "ONE_TIME" ? "（加入から割引月数ぶん適用）" : ""}
         </p>
       )}
     </div>
@@ -88,13 +100,14 @@ export function PricingModal({
   onGranted,
   context = "list",
 }: PricingModalProps) {
-  const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | "SUB" | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | SubscriptionChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const oneTime = quotes?.oneTime ?? null;
-  const subscription = quotes?.subscription ?? null;
+  const subscription8 = quotes?.subscription8 ?? null;
+  const subscriptionUnlimited = quotes?.subscriptionUnlimited ?? null;
   const isFree = oneTime?.chargedPrice === 0;
   const freeExhausted = isFree && freeGrantRemaining === 0;
 
@@ -120,11 +133,11 @@ export function PricingModal({
     }
   };
 
-  const handleSubscription = async () => {
-    setLoadingPlan("SUB");
+  const handleSubscription = async (plan: SubscriptionChoice) => {
+    setLoadingPlan(plan);
     setError(null);
     try {
-      await onSelectSubscription();
+      await onSelectSubscription(plan);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "サブスクリプションセッション作成に失敗しました");
       setLoadingPlan(null);
@@ -139,7 +152,7 @@ export function PricingModal({
             {CANCEL_LABEL[context]}
           </button></>}
     >
-      <p className="dialog__body">継続して告知ページを作るには、次のどちらかを選びます。</p>
+      <p className="dialog__body">継続して告知ページを作るには、次のいずれかを選びます。</p>
         <div className="stack" style={{ marginTop: "1.25rem" }}>
           <article className="card">
             <h4 className="card__title">単発チケット</h4>
@@ -163,31 +176,54 @@ export function PricingModal({
                     : "単発で購入する"}
             </button>
           </article>
-          <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
-            <p className="eyebrow">月4回以上でおトク</p>
-            <h4 className="card__title">月額使い放題</h4>
-            <PriceBlock quote={subscription} fallback={SUBSCRIPTION_PRICE_JPY} />
+          <article className="card">
+            <p className="eyebrow">月に{SUBSCRIPTION_EVENT_LIMIT}回まで</p>
+            <h4 className="card__title">月{SUBSCRIPTION_EVENT_LIMIT}回プラン</h4>
+            <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
             <p className="card__body">
-              生成無制限、共同主催者の招待、複製。
-              {subscription?.chargedPrice === 0
+              月{SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。
+              {subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
             <button
               type="button"
-              onClick={() => void handleSubscription()}
+              onClick={() => void handleSubscription("MONTHLY_8")}
+              disabled={loadingPlan !== null}
+              className="btn btn--block"
+            >
+              {loadingPlan === "MONTHLY_8"
+                ? "Stripeへ接続中..."
+                : subscription8?.chargedPrice === 0
+                  ? "0円で定期購入を始める"
+                  : "月8回プランを始める"}
+            </button>
+          </article>
+          <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
+            <p className="eyebrow">回数を気にせず作る</p>
+            <h4 className="card__title">作り放題</h4>
+            <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
+            <p className="card__body">
+              契約が有効なあいだ、イベント作成の回数は数えません。
+              {subscriptionUnlimited?.chargedPrice === 0
+                ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
+                : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSubscription("UNLIMITED")}
               disabled={loadingPlan !== null}
               className="btn btn--primary btn--block"
             >
-              {loadingPlan === "SUB"
+              {loadingPlan === "UNLIMITED"
                 ? "Stripeへ接続中..."
-                : subscription?.chargedPrice === 0
+                : subscriptionUnlimited?.chargedPrice === 0
                   ? "0円で定期購入を始める"
-                  : "定期購入で使い放題"}
+                  : "定期購入で作り放題"}
             </button>
           </article>
         </div>
-        {error && <p className="alert alert--error" style={{ marginTop: "1rem" }}>{error}</p>}
+        {error && <Alert tone="error" style={{ marginTop: "1rem" }}>{error}</Alert>}
         <p className="help" style={{ marginTop: "1rem" }}>
           0円の月額は無料期間の終了後に自動で有料へ切り替わります。終了の3日前と1日前にメールでお知らせします。詳しくは
           <Link href="/terms" className="text-link">

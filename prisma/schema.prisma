@@ -19,6 +19,14 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+/// 有料の定額プラン。NONE は未加入。
+/// MONTHLY_8 は暦月 8 回まで、UNLIMITED は回数を数えない。
+enum SubscriptionPlan {
+  NONE
+  MONTHLY_8
+  UNLIMITED
+}
+
 enum PaymentType {
   ONE_TIME
   SUBSCRIPTION
@@ -33,9 +41,12 @@ enum PaymentStatus {
 }
 
 /// 価格キャンペーンの適用対象。
+/// SUBSCRIPTION は定額プランの両方（8 回・作り放題）に効く、旧来の指定。
 enum PricingTarget {
   ONE_TIME
   SUBSCRIPTION
+  SUBSCRIPTION_8
+  SUBSCRIPTION_UNLIMITED
   BOTH
 }
 
@@ -229,6 +240,12 @@ model UserUsageQuota {
   freeEventCount       Int                @default(0) @map("free_event_count") @db.SmallInt
   paidCredits          Int                @default(0) @map("paid_credits") @db.Integer
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
+  /// 加入中の定額プラン。subscription_status が ACTIVE のときだけ意味を持つ。
+  subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
+  /// MONTHLY_8 で今月すでに公開した回数。暦月が変わったら作り直す。
+  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
+  /// monthly_event_count を数えた暦月（JST の "2026-10"）。NULL はまだ数えていない。
+  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -313,19 +330,22 @@ model PricingCampaign {
   @@map("pricing_campaigns")
 }
 
-/// 期間付きの Stripe クーポン。キャンペーン版と割引月数の組み合わせで1つ作る。
+/// 期間付きの Stripe クーポン。キャンペーン版・割引月数・プランの組み合わせで1つ作る。
+/// 定額プランが 2 段階になったので、980 円用と 2980 円用で金額の違うクーポンを分けて持つ。
 model PricingCampaignCoupon {
-  id             String       @id @default(uuid()) @db.Uuid
-  campaignId     String       @map("campaign_id") @db.Uuid
+  id             String           @id @default(uuid()) @db.Uuid
+  campaignId     String           @map("campaign_id") @db.Uuid
   version        Int
-  months         Int          @db.SmallInt
+  months         Int              @db.SmallInt
   kind           DiscountKind
-  stripeCouponId String       @unique @map("stripe_coupon_id") @db.VarChar(255)
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  /// どの定額プラン用のクーポンか。金額（amount_off）が変わるためプランごとに作る。
+  plan           SubscriptionPlan @default(MONTHLY_8)
+  stripeCouponId String           @unique @map("stripe_coupon_id") @db.VarChar(255)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
   campaign PricingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  @@unique([campaignId, version, months, kind])
+  @@unique([campaignId, version, months, kind, plan])
   @@map("pricing_campaign_coupons")
 }
 
@@ -483,7 +503,7 @@ model FlyerAsset {
   externalFlyerId String?     @map("external_flyer_id") @db.VarChar(100)
   imageUrl        String      @map("image_url") @db.Text
   lqipDataUrl     String?     @map("lqip_data_url") @db.Text
-  aspectRatio     String      @default("9:16") @map("aspect_ratio") @db.VarChar(10)
+  aspectRatio     String      @default("A4") @map("aspect_ratio") @db.VarChar(10)
   title           String?     @db.VarChar(100)
   eventDate       DateTime?   @map("event_date") @db.Date
   eventTime       String?     @map("event_time") @db.VarChar(50)

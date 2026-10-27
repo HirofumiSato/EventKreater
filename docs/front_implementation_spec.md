@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月額980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月8回980円/作り放題2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計＆API仕様】<br>user_usage_quotas・Stripe Webhook・アトミック排他・同期verify API"]
     D["【本設計書：フロントエンド実装仕様】<br>画面遷移・Tailwind UI・useEditLock・useEventQuota・PricingModal・Portal遷移"]
@@ -22,10 +22,11 @@ flowchart TD
 ### 1.1. 5大設計原則
 
 1. **Flyer-First & Peek UI (視覚訴求とCTAの共存):**  
-   - スマホのファーストビュー（FV）でチラシ画像（9:16）を美しくカード状に埋め込みつつ（`max-height: 65vh`）、画面下部に出欠フォームの頭部が自然に見える「Peek UI」および追従型「Sticky CTAバー」を実装し、FV直帰率35%以下・スクロール誘導を担保。  
+   - スマホのファーストビュー（FV）でチラシ画像（A4 縦 210:297）を美しくカード状に埋め込みつつ（`max-height: 65vh`）、画面下部に出欠フォームの頭部が自然に見える「Peek UI」および追従型「Sticky CTAバー」を実装し、FV直帰率35%以下・スクロール誘導を担保。  
 2. **Zero-Friction RSVP (極小摩擦の出欠体験):**  
    - 参加者はアカウント作成不要。氏名・出欠トグル（参加/不参加）・追加コメントを入力するだけで3秒回答。端末Cookie（`rsvp_token`）をフックし、再訪時は自回答を自動プリフィル・上書き変更可能とする。  
    - 定員に達した催しでは「参加」を出さず、「参加要望」と「不参加」の2択にする（`status = WAITLISTED`）。要望は氏名とコメントだけを受け、日時・費用プランは聞かない。送信後は待ち順（1始まり）を表示する。席を確保済みの出席者は満員でも出席のまま変更できる。幹事は名簿の「参加要望」から待ち順に承認する。満員判定はサーバーで `events` の行ロックを取って行い、画面の状態が古いときは断らず参加要望へ読み替える。  
+   - 出席の日時と費用プランは、候補が1件だけならラジオを出さず、その値をそのまま送る。選ばせるのは候補が2件以上のときだけである。  
 3. **Robust Exclusive Lock UX (競合時の可視化):**  
    - 複数幹事の同時編集事故を防ぐため、期限を持たない排他ロック、30秒ごとの保持確認、他幹事編集中モーダル、および緊急時の「強制引き継ぎ（Takeover）」を完全なUI/UXとして実装。  
    - ロックを保持している本人の画面には、排他の状態や残り時間を表示しない。競合する幹事にだけ、保持者名を出す。  
@@ -45,8 +46,8 @@ flowchart TD
 | パス | 画面ID | 対象アクター | 認可・アクセス条件 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
 | `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`飯フェス、タコパ、ライブ、占い、撮影会などの主催者様へ。`）、見出しは `SITE.tagline`（チラシと告知WEBページを5分で作る）。LP として扱い、共通ヘッダーは出さない。墨地のヒーローを画面の上端から始め、メインの上端の余白も 0 にする（`siteChrome("/")` の `flushTop`）。ログインの入口は、ヒーローに「参加者ログイン」、フッターに「主催者ログイン」を置く。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
-| `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
-| `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円月額の自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
+| `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月8回980円、作り放題2980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
+| `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円の定額プランの自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。共通ヘッダーは出さない（`siteChrome("/events/…")`）。チラシを画面の上端から始める（`flushTop`）。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する。ログインと作成の入口は本文とフッターが持つ |
 | `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。出欠集計・クォータ残数・ポータル導線。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。下書きの件数をボタンに添える。本文冒頭のサブタブ（主催一覧 / カレンダー / 売上）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
 | `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、選んだ日の予定一覧を出す。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。公開中の予定は、日別一覧から LINE 共有ボタンで告知URLを送れる（SCR-PUB-01 と同じ注意書きを出す）。外部カレンダー連携（`.ics`・購読URL）は持たない |
@@ -92,7 +93,7 @@ flowchart TD
 | :---- | :---- | :---- | :---- | :---- |
 | 公開 | SCR-PUB-00 | ホーム | `/` | 5分でチラシと告知WEBページを作れることの紹介と使い方。告知URLは主催者から受け取る旨の案内。一覧・検索は置かない |
 | 公開 | SCR-PUB-06 | サービス・プラン紹介 | `/service` | チラシと出欠の説明、料金3種、作成と主催者ログインへのボタン。Stripe は開かない。割引中は販売価格と定価を併記する |
-| 公開 | SCR-PUB-10 | 利用規約 | `/terms` | 料金、価格キャンペーン、0円単発、0円月額の自動更新、3日前・1日前の通知、解約と返金 |
+| 公開 | SCR-PUB-10 | 利用規約 | `/terms` | 料金、価格キャンペーン、0円単発、0円の定額プランの自動更新、3日前・1日前の通知、解約と返金 |
 | 公開 | SCR-PUB-01 | イベント告知・出欠画面 | `/events/[id]` | チラシFV埋め込み告知と、未登録の3秒出欠。共通ヘッダーは出さない。直下に主催者勧誘カード |
 | 会員 | SCR-PUB-02 | 主催者の会員登録・ログイン | `/auth/register` | 幹事の入口。パスワード登録は確認メールのあと電話番号を確認する。ログインは確認番号（既定はSMS、予備はメール）。同じ確認済み電話番号なら既存会員へ結びつける。Google は確認済みメールだけ |
 | 会員 | SCR-PUB-07 | 参加者の会員登録・ログイン | `/participant/login` | 履歴を残す参加者の入口。部品は SCR-PUB-02 と同じで、文言と着地だけを参加者向けにする。管理者も参加者としては入れる |
@@ -117,19 +118,19 @@ flowchart TD
 | 主催 | SCR-ORG-11 | 売上 | `/organizer/revenue` | 見込み売上・領収書発行額・差額・平均単価。全期間が初期値で、開催日で絞り込む。イベント別の一覧 |
 | 主催 | SCR-ORG-12 | 売上の内訳 | `/organizer/events/[id]/revenue` | プラン別と開催回別の人数・小計。プラン未選択の案内 |
 | 主催 | SCR-ORG-07 | 共同幹事受諾 | `/invitations/[code]` | 招待コードによる幹事権限のバインド |
-| パネル | SCR-ORG-08 | チラシ生成 | SCR-ORG-02 / SCR-ORG-05 上 | デザイン選択と7項目からの生成、生成結果のプレビューとダウンロード、手元の画像のアップロード。過去チラシは SCR-ORG-03 で選ぶ |
-| モーダル | SCR-ORG-03 | チラシ選択モーダル | SCR-ORG-02 / SCR-ORG-05 上 | 生成済み・アップロード済みチラシの選択と、7項目の流し込み。各チラシのダウンロードと、その場でのアップロード |
+| パネル | SCR-ORG-08 | チラシ生成 | SCR-ORG-02 / SCR-ORG-05 上 | デザイン選択と7項目からの生成、生成結果のプレビュー、手元の画像のアップロード。ダウンロード（画像・告知 QR 付き A4 PDF）は、チラシを載せたイベントが公開済みのときだけ出す。PDF は SCR-ORG-16 からも落とせる。過去チラシは SCR-ORG-03 で選ぶ |
+| モーダル | SCR-ORG-03 | チラシ選択モーダル | SCR-ORG-02 / SCR-ORG-05 上 | 生成済み・アップロード済みチラシの選択と、7項目の流し込み。各チラシの画像ダウンロード（イベントに紐づかないため PDF は出さない）と、その場でのアップロード |
 | モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰。LINE共有は公開ページとカレンダーに置く |
 | モーダル | SCR-MOD-02 | 排他ロック競合モーダル | SCR-ORG-05 上（HTTP 409） | 他幹事の編集中通知と、強制引き継ぎ（Takeover） |
 | モーダル | SCR-MOD-03 | 削除・受付停止モーダル | SCR-ORG-01 上（筆頭幹事のみ） | 完全削除（`isDeleted`）または出欠受付停止（`CLOSED`）の確認 |
-| モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月額980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ |
+| モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・プレビュー・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月8回980円 / 作り放題2980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ。月8回の上限で 402 のときは作り放題を先頭に出す |
 | 外部 | — | Stripe Hosted Checkout | Stripe ホスト画面 | カード決済とサブスク加入。成功時は `session_id` 付きで SCR-ORG-02 へ戻る |
 | 外部 | — | Stripe Customer Portal | Stripe ホスト画面 | 筆頭幹事の解約とカード変更。SCR-ORG-01 と SCR-PUB-03 から開き、完了後は SCR-ORG-01 へ戻る。参加者の出欠では開かない |
 | 管理者 | SCR-ADM-00 | 管理者ログイン | `/console/login` | 公開ナビに出さない。パスワードのあと確認番号。確認済み電話が必須 |
 | 管理者 | SCR-ADM-04 | 管理者ホーム | `/console` | ログイン後の着地。会員、イベント、決済への入口 |
 | 管理者 | SCR-ADM-01 | 会員検索・権限変更 | `/console/users` | 名前・メールで検索し、他会員を管理者または会員にする |
 | 管理者 | SCR-ADM-02 | イベント検索 | `/console/events` | 催し名・場所・幹事で検索する。下書きと削除済みを含む |
-| 管理者 | SCR-ADM-03 | 利用枠の決済履歴 | `/console/payments` | 単発と月額の請求。失敗、返金、異議申立を含む。操作は検索だけ |
+| 管理者 | SCR-ADM-03 | 利用枠の決済履歴 | `/console/payments` | 単発と定額の請求。失敗、返金、異議申立を含む。操作は検索だけ |
 | 管理者 | SCR-ADM-05 | 料金キャンペーン | `/console/pricing` | 期間と対象を決めた割引・0円販売の作成、編集、停止。成立件数と売上を確認する |
 
 ---
@@ -202,7 +203,7 @@ graph TD
         MOD03["SCR-MOD-03: 削除・受付停止モーダル<br/>(筆頭幹事のみ)"]:::modal
         subgraph bill["課金（筆頭幹事の利用枠だけ）"]
             direction TB
-            MOD01["SCR-MOD-01: 課金プランモーダル<br/>(299円単発 / 980円サブスク)"]:::modal
+            MOD01["SCR-MOD-01: 課金プランモーダル<br/>(299円単発 / 月8回980円 / 作り放題2980円)"]:::modal
             ST_CHECK["Stripe Hosted Checkout<br/>(カード決済・サブスク加入)"]:::stripe
             ST_PORTAL["Stripe Customer Portal<br/>(筆頭幹事の解約・カード変更)"]:::stripe
         end
@@ -359,7 +360,7 @@ graph TD
     ORG07 -.->|未ログイン: ログインしてから受諾| PUB02
 
     %% 課金・Stripe
-    MOD01 -->|単発299円 または 月額980円を選択| ST_CHECK
+    MOD01 -->|単発299円 / 月8回980円 / 作り放題2980円を選択| ST_CHECK
     MOD01 -->|閉じる（作成から）| ORG02
     MOD01 -->|閉じる（一覧・マイページから）| ORG01
     ST_CHECK -->|決済成功: redirect session_id| ORG02
@@ -486,7 +487,7 @@ src/
 │   ├── auth/                         # SCR-PUB-02 / 05 / 07。AuthEntryScreen・LoginChallengeForm・Hydration
 │   ├── billing/                      # SCR-MOD-01。PricingModal・QuotaStatusBanner・StripePortalButton・plans/pricing/quota
 │   ├── events/                       # SCR-PUB-01 / SCR-ORG-01 / 02 / 05。EventCard・EventForm・EventMetaCard・OrganizerInviteCard・PosterHero
-│   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal・FlyerUploadButton
+│   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal・FlyerUploadButton・lib/pdf（A4 PDF と QR）
 │   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-14
 │   │   ├── components/OrganizerTabs.tsx         # 主催一覧 / カレンダー / 売上 / プロフィール（本文内サブタブ）
 │   │   ├── components/OrganizerProfileForm.tsx  # SCR-ORG-14（保存前プレビュー）
@@ -536,32 +537,45 @@ src/
 
 ### 4.1. PricingModal.tsx（SCR-MOD-01: 課金プラン選択・Checkout遷移モーダル）
 
-イベント作成時に HTTP 402（QUOTA_EXCEEDED）が発生した際、または主催者一覧でアップグレードを押した際に表示する。単発チケットと月額プランを選ぶと、バックエンドから Stripe Hosted Checkout の URL を取得して画面遷移する。`quotes` があるときは販売価格と定価を併記し、期限とキャンペーン名を出す。単発が 0 円のときのボタンは「無料で受け取る」で、Stripe へは行かず、その場で付与する。0 円の月額はカード登録を必須にし、無料期間の終了後に自動で有料へ切り替わることを本文と `/terms` へのリンクで示す。
+イベント作成時に HTTP 402（QUOTA_EXCEEDED）が発生した際、または主催者一覧でアップグレードを押した際に表示する。単発チケットと2つの定額プラン（月8回 / 作り放題）を選ぶと、バックエンドから Stripe Hosted Checkout の URL を取得して画面遷移する。`quotes` があるときは販売価格と定価を併記し、期限とキャンペーン名を出す。単発が 0 円のときのボタンは「無料で受け取る」で、Stripe へは行かず、その場で付与する。0 円の定額プランはカード登録を必須にし、無料期間の終了後に自動で有料へ切り替わることを本文と `/terms` へのリンクで示す。月8回の上限で 402 になったときは、作り放題を先頭に出す。
 
 ```tsx
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
-import { ONE_TIME_PRICE_JPY, SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import {
+  ONE_TIME_PRICE_JPY,
+  SUBSCRIPTION_8_PRICE_JPY,
+  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+} from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
+
+/** 申し込む定額プラン。DB の SubscriptionPlan から NONE を除いた形。 */
+export type SubscriptionChoice = "MONTHLY_8" | "UNLIMITED";
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectOneTime: () => Promise<unknown>;
-  onSelectSubscription: () => Promise<unknown>;
+  onSelectSubscription: (plan: SubscriptionChoice) => Promise<unknown>;
   /** いまの販売価格。無いときは定価で表示する。 */
-  quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
+  quotes?: {
+    oneTime: PricingQuote;
+    subscription8: PricingQuote;
+    subscriptionUnlimited: PricingQuote;
+  } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
-  context?: "create" | "edit" | "list" | "mypage";
+  context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
 
 const CANCEL_LABEL: Record<NonNullable<PricingModalProps["context"]>, string> = {
   create: "キャンセルして作成に戻る",
   edit: "キャンセルして編集に戻る",
+  preview: "キャンセルしてプレビューに戻る",
   list: "閉じる",
   mypage: "閉じる",
 };
@@ -609,7 +623,7 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
       {discounted && deadline && (
         <p className="help">
           {quote?.campaignEndsAt ? `${endsAtLabel(quote.campaignEndsAt)} まで` : ""}
-          {quote?.target === "SUBSCRIPTION" ? "（加入から割引月数ぶん適用）" : ""}
+          {quote?.target === "ONE_TIME" ? "" : "（加入から割引月数ぶん適用）"}
         </p>
       )}
     </div>
@@ -626,13 +640,14 @@ export function PricingModal({
   onGranted,
   context = "create",
 }: PricingModalProps) {
-  const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | "SUB" | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | SubscriptionChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const oneTime = quotes?.oneTime ?? null;
-  const subscription = quotes?.subscription ?? null;
+  const subscription8 = quotes?.subscription8 ?? null;
+  const subscriptionUnlimited = quotes?.subscriptionUnlimited ?? null;
   const isFree = oneTime?.chargedPrice === 0;
   const freeExhausted = isFree && freeGrantRemaining === 0;
 
@@ -658,11 +673,11 @@ export function PricingModal({
     }
   };
 
-  const handleSubscription = async () => {
-    setLoadingPlan("SUB");
+  const handleSubscription = async (plan: SubscriptionChoice) => {
+    setLoadingPlan(plan);
     setError(null);
     try {
-      await onSelectSubscription();
+      await onSelectSubscription(plan);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "サブスクリプションセッション作成に失敗しました");
       setLoadingPlan(null);
@@ -674,7 +689,7 @@ export function PricingModal({
       <button type="button" className="modal__backdrop" aria-label="閉じる" onClick={onClose} />
       <div className="dialog" role="dialog" aria-modal="true">
         <h3 className="dialog__title">課金プラン選択</h3>
-        <p className="dialog__body">継続して告知ページを作るには、次のどちらかを選びます。</p>
+        <p className="dialog__body">継続して告知ページを作るには、次のいずれかを選びます。</p>
         <div className="stack" style={{ marginTop: "1.25rem" }}>
           <article className="card">
             <h4 className="card__title">単発チケット</h4>
@@ -698,33 +713,56 @@ export function PricingModal({
                     : "単発で購入する"}
             </button>
           </article>
-          <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
-            <p className="eyebrow">月4回以上でおトク</p>
-            <h4 className="card__title">月額使い放題</h4>
-            <PriceBlock quote={subscription} fallback={SUBSCRIPTION_PRICE_JPY} />
+          <article className="card">
+            <p className="eyebrow">月に{SUBSCRIPTION_EVENT_LIMIT}回まで</p>
+            <h4 className="card__title">月{SUBSCRIPTION_EVENT_LIMIT}回プラン</h4>
+            <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
             <p className="card__body">
-              生成無制限、共同幹事、複製。
-              {subscription?.chargedPrice === 0
+              月{SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。
+              {subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
             <button
               type="button"
-              onClick={() => void handleSubscription()}
+              onClick={() => void handleSubscription("MONTHLY_8")}
+              disabled={loadingPlan !== null}
+              className="btn btn--block"
+            >
+              {loadingPlan === "MONTHLY_8"
+                ? "Stripeへ接続中..."
+                : subscription8?.chargedPrice === 0
+                  ? "0円で定期購入を始める"
+                  : "月8回プランを始める"}
+            </button>
+          </article>
+          <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
+            <p className="eyebrow">回数を気にせず作る</p>
+            <h4 className="card__title">作り放題</h4>
+            <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
+            <p className="card__body">
+              契約が有効なあいだ、イベント作成の回数は数えません。
+              {subscriptionUnlimited?.chargedPrice === 0
+                ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
+                : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSubscription("UNLIMITED")}
               disabled={loadingPlan !== null}
               className="btn btn--primary btn--block"
             >
-              {loadingPlan === "SUB"
+              {loadingPlan === "UNLIMITED"
                 ? "Stripeへ接続中..."
-                : subscription?.chargedPrice === 0
+                : subscriptionUnlimited?.chargedPrice === 0
                   ? "0円で定期購入を始める"
-                  : "定期購入で使い放題"}
+                  : "定期購入で作り放題"}
             </button>
           </article>
         </div>
         {error && <p className="alert alert--error" style={{ marginTop: "1rem" }}>{error}</p>}
         <p className="help" style={{ marginTop: "1rem" }}>
-          0円の月額は無料期間の終了後に自動で有料へ切り替わります。終了の3日前と1日前にメールでお知らせします。詳しくは
+          0円の定額プランは無料期間の終了後に自動で有料へ切り替わります。終了の3日前と1日前にメールでお知らせします。詳しくは
           <Link href="/terms" className="text-link">
             利用規約
           </Link>
@@ -908,7 +946,7 @@ export const StripePortalButton: React.FC<StripePortalButtonProps> = ({
 
 ### 4.4. QuotaStatusBanner.tsx（クォータ残数＆プラン状態表示バー）
 
-主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は月額980円を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
+主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月8回 / 作り放題）を出し、月8回プランでは今月の使用回数と残り回数（`monthlyEventCount` / `monthlyLimit` / `remainingMonthly`）を出す。上限に達した月は作り放題への変更を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
 
 ```tsx
 "use client";
@@ -933,6 +971,23 @@ function dateLabel(iso: string): string {
   }).format(new Date(iso));
 }
 
+function subscribedMessage(quota: UserQuota, discountLabel: string | null): string {
+  const price = quota.subscriptionPlan === "MONTHLY_8" ? "980円" : "2,980円";
+  const detail = discountLabel
+    ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
+    : `毎月の自動更新です。解約するまで継続します。`;
+  if (quota.subscriptionPlan === "MONTHLY_8") {
+    const remaining = Math.max(0, quota.remainingMonthly ?? 0);
+    const used = `今月は ${quota.monthlyEventCount ?? 0}/${quota.monthlyLimit ?? 8} 回`;
+    const tail =
+      remaining === 0
+        ? "今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
+        : `あと ${remaining}回つくれます。`;
+    return `月8回プランに加入中です。${used}。${tail}${detail}`;
+  }
+  return `作り放題に加入中です。イベント作成の回数は数えません。${detail}`;
+}
+
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
   if (!quota) return null;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
@@ -955,9 +1010,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
     : quota.subscriptionStatus === "PAST_DUE"
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
-        ? discountLabel
-          ? `月額プラン加入中です。${discountLabel}。終了後は月額980円を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
-          : "月額プラン加入中です。イベント生成は無制限です。"
+        ? subscribedMessage(quota, discountLabel)
         : `無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
@@ -979,7 +1032,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
       </p>
       {!isSubscribed && (
         <button type="button" onClick={onOpenPricing} className="btn btn--primary btn--sm">
-          {freeTicketAvailable ? "0円チケットを受け取る" : "使い放題プランを見る"}
+          {freeTicketAvailable ? "0円チケットを受け取る" : "プランを見る"}
         </button>
       )}
     </div>
@@ -1004,6 +1057,9 @@ import { problemMessage, readProblemBody } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 
 export type OneTimeCheckoutResult = "GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED";
+
+/** 申し込む定額プラン。 */
+export type SubscriptionChoice = "MONTHLY_8" | "UNLIMITED";
 
 /** 課金を開いた画面と、購入後に復元する下書き。 */
 export interface CheckoutIntent {
@@ -1097,7 +1153,7 @@ export function useEventQuota() {
     throw new Error("単発決済セッション作成に失敗しました");
   }, [fetchQuota]);
 
-  const startSubscriptionCheckout = useCallback(async (override?: CheckoutIntent) => {
+  const startSubscriptionCheckout = useCallback(async (plan: SubscriptionChoice, override?: CheckoutIntent) => {
     const intent = override ?? intentRef.current;
     const res = await fetch("/api/v1/billing/checkout/subscription", {
       method: "POST",
@@ -1105,7 +1161,7 @@ export function useEventQuota() {
         "Content-Type": "application/json",
         "Idempotency-Key": crypto.randomUUID(),
       },
-      body: checkoutBody(intent),
+      body: JSON.stringify({ ...(intent ?? {}), plan }),
     });
     if (!res.ok) {
       throw new Error(problemMessage(await readProblemBody(res), "サブスクセッション作成に失敗しました"));
@@ -1145,22 +1201,33 @@ export function useEventQuota() {
 
 ```ts
 export type SubscriptionStatus = "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "INCOMPLETE";
+export type SubscriptionPlan = "NONE" | "MONTHLY_8" | "UNLIMITED";
 export interface UserQuota {
   freeEventCount: number;
   freeLimit: number;
   remainingFree: number;
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
+  subscriptionPlan: SubscriptionPlan;
+  /** 今月すでに公開した回数。暦月（JST）が変われば 0 として返る。 */
+  monthlyEventCount: number;
+  monthlyLimit: number;
+  /** 月8回プランの残り。作り放題と未加入は null。 */
+  remainingMonthly: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
-  planType: "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION" | "NONE";
+  planType: "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION_MONTHLY_8" | "SUBSCRIPTION_UNLIMITED" | "NONE";
 }
 export interface PricingOption {
-  type: "SINGLE" | "SUBSCRIPTION";
+  type: "SINGLE" | "SUBSCRIPTION_8" | "SUBSCRIPTION_UNLIMITED";
   name: string;
   price: number;
+  listPrice: number;
+  discountPercent: number;
+  campaignName: string | null;
   currency: string;
-  interval?: string;
+  interval?: "month";
+  eventLimit?: number;
 }
 ```
 
@@ -1172,7 +1239,8 @@ export interface PricingOption {
 | :---- | :---- | :---- | :---- |
 | **FE-BILL-01** | **課金モーダル起動** | 2回無料枠消化済みの主催者が新規作成で「公開」をクリック | HTTP 402を検知し、`PricingModal` が画面遷移なしで即座にポップアップすること |
 | **FE-BILL-02** | **単発購入Checkout遷移** | `PricingModal` で「単発で購入する (299円)」をクリック | ローディング表示後、Stripe Hosted Checkout 画面へ正常にリダイレクトされること |
-| **FE-BILL-03** | **サブスクCheckout遷移** | `PricingModal` で「定期購入で使い放題 (980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ正常にリダイレクトされること |
+| **FE-BILL-03** | **定額プランCheckout遷移** | `PricingModal` で「月8回プランを始める (980円/月)」または「定期購入で作り放題 (2980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ、選んだ階層の Price で正常にリダイレクトされること。`metadata.plan` が `MONTHLY_8` / `UNLIMITED` であること |
+| **FE-BILL-03b** | **月8回の上限表示** | 月8回プランで今月8回公開したあと主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「今月の上限に達しました」を出し、`PricingModal` は作り放題を先頭に出すこと。402 の `error` が `MONTHLY_LIMIT_EXCEEDED` であること |
 | **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、枠加算を確認して作成が認可されること。応答の `draftId` が URL に残り、開いていた画面から動かないこと |
 | **FE-BILL-05** | **Customer Portal遷移** | 主催一覧、またはマイページで「プラン・カード管理」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
 | **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
@@ -1185,7 +1253,7 @@ export interface PricingOption {
 | **FE-ADM-03** | **会員検索と権限変更** | 管理者ホームから会員を開き、名前またはメールで検索して他会員を管理者にする | 一覧が絞り込まれ、保存後に権限表示が変わること。自分の行は保存できないこと |
 | **FE-ADM-06** | **ログイン後の管理者ホーム** | 管理者でログインする | `/console` の管理者ホームが開き、会員・イベント・決済へ進めること |
 | **FE-ADM-04** | **イベント検索** | 管理者で催し名、場所、または幹事を検索する | 下書きと削除済みを含む一致行が表示され、告知 URL がある行だけリンクになること |
-| **FE-ADM-05** | **決済履歴** | 管理者で会員のメール、または Stripe の ID を検索する | 単発と月額の行が日時順に出ること。返金ボタンは無いこと |
+| **FE-ADM-05** | **決済履歴** | 管理者で会員のメール、または Stripe の ID を検索する | 単発と定額の行が日時順に出ること。返金ボタンは無いこと |
 | **FE-ADM-07** | **管理画面の画面名** | `/console`、`/console/users`、`/console/events`、`/console/payments`、`/console/login` を開く | 冒頭 `h1` がそれぞれ管理者ホーム、会員検索・権限変更、イベント検索、利用枠の決済履歴、管理者ログインであること。共通バーは「管理コンソール」とナビだけであること |
 | **FE-ORG-01** | **幹事画面の画面名** | 主催一覧、新規作成、編集、名簿、幹事領収書、共同幹事受諾を開く | 冒頭 `h1` が画面名であること。催し名は `h1` にせずリードに出すこと |
 | **FE-ORG-02** | **公開状態** | 新規イベント作成を開き、続けて複製した下書きの編集を開く | 新規作成に公開状態の選択が無く、`visibility` は `UNLISTED` で保存されること。編集では下書きのときだけ「公開中」を選べ、公開済みでは状態を変えられないこと |
@@ -1199,7 +1267,7 @@ export interface PricingOption {
 | **FE-ORG-14** | **公開直後の登録の着地** | SCR-ORG-10 で「会員登録」または「ログイン」を押して完了する | `/organizer/events?registered=1` へ戻り、「登録が完了しました」のトーストが1回だけ出ること。`registered` は表示後に URL から消えること |
 | **FE-ORG-15** | **主催者マイページの要約** | 主催イベントを5件持つ会員で `/mypage` を開く | 主催イベントが直近3件だけ出て、「すべて見る」が `/organizer/events` を指すこと。利用枠の残数と公開プロフィールの状態が出ること。参加履歴（`/participant/history`）への導線が無いこと |
 | **FE-ORG-16** | **下書きの公開ボタン** | 下書きの編集画面と主催一覧を開く | 編集画面では「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、枠が無ければ `PricingModal` が出ること。一覧の下書きカードには「公開ページ」を出さないこと |
-| **FE-ORG-17** | **チラシのダウンロードとアップロード** | 作成画面で手元の JPEG をアップロードし、プレビューの「ダウンロード」を押す。続けて「過去のチラシから選ぶ」を開く | アップロード後にプレビューが出て、作成フォームの `flyerAssetId` がそのチラシになること。ダウンロードが `チラシ-{催し名}.jpg` の名前で保存され、回数（quota）が減らないこと。選択モーダルにアップロードしたチラシが並び、各カードからもダウンロードできること。PNG・WebP も同じように扱え、GIF や 8MB 超はエラーになること |
+| **FE-ORG-17** | **チラシのダウンロードとアップロード** | 作成画面で手元の JPEG をアップロードし、「過去のチラシから選ぶ」を開く。公開後に編集画面の「画像でダウンロード」「PDFでダウンロード」を押す | アップロード後にプレビューが出て、作成フォームの `flyerAssetId` がそのチラシになること。下書きの間はダウンロードのボタンが出ず、公開後に出ること。画像が `チラシ-{催し名}.jpg`、PDF が `チラシ-{催し名}.pdf` の名前で保存され、どちらも回数（quota）を減らさないこと。PDF が A4 縦 1 ページで、右下に告知ページの QR と URL があること。選択モーダルにアップロードしたチラシが並び、各カードから画像だけダウンロードできること。PNG・WebP も同じように扱え、GIF や 8MB 超はエラーになること |
 | **FE-PUB-00** | **サービス名** | 公開画面のヘッダーとフッター | 表示が `SITE.name`（いまは `EventKreater`）であること |
 | **FE-PUB-01** | **未ログインの導線** | 未ログインでホーム、`/service`、フッターを見る | ホームには共通ヘッダーが無く、ヒーローに「参加者ログイン」（`/participant/login`）、フッターに「主催者ログイン」（`/auth/register`）があること。`/service` のヘッダーには「参加者ログイン」と「主催者ログイン」の 2 本があること。管理者ログインへのリンクはどこにも無いこと |
 | **FE-PUB-02** | **参加者のヘッダー** | 主催イベントを持たない会員でログインし、`/participant` を開く | ヘッダーが「参加者ホーム」「参加カレンダー」「参加履歴」「主催者として使う」だけで、「イベント告知ページを作る」「主催一覧」「イベントを探す」が無いこと。「主催者として使う」の着地が `/organizer/events` であること |
@@ -1237,7 +1305,7 @@ export interface PricingOption {
 | SCR-ADM-01 | `src/app/console/users/page.tsx` | 冒頭 `h1` は「会員検索・権限変更」。`GET /api/v1/admin/users`。401 はログインへ戻す。403 は「このページは利用できません。」だけを出す。権限の保存は `PATCH /api/v1/admin/users/[id]`。`actorId` と一致する行は変更できない |
 | SCR-ADM-02 | `src/app/console/events/page.tsx` | 冒頭 `h1` は「イベント検索」。`GET /api/v1/admin/events`。`publicPath` がある行だけ告知ページへリンクする |
 | SCR-ADM-03 | `src/app/console/payments/page.tsx` | 冒頭 `h1` は「利用枠の決済履歴」。`GET /api/v1/admin/payments`。会員名、メール、Stripe のセッション ID・請求書 ID・PaymentIntent ID で検索する。状態は手続き中、支払済み、失敗、返金済み、異議申立 |
-| SCR-ADM-05 | `src/app/console/pricing/page.tsx` | 冒頭 `h1` は「料金キャンペーン」。`GET/POST /api/v1/admin/pricing-campaigns`、`PATCH /api/v1/admin/pricing-campaigns/[id]`、`POST /api/v1/admin/pricing-campaigns/[id]/stop`。作成・編集フォームは名前、対象、割引の種類、割引率、開始・終了（JST）、優先度、0円の上限回数を持つ。入力中の割引率から単発・月額の販売価格を即時プレビューする。停止は確認ダイアログを出し、既存購入者の割引が続くことを明記する |
+| SCR-ADM-05 | `src/app/console/pricing/page.tsx` | 冒頭 `h1` は「料金キャンペーン」。`GET/POST /api/v1/admin/pricing-campaigns`、`PATCH /api/v1/admin/pricing-campaigns/[id]`、`POST /api/v1/admin/pricing-campaigns/[id]/stop`。作成・編集フォームは名前、対象（単発／月8回／作り放題／定額2階層／両方）、割引の種類、割引率、開始・終了（JST）、優先度、0円の上限回数を持つ。入力中の割引率から単発と2つの定額の販売価格を即時プレビューする。停止は確認ダイアログを出し、既存購入者の割引が続くことを明記する |
 
 ログイン後の共通バーは `src/modules/admin/components/AdminChrome.tsx` である。「管理コンソール」と、ホーム、会員、イベント、決済、料金のナビだけを出す。画面名は各ページの `h1` である。ログアウトは `DELETE /api/v1/admin/session` のあと `/console/login` へ戻す。ログアウト時はセッション行を失効させる。
 
@@ -1271,9 +1339,9 @@ Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ
 
 | 画面 | 取得元 | 表示 |
 | :---- | :---- | :---- |
-| SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteBoth()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える |
-| SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` を保持し、`quotes` として渡す | 同じく販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
-| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 適用中の割引があるときは「無料期間（〜日時）」「終了後は月額980円を自動で請求」「終了の3日前と1日前にメールでお知らせ」を出す |
+| SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える。単発・月8回・作り放題の3枚を出す |
+| SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` を保持し、`quotes`（`oneTime` / `subscription8` / `subscriptionUnlimited`）として渡す | 同じく販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
+| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「月8回プラン（今月 3/8 回、あと5回）」「作り放題（回数を数えない）」を出す。適用中の割引があるときは「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を出す |
 | SCR-ADM-05 `/console/pricing` | `GET /api/v1/admin/pricing-campaigns` | 一覧に成立件数、売上、割引総額を出す。フォームは入力中の割引率から販売価格を即時計算する |
 
 ### 10.2. `PricingModal` の props
@@ -1283,18 +1351,24 @@ interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectOneTime: () => Promise<unknown>;
-  onSelectSubscription: () => Promise<unknown>;
-  quotes?: { oneTime: PricingQuote; subscription: PricingQuote } | null;
+  onSelectSubscription: (plan: "MONTHLY_8" | "UNLIMITED") => Promise<unknown>;
+  quotes?: {
+    oneTime: PricingQuote;
+    subscription8: PricingQuote;
+    subscriptionUnlimited: PricingQuote;
+  } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
-  context?: "create" | "edit" | "list" | "mypage";
+  context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
 ```
 
 `onSelectOneTime` は `"GRANTED" | "LIMITED" | "REDIRECT" | "PHONE_REQUIRED"` を返す。`GRANTED` のときは `onGranted()` を呼んでモーダルを閉じ、呼び出し元がトーストを出して利用枠を取り直す。`LIMITED` は「このキャンペーンは受け取り済みです」、`PHONE_REQUIRED` は電話番号確認への導線を出す。
 
-`context` はキャンセルボタンの文言だけに使う。`create` は「キャンセルして作成に戻る」、`edit` は「キャンセルして編集に戻る」、`list` と `mypage` は「閉じる」。作成画面の 402 では下書きが既に保存されているので、閉じても入力は失われない。
+`context` はキャンセルボタンの文言だけに使う。`create` は「キャンセルして作成に戻る」、`edit` は「キャンセルして編集に戻る」、`preview` は「キャンセルしてプレビューに戻る」、`list` と `mypage` は「閉じる」。作成画面の 402 では下書きが既に保存されているので、閉じても入力は失われない。
+
+`onSelectSubscription(plan)` は選んだ階層を `POST /api/v1/billing/checkout/subscription` の `plan` に載せる。月8回の上限で 402 になったとき（`error = "MONTHLY_LIMIT_EXCEEDED"`）は、作り放題のカードを先頭に出して変更を促す。
 
 ### 10.3. `useEventQuota` の追加
 

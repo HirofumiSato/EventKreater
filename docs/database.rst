@@ -125,7 +125,7 @@ Prisma Studio
      - 期間限定の価格キャンペーン。対象、割引率、開始と終了、優先度、版、停止日時
    * - ``pricing_campaign_coupons``
      - ``PricingCampaignCoupon``
-     - 版・月数・種類ごとの Stripe クーポン ID
+     - 版・対象プラン・月数・種類ごとの Stripe クーポン ID
    * - ``pricing_campaign_audits``
      - ``PricingCampaignAudit``
      - 作成・編集・停止の監査ログ
@@ -168,8 +168,14 @@ Prisma Studio
      - 未使用の単発チケット数
    * - ``subscription_status``
      - ``NONE`` / ``ACTIVE`` / ``PAST_DUE`` / ``CANCELED`` / ``INCOMPLETE``
+   * - ``subscription_plan``
+     - 加入中の定額プラン。 ``NONE`` / ``MONTHLY_8`` / ``UNLIMITED``
+   * - ``monthly_event_count``
+     - 月8回プランで今月すでに作った回数。月が変わると 0 に戻る
+   * - ``monthly_period_key``
+     - その回数を数えた暦月（JST の ``YYYY-MM`` ）
    * - ``current_period_end``
-     - 月額の有効期限。 ``ACTIVE`` でも過去なら使い放題にならない
+     - 定額プランの有効期限。 ``ACTIVE`` でも過去なら加入は効かない。 ``MONTHLY_8`` は月8回まで、 ``UNLIMITED`` は回数を数えない
    * - ``stripe_customer_id``
      - Stripe Customer。一意
    * - ``stripe_subscription_id``
@@ -298,15 +304,20 @@ Prisma Studio
    SET paid_credits = paid_credits + 1
    WHERE user_id = (SELECT id FROM users WHERE email = 'you@example.com');
 
-月額を、今から 30 日有効な状態にします。
+月8回プランを、今から 30 日有効な状態にします。 ``monthly_period_key`` は今月の JST の暦月です。
 
 .. code-block:: sql
 
    UPDATE user_usage_quotas
    SET
      subscription_status = 'ACTIVE',
+     subscription_plan = 'MONTHLY_8',
+     monthly_event_count = 0,
+     monthly_period_key = to_char((NOW() AT TIME ZONE 'Asia/Tokyo'), 'YYYY-MM'),
      current_period_end = NOW() + INTERVAL '30 days'
    WHERE user_id = (SELECT id FROM users WHERE email = 'you@example.com');
+
+作り放題にするときは ``subscription_plan`` を ``'UNLIMITED'`` にします。回数は数えません。
 
 支払い失敗で作成できない状態にします。
 

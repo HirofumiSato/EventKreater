@@ -221,7 +221,7 @@ async function createFlyer(userId, title) {
       id,
       userId,
       imageUrl: `/api/v1/flyer-assets/${id}/image`,
-      aspectRatio: "9:16",
+      aspectRatio: "A4",
       title,
     },
   });
@@ -235,14 +235,32 @@ try {
     upsertVerifyUser(),
   ]);
 
+  // スクリーンショット用の加入状態。月8回プランの途中にして、残り回数の表示を撮る。
+  const monthlyPeriodKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+
   await prisma.userUsageQuota.upsert({
     where: { userId: organizer.id },
-    create: { userId: organizer.id, freeEventCount: 1 },
+    create: {
+      userId: organizer.id,
+      freeEventCount: 1,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "MONTHLY_8",
+      monthlyEventCount: 3,
+      monthlyPeriodKey,
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+    },
     update: {
       freeEventCount: 1,
       paidCredits: 0,
-      subscriptionStatus: "NONE",
-      currentPeriodEnd: null,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "MONTHLY_8",
+      monthlyEventCount: 3,
+      monthlyPeriodKey,
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
     },

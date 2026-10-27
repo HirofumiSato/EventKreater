@@ -1,23 +1,31 @@
-import type { Prisma, PricingCampaign } from "@prisma/client";
+import type { Prisma, PricingCampaign, PricingTarget } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { getStripe } from "@/modules/billing/lib/stripe";
-import { SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
 import {
   MAX_CAMPAIGN_MONTHS,
   addMonthsUtc,
   isEffectiveDiscount,
   listPriceFor,
   parseJstDateTime,
+  pricingKindOfPlan,
   roundChargedPrice,
   type CampaignDefinition,
   type PricingKind,
+  type SubscriptionProduct,
 } from "@/modules/billing/lib/pricing";
+
+/** 割引の検証で出す商品名。 */
+const PRICING_KIND_LABEL: Record<PricingKind, string> = {
+  ONE_TIME: "単発",
+  SUBSCRIPTION_8: "月8回プラン",
+  SUBSCRIPTION_UNLIMITED: "作り放題",
+};
 
 export interface CampaignInput {
   name: string;
-  target: "ONE_TIME" | "SUBSCRIPTION" | "BOTH";
+  target: PricingTarget;
   discountKind: "PERCENT" | "FREE";
   percent: number;
   startsAt: string;
@@ -29,7 +37,7 @@ export interface CampaignInput {
 
 export interface NormalizedCampaign {
   name: string;
-  target: "ONE_TIME" | "SUBSCRIPTION" | "BOTH";
+  target: PricingTarget;
   discountKind: "PERCENT" | "FREE";
   percent: number;
   startsAt: Date;
@@ -70,11 +78,15 @@ export function normalizeCampaignInput(input: CampaignInput): NormalizedCampaign
   }
 
   const targets: PricingKind[] =
-    input.target === "BOTH" ? ["ONE_TIME", "SUBSCRIPTION"] : [input.target];
+    input.target === "BOTH"
+      ? ["ONE_TIME", "SUBSCRIPTION_8", "SUBSCRIPTION_UNLIMITED"]
+      : input.target === "SUBSCRIPTION"
+        ? ["SUBSCRIPTION_8", "SUBSCRIPTION_UNLIMITED"]
+        : [input.target];
   for (const target of targets) {
     if (!isEffectiveDiscount(listPriceFor(target), percent)) {
       throw invalid(
-        `${target === "ONE_TIME" ? "単発" : "月額"}の割引額が10円未満のため、値引きになりません。割引率を上げてください。`,
+        `${PRICING_KIND_LABEL[target]}の割引額が10円未満のため、値引きになりません。割引率を上げてください。`,
       );
     }
   }
@@ -287,27 +299,30 @@ function couponName(campaign: PricingCampaign, months: number): string {
 }
 
 /**
- * 月額の割引クーポン。同じキャンペーン版・同じ月数なら使い回す。
+ * 月額の割引クーポン。同じキャンペーン版・同じ月数・同じプランなら使い回す。
  * 既存購入者のクーポンは Stripe 側に残るので、版を上げても止まらない。
  */
 export async function ensureCampaignCoupon(
   campaign: PricingCampaign,
   months: number,
+  plan: SubscriptionProduct,
 ): Promise<string> {
   const kind = campaign.discountKind;
   const existing = await prisma.pricingCampaignCoupon.findUnique({
     where: {
-      campaignId_version_months_kind: {
+      campaignId_version_months_kind_plan: {
         campaignId: campaign.id,
         version: campaign.version,
         months,
         kind,
+        plan,
       },
     },
   });
   if (existing) return existing.stripeCouponId;
 
-  const charged = roundChargedPrice(SUBSCRIPTION_PRICE_JPY, campaign.percent);
+  const listPrice = listPriceFor(pricingKindOfPlan(plan));
+  const charged = roundChargedPrice(listPrice, campaign.percent);
   const common = {
     duration: "repeating" as const,
     duration_in_months: months,
@@ -316,16 +331,17 @@ export async function ensureCampaignCoupon(
       campaignId: campaign.id,
       campaignVersion: String(campaign.version),
       months: String(months),
+      plan,
     },
   };
   // currency は amount_off のときだけ指定する。percent_off と併用すると Stripe が拒否する。
   const params: Stripe.CouponCreateParams =
     campaign.discountKind === "FREE"
       ? { ...common, percent_off: 100 }
-      : { ...common, amount_off: SUBSCRIPTION_PRICE_JPY - charged, currency: "jpy" };
+      : { ...common, amount_off: listPrice - charged, currency: "jpy" };
 
   const coupon = await getStripe().coupons.create(params, {
-    idempotencyKey: `pricing_coupon_${campaign.id}_${campaign.version}_${months}`,
+    idempotencyKey: `pricing_coupon_${campaign.id}_${campaign.version}_${months}_${plan}`,
   });
 
   try {
@@ -335,6 +351,7 @@ export async function ensureCampaignCoupon(
         version: campaign.version,
         months,
         kind,
+        plan,
         stripeCouponId: coupon.id,
       },
     });
@@ -343,11 +360,12 @@ export async function ensureCampaignCoupon(
     // 同時に2本の決済が走ったときは、先に保存された方を使う。
     const again = await prisma.pricingCampaignCoupon.findUnique({
       where: {
-        campaignId_version_months_kind: {
+        campaignId_version_months_kind_plan: {
           campaignId: campaign.id,
           version: campaign.version,
           months,
           kind,
+          plan,
         },
       },
     });

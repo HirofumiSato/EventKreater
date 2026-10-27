@@ -3,13 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { requireUserId } from "@/modules/auth/lib/guards";
 import { appBaseUrl, toErrorResponse } from "@/lib/http";
-import { SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import { priceIdForPlan } from "@/modules/billing/lib/billing";
 import { ensureStripeCustomer } from "@/modules/billing/lib/billing";
 import { getStripe, checkoutIdempotencyKey } from "@/modules/billing/lib/stripe";
 import { ensureCampaignCoupon, loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
-import { discountMonths, quoteFor } from "@/modules/billing/lib/pricing";
+import {
+  discountMonths,
+  listPriceFor,
+  pricingKindOfPlan,
+  quoteFor,
+  type SubscriptionProduct,
+} from "@/modules/billing/lib/pricing";
 import { isSubscriptionActive } from "@/modules/billing/lib/quota";
-import { CheckoutIntentSchema } from "@/lib/schemas";
+import { SubscriptionCheckoutSchema } from "@/lib/schemas";
 import {
   DEFAULT_CHECKOUT_RETURN_TO,
   assertOwnDraft,
@@ -19,10 +25,15 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** 申込の既定。料金ページの主ボタンは作り放題なので、指定が無ければそちら。 */
+const DEFAULT_PLAN: SubscriptionProduct = "UNLIMITED";
+
 export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId(req);
-    const priceId = process.env.STRIPE_PRICE_ID_MONTHLY_980;
+    const body = SubscriptionCheckoutSchema.parse(await req.json().catch(() => ({})));
+    const plan: SubscriptionProduct = body.plan ?? DEFAULT_PLAN;
+    const priceId = priceIdForPlan(plan);
     if (!priceId) {
       throw new ProblemDetailException({
         status: 500,
@@ -42,7 +53,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const quote = quoteFor("SUBSCRIPTION", await loadActiveCampaigns(now), now);
+    const quote = quoteFor(pricingKindOfPlan(plan), await loadActiveCampaigns(now), now);
     const campaign = quote.campaignId
       ? await prisma.pricingCampaign.findUnique({ where: { id: quote.campaignId } })
       : null;
@@ -58,14 +69,14 @@ export async function POST(req: NextRequest) {
           error: "CAMPAIGN_ENDED",
         });
       }
-      couponId = await ensureCampaignCoupon(campaign, months);
+      couponId = await ensureCampaignCoupon(campaign, months, plan);
     }
 
     const stripe = getStripe();
     const customerId = await ensureStripeCustomer(userId);
     const appUrl = appBaseUrl();
-    const idempotencyKey = checkoutIdempotencyKey(req, userId, "subscription");
-    const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
+    const idempotencyKey = checkoutIdempotencyKey(req, userId, `subscription_${plan}`);
+    const intent = body;
     const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
     if (intent.draftId) await assertOwnDraft(userId, intent.draftId);
     const { successUrl, cancelUrl } = checkoutReturnUrls(appUrl, returnTo, intent.draftId);
@@ -84,6 +95,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           userId,
           paymentType: "SUBSCRIPTION",
+          plan,
           ...(intent.draftId ? { draftId: intent.draftId } : {}),
           ...(intent.returnTo ? { returnTo } : {}),
           ...(campaign
@@ -93,6 +105,7 @@ export async function POST(req: NextRequest) {
         subscription_data: {
           metadata: {
             userId,
+            plan,
             ...(campaign ? { campaignId: campaign.id } : {}),
           },
         },
@@ -113,7 +126,7 @@ export async function POST(req: NextRequest) {
       paymentType: "SUBSCRIPTION" as const,
       paymentStatus: "PENDING" as const,
       amount: quote.chargedPrice,
-      listAmount: SUBSCRIPTION_PRICE_JPY,
+      listAmount: listPriceFor(pricingKindOfPlan(plan)),
       discountAmount: quote.discountAmount,
       campaignId: quote.campaignId,
       appliedPercent: quote.discountPercent > 0 ? quote.discountPercent : null,
@@ -127,7 +140,7 @@ export async function POST(req: NextRequest) {
       update: data,
     });
 
-    return NextResponse.json({ checkoutUrl: session.url, pricing: quote });
+    return NextResponse.json({ checkoutUrl: session.url, plan, pricing: quote });
   } catch (error) {
     if (error instanceof Error && error.message === "STRIPE_SECRET_KEY is not set") {
       return toErrorResponse(

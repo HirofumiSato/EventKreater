@@ -359,6 +359,13 @@ export const CheckoutIntentSchema = z.object({
 
 export type CheckoutIntent = z.infer<typeof CheckoutIntentSchema>;
 
+/** 定額プランの申込。プランを省略したときは作り放題として扱う。 */
+export const SubscriptionCheckoutSchema = CheckoutIntentSchema.extend({
+  plan: z.enum(["MONTHLY_8", "UNLIMITED"]).optional(),
+});
+
+export type SubscriptionCheckout = z.infer<typeof SubscriptionCheckoutSchema>;
+
 export const AdminLoginSchema = z.object({
   email: z.string().trim().email("メールアドレスの形式が不正です").max(255),
   password: z.string().min(1, "パスワードを入力してください").max(128),
@@ -448,7 +455,13 @@ export const WithdrawSchema = z.object({
  */
 export const PricingCampaignSchema = z.object({
   name: z.string().trim().min(1, "名前を入力してください").max(100),
-  target: z.enum(["ONE_TIME", "SUBSCRIPTION", "BOTH"]),
+  target: z.enum([
+    "ONE_TIME",
+    "SUBSCRIPTION",
+    "SUBSCRIPTION_8",
+    "SUBSCRIPTION_UNLIMITED",
+    "BOTH",
+  ]),
   discountKind: z.enum(["PERCENT", "FREE"]),
   percent: z.number().int().min(1, "割引率は1以上にしてください").max(100),
   startsAt: z.string().trim().min(1, "開始日時を入力してください").max(40),

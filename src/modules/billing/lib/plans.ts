@@ -1,9 +1,17 @@
 export const FREE_EVENT_LIMIT = 2;
 export const ONE_TIME_PRICE_JPY = 299;
-export const SUBSCRIPTION_PRICE_JPY = 980;
+/** 月8回プランの月額（税込）。 */
+export const SUBSCRIPTION_8_PRICE_JPY = 980;
+/** 作り放題の月額（税込）。 */
+export const SUBSCRIPTION_UNLIMITED_PRICE_JPY = 2980;
+/** 月8回プランで、暦月（JST）に公開できる回数。 */
+export const SUBSCRIPTION_EVENT_LIMIT = 8;
+
+/** 定額プランの種類。DB の SubscriptionPlan と揃える（NONE は未加入）。 */
+export type ServicePlanId = "free" | "single" | "subscription-8" | "subscription-unlimited";
 
 export interface ServicePlan {
-  id: "free" | "single" | "subscription";
+  id: ServicePlanId;
   name: string;
   priceYen: number;
   unit: string;
@@ -29,7 +37,7 @@ export interface PlanQuote {
 }
 
 function planFrom(
-  id: "free" | "single" | "subscription",
+  id: ServicePlanId,
   name: string,
   unit: string,
   body: string,
@@ -76,22 +84,35 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
       "買った回数に期限なし",
       "領収書の発行も含む",
     ],
-    true,
   ),
   planFrom(
-    "subscription",
-    "月額",
+    "subscription-8",
+    "月8回プラン",
+    "月",
+    `月に${SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。`,
+    SUBSCRIPTION_8_PRICE_JPY,
+    [
+      `月に${SUBSCRIPTION_EVENT_LIMIT}回まで公開できる`,
+      "回数は毎月1日（日本時間）に戻る",
+      "解約はいつでも。次の更新で止まる",
+    ],
+  ),
+  planFrom(
+    "subscription-unlimited",
+    "作り放題",
     "月",
     "契約が有効なあいだ、イベント作成の回数は数えません。",
-    SUBSCRIPTION_PRICE_JPY,
-    ["月に 4回以上開くなら、こちらが安い", "毎月の自動更新", "解約はいつでも。次の更新で止まる"],
+    SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+    ["月の回数を気にせず作れる", "毎月の自動更新", "解約はいつでも。次の更新で止まる"],
+    true,
   ),
 ];
 
 /** 料金ページ用。定価はそのまま、割引中のものだけ金額を差し替える。 */
 export function buildServicePlans(quotes: {
   oneTime: PlanQuote;
-  subscription: PlanQuote;
+  subscription8: PlanQuote;
+  subscriptionUnlimited: PlanQuote;
 }): ServicePlan[] {
   const apply = (plan: ServicePlan, quote: PlanQuote): ServicePlan => ({
     ...plan,
@@ -103,7 +124,8 @@ export function buildServicePlans(quotes: {
   });
   return SERVICE_PLANS.map((plan) => {
     if (plan.id === "single") return apply(plan, quotes.oneTime);
-    if (plan.id === "subscription") return apply(plan, quotes.subscription);
+    if (plan.id === "subscription-8") return apply(plan, quotes.subscription8);
+    if (plan.id === "subscription-unlimited") return apply(plan, quotes.subscriptionUnlimited);
     return plan;
   });
 }

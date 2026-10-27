@@ -42,19 +42,23 @@ flowchart LR
 
 #### 2.1. クォータ判定・消費の優先順位
 
-1. **第1優先：月額サブスクリプション（980円/月）**
+1. **第1優先：定額プラン（月8回 980円 / 作り放題 2,980円）**
    - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`
-   - 処理: 作成を即時認可。枠（クレジット）は消費しない（無制限利用）。
+   - 処理: プランを見て分岐する。
+     - `subscription_plan = 'UNLIMITED'`: 作成を即時認可。枠（クレジット）は消費せず、回数も数えない。
+     - `subscription_plan = 'MONTHLY_8'`: 暦月（JST）で数える。`monthly_period_key` が今月と違えば 0 回から数え直し、`monthly_event_count` が 8 未満なら 1 増やして認可。8 回に達した月は第2優先へ落ちる。
 2. **第2優先：単発購入済みクレジット（299円/回）**
    - 判定条件: `paid_credits >= 1`
    - 処理: `paid_credits` を 1 デクリメント（消費）し、作成を認可。
 3. **第3優先：無料トライアル枠（累計2回まで）**
-   - 判定条件: `free_event_count < 2` かつ、その会員の `phone_verified_at` が入っていること。
+   - 判定条件: サブスクが有効でなく、`free_event_count < 2` かつ、その会員の `phone_verified_at` が入っていること。
    - 処理: `free_event_count` を 1 インクリメントし、作成を認可。
    - 電話番号が未確認のときは HTTP 403（`PHONE_REQUIRED`）。枠は減らさない。
 4. **上限到達（未認可）**
    - 判定条件: 上記すべてに該当しない場合。
-   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
+   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。月8回プランで今月の上限に達しただけなら `error = "MONTHLY_LIMIT_EXCEEDED"` とし、作り放題への変更を案内する。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
+
+加入中の会員は無料トライアル枠へは戻らない。月8回プランで上限に達した月は、単発クレジットがあればそれを使い、無ければ 402 で作り放題を案内する。
 
 無料 2 回の主体は会員行ではなく、確認済み電話番号である。同じ番号で別メールや別 Google アカウントから入っても、会員行は増えず、枠も増えない。
 
@@ -113,9 +117,9 @@ sequenceDiagram
 
 ---
 
-#### 3.2. 月額サブスクリプション（980円/月）ライフサイクルシーケンス
+#### 3.2. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス
 
-初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。
+初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout 作成時の `plan`（`MONTHLY_8` / `UNLIMITED`）で選び、Webhook では Price ID から `subscription_plan` を決める。Stripe Customer Portal で階層を変更したときも Price ID から判定し直す。
 
 ```mermaid
 sequenceDiagram
@@ -125,11 +129,11 @@ sequenceDiagram
     participant DB as クォータ DB
     participant Stripe as Stripe API / Billing
     Note over Organizer, Stripe: 【1. 初回サブスクリプション加入】
-    Organizer->>BE: POST /api/v1/billing/checkout/subscription
-    BE->>Stripe: checkout.sessions.create (mode: subscription, price: 'price_980_month')
+    Organizer->>BE: POST /api/v1/billing/checkout/subscription { plan: "MONTHLY_8" | "UNLIMITED" }
+    BE->>Stripe: checkout.sessions.create (mode: subscription, price: 階層の Price ID)
     Stripe-->>Organizer: Stripe Checkout でカード入力・加入完了
     Stripe->>BE: Webhook: checkout.session.completed
-    BE->>DB: subscription_status = 'ACTIVE', stripe_subscription_id 保存
+    BE->>DB: subscription_status = 'ACTIVE', subscription_plan = 階層, stripe_subscription_id 保存
     BE-->>Stripe: HTTP 200 OK
     Note over Stripe, DB: 【2. 翌月次自動更新 (Recurring Charge)】
     Stripe->>Stripe: 翌月自動請求成功
@@ -186,11 +190,11 @@ flowchart TD
 
 | テーブル名 | 論理名 | 役割・責務 |
 | :---- | :---- | :---- |
-| `user_usage_quotas` | ユーザー利用枠クォータ | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態を一元管理 |
+| `user_usage_quotas` | ユーザー利用枠クォータ | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層・今月の作成回数を一元管理 |
 | `billing_transactions` | 課金決済トランザクション | Stripe決済（単発/定期）の監査ログ、金額、セッションID履歴 |
 | `stripe_webhook_events` | Webhook冪等性管理ログ | 処理済みStripe Event IDを記録し二重処理を物理遮断 |
 | `pricing_campaigns` | 価格キャンペーン | 期間・対象・割引率・優先度・停止日時。定価は変更しない |
-| `pricing_campaign_coupons` | キャンペーン用 Stripe クーポン | 版・割引月数ごとのクーポン ID |
+| `pricing_campaign_coupons` | キャンペーン用 Stripe クーポン | 版・割引月数・対象プランごとのクーポン ID |
 | `pricing_campaign_audits` | キャンペーン監査ログ | 作成・編集・停止の操作者と前後値 |
 | `billing_notices` | 終了前通知の送信記録 | 0 円月額の 3 日前・1 日前の案内。`UNIQUE(user_id, kind, period_end)` |
 
@@ -209,11 +213,20 @@ CREATE TYPE subscription_status_enum AS ENUM (
     'INCOMPLETE'  -- 初回決済処理中
 );
 
+CREATE TYPE subscription_plan_enum AS ENUM (
+    'NONE',       -- 未加入
+    'MONTHLY_8',  -- 月8回プラン（980円/月）
+    'UNLIMITED'   -- 作り放題（2,980円/月）
+);
+
 CREATE TABLE user_usage_quotas (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     free_event_count INT NOT NULL DEFAULT 0 CHECK (free_event_count >= 0),
     paid_credits INT NOT NULL DEFAULT 0 CHECK (paid_credits >= 0),
     subscription_status subscription_status_enum NOT NULL DEFAULT 'NONE',
+    subscription_plan subscription_plan_enum NOT NULL DEFAULT 'NONE',
+    monthly_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (monthly_event_count >= 0),
+    monthly_period_key VARCHAR(7) NULL,
     current_period_end TIMESTAMPTZ NULL,
     stripe_customer_id VARCHAR(255) UNIQUE NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NULL,
@@ -275,6 +288,12 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+enum SubscriptionPlan {
+  NONE
+  MONTHLY_8
+  UNLIMITED
+}
+
 enum PaymentType {
   ONE_TIME
   SUBSCRIPTION
@@ -292,6 +311,9 @@ model UserUsageQuota {
   freeEventCount       Int                @default(0) @map("free_event_count")
   paidCredits          Int                @default(0) @map("paid_credits")
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
+  subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
+  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
+  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -343,10 +365,10 @@ model StripeWebhookEvent {
 
 | Stripe イベント種別 | 発火トリガー | バックエンド処理内容 |
 | :---- | :---- | :---- |
-| `checkout.session.completed` | 単発299円 または サブスク初回のCheckout完了 | 署名検証のあと、`paid`、通貨 `jpy`、単発 299 円または月額 980 円、月額 Price、`livemode`、`metadata.userId`、保存済みの Stripe 顧客 ID が一致するときだけ付与する。単発は `paid_credits + 1`。月額は `ACTIVE` と期間終了。金額が無いときは付与しない |
-| `invoice.payment_succeeded` | サブスクリプションの初回または月次更新 | 顧客またはサブスク ID から会員を特定し、Price と 980 円と `jpy` が一致するとき `ACTIVE` と `current_period_end` を更新する。初回は Checkout の行へ請求書 ID を足す。2 回目以降は `billing_transactions` に支払済みの行を増やす |
+| `checkout.session.completed` | 単発299円 または サブスク初回のCheckout完了 | 署名検証のあと、`paid`、通貨 `jpy`、単発 299 円または月額（980 円 / 2,980 円のいずれか）、階層の Price ID、`livemode`、`metadata.userId`、保存済みの Stripe 顧客 ID が一致するときだけ付与する。単発は `paid_credits + 1`。月額は `ACTIVE`、`subscription_plan`、期間終了を保存する。金額が無いときは付与しない |
+| `invoice.payment_succeeded` | サブスクリプションの初回または月次更新 | 顧客またはサブスク ID から会員を特定し、Price と階層の定価（980 円 / 2,980 円）と `jpy` が一致するとき `ACTIVE`・`subscription_plan`・`current_period_end` を更新する。初回は Checkout の行へ請求書 ID を足す。2 回目以降は `billing_transactions` に支払済みの行を増やす |
 | `invoice.payment_failed` | サブスクリプションの請求失敗 | `subscription_status = PAST_DUE`。同じ請求書 ID の履歴を失敗にする。既に支払済みの行は失敗へ戻さない |
-| `customer.subscription.updated` | 契約状態の変化 | `active` は Price が月額 Price のときだけ `ACTIVE`。`past_due` は `PAST_DUE`。`incomplete` と `trialing` は `INCOMPLETE`。それ以外は `CANCELED` |
+| `customer.subscription.updated` | 契約状態の変化 | `active` は Price が階層の Price ID のときだけ `ACTIVE`（`subscription_plan` も Price ID から決める）。`past_due` は `PAST_DUE`。`incomplete` と `trialing` は `INCOMPLETE`。それ以外は `CANCELED` |
 | `customer.subscription.deleted` | サブスクリプションの解約完了 | `subscription_status = CANCELED`。以後の作成は単発クレジットまたは無料枠へ戻る |
 | `charge.refunded` | 全額返金 | 履歴を `REFUNDED` にする。単発で未使用クレジットが残っていれば 1 つ戻す。月額なら `CANCELED`。一部返金では枠を変えない。公開済みイベントは自動では消さない |
 | `charge.dispute.created` | 異議申立 | 履歴を `DISPUTED` にし、全額返金と同じ枠の戻しを一度だけ行う |
@@ -374,21 +396,32 @@ model StripeWebhookEvent {
 }
 ```
 
-#### 6.2. 月額使い放題サブスク加入セッション作成
+#### 6.2. 定額プラン加入セッション作成（月8回 / 作り放題）
 
 - **URL:** `POST /api/v1/billing/checkout/subscription`
 - **認可:** 認証済み主催者（JWT セッション）
+- **補足:** `plan` で加入する階層を選ぶ。省略時は `UNLIMITED`。すでに有効な定額プランがあるときは 409（`ALREADY_SUBSCRIBED`）を返し、階層の変更は Customer Portal に委ねる。
 - **リクエスト Body:**
 
 ```json
-{}
+{
+  "plan": "MONTHLY_8"
+}
 ```
 
 - **レスポンス (200 OK):**
 
 ```json
 {
-  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]"
+  "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]",
+  "plan": "MONTHLY_8",
+  "pricing": {
+    "target": "SUBSCRIPTION_8",
+    "listPrice": 980,
+    "chargedPrice": 980,
+    "discountPercent": 0,
+    "campaignName": null
+  }
 }
 ```
 
@@ -413,15 +446,17 @@ model StripeWebhookEvent {
   "quota": {
     "freeEventCount": 2,
     "paidCredits": 1,
-    "subscriptionStatus": "NONE"
+    "subscriptionStatus": "NONE",
+    "currentPeriodEnd": null
   }
 }
 ```
 
 #### 6.4. クォータ照会 API
 
-- **URL:** `GET /api/v1/organizer/quota`
+- **URL:** `GET /api/v1/billing/quota`
 - **認可:** 認証済み主催者（JWT セッション）
+- **補足:** `remainingMonthly` は月8回プランのときだけ数値、作り放題と未加入は `null`。`monthlyEventCount` は暦月（JST）が変わると 0 として返す。
 - **レスポンス (200 OK):**
 
 ```json
@@ -431,8 +466,13 @@ model StripeWebhookEvent {
   "remainingFree": 0,
   "paidCredits": 1,
   "subscriptionStatus": "ACTIVE",
+  "subscriptionPlan": "MONTHLY_8",
+  "monthlyEventCount": 3,
+  "monthlyLimit": 8,
+  "remainingMonthly": 5,
   "currentPeriodEnd": "2026-11-19T00:00:00.000Z",
-  "canCreate": true
+  "canCreate": true,
+  "planType": "SUBSCRIPTION_MONTHLY_8"
 }
 ```
 
@@ -441,11 +481,16 @@ model StripeWebhookEvent {
 ```ts
 import { prisma } from '@/lib/prisma';
 import { ProblemDetailException } from '@/lib/exceptions';
+import { SUBSCRIPTION_EVENT_LIMIT } from '@/modules/billing/lib/plans';
+
+/** 暦月のキー（日本時間）。月8回プランの数え直しはこの値が変わったときに行う。 */
+export function jstMonthKey(now: Date): string {
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, '0')}`;
+}
 
 export async function assertCanCreateEvent(userId: string) {
-  const quota = await prisma.userUsageQuota.findUnique({
-    where: { userId },
-  });
+  const quota = await prisma.userUsageQuota.findUnique({ where: { userId } });
   if (!quota) {
     throw new ProblemDetailException({
       status: 404,
@@ -454,50 +499,48 @@ export async function assertCanCreateEvent(userId: string) {
     });
   }
   const now = new Date();
-  // 1. サブスクリプション有効チェック
-  if (
+  const subscriptionActive =
     quota.subscriptionStatus === 'ACTIVE' &&
-    quota.currentPeriodEnd &&
-    quota.currentPeriodEnd > now
-  ) {
-    return { type: 'SUBSCRIPTION_UNLIMITED', consume: async () => {} };
+    quota.currentPeriodEnd !== null &&
+    quota.currentPeriodEnd > now;
+  // 月8回プランで今月の上限に達しているか。記録した月が違えば 0 回から数え直す。
+  const usedThisMonth =
+    quota.monthlyPeriodKey === jstMonthKey(now) ? quota.monthlyEventCount : 0;
+  const capped =
+    subscriptionActive &&
+    quota.subscriptionPlan === 'MONTHLY_8' &&
+    usedThisMonth >= SUBSCRIPTION_EVENT_LIMIT;
+
+  // 1. 定額プラン（作り放題、または月8回でまだ今月の枠が残っている）
+  if (subscriptionActive && !capped) {
+    return { type: 'SUBSCRIPTION', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 2. 単発クレジットチェック
+  // 2. 単発クレジット
   if (quota.paidCredits >= 1) {
-    return {
-      type: 'PAID_CREDIT',
-      consume: async () => {
-        await prisma.userUsageQuota.update({
-          where: { userId },
-          data: { paidCredits: { decrement: 1 } },
-        });
-      },
-    };
+    return { type: 'PAID_CREDIT', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 3. 無料トライアルチェック (2回まで)
-  if (quota.freeEventCount < 2) {
-    return {
-      type: 'FREE_TRIAL',
-      consume: async () => {
-        await prisma.userUsageQuota.update({
-          where: { userId },
-          data: { freeEventCount: { increment: 1 } },
-        });
-      },
-    };
+  // 3. 無料トライアル（累計2回まで。加入中は対象外）
+  if (!subscriptionActive && quota.freeEventCount < 2) {
+    return { type: 'FREE_TRIAL', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 4. 上限超過
-  throw new ProblemDetailException({
-    status: 402,
-    title: 'Payment Required',
-    detail: '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）または月額プラン（980円）をご利用ください。',
-    pricingOptions: {
-      oneTimePrice: 299,
-      subscriptionMonthlyPrice: 980,
-    },
-  });
+  // 4. 上限超過。月8回の上限なら作り放題への変更を案内する。
+  throw capped
+    ? monthlyLimitExceeded()
+    : new ProblemDetailException({
+        status: 402,
+        title: 'Payment Required',
+        detail:
+          '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月8回プラン（980円）、作り放題（2,980円）のいずれかをご利用ください。',
+        pricingOptions: {
+          oneTimePrice: 299,
+          subscription8MonthlyPrice: 980,
+          subscriptionUnlimitedMonthlyPrice: 2980,
+        },
+      });
 }
 ```
+
+実際の実装は `src/modules/billing/lib/quota.ts` にあり、消費時のロック行再読込と `monthly_period_key` の更新まで含む。上の抜粋は分岐の順序だけを示す。
 
 ---
 
@@ -516,7 +559,10 @@ export async function assertCanCreateEvent(userId: string) {
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_PUBLISHABLE_KEY="pk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
-STRIPE_PRICE_ID_MONTHLY_980="price_..."
+STRIPE_PRICE_ID_MONTHLY_8="price_..."
+STRIPE_PRICE_ID_UNLIMITED="price_..."
+# 旧・980円の作り放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）
+STRIPE_PRICE_ID_MONTHLY_980_LEGACY=""
 STRIPE_PRICE_ID_ONE_TIME="price_..."
 # 0円月額の終了前案内（3日前・1日前）を送るバッチの合言葉
 BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
@@ -531,10 +577,10 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 #### 8.1. 価格の解決
 
 1. `pricing_campaigns` から `isEnabled = true`、`stoppedAt IS NULL`、`startsAt <= now < endsAt` の行を取る。
-2. 対象（`ONE_TIME` / `SUBSCRIPTION` / `BOTH`）が一致するものに絞る。
+2. 対象（`ONE_TIME` / `SUBSCRIPTION` / `SUBSCRIPTION_8` / `SUBSCRIPTION_UNLIMITED` / `BOTH`）が一致するものに絞る。`SUBSCRIPTION` は定額2階層の両方、`BOTH` は単発と定額すべてに効く。
 3. `priority DESC, createdAt DESC, id DESC` の先頭 1 件を採用する。
 4. 請求額は `min(定価, max(10, ceil(定価 × (100 - 割引率) / 100 / 10) × 10))`。割引率 100% のみ 0 円。
-5. 定価は `plans.ts` の `ONE_TIME_PRICE_JPY = 299`、`SUBSCRIPTION_PRICE_JPY = 980` を維持する。
+5. 定価は `plans.ts` の `ONE_TIME_PRICE_JPY = 299`、`SUBSCRIPTION_8_PRICE_JPY = 980`、`SUBSCRIPTION_UNLIMITED_PRICE_JPY = 2980` を維持する。
 
 #### 8.2. 0 円の単発チケット
 
@@ -542,11 +588,11 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 - 電話番号確認済みの会員だけが対象。`users` 行を `FOR UPDATE` でロックし、キャンペーンごとの上限回数（既定 1 回）を超えない。
 - `requestKey`（`Idempotency-Key`）の `UNIQUE` 制約で二重付与を防ぐ。
 
-#### 8.3. 0 円の月額プラン
+#### 8.3. 0 円の定額プラン
 
-- `STRIPE_PRICE_ID_MONTHLY_980` の Price は変えず、Stripe クーポンで割り引く。
+- 加入する階層の Price（`STRIPE_PRICE_ID_MONTHLY_8` / `STRIPE_PRICE_ID_UNLIMITED`）は変えず、Stripe クーポンで割り引く。クーポンは `(キャンペーン, 版, 月数, 割引種別, 対象プラン)` ごとに作る。
   - 100%: `percent_off = 100`
-  - 100% 未満: `amount_off = 980 - 請求額`、`currency = "jpy"`
+  - 100% 未満: `amount_off = その階層の定価 - 請求額`（980 円または 2,980 円）、`currency = "jpy"`
   - 共通: `duration = "repeating"`、`duration_in_months = 加入から終了までの切り上げ月数`
 - `payment_method_collection: "always"` でカードを登録させ、無料期間の終了後は Stripe が通常価格で自動請求する。
 - 加入確定時に `user_usage_quotas.discount_ends_at` を記録する。これが通知の基準日時になる。
@@ -554,9 +600,11 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 #### 8.4. 金額検証の変更
 
 - 旧実装の `amount === 299` / `amount === 980` の固定比較を廃止する。
-- 申込時に作った `PENDING` の `billing_transactions.amount` と、Checkout Session / Invoice の金額を突き合わせる。
+- 単発は 299 円、定額は Price ID から決めた階層の定価（980 円 / 2,980 円）と突き合わせる。
+- 申込時に作った `PENDING` の `billing_transactions.amount` と、Checkout Session / Invoice の金額を突き合わせる。`listAmount` にはその階層の定価を残す。
 - 0 円の初回請求は `payment_status = "no_payment_required"` を通す。
-- 月額の更新請求は、`amount_paid <= 980` かつ、980 円未満ならクーポン（`invoice.discount` または `total_discount_amounts`）が付いていることを条件にする。
+- 定額の更新請求は、`amount_paid <= 階層の定価` かつ、定価未満ならクーポン（`invoice.discount` または `total_discount_amounts`）が付いていることを条件にする。
+- 旧 980 円の作り放題 Price（`STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）で加入した契約は、`UNLIMITED` として扱い、回数を数えない。値上げ後も定価 980 円で検証する。
 
 #### 8.5. 終了前通知
 

@@ -4,7 +4,8 @@ import { appBaseUrl } from "@/lib/http";
 import { isUniqueViolation } from "@/lib/exceptions";
 import { deliverMail } from "@/lib/mail";
 import { SITE } from "@/lib/site";
-import { SUBSCRIPTION_PRICE_JPY } from "@/modules/billing/lib/plans";
+import { planOfQuota } from "@/modules/billing/lib/billing";
+import { listPriceFor, pricingKindOfPlan } from "@/modules/billing/lib/pricing";
 
 /**
  * 0円（または割引）の月額が終わる前の案内。
@@ -48,11 +49,13 @@ function buildMessage(input: {
   percent: number;
   periodEnd: Date;
   kind: NoticeKind;
+  /** 終了後に請求する月額。加入中のプランで 980 円と 2980 円が変わる。 */
+  listPriceYen: number;
 }): { subject: string; body: string } {
   const origin = appBaseUrl();
   const when = jstLabel(input.periodEnd);
   const isFree = input.percent >= 100;
-  const price = yen(SUBSCRIPTION_PRICE_JPY);
+  const price = yen(input.listPriceYen);
   const remaining = input.kind === "FREE_PERIOD_ENDING_3D" ? "3日" : "1日";
   const label = isFree ? "無料期間" : "割引期間";
   const campaign = input.campaignName ? `${input.campaignName} の` : "";
@@ -143,6 +146,7 @@ export async function sendFreePeriodEndingNotices(
       percent,
       periodEnd,
       kind,
+      listPriceYen: listPriceFor(pricingKindOfPlan(planOfQuota(quota.subscriptionPlan))),
     });
     const status = await deliverMail({ to: quota.user.email, subject, body });
 
