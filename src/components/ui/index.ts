@@ -14,3 +14,5 @@ export { PageHeader } from "./PageHeader";
 export { Panel, PanelHead } from "./Panel";
 export { Row, Rows } from "./Rows";
 export { Section, SectionHead } from "./Section";
+export { SemanticThemeScope } from "./SemanticThemeScope";
+export { ThemePicker } from "./ThemePicker";

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
+import sharp from "sharp";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -112,8 +113,12 @@ const prisma = new PrismaClient();
 const ROOT = process.cwd();
 const STORAGE = path.join(ROOT, "storage");
 const FLYER_DIR = path.join(STORAGE, "flyers");
+const IMAGE_DIR = path.join(STORAGE, "images");
 const OUT_FILE = path.join(STORAGE, "ui-demo.json");
 const SAMPLE_FLYER = path.join(ROOT, "public", "samples", "flyer-autumn.jpg");
+
+/** デモ主催者のアイコン。内容も ID も固定にして、撮り直しても画像名が変わらないようにする。 */
+const DEMO_AVATAR_ID = "8f3c1d2e-5a4b-4c6d-9e70-2b1a4c8d6f31";
 
 /** パスワードと確認済みメール・電話を持つ会員を用意する。 */
 async function upsertUser(account) {
@@ -227,6 +232,44 @@ async function createFlyer(userId, title) {
   });
 }
 
+/**
+ * デモ主催者のアイコンを置く。
+ *
+ * アップロード API は通さず、同じ形（256px 角の WebP）を SVG から作って
+ * `storage/images` と `image_assets` に直接入れる。固定の ID なので、
+ * 何度実行してもモックの画像ファイル名は変わらない。
+ */
+async function ensureDemoAvatar(userId) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#8b2635"/>
+        <stop offset="1" stop-color="#d9a05b"/>
+      </linearGradient>
+    </defs>
+    <rect width="256" height="256" fill="url(#g)"/>
+    <circle cx="128" cy="100" r="42" fill="#fbf6e9" opacity="0.92"/>
+    <path d="M38 256c0-52 40-86 90-86s90 34 90 86z" fill="#fbf6e9" opacity="0.92"/>
+  </svg>`;
+  const data = await sharp(Buffer.from(svg)).webp({ quality: 82 }).toBuffer();
+  await mkdir(IMAGE_DIR, { recursive: true });
+  await writeFile(path.join(IMAGE_DIR, `${DEMO_AVATAR_ID}.webp`), data);
+  await prisma.imageAsset.upsert({
+    where: { id: DEMO_AVATAR_ID },
+    create: {
+      id: DEMO_AVATAR_ID,
+      userId,
+      kind: "AVATAR",
+      contentType: "image/webp",
+      width: 256,
+      height: 256,
+      byteSize: data.byteLength,
+    },
+    update: { userId, isDeleted: false, byteSize: data.byteLength },
+  });
+  return DEMO_AVATAR_ID;
+}
+
 try {
   const [organizer, participant, coHost, verifyUser] = await Promise.all([
     upsertUser(ORGANIZER),
@@ -274,33 +317,26 @@ try {
   }
 
   // 公開プロフィール。タグは 3 つまで。公開ページに出すのは X と Instagram。
+  // テーマは羊皮紙（読み物として見せる）。アイコンと合わせて、モックで適用後の見た目を確認できるようにする。
+  const avatarImageId = await ensureDemoAvatar(organizer.id);
+  const appearance = {
+    isPublished: true,
+    headline: "月に一度、川辺でごはんを炊く人",
+    bio: "2019 年から、川辺で芋煮会と焚き火会を開いています。\n子ども連れでも来られる、ゆるい集まりです。",
+    area: "東京都 世田谷区",
+    tags: ["FOOD", "LOCAL", "MUSIC"],
+    xUrl: "https://x.com/example_minori",
+    instagramUrl: "https://www.instagram.com/example_minori",
+    websiteUrl: "https://example.com/minori",
+    lineUrl: "https://lin.ee/example",
+    showStats: true,
+    themeId: "parchment",
+    avatarImageId,
+  };
   await prisma.organizerProfile.upsert({
     where: { userId: organizer.id },
-    create: {
-      userId: organizer.id,
-      isPublished: true,
-      headline: "月に一度、川辺でごはんを炊く人",
-      bio: "2019 年から、川辺で芋煮会と焚き火会を開いています。\n子ども連れでも来られる、ゆるい集まりです。",
-      area: "東京都 世田谷区",
-      tags: ["FOOD", "LOCAL", "MUSIC"],
-      xUrl: "https://x.com/example_minori",
-      instagramUrl: "https://www.instagram.com/example_minori",
-      websiteUrl: "https://example.com/minori",
-      lineUrl: "https://lin.ee/example",
-      showStats: true,
-    },
-    update: {
-      isPublished: true,
-      headline: "月に一度、川辺でごはんを炊く人",
-      bio: "2019 年から、川辺で芋煮会と焚き火会を開いています。\n子ども連れでも来られる、ゆるい集まりです。",
-      area: "東京都 世田谷区",
-      tags: ["FOOD", "LOCAL", "MUSIC"],
-      xUrl: "https://x.com/example_minori",
-      instagramUrl: "https://www.instagram.com/example_minori",
-      websiteUrl: "https://example.com/minori",
-      lineUrl: "https://lin.ee/example",
-      showStats: true,
-    },
+    create: { userId: organizer.id, ...appearance },
+    update: appearance,
   });
   await prisma.organizerProfile.upsert({
     where: { userId: coHost.id },

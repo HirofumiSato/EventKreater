@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 79
-- エンドポイント（メソッド × パス）: 95
-- 仕様書に記載: 89
+- ルートファイル: 81
+- エンドポイント（メソッド × パス）: 98
+- 仕様書に記載: 92
 - 実装のみ（仕様書に記載なし）: 6
 - 仕様書のみ（実装なし）: 0
 
@@ -58,6 +58,7 @@
 | GET | `/api/v1/flyers/quota` | なし | あり | `src/app/api/v1/flyers/quota/route.ts` |
 | POST | `/api/v1/flyers/uploads` | なし | あり | `src/app/api/v1/flyers/uploads/route.ts` |
 | GET | `/api/v1/geo/postal-codes/[code]` | なし | なし | `src/app/api/v1/geo/postal-codes/[code]/route.ts` |
+| GET | `/api/v1/image-assets/[id]/image` | なし | あり | `src/app/api/v1/image-assets/[id]/image/route.ts` |
 | POST | `/api/v1/internal/billing/notices` | なし | あり | `src/app/api/v1/internal/billing/notices/route.ts` |
 | GET | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | あり | `src/app/api/v1/invitations/[code]/route.ts` |
 | POST | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | なし | `src/app/api/v1/invitations/[code]/route.ts` |
@@ -85,6 +86,8 @@
 | PUT | `/api/v1/organizer/events/[id]/revenue/allocation` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/revenue/allocation/route.ts` |
 | GET | `/api/v1/organizer/profile` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/route.ts` |
 | PUT | `/api/v1/organizer/profile` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/route.ts` |
+| POST | `/api/v1/organizer/profile/avatar` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/avatar/route.ts` |
+| DELETE | `/api/v1/organizer/profile/avatar` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/avatar/route.ts` |
 | GET | `/api/v1/organizer/revenue` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/revenue/route.ts` |
 | POST | `/api/v1/public/events` | 条件付き（collectGuestTokenHashes, resolveUserId） | あり | `src/app/api/v1/public/events/route.ts` |
 | GET | `/api/v1/public/events/[id]` | 条件付き（collectGuestTokenHashes, resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/route.ts` |

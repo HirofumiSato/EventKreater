@@ -11,6 +11,7 @@ import {
   profileUrlProblem,
 } from "@/modules/organizers/lib/profile";
 import { organizerProfileRedirectPath } from "@/modules/organizers/lib/public-page";
+import { profileContentFromRow } from "@/modules/organizers/lib/profile-store";
 import { EMPTY_PROFILE_DRAFT, type OrganizerProfileDraft } from "@/modules/organizers/types";
 
 const TODAY = "2026-10-22";
@@ -142,6 +143,22 @@ describe("profileContentFromDraft", () => {
 
     expect(content.stats).toEqual({ eventCount: 3, sinceYear: 2024 });
   });
+
+  it("テーマとアイコンをそのまま載せる（プレビュー用）", () => {
+    const content = profileContentFromDraft(
+      draft({ themeId: "neon" }),
+      null,
+      "/api/v1/image-assets/abc/image",
+    );
+
+    expect(content.themeId).toBe("neon");
+    expect(content.avatarUrl).toBe("/api/v1/image-assets/abc/image");
+  });
+
+  it("アイコン未設定なら null", () => {
+    expect(profileContentFromDraft(draft(), null).avatarUrl).toBeNull();
+    expect(profileContentFromDraft(draft(), null).themeId).toBeNull();
+  });
 });
 
 describe("profileIsPublished", () => {
@@ -218,6 +235,7 @@ describe("OrganizerProfileSchema", () => {
       websiteUrl: null,
       lineUrl: null,
       showStats: false,
+      themeId: null,
     });
   });
 
@@ -266,5 +284,64 @@ describe("OrganizerProfileSchema", () => {
 
   it("知らない項目は受け付けない", () => {
     expect(OrganizerProfileSchema.safeParse({ name: "別名" }).success).toBe(false);
+  });
+});
+
+describe("profileContentFromRow", () => {
+  function row(overrides: Record<string, unknown> = {}) {
+    return {
+      isPublished: true,
+      headline: "渋谷で読書会",
+      bio: "月いちで開いています。",
+      area: "東京都渋谷区",
+      tags: ["LEARNING"],
+      xUrl: "https://x.com/example",
+      instagramUrl: null,
+      websiteUrl: null,
+      lineUrl: null,
+      showStats: false,
+      avatarImageId: "1f2e3d4c-5b6a-4978-8899-aabbccddeeff",
+      themeId: "neon",
+      ...overrides,
+    };
+  }
+
+  it("公開中なら本文・テーマ・アイコンを出す", () => {
+    const content = profileContentFromRow(row(), null);
+
+    expect(content.isPublished).toBe(true);
+    expect(content.headline).toBe("渋谷で読書会");
+    expect(content.themeId).toBe("neon");
+    expect(content.avatarUrl).toBe(
+      "/api/v1/image-assets/1f2e3d4c-5b6a-4978-8899-aabbccddeeff/image",
+    );
+  });
+
+  it("非公開なら本文とテーマを隠すが、アイコンは残す", () => {
+    const content = profileContentFromRow(row({ isPublished: false }), null);
+
+    expect(content.isPublished).toBe(false);
+    expect(content.headline).toBeNull();
+    expect(content.bio).toBeNull();
+    expect(content.tags).toEqual([]);
+    expect(content.links).toEqual([]);
+    expect(content.themeId).toBeNull();
+    expect(content.avatarUrl).toBe(
+      "/api/v1/image-assets/1f2e3d4c-5b6a-4978-8899-aabbccddeeff/image",
+    );
+  });
+
+  it("行が無ければすべて null", () => {
+    const content = profileContentFromRow(null, null);
+
+    expect(content.isPublished).toBe(false);
+    expect(content.themeId).toBeNull();
+    expect(content.avatarUrl).toBeNull();
+  });
+
+  it("DB に知らないテーマが入っていても、標準の見た目に落とす", () => {
+    const content = profileContentFromRow(row({ themeId: "midnight" }), null);
+
+    expect(content.themeId).toBeNull();
   });
 });

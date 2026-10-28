@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense, cache } from "react";
-import { Loading } from "@/components/ui";
+import { Loading, SemanticThemeScope } from "@/components/ui";
 import { isUserId } from "@/lib/ids";
 import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
@@ -40,7 +40,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { title, description, type: "profile" },
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      // アイコンは 256px 角。無ければ既定の OGP 画像に任せる。
+      ...(loaded.profile.avatarUrl ? { images: [loaded.profile.avatarUrl] } : {}),
+    },
   };
 }
 
@@ -51,19 +57,22 @@ export default async function OrganizerProfilePage({ params }: PageProps) {
 
   return (
     <div className="page--narrow">
-      <div className="stack">
-        <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
-        {/* 催しは useSearchParams を読むため、Suspense で包む。 */}
-        <Suspense
-          fallback={
-            <Loading>
-              読み込んでいます
-            </Loading>
-          }
-        >
-          <OrganizerPageView userId={loaded.userId} />
-        </Suspense>
-      </div>
+      {/* テーマ未選択なら何も包まない（現行の DOM と見た目のまま）。 */}
+      <SemanticThemeScope themeId={loaded.profile.themeId} page>
+        <div className="stack">
+          <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
+          {/* 催しは useSearchParams を読むため、Suspense で包む。 */}
+          <Suspense
+            fallback={
+              <Loading>
+                読み込んでいます
+              </Loading>
+            }
+          >
+            <OrganizerPageView userId={loaded.userId} />
+          </Suspense>
+        </div>
+      </SemanticThemeScope>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { formatEventDate } from "@/lib/serializers";
 import { todayInTokyo } from "@/lib/calendar";
+import { imageAssetImagePath } from "@/lib/image-assets";
+import { normalizeSemanticThemeId } from "@/lib/semantic-themes";
 import {
   normalizeProfileTags,
   profileLinks,
@@ -34,6 +36,7 @@ export interface OrganizerProfileInput {
   websiteUrl: string | null;
   lineUrl: string | null;
   showStats: boolean;
+  themeId: string | null;
 }
 
 export interface LoadedOrganizerProfile {
@@ -51,6 +54,8 @@ function emptyContent(): OrganizerProfileContent {
     tags: [],
     links: [],
     stats: null,
+    avatarUrl: null,
+    themeId: null,
   };
 }
 
@@ -65,6 +70,12 @@ interface ProfileRowShape {
   websiteUrl: string | null;
   lineUrl: string | null;
   showStats: boolean;
+  avatarImageId: string | null;
+  themeId: string | null;
+}
+
+function avatarUrlOf(avatarImageId: string | null): string | null {
+  return avatarImageId ? imageAssetImagePath(avatarImageId) : null;
 }
 
 /** DB の行を公開ページの形にする。非公開なら中身を一切出さない。 */
@@ -72,7 +83,10 @@ export function profileContentFromRow(
   row: ProfileRowShape | null,
   stats: OrganizerProfileStats | null,
 ): OrganizerProfileContent {
-  if (!row || !row.isPublished) return emptyContent();
+  // アイコンは本文ではなく、その人を示す印。非公開でも出す。
+  if (!row || !row.isPublished) {
+    return { ...emptyContent(), avatarUrl: avatarUrlOf(row?.avatarImageId ?? null) };
+  }
   return {
     isPublished: true,
     headline: row.headline?.trim() || null,
@@ -86,6 +100,8 @@ export function profileContentFromRow(
       lineUrl: row.lineUrl ?? "",
     }),
     stats: row.showStats ? stats : null,
+    avatarUrl: avatarUrlOf(row.avatarImageId),
+    themeId: normalizeSemanticThemeId(row.themeId),
   };
 }
 
@@ -102,6 +118,7 @@ function toDraft(row: ProfileRowShape | null): OrganizerProfileDraft {
     websiteUrl: row.websiteUrl ?? "",
     lineUrl: row.lineUrl ?? "",
     showStats: row.showStats,
+    themeId: normalizeSemanticThemeId(row.themeId),
   };
 }
 
@@ -186,6 +203,7 @@ export async function upsertOrganizerProfile(
     websiteUrl: input.websiteUrl,
     lineUrl: input.lineUrl,
     showStats: input.showStats,
+    themeId: normalizeSemanticThemeId(input.themeId),
   };
   const row = await prisma.organizerProfile.upsert({
     where: { userId },
@@ -193,6 +211,50 @@ export async function upsertOrganizerProfile(
     update: data,
   });
   return toDraft(row);
+}
+
+/** 設定中のアイコン画像の ID。未設定・行なしは null。 */
+export async function readOrganizerAvatarId(userId: string): Promise<string | null> {
+  const row = await prisma.organizerProfile.findUnique({
+    where: { userId },
+    select: { avatarImageId: true },
+  });
+  return row?.avatarImageId ?? null;
+}
+
+/** 設定中のアイコンの URL。未設定・行なしは null。 */
+export async function readOrganizerAvatarUrl(userId: string): Promise<string | null> {
+  return avatarUrlOf(await readOrganizerAvatarId(userId));
+}
+
+/**
+ * アイコンの参照を差し替える。行が無ければ作る（未作成の会員でも設定できる）。
+ * 差し替え前の画像は呼び出し側が退役させる。ここでは参照だけを動かす。
+ */
+export async function setOrganizerAvatar(
+  userId: string,
+  avatarImageId: string | null,
+): Promise<void> {
+  await prisma.organizerProfile.upsert({
+    where: { userId },
+    create: { userId, avatarImageId },
+    update: { avatarImageId },
+  });
+}
+
+/** アイコンの参照を外す。外した画像の ID を返す（退役させるため）。 */
+export async function clearOrganizerAvatar(userId: string): Promise<string | null> {
+  const row = await prisma.organizerProfile.findUnique({
+    where: { userId },
+    select: { avatarImageId: true },
+  });
+  const previous = row?.avatarImageId ?? null;
+  if (!previous) return null;
+  await prisma.organizerProfile.update({
+    where: { userId },
+    data: { avatarImageId: null },
+  });
+  return previous;
 }
 
 /** 主催イベントを1件以上持つ会員か。持たない会員は編集画面を使えない。 */

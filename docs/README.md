@@ -8,9 +8,9 @@
 
 | 対象 | 正 | 解説する文書 | 検証方法 |
 | --- | --- | --- | --- |
-| DB 物理設計 | `prisma/schema.prisma` | [DBschema.md](DBschema.md) | 30 テーブルの照合 |
-| API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 73 ルートの照合 |
-| 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 35 ページの照合 |
+| DB 物理設計 | `prisma/schema.prisma` | [DBschema.md](DBschema.md) | 32 テーブルの照合 |
+| API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 81 ルートの照合 |
+| 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 37 ページの照合 |
 | チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 66 件 + `mypy`（src の strict） |
 | モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run check`（ソースの指紋と `mock-manifest.json` の一致）。生成は `npm run mock:sync` |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |

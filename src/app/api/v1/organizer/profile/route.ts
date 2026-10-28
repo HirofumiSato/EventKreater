@@ -6,6 +6,7 @@ import { requireOrganizerAccount } from "@/modules/auth/lib/guards";
 import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
 import {
   assertOrganizerMember,
+  readOrganizerAvatarUrl,
   readOrganizerProfileDraft,
   readOrganizerProfileStats,
   upsertOrganizerProfile,
@@ -22,16 +23,18 @@ export const dynamic = "force-dynamic";
  * 公開ページの表示名は `users.name` なので、ここでは変えない。
  */
 async function loadResponse(userId: string): Promise<OrganizerProfileDraftResponse> {
-  const [user, profile, stats] = await Promise.all([
+  const [user, profile, stats, avatarUrl] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     readOrganizerProfileDraft(userId),
     readOrganizerProfileStats(userId),
+    readOrganizerAvatarUrl(userId),
   ]);
   return {
     name: user?.name ?? "",
     profile,
     stats,
     homePath: organizerProfilePath(userId),
+    avatarUrl,
   };
 }
 

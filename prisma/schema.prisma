@@ -191,9 +191,37 @@ model User {
   accountChangeLogs       AccountChangeLog[]
   emailChangeRequests     EmailChangeRequest[]
   organizerProfile        OrganizerProfile?
+  imageAssets             ImageAsset[]
 
   @@index([deletedAt])
   @@map("users")
+}
+
+/// 会員が上げた画像の実体。プロフィールのアイコンなど、用途を問わず 1 行 1 画像で持つ。
+///
+/// 参照する側（`organizer_profiles.avatar_image_id` など）に外部キーを置く。
+/// 用途（`kind`）は列挙型にせず、アプリ側で検証する。用途が増えてもマイグレーションが要らない。
+model ImageAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// 上げた会員。退会後も画像は残すが、所有者は NULL になる。
+  userId      String?  @map("user_id") @db.Uuid
+  /// AVATAR / EVENT_COVER など。アプリ側の固定リストで検証する。
+  kind        String   @db.VarChar(20)
+  /// 保存済みの形式。いまは WebP だけ。
+  contentType String   @map("content_type") @db.VarChar(40)
+  width       Int
+  height      Int
+  /// 保存したバイト数。上限の確認と監査に使う。
+  byteSize    Int      @map("byte_size")
+  /// 参照が外れた画像。行は残し、配信だけ止める。
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizerProfile OrganizerProfile?
+
+  @@index([userId, isDeleted])
+  @@map("image_assets")
 }
 
 /// 会員が自分の情報を変えた記録。値はマスク済みのものだけを残し、パスワードは入れない。
@@ -865,28 +893,34 @@ model ReminderDelivery {
 /// 会員の公開プロフィール。行が無い会員は「未作成」として扱う。
 /// ページ自体は誰でも開けるが、自己紹介・リンク・実績は isPublished が true のときだけ出す。
 model OrganizerProfile {
-  userId       String   @id @map("user_id") @db.Uuid
+  userId        String   @id @map("user_id") @db.Uuid
   /// 自己紹介・リンク・実績を参加者に見せるか。既定は非公開。
-  isPublished  Boolean  @default(false) @map("is_published")
+  isPublished   Boolean  @default(false) @map("is_published")
   /// 肩書き・ひとこと。屋号をここに置ける（User.name は変えない）。
-  headline     String?  @db.VarChar(60)
+  headline      String?  @db.VarChar(60)
   /// 自己紹介。プレーンテキストで、改行は保持する。
-  bio          String?  @db.VarChar(400)
+  bio           String?  @db.VarChar(400)
   /// 活動エリア。「東京都渋谷区」など。
-  area         String?  @db.VarChar(50)
+  area          String?  @db.VarChar(50)
   /// 活動ジャンル。固定リストから最大3つ。
-  tags         String[]
-  xUrl         String?  @map("x_url") @db.VarChar(200)
-  instagramUrl String?  @map("instagram_url") @db.VarChar(200)
-  websiteUrl   String?  @map("website_url") @db.VarChar(200)
+  tags          String[]
+  xUrl          String?  @map("x_url") @db.VarChar(200)
+  instagramUrl  String?  @map("instagram_url") @db.VarChar(200)
+  websiteUrl    String?  @map("website_url") @db.VarChar(200)
   /// LINE 公式アカウント・オープンチャット。lin.ee / line.me のみ許可する。
-  lineUrl      String?  @map("line_url") @db.VarChar(200)
+  lineUrl       String?  @map("line_url") @db.VarChar(200)
   /// 主催した回数と初回開催年を出すか。既定はオフ。
-  showStats    Boolean  @default(false) @map("show_stats")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  showStats     Boolean  @default(false) @map("show_stats")
+  /// 公開ページに出すアイコン画像。未設定なら名前の頭文字を出す。
+  avatarImageId String?  @unique @map("avatar_image_id") @db.Uuid
+  /// 公開ページのセマンティックテーマ。NULL は標準の見た目。
+  /// 列挙型にしないのは、テーマを増やすたびにマイグレーションが要るため。
+  themeId       String?  @map("theme_id") @db.VarChar(32)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarImage ImageAsset? @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
 
   @@map("organizer_profiles")
 }

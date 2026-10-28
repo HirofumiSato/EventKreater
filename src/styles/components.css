@@ -1740,3 +1740,124 @@ fieldset.field {
 
   
 }
+
+/* ==========================================================================
+   テーマの選択肢（SCR-ORG-14）。公開ページの見た目を、選ぶ前に色で確かめられる。
+
+   色見本は画像を持たない。`data-semantic-theme` を付けた面が、themes.css の
+   トークン（--st-*）をそのまま読むので、テーマを足しても読み込みは増えない。
+   スマホは 1 列、640px から 2 列。選択肢の説明が長いので、3 列にはしない。
+   ========================================================================== */
+
+.theme-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.theme-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+/* ラジオは見せないが、キーボードの操作は残す（見た目だけを消す）。 */
+.theme-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.theme-option:hover {
+  border-color: var(--color-border-strong);
+}
+
+.theme-option:has(input:checked) {
+  border-color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-text);
+}
+
+.theme-option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary-ring);
+  outline-offset: 2px;
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.1875rem;
+  height: 2.75rem;
+  padding: 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  /* 見本の中は、テーマの地と字をそのまま見せる。 */
+  background: var(--st-surface-base, var(--color-bg));
+}
+
+.theme-swatch__card {
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--st-surface-raised, var(--color-surface));
+  box-shadow: var(--st-shadow-elevation, none);
+}
+
+.theme-swatch__line {
+  width: 70%;
+  height: 0.1875rem;
+  border-radius: 999px;
+  background: var(--st-content-primary, var(--color-text));
+  opacity: 0.8;
+}
+
+.theme-swatch__accent {
+  width: 40%;
+  height: 0.1875rem;
+  border-radius: 999px;
+  background: var(--st-accent-primary, var(--color-primary));
+}
+
+/* 「標準」はいまの見た目。テーマの変数を持たないので、地の色を直接置く。 */
+.theme-swatch--default {
+  background: #fdf3e4;
+}
+
+.theme-swatch--default .theme-swatch__card {
+  background: #fffdf8;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.15);
+}
+
+.theme-swatch--default .theme-swatch__line {
+  background: #1a1916;
+}
+
+.theme-option__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.theme-option__label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.theme-option__note {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .theme-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

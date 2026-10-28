@@ -11,6 +11,8 @@ coverage
 # 検査のキャッシュ。消しても次の実行で作り直すだけ。
 node_modules/.cache/
 storage/flyers
+# プロフィールのアイコンなど、会員が上げた画像。`src/lib/image-assets.ts` が置く。
+storage/images
 # 撮影用の JWT とデモ会員の控え。`npm run db:seed:ui` が作り直す。
 storage/ui-demo.json
 # mock:sync の撮影（390 / 1280）。目視用で、コミットしない。

@@ -137,7 +137,7 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - :doc:`testing/vitest/practice`
      - テストを足す 5 手順と、落ちたときの判断
    * - :doc:`testing/scope`
-     - テスト範囲のフロー。画面遷移と手段の対応。現在 74 件と、次に書くもの
+     - テスト範囲のフロー。画面遷移と手段の対応と、次に書くもの。件数を持つのはこのページだけ（`npm run docs:counts` が書き戻す）
    * - :doc:`testing/first-cases`
      - 最初に書くケース。Webhook は偽物の Stripe
    * - :doc:`testing/local-run`

@@ -438,9 +438,11 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      - 内容と、外すときにやること
    * - チラシ画像がローカルディスク
      - ``src/modules/flyers/lib/flyer.ts`` は ``process.cwd()/storage/flyers`` に書きます。**web は 1 台で運用してください。** 2 台にすると、A が保存した画像を B が返せません。R2 へ移すのが次の一歩です
+   * - プロフィールのアイコンもローカルディスク
+     - ``src/lib/image-assets.ts`` は ``process.cwd()/storage/images`` に WebP を書きます。チラシと同じく単一インスタンス前提です（``Dockerfile`` の ``mkdir`` と ``.gitignore`` に追加済み）。移すときは保存と配信の 2 か所だけで、``image_assets`` の行はそのまま使えます
    * - R2 は未実装
      - 構成図には入れていますが、コードはまだ R2 を読み書きしません。現状は Fly ボリュームです
    * - チラシ候補もローカルディスク
      - flyer 側の ``CANDIDATE_DIR`` はボリュームです。台数を増やすと候補の見え方がずれます
    * - ログイン試行の記録は DB
-     - ``AuthAttempt`` に貯めるので台数を増やしても効きます。一方、チラシのアップロード回数制限はプロセス内の ``Map``（``src/modules/flyers/lib/upload-limit.ts``）なので、台数ごとに別々です
+     - ``AuthAttempt`` に貯めるので台数を増やしても効きます。一方、チラシとアイコンのアップロード回数制限はプロセス内の ``Map``（``src/lib/upload-limit.ts``）なので、台数ごとに別々です

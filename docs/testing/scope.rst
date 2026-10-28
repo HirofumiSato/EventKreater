@@ -147,7 +147,7 @@
 
 .. count-start
 
-59 ファイル、``it`` は 756 件です。内訳は ``tests/unit/`` が 46 ファイル 682 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+62 ファイル、``it`` は 789 件です。内訳は ``tests/unit/`` が 48 ファイル 703 件、``tests/integration/`` が 14 ファイル 86 件です。結合の 86 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -328,9 +328,9 @@
      - 幹事の表示名の優先順位、筆頭の分離、公開用に渡す項目の絞り込み
      - SCR-ORG-01 / SCR-PUB-03
    * - ``tests/unit/organizer-profile.test.ts``
-     - 36
-     - プロフィールの入力検証（URL のホスト・ジャンル・文字数）、公開条件、実績の数え方、表示の短縮
-     - SCR-ORG-07 / SCR-PUB-03
+     - 42
+     - プロフィールの入力検証（URL のホスト・ジャンル・文字数）、公開条件、実績の数え方、表示の短縮、テーマとアイコンの受け渡し
+     - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/participant-calendar.test.ts``
      - 13
      - 参加者カレンダーの日付の決め方、1 日 3 行への収め方、欠席の見せ方、主催者と参加者の遷移先
@@ -343,6 +343,14 @@
      - 13
      - 出欠の選択肢（出席・参加要望）と残席、席を確保済みの人の扱い、待ち順の決め方
      - SCR-PUB-04
+   * - ``tests/unit/semantic-theme.test.ts``
+     - 10
+     - セマンティックテーマの ID と表示名（5 件・重複なし・空でない）、未知の値と NULL の正規化、スキーマが 5 テーマと NULL を受け未知の ID を 400 にすること
+     - SCR-ORG-14 / SCR-PUB-14
+   * - ``tests/unit/semantic-theme-css.test.ts``
+     - 5
+     - テーマの ID と ``themes.css`` の対応（全テーマのブロックと必須 10 トークン）、``themes.css`` を ``index.css`` の最後に読むこと、ぼかしとアニメーションを持たないこと、全幅の面の広げ方
+     - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/design-scope.test.ts``
      - 8
      - パスから貼り紙の装飾スコープ（影だけ・静かめ・なし）を決める。``/console`` は装飾なし、``/organizer/events/new`` だけ静かめから影だけへ移る
@@ -375,10 +383,14 @@
      - 5
      - 下書き保存では枠を消費せず公開で消費する。上書き保存の可否と、402・409・404 の分かれ方
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/integration/organizer-avatar.test.ts``
+     - 8
+     - プロフィールのアイコンの登録（201・DB の行・WebP の配信）、差し替えで旧画像が 404、削除で参照が NULL、4MB 超と画像でないバイト列の拒否、``storage/images`` の後片付け
+     - SCR-ORG-14
    * - ``tests/integration/organizer-profile.test.ts``
-     - 12
-     - プロフィールの保存と公開、非公開に戻したときの扱い、退会者と UUID でない URL の 404
-     - SCR-ORG-07 / SCR-PUB-03
+     - 16
+     - プロフィールの保存と公開、テーマの保存と公開 API への反映、未知のテーマの 400、非公開に戻したときの扱い、退会者と UUID でない URL の 404
+     - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/integration/organizers.test.ts``
      - 4
      - プレビューの主催者名と共同主催の人数、ゲストの表示名、招待の使い切り
@@ -398,7 +410,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 682、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 682 件を実行して 74 件を skip します。
+件数の内訳は ``tests/unit/`` が 703、``tests/integration/`` が 86 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 703 件を実行して 86 件を skip します。
 
 .. breakdown-end
 

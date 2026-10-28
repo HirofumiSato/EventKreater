@@ -45,10 +45,13 @@ flowchart TD
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/events/[id]/receipt` | GET | SCR-PUB-04 | 出欠 Cookie または会員 | 自分の参加費領収書 |
-| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績を空にする。会員が無い・退会済み・催しが0件は 404 |
+| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマを空にする（アイコンの `avatarUrl` は返す）。会員が無い・退会済み・催しが0件は 404 |
 | `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない |
+| `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 5 テーマのいずれか |
+| `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.17） |
+| `/api/v1/organizer/profile/avatar` | DELETE | SCR-ORG-14 | 同左 | アイコンの削除。以後は名前の頭文字に戻る（5.17） |
+| `/api/v1/image-assets/[id]/image` | GET | SCR-ORG-14、SCR-PUB-14 | 不要 | 会員が上げた画像の配信。WebP・1 年キャッシュ。論理削除済みは 404（5.18） |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | GET | SCR-ORG-09 | 幹事（会員のみ） | 発行済み領収書の取得。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
@@ -1180,6 +1183,8 @@ POST /api/v1/organizer/events/[id]/reminders
 - `links` は X → Instagram → Webサイト → LINE の順。空文字の項目は飛ばす。
 - `tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）に無い値を落とす。
 - `stats` は `show_stats = true` のときだけ。開催済み（`status != DRAFT`・未削除・今日以前の開催日がある）催しの件数と、その最も早い開催日の年。共同主催も1件として数える。
+- `themeId` は `is_published = true` のときだけ、既知の 5 テーマのいずれか。非公開・未知の値は `null`（標準の見た目）。
+- `avatarUrl` は `avatar_image_id` があれば `/api/v1/image-assets/{id}/image`。**非公開でも返す**（本文ではなく、その人を示す印のため）。
 
 ```json
 {
@@ -1192,7 +1197,9 @@ POST /api/v1/organizer/events/[id]/reminders
     "area": "東京都渋谷区",
     "tags": ["LEARNING"],
     "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
-    "stats": { "eventCount": 12, "sinceYear": 2019 }
+    "stats": { "eventCount": 12, "sinceYear": 2019 },
+    "avatarUrl": "/api/v1/image-assets/{id}/image",
+    "themeId": "parchment"
   }
 }
 ```
@@ -1226,10 +1233,12 @@ GET の応答:
     "instagramUrl": "",
     "websiteUrl": "",
     "lineUrl": "",
-    "showStats": false
+    "showStats": false,
+    "themeId": null
   },
   "stats": { "eventCount": 3, "sinceYear": 2024 },
-  "homePath": "/organizers/{userId}"
+  "homePath": "/organizers/{userId}",
+  "avatarUrl": "/api/v1/image-assets/{id}/image"
 }
 ```
 
@@ -1246,8 +1255,9 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `websiteUrl` | `https` のみ。ホストは問わない。後方互換のため受け付けるが、公開ページには出さない |
 | `lineUrl` | `https` のみ。ホストは `lin.ee` / `line.me`。後方互換のため受け付けるが、公開ページには出さない |
 | `isPublished` / `showStats` | 真偽値。既定は false |
+| `themeId` | `modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` のいずれか、または null（標準）。未知の値は 400 |
 
-URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。
+URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.17 の `avatar` で別に保存する。
 
 ### 5.15. GET / DELETE `/api/v1/venues`（過去の会場の候補）
 
@@ -1304,6 +1314,37 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 `VOICE_TRANSCRIBE_MOCK=1` のときは、OpenAI を呼ばずに欄の入力例（`src/modules/events/lib/voice/fields.ts` の `example`）を `text` として返す。`model` は `"mock"` になる。外部を呼ばないため回数の上限は数えず、`OPENAI_API_KEY` が空でも 503 にしない。`NODE_ENV=production` では常に無効。開発では、このルートを初めて読み込んだ時点でモックの有効・無効と鍵の有無を 1 度だけ `console.warn` に出す（設定の付け忘れと切り忘れに気づくため）。
 
 文字をフォームの値へ変える規則はサーバーではなく画面側に置く（`src/modules/events/lib/voice/parse.ts`）。欄が決まっていれば LLM を使わず、日付・時刻・金額・人数を決定的に読めるため、同じ発話が常に同じ値になり、テストで仕様を固定できる。導入手順と画面の動きは `docs/voice-input.rst`。
+
+### 5.17. POST / DELETE `/api/v1/organizer/profile/avatar`（プロフィールのアイコン）
+
+対象画面は SCR-ORG-14。認可は 5.14 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
+
+本文の保存（`PUT /api/v1/organizer/profile`）とは分ける。画像は選んだ時点で保存し、本文の保存に失敗してもアイコンだけ巻き戻る事故を作らない。
+
+- `multipart/form-data` の `file` を 1 つ受け取る。
+- 受け付けるのは JPEG / PNG / WebP。判定は先頭バイトだけで行う（`src/lib/image-upload.ts`）。
+- 4MB を超える本文は 413。形式が違う・読めない画像は 422 `INVALID_IMAGE`。
+- 変換は `sharp` で行い、**中央で正方形に切り抜き**、長辺 256px（元画像が小さければ短辺まで、最低 64px）に縮めて WebP（品質 82）にする。原本は保存しない。
+- バイト列を `storage/images/{id}.webp`、行を `image_assets`（`kind = AVATAR`）に持つ。DB の作成に失敗したらファイルも消す。
+- `organizer_profiles.avatar_image_id` を新しい ID に差し替え、**差し替え前の画像は `is_deleted = true` にして配信を止め、ファイルを消す**。参照を移す前に消さない（失敗したときにアイコンが消えたままになる）。
+- 同じ会員の試行は 10 分間に 5 回まで（`src/lib/upload-limit.ts`、プロセス内）。超過は 429。
+- 応答は `201 { "avatarUrl": "/api/v1/image-assets/{id}/image" }`。削除は `200 { "avatarUrl": null }`。
+
+| 状態 | error | 意味 |
+| :---- | :---- | :---- |
+| 400 | - | `file` が無い、または本文を読めない |
+| 413 | - | 4MB を超えた |
+| 422 | `INVALID_IMAGE` | JPEG / PNG / WebP でない、または画像として読めない |
+| 429 | - | 短時間のアップロードが多すぎる |
+
+### 5.18. GET `/api/v1/image-assets/[id]/image`（会員が上げた画像の配信）
+
+アイコンなど、`image_assets` に保存した画像を返す。認証は不要（推測できない UUID を URL に持つ公開画像）。
+
+- `id` が UUID でない、行が無い、`is_deleted = true`、ファイルが無いときは 404。
+- `Content-Type: image/webp`、`Cache-Control: public, max-age=31536000, immutable`、`X-Content-Type-Options: nosniff`。
+- ID は差し替えのたびに新しくなるため、内容は変わらない。長期キャッシュで安全。
+- 将来のイベント表紙（`kind = EVENT_COVER`）も同じ URL の形で配る。
 
 ---
 

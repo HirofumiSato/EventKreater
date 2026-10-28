@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { normalizePostalCode } from "@/lib/postal-code";
 import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
+import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
 import { profileUrlProblem } from "@/modules/organizers/lib/profile";
 import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
@@ -524,6 +525,16 @@ export const OrganizerProfileSchema = z
     websiteUrl: optionalProfileUrl("Webサイト", []),
     lineUrl: optionalProfileUrl("LINE", ["lin.ee", "line.me"]),
     showStats: z.boolean().default(false),
+    /**
+     * 公開ページのテーマ。null は標準の見た目。
+     * 未知の ID は 400 にする（DB には既知の値しか入れない）。
+     */
+    themeId: z
+      .enum(SEMANTIC_THEME_IDS, {
+        errorMap: () => ({ message: "選べないテーマです。" }),
+      })
+      .nullable()
+      .default(null),
   })
   .strict();
 

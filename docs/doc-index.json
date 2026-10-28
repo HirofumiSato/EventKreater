@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 111,
+    "docs": 112,
     "preImplementation": 15,
-    "markdown": 46,
+    "markdown": 47,
     "rst": 65,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2510,
+      "lineCount": 2551,
       "headings": [
         {
           "level": 1,
@@ -2185,6 +2185,14 @@
         {
           "level": 3,
           "text": "5.16. POST /api/v1/voice/transcriptions（音声を文字にする）"
+        },
+        {
+          "level": 3,
+          "text": "5.17. POST / DELETE /api/v1/organizer/profile/avatar（プロフィールのアイコン）"
+        },
+        {
+          "level": 3,
+          "text": "5.18. GET /api/v1/image-assets/[id]/image（会員が上げた画像の配信）"
         },
         {
           "level": 2,
@@ -2442,7 +2450,15 @@
           "exists": false
         },
         {
+          "path": "src/lib/image-upload.ts",
+          "exists": true
+        },
+        {
           "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/upload-limit.ts",
           "exists": true
         },
         {
@@ -2835,7 +2851,7 @@
       "title": "データベース物理設計書（DBschema.md）",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1521,
+      "lineCount": 1573,
       "headings": [
         {
           "level": 1,
@@ -2944,7 +2960,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 447,
+      "lineCount": 449,
       "headings": [
         {
           "level": 1,
@@ -2998,6 +3014,14 @@
           "exists": true
         },
         {
+          "path": "src/lib/image-assets.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/upload-limit.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/auth/lib/cookies.ts",
           "exists": true
         },
@@ -3007,10 +3031,6 @@
         },
         {
           "path": "src/modules/flyers/lib/flyer.ts",
-          "exists": true
-        },
-        {
-          "path": "src/modules/flyers/lib/upload-limit.ts",
           "exists": true
         }
       ],
@@ -5278,7 +5298,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1867,
+      "lineCount": 1885,
       "headings": [
         {
           "level": 1,
@@ -5740,11 +5760,19 @@
           "exists": true
         },
         {
+          "path": "src/styles/themes.css",
+          "exists": true
+        },
+        {
           "path": "src/types/event.ts",
           "exists": false
         },
         {
           "path": "tests/integration",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-avatar.test.ts",
           "exists": true
         },
         {
@@ -5777,6 +5805,14 @@
         },
         {
           "path": "tests/unit/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-css.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme.test.ts",
           "exists": true
         },
         {
@@ -7119,7 +7155,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 24,
+      "lineCount": 25,
       "headings": [
         {
           "level": 1,
@@ -7132,6 +7168,7 @@
         "docs/issues/event-draft-save-and-preview.md",
         "docs/issues/public-organizer-page.md",
         "docs/issues/organizer-profile.md",
+        "docs/issues/organizer-profile-appearance.md",
         "docs/issues/event-owner-and-cohosts.md",
         "docs/issues/organizer-revenue-dashboard.md",
         "docs/issues/cohost-revenue-allocation.md",
@@ -7438,6 +7475,215 @@
         },
         {
           "path": "tests/unit/guest-draft.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/organizer-profile-appearance.md",
+      "sphinxDoc": "issues/organizer-profile-appearance",
+      "format": "markdown",
+      "title": "公開プロフィールにアイコン画像とセマンティックテーマを足す",
+      "summary": "> [organizer-profile.md](organizer-profile.md) の「スコープ外」から切り出した issue。プロフィールの本文（肩書き・自己紹介・リンク）は動いている前提で、そこに「その人らしさ」を出す手段を 2 つ足す。",
+      "preImplementation": false,
+      "lineCount": 341,
+      "headings": [
+        {
+          "level": 1,
+          "text": "公開プロフィールにアイコン画像とセマンティックテーマを足す"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "決定"
+        },
+        {
+          "level": 3,
+          "text": "なぜ「属性＋静的 CSS」なのか"
+        },
+        {
+          "level": 2,
+          "text": "データ"
+        },
+        {
+          "level": 3,
+          "text": "image_assets（新規）"
+        },
+        {
+          "level": 3,
+          "text": "organizer_profiles（追加列）"
+        },
+        {
+          "level": 3,
+          "text": "置き場所"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 3,
+          "text": "1. テーマの定義"
+        },
+        {
+          "level": 3,
+          "text": "2. src/styles/themes.css"
+        },
+        {
+          "level": 3,
+          "text": "3. SemanticThemeScope と ThemePicker"
+        },
+        {
+          "level": 3,
+          "text": "4. 画像の保存と配信"
+        },
+        {
+          "level": 3,
+          "text": "5. アイコンの API"
+        },
+        {
+          "level": 3,
+          "text": "6. プロフィールの型・スキーマ・ストア"
+        },
+        {
+          "level": 3,
+          "text": "7. 画面"
+        },
+        {
+          "level": 3,
+          "text": "8. パフォーマンス"
+        },
+        {
+          "level": 3,
+          "text": "9. 将来のイベント公開ページ"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "ドキュメント"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/DBschema.md",
+          "exists": true
+        },
+        {
+          "path": "docs/deploy.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/issues/index.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/overall_system_requirements_common.md",
+          "exists": true
+        },
+        {
+          "path": "docs/sitemap.rst",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261028120000_organizer_profile_theme_and_avatar/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/image-assets/[id]/image/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/profile/avatar/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/SemanticThemeScope.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/ThemePicker.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/image-assets.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/image-upload.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/semantic-themes.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/upload-limit.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/upload.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/index.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/themes.css",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-avatar.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-profile.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-upload.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-profile.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-css.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme.test.ts",
           "exists": true
         }
       ],
@@ -9795,7 +10041,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 514,
+      "lineCount": 526,
       "headings": [
         {
           "level": 1,
@@ -9866,6 +10112,10 @@
         },
         {
           "path": "tests/integration/login-challenge.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-avatar.test.ts",
           "exists": true
         },
         {
@@ -10046,6 +10296,14 @@
         },
         {
           "path": "tests/unit/rsvp-status.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-css.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme.test.ts",
           "exists": true
         },
         {

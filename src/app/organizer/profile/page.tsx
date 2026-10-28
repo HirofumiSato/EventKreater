@@ -20,7 +20,7 @@ export default function OrganizerProfilePage() {
     <div className="stack has-form-dock">
       <PageHeader
         title="公開プロフィール"
-        lead="参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。"
+        lead="参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。アイコンとページの見た目も、ここで決められます。"
       />
       <OrganizerProfileForm />
       <p className="screen-note">
@@ -28,7 +28,7 @@ export default function OrganizerProfilePage() {
         <Link href="/account" className="text-link">
           アカウント設定
         </Link>
-        で変えます。この画面では、肩書きと自己紹介を扱います。保存の前に、参加者と同じ見た目でプレビューできます。
+        で変えます。この画面では、肩書き・自己紹介・アイコンと、公開ページの見た目を扱います。保存の前に、参加者と同じ見た目でプレビューできます。
       </p>
     </div>
   );

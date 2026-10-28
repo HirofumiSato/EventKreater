@@ -32,8 +32,13 @@ export function OrganizerProfileView({
   return (
     <div className="stack">
       <div className="profile-head">
-        <span className="profile-head__avatar" aria-hidden="true">
-          {profileInitial(name)}
+        <span className="profile-head__avatar">
+          {profile.avatarUrl ? (
+            // 64px で出し、画像は 256px を配る。比率は枠側で切る。
+            <img src={profile.avatarUrl} alt="" width={64} height={64} decoding="async" />
+          ) : (
+            <span aria-hidden="true">{profileInitial(name)}</span>
+          )}
         </span>
         <div>
           <p className="eyebrow">主催者</p>
