@@ -13,6 +13,7 @@ const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知
 /**
  * ホームの h1。スマホの 390px でも折り返しが意図どおりになるよう、行ごとに分けて持つ。
  * 各要素の末尾に読点・句点を置き、つなげて 1 行にしても文として通るようにしてある。
+ * スマホは 3 行、PC（1024px 以上）は 1・2 行目をつなげて 2 行にする（`components.css`）。
  */
 const TAGLINE_LINES = ["イベントのチラシと", "WEBページ、", "5分で簡単作成。"] as const;
 
