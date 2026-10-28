@@ -23,7 +23,6 @@ from src.adapters.image_generator.dalle_image_generator import (
     uses_gpt_image_vocabulary,
 )
 from src.adapters.wiring import build_candidate_source
-from src.domain.models import TemplateId
 from src.domain.pricing import (
     DEFAULT_IMAGE_MODEL,
     DEFAULT_IMAGE_QUALITY,
@@ -147,7 +146,7 @@ def test_ai_source_preview_is_free() -> None:
     generator = _FakeGenerator()
     source = _source(generator)
 
-    payload = asyncio.run(source.preview_background(TemplateId.STYLE_2_WARM_EARTH))
+    payload = asyncio.run(source.preview_background(None))
 
     assert payload.startswith(b"\x89PNG")
     assert generator.calls == []

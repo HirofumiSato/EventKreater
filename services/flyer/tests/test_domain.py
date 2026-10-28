@@ -48,6 +48,19 @@ def test_blank_capacity_becomes_none() -> None:
     assert request.capacity is None
 
 
+def test_title_colour_is_optional_and_must_be_a_hex_colour() -> None:
+    """未指定は「自動」。指定するなら 6 桁の HEX だけを受け付ける。"""
+    assert FlyerGenerationRequest.model_validate(_payload()).title_color is None
+
+    chosen = FlyerGenerationRequest.model_validate(_payload(title_color="#FFFFFF"))
+    assert chosen.title_color == "#FFFFFF"
+
+    with pytest.raises(ValidationError):
+        FlyerGenerationRequest.model_validate(_payload(title_color="white"))
+    with pytest.raises(ValidationError):
+        FlyerGenerationRequest.model_validate(_payload(title_color="#FFF"))
+
+
 def test_semantic_theme_is_optional_and_unknown_is_rejected() -> None:
     # 旧クライアントは送らない。未指定のまま従来どおり動く。
     assert FlyerGenerationRequest.model_validate(_payload()).semantic_theme is None

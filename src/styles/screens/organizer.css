@@ -211,8 +211,8 @@
   display: block;
   overflow: hidden;
   aspect-ratio: 210 / 297;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
   background: var(--color-slate-100);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -239,7 +239,7 @@
 
 .candidate-tile--selected .candidate-tile__frame {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .candidate-tile__check {
@@ -247,7 +247,7 @@
   top: 0.5rem;
   left: 0.5rem;
   padding: 0.125rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--color-primary);
   color: #fff;
   font-size: 0.6875rem;
@@ -260,21 +260,31 @@
   top: 0.5rem;
   right: 0.5rem;
   padding: 0.125rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--color-text);
   color: var(--color-surface);
   font-size: 0.625rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* 前段で選んだテーマに合う 1 枚。選ばせるのではなく、迷ったときの目印にする。 */
+.candidate-tile__badge--recommend {
+  background: var(--color-surface);
+  color: var(--color-primary-text);
+  border: 1px solid var(--color-primary);
 }
 
 .candidate-tile__label {
   font-size: 0.8125rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
 }
 .candidate-tile__desc {
   color: var(--color-text-subtle);
   font-size: 0.6875rem;
   line-height: 1.5;
+  letter-spacing: 0.01em;
 }
 
 /* ステップ 2 の「別の背景を作る」と、AI の残り枚数。 */
@@ -336,6 +346,15 @@
   .wizard__body,
   .wizard__foot {
     padding-inline: 1rem;
+  }
+
+  /* 5 ステップを 1 行に保つ。狭い幅では字と間隔だけを詰める。 */
+  .wizard__steps {
+    gap: 0.375rem;
+  }
+
+  .wizard__step {
+    font-size: 0.6875rem;
   }
 
   .wizard__foot .btn {

@@ -1,6 +1,6 @@
 """ウィザードの候補生成。
 
-タイプ → 背景 → 配置 → 配色 の 4 ステップを、同じ背景の上で決定的に描く。
+紙面の性格 → 背景 → 配置 → 配色 → タイトル色 の 5 ステップを、同じ背景の上で決定的に描く。
 候補はすべて「文字まで合成した完成イメージ」で、確定時は再描画せずそのまま
 保存する。選んだ見た目と完成品がずれない。
 """
@@ -10,15 +10,16 @@ from __future__ import annotations
 from uuid import uuid4
 
 from src.adapters.candidate_source.palettes import (
-    PALETTES,
     Palette,
     default_palette,
+    palette_candidates,
     palette_for,
 )
 from src.adapters.candidate_source.templates import (
     TEMPLATE_DESCRIPTIONS,
     TEMPLATE_LABELS,
 )
+from src.adapters.candidate_source.title_colors import title_color_candidates
 from src.adapters.renderer.layouts import LAYOUT_DESCRIPTIONS, LAYOUT_LABELS
 from src.domain.exceptions import CandidateNotFoundError
 from src.domain.models import (
@@ -31,6 +32,7 @@ from src.domain.models import (
     TemplateId,
     TextLayout,
 )
+from src.domain.semantic_theme import theme_look
 from src.ports.ai_generation_quota_port import AiGenerationQuotaPort
 from src.ports.candidate_source_port import CandidateSourcePort
 from src.ports.candidate_store_port import CandidateStorePort
@@ -76,12 +78,17 @@ class ProposeCandidatesUseCase:
         request: FlyerGenerationRequest,
         owner_token_hash: str | None = None,
     ) -> CandidateList:
-        """ステップ 1。3 テンプレートを標準配置・既定配色で描く。"""
+        """ステップ 1。3 種の紙面の性格を、同じ地・同じ差し色で描く。
+
+        3 枚で地を共有するのは、色の差ではなく書体と寄せの差だけを見せるため。
+        おすすめはテーマに合う 1 枚だけに付け、並び順は動かさない。
+        """
         context = await self._prompt_engine.generate_prompt_context(request)
+        background = await self._source.preview_background(request.semantic_theme)
+        recommended = theme_look(request.semantic_theme).recommended
         items: list[CandidateItem] = []
         for template_id in TemplateId:
-            palette = default_palette(template_id)
-            background = await self._source.preview_background(template_id)
+            palette = default_palette(template_id, request.semantic_theme)
             items.append(
                 self._make(
                     kind=CandidateKind.TYPE,
@@ -99,6 +106,7 @@ class ProposeCandidatesUseCase:
                     label=TEMPLATE_LABELS[template_id],
                     description=TEMPLATE_DESCRIPTIONS[template_id],
                     owner_token_hash=owner_token_hash,
+                    recommended=template_id is recommended,
                 )
             )
         return CandidateList(candidates=items)
@@ -109,9 +117,9 @@ class ProposeCandidatesUseCase:
         count: int,
         owner_token_hash: str | None = None,
     ) -> CandidateList:
-        """ステップ 2。選んだタイプの背景を描く。AI は 1 端末あたりの残り枚数まで。"""
+        """ステップ 2。選んだ紙面の背景を描く。AI は 1 端末あたりの残り枚数まで。"""
         context = await self._prompt_engine.generate_prompt_context(request)
-        palette = default_palette(request.template_id)
+        palette = default_palette(request.template_id, request.semantic_theme)
         allowed = min(max(1, count), self._ai_quota.remaining(owner_token_hash))
         options = await self._source.suggest_backgrounds(request, context, allowed)
         used = sum(1 for option in options if option.source == "ai")
@@ -148,7 +156,7 @@ class ProposeCandidatesUseCase:
         候補を作るだけなので、生成回数は消費しない。
         """
         background = self._uploads.normalize(payload)
-        palette = default_palette(request.template_id)
+        palette = default_palette(request.template_id, request.semantic_theme)
         context = await self._prompt_engine.generate_prompt_context(request)
         return self._make(
             kind=CandidateKind.BACKGROUND,
@@ -172,7 +180,11 @@ class ProposeCandidatesUseCase:
         """ステップ 3。同じ背景のまま 4 通りの配置を描く。"""
         meta = self._load_owned_meta(parent_id, owner_token_hash)
         background = self._store.load_background(parent_id)
-        palette = palette_for(meta.palette_id, meta.template_id)
+        palette = palette_for(
+            meta.palette_id,
+            meta.template_id,
+            meta.request.semantic_theme,
+        )
         items = [
             self._make(
                 kind=CandidateKind.LAYOUT,
@@ -196,7 +208,11 @@ class ProposeCandidatesUseCase:
         parent_id: str,
         owner_token_hash: str | None = None,
     ) -> CandidateList:
-        """ステップ 4。選んだ配置のまま 4 通りの配色を描く。"""
+        """ステップ 4。選んだ配置のまま 4 通りの配色を描く。
+
+        いまの色を先頭に置く。並びが変わると、ステップ 3 で見た色と確定後の色が
+        食い違う。テーマを選んでいれば、テーマの差し色から 4 通りを作る。
+        """
         meta = self._load_owned_meta(parent_id, owner_token_hash)
         background = self._store.load_background(parent_id)
         items = [
@@ -213,7 +229,52 @@ class ProposeCandidatesUseCase:
                 owner_token_hash=meta.owner_token_hash,
                 source=meta.source,
             )
-            for palette in PALETTES
+            for palette in palette_candidates(
+                meta.template_id,
+                meta.request.semantic_theme,
+                meta.palette_id,
+            )
+        ]
+        return CandidateList(candidates=items)
+
+    def suggest_title_colors(
+        self,
+        parent_id: str,
+        owner_token_hash: str | None = None,
+    ) -> CandidateList:
+        """ステップ 5。選んだ配色のまま 4 通りのタイトル色を描く。
+
+        先頭は「自動」。背景の明るさから墨か白を選ぶので、迷ったらここへ戻せる。
+        """
+        meta = self._load_owned_meta(parent_id, owner_token_hash)
+        background = self._store.load_background(parent_id)
+        palette = palette_for(
+            meta.palette_id,
+            meta.template_id,
+            meta.request.semantic_theme,
+        )
+        items = [
+            self._make(
+                kind=CandidateKind.TITLE_COLOR,
+                request=meta.request.model_copy(
+                    update={"title_color": option.color}
+                ),
+                context=meta.context,
+                background=background,
+                palette=palette,
+                layout=meta.layout_id,
+                parent_id=parent_id,
+                label=option.label,
+                description=option.description,
+                owner_token_hash=meta.owner_token_hash,
+                source=meta.source,
+                title_color_id=option.title_color_id,
+            )
+            for option in title_color_candidates(
+                meta.request.semantic_theme,
+                meta.template_id,
+                meta.context.suggested_accent_color,
+            )
         ]
         return CandidateList(candidates=items)
 
@@ -262,6 +323,8 @@ class ProposeCandidatesUseCase:
         description: str,
         owner_token_hash: str | None = None,
         source: str | None = None,
+        recommended: bool = False,
+        title_color_id: str | None = None,
     ) -> CandidateItem:
         image = self._renderer.render_flyer(
             background_bytes=background,
@@ -277,6 +340,7 @@ class ProposeCandidatesUseCase:
             palette_id=palette.palette_id,
             accent_color=palette.accent_color,
             overlay_alpha=palette.overlay_alpha,
+            title_color_id=title_color_id,
             parent_id=parent_id,
             label=label,
             description=description,
@@ -297,7 +361,9 @@ class ProposeCandidatesUseCase:
             palette_id=palette.palette_id,
             accent_color=palette.accent_color,
             overlay_alpha=palette.overlay_alpha,
+            title_color=request.title_color,
             source=source or "placeholder",
+            recommended=recommended,
         )
 
 

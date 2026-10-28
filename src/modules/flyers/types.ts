@@ -1,7 +1,12 @@
 /** ブラウザとサーバーで共有するチラシの型。 */
 import type { FlyerAsset, RainPolicy } from "@/modules/events/types";
 
-export type FlyerCandidateKind = "type" | "background" | "layout" | "palette";
+export type FlyerCandidateKind =
+  | "type"
+  | "background"
+  | "layout"
+  | "palette"
+  | "title_color";
 
 /** ウィザードのタイル 1 枚。画像 URL は BFF の中継先を指す。 */
 export interface FlyerCandidate {
@@ -15,10 +20,14 @@ export interface FlyerCandidate {
   paletteId: string;
   accentColor: string;
   overlayAlpha: number;
+  /** タイトルの文字色。`null` は「自動」で、背景の明るさから決まる。 */
+  titleColor: string | null;
   /** 背景の供給元。`ai` のときだけ課金が起きる。 */
   source: string;
   /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
   aiRemaining: number | null;
+  /** 前段で選んだテーマに合う 1 枚。ステップ 1 だけ立つ。 */
+  recommended: boolean;
 }
 
 export interface FlyerQuota {
@@ -42,4 +51,4 @@ export interface SelectableFlyer extends FlyerAsset {
   capacity: number | null;
 }
 
-export type FlyerWizardStep = 1 | 2 | 3 | 4;
+export type FlyerWizardStep = 1 | 2 | 3 | 4 | 5;

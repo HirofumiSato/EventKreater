@@ -19,7 +19,7 @@ HTTP API
 ウィザードの候補を作る
 ----------------------
 
-画面は「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選びます。
+画面は「紙面の性格 → 背景 → 文字配置 → 配色 → タイトル色」の 5 ステップで候補を選びます。
 候補はすべて文字まで合成した完成イメージで、確定時は再描画しません。
 候補画像は ``candidate_ttl_seconds``（既定 3600 秒）で消えます。
 
@@ -27,16 +27,19 @@ HTTP API
 ただしステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼びます。
 そのため flyer サービス内で 1 端末・1 時間あたり ``ai_candidate_max_per_hour``
 （既定 3 枚）に制限し、応答の ``source`` と ``ai_remaining`` で残りを返します。
-上限に達したときと生成に失敗したときは、グラデーション背景（``source`` は
-``placeholder``）で 200 を返します。
+上限に達したときと生成に失敗したときは、テーマ色で描いたサンプル紙面
+（``source`` は ``placeholder``）で 200 を返します。
 
-ステップ 1: タイプ
-~~~~~~~~~~~~~~~~~~
+ステップ 1: 紙面の性格
+~~~~~~~~~~~~~~~~~~~~~~
 
 ``POST /api/v1/flyers/candidates/types``
 
 ``POST /api/v1/flyers/generate`` と同じ 7 項目を送ります。``template_id`` と
-``layout_id`` は無視され、3 テンプレート分の完成イメージが返ります。
+``layout_id`` は無視され、3 種の紙面の性格（静けさ／やわらかさ／にぎやかさ）の
+完成イメージが返ります。3 枚は同じ紙・同じ差し色・同じ格子で、書体・寄せ・
+面の濃さだけが違います。``semantic_theme`` に合う 1 枚は ``recommended`` が
+``true`` になります。
 
 .. code-block:: json
 
@@ -45,14 +48,15 @@ HTTP API
        {
          "candidate_id": "0f6a...",
          "kind": "type",
-         "label": "バー・スタイリッシュ",
-         "description": "暗い背景に明朝体。夜のイベント向け",
+         "label": "静けさ",
+         "description": "明朝で中央に組む。余白を広く取り、罫線は短く。",
          "image_url": "/api/v1/flyers/candidates/0f6a...",
          "template_id": "style_1_bar_stylish",
          "layout_id": "classic",
-         "palette_id": "gold",
-         "accent_color": "#F59E0B",
-         "overlay_alpha": 0.55
+         "palette_id": "theme",
+         "accent_color": "#8B2635",
+         "overlay_alpha": 0.55,
+         "recommended": true
        }
      ]
    }
@@ -63,14 +67,14 @@ HTTP API
 ``POST /api/v1/flyers/candidates``
 
 7 項目に ``template_id`` と ``count``（1〜16、既定 1）を足して送ります。
-選んだタイプの背景タイルが返ります。``kind`` は ``background`` です。
+選んだ紙面の性格の背景タイルが返ります。``kind`` は ``background`` です。
 画面は 1 枚ずつ出し、気に入らなければ作り直させます（``count`` は 1）。
 
 ``target_generation``（例: ``"20代から40代"``、50 文字まで）を送ると、想定する
 参加者をプロンプトの文脈に足します。値が変われば人物・衣装・光の当て方の指示も
 変わるので、同じ催しでも背景の雰囲気が寄ります。``layout_id`` は余白の指示に使い、
-ステップ 2 では ``classic``（上部 3 分の 2 を空ける）を渡します。``count`` は何枚
-作るかだけで、プロンプトには渡しません。
+ステップ 2 では ``classic``（上下の帯を空け、真ん中に被写体を置く）を渡します。
+``count`` は何枚作るかだけで、プロンプトには渡しません。
 
 応答の各候補には ``source``（``ai`` / ``placeholder`` / ``upload``）と
 ``ai_remaining``（AI で作れる残り枚数。背景のステップだけ）が付きます。
@@ -90,8 +94,27 @@ HTTP API
 ``POST /api/v1/flyers/candidates/{candidate_id}/palettes``
 
 本文は不要です。親候補の背景と配置をそのまま使い、4 通りの配色を描きます。
-``kind`` は ``palette``、``palette_id`` は ``gold`` / ``mono`` / ``neon`` /
-``earth`` です。
+``kind`` は ``palette`` です。``semantic_theme`` があるときは ``theme`` /
+``theme-soft`` / ``theme-deep`` / ``theme-quiet``（テーマの差し色から作る）で、
+無いときは ``gold`` / ``mono`` / ``neon`` / ``earth`` です。どちらも、いま選ばれて
+いる色が先頭に来ます。
+
+ステップ 5: タイトル色
+~~~~~~~~~~~~~~~~~~~~~~
+
+``POST /api/v1/flyers/candidates/{candidate_id}/title-colors``
+
+本文は不要です。親候補の背景・配置・配色をそのまま使い、題名の色だけを変えた
+4 枚を描きます。``kind`` は ``title_color`` で、並びは ``auto``（自動） /
+``ink``（墨） / ``white``（白） / ``accent``（差し色）に固定します。先頭が自動なのは、
+題名の読みやすさが写真の明るさで変わり、迷ったときに戻せる場所が要るためです。
+
+* ``auto`` の ``title_color`` は ``null`` です。描画時に見出しの群の平均色を測り、
+  墨が 4.5:1 を満たせば墨、満たさなければ白を選びます。
+* それ以外は ``#RRGGBB`` を返します。``ink`` と ``accent`` は紙に対して
+  4.5:1 へ寄せた値です。``white`` は明るい紙でも地の側を暗くして白を保ちます。
+
+各候補には描画に使った ``title_color``（``auto`` なら ``null``）が付きます。
 
 候補画像を取得する
 ~~~~~~~~~~~~~~~~~~
@@ -120,6 +143,7 @@ HTTP API
      "target_generation": "20代から40代",
      "template_id": "style_1_bar_stylish",
      "layout_id": "classic",
+     "title_color": null,
      "candidate_id": "0f6a..."
    }
 
@@ -127,6 +151,11 @@ HTTP API
 （``design_direction``）を LLM のユーザー JSON に足し、背景の雰囲気を告知ページと
 揃えます。候補は ``modern-slate`` / ``enterprise-clean`` / ``parchment`` /
 ``neo-brutalism`` / ``neon`` です。省略したときの出力は従来と同じです。
+
+``title_color`` も任意です。``#RRGGBB`` を渡すと題名をその色で描きます。
+省略（``null``）すると、見出しの群の平均色から墨か白を選びます。暗い写真で墨を
+置くと題名が沈むため、既定は自動です。選んだ色が地に近くて読めないときは、
+文字ではなく地の側を寄せます。
 
 ``candidate_id`` を付けると、その候補の完成画像をそのまま保存して返します。
 文字合成も背景生成もしません。``candidate_id`` を省くと、7 項目から生成します

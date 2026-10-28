@@ -14,7 +14,10 @@ from src.domain.models import LLMGenerationContext, TextLayout
 
 #: 配置プリセットごとの余白指示。AI 背景を入れるときにプロンプトへ連結する。
 LAYOUT_NEGATIVE_SPACE_HINTS: dict[TextLayout, str] = {
-    TextLayout.CLASSIC: "The upper two thirds must stay uncluttered for a text overlay.",
+    TextLayout.CLASSIC: (
+        "The top and bottom bands must stay uncluttered for text; "
+        "the middle band is free for the subject."
+    ),
     TextLayout.TOP_STACK: (
         "The upper two thirds must stay uncluttered; the lower third is free for the subject."
     ),

@@ -147,7 +147,7 @@
 
 .. count-start
 
-64 ファイル、``it`` は 829 件です。内訳は ``tests/unit/`` が 51 ファイル 747 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+64 ファイル、``it`` は 831 件です。内訳は ``tests/unit/`` が 51 ファイル 749 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -204,8 +204,8 @@
     - 定員の選択肢が1〜50の1刻みであること。51以上は数値入力に寄せること。無制限・人数選択・51以上の切り替えで保存値が保たれること。数値入力が正の整数だけを受けること
     - SCR-ORG-02
   * - ``tests/unit/event-preview.test.ts``
-    - 13
-    - 対象世代の空白を落として空欄を null にし、テーマ ID をそのまま送ること。入力途中のフォームを告知ページの形へ寄せ、未入力の欄を「未入力」と出すこと。チラシの有無をプレビューの画像に反映すること。チラシ生成のペイロードに ``themeId`` を載せ、サービスへ ``semantic_theme`` として渡すこと。想定する世代が 50 文字なら受け、51 文字は弾くこと
+    - 15
+    - 対象世代の空白を落として空欄を null にし、テーマ ID をそのまま送ること。入力途中のフォームを告知ページの形へ寄せ、未入力の欄を「未入力」と出すこと。チラシの有無をプレビューの画像に反映すること。チラシ生成のペイロードに ``themeId`` を載せ、サービスへ ``semantic_theme`` として渡すこと。タイトル色は未指定なら ``title_color: null`` で送り、``#RRGGBB`` 以外を弾くこと。想定する世代が 50 文字なら受け、51 文字は弾くこと
     - SCR-ORG-02 / SCR-ORG-16 / SCR-PUB-01
    * - ``tests/unit/revenue.test.ts``
      - 28
@@ -418,7 +418,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 747、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 747 件を実行して 82 件を skip します。
+件数の内訳は ``tests/unit/`` が 749、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 749 件を実行して 82 件を skip します。
 
 .. breakdown-end
 

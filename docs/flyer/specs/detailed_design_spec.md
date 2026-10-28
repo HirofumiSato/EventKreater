@@ -63,7 +63,9 @@ app/
 │   ├── security.py                 # レートリミット、バリデーションユーティリティ
 │   └── exceptions.py               # カスタム例外定義
 ├── domain/
-│   └── models.py                   # 業務エンティティ・スキーマ（Pydantic）
+│   ├── models.py                   # 業務エンティティ・スキーマ（Pydantic）
+│   ├── title_composition.py        # タイトルの意味改行（Pillow に依存しない）
+│   └── semantic_theme.py           # テーマの色と明度
 ├── ports/                          # 抽象インターフェース（ABC）
 │   ├── llm_port.py
 │   ├── image_gen_port.py
@@ -78,7 +80,11 @@ app/
 │   │   ├── openai_dalle_adapter.py # DALL-E 3実装
 │   │   └── comfyui_adapter.py      # Mac mini用 ComfyUI API実装
 │   ├── renderer/
-│   │   └── pillow_renderer.py      # Pillow文字・幾何学合成実装
+│   │   ├── design.py               # 目盛り・余白・色の役割・3 変奏（Pillow 非依存）
+│   │   ├── poster.py               # build_poster_plan（純関数）と draw_poster
+│   │   ├── layouts.py              # 積みの基準位置（split / top / center / bottom）
+│   │   ├── layout_calculator.py    # fit_to_scale・コントラスト・文字計測
+│   │   └── pillow_renderer.py      # 面 → plan → 描画 の 3 段
 │   └── storage/
 │       └── local_storage.py        # 一時ファイルI/O
 ├── services/
@@ -282,8 +288,10 @@ Client            API Endpoint        Orchestrator      ImageGenAdapter      Loc
 
 ### 5.3. ウィザード候補のライフサイクル
 
-画面は「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選ぶ。候補は
-1 件につき 3 ファイルを持つ。
+画面は「紙面の性格 → 背景 → 文字配置 → 配色 → タイトル色」の 5 ステップで候補を選ぶ。候補は
+1 件につき 3 ファイルを持つ。ステップ 1 の 3 枚は同じサンプル紙面（`paper_ground`）を
+共有し、書体・揃え・面の濃さだけを変えて並べる。地はテーマ色から決定論的に描く
+紙面見本で、画像生成 API は呼ばない。ぼけ玉・偽の水平線・ビネットは持たない。
 
 ```text
 static/candidates/
@@ -298,25 +306,58 @@ static/candidates/
 
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
-*   **課金・回数:** ステップ 1・3・4 と写真の取り込みは消費しない。ステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、グラデーション背景（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
+*   **課金・回数:** ステップ 1・3・4・5 と写真の取り込みは消費しない。ステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、グラデーション背景（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
 *   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1528（A4 縦）の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
 *   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・配置・配色・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 
 ### 5.4. 文字配置プリセット
 
-`TextLayout` は 5 つのゾーン（A カテゴリ、B タイトル、C 日時、D 詳細、E フッター）を
-まとめて動かす。要素単位の微調整は許さない。座標を動かすとコントラスト保証と
-自動縮小の前提が崩れるためである。
+`TextLayout` は「積みの基準位置」と「タイトルに許す高さ」の 2 つだけを持つ。
+要素単位の微調整は許さない。座標を動かすとコントラスト保証と目盛りの前提が
+崩れるためである。スロットの y は `adapters/renderer/poster.py` の
+`build_poster_plan()` が 8 px の目盛りに載せて決める。
 
-| `layout_id` | 意図 | 文字が載る範囲（1080×1528） |
-| :--- | :--- | :--- |
-| `classic` | 上から順に詰める。既定値 | y 128〜1402 |
-| `top_stack` | 下半分を空け、下に被写体を置ける | y 88〜1138 |
-| `center_stack` | 中央にまとめ、上下に余白を残す | y 334〜1282 |
-| `bottom_stack` | 上半分を空け、上に被写体を置ける | y 558〜1496 |
+| `layout_id` | 意図 | 積みの基準（`StackAnchor`） | タイトル上限 |
+| :--- | :--- | :--- | :--- |
+| `classic` | 見出しは上、詳細は下。写真の主役が真ん中に残る（既定値） | `split` | 480 px |
+| `top_stack` | 文字を上へ。下半分が空くので下に被写体を置ける | `top` | 440 px |
+| `center_stack` | 中央に置く。上下に余白が残る | `center` | 440 px |
+| `bottom_stack` | 文字を下へ。上半分が空くので上に被写体を置ける | `bottom` | 400 px |
 
-背景の遮光グラデーションは文字の側を濃くする（`top_stack` は上、`center_stack` は
-中央、`bottom_stack` は下）。`style_2_warm_earth` の白カードも文字範囲に合わせて縮む。
+`split` は見出しの群を `TOP_SAFE`（128）、詳細の群を `BOTTOM_SAFE` から上へ詰める。
+見出しが大きすぎて重なるときは分割をやめ、続けて積む。`top` / `center` / `bottom`
+は 2 つの群を続けて置き、その全体を上端・中央・下端へ寄せる。
+
+配置で変えてよいのは重心だけである。スロットの順序（eyebrow → meta → title → rule →
+facts → note）、文字の目盛り、群の中の間隔は 4 つで共通にする。日付（eyebrow）と
+時刻（meta）は 1 つの群に置く。片方を上端、片方を下端へ離すと、いつ開く催しなのかを
+目が 2 往復して読むことになる。
+
+タイトルを行のどこで分けるかは `src/domain/title_composition.py` が決め、目盛りから
+どの段を選ぶかは `layout_calculator.fit_to_scale()` が決める。最終行の右寄せ
+（ぶら下げ）は左寄せの変奏でだけ使う。アルゴリズムは実装仕様 3.3 にある。
+
+### 5.5. 差し色の引き継ぎ
+
+ステップ 1〜3 の既定配色はテーマの差し色（`theme_palette`）で、`palette_id` は
+`theme` になる。ステップ 4 は同じ色相から「基準 / 淡め / 深め / 控えめ」の 4 通りを
+作り、いま選ばれている色を必ず先頭に置く。テーマ未選択のときは従来の 4 色
+（gold / mono / neon / earth）を並べ替えて返す。並びが変わると、ステップ 3 で見た色と
+確定後の色が食い違うためである。
+
+### 5.6. タイトル色の引き継ぎ
+
+`POST /api/v1/flyers/candidates/{candidate_id}/title-colors` は、選ばれた配色の候補を
+親にして `CandidateKind.TITLE_COLOR` の 4 枚を返す。並びは `auto`（自動） / `ink`（墨） /
+`white`（白） / `accent`（差し色）で固定し、先頭は必ず自動にする。題名の色は写真の
+明るさで変わるため、迷ったら自動へ戻せる場所を先頭に置く。
+
+* `auto` は `title_color` を `None` のまま描く。描画時に `poster.resolve_title_color()` が
+  見出しの群の平均色から墨か白を選ぶ。候補の画像はこの時点で確定する。
+* それ以外は `FlyerGenerationRequest.title_color` に HEX を入れて描く。選んだ色は
+  動かさない。読みにくければベールの向きで地の側を寄せる。
+* `CandidateMeta.title_color_id` に選択肢の ID を残す。確定は候補の JPEG を複写する
+  だけなので、再描画は起きない。
 
 ---
 

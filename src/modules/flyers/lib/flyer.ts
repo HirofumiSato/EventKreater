@@ -38,6 +38,7 @@ export function toFlyerPayload(input: GenerateFlyerInput) {
     target_generation: input.targetGeneration ?? null,
     template_id: input.templateId,
     layout_id: input.layoutId ?? "classic",
+    title_color: input.titleColor ?? null,
   };
 }
 
@@ -145,10 +146,14 @@ export interface FlyerCandidateDto {
   palette_id: string;
   accent_color: string;
   overlay_alpha: number;
+  /** タイトルの文字色。`null` は「自動」。古いサービス応答では省略される。 */
+  title_color?: string | null;
   /** 背景の供給元。`ai` のときだけ課金が起きる。古いサービス応答では省略される。 */
   source?: string;
   /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
   ai_remaining?: number | null;
+  /** 前段で選んだテーマに合う 1 枚。古いサービス応答では省略される。 */
+  recommended?: boolean;
 }
 
 function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
@@ -163,8 +168,10 @@ function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
     paletteId: dto.palette_id,
     accentColor: dto.accent_color,
     overlayAlpha: dto.overlay_alpha,
+    titleColor: typeof dto.title_color === "string" ? dto.title_color : null,
     source: typeof dto.source === "string" ? dto.source : "placeholder",
     aiRemaining: typeof dto.ai_remaining === "number" ? dto.ai_remaining : null,
+    recommended: dto.recommended === true,
   };
 }
 
@@ -206,7 +213,7 @@ async function postCandidateRequest(
   return payload.candidates.map(serializeCandidate);
 }
 
-/** ステップ 1。3 テンプレートの完成イメージ。 */
+/** ステップ 1。3 種の紙面の性格の完成イメージ。 */
 export async function proposeTypeCandidates(
   input: GenerateFlyerInput,
   ownerTokenHash?: string,
@@ -218,7 +225,7 @@ export async function proposeTypeCandidates(
   );
 }
 
-/** ステップ 2。選んだタイプの背景タイル。 */
+/** ステップ 2。選んだ紙面の性格の背景タイル。 */
 export async function proposeBackgroundCandidates(
   input: GenerateFlyerInput,
   count: number,
@@ -255,6 +262,19 @@ export async function proposePaletteCandidates(
   assertFlyerAssetId(candidateId);
   return postCandidateRequest(
     `/api/v1/flyers/candidates/${candidateId}/palettes`,
+    {},
+    ownerTokenHash,
+  );
+}
+
+/** ステップ 5。選んだ配色のまま 4 通りのタイトル色。 */
+export async function proposeTitleColorCandidates(
+  candidateId: string,
+  ownerTokenHash?: string,
+): Promise<FlyerCandidate[]> {
+  assertFlyerAssetId(candidateId);
+  return postCandidateRequest(
+    `/api/v1/flyers/candidates/${candidateId}/title-colors`,
     {},
     ownerTokenHash,
   );

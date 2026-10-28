@@ -148,6 +148,12 @@ export const GenerateFlyerSchema = z.object({
     .optional(),
   templateId: z.enum(FLYER_TEMPLATE_IDS),
   layoutId: z.enum(FLYER_LAYOUT_IDS).default("classic"),
+  /** タイトルの文字色。null は「自動」で、背景の明るさからサービスが決める。 */
+  titleColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "文字色は#RRGGBBで指定してください")
+    .nullable()
+    .optional(),
 });
 
 /** ウィザードのステップ 1・2。下書き ID はブラウザが localStorage に持つ。 */

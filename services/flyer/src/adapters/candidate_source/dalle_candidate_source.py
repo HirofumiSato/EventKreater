@@ -13,7 +13,11 @@ from src.adapters.image_generator.dalle_image_generator import (
     resolved_image_size,
 )
 from src.domain.layout_prompts import prompt_with_layout_hint
-from src.domain.models import FlyerGenerationRequest, LLMGenerationContext, TemplateId
+from src.domain.models import (
+    FlyerGenerationRequest,
+    LLMGenerationContext,
+    SemanticTheme,
+)
 from src.domain.pricing import (
     DEFAULT_IMAGE_MODEL,
     DEFAULT_IMAGE_QUALITY,
@@ -57,9 +61,14 @@ class DalleCandidateSource(CandidateSourcePort):
     def source_id(self) -> str:
         return "ai"
 
-    async def preview_background(self, template_id: TemplateId) -> bytes:
+    async def preview_background(
+        self,
+        theme: SemanticTheme | None,
+        *,
+        variant: int = 0,
+    ) -> bytes:
         """ステップ 1 は無料のまま。代表背景は代替供給元から借りる。"""
-        return await self._fallback.preview_background(template_id)
+        return await self._fallback.preview_background(theme, variant=variant)
 
     async def suggest_backgrounds(
         self,
