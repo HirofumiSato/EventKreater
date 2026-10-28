@@ -10,10 +10,18 @@
  */
 const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知ページを作る" } as const;
 
+/**
+ * ホームの h1。スマホの 390px でも折り返しが意図どおりになるよう、行ごとに分けて持つ。
+ * 各要素の末尾に読点・句点を置き、つなげて 1 行にしても文として通るようにしてある。
+ */
+const TAGLINE_LINES = ["イベントのチラシと", "WEBページ、", "5分で簡単作成。"] as const;
+
 export const SITE = {
   name: "EventKreater",
   // ホームの h1。何をどれだけの時間で作れるかを、最初の 1 文で言い切る。
-  tagline: "催し・イベントのチラシと告知WEBページを、5分で作る。",
+  // 画面では行ごとに改行して出し、1 行で扱う場所は `tagline` を使う。
+  taglineLines: TAGLINE_LINES,
+  tagline: TAGLINE_LINES.join(""),
   description:
     "催し名・日時・場所を入れるだけで、チラシと告知ページが5分でできます。参加者は登録なしで出欠を答えられ、集計は自動で揃います。",
   nav: {

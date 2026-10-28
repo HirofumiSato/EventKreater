@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { SITE } from "@/lib/site";
 import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
 import { Section, SectionHead } from "@/components/ui";
@@ -71,7 +72,15 @@ export default function HomePage() {
         <div className="hero__grid">
           <div className="hero__copy">
             <p className="hero__eyebrow">{HERO_EYEBROW}</p>
-            <h1 className="hero__title">{SITE.tagline}</h1>
+            {/* 改行の位置は文言の一部。狭い画面でも「と」「、」の位置で折り返す。 */}
+            <h1 className="hero__title">
+              {SITE.taglineLines.map((line, index) => (
+                <Fragment key={line}>
+                  {index > 0 ? <br /> : null}
+                  {line}
+                </Fragment>
+              ))}
+            </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">
               <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
