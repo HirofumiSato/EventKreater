@@ -87,6 +87,10 @@ class FlyerGenerationRequest(BaseModel):
     capacity: Optional[str] = Field(
         None, max_length=20, description="想定上限人数（例: 先着15名）"
     )
+    semantic_theme: Optional[SemanticTheme] = Field(
+        None,
+        description="告知ページのテーマ。英語の design_direction として LLM に渡す",
+    )
     template_id: TemplateId = Field(
         ..., description="選択されたデザインテンプレートID"
     )

@@ -844,6 +844,7 @@ fieldset.field {
 }
 
 .event-step__title {
+  font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -938,6 +939,14 @@ fieldset.field {
     padding: 0.875rem 1rem;
   }
 
+  /* 見出しは 1 行に収める。「イベントページテーマ選択&チラシ生成」のような長い
+     ステップ名でも折り返さないよう、狭い端末ほど字を詰める。17px を上限にし、
+     360px 級でも横にはみ出さない大きさで止める。 */
+  .event-step__title {
+    white-space: nowrap;
+    font-size: clamp(0.75rem, 3.7vw, 1.0625rem);
+  }
+
   .event-step__body {
     padding: 1rem;
   }
@@ -958,6 +967,43 @@ fieldset.field {
 
   .form-final__actions .btn {
     flex: 1;
+  }
+}
+
+/* スマホでは最後の操作を画面下に固定する。長いフォームを読み終えても、
+   保存・プレビューまで戻らずに押せるようにするため。広い画面は固定しない。 */
+@media (max-width: 639px) {
+  .form-final {
+    position: fixed;
+    z-index: 40;
+    inset-inline: 0;
+    bottom: 0;
+    margin: 0;
+    border-inline: 0;
+    border-bottom: 0;
+    border-radius: 0;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: var(--color-surface);
+    box-shadow: 0 -10px 24px -20px rgb(26 25 22 / 0.5);
+  }
+
+  .form-final__actions .btn {
+    min-height: 2.5rem;
+  }
+
+  /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。 */
+  body:has(.form-final) .page--form,
+  body:has(.form-final) .site-footer {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。 */
+  .page--form:has(.form-final) .voice-fab {
+    bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .page--form:has(.form-final) .voice-panel {
+    bottom: calc(11.5rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -1541,6 +1587,32 @@ fieldset.field {
   border-radius: var(--radius-2xl);
   background: var(--color-surface);
   box-shadow: var(--shadow-xl);
+}
+
+/* ステップの途中で開くプレビュー。告知ページの部品をそのまま縮めて入れる。
+   チラシは画面端まで広げる指定（`margin-inline: calc(50% - 50vw)`）を持つので、
+   モーダルの中では 0 に戻す。 */
+.event-preview-modal {
+  max-height: min(62vh, 32rem);
+  margin-top: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+}
+
+.event-preview-modal .poster-hero {
+  margin-inline: 0;
+}
+
+/* 告知ページの追従バー用の下余白は、モーダルでは要らない。 */
+.event-preview-modal .event-page {
+  padding-bottom: 0;
+}
+
+.event-preview-modal__note {
+  margin-top: 0.75rem;
 }
 
 /* カレンダーの短冊から開くモーダル。催し名が長いので左揃えにする。 */

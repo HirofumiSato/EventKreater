@@ -327,6 +327,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           ...addressData(input),
           rainPolicy: input.rainPolicy,
           capacity: input.capacity ?? null,
+          targetGeneration: input.targetGeneration ?? null,
+          themeId: input.themeId ?? null,
           flyerAssetId: input.flyerAssetId ?? null,
           referrerEventId,
           // 一覧を持たないため、作成時は常に紹介制で保存する。値は将来のメディアサイト用に残す。
@@ -377,6 +379,8 @@ export async function createEventForGuest(input: CreateEventInput, guestTokenHas
           ...addressData(input),
           rainPolicy: input.rainPolicy,
           capacity: input.capacity ?? null,
+          targetGeneration: input.targetGeneration ?? null,
+          themeId: input.themeId ?? null,
           flyerAssetId: input.flyerAssetId ?? null,
           referrerEventId,
           // 一覧を持たないため、作成時は常に紹介制で保存する。値は将来のメディアサイト用に残す。
@@ -436,6 +440,8 @@ export function eventUpdateData(input: UpdateEventInput) {
     venueName: input.venueName ?? null,
     rainPolicy: input.rainPolicy,
     capacity: input.capacity ?? null,
+    targetGeneration: input.targetGeneration ?? null,
+    themeId: input.themeId ?? null,
     flyerAssetId: input.flyerAssetId ?? null,
     rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
   };

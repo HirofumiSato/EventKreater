@@ -210,6 +210,14 @@ describe("畳んだステップの要約", () => {
     expect(summarizeStep("location", form)).toBe("渋谷ホール 東京都渋谷区1-2-3");
   });
 
+  it("チラシのステップはテーマとチラシの有無を並べる", () => {
+    expect(summarizeStep("flyer", filledForm())).toBe("チラシなし");
+    expect(summarizeStep("flyer", filledForm({ themeId: "neon" }))).toBe("テーマ ネオン / チラシなし");
+    expect(summarizeStep("flyer", filledForm({ themeId: "neon", flyerAssetId: "id" }))).toBe(
+      "テーマ ネオン / チラシを作成済み",
+    );
+  });
+
   it("何も入っていない項目は要約を出さない", () => {
     expect(summarizeStep("basic", EMPTY_EVENT_FORM)).toBeNull();
     expect(summarizeStep("pricing", EMPTY_EVENT_FORM)).toBeNull();

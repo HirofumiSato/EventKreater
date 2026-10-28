@@ -14,6 +14,7 @@ import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
+import { normalizeSemanticThemeId } from "@/lib/semantic-themes";
 import { SITE } from "@/lib/site";
 import { loginUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
@@ -46,6 +47,8 @@ interface DraftDetailResponse {
     venueName: string | null;
     rainPolicy: EventFormValues["rainPolicy"];
     capacity: number | null;
+    targetGeneration: string | null;
+    themeId: string | null;
     flyerAssetId: string | null;
     rsvpDeadline: string | null;
     flyerAsset: FlyerAsset | null;
@@ -105,6 +108,8 @@ function NewEventScreen() {
         venueName: detail.event.venueName ?? "",
         rainPolicy: detail.event.rainPolicy,
         capacity: detail.event.capacity,
+        targetGeneration: detail.event.targetGeneration ?? "",
+        themeId: normalizeSemanticThemeId(detail.event.themeId),
         flyerAssetId: detail.event.flyerAssetId,
         rsvpDeadline: detail.event.rsvpDeadline
           ? formatRsvpDeadlineInput(new Date(detail.event.rsvpDeadline))
@@ -345,6 +350,7 @@ function NewEventScreen() {
         showOrganizerName={!quotaState.isLoading && !quotaState.quota}
         seedKey={draftId ?? "new"}
         ready={!restoring}
+        flyerPreviewUrl={flyerPreview}
         flyerSlot={
           <>
             <FlyerGeneratePanel

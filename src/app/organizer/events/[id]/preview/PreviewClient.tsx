@@ -23,7 +23,7 @@ import type {
   OrganizerRole,
   RainPolicy,
 } from "@/modules/events/types";
-import { Alert, Loading } from "@/components/ui";
+import { Alert, Loading, SemanticThemeScope } from "@/components/ui";
 
 interface PreviewResponse {
   event: {
@@ -34,6 +34,8 @@ interface PreviewResponse {
     location: string;
     rainPolicy: RainPolicy;
     capacity: number | null;
+    targetGeneration: string | null;
+    themeId: string | null;
     status: EventStatus;
     rsvpDeadline: string | null;
     rsvpOpen: boolean;
@@ -207,6 +209,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
       </div>
 
       <p className="preview-canvas__label">プレビュー — 参加者が見る画面です。</p>
+      <SemanticThemeScope themeId={event.themeId} page>
       <div className="page--narrow event-page">
         <PosterHero title={event.title} flyer={event.flyerAsset} stamp="プレビュー" />
         <EventMetaCard
@@ -217,6 +220,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
             location: event.location,
             rainPolicy: event.rainPolicy,
             capacity: event.capacity,
+            targetGeneration: event.targetGeneration,
             status: event.status,
             rsvpDeadline: event.rsvpDeadline,
             rsvpOpen: event.rsvpOpen,
@@ -243,6 +247,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
+      </SemanticThemeScope>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}

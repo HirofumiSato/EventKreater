@@ -6,6 +6,7 @@ from src.domain.models import (
     FlyerGenerationRequest,
     LLMGenerationContext,
     RainPolicy,
+    SemanticTheme,
     TemplateId,
     TextLayout,
 )
@@ -22,6 +23,7 @@ def make_request(
     template_id: TemplateId = TemplateId.STYLE_1_BAR_STYLISH,
     capacity: str | None = "先着15名",
     layout_id: TextLayout = TextLayout.CLASSIC,
+    semantic_theme: SemanticTheme | None = None,
 ) -> FlyerGenerationRequest:
     return FlyerGenerationRequest(
         title=title,
@@ -31,6 +33,7 @@ def make_request(
         location="Jazz Bar MOON 新宿東口",
         rain_policy=RainPolicy.RAIN_OR_SHINE,
         capacity=capacity,
+        semantic_theme=semantic_theme,
         template_id=template_id,
         layout_id=layout_id,
     )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Protocol
 
 from openai import AsyncOpenAI
@@ -38,14 +39,22 @@ SYSTEM_PROMPT: str = (
 def build_prompt_messages(
     request: FlyerGenerationRequest,
 ) -> list[ChatCompletionMessageParam]:
-    """システムプロンプトと、隔離されたユーザー JSON を組み立てる。"""
+    """システムプロンプトと、隔離されたユーザー JSON を組み立てる。
+
+    テーマが選ばれていれば、英語の方向付けを `design_direction` として足す。
+    システムプロンプトは変えない（仕様書との一致を保つ）。利用者入力はここへ連結しない。
+    """
     system_message: ChatCompletionMessageParam = {
         "role": "system",
         "content": SYSTEM_PROMPT,
     }
+    payload: dict[str, object] = json.loads(request.model_dump_json())
+    theme = request.semantic_theme
+    if theme is not None:
+        payload["design_direction"] = theme.design_direction
     user_message: ChatCompletionMessageParam = {
         "role": "user",
-        "content": request.model_dump_json(ensure_ascii=False),
+        "content": json.dumps(payload, ensure_ascii=False),
     }
     return [system_message, user_message]
 

@@ -101,10 +101,16 @@ HTTP API
      "location": "Jazz Bar MOON",
      "rain_policy": "雨天決行",
      "capacity": "先着15名",
+     "semantic_theme": "neon",
      "template_id": "style_1_bar_stylish",
      "layout_id": "classic",
      "candidate_id": "0f6a..."
    }
+
+``semantic_theme`` は任意です。指定すると、そのテーマの英語の方向付け
+（``design_direction``）を LLM のユーザー JSON に足し、背景の雰囲気を告知ページと
+揃えます。候補は ``modern-slate`` / ``enterprise-clean`` / ``parchment`` /
+``neo-brutalism`` / ``neon`` です。省略したときの出力は従来と同じです。
 
 ``candidate_id`` を付けると、その候補の完成画像をそのまま保存して返します。
 文字合成も背景生成もしません。``candidate_id`` を省くと、7 項目から生成します

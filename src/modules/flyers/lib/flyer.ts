@@ -34,6 +34,7 @@ export function toFlyerPayload(input: GenerateFlyerInput) {
     location: input.location,
     rain_policy: RAIN_POLICY_LABELS[input.rainPolicy],
     capacity: flyerCapacityLabel(input.capacity),
+    semantic_theme: input.themeId ?? null,
     template_id: input.templateId,
     layout_id: input.layoutId ?? "classic",
   };

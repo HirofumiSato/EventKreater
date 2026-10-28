@@ -1,4 +1,5 @@
 import { composeEventTime, composeLocation, formatYen } from "@/lib/serializers";
+import { semanticTheme } from "@/lib/semantic-themes";
 import type { CapacitySelection } from "@/modules/events/lib/capacity";
 import type { EventFormValues } from "@/modules/events/types";
 
@@ -45,8 +46,9 @@ export const EVENT_STEPS: readonly EventStep[] = [
   },
   {
     key: "flyer",
-    title: "チラシ生成",
-    hint: "作らなくても公開できます。あとから作り直せます。",
+    // 見出しは省略せずに書く。ここで何を決めるステップかを、開く前に分かるようにする。
+    title: "イベントページテーマ選択&チラシ生成",
+    hint: "テーマは告知ページの見た目と、チラシの雰囲気に効きます。チラシは作らなくても公開できます。",
     mandatory: false,
   },
 ];
@@ -207,7 +209,11 @@ export function summarizeStep(key: EventStepKey, value: EventFormValues): string
         : "期限なし";
       return `${capacity} / ${deadline}`;
     }
-    case "flyer":
-      return value.flyerAssetId ? "チラシを作成済み" : "チラシなし";
+    case "flyer": {
+      // 見出しがテーマとチラシの両方を扱うので、畳んだ行にもテーマを出す。
+      const theme = semanticTheme(value.themeId);
+      const flyer = value.flyerAssetId ? "チラシを作成済み" : "チラシなし";
+      return theme ? `テーマ ${theme.label} / ${flyer}` : flyer;
+    }
   }
 }

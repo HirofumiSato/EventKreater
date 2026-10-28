@@ -18,6 +18,7 @@ from src.domain.models import (
     FlyerGenerationRequest,
     LLMGenerationContext,
     RainPolicy,
+    SemanticTheme,
     TemplateId,
 )
 
@@ -45,6 +46,18 @@ def test_title_strips_whitespace_and_newlines() -> None:
 def test_blank_capacity_becomes_none() -> None:
     request = FlyerGenerationRequest.model_validate(_payload(capacity="  \n "))
     assert request.capacity is None
+
+
+def test_semantic_theme_is_optional_and_unknown_is_rejected() -> None:
+    # 旧クライアントは送らない。未指定のまま従来どおり動く。
+    assert FlyerGenerationRequest.model_validate(_payload()).semantic_theme is None
+
+    themed = FlyerGenerationRequest.model_validate(_payload(semantic_theme="neon"))
+    assert themed.semantic_theme is SemanticTheme.NEON
+    assert "neon" in themed.semantic_theme.design_direction
+
+    with pytest.raises(ValidationError):
+        FlyerGenerationRequest.model_validate(_payload(semantic_theme="midnight"))
 
 
 def test_length_limits_reject_overflow() -> None:

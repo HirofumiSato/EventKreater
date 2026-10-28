@@ -246,6 +246,10 @@ export interface EventRecordShape {
   venueName?: string | null;
   rainPolicy: RainPolicy;
   capacity: number | null;
+  /** 想定する参加者の世代。NULL は未設定。 */
+  targetGeneration?: string | null;
+  /** 告知ページのセマンティックテーマ。NULL は標準の見た目。 */
+  themeId?: string | null;
   status: EventStatus;
   visibility: EventVisibility;
   rsvpDeadline: Date | null;
@@ -398,6 +402,8 @@ export function serializeEvent(event: EventRecordShape) {
     venueName: event.venueName ?? null,
     rainPolicy: event.rainPolicy,
     capacity: event.capacity,
+    targetGeneration: event.targetGeneration ?? null,
+    themeId: event.themeId ?? null,
     status: event.status,
     visibility: event.visibility,
     rsvpDeadline: event.rsvpDeadline ? event.rsvpDeadline.toISOString() : null,

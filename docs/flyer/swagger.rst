@@ -86,7 +86,7 @@ Swagger の応答は JSON であり、画像そのものではありません。
 
 ページ下部の **Schemas** で ``FlyerGenerationRequest`` を開くと、各項目の説明と文字数の制限が出ます。``template_id`` と ``rain_policy`` は決まった候補から選ぶ値です。候補以外の文字列を送ると 422 になります。
 
-``rain_policy`` と ``capacity`` は省略できます。省略した雨天時の対応は「雨天決行」です。
+``rain_policy`` と ``capacity`` は省略できます。省略した雨天時の対応は「雨天決行」です。``semantic_theme`` も省略でき、指定したときだけ画像の雰囲気（``design_direction``）として LLM に渡ります。候補は ``modern-slate``、``enterprise-clean``、``parchment``、``neo-brutalism``、``neon`` の 5 つです。
 
 よくある失敗
 ------------

@@ -195,6 +195,7 @@ export function FlyerCandidateModal({
     form.append("location", base.location);
     form.append("rainPolicy", base.rainPolicy);
     if (base.capacity != null) form.append("capacity", String(base.capacity));
+    if (base.themeId) form.append("themeId", base.themeId);
     form.append("templateId", selected[1]?.templateId ?? FLYER_TEMPLATE_IDS[0]);
     form.append("layoutId", "classic");
 

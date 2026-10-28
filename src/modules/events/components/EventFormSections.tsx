@@ -25,7 +25,7 @@ import {
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
 import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
-import { Alert, Dialog, Field } from "@/components/ui";
+import { Alert, Dialog, Field, ThemePicker } from "@/components/ui";
 
 /**
  * 作成画面（ステップ）と編集画面（一括）で同じ入力欄を使うための共通の型。
@@ -677,6 +677,20 @@ export function CapacitySection({
           <p className="help">51人以上の人数を入れてください。空欄のままでは次へ進めません。</p>
         </Field>
       )}
+      <Field label="対象世代（任意）" htmlFor="event-target-generation">
+        <input
+          id="event-target-generation"
+          maxLength={50}
+          disabled={disabled}
+          value={value.targetGeneration}
+          onChange={(event) => set("targetGeneration", event.target.value)}
+          placeholder="20代から40代"
+          className="input"
+        />
+        <p className="help">
+          公開ページに「対象」として出ます。空欄なら表示しません。
+        </p>
+      </Field>
       <Field label="申し込み期限" htmlFor="rsvp-deadline">
         <input
           id="rsvp-deadline"
@@ -691,6 +705,41 @@ export function CapacitySection({
           空欄なら期限はありません。この日時（日本時間）になると、新しい申し込みと回答の変更を止めます。取消はできます。告知URLは開いたままです。
         </p>
       </Field>
+    </>
+  );
+}
+
+/**
+ * 告知ページのテーマ。チラシの手前に置き、選んだ見た目をそのまま確認できるようにする。
+ * 選択は保存するまで確定しない（親のフォームが持つ）。
+ */
+export function ThemeSection({
+  value,
+  onChange,
+  disabled = false,
+  onPreview,
+}: EventSectionProps & {
+  /** ここまでの内容をモーダルで開く導線。渡されたときだけ出す。 */
+  onPreview?: () => void;
+}) {
+  return (
+    <>
+      <fieldset className="field" disabled={disabled}>
+        <legend className="label">イベントページのテーマ</legend>
+        <ThemePicker
+          name="event-theme"
+          value={value.themeId}
+          onChange={(themeId) => onChange({ ...value, themeId })}
+        />
+        <p className="help">
+          選ぶと告知ページの配色が変わります。チラシの画像生成にも、このテーマの雰囲気を渡します。
+        </p>
+      </fieldset>
+      {onPreview && (
+        <button type="button" className="btn btn--outline" disabled={disabled} onClick={onPreview}>
+          ここまでの内容をプレビュー
+        </button>
+      )}
     </>
   );
 }

@@ -22,7 +22,9 @@ import {
   CapacitySection,
   LocationSection,
   PricePlansSection,
+  ThemeSection,
 } from "@/modules/events/components/EventFormSections";
+import { EventPreviewModal } from "@/modules/events/components/EventPreviewModal";
 import { Alert } from "@/components/ui";
 
 interface EventStepFormProps {
@@ -42,6 +44,8 @@ interface EventStepFormProps {
   savingDraft?: boolean;
   /** チラシ生成のパネル。最終ステップに出す。 */
   flyerSlot: ReactNode;
+  /** 作成中のチラシの画像 URL。モーダルのプレビューに使う。 */
+  flyerPreviewUrl?: string | null;
   /**
    * 音声入力のパネル。フォームの末尾に出す。画面では右下に固定表示する。
    * ステップを開く操作を渡すため、`flyerSlot` と違って関数で受け取る。
@@ -90,6 +94,7 @@ export function EventStepForm({
   onSaveDraft,
   savingDraft = false,
   flyerSlot,
+  flyerPreviewUrl = null,
   voiceSlot,
   seedKey,
   ready,
@@ -101,6 +106,8 @@ export function EventStepForm({
   const [customCapacity, setCustomCapacity] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  /** モーダルのプレビュー。スマホの最終操作と、テーマ選択の導線から開く。 */
+  const [previewOpen, setPreviewOpen] = useState(false);
   const capacitySelection: CapacitySelection = customCapacity
     ? "custom"
     : capacitySelectionOf(value.capacity);
@@ -245,6 +252,23 @@ export function EventStepForm({
     onSaveDraft();
   };
 
+  /** スマホか。プレビューをモーダルにするかどうかの分岐にだけ使う。 */
+  const isNarrow = () =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
+
+  /**
+   * 最終操作の「プレビューを見る」。
+   * スマホはその場のモーダルで確かめ、広い画面は従来どおり SCR-ORG-16 へ進む。
+   */
+  const preview = () => {
+    if (!validate()) return;
+    if (isNarrow()) {
+      setPreviewOpen(true);
+      return;
+    }
+    onSubmit();
+  };
+
   const nextDisabled = (key: EventStepKey) => {
     if (key === "basic") return !isBasicStepComplete(value);
     if (key === "pricing") return !isPricingStepComplete(value);
@@ -370,7 +394,17 @@ export function EventStepForm({
                       onSelectionChange={(next) => setCustomCapacity(next === "custom")}
                     />
                   )}
-                  {step.key === "flyer" && flyerSlot}
+                  {step.key === "flyer" && (
+                    <>
+                      <ThemeSection
+                        value={value}
+                        onChange={onChange}
+                        disabled={locked}
+                        onPreview={() => setPreviewOpen(true)}
+                      />
+                      {flyerSlot}
+                    </>
+                  )}
                   <div className="event-step__actions">
                     {index > 0 && (
                       <button
@@ -422,7 +456,7 @@ export function EventStepForm({
               >
                 {savingDraft ? "保存中..." : "下書き保存"}
               </button>
-              <button type="submit" className="btn btn--primary" disabled={locked}>
+              <button type="button" className="btn btn--primary" disabled={locked} onClick={preview}>
                 {submitting ? "移動中..." : "プレビューを見る"}
               </button>
             </>
@@ -439,6 +473,25 @@ export function EventStepForm({
       </div>
       {voiceSlot?.(voiceApi)}
     </form>
+    {/* モーダルはフォームの外に置く。ステップの送信や無効化に巻き込まない。 */}
+    {previewOpen && (
+      <EventPreviewModal
+        value={value}
+        flyerPreviewUrl={flyerPreviewUrl}
+        onClose={() => setPreviewOpen(false)}
+        onContinue={
+          canSaveDraft
+            ? () => {
+                // テーマ選択の導線からは検証せずに開ける。進む前にここで 1 回だけ確かめる。
+                setPreviewOpen(false);
+                if (!validate()) return;
+                onSubmit();
+              }
+            : null
+        }
+        continuing={submitting}
+      />
+    )}
     </div>
   );
 }
