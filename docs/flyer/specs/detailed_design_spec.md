@@ -298,7 +298,7 @@ static/candidates/
 
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
-*   **課金・回数:** 候補の生成では消費しない。回数は Next.js の BFF が `flyer_generation_logs` で数える。
+*   **課金・回数:** ステップ 1・3・4 と写真の取り込みは消費しない。ステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、グラデーション背景（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
 *   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1528（A4 縦）の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
 *   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・配置・配色・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 

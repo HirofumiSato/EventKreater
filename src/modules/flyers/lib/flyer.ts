@@ -35,6 +35,7 @@ export function toFlyerPayload(input: GenerateFlyerInput) {
     rain_policy: RAIN_POLICY_LABELS[input.rainPolicy],
     capacity: flyerCapacityLabel(input.capacity),
     semantic_theme: input.themeId ?? null,
+    target_generation: input.targetGeneration ?? null,
     template_id: input.templateId,
     layout_id: input.layoutId ?? "classic",
   };
@@ -144,6 +145,10 @@ export interface FlyerCandidateDto {
   palette_id: string;
   accent_color: string;
   overlay_alpha: number;
+  /** 背景の供給元。`ai` のときだけ課金が起きる。古いサービス応答では省略される。 */
+  source?: string;
+  /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
+  ai_remaining?: number | null;
 }
 
 function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
@@ -158,6 +163,8 @@ function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
     paletteId: dto.palette_id,
     accentColor: dto.accent_color,
     overlayAlpha: dto.overlay_alpha,
+    source: typeof dto.source === "string" ? dto.source : "placeholder",
+    aiRemaining: typeof dto.ai_remaining === "number" ? dto.ai_remaining : null,
   };
 }
 

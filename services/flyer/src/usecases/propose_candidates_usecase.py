@@ -31,6 +31,7 @@ from src.domain.models import (
     TemplateId,
     TextLayout,
 )
+from src.ports.ai_generation_quota_port import AiGenerationQuotaPort
 from src.ports.candidate_source_port import CandidateSourcePort
 from src.ports.candidate_store_port import CandidateStorePort
 from src.ports.image_upload_port import ImageUploadPort
@@ -61,12 +62,14 @@ class ProposeCandidatesUseCase:
         renderer: FlyerRendererPort,
         store: CandidateStorePort,
         uploads: ImageUploadPort,
+        ai_quota: AiGenerationQuotaPort,
     ) -> None:
         self._prompt_engine = prompt_engine
         self._source = source
         self._renderer = renderer
         self._store = store
         self._uploads = uploads
+        self._ai_quota = ai_quota
 
     async def suggest_types(
         self,
@@ -106,10 +109,15 @@ class ProposeCandidatesUseCase:
         count: int,
         owner_token_hash: str | None = None,
     ) -> CandidateList:
-        """ステップ 2。選んだタイプの背景を複数枚描く。"""
+        """ステップ 2。選んだタイプの背景を描く。AI は 1 端末あたりの残り枚数まで。"""
         context = await self._prompt_engine.generate_prompt_context(request)
         palette = default_palette(request.template_id)
-        options = await self._source.suggest_backgrounds(request, context, count)
+        allowed = min(max(1, count), self._ai_quota.remaining(owner_token_hash))
+        options = await self._source.suggest_backgrounds(request, context, allowed)
+        used = sum(1 for option in options if option.source == "ai")
+        if used:
+            self._ai_quota.consume(owner_token_hash, used)
+        remaining = self._ai_quota.remaining(owner_token_hash)
         items = [
             self._make(
                 kind=CandidateKind.BACKGROUND,
@@ -122,7 +130,8 @@ class ProposeCandidatesUseCase:
                 label=option.label,
                 description=option.description,
                 owner_token_hash=owner_token_hash,
-            )
+                source=option.source,
+            ).model_copy(update={"ai_remaining": remaining})
             for option in options
         ]
         return CandidateList(candidates=items)
@@ -176,6 +185,7 @@ class ProposeCandidatesUseCase:
                 label=LAYOUT_LABELS[layout],
                 description=LAYOUT_DESCRIPTIONS[layout],
                 owner_token_hash=meta.owner_token_hash,
+                source=meta.source,
             )
             for layout in TextLayout
         ]
@@ -201,6 +211,7 @@ class ProposeCandidatesUseCase:
                 label=palette.label,
                 description=palette.description,
                 owner_token_hash=meta.owner_token_hash,
+                source=meta.source,
             )
             for palette in PALETTES
         ]
@@ -269,7 +280,7 @@ class ProposeCandidatesUseCase:
             parent_id=parent_id,
             label=label,
             description=description,
-            source=source or self._source.source_id,
+            source=source or "placeholder",
             owner_token_hash=owner_token_hash,
             request=request,
             context=context,
@@ -286,6 +297,7 @@ class ProposeCandidatesUseCase:
             palette_id=palette.palette_id,
             accent_color=palette.accent_color,
             overlay_alpha=palette.overlay_alpha,
+            source=source or "placeholder",
         )
 
 

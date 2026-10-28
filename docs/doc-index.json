@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 112,
+    "docs": 113,
     "preImplementation": 15,
-    "markdown": 47,
+    "markdown": 48,
     "rst": 65,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2557,
+      "lineCount": 2558,
       "headings": [
         {
           "level": 1,
@@ -2964,7 +2964,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 449,
+      "lineCount": 451,
       "headings": [
         {
           "level": 1,
@@ -3261,7 +3261,7 @@
       "title": "アーキテクチャ",
       "summary": "依存の向きは Ports & Adapters です。ユースケースはポート（抽象）だけを知り、OpenAI や Pillow の具象は src/main.py の組み立て時に注入します。",
       "preImplementation": false,
-      "lineCount": 41,
+      "lineCount": 44,
       "headings": [
         {
           "level": 1,
@@ -3624,7 +3624,7 @@
       "title": "設定",
       "summary": "設定は src.infrastructure.config.Settings です。環境変数名はフィールド名の大文字です（例: OPENAI_API_KEY）。空文字の API キーは未設定と同じです。",
       "preImplementation": false,
-      "lineCount": 56,
+      "lineCount": 70,
       "headings": [
         {
           "level": 1,
@@ -3681,7 +3681,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 173,
+      "lineCount": 191,
       "headings": [
         {
           "level": 1,
@@ -3820,7 +3820,7 @@
       "sphinxDoc": "flyer/libraries/httpx",
       "format": "rst",
       "title": "HTTPX",
-      "summary": "DALL-E 3 が返す画像 URL からバイト列をダウンロードします。テストでは実ネットワークの代わりにモックトランスポートを使います。",
+      "summary": "画像生成 API が返す画像 URL からバイト列をダウンロードします。テストでは実ネットワークの代わりにモックトランスポートを使います。",
       "preImplementation": false,
       "lineCount": 23,
       "headings": [
@@ -3940,7 +3940,7 @@
       "title": "OpenAI",
       "summary": "催し情報を、文字を描かせない英語の背景プロンプトとスタイルパラメータに変換し、そのプロンプトで背景画像を得ます。",
       "preImplementation": false,
-      "lineCount": 25,
+      "lineCount": 28,
       "headings": [
         {
           "level": 1,
@@ -3967,6 +3967,14 @@
         },
         {
           "path": "services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/pricing.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_cost_budget.py",
           "exists": true
         }
       ],
@@ -4250,7 +4258,7 @@
       "title": "ローカルでの実行",
       "summary": "自分の PC 上で API を起動し、ブラウザからチラシを 1 枚作ります。コマンドは、requirements.txt があるプロジェクトルートで実行します。",
       "preImplementation": false,
-      "lineCount": 76,
+      "lineCount": 92,
       "headings": [
         {
           "level": 1,
@@ -4271,6 +4279,10 @@
         {
           "level": 2,
           "text": "OpenAI を使うとき"
+        },
+        {
+          "level": 3,
+          "text": "ステップ 2 の背景候補も AI で作る"
         },
         {
           "level": 2,
@@ -4327,7 +4339,7 @@
       "title": "生成パイプライン",
       "summary": "src.usecases.generate_flyer_usecase.GenerateFlyerUseCase.execute が次の順で処理します。",
       "preImplementation": false,
-      "lineCount": 26,
+      "lineCount": 30,
       "headings": [
         {
           "level": 1,
@@ -4565,6 +4577,99 @@
       ]
     },
     {
+      "path": "docs/flyer/specs/context_contract.md",
+      "sphinxDoc": "flyer/specs/context_contract",
+      "format": "markdown",
+      "title": "チラシ生成コンテクストの契約",
+      "summary": "画面の入力が、どの項目としてチラシ生成サービスへ渡り、どこで使われるかを 1 枚に固定する。背景画像を作る LLM と、文字を焼き込む決定論レンダラーは別のものなので、「プロンプトに効く項目」と「描画だけで使う項目」を混ぜないことが要点になる。",
+      "preImplementation": false,
+      "lineCount": 88,
+      "headings": [
+        {
+          "level": 1,
+          "text": "チラシ生成コンテクストの契約"
+        },
+        {
+          "level": 2,
+          "text": "この文書の役割"
+        },
+        {
+          "level": 2,
+          "text": "対応表"
+        },
+        {
+          "level": 2,
+          "text": "画像のジオメトリ"
+        },
+        {
+          "level": 2,
+          "text": "画面項目を増やす・変えるときの手順"
+        },
+        {
+          "level": 2,
+          "text": "この契約で塞いだ穴"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/adapters/renderer",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/layout_prompts.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/models.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/models.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/prompt_payload.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_prompt_context.py",
+          "exists": true
+        },
+        {
+          "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/serializers.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/types.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/flyer.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/form.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-preview.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/flyer/specs/index.rst"
+      ]
+    },
+    {
       "path": "docs/flyer/specs/detailed_design_spec.md",
       "sphinxDoc": "flyer/specs/detailed_design_spec",
       "format": "markdown",
@@ -4683,7 +4788,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 326,
+      "lineCount": 360,
       "headings": [
         {
           "level": 1,
@@ -4728,6 +4833,14 @@
         {
           "level": 1,
           "text": "Goal"
+        },
+        {
+          "level": 1,
+          "text": "Deliverable"
+        },
+        {
+          "level": 1,
+          "text": "How to read the event data"
         },
         {
           "level": 1,
@@ -4787,7 +4900,12 @@
         }
       ],
       "toctree": [],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "services/flyer/src/domain/prompt_payload.py",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/flyer/specs/index.rst"
       ]
@@ -4799,7 +4917,7 @@
       "title": "仕様書",
       "summary": "企画から詳細設計までの上流文書です。ガイドはこれらを読みやすく言い換えたもので、数式・座標・クラス契約が衝突したときは、ここに置いた原文を正とします。とくに implementation_spec と detailed_design_spec が実装の真実の源です。",
       "preImplementation": false,
-      "lineCount": 15,
+      "lineCount": 16,
       "headings": [
         {
           "level": 1,
@@ -4810,7 +4928,8 @@
         "docs/flyer/specs/planning_requirements.md",
         "docs/flyer/specs/system_requirements.md",
         "docs/flyer/specs/implementation_spec.md",
-        "docs/flyer/specs/detailed_design_spec.md"
+        "docs/flyer/specs/detailed_design_spec.md",
+        "docs/flyer/specs/context_contract.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -5052,7 +5171,16 @@
         }
       ],
       "toctree": [],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "services/flyer/src/domain/pricing.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_cost_budget.py",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/flyer/specs/index.rst"
       ]

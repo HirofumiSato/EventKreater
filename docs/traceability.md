@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 102（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 323
+- 対象文書: 103（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 329
 - API ルート: 81（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -43,14 +43,17 @@
 | `services/flyer/requirements.txt` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/src` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) |
 | `services/flyer/src/adapters/image_generator/dalle_image_generator.py` | [docs/flyer/libraries/httpx.rst](flyer/libraries/httpx.rst) / [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) |
-| `services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) |
-| `services/flyer/src/adapters/renderer` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pillow.rst](flyer/libraries/pillow.rst) / `services/flyer/README.md` |
+| `services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
+| `services/flyer/src/adapters/renderer` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pillow.rst](flyer/libraries/pillow.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / `services/flyer/README.md` |
 | `services/flyer/src/adapters/renderer/layout_calculator.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/adapters/wiring.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/api/errors.py` | [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) |
 | `services/flyer/src/api/routes.py` | [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
 | `services/flyer/src/domain/exceptions.py` | `services/flyer/AGENTS.md` |
-| `services/flyer/src/domain/models.py` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pydantic.rst](flyer/libraries/pydantic.rst) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
+| `services/flyer/src/domain/layout_prompts.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
+| `services/flyer/src/domain/models.py` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pydantic.rst](flyer/libraries/pydantic.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
+| `services/flyer/src/domain/pricing.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/system_requirements.md](flyer/specs/system_requirements.md) |
+| `services/flyer/src/domain/prompt_payload.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) |
 | `services/flyer/src/infrastructure/storage/local_candidate_store.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/main.py` | [docs/flyer/architecture.rst](flyer/architecture.rst) / [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/local_run.rst](flyer/local_run.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / `llms.txt` / `services/flyer/AGENTS.md` |
 | `services/flyer/src/ports` | `services/flyer/AGENTS.md` |
@@ -58,7 +61,9 @@
 | `services/flyer/tests/support.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) / `services/flyer/AGENTS.md` |
 | `services/flyer/tests/test_adapters.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_api_integration.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
+| `services/flyer/tests/test_cost_budget.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/system_requirements.md](flyer/specs/system_requirements.md) |
 | `services/flyer/tests/test_domain.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
+| `services/flyer/tests/test_prompt_context.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `services/flyer/tests/test_renderer.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `src/app` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/app/account/email/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -157,9 +162,9 @@
 | `src/lib/image-upload.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/lib/problem.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/onboarding.md](onboarding.md) |
-| `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
+| `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
 | `src/lib/semantic-themes.ts` | [docs/DBschema.md](DBschema.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
-| `src/lib/serializers.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
+| `src/lib/serializers.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/site-chrome.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/lib/site-nav.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/lib/site.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/local.rst](local.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
@@ -231,9 +236,10 @@
 | `src/modules/events/lib/voice/spotlight.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/transcribe.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/types.ts` | [docs/voice-input.rst](voice-input.rst) |
-| `src/modules/events/types.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
+| `src/modules/events/types.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
-| `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) |
+| `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
+| `src/modules/flyers/lib/form.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `src/modules/flyers/lib/ownership.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/flyers/lib/pdf.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/flyers/lib/upload.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
@@ -302,7 +308,7 @@
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-filters.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
-| `tests/unit/event-preview.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

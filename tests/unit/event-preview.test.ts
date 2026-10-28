@@ -9,6 +9,7 @@ import {
 import { eventFormToPreview } from "@/modules/events/lib/preview";
 import { buildFlyerFormPayload } from "@/modules/flyers/lib/form";
 import { toFlyerPayload } from "@/modules/flyers/lib/flyer";
+import { GenerateFlyerSchema } from "@/lib/schemas";
 
 function form(overrides: Partial<EventFormValues> = {}): EventFormValues {
   return {
@@ -82,6 +83,22 @@ describe("チラシ生成へテーマを渡す", () => {
     expect(buildFlyerFormPayload(form()).themeId).toBeNull();
   });
 
+  it("想定する世代もサービスへ渡す", () => {
+    const payload = toFlyerPayload({
+      ...buildFlyerFormPayload(form({ targetGeneration: "20代から40代" })),
+      templateId: "style_1_bar_stylish",
+      layoutId: "classic",
+    });
+    expect(payload.target_generation).toBe("20代から40代");
+
+    const empty = toFlyerPayload({
+      ...buildFlyerFormPayload(form()),
+      templateId: "style_1_bar_stylish",
+      layoutId: "classic",
+    });
+    expect(empty.target_generation).toBeNull();
+  });
+
   it("toFlyerPayload はサービスのスネークケースへ寄せる", () => {
     const payload = toFlyerPayload({
       ...buildFlyerFormPayload(form({ themeId: "neon" })),
@@ -99,5 +116,34 @@ describe("チラシ生成へテーマを渡す", () => {
       layoutId: "classic",
     });
     expect(payload.semantic_theme).toBeNull();
+  });
+});
+
+describe("チラシ生成リクエストの文字数上限", () => {
+  const base = {
+    title: "ジャズの夜",
+    eventDate: "2026-11-15",
+    eventTime: "19:00〜22:00",
+    price: "3,000円",
+    location: "Jazz Bar MOON 新宿東口",
+    rainPolicy: "RAIN_OR_SHINE" as const,
+    templateId: "style_1_bar_stylish" as const,
+    layoutId: "classic" as const,
+  };
+
+  it("想定する世代は画面と同じ 50 文字まで受ける", () => {
+    const parsed = GenerateFlyerSchema.safeParse({
+      ...base,
+      targetGeneration: "あ".repeat(50),
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("51 文字は弾く", () => {
+    const parsed = GenerateFlyerSchema.safeParse({
+      ...base,
+      targetGeneration: "あ".repeat(51),
+    });
+    expect(parsed.success).toBe(false);
   });
 });

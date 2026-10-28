@@ -14,6 +14,7 @@ from src.adapters.image_generator.static_fallback_image_generator import (
 )
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
 from src.adapters.wiring import (
+    ai_candidates_enabled,
     build_candidate_source,
     build_image_generator,
     build_image_upload,
@@ -22,8 +23,10 @@ from src.adapters.wiring import (
 from src.api.errors import register_exception_handlers
 from src.api.routes import router
 from src.infrastructure.config import Settings
+from src.infrastructure.quota.memory_ai_quota import MemoryAiGenerationQuota
 from src.infrastructure.storage.local_candidate_store import LocalCandidateStore
 from src.infrastructure.storage.local_file_storage import LocalFileStorage
+from src.ports.ai_generation_quota_port import AiGenerationQuotaPort
 from src.ports.candidate_source_port import CandidateSourcePort
 from src.ports.image_generator_port import ImageGeneratorPort
 from src.ports.prompt_engine_port import PromptEnginePort
@@ -76,6 +79,7 @@ def create_app(
     image_generator: ImageGeneratorPort | None = None,
     renderer: FlyerRendererPort | None = None,
     candidate_source: CandidateSourcePort | None = None,
+    ai_quota: AiGenerationQuotaPort | None = None,
 ) -> FastAPI:
     resolved = settings if settings is not None else Settings()
     storage = LocalFileStorage(
@@ -89,6 +93,11 @@ def create_app(
     drawing = renderer or PillowFlyerRenderer()
     sources = candidate_source or build_candidate_source(resolved)
     uploads = build_image_upload(resolved)
+    quota = ai_quota or MemoryAiGenerationQuota(
+        resolved.ai_candidate_max_per_hour,
+        resolved.candidate_ttl_seconds,
+    )
+    _log_ai_candidates(resolved)
 
     app = FastAPI(title="AI Flyer Generator", lifespan=_lifespan)
     app.state.settings = resolved
@@ -107,10 +116,31 @@ def create_app(
         renderer=drawing,
         store=candidate_store,
         uploads=uploads,
+        ai_quota=quota,
     )
     register_exception_handlers(app)
     app.include_router(router)
     return app
+
+
+def _log_ai_candidates(settings: Settings) -> None:
+    """採用した背景の供給元を 1 度だけ出す。付け忘れと切り忘れに気づけるようにする。"""
+    if ai_candidates_enabled(settings):
+        logger.info(
+            "AI 背景候補: 有効 model=%s quality=%s 上限=%s枚/%s秒",
+            settings.openai_image_model,
+            settings.image_quality,
+            settings.ai_candidate_max_per_hour,
+            settings.candidate_ttl_seconds,
+        )
+        return
+    if settings.ai_candidates_enabled:
+        logger.warning(
+            "AI_CANDIDATES_ENABLED が有効ですが OPENAI_API_KEY が空です。"
+            "背景はグラデーションで生成します"
+        )
+        return
+    logger.info("AI 背景候補: 無効（グラデーションで生成します）")
 
 
 app = create_app()

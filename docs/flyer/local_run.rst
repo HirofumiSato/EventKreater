@@ -64,7 +64,23 @@ OpenAI を使うとき
    $env:OPENAI_API_KEY = "sk-..."
    python -m uvicorn src.main:app --reload
 
-この場合、プロンプトは ``gpt-4o-mini``、背景は DALL-E 3 です。画像生成には最大で約 25 秒かかります。失敗したときは静的背景で合成し、``status`` が ``fallback_used`` になります。
+この場合、プロンプトは ``gpt-4o-mini``、背景は ``gpt-image-1``（``low`` / ``1024x1536``）です。``gpt-image-1`` は組織認証が要ります。未認証だと 400 が返り、グラデーションへ落ちます。画像生成には最大で約 25 秒かかります。失敗したときは静的背景で合成し、``status`` が ``fallback_used`` になります。
+
+ステップ 2 の背景候補も AI で作る
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``AI_CANDIDATES_ENABLED`` を明示すると、候補の段階でも画像生成 API を呼びます。手元で何度も試すときは上限を上げます。
+
+.. code-block:: powershell
+
+   $env:OPENAI_API_KEY = "sk-..."
+   $env:AI_CANDIDATES_ENABLED = "1"
+   $env:AI_CANDIDATE_MAX_PER_HOUR = "20"   # 手元で試すときだけ
+   python -m uvicorn src.main:app --reload
+
+起動ログに ``AI 背景候補: 有効 model=gpt-image-1 ...`` と出れば有効です。``AI_CANDIDATES_ENABLED=0`` にすると、キーがあってもグラデーションだけを返します。
+
+``/docs`` の ``POST /api/v1/flyers/candidates`` を ``count`` を ``1`` にして Execute すると、応答の ``source`` が ``ai``（生成できた）か ``placeholder``（グラデーション）になります。``ai_remaining`` は 1 時間あたりの残り枚数です。
 
 うまく起動しないとき
 --------------------

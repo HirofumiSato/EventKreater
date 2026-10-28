@@ -139,6 +139,13 @@ export const GenerateFlyerSchema = z.object({
     })
     .nullable()
     .optional(),
+  /** 想定する参加者の世代。背景の人物像と光の当て方を寄せるためにサービスへ渡す。 */
+  targetGeneration: z
+    .string()
+    .trim()
+    .max(50, "想定する世代は50文字以内です")
+    .nullable()
+    .optional(),
   templateId: z.enum(FLYER_TEMPLATE_IDS),
   layoutId: z.enum(FLYER_LAYOUT_IDS).default("classic"),
 });

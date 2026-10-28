@@ -91,8 +91,17 @@ class FlyerGenerationRequest(BaseModel):
         None,
         description="告知ページのテーマ。英語の design_direction として LLM に渡す",
     )
+    target_generation: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="想定する参加者の世代。人物像と光の当て方に使う",
+    )
     template_id: TemplateId = Field(
         ..., description="選択されたデザインテンプレートID"
+    )
+    layout_id: TextLayout = Field(
+        TextLayout.CLASSIC,
+        description="文字ブロックの配置プリセット。余白の指示に使う",
     )
 
     @field_validator("title")
@@ -132,13 +141,30 @@ class LLMGenerationContext(BaseModel):
 
 ```markdown
 # Role
-You are an elite commercial art director specializing in event poster design.
+You are an elite commercial art director specializing in Japanese event flyer design.
 
 # Goal
 Analyze the user's event data and target aesthetic, then output a structured design direction:
 1. An English prompt for generating a high-end background visual.
-2. Safe negative prompts to strictly prevent image models from rendering text.
+2. Safe negative prompts that keep image models from rendering any lettering, including Japanese characters and kanji.
 3. Color styling parameters compatible with readability.
+
+# Deliverable
+One text-free background for a Japanese event flyer that is delivered to prospective participants by URL.
+Framing: draw a 2:3 portrait image. It is then center-cropped to A4 portrait (1080x1528), so the top and bottom edges are lost. Keep the subject and every focal point inside the central 85% of the frame.
+Every Japanese character is drawn later by a deterministic renderer; you design only the ground it sits on.
+This is a flyer backdrop, not a poster: no typography, no layout mockups.
+
+# How to read the event data
+- title: the event's identity. Translate its emotional core into one concrete subject.
+- event_date, event_time: infer season and time of day (19:00 -> night, 11月 -> autumn).
+- location: infer venue type (bar, studio, hall, park) and indoor/outdoor cues.
+- rain_policy: 屋内開催 -> indoor only; 雨天決行 -> outdoor is allowed.
+- price, capacity: infer scale and tier (intimate vs large, premium vs casual). Never render them.
+- target_generation: match the audience's generation in styling, wardrobe, and energy.
+- semantic_theme and design_direction: control palette and mood.
+- template_id: apply the composition rule for that template.
+- layout_id: keep the band where the text sits calm and low-frequency.
 
 # Critical Constraints on image_prompt_en
 1. ABSOLUTE FORBIDDEN: Do NOT include any instructions that ask the image model to write text, letters, titles, dates, numbers, or calligraphy. 
@@ -147,10 +173,18 @@ Analyze the user's event data and target aesthetic, then output a structured des
    - For 'style_2_warm_earth': Clean, soft, shallow depth of field, natural background with smooth textures.
    - For 'style_3_vibrant_pop': Dynamic composition with a central or bottom low-frequency area to hold text legible.
 3. SUBJECT TRANSLATION: Do not just copy Japanese terms. Translate the emotional core of the event into visual elements (e.g., "A jazz session at a bar" -> "Cinematic close-up of a vintage brass saxophone resting on a polished mahogany counter, soft amber neon bokeh, atmospheric dust motes, dimly lit, 35mm photograph, moody, elegant").
+4. DO NOT use the words poster, flyer, banner, headline, typography, logo, or menu in image_prompt_en; they bias the image model toward drawing type.
+5. Do not place the subject or a strong focal point within 8% of the top or bottom edge; that area is cropped away.
 
 # Output Format
 Output MUST be strict JSON adhering to the provided schema.
 ```
+
+ユーザーメッセージに載せる項目は `src/domain/prompt_payload.py` の
+`_CONTEXT_KEYS` で決める。`count` のような操作パラメータや未入力の項目は渡さない。
+`composition_hint`（配置の余白指示と、A4 への切り抜きで上下が落ちる前提）も同じ
+JSON に足し、LLM が構図を先に考えられるようにする。画面項目との対応表は
+:doc:`context_contract` にある。
 
 ---
 

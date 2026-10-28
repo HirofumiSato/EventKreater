@@ -26,8 +26,8 @@
      - 背景の上に文字と遮光を決定論的に描く
      - ``src/adapters/renderer/`` が 1080×1528（A4 縦）の JPEG を返す。この層から外部 API は呼ばない
    * - :doc:`OpenAI <openai>`
-     - 背景用プロンプトの構造化と DALL-E 3 による画像取得を行う
-     - ``gpt-4o-mini`` の ``beta.chat.completions.parse`` と ``dall-e-3`` を、キーがあるときだけ使う
+     - 背景用プロンプトの構造化と、画像生成 API による背景取得を行う
+     - ``gpt-4o-mini`` の ``beta.chat.completions.parse`` と ``gpt-image-1``（既定）を、キーがあるときだけ使う
    * - :doc:`HTTPX <httpx>`
      - 生成画像の URL からバイト列を取得する
      - ``download_image`` が残り時間をタイムアウトにして取得する。テストは ``MockTransport`` を渡す

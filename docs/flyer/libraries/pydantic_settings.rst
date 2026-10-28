@@ -16,7 +16,7 @@ API キー、タイムアウト、保存先、TTL、レート制限を環境変�
    $env:OPENAI_API_KEY = "sk-..."
    python -m uvicorn src.main:app --reload
 
-キーが未設定、または空白だけなら ``None`` になり、プロンプトと画像生成はモックになります。キーがあるときは ``gpt-4o-mini`` と DALL-E 3 を使います。
+キーが未設定、または空白だけなら ``None`` になり、プロンプトと画像生成はモックになります。キーがあるときは ``gpt-4o-mini`` と ``gpt-image-1`` を使います。
 
 Tips
 ----

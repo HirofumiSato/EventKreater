@@ -111,7 +111,7 @@ flowchart TD
 | `/api/v1/internal/billing/notices` | POST | - | `BILLING_NOTICE_SECRET` | 0円の定額プランの 3 日前・1 日前の通知バッチ |
 | `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | イベント（公開前は下書き）の残り作成回数。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 テンプレートの完成イメージ |
-| `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 8 枚返す |
+| `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 1 枚返す（AI は 1 時間 3 枚まで） |
 | `/api/v1/flyers/uploads` | POST | SCR-ORG-03 | 不要 | ステップ 2。自分の写真を背景候補 1 枚にする |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | SCR-ORG-03 | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | SCR-ORG-03 | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
@@ -2176,20 +2176,21 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `rainPolicy` | `RAIN_OR_SHINE`、`CANCEL_ON_RAIN`、`POSTPONE_ON_RAIN`、`INDOOR` |
 | `capacity` | 正の整数、または省略 |
 | `themeId` | `modern-slate`、`enterprise-clean`、`parchment`、`neo-brutalism`、`neon` のいずれか、または省略（未指定は標準） |
+| `targetGeneration` | 50 文字以内の自由文、または省略。サービスは読者層としてプロンプトに使う |
 | `templateId` | `style_1_bar_stylish`、`style_2_warm_earth`、`style_3_vibrant_pop` |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack`（省略時 `classic`） |
 
-本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`semantic_theme`、`template_id`、`layout_id`）に合わせる。`themeId` があれば `semantic_theme` として送り、サービスはその英語の方向付け（`design_direction`）を LLM のユーザー JSON に足す。待ち時間は 90 秒。
+本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`semantic_theme`、`target_generation`、`template_id`、`layout_id`）に合わせる。`themeId` があれば `semantic_theme` として送り、サービスはその英語の方向付け（`design_direction`）を LLM のユーザー JSON に足す。`targetGeneration` は空でなければ `target_generation` として送る。待ち時間は 90 秒。
 
 ### 9.2. ウィザード候補 API（本アプリ）
 
-画面はチラシをいきなり作らない。「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**候補を作るだけでは回数を消費しない。**
+画面はチラシをいきなり作らない。「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**確定の回数は候補を作るだけでは消費しない。** ただしステップ 2 の背景候補は、AI が有効なときに画像生成 API を呼ぶため、flyer サービスが 1 端末・1 時間あたり 3 枚で数える（`ai_remaining` で残りを返す）。上限に達したときと失敗時はグラデーション背景で 200 を返す。
 
 | パス | メソッド | 認証 | 内容 |
 | :---- | :---- | :---- | :---- |
 | `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。公開前は下書き、`eventId` を添えたときはイベント単位。未ログインは端末通算 |
 | `/api/v1/flyers/candidates/types` | POST | 不要 | ステップ 1。3 テンプレートの完成イメージ |
-| `/api/v1/flyers/candidates` | POST | 不要 | ステップ 2。背景タイル 8 枚 |
+| `/api/v1/flyers/candidates` | POST | 不要 | ステップ 2。背景タイル 1 枚（作り直しは 1 時間 3 枚まで） |
 | `/api/v1/flyers/uploads` | POST | 不要 | ステップ 2。自分の写真 1 枚を背景候補にする（multipart） |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |
 | `/api/v1/flyers/candidates/[id]/palettes` | POST | 不要 | ステップ 4。同じ配置で 4 通りの配色 |
