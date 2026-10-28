@@ -19,30 +19,41 @@ DEFAULT_IMAGE_MODEL: str = "gpt-image-2.5-flare"
 DEFAULT_IMAGE_QUALITY: str = "low"
 DEFAULT_IMAGE_SIZE: str = "1024x1536"
 
+#: `gpt-image-2.5` 系の 1 枚あたり USD（画質, サイズ）。トークン課金のため定価が
+#: 無く、公式ガイドの代表サイズの換算値を安全側へ切り上げている。1024x1536 と
+#: 1536x1024 は同額、1024x1024 は正方形で安い。`auto` は最上位まで振れるため
+#: `max` と同じ額で見積もる（過小に出さない）。
+_GPT_IMAGE_25_UNIT_USD: dict[tuple[str, str], float] = {
+    ("low", "1024x1536"): 0.005,
+    ("medium", "1024x1536"): 0.011,
+    ("high", "1024x1536"): 0.042,
+    ("xhigh", "1024x1536"): 0.074,
+    ("max", "1024x1536"): 0.165,
+    ("auto", "1024x1536"): 0.165,
+    ("low", "1536x1024"): 0.005,
+    ("medium", "1536x1024"): 0.011,
+    ("high", "1536x1024"): 0.042,
+    ("xhigh", "1536x1024"): 0.074,
+    ("max", "1536x1024"): 0.165,
+    ("auto", "1536x1024"): 0.165,
+    ("low", "1024x1024"): 0.006,
+    ("medium", "1024x1024"): 0.014,
+    ("high", "1024x1024"): 0.053,
+    ("xhigh", "1024x1024"): 0.094,
+    ("max", "1024x1024"): 0.211,
+    ("auto", "1024x1024"): 0.211,
+}
+
 #: 1 枚あたりの USD。表に無い組み合わせは安全側（そのモデルの最高額）へ倒す。
 #: `gpt-image-1` は停止済み、`gpt-image-1.5` は 2026-12-01 停止予定。移行中の
 #: 切り戻しが予算ガードで止まらないよう、両方の行は残してある。
 IMAGE_PRICES_USD: dict[tuple[str, str, str], float] = {
-    # 現行。1024x1536 / low の換算値 $0.00474 を切り上げる。
-    ("gpt-image-2.5-flare", "low", "1024x1536"): 0.005,
-    ("gpt-image-2.5-flare", "medium", "1024x1536"): 0.011,
-    ("gpt-image-2.5-flare", "high", "1024x1536"): 0.042,
-    ("gpt-image-2.5-flare", "low", "1536x1024"): 0.005,
-    ("gpt-image-2.5-flare", "medium", "1536x1024"): 0.011,
-    ("gpt-image-2.5-flare", "high", "1536x1024"): 0.042,
-    ("gpt-image-2.5-flare", "low", "1024x1024"): 0.006,
-    ("gpt-image-2.5-flare", "medium", "1024x1024"): 0.014,
-    ("gpt-image-2.5-flare", "high", "1024x1024"): 0.053,
-    # sunburst は flare と同じトークン単価。編集の精度だけが違う。
-    ("gpt-image-2.5-sunburst", "low", "1024x1536"): 0.005,
-    ("gpt-image-2.5-sunburst", "medium", "1024x1536"): 0.011,
-    ("gpt-image-2.5-sunburst", "high", "1024x1536"): 0.042,
-    ("gpt-image-2.5-sunburst", "low", "1536x1024"): 0.005,
-    ("gpt-image-2.5-sunburst", "medium", "1536x1024"): 0.011,
-    ("gpt-image-2.5-sunburst", "high", "1536x1024"): 0.042,
-    ("gpt-image-2.5-sunburst", "low", "1024x1024"): 0.006,
-    ("gpt-image-2.5-sunburst", "medium", "1024x1024"): 0.014,
-    ("gpt-image-2.5-sunburst", "high", "1024x1024"): 0.053,
+    # 現行。sunburst は flare と同じトークン単価で、編集の精度だけが違う。
+    **{
+        (model, quality, size): price
+        for model in ("gpt-image-2.5-flare", "gpt-image-2.5-sunburst")
+        for (quality, size), price in _GPT_IMAGE_25_UNIT_USD.items()
+    },
     # 非推奨（2026-12-01 停止）。切り戻し用に残す。
     ("gpt-image-1.5", "low", "1024x1536"): 0.013,
     ("gpt-image-1.5", "medium", "1024x1536"): 0.050,

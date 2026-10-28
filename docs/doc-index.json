@@ -3624,7 +3624,7 @@
       "title": "設定",
       "summary": "設定は src.infrastructure.config.Settings です。環境変数名はフィールド名の大文字です（例: OPENAI_API_KEY）。空文字の API キーは未設定と同じです。",
       "preImplementation": false,
-      "lineCount": 72,
+      "lineCount": 74,
       "headings": [
         {
           "level": 1,
@@ -3649,7 +3649,7 @@
       "title": "開発",
       "summary": "Python 3.11 以上です。依存の導入と API の起動手順は local_run にまとめています。何をどの粒度で確認するかは testing/index、実行コマンドは以下です。",
       "preImplementation": false,
-      "lineCount": 28,
+      "lineCount": 37,
       "headings": [
         {
           "level": 1,
@@ -3672,6 +3672,10 @@
         },
         {
           "path": "docs/flyer/reference",
+          "exists": true
+        },
+        {
+          "path": "docs/flyer/specs/implementation_spec.md",
           "exists": true
         }
       ],
@@ -8797,7 +8801,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 329,
+      "lineCount": 331,
       "headings": [
         {
           "level": 1,
