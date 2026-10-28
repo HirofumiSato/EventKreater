@@ -19,7 +19,7 @@ HTTP API
 ウィザードの候補を作る
 ----------------------
 
-画面は「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選びます。
+画面は「紙面の性格 → 背景 → 文字配置 → 配色」の 4 ステップで候補を選びます。
 候補はすべて文字まで合成した完成イメージで、確定時は再描画しません。
 候補画像は ``candidate_ttl_seconds``（既定 3600 秒）で消えます。
 
@@ -27,16 +27,18 @@ HTTP API
 ただしステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼びます。
 そのため flyer サービス内で 1 端末・1 時間あたり ``ai_candidate_max_per_hour``
 （既定 3 枚）に制限し、応答の ``source`` と ``ai_remaining`` で残りを返します。
-上限に達したときと生成に失敗したときは、グラデーション背景（``source`` は
-``placeholder``）で 200 を返します。
+上限に達したときと生成に失敗したときは、テーマ色で描いたサンプル紙面
+（``source`` は ``placeholder``）で 200 を返します。
 
-ステップ 1: タイプ
-~~~~~~~~~~~~~~~~~~
+ステップ 1: 紙面の性格
+~~~~~~~~~~~~~~~~~~~~~~
 
 ``POST /api/v1/flyers/candidates/types``
 
 ``POST /api/v1/flyers/generate`` と同じ 7 項目を送ります。``template_id`` と
-``layout_id`` は無視され、3 テンプレート分の完成イメージが返ります。
+``layout_id`` は無視され、3 種の紙面の性格（静けさ／やわらかさ／にぎやかさ）の
+完成イメージが返ります。3 枚は同じ地・同じ差し色で、書体と寄せだけが違います。
+``semantic_theme`` に合う 1 枚は ``recommended`` が ``true`` になります。
 
 .. code-block:: json
 
@@ -45,14 +47,15 @@ HTTP API
        {
          "candidate_id": "0f6a...",
          "kind": "type",
-         "label": "バー・スタイリッシュ",
-         "description": "暗い背景に明朝体。夜のイベント向け",
+         "label": "静けさ",
+         "description": "写真を静かに見せます。文字は中央に、余白を広く。",
          "image_url": "/api/v1/flyers/candidates/0f6a...",
          "template_id": "style_1_bar_stylish",
          "layout_id": "classic",
-         "palette_id": "gold",
-         "accent_color": "#F59E0B",
-         "overlay_alpha": 0.55
+         "palette_id": "theme",
+         "accent_color": "#8B2635",
+         "overlay_alpha": 0.55,
+         "recommended": true
        }
      ]
    }
@@ -63,7 +66,7 @@ HTTP API
 ``POST /api/v1/flyers/candidates``
 
 7 項目に ``template_id`` と ``count``（1〜16、既定 1）を足して送ります。
-選んだタイプの背景タイルが返ります。``kind`` は ``background`` です。
+選んだ紙面の性格の背景タイルが返ります。``kind`` は ``background`` です。
 画面は 1 枚ずつ出し、気に入らなければ作り直させます（``count`` は 1）。
 
 ``target_generation``（例: ``"20代から40代"``、50 文字まで）を送ると、想定する
@@ -90,8 +93,10 @@ HTTP API
 ``POST /api/v1/flyers/candidates/{candidate_id}/palettes``
 
 本文は不要です。親候補の背景と配置をそのまま使い、4 通りの配色を描きます。
-``kind`` は ``palette``、``palette_id`` は ``gold`` / ``mono`` / ``neon`` /
-``earth`` です。
+``kind`` は ``palette`` です。``semantic_theme`` があるときは ``theme`` /
+``theme-soft`` / ``theme-deep`` / ``theme-quiet``（テーマの差し色から作る）で、
+無いときは ``gold`` / ``mono`` / ``neon`` / ``earth`` です。どちらも、いま選ばれて
+いる色が先頭に来ます。
 
 候補画像を取得する
 ~~~~~~~~~~~~~~~~~~

@@ -333,10 +333,10 @@ P0 は情報の並べ替えに留まり、画面の印象は変わらなかっ�
 | `src/styles/base.css` | `body` に `overflow-x: clip` |
 | `src/styles/components.css` | `.hero--stage`（全幅の墨地・2カラム）、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` を追加。墨地と朱の帯ではフォーカスリングを白に（朱のリングは墨地で 2.89:1 しかない） |
 | `src/app/page.tsx` | ヒーローを `.hero__grid`（コピー＋チラシ）に変更。`card-grid` を `feature-list` / `step-list` に置換。末尾を `cta-band` に変更 |
-| `public/samples/flyer-autumn.jpg` | 作成画面（`/organizer/events/new`）で「焚き火とシチューの夕べ」を作り、AI 背景＋バー・スタイリッシュ／上にまとめる／ゴールドで生成した実物。1080×1528（A4） |
+| `public/samples/flyer-autumn.jpg` | 作成画面（`/organizer/events/new`）で「焚き火とシチューの夕べ」を作り、AI 背景＋静けさ／上にまとめる／ゴールドで生成した実物。1080×1528（A4） |
 | `style-guide/*` | 角の値を 0 に更新。`.hero--stage`、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` の見本を追加 |
 
-チラシ画像は次の手順で取り直せる。作成画面でイベントを最後まで入力し、ステップ 5 の「チラシを作る」でタイプ・背景・文字の配置・配色を選んで保存し、`storage/flyers/<flyerAssetId>.jpg` を `public/samples/flyer-autumn.jpg` へコピーする。API キーが無いときは `MockImageGenerator` の背景でも同じ手順で作れる。
+チラシ画像は次の手順で取り直せる。作成画面でイベントを最後まで入力し、ステップ 5 の「チラシを作る」で紙面の性格・背景・文字の配置・配色を選んで保存し、`storage/flyers/<flyerAssetId>.jpg` を `public/samples/flyer-autumn.jpg` へコピーする。API キーが無いときはテーマ色で描くサンプル紙面でも同じ手順で作れる。
 
 ### 9.3. 実測（1440px / 390px）
 

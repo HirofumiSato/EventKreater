@@ -3690,7 +3690,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 191,
+      "lineCount": 196,
       "headings": [
         {
           "level": 1,
@@ -3706,7 +3706,7 @@
         },
         {
           "level": 3,
-          "text": "ステップ 1: タイプ"
+          "text": "ステップ 1: 紙面の性格"
         },
         {
           "level": 3,
@@ -4316,7 +4316,7 @@
       "title": "概要",
       "summary": "このシステムが引き受ける仕事は、告知に必要な事実を受け取り、スマートフォンのストーリー向けポスターを 1 枚返すことです。利用者はフォントや余白を自分で調整しません。",
       "preImplementation": false,
-      "lineCount": 40,
+      "lineCount": 41,
       "headings": [
         {
           "level": 1,
@@ -4685,7 +4685,7 @@
       "title": "システム詳細設計書",
       "summary": "本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。",
       "preImplementation": false,
-      "lineCount": 381,
+      "lineCount": 393,
       "headings": [
         {
           "level": 1,
@@ -4760,6 +4760,10 @@
           "text": "5.4. 文字配置プリセット"
         },
         {
+          "level": 3,
+          "text": "5.5. 差し色の引き継ぎ"
+        },
+        {
           "level": 2,
           "text": "6. 例外設計とエラーハンドリングマトリクス"
         },
@@ -4797,7 +4801,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 360,
+      "lineCount": 372,
       "headings": [
         {
           "level": 1,
@@ -4869,7 +4873,7 @@
         },
         {
           "level": 3,
-          "text": "3.2. テンプレート別スタイル・タイポグラフィ定義"
+          "text": "3.2. 紙面の性格ごとのスタイル・タイポグラフィ定義"
         },
         {
           "level": 3,
@@ -4912,6 +4916,10 @@
       "codePaths": [
         {
           "path": "services/flyer/src/domain/prompt_payload.py",
+          "exists": true
+        },
+        {
+          "path": "src/styles/themes.css",
           "exists": true
         }
       ],
@@ -5048,7 +5056,7 @@
       "title": "システム要件定義書",
       "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
-      "lineCount": 287,
+      "lineCount": 299,
       "headings": [
         {
           "level": 1,
@@ -5096,7 +5104,7 @@
         },
         {
           "level": 3,
-          "text": "FR-02: テンプレート（世界観）選択機能"
+          "text": "FR-02: 紙面の性格の選択機能"
         },
         {
           "level": 3,

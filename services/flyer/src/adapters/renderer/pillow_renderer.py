@@ -45,54 +45,78 @@ from src.domain.models import (
     RenderMetadata,
     TemplateId,
 )
+from src.domain.semantic_theme import Ground, ThemeLook, theme_look
 from src.ports.renderer_port import FlyerRendererPort
 
 FontRole = Literal["serif", "sans", "display"]
 Alignment = Literal["center", "left"]
+#: 文字の下に敷く保護レイヤーの形。色ではなく形だけを持つ。
+#: - scrim: 地の明度に合わせたベタのグラデーション
+#: - card: 白い角丸のカード
+#: - panel: 暗いパネルに差し色の枠
+Protection = Literal["scrim", "card", "panel"]
 
 
 @dataclass(frozen=True)
 class TemplateStyle:
-    """テンプレートごとのタイポグラフィと保護レイヤー。"""
+    """紙面の性格ごとの書体・寄せ・保護レイヤーの形。
 
-    template_id: TemplateId
+    色は持たない。地の明度と文字色は前段のテーマ（`ThemeLook`）が決める。
+    """
+
     font_role: FontRole
     alignment: Alignment
-    title_color: tuple[int, int, int]
-    body_color: tuple[int, int, int]
-    category_label: str
-    card_alpha: float
+    protection: Protection
+    #: card / panel の塗りの不透明度。scrim は LLM の overlay_alpha を使う。
+    plate_alpha: float
+
+
+@dataclass(frozen=True)
+class RenderInk:
+    """保護レイヤーの上に載る文字色。"""
+
+    title: tuple[int, int, int]
+    body: tuple[int, int, int]
 
 
 _STYLES: dict[TemplateId, TemplateStyle] = {
     TemplateId.STYLE_1_BAR_STYLISH: TemplateStyle(
-        template_id=TemplateId.STYLE_1_BAR_STYLISH,
         font_role="serif",
         alignment="center",
-        title_color=(255, 255, 255),
-        body_color=(243, 244, 246),
-        category_label="ナイトイベント",
-        card_alpha=0.55,
+        protection="scrim",
+        plate_alpha=0.55,
     ),
     TemplateId.STYLE_2_WARM_EARTH: TemplateStyle(
-        template_id=TemplateId.STYLE_2_WARM_EARTH,
         font_role="sans",
         alignment="left",
-        title_color=(45, 42, 38),
-        body_color=(75, 70, 62),
-        category_label="あたたかい集い",
-        card_alpha=0.90,
+        protection="card",
+        plate_alpha=0.90,
     ),
     TemplateId.STYLE_3_VIBRANT_POP: TemplateStyle(
-        template_id=TemplateId.STYLE_3_VIBRANT_POP,
         font_role="display",
         alignment="left",
-        title_color=(255, 255, 255),
-        body_color=(255, 255, 255),
-        category_label="ポップイベント",
-        card_alpha=0.86,
+        protection="panel",
+        plate_alpha=0.86,
     ),
 }
+
+#: 白いカードの上に載せる文字色。地の明度に関係なく固定する。
+_DARK_INK = RenderInk(title=(31, 35, 40), body=(75, 70, 62))
+#: 暗いパネルの上に載せる文字色。地の明度に関係なく固定する。
+_LIGHT_INK = RenderInk(title=(255, 255, 255), body=(243, 244, 246))
+
+
+def inks_for(style: TemplateStyle, look: ThemeLook) -> RenderInk:
+    """保護レイヤーに応じた文字色。
+
+    scrim は地の明度に合わせる。card は白い面、panel は暗い面なので、テーマの
+    明るさに関係なく固定したほうが読みやすい。
+    """
+    if style.protection == "card":
+        return _DARK_INK
+    if style.protection == "panel":
+        return _LIGHT_INK
+    return RenderInk(hex_to_rgb(look.ink), hex_to_rgb(look.ink_sub))
 
 
 def _windows_font_dir() -> Path:
@@ -171,28 +195,54 @@ def _decode_background(background_bytes: bytes) -> Image.Image:
     return _cover(loaded, CANVAS_WIDTH, CANVAS_HEIGHT)
 
 
+def _anchor_weight(anchor: str, progress: float) -> float:
+    """文字が載る側を濃くする重み。anchor は top / center / bottom。"""
+    if anchor == "top":
+        return 0.5 + 0.5 * (1.0 - progress)
+    if anchor == "center":
+        return 0.5 + 0.5 * (1.0 - abs(2.0 * progress - 1.0))
+    return 0.5 + 0.5 * progress
+
+
 def _dark_gradient(
     size: tuple[int, int],
     overlay_alpha: float,
     anchor: str = "bottom",
 ) -> Image.Image:
-    """文字が載る側を濃くする黒グラデーション。anchor は top / center / bottom。"""
+    """文字が載る側を濃くする黒グラデーション。暗い地で使う。"""
     width, height = size
     column = Image.new("L", (1, height))
     for y in range(height):
         progress = y / max(1, height - 1)
-        if anchor == "top":
-            weight = 0.5 + 0.5 * (1.0 - progress)
-        elif anchor == "center":
-            weight = 0.5 + 0.5 * (1.0 - abs(2.0 * progress - 1.0))
-        else:
-            weight = 0.5 + 0.5 * progress
-        strength = min(0.85, overlay_alpha * weight)
+        strength = min(0.85, overlay_alpha * _anchor_weight(anchor, progress))
         column.putpixel((0, y), int(strength * 255))
     alpha = column.resize((width, height), Image.Resampling.BILINEAR)
     black = Image.new("RGBA", size, (0, 0, 0, 255))
     black.putalpha(alpha)
     return black
+
+
+def _light_gradient(
+    size: tuple[int, int],
+    overlay_alpha: float,
+    anchor: str = "bottom",
+) -> Image.Image:
+    """文字が載る側を白く飛ばすスクリム。明るい地で使う。
+
+    暗い文字を載せる前提なので、暗い地のスクリムより薄くはしない。0.55 を下回ると
+    写真の上で本文が読みにくくなる。
+    """
+    width, height = size
+    base = min(0.75, max(0.55, overlay_alpha))
+    column = Image.new("L", (1, height))
+    for y in range(height):
+        progress = y / max(1, height - 1)
+        strength = min(0.85, base * _anchor_weight(anchor, progress))
+        column.putpixel((0, y), int(strength * 255))
+    alpha = column.resize((width, height), Image.Resampling.BILINEAR)
+    white = Image.new("RGBA", size, (255, 255, 255, 255))
+    white.putalpha(alpha)
+    return white
 
 
 def _apply_base_overlay(
@@ -201,12 +251,18 @@ def _apply_base_overlay(
     context: LLMGenerationContext,
     zones: LayoutZones,
     anchor: str,
+    ground: Ground,
 ) -> Image.Image:
     canvas = background.convert("RGBA")
-    if style.template_id is TemplateId.STYLE_1_BAR_STYLISH:
-        gradient = _dark_gradient(canvas.size, context.suggested_overlay_alpha, anchor)
+    if style.protection == "scrim":
+        alpha = context.suggested_overlay_alpha
+        gradient = (
+            _dark_gradient(canvas.size, alpha, anchor)
+            if ground == "dark"
+            else _light_gradient(canvas.size, alpha, anchor)
+        )
         return Image.alpha_composite(canvas, gradient)
-    if style.template_id is TemplateId.STYLE_2_WARM_EARTH:
+    if style.protection == "card":
         overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
         top, bottom = zones.text_span
         ImageDraw.Draw(overlay).rounded_rectangle(
@@ -217,7 +273,7 @@ def _apply_base_overlay(
                 min(CANVAS_HEIGHT - 48, bottom + 80),
             ),
             radius=40,
-            fill=(255, 255, 255, int(style.card_alpha * 255)),
+            fill=(255, 255, 255, int(style.plate_alpha * 255)),
         )
         return Image.alpha_composite(canvas, overlay)
     return canvas
@@ -424,6 +480,8 @@ class PillowFlyerRenderer(FlyerRendererPort):
     ) -> bytes:
         self.last_metadata = None
         style = _STYLES[request.template_id]
+        look = theme_look(request.semantic_theme)
+        ink = inks_for(style, look)
         zones = zones_for(request.layout_id)
         anchor = overlay_anchor_for(request.layout_id)
         font_path = self.font_path_for(request.template_id)
@@ -436,7 +494,14 @@ class PillowFlyerRenderer(FlyerRendererPort):
                 ImageFilter.GaussianBlur(radius=12)
             )
             background.paste(blurred_zone, zones.b.box)
-        canvas = _apply_base_overlay(background, style, context, zones, anchor)
+        canvas = _apply_base_overlay(
+            background,
+            style,
+            context,
+            zones,
+            anchor,
+            look.ground,
+        )
         accent = hex_to_rgb(context.suggested_accent_color)
         spacing = (
             SHORT_TITLE_LETTER_SPACING
@@ -477,7 +542,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
         ):
             raise RenderingError("タイトルを指定領域に収められませんでした")
 
-        if style.template_id is TemplateId.STYLE_3_VIBRANT_POP:
+        if style.protection == "panel":
             panel_alpha = max(220, int(context.suggested_overlay_alpha * 255))
             for zone in (zones.a, zones.b, zones.c, zones.d):
                 canvas = _paint_pop_panel(canvas, zone.box, accent, panel_alpha)
@@ -492,7 +557,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
             CANVAS_WIDTH,
             CANVAS_HEIGHT,
         )
-        canvas, ratio, backdrop, outline = protect_region(canvas, title_box, style.title_color)
+        canvas, ratio, backdrop, outline = protect_region(canvas, title_box, ink.title)
         outline = outline or pre_outline
         _draw_lines(
             canvas,
@@ -500,14 +565,13 @@ class PillowFlyerRenderer(FlyerRendererPort):
             title_font,
             zones.b,
             ink_top,
-            style.title_color,
+            ink.title,
             style.alignment,
             spacing,
             2 if outline else 0,
         )
-        canvas = self._draw_category(canvas, style, font_path, accent, zones.a)
-        canvas = self._draw_schedule(canvas, request, style, font_path, accent, zones.c)
-        canvas = self._draw_details(canvas, request, style, font_path, accent, zones.d)
+        canvas = self._draw_schedule(canvas, request, style, font_path, accent, zones.c, ink)
+        canvas = self._draw_details(canvas, request, style, font_path, accent, zones.d, ink)
         canvas = self._draw_footer(canvas, style, accent, zones.e)
         self.last_metadata = RenderMetadata(
             canvas_width=CANVAS_WIDTH,
@@ -517,8 +581,8 @@ class PillowFlyerRenderer(FlyerRendererPort):
             accent_color=context.suggested_accent_color,
             overlay_alpha=(
                 context.suggested_overlay_alpha
-                if style.template_id is TemplateId.STYLE_1_BAR_STYLISH
-                else style.card_alpha
+                if style.protection == "scrim"
+                else style.plate_alpha
             ),
             title_font_size=int(title_font.size),
             title_line_count=len(title_lines),
@@ -531,41 +595,6 @@ class PillowFlyerRenderer(FlyerRendererPort):
         )
         return _to_jpeg(canvas)
 
-    def _draw_category(
-        self,
-        canvas: Image.Image,
-        style: TemplateStyle,
-        font_path: str,
-        accent: tuple[int, int, int],
-        zone: Zone,
-    ) -> Image.Image:
-        probe = ImageDraw.Draw(canvas)
-        font, lines = calculate_optimal_font_and_lines(
-            style.category_label,
-            font_path,
-            probe,
-            max_w=zone.width,
-            max_h=zone.height,
-            min_size=18,
-            max_size=32,
-            max_lines=1,
-        )
-        block_w, block_h = measure_text_block(probe, lines, font)
-        ink_top = zone.y + max(0, (zone.height - block_h) // 2)
-        canvas, _, _, outline = protect_region(canvas, zone.box, accent)
-        _draw_lines(
-            canvas,
-            lines,
-            font,
-            zone,
-            ink_top,
-            accent,
-            style.alignment,
-            0,
-            2 if outline else 0,
-        )
-        return canvas
-
     def _draw_schedule(
         self,
         canvas: Image.Image,
@@ -574,6 +603,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
         font_path: str,
         accent: tuple[int, int, int],
         zone: Zone,
+        ink: RenderInk,
     ) -> Image.Image:
         probe = ImageDraw.Draw(canvas)
         date_font, date_lines = calculate_optimal_font_and_lines(
@@ -629,7 +659,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
                 CANVAS_WIDTH,
                 CANVAS_HEIGHT,
             ),
-            style.body_color,
+            ink.body,
         )
         _draw_lines(
             canvas,
@@ -637,7 +667,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
             time_font,
             zone,
             time_top,
-            style.body_color,
+            ink.body,
             style.alignment,
             0,
             2 if time_outline else 0,
@@ -696,6 +726,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
         font_path: str,
         accent: tuple[int, int, int],
         zone: Zone,
+        ink: RenderInk,
     ) -> Image.Image:
         rows: list[tuple[str, str]] = [
             ("pin", request.location),
@@ -731,7 +762,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
                 zone.x + zone.width,
                 slot_top + slot_h - 6,
             )
-            canvas, _, _, outline = protect_region(canvas, slot_box, style.body_color)
+            canvas, _, _, outline = protect_region(canvas, slot_box, ink.body)
             draw = ImageDraw.Draw(canvas)
             _draw_icon(draw, (zone.x + 4, slot_top + 18), kind, accent)
             ink_top = slot_top + max(8, (slot_h - block_h) // 2)
@@ -741,7 +772,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
                 font,
                 text_zone,
                 ink_top,
-                style.body_color,
+                ink.body,
                 "left",
                 0,
                 2 if outline else 0,

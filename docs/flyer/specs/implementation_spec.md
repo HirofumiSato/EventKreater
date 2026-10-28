@@ -44,9 +44,10 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class TemplateId(str, Enum):
-    STYLE_1_BAR_STYLISH = "style_1_bar_stylish"  # バー・ナイトイベント向け（ダーク・洗練）
-    STYLE_2_WARM_EARTH = "style_2_warm_earth"  # サロン・ワークショップ向け（暖色・余白）
-    STYLE_3_VIBRANT_POP = "style_3_vibrant_pop"  # マルシェ・フェス向け（高彩度・明快）
+    # ID は保存済みチラシとの互換のため変えない。表示名だけが「紙面の性格」を指す。
+    STYLE_1_BAR_STYLISH = "style_1_bar_stylish"  # 静けさ（中央揃え・明朝・scrim）
+    STYLE_2_WARM_EARTH = "style_2_warm_earth"  # やわらかさ（左揃え・ゴシック・白カード）
+    STYLE_3_VIBRANT_POP = "style_3_vibrant_pop"  # にぎやかさ（左揃え・極太・暗いパネル）
 
 
 class RainPolicy(str, Enum):
@@ -97,7 +98,7 @@ class FlyerGenerationRequest(BaseModel):
         description="想定する参加者の世代。人物像と光の当て方に使う",
     )
     template_id: TemplateId = Field(
-        ..., description="選択されたデザインテンプレートID"
+        ..., description="選んだ紙面の性格の ID。書体・揃え・保護レイヤーの形に使う"
     )
     layout_id: TextLayout = Field(
         TextLayout.CLASSIC,
@@ -220,15 +221,26 @@ JSON に足し、LLM が構図を先に考えられるようにする。画面�
 
 ---
 
-### 3.2. テンプレート別スタイル・タイポグラフィ定義
+### 3.2. 紙面の性格ごとのスタイル・タイポグラフィ定義
 
-| パラメータ | テンプレート1: スタイリッシュ（Bar向け） | テンプレート2: アットホーム（Salon向け） | テンプレート3: ポップ（Event向け） |
+3 つは同じ軸（静けさ）の 3 点で、色は持たない。地の明度と文字色は前段で選んだ
+セマンティックテーマ（`src/styles/themes.css` の `--st-*`）が決め、ここは
+書体・揃え・保護レイヤーの形だけを決める。ステップ 1 の 3 枚は同じ地・同じ
+差し色・同じ配置（`classic`）で描き、書体と寄せの差だけを見せる。
+
+| パラメータ | 静けさ | やわらかさ | にぎやかさ |
 | :--- | :--- | :--- | :--- |
-| **主要フォント** | Noto Serif JP (明朝体・高級感) | Noto Sans JP (Medium/Light・親しみ) | M PLUS 1p (Black/Bold・力強さ) |
-| **文字揃え** | 完全中央揃え（Center-aligned） | 左揃え＋余白バランス（Left-aligned） | 左上タイトル＋グリッドブロック |
-| **ベース文字色** | `#FFFFFF` (タイトル) / `#F3F4F6` | `#2D2A26` (チャコール) / `#4B463E` | `#FFFFFF` (タイトル) / `#111827` |
-| **推奨アクセント色** | `#F59E0B` (Amber) / `#E11D48` (Rose) | `#059669` (Sage Green) / `#D97706` | `#FBBF24` (Yellow) / `#3B82F6` |
-| **背景保護レイヤー** | 全面ダークグラデーション (Alpha: 0.55) | 下部カード型ソリッド角丸矩形 (白/90%不透明) | ネオン境界線＋半透明黒角丸ボックス |
+| **主要フォント** | 明朝体・セリフ体（Noto Serif JP 等） | ゴシック体 Medium（Noto Sans JP 等） | 極太ゴシック体（M PLUS 1p Black 等） |
+| **文字揃え** | 完全中央揃え | 左揃え | 左揃え |
+| **保護レイヤー** | scrim: 地の明度に合わせた全面グラデーション | card: 白い角丸カード（`plate_alpha` 0.90） | panel: 暗い面＋差し色の枠（`plate_alpha` 0.86） |
+| **文字色** | テーマの `ink` / `ink_sub`（暗い地なら白系、明るい地なら濃色） | 白いカードの上なので固定の濃色（`#1F2328` / `#4B463E`） | 暗いパネルの上なので固定の白色（`#FFFFFF` / `#F3F4F6`） |
+| **差し色** | テーマの `accent` | テーマの `accent` | テーマの `accent` |
+
+scrim の向きは地の明度で反転する。暗い地は黒グラデーション、明るい地は白
+グラデーション（下限 0.55）で、羊皮紙を選んだのに紙面が黒くなる事故を防ぐ。
+
+Zone A（`Y: 128 ~ 176`）は種目名を焼かずに空けておく。利用者が入力していない
+「ナイトイベント」等を紙面へ入れないためで、座標は将来「種目」を入れる枠として残す。
 
 ---
 

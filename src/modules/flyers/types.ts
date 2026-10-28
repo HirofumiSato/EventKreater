@@ -19,6 +19,8 @@ export interface FlyerCandidate {
   source: string;
   /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
   aiRemaining: number | null;
+  /** 前段で選んだテーマに合う 1 枚。ステップ 1 だけ立つ。 */
+  recommended: boolean;
 }
 
 export interface FlyerQuota {

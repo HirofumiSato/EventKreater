@@ -276,6 +276,8 @@ class CandidateItem(BaseModel):
     source: str = Field(default="placeholder")
     #: AI 背景の残り枚数。背景候補のステップだけ入る。
     ai_remaining: int | None = Field(default=None)
+    #: 前段で選んだテーマに合う 1 枚。ステップ 1 だけ立つ。
+    recommended: bool = Field(default=False)
 
 
 class CandidateList(BaseModel):

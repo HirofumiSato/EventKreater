@@ -202,3 +202,84 @@ def test_generate_rejects_expired_candidate(tmp_path: Path) -> None:
         )
     assert response.status_code == 404
     assert response.json()["error_code"] == "CANDIDATE_EXPIRED"
+
+
+def test_type_step_is_one_axis_with_shared_ground_and_accent(tmp_path: Path) -> None:
+    """3 枚は地も差し色も同じ。違うのは書体と寄せだけで、そこを比べさせる。"""
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        candidates = client.post(
+            "/api/v1/flyers/candidates/types",
+            json=_body(semantic_theme="parchment"),
+        ).json()["candidates"]
+        assert [item["label"] for item in candidates] == ["静けさ", "やわらかさ", "にぎやかさ"]
+        assert len({item["palette_id"] for item in candidates}) == 1
+        assert len({item["accent_color"] for item in candidates}) == 1
+        # 前段で選んだテーマの差し色をそのまま使う。
+        assert candidates[0]["accent_color"] == "#8B2635"
+        stored = client.app.state.candidate_store  # type: ignore[attr-defined]
+        grounds = {stored.load_background(item["candidate_id"]) for item in candidates}
+        assert len(grounds) == 1
+
+
+def test_type_step_recommends_only_the_themed_paper(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        parchment = client.post(
+            "/api/v1/flyers/candidates/types",
+            json=_body(semantic_theme="parchment"),
+        ).json()["candidates"]
+        plain = client.post(
+            "/api/v1/flyers/candidates/types",
+            json=_body(),
+        ).json()["candidates"]
+    assert [item["recommended"] for item in parchment] == [True, False, False]
+    assert all(item["recommended"] is False for item in plain)
+
+
+def test_type_descriptions_do_not_name_venues_or_colours(tmp_path: Path) -> None:
+    """色はテーマが決める。会場名や色名を混ぜると、選ぶ軸がぶれる。"""
+    forbidden = ("バー", "フェス", "サロン", "暗い", "明るい", "鮮やか", "ゴールド")
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        candidates = client.post(
+            "/api/v1/flyers/candidates/types",
+            json=_body(),
+        ).json()["candidates"]
+    for item in candidates:
+        text = f"{item['label']}{item['description']}"
+        assert not any(word in text for word in forbidden), text
+
+
+def test_palette_step_starts_with_the_colour_already_chosen(tmp_path: Path) -> None:
+    """ステップ 3 で見た色が、ステップ 4 の先頭に来る。確定時に色が飛ばない。"""
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        background = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(template_id="style_2_warm_earth", count=1),
+        ).json()["candidates"][0]
+        # テーマ無しでは従来の 4 色を並べ替えて返す。
+        palettes = client.post(
+            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
+            json={},
+        ).json()["candidates"]
+        assert palettes[0]["palette_id"] == background["palette_id"] == "earth"
+        assert {item["palette_id"] for item in palettes} == {
+            "gold",
+            "mono",
+            "neon",
+            "earth",
+        }
+
+        themed = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(semantic_theme="neon", count=1),
+        ).json()["candidates"][0]
+        themed_palettes = client.post(
+            f"/api/v1/flyers/candidates/{themed['candidate_id']}/palettes",
+            json={},
+        ).json()["candidates"]
+    assert [item["palette_id"] for item in themed_palettes] == [
+        "theme",
+        "theme-soft",
+        "theme-deep",
+        "theme-quiet",
+    ]
+    assert themed_palettes[0]["accent_color"] == themed["accent_color"]

@@ -19,14 +19,14 @@ import type {
 import { Alert } from "@/components/ui";
 
 const STEP_TITLES: Record<FlyerWizardStep, string> = {
-  1: "タイプ",
+  1: "紙面の性格",
   2: "背景",
   3: "文字の配置",
   4: "配色",
 };
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
-  1: "デザインの方向性を選んでください。文字の見え方がテンプレートごとに変わります。",
+  1: "紙面の性格を選んでください。文字の組み方が変わり、写真の見え方も変わります。",
   2: "背景を選んでください。1枚ずつ作り、気に入らなければ作り直せます。",
   3: "文字をどこにまとめるかを選んでください。背景はそのまま残ります。",
   4: "最後に色を選んでください。選んだ内容でチラシを保存します。",
@@ -264,7 +264,7 @@ export function FlyerCandidateModal({
   }, [open, saving, onClose]);
 
   const choose = (target: FlyerWizardStep, candidate: FlyerCandidate) => {
-    // タイプを変えると、前のタイプで作ったアップロード背景は使えない。
+    // 紙面の性格を変えると、前の性格で作ったアップロード背景は使えない。
     if (target === 1) {
       setUploaded(null);
       setUploadError(null);
@@ -508,6 +508,11 @@ export function FlyerCandidateModal({
                         decoding="async"
                       />
                       {active && <span className="candidate-tile__check">選択中</span>}
+                      {candidate.recommended && (
+                        <span className="candidate-tile__badge candidate-tile__badge--recommend">
+                          このテーマに合う
+                        </span>
+                      )}
                       {candidate.source === "ai" && (
                         <span className="candidate-tile__badge">AI生成</span>
                       )}

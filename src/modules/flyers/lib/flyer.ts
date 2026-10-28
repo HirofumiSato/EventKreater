@@ -149,6 +149,8 @@ export interface FlyerCandidateDto {
   source?: string;
   /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
   ai_remaining?: number | null;
+  /** 前段で選んだテーマに合う 1 枚。古いサービス応答では省略される。 */
+  recommended?: boolean;
 }
 
 function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
@@ -165,6 +167,7 @@ function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
     overlayAlpha: dto.overlay_alpha,
     source: typeof dto.source === "string" ? dto.source : "placeholder",
     aiRemaining: typeof dto.ai_remaining === "number" ? dto.ai_remaining : null,
+    recommended: dto.recommended === true,
   };
 }
 
@@ -206,7 +209,7 @@ async function postCandidateRequest(
   return payload.candidates.map(serializeCandidate);
 }
 
-/** ステップ 1。3 テンプレートの完成イメージ。 */
+/** ステップ 1。3 種の紙面の性格の完成イメージ。 */
 export async function proposeTypeCandidates(
   input: GenerateFlyerInput,
   ownerTokenHash?: string,
@@ -218,7 +221,7 @@ export async function proposeTypeCandidates(
   );
 }
 
-/** ステップ 2。選んだタイプの背景タイル。 */
+/** ステップ 2。選んだ紙面の性格の背景タイル。 */
 export async function proposeBackgroundCandidates(
   input: GenerateFlyerInput,
   count: number,

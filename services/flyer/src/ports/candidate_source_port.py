@@ -1,6 +1,6 @@
 """候補背景の供給元。
 
-ローカル合成（グラデーション）と、OpenAI の画像生成の 2 実装を持つ。将来
+ローカル合成（テーマ色のサンプル紙面）と、OpenAI の画像生成の 2 実装を持つ。将来
 「同梱画像パック」「ネット取得」へ差し替えるための口をここに固定する。差し替えて
 も `ProposeCandidatesUseCase` とレンダラーは変更しない。
 
@@ -13,7 +13,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from src.domain.models import FlyerGenerationRequest, LLMGenerationContext, TemplateId
+from src.domain.models import (
+    FlyerGenerationRequest,
+    LLMGenerationContext,
+    SemanticTheme,
+)
 
 
 @dataclass(frozen=True)
@@ -36,8 +40,17 @@ class CandidateSourcePort(ABC):
         """保存メタに残す供給元の識別子。"""
 
     @abstractmethod
-    async def preview_background(self, template_id: TemplateId) -> bytes:
-        """ステップ 1 のサンプルに使う代表背景。"""
+    async def preview_background(
+        self,
+        theme: SemanticTheme | None,
+        *,
+        variant: int = 0,
+    ) -> bytes:
+        """ステップ 1 のサンプルに使う代表背景。
+
+        ステップ 1 は同じ地を 3 枚で共有するので、書体を比べる前提が崩れない。
+        色はテーマが決めるため、引数は `template_id` ではなく `theme` を取る。
+        """
 
     @abstractmethod
     async def suggest_backgrounds(

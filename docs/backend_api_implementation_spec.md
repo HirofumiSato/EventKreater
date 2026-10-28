@@ -32,7 +32,7 @@ flowchart TD
 5. **RFC 7807 準拠のエラーレスポンス:**
    - すべてのエラーレスポンスを `application/problem+json` 構造に統一。
 6. **チラシ生成は外部サービスへ委譲し、結果だけを自前で保存する:**
-   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` でタイプ・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。手元の完成済み画像を上げる `POST /api/v1/flyer-assets` も同じ `flyer_assets` 行を作り、原本の形式のまま `storage/flyers/{id}.{jpg|png|webp}` に置く（回数は消費しない）。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
+   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` で紙面の性格・背景・文字配置・配色の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。手元の完成済み画像を上げる `POST /api/v1/flyer-assets` も同じ `flyer_assets` 行を作り、原本の形式のまま `storage/flyers/{id}.{jpg|png|webp}` に置く（回数は消費しない）。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
 
 ---
 
@@ -110,7 +110,7 @@ flowchart TD
 | `/api/v1/public/pricing` | GET | SCR-PUB-06 | 不要 | 現在の販売価格と実施中キャンペーン |
 | `/api/v1/internal/billing/notices` | POST | - | `BILLING_NOTICE_SECRET` | 0円の定額プランの 3 日前・1 日前の通知バッチ |
 | `/api/v1/flyers/quota` | GET | SCR-ORG-03 | 不要 | イベント（公開前は下書き）の残り作成回数。未ログインは端末通算 |
-| `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 テンプレートの完成イメージ |
+| `/api/v1/flyers/candidates/types` | POST | SCR-ORG-03 | 不要 | ステップ 1。3 種の紙面の性格の完成イメージ |
 | `/api/v1/flyers/candidates` | POST | SCR-ORG-03 | 不要 | ステップ 2。背景タイルを 1 枚返す（AI は 1 時間 3 枚まで） |
 | `/api/v1/flyers/uploads` | POST | SCR-ORG-03 | 不要 | ステップ 2。自分の写真を背景候補 1 枚にする |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | SCR-ORG-03 | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |
@@ -2157,7 +2157,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 `FLYER_API_URL` の `POST /api/v1/flyers/generate` は次の順で処理する。
 
-1. **プロンプト解釈。** 入力から英語の背景プロンプト、除外プロンプト、アクセント色、遮光の不透明度を作る。利用者の文章はシステムプロンプトへ混ぜない。画像プロンプトには文字、数字、ロゴを描かないことを求め、テンプレートごとの余白を指定する。この段の失敗は背景へすり替えず、サービスは 503 を返す。
+1. **プロンプト解釈。** 入力から英語の背景プロンプト、除外プロンプト、アクセント色、遮光の不透明度を作る。利用者の文章はシステムプロンプトへ混ぜない。画像プロンプトには文字、数字、ロゴを描かないことを求め、紙面の性格ごとの余白を指定する。この段の失敗は背景へすり替えず、サービスは 503 を返す。
 2. **背景の取得。** 縦長 `9:16` で背景画像を得る（画像生成 API に A4 相当のサイズが無いため）。画像生成が時間切れ、または画像でなかった場合は、静的なテンプレート背景へ切り替え、状態を `fallback_used` にする。利用者へ空の失敗応答は返さない。
 3. **文字合成。** 背景の上に、日付、料金、場所、タイトルをサーバー側の描画で載せる。画像モデルには日本語と数字を書かせない。
 4. **一時保存。** 生成 ID をファイル名にし、`image_url` として `/api/v1/flyers/{generation_id}` を返す。HTTP は成功時 200。フォールバック時も 200 で、`status` は `fallback_used` である。
@@ -2184,12 +2184,12 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ### 9.2. ウィザード候補 API（本アプリ）
 
-画面はチラシをいきなり作らない。「タイプ → 背景 → 文字配置 → 配色」の 4 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**確定の回数は候補を作るだけでは消費しない。** ただしステップ 2 の背景候補は、AI が有効なときに画像生成 API を呼ぶため、flyer サービスが 1 端末・1 時間あたり 3 枚で数える（`ai_remaining` で残りを返す）。上限に達したときと失敗時はグラデーション背景で 200 を返す。
+画面はチラシをいきなり作らない。「紙面の性格 → 背景 → 文字配置 → 配色」の 4 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**確定の回数は候補を作るだけでは消費しない。** ただしステップ 2 の背景候補は、AI が有効なときに画像生成 API を呼ぶため、flyer サービスが 1 端末・1 時間あたり 3 枚で数える（`ai_remaining` で残りを返す）。上限に達したときと失敗時は、テーマ色で描いたサンプル紙面で 200 を返す。
 
 | パス | メソッド | 認証 | 内容 |
 | :---- | :---- | :---- | :---- |
 | `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。公開前は下書き、`eventId` を添えたときはイベント単位。未ログインは端末通算 |
-| `/api/v1/flyers/candidates/types` | POST | 不要 | ステップ 1。3 テンプレートの完成イメージ |
+| `/api/v1/flyers/candidates/types` | POST | 不要 | ステップ 1。3 種の紙面の性格の完成イメージ |
 | `/api/v1/flyers/candidates` | POST | 不要 | ステップ 2。背景タイル 1 枚（作り直しは 1 時間 3 枚まで） |
 | `/api/v1/flyers/uploads` | POST | 不要 | ステップ 2。自分の写真 1 枚を背景候補にする（multipart） |
 | `/api/v1/flyers/candidates/[id]/layouts` | POST | 不要 | ステップ 3。同じ背景で 4 通りの文字配置 |

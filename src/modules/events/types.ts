@@ -632,9 +632,9 @@ export const FLYER_TEMPLATE_IDS = [
 export type FlyerTemplateId = (typeof FLYER_TEMPLATE_IDS)[number];
 
 export const FLYER_TEMPLATE_LABELS: Record<FlyerTemplateId, string> = {
-  style_1_bar_stylish: "バー・スタイリッシュ",
-  style_2_warm_earth: "あたたかいアース",
-  style_3_vibrant_pop: "ビビッド・ポップ",
+  style_1_bar_stylish: "静けさ",
+  style_2_warm_earth: "やわらかさ",
+  style_3_vibrant_pop: "にぎやかさ",
 };
 
 /** 文字ブロックの配置プリセット。順序はウィザードの表示順。 */

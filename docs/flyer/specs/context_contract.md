@@ -33,8 +33,8 @@
 | `rainPolicy` | `RAIN_POLICY_LABELS` | `rain_policy` | 屋内開催なら屋内、雨天決行なら屋外可として扱わせる | 雨天時の案内 |
 | `capacity` | `flyerCapacityLabel`（`先着15名`、20 文字を超えたら null） | `capacity` | 規模（少人数か大箱か）を推論させる | 定員 |
 | `targetGeneration` | `trim()`、空なら null | `target_generation` | 読者層に合わせて人物・衣装・熱量を寄せる | 使わない |
-| `themeId` | `null` は未指定 | `semantic_theme` | 値そのものと `design_direction`（英語の方向付け）を対で渡す | 配色の一部 |
-| （画面で選ぶ）`templateId` | そのまま | `template_id` | テンプレートごとの構図ルールを適用させる | 書体・配色・座標 |
+| `themeId` | `null` は未指定 | `semantic_theme` | 値そのものと `design_direction`（英語の方向付け）を対で渡す | 配色・地の明度・文字色・サンプル紙面の地 |
+| （画面で選ぶ）`templateId` | そのまま | `template_id` | 紙面の性格（書体・揃え）として構図ルールを適用させる。色はテーマが持つ | 書体・揃え・保護レイヤーの形 |
 | （画面で選ぶ）`layoutId` | 既定は `classic` | `layout_id` | 文字が載る帯を平らに保たせる | 文字ブロックの座標 |
 
 送らない項目と、その理由。

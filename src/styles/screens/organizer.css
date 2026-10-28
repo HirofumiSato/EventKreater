@@ -267,6 +267,13 @@
   font-weight: 700;
 }
 
+/* 前段で選んだテーマに合う 1 枚。選ばせるのではなく、迷ったときの目印にする。 */
+.candidate-tile__badge--recommend {
+  background: var(--color-surface);
+  color: var(--color-primary-text);
+  border: 1px solid var(--color-primary);
+}
+
 .candidate-tile__label {
   font-size: 0.8125rem;
   font-weight: 700;

@@ -9,6 +9,7 @@ from io import BytesIO
 import pytest
 from PIL import Image, ImageDraw
 
+from src.adapters.candidate_source.sample_ground import render_sample_ground
 from src.adapters.renderer import layout_calculator
 from src.adapters.renderer.layout_calculator import (
     CANVAS_HEIGHT,
@@ -30,7 +31,7 @@ from src.adapters.renderer.layout_calculator import (
 from src.adapters.renderer.layouts import zones_for
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
 from src.domain.exceptions import RenderingError
-from src.domain.models import TemplateId, TextLayout
+from src.domain.models import SemanticTheme, TemplateId, TextLayout
 from tests.support import make_context, make_request
 
 
@@ -243,3 +244,41 @@ def test_layout_change_alters_the_output() -> None:
         context,
     )
     assert classic != top
+
+
+def test_scrim_follows_the_theme_brightness() -> None:
+    """地の明度でスクリムの向きを変える。羊皮紙で黒い紙面にしない。"""
+    renderer = PillowFlyerRenderer()
+    zone = zones_for(TextLayout.CLASSIC).a
+
+    def upper_band(theme: SemanticTheme) -> tuple[int, int, int]:
+        data = renderer.render_flyer(
+            render_sample_ground(theme),
+            make_request(
+                template_id=TemplateId.STYLE_1_BAR_STYLISH,
+                semantic_theme=theme,
+            ),
+            make_context(TemplateId.STYLE_1_BAR_STYLISH),
+        )
+        image = Image.open(BytesIO(data)).convert("RGB")
+        return average_rgb(image, zone.box)
+
+    parchment = upper_band(SemanticTheme.PARCHMENT)
+    neon = upper_band(SemanticTheme.NEON)
+    assert sum(parchment) > sum(neon) + 150
+    assert renderer.last_metadata is not None
+    assert renderer.last_metadata.contrast_ratio >= 4.5
+
+
+def test_category_label_is_not_burned_in() -> None:
+    """利用者が入力していない種目名を紙面へ焼かない。zone A は空けておく。"""
+    renderer = PillowFlyerRenderer()
+    data = renderer.render_flyer(
+        _png((240, 240, 240)),
+        make_request(),
+        make_context(),
+    )
+    image = Image.open(BytesIO(data)).convert("L")
+    zone = zones_for(TextLayout.CLASSIC).a
+    values = image.crop(zone.box).tobytes()
+    assert max(values) - min(values) <= 8
