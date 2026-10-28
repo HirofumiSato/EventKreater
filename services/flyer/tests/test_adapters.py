@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from io import BytesIO
 from pathlib import Path
 
@@ -110,15 +111,44 @@ def _png(color: tuple[int, int, int] = (10, 20, 30)) -> bytes:
     return buffer.getvalue()
 
 
-def test_system_prompt_matches_implementation_spec() -> None:
-    # 仕様書は services/flyer/docs からリポジトリ直下の docs/flyer へ移った。
+#: リポジトリ直下から見た仕様書の位置。
+_SPEC_RELATIVE = Path("docs") / "flyer" / "specs" / "implementation_spec.md"
+
+#: 仕様書の置き場を明示する環境変数。開発コンテナはサービスだけを /app に置くため、
+#: compose が ``/repo`` へ仕様書を写してこれを指す。
+_SPEC_ROOT_ENV = "FLYER_SPEC_ROOT"
+
+
+def _implementation_spec_path() -> Path | None:
+    """仕様書を探す。サービス単体で置かれた開発コンテナでも見つかるようにする。
+
+    サービスルートの祖先をすべて辿り、``docs/flyer/specs/implementation_spec.md`` を
+    持つディレクトリをリポジトリルートとみなす。``FLYER_SPEC_ROOT`` があればそこを
+    先に見る。
+    """
     service_root = Path(__file__).resolve().parents[1]
-    candidates = (
-        service_root / "docs" / "specs" / "implementation_spec.md",
-        service_root.parents[1] / "docs" / "flyer" / "specs" / "implementation_spec.md",
-    )
-    spec_path = next((path for path in candidates if path.is_file()), None)
-    assert spec_path is not None, f"implementation_spec.md が見つかりません: {candidates}"
+    roots: list[Path] = []
+    override = os.environ.get(_SPEC_ROOT_ENV)
+    if override:
+        roots.append(Path(override))
+    roots.append(service_root)
+    roots.extend(service_root.parents)
+    for root in roots:
+        candidate = root / _SPEC_RELATIVE
+        if candidate.is_file():
+            return candidate
+    # 仕様書がサービス内にあった頃の配置。古い作業ツリーでも読めるようにする。
+    legacy = service_root / "docs" / "specs" / "implementation_spec.md"
+    return legacy if legacy.is_file() else None
+
+
+def test_system_prompt_matches_implementation_spec() -> None:
+    spec_path = _implementation_spec_path()
+    if spec_path is None:
+        pytest.skip(
+            f"{_SPEC_RELATIVE} が見つかりません。リポジトリ全体をチェックアウトした"
+            f"ツリーか、{_SPEC_ROOT_ENV} を設定した環境で実行してください。"
+        )
     text = spec_path.read_text(encoding="utf-8")
     start = text.index("# Role\nYou are an elite commercial art director")
     ending = "Output MUST be strict JSON adhering to the provided schema."

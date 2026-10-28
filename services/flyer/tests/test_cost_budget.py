@@ -76,6 +76,22 @@ def test_yen_rate_that_breaks_the_target_is_known() -> None:
         assert _wizard_cost(break_even + 10.0) < TARGET_JPY_PER_REQUEST
 
 
+def test_extended_qualities_are_priced() -> None:
+    """画質を上げても安全側の $0.25 に落ちない。
+
+    落ちると上限 9.5 円に当たり、生成前に打ち切られて背景が代替になる。
+    """
+    fallback = image_price_usd(DEFAULT_IMAGE_MODEL, "unknown", DEFAULT_IMAGE_SIZE)
+    assert fallback == pytest.approx(0.250)
+    for quality in ("low", "medium", "high", "xhigh", "max"):
+        price = image_price_usd(DEFAULT_IMAGE_MODEL, quality, DEFAULT_IMAGE_SIZE)
+        assert price < fallback, quality
+    # `auto` は最上位まで振れるので、`max` を下回らない。
+    assert image_price_usd(
+        DEFAULT_IMAGE_MODEL, "auto", DEFAULT_IMAGE_SIZE
+    ) >= image_price_usd(DEFAULT_IMAGE_MODEL, "max", DEFAULT_IMAGE_SIZE)
+
+
 def test_default_request_cap_leaves_headroom_below_ten_yen() -> None:
     assert DEFAULT_MAX_COST_JPY_PER_REQUEST < TARGET_JPY_PER_REQUEST
     # 1 枚ずつ作るので、上限に当たらずに 3 枚まで作れる。

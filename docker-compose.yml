@@ -61,12 +61,16 @@ services:
       OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-}
       IMAGE_QUALITY: ${IMAGE_QUALITY:-}
       IMAGE_SIZE: ${IMAGE_SIZE:-}
+      # 仕様書との一致を見るテストが読む。サービスは /app にしか無いため写す。
+      FLYER_SPEC_ROOT: /repo
       STORAGE_DIR: /data/tmp
       CANDIDATE_DIR: /data/candidates
       FALLBACK_DIR: /data/backgrounds
       TZ: Asia/Tokyo
     volumes:
       - ./services/flyer:/app
+      # `python -m pytest` をコンテナで回すため、仕様書だけ読み取り専用で渡す。
+      - ./docs/flyer/specs:/repo/docs/flyer/specs:ro
       - flyer_data:/data
     ports:
       - "8000:8000"

@@ -182,6 +182,8 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
      - ``http://flyer:8000`` に上書きされます。``.env`` の ``127.0.0.1:8000`` はコンテナ自身を指すためです
    * - ``node_modules`` / ``.next``
      - 名前付きボリュームに置きます。ホストの Windows 版バイナリを混ぜないためです。``package.json`` を変えたら ``docker compose exec web npm install`` を実行します
+   * - ``docs/flyer/specs``
+     - flyer コンテナへ ``/repo/docs/flyer/specs`` として読み取り専用で渡します。``docker compose exec flyer python -m pytest`` で、仕様書とプロンプトの一致まで含めて全件が走ります
    * - 本番相当
      - ``docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build`` 。standalone ビルドを ``node server.js`` で起動し、ソースの bind mount を外します
    * - データの削除
