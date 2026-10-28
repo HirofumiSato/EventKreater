@@ -96,6 +96,18 @@ html.has-mockbar:not(.is-embed):has(.action-dock) .mockbar {
   }
 }
 
+/* 作成ウィザードの保存・プレビュー帯（`.form-final`）も、スマホでは画面下に固定される。
+   製品の帯は本物の位置のまま、付箋だけをその上へ逃がす。 */
+@media (max-width: 639px) {
+  html.has-mockbar:not(.is-embed):has(.form-final) body {
+    padding-bottom: 9.5rem;
+  }
+
+  html.has-mockbar:not(.is-embed):has(.form-final) .mockbar {
+    bottom: 6.5rem;
+  }
+}
+
 /* 枠の中では付箋を出さない。枠は本文だけを見るためのもの。 */
 html.is-embed .mockbar {
   display: none;

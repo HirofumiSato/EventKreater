@@ -628,6 +628,11 @@ model Event {
   venueName    String?         @map("venue_name") @db.VarChar(150)
   rainPolicy   RainPolicy      @default(RAIN_OR_SHINE) @map("rain_policy")
   capacity     Int?            @db.Integer
+  /// 想定する参加者の世代。「20代から40代」のような自由文。NULL は未設定で、告知ページに出さない。
+  targetGeneration String?    @map("target_generation") @db.VarChar(50)
+  /// 告知ページのセマンティックテーマ。NULL は標準の見た目。主催者プロフィールと同じ ID を使う。
+  /// 列挙型にしないのは、テーマを増やすたびにマイグレーションが要るため（`semantic-themes.ts` が一覧の正）。
+  themeId      String?         @map("theme_id") @db.VarChar(32)
   flyerAssetId String?         @map("flyer_asset_id") @db.Uuid
   status       EventStatus     @default(DRAFT)
   /// 将来のメディアサイト向けの掲載フラグ。いまのアプリは一覧を持たないため常に UNLISTED（紹介制）。

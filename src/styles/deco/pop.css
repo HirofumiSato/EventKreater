@@ -25,9 +25,8 @@
   border-top: 1px dashed var(--color-border);
 }
 
-.deco.deco--tape .event-step__title {
-  font-size: 1.0625rem;
-}
+/* 見出しの大きさ（17px）は `components.css` の `.event-step__title` が持つ。
+   スマホで字を詰める規則と同じ場所に置き、ここでは上書きしない。 */
 
 .deco.deco--tape .event-step--done:not(.event-step--open) .event-step__toggle {
   padding-block: 0.625rem;

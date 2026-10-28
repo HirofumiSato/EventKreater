@@ -44,6 +44,48 @@ class CandidateKind(str, Enum):
     PALETTE = "palette"
 
 
+class SemanticTheme(str, Enum):
+    """告知ページで選んだセマンティックテーマ。
+
+    ID は `src/lib/semantic-themes.ts` と揃える。背景の雰囲気をページと揃えるために、
+    LLM へ英語の方向付け（`design_direction`）として渡す。未指定（None）は標準。
+    """
+
+    MODERN_SLATE = "modern-slate"
+    ENTERPRISE_CLEAN = "enterprise-clean"
+    PARCHMENT = "parchment"
+    NEO_BRUTALISM = "neo-brutalism"
+    NEON = "neon"
+
+    @property
+    def design_direction(self) -> str:
+        """画像生成へ渡す英語の方向付け。"""
+        return _THEME_DIRECTIONS[self]
+
+
+_THEME_DIRECTIONS: dict[SemanticTheme, str] = {
+    SemanticTheme.MODERN_SLATE: (
+        "dark slate ground, white high-contrast type, cinematic low-key photography, "
+        "quiet and composed atmosphere"
+    ),
+    SemanticTheme.ENTERPRISE_CLEAN: (
+        "bright neutral ground, thin restrained borders, clean daylight photography, "
+        "calm and trustworthy tone"
+    ),
+    SemanticTheme.PARCHMENT: (
+        "warm off-white paper texture, serif editorial mood, soft natural light, "
+        "vintage print feel"
+    ),
+    SemanticTheme.NEO_BRUTALISM: (
+        "heavy black outlines, hard offset shadows, bold saturated flat color, "
+        "handmade poster energy"
+    ),
+    SemanticTheme.NEON: (
+        "black ground, cyan neon glow, night club energy, wet reflections, high contrast"
+    ),
+}
+
+
 class FlyerStatus(str, Enum):
     """生成パイプラインの完了状態。"""
 
@@ -89,6 +131,10 @@ class FlyerGenerationRequest(BaseModel):
         None,
         max_length=20,
         description="想定上限人数（例: 先着15名）",
+    )
+    semantic_theme: SemanticTheme | None = Field(
+        default=None,
+        description="告知ページで選んだテーマ。背景の雰囲気をページと揃える。未指定は標準",
     )
     template_id: TemplateId = Field(..., description="選択されたデザインテンプレートID")
     layout_id: TextLayout = Field(

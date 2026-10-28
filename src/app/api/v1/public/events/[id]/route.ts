@@ -160,6 +160,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       location: serialized.location,
       rainPolicy: serialized.rainPolicy,
       capacity: serialized.capacity,
+      targetGeneration: serialized.targetGeneration,
+      themeId: serialized.themeId,
       status: serialized.status,
       visibility: serialized.visibility,
       rsvpDeadline: serialized.rsvpDeadline,

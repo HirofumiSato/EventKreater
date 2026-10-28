@@ -28,7 +28,7 @@ from src.adapters.prompt_engine.openai_prompt_engine import (
 )
 from src.adapters.wiring import build_image_generator, build_prompt_engine
 from src.domain.exceptions import ImageGenerationTimeoutError, LLMContextGenerationError
-from src.domain.models import LLMGenerationContext, TemplateId
+from src.domain.models import LLMGenerationContext, SemanticTheme, TemplateId
 from src.infrastructure.config import Settings
 from tests.support import make_context, make_request
 
@@ -168,6 +168,28 @@ def test_openai_prompt_engine_sends_spec_prompt_and_user_json() -> None:
     assert transport.messages is not None
     assert transport.messages[0]["content"] == SYSTEM_PROMPT
     assert "ジャズの夜" in str(transport.messages[1]["content"])
+
+
+def test_prompt_messages_include_theme_direction() -> None:
+    transport = _ScriptedTransport(make_context())
+    engine = OpenAIPromptEngine(api_key="sk-test", transport=transport)
+    asyncio.run(
+        engine.generate_prompt_context(make_request(semantic_theme=SemanticTheme.NEON))
+    )
+    assert transport.messages is not None
+    content = str(transport.messages[1]["content"])
+    assert "design_direction" in content
+    assert "neon" in content
+    # 選んだテーマそのものも、ユーザー JSON に残す。
+    assert "semantic_theme" in content
+
+
+def test_prompt_messages_omit_theme_direction_when_unset() -> None:
+    transport = _ScriptedTransport(make_context())
+    engine = OpenAIPromptEngine(api_key="sk-test", transport=transport)
+    asyncio.run(engine.generate_prompt_context(make_request()))
+    assert transport.messages is not None
+    assert "design_direction" not in str(transport.messages[1]["content"])
 
 
 def test_openai_prompt_engine_wraps_transport_errors() -> None:

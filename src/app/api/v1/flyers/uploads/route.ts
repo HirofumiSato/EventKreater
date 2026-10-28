@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
       location: field(form, "location"),
       rainPolicy: field(form, "rainPolicy"),
       capacity: capacityText ? Number(capacityText) : null,
+      themeId: field(form, "themeId") || null,
       templateId: field(form, "templateId"),
       layoutId: field(form, "layoutId") || "classic",
       eventId: field(form, "eventId") || null,

@@ -132,6 +132,13 @@ export const GenerateFlyerSchema = z.object({
   location: z.string().trim().min(2, "開催場所は2文字以上60文字以内です").max(60, "チラシの場所は60文字以内です"),
   rainPolicy: z.enum(["RAIN_OR_SHINE", "CANCEL_ON_RAIN", "POSTPONE_ON_RAIN", "INDOOR"]),
   capacity: z.number().int().positive().nullable().optional(),
+  /** 告知ページのテーマ。背景の雰囲気を揃えるためにサービスへ渡す。null は標準。 */
+  themeId: z
+    .enum(SEMANTIC_THEME_IDS, {
+      errorMap: () => ({ message: "選べないテーマです。" }),
+    })
+    .nullable()
+    .optional(),
   templateId: z.enum(FLYER_TEMPLATE_IDS),
   layoutId: z.enum(FLYER_LAYOUT_IDS).default("classic"),
 });
@@ -203,6 +210,15 @@ const eventBodySchema = z.object({
   venueName: optionalText(150, "会場名は150文字以内です"),
   rainPolicy: z.enum(["RAIN_OR_SHINE", "CANCEL_ON_RAIN", "POSTPONE_ON_RAIN", "INDOOR"]),
   capacity: z.number().int().positive().nullable().optional(),
+  /** 想定する参加者の世代。空欄は NULL で、告知ページに出さない。 */
+  targetGeneration: optionalText(50, "対象世代は50文字以内です"),
+  /** 告知ページのセマンティックテーマ。null は標準の見た目。未知の ID は 400。 */
+  themeId: z
+    .enum(SEMANTIC_THEME_IDS, {
+      errorMap: () => ({ message: "選べないテーマです。" }),
+    })
+    .nullable()
+    .default(null),
   flyerAssetId: z.string().uuid().nullable().optional(),
   rsvpDeadline: rsvpDeadlineSchema,
 });

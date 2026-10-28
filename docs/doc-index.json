@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2551,
+      "lineCount": 2557,
       "headings": [
         {
           "level": 1,
@@ -2851,7 +2851,7 @@
       "title": "データベース物理設計書（DBschema.md）",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1573,
+      "lineCount": 1579,
       "headings": [
         {
           "level": 1,
@@ -2946,6 +2946,10 @@
       "codePaths": [
         {
           "path": "prisma/migrations/20261021150000_pricing_campaigns/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "src/lib/semantic-themes.ts",
           "exists": true
         }
       ],
@@ -3677,7 +3681,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 167,
+      "lineCount": 173,
       "headings": [
         {
           "level": 1,
@@ -4679,7 +4683,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 322,
+      "lineCount": 326,
       "headings": [
         {
           "level": 1,
@@ -10045,7 +10049,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 526,
+      "lineCount": 530,
       "headings": [
         {
           "level": 1,
@@ -10212,6 +10216,10 @@
         },
         {
           "path": "tests/unit/event-payload-schema.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-preview.test.ts",
           "exists": true
         },
         {

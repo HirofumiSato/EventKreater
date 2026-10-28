@@ -14,6 +14,7 @@ interface EventMetaCardProps {
     | "location"
     | "rainPolicy"
     | "capacity"
+    | "targetGeneration"
     | "attendingCount"
     | "status"
     | "rsvpDeadline"
@@ -128,6 +129,13 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             {remaining === 0 && "（満員）"}
           </dd>
         </div>
+        {/* 対象世代は未設定のことがある。空の行を出さず、告知ページの見た目を変えない。 */}
+        {event.targetGeneration && (
+          <div className="event-facts__row">
+            <dt>対象</dt>
+            <dd>{event.targetGeneration}</dd>
+          </div>
+        )}
       </dl>
     </section>
   );

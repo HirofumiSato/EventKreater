@@ -1,4 +1,5 @@
 import { parseLegacyEventTime, parseLegacyPrice } from "@/lib/serializers";
+import type { SemanticThemeId } from "@/lib/semantic-themes";
 
 export type SubscriptionStatus = "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "INCOMPLETE";
 export type RainPolicy = "RAIN_OR_SHINE" | "CANCEL_ON_RAIN" | "POSTPONE_ON_RAIN" | "INDOOR";
@@ -154,6 +155,10 @@ export interface EventFormValues {
   venueName: string;
   rainPolicy: RainPolicy;
   capacity: number | null;
+  /** 想定する参加者の世代。「20代から40代」のような自由文。空欄なら告知ページに出さない。 */
+  targetGeneration: string;
+  /** 告知ページのテーマ。null は標準の見た目。 */
+  themeId: SemanticThemeId | null;
   flyerAssetId: string | null;
   rsvpDeadline: string;
   status?: EventStatus;
@@ -210,6 +215,10 @@ export interface PublicEvent {
   location: string;
   rainPolicy: RainPolicy;
   capacity: number | null;
+  /** 想定する参加者の世代。NULL は未設定で、行ごと出さない。 */
+  targetGeneration: string | null;
+  /** 告知ページのテーマ。NULL は標準の見た目。 */
+  themeId: string | null;
   status: EventStatus;
   visibility: EventVisibility;
   rsvpDeadline: string | null;
@@ -554,6 +563,8 @@ export function toEventRequest(form: EventFormValues, referrerEventId?: string |
       : { location: form.location, venueName: form.venueName || null }),
     rainPolicy: form.rainPolicy,
     capacity: form.capacity,
+    targetGeneration: form.targetGeneration.trim() || null,
+    themeId: form.themeId,
     flyerAssetId: form.flyerAssetId,
     rsvpDeadline: form.rsvpDeadline ? form.rsvpDeadline : null,
     ...(referrerEventId ? { referrerEventId } : {}),
@@ -689,6 +700,8 @@ export const EMPTY_EVENT_FORM: EventFormValues = {
   venueName: "",
   rainPolicy: "RAIN_OR_SHINE",
   capacity: null,
+  targetGeneration: "",
+  themeId: null,
   flyerAssetId: null,
   rsvpDeadline: "",
   status: "PUBLISHED",

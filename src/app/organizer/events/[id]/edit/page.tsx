@@ -15,6 +15,7 @@ import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentB
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem, RequestProblemError } from "@/lib/problem";
+import { normalizeSemanticThemeId } from "@/lib/semantic-themes";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
 import {
   applyFlyerToForm,
@@ -45,6 +46,8 @@ interface DetailResponse {
     venueName: string | null;
     rainPolicy: EventFormValues["rainPolicy"];
     capacity: number | null;
+    targetGeneration: string | null;
+    themeId: string | null;
     flyerAssetId: string | null;
     rsvpDeadline: string | null;
     status: EventStatus;
@@ -111,6 +114,8 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         venueName: detail.event.venueName ?? "",
         rainPolicy: detail.event.rainPolicy,
         capacity: detail.event.capacity,
+        targetGeneration: detail.event.targetGeneration ?? "",
+        themeId: normalizeSemanticThemeId(detail.event.themeId),
         flyerAssetId: detail.event.flyerAssetId,
         rsvpDeadline: detail.event.rsvpDeadline ? formatRsvpDeadlineInput(new Date(detail.event.rsvpDeadline)) : "",
         status: detail.event.status,

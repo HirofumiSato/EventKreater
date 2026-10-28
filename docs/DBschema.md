@@ -457,6 +457,10 @@ model Event {
   venueName    String?     @map("venue_name") @db.VarChar(150)
   rainPolicy   RainPolicy  @default(RAIN_OR_SHINE) @map("rain_policy")
   capacity     Int?        @db.Integer
+  /// 想定する参加者の世代。NULL は未設定で、告知ページに「対象」を出さない。
+  targetGeneration String? @map("target_generation") @db.VarChar(50)
+  /// 告知ページのセマンティックテーマ。NULL は標準。ID の一覧は `src/lib/semantic-themes.ts`。
+  themeId      String?     @map("theme_id") @db.VarChar(32)
   flyerAssetId String?     @map("flyer_asset_id") @db.Uuid
   status       EventStatus @default(DRAFT)
   /// 将来のメディアサイト向けの掲載フラグ。いまのアプリは一覧を持たないため常に UNLISTED（紹介制）。
@@ -956,6 +960,8 @@ CREATE TABLE events (
     venue_name VARCHAR(150) NULL,
     rain_policy rain_policy_enum NOT NULL DEFAULT 'RAIN_OR_SHINE',
     capacity INT NULL CHECK (capacity > 0),
+    target_generation VARCHAR(50) NULL,
+    theme_id VARCHAR(32) NULL,
     flyer_asset_id UUID NULL REFERENCES flyer_assets(id) ON DELETE SET NULL,
     status event_status_enum NOT NULL DEFAULT 'DRAFT',
     visibility event_visibility_enum NOT NULL DEFAULT 'UNLISTED',

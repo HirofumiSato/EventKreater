@@ -3,6 +3,7 @@ import {
   flyerLocationLabel,
   flyerPriceLabel,
 } from "@/lib/serializers";
+import type { SemanticThemeId } from "@/lib/semantic-themes";
 import type { EventFormValues } from "@/modules/events/types";
 
 /** チラシ生成サービスへ渡す 7 項目。ウィザードの全ステップで同じ値を使う。 */
@@ -14,6 +15,11 @@ export interface FlyerFormPayload {
   location: string;
   rainPolicy: EventFormValues["rainPolicy"];
   capacity: number | null;
+  /**
+   * 告知ページで選んだセマンティックテーマ。
+   * チラシの画像生成にも渡し、背景の雰囲気をページと揃える。null は標準。
+   */
+  themeId: SemanticThemeId | null;
 }
 
 export function buildFlyerFormPayload(value: EventFormValues): FlyerFormPayload {
@@ -36,6 +42,7 @@ export function buildFlyerFormPayload(value: EventFormValues): FlyerFormPayload 
     location: flyerLocationLabel(value),
     rainPolicy: value.rainPolicy,
     capacity: value.capacity,
+    themeId: value.themeId,
   };
 }
 

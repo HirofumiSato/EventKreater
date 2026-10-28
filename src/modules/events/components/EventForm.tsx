@@ -10,6 +10,7 @@ import {
   LocationSection,
   PricePlansSection,
   StatusSection,
+  ThemeSection,
 } from "@/modules/events/components/EventFormSections";
 
 interface EventFormProps {
@@ -87,7 +88,12 @@ export function EventForm({
             onSelectionChange={(next) => setCustomCapacity(next === "custom")}
           />
         </EventStepFrame>
-        <EventStepFrame number={5} title="チラシ" hint="作らなくても保存できます。あとから作り直せます。">
+        <EventStepFrame
+          number={5}
+          title="イベントページテーマ選択&チラシ生成"
+          hint="テーマは告知ページの見た目と、チラシの雰囲気に効きます。チラシは作らなくても保存できます。"
+        >
+          <ThemeSection value={value} onChange={onChange} disabled={locked} />
           {flyerSlot}
         </EventStepFrame>
         {showStatus && (

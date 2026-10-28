@@ -679,6 +679,10 @@ export const CreateEventSchema = z.object({
   location: z.string().min(1, '開催場所を入力してください').max(150),
   rainPolicy: z.enum(['RAIN_OR_SHINE', 'CANCEL_ON_RAIN', 'POSTPONE_ON_RAIN', 'INDOOR']),
   capacity: z.number().int().positive().nullable().optional(),
+  /** 想定する参加者の世代。空欄は NULL で、告知ページに「対象」として出さない。 */
+  targetGeneration: z.string().trim().max(50).nullable().optional(),
+  /** 告知ページのセマンティックテーマ。null は標準。未知の ID は 400。 */
+  themeId: z.enum(['modern-slate', 'enterprise-clean', 'parchment', 'neo-brutalism', 'neon']).nullable().default(null),
   flyerAssetId: z.string().uuid().nullable().optional(),
   rsvpDeadline: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
   /** 告知ページの勧誘カードから来たときの参照元。存在しない・削除済み・下書きなら NULL として保存する。 */
@@ -758,6 +762,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
 6. `{ event }` を返す。
 
 - **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
+- **対象世代とテーマ:** `targetGeneration`（50 文字まで）と `themeId` はどちらも任意で、`events.target_generation`・`events.theme_id` に保存する。`themeId` は `null`（標準）または 5 テーマのいずれかで、未知の値は 400 にする。更新（`PUT .../organizer/events/[id]`）と下書き保存（`POST .../draft`）も同じ 2 項目を受け取る。
 - **枠:** 消費しない。公開時に 1 回だけ消費する。
 - **行ロック:** 公開と同時に走っても、後から来た保存が公開済みの催しを上書きしない。
 
@@ -2170,10 +2175,11 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `location` | 2 文字以上 60 文字以内 |
 | `rainPolicy` | `RAIN_OR_SHINE`、`CANCEL_ON_RAIN`、`POSTPONE_ON_RAIN`、`INDOOR` |
 | `capacity` | 正の整数、または省略 |
+| `themeId` | `modern-slate`、`enterprise-clean`、`parchment`、`neo-brutalism`、`neon` のいずれか、または省略（未指定は標準） |
 | `templateId` | `style_1_bar_stylish`、`style_2_warm_earth`、`style_3_vibrant_pop` |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack`（省略時 `classic`） |
 
-本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`template_id`、`layout_id`）に合わせる。待ち時間は 90 秒。
+本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`semantic_theme`、`template_id`、`layout_id`）に合わせる。`themeId` があれば `semantic_theme` として送り、サービスはその英語の方向付け（`design_direction`）を LLM のユーザー JSON に足す。待ち時間は 90 秒。
 
 ### 9.2. ウィザード候補 API（本アプリ）
 
