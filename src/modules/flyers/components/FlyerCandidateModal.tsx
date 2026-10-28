@@ -27,12 +27,16 @@ const STEP_TITLES: Record<FlyerWizardStep, string> = {
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
   1: "デザインの方向性を選んでください。文字の見え方がテンプレートごとに変わります。",
-  2: "背景を選んでください。ここでは課金も回数消費もありません。",
+  2: "背景を選んでください。1枚ずつ作り、気に入らなければ作り直せます。",
   3: "文字をどこにまとめるかを選んでください。背景はそのまま残ります。",
   4: "最後に色を選んでください。選んだ内容でチラシを保存します。",
 };
 
-const BACKGROUND_COUNT = 8;
+/**
+ * ステップ 2 で一度に出す背景の枚数。
+ * AI 生成は 1 枚でも課金が起きるため、1 枚ずつ出して作り直させる。
+ */
+const BACKGROUND_COUNT = 1;
 
 const EMPTY_STEPS: Record<FlyerWizardStep, FlyerCandidate[]> = {
   1: [],
@@ -356,6 +360,11 @@ export function FlyerCandidateModal({
   const uploadSelected = Boolean(
     uploaded && selected[2]?.candidateId === uploaded.candidateId,
   );
+  // 背景の供給元と、AI であと何枚作れるか。作り直しボタンの表示に使う。
+  const backgroundCandidate = candidates[2][0] ?? null;
+  const backgroundFromAi = backgroundCandidate?.source === "ai";
+  const aiRemaining = backgroundCandidate?.aiRemaining ?? null;
+  const aiExhausted = aiRemaining === 0;
 
   if (!open) return null;
 
@@ -499,6 +508,9 @@ export function FlyerCandidateModal({
                         decoding="async"
                       />
                       {active && <span className="candidate-tile__check">選択中</span>}
+                      {candidate.source === "ai" && (
+                        <span className="candidate-tile__badge">AI生成</span>
+                      )}
                     </span>
                     <span className="candidate-tile__label">{candidate.label}</span>
                     {candidate.description && (
@@ -507,6 +519,31 @@ export function FlyerCandidateModal({
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {step === 2 && !loading && (
+            <div className="candidate-retry">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                disabled={busy || aiExhausted}
+                onClick={() => void load(2, selected)}
+              >
+                別の背景を作る
+              </button>
+              {aiExhausted ? (
+                <span className="candidate-retry__note">
+                  AIで作れるのは1時間に3枚までです。しばらく待つと回復します。
+                </span>
+              ) : (
+                backgroundFromAi &&
+                aiRemaining !== null && (
+                  <span className="candidate-retry__note">
+                    AIで作れるのはあと{aiRemaining}枚です
+                  </span>
+                )
+              )}
             </div>
           )}
 

@@ -88,6 +88,7 @@ class PlaceholderCandidateSource(CandidateSourcePort):
                     background=render_gradient_png(_SIZE, top, bottom),
                     label=label,
                     description=description,
+                    source="placeholder",
                 )
             )
         return options

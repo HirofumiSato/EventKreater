@@ -161,11 +161,13 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    * - ``OPENAI_API_KEY``
      - 本番では必須。**未設定でも起動します。** そのときはモックのアダプターに切り替わり、本物ではない候補が静かに返ります
    * - ``OPENAI_TEXT_MODEL`` / ``OPENAI_IMAGE_MODEL``
-     - 任意。既定は ``gpt-4o-mini`` と ``dall-e-3``
+     - 任意。既定は ``gpt-4o-mini`` と ``gpt-image-1``（``IMAGE_QUALITY=low``、``IMAGE_SIZE=1024x1536``）
    * - ``STORAGE_DIR`` / ``CANDIDATE_DIR`` / ``FALLBACK_DIR``
      - 上の ``fly.toml`` で固定。ボリュームを外すと再起動で候補が消えます
-   * - ``CANDIDATE_COUNT`` / ``CANDIDATE_TTL_SECONDS`` / ``TTL_SECONDS``
-     - 任意。既定は 8 枚、3600 秒。``TTL_SECONDS`` は古い候補の掃除に使います
+   * - ``CANDIDATE_TTL_SECONDS`` / ``TTL_SECONDS``
+     - 任意。既定は 3600 秒。``TTL_SECONDS`` は古い候補の掃除に使います
+   * - ``AI_CANDIDATES_ENABLED`` / ``AI_CANDIDATE_MAX_PER_HOUR`` / ``USD_JPY_RATE``
+     - 任意。AI 背景候補の有無と 1 時間あたりの枚数（既定 3）、原価見積りの為替（既定 200）
 
 日本語フォントはイメージに ``fonts-noto-cjk`` として入っています。ローカルと同じく、無いと ``FontRenderError`` で全滅します。
 

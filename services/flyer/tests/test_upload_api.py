@@ -26,7 +26,6 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
         "ttl_seconds": 3600,
         "candidate_ttl_seconds": 3600,
         "cleanup_interval_seconds": 600,
-        "candidate_count": 8,
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]

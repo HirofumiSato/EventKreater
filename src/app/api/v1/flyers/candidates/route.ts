@@ -9,7 +9,7 @@ import { resolveFlyerQuotaScope } from "@/modules/flyers/lib/scope";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** ステップ 2。背景タイルを返す。ここではクォータを消費しない。 */
+/** ステップ 2。背景タイルを返す。ここでは確定のクォータを消費しない。 */
 export async function POST(req: NextRequest) {
   try {
     const input = ProposeCandidatesSchema.parse(await req.json());
@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
     const scope = await resolveFlyerQuotaScope(req, input.draftKey, input.eventId);
     const candidates = await proposeBackgroundCandidates(
       input,
-      input.count ?? 8,
+      // 画面は 1 枚ずつ出して作り直させる。AI の課金を 1 回 1 枚に抑える。
+      input.count ?? 1,
       owner.ownerTokenHash,
     );
     const quota = await readFlyerQuota(scope, owner);

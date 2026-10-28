@@ -10,6 +10,7 @@ from src.domain.exceptions import (
     FontRenderError,
     ImageGenerationTimeoutError,
 )
+from src.domain.layout_prompts import prompt_with_layout_hint
 from src.domain.models import (
     FlyerGenerationRequest,
     FlyerGenerationResponse,
@@ -56,11 +57,14 @@ class GenerateFlyerUseCase:
         context = await self._prompt_engine.generate_prompt_context(request)
         _select_template(self._fallback_images, request.template_id)
         status = FlyerStatus.SUCCESS
+        # LLM が余白や切り抜きに触れずに返してきても構図を保つため、画像生成の直前に
+        # 決定的な指示を足す。候補経由（DalleCandidateSource）と同じ関数を使う。
+        image_prompt = prompt_with_layout_hint(context, request.layout_id)
         try:
             # 画像生成 API に A4 相当のサイズは無い。縦長（9:16）で生成し、
             # レンダラーが A4 縦（1080×1528）へ cover で切り抜く。
             background = await self._image_generator.generate_background(
-                prompt=context.image_prompt_en,
+                prompt=image_prompt,
                 negative_prompt=context.negative_prompt_en,
                 aspect_ratio="9:16",
             )
@@ -68,11 +72,11 @@ class GenerateFlyerUseCase:
                 status = FlyerStatus.FALLBACK_USED
         except ImageGenerationTimeoutError as exc:
             logger.warning("Image generation timed out, using static fallback: %s", exc)
-            background = await self._load_fallback(context.image_prompt_en, context.negative_prompt_en)
+            background = await self._load_fallback(image_prompt, context.negative_prompt_en)
             status = FlyerStatus.FALLBACK_USED
         except Exception as exc:
             logger.warning("ImageGen failed, switching to static fallback: %s", exc)
-            background = await self._load_fallback(context.image_prompt_en, context.negative_prompt_en)
+            background = await self._load_fallback(image_prompt, context.negative_prompt_en)
             status = FlyerStatus.FALLBACK_USED
 
         try:

@@ -12,3 +12,4 @@
    system_requirements
    implementation_spec
    detailed_design_spec
+   context_contract

@@ -1,8 +1,8 @@
 """候補背景の供給元。
 
-いまはローカル合成のプレースホルダだけだが、将来「同梱画像パック」「ネット
-取得」「AI 生成」へ差し替えるための口をここに固定する。差し替えても
-`ProposeCandidatesUseCase` とレンダラーは変更しない。
+ローカル合成（グラデーション）と、OpenAI の画像生成の 2 実装を持つ。将来
+「同梱画像パック」「ネット取得」へ差し替えるための口をここに固定する。差し替えて
+も `ProposeCandidatesUseCase` とレンダラーは変更しない。
 
 利用者が持ち込んだ写真は供給元ではなく入力なので、`ImageUploadPort` が
 正規化し、`ProposeCandidatesUseCase.create_uploaded_background` が候補にする。
@@ -23,6 +23,8 @@ class BackgroundOption:
     background: bytes
     label: str
     description: str = ""
+    #: 供給元。`ai` のときだけ課金が起きる。`CandidateMeta.source` に残る。
+    source: str = "placeholder"
 
 
 class CandidateSourcePort(ABC):
@@ -44,4 +46,8 @@ class CandidateSourcePort(ABC):
         context: LLMGenerationContext,
         count: int,
     ) -> list[BackgroundOption]:
-        """ステップ 2 の候補背景を指定枚数返す。"""
+        """ステップ 2 の候補背景を指定枚数返す。
+
+        `count` が 0 以下でも 1 枚以上を返す（画面が空にならないように）。
+        AI の残りが 0 のときは、課金の無い代替を 1 枚返す。
+        """

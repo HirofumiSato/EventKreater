@@ -254,12 +254,39 @@
   font-weight: 700;
 }
 
+/* AI が描いた候補であることを、ローカル検証でも見分けられるようにする。 */
+.candidate-tile__badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
 .candidate-tile__label {
   font-size: 0.8125rem;
   font-weight: 700;
 }
-
 .candidate-tile__desc {
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+/* ステップ 2 の「別の背景を作る」と、AI の残り枚数。 */
+.candidate-retry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.candidate-retry__note {
   color: var(--color-text-subtle);
   font-size: 0.6875rem;
   line-height: 1.5;

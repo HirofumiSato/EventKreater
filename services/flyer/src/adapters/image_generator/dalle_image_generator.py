@@ -1,4 +1,9 @@
-"""DALL-E 3 背景生成。失敗時は静的フォールバックへ委譲する。"""
+"""OpenAI Images API の背景生成。失敗時は静的フォールバックへ委譲する。
+
+`gpt-image-1` と `dall-e-3` を同じアダプターで扱う。サイズと画質の語彙が違うため、
+要求値は論理サイズ（``1024x1536`` など）で受け取り、クライアントがモデルに合わせて
+寄せる。
+"""
 
 from __future__ import annotations
 
@@ -7,7 +12,7 @@ import base64
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
 import httpx
 from openai import AsyncOpenAI
@@ -15,22 +20,71 @@ from openai.types import ImagesResponse
 
 from src.adapters.image_generator.gradients import ensure_image_bytes
 from src.domain.exceptions import ImageGenerationTimeoutError, InputValidationError
+from src.domain.pricing import DEFAULT_IMAGE_MODEL, DEFAULT_IMAGE_QUALITY, DEFAULT_IMAGE_SIZE
 from src.ports.image_generator_port import ImageGeneratorPort
 
 logger = logging.getLogger(__name__)
 
+#: 要求する論理サイズ。A4 縦（1080×1528）に近い縦長を既定にする。
+ImageSize = Literal["1024x1024", "1024x1536", "1536x1024"]
+GptImageSize = Literal["1024x1024", "1536x1024", "1024x1536", "auto"]
 DalleSize = Literal["1024x1024", "1024x1792", "1792x1024"]
+GptImageQuality = Literal["low", "medium", "high", "auto"]
+DalleQuality = Literal["standard", "hd"]
+
 MAX_IMAGE_BYTES: int = 20 * 1024 * 1024
 _PROMPT_CHAR_LIMIT: int = 3900
 
+_DALLE_SIZES: dict[str, DalleSize] = {
+    "1024x1024": "1024x1024",
+    # dall-e-3 に 1024x1536 は無い。最も近い縦長へ寄せる。
+    "1024x1536": "1024x1792",
+    "1536x1024": "1792x1024",
+    "1024x1792": "1024x1792",
+    "1792x1024": "1792x1024",
+}
 
-def dalle_size_for_aspect_ratio(aspect_ratio: str) -> DalleSize:
-    """9:16 は縦長 1024x1792、1:1 は正方形。"""
+_GPT_IMAGE_SIZES: dict[str, GptImageSize] = {
+    "1024x1024": "1024x1024",
+    "1024x1536": "1024x1536",
+    "1536x1024": "1536x1024",
+    "1024x1792": "1024x1536",
+    "1792x1024": "1536x1024",
+    "auto": "auto",
+}
+
+_GPT_IMAGE_QUALITIES: frozenset[str] = frozenset({"low", "medium", "high", "auto"})
+
+#: 論理的な縦横比ごとの要求サイズ。`9:16` は「縦長」の合図として扱う。
+_ASPECT_SIZES: dict[str, ImageSize] = {
+    "1:1": "1024x1024",
+    "9:16": "1024x1536",
+    "16:9": "1536x1024",
+}
+
+
+def uses_gpt_image_vocabulary(model: str) -> bool:
+    """`gpt-image-1` 系か。サイズ・画質・応答形式の扱いが dall-e-3 と違う。"""
+    return model.startswith("gpt-image")
+
+
+def resolve_image_size(aspect_ratio: str, preferred: str = DEFAULT_IMAGE_SIZE) -> str:
+    """1:1 / 16:9 は明示指定を優先し、それ以外は設定の縦長サイズを使う。
+
+    `preferred` は `IMAGE_SIZE` 設定。原価見積り（`DalleCandidateSource`）と同じ値を
+    実際のリクエストにも使うため、ここで 1 回だけ決める。`9:16` は比率ではなく
+    「縦長で頼む」の合図なので、設定値へ委ねる。
+    """
     if aspect_ratio == "1:1":
         return "1024x1024"
     if aspect_ratio == "16:9":
-        return "1792x1024"
-    return "1024x1792"
+        return "1536x1024"
+    return preferred
+
+
+def dalle_size_for_aspect_ratio(aspect_ratio: str) -> ImageSize:
+    """9:16 は縦長 1024x1536、1:1 は正方形、16:9 は横長。"""
+    return _ASPECT_SIZES.get(aspect_ratio, "1024x1536")
 
 
 def compose_image_prompt(prompt: str, negative_prompt: str) -> str:
@@ -78,30 +132,31 @@ async def download_image(
 
 
 class OpenAIDalleClient:
-    """OpenAI Images API（DALL-E 3）の薄いクライアント。"""
+    """OpenAI Images API の薄いクライアント。モデルごとに要求を組み立てる。"""
 
     def __init__(
         self,
         api_key: str,
         *,
-        model: str = "dall-e-3",
+        model: str = DEFAULT_IMAGE_MODEL,
+        quality: str = DEFAULT_IMAGE_QUALITY,
         client: AsyncOpenAI | None = None,
     ) -> None:
         self._model = model
+        self._quality = quality
         self._client = client if client is not None else AsyncOpenAI(api_key=api_key)
 
+    @property
+    def model(self) -> str:
+        return self._model
+
+    @property
+    def quality(self) -> str:
+        return self._quality
+
     async def generate_image(self, *, prompt: str, size: str, timeout: float) -> bytes:
-        size_literal = _as_dalle_size(size)
         try:
-            response = await self._client.images.generate(
-                model=self._model,
-                prompt=prompt,
-                size=size_literal,
-                quality="standard",
-                n=1,
-                response_format="url",
-                timeout=timeout,
-            )
+            response = await self._request(prompt=prompt, size=size, timeout=timeout)
         except Exception as exc:
             raise ImageGenerationTimeoutError("画像生成APIの呼び出しに失敗しました") from exc
         if not isinstance(response, ImagesResponse):
@@ -119,13 +174,65 @@ class OpenAIDalleClient:
             return await download_image(item.url, timeout)
         raise ImageGenerationTimeoutError("画像生成APIが URL を返しませんでした")
 
+    async def _request(self, *, prompt: str, size: str, timeout: float) -> ImagesResponse:
+        if uses_gpt_image_vocabulary(self._model):
+            # gpt-image-1 は response_format を受け付けず、常に b64_json を返す。
+            return await self._client.images.generate(
+                model=self._model,
+                prompt=prompt,
+                size=_as_gpt_image_size(size),
+                quality=_as_gpt_image_quality(self._quality),
+                n=1,
+                timeout=timeout,
+            )
+        return await self._client.images.generate(
+            model=self._model,
+            prompt=prompt,
+            size=_as_dalle_size(size),
+            quality=_as_dalle_quality(self._quality),
+            n=1,
+            response_format="url",
+            timeout=timeout,
+        )
+
 
 def _as_dalle_size(size: str) -> DalleSize:
-    if size == "1024x1024":
-        return "1024x1024"
-    if size == "1792x1024":
-        return "1792x1024"
-    return "1024x1792"
+    return _DALLE_SIZES.get(size, "1024x1792")
+
+
+def _as_gpt_image_size(size: str) -> GptImageSize:
+    return _GPT_IMAGE_SIZES.get(size, "1024x1536")
+
+
+def resolved_image_size(model: str, size: str) -> str:
+    """実際に API へ渡るサイズ。原価の見積りにも同じ値を使う。"""
+    if uses_gpt_image_vocabulary(model):
+        return _as_gpt_image_size(size)
+    return _as_dalle_size(size)
+
+
+def resolved_image_quality(model: str, quality: str) -> str:
+    """実際に API へ渡る画質。原価の見積りにも同じ値を使う。"""
+    if uses_gpt_image_vocabulary(model):
+        return _as_gpt_image_quality(quality)
+    return _as_dalle_quality(quality)
+
+
+
+def _as_dalle_quality(value: str) -> DalleQuality:
+    if value in ("standard", "hd"):
+        return cast(DalleQuality, value)
+    if value == "high":
+        return "hd"
+    return "standard"
+
+
+def _as_gpt_image_quality(value: str) -> GptImageQuality:
+    if value in _GPT_IMAGE_QUALITIES:
+        return cast(GptImageQuality, value)
+    if value == "hd":
+        return "high"
+    return "low"
 
 
 class DalleImageGenerator(ImageGeneratorPort):
@@ -139,18 +246,21 @@ class DalleImageGenerator(ImageGeneratorPort):
         fallback: ImageGeneratorPort | None = None,
         timeout_seconds: float = 25.0,
         max_attempts: int = 2,
-        model: str = "dall-e-3",
+        model: str = DEFAULT_IMAGE_MODEL,
+        quality: str = DEFAULT_IMAGE_QUALITY,
+        size: str = DEFAULT_IMAGE_SIZE,
         sleep: Callable[[float], Awaitable[None]] | None = None,
         clock: Callable[[], float] | None = None,
     ) -> None:
         if client is None:
             if not api_key:
                 raise InputValidationError("OPENAI_API_KEY が未設定です")
-            client = OpenAIDalleClient(api_key, model=model)
+            client = OpenAIDalleClient(api_key, model=model, quality=quality)
         self._client = client
         self._fallback = fallback
         self._timeout_seconds = timeout_seconds
         self._max_attempts = max(1, max_attempts)
+        self._size = size
         self._sleep = sleep or asyncio.sleep
         self._clock = clock or time.monotonic
         self.used_fallback = False
@@ -163,7 +273,7 @@ class DalleImageGenerator(ImageGeneratorPort):
     ) -> bytes:
         self.used_fallback = False
         composed = compose_image_prompt(prompt, negative_prompt)
-        size = dalle_size_for_aspect_ratio(aspect_ratio)
+        size = resolve_image_size(aspect_ratio, self._size)
         deadline = self._clock() + self._timeout_seconds
         last_error: Exception | None = None
         for attempt in range(1, self._max_attempts + 1):
@@ -182,7 +292,7 @@ class DalleImageGenerator(ImageGeneratorPort):
                 )
             except Exception as exc:
                 last_error = exc
-                logger.warning("DALL-E attempt %s failed: %s", attempt, exc)
+                logger.warning("image generation attempt %s failed: %s", attempt, exc)
                 if attempt >= self._max_attempts:
                     break
                 pause = min(0.25, max(0.0, deadline - self._clock()))

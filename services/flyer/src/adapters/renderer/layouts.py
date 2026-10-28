@@ -10,6 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.adapters.renderer.layout_calculator import TITLE_MAX_WIDTH, Zone
+from src.domain.layout_prompts import (
+    LAYOUT_NEGATIVE_SPACE_HINTS as LAYOUT_NEGATIVE_SPACE_HINTS,
+)
 from src.domain.models import TextLayout
 
 #: 左右の余白は全プリセットで共通。横位置を変えるとアイコンと罫線の基準がずれる。
@@ -109,12 +112,8 @@ LAYOUT_DESCRIPTIONS: dict[TextLayout, str] = {
 }
 
 #: 画像生成プロンプトへ渡す「空けるべき領域」の指示。AI 背景を入れる段階で使う。
-LAYOUT_NEGATIVE_SPACE_HINTS: dict[TextLayout, str] = {
-    TextLayout.CLASSIC: "The upper two thirds must stay uncluttered for a text overlay.",
-    TextLayout.TOP_STACK: "The upper two thirds must stay uncluttered; the lower third is free for the subject.",
-    TextLayout.CENTER_STACK: "The middle band must stay uncluttered; top and bottom are free.",
-    TextLayout.BOTTOM_STACK: "The lower two thirds must stay uncluttered; the upper third is free for the subject.",
-}
+#: 本体は `src/domain/layout_prompts.py`。ここから再輸出して既存の参照を保つ。
+
 
 
 def zones_for(layout: TextLayout) -> LayoutZones:

@@ -136,6 +136,11 @@ class FlyerGenerationRequest(BaseModel):
         default=None,
         description="告知ページで選んだテーマ。背景の雰囲気をページと揃える。未指定は標準",
     )
+    target_generation: str | None = Field(
+        default=None,
+        max_length=50,
+        description="想定する参加者の世代（例: 20代から40代）。背景の人物像と光の当て方に使う",
+    )
     template_id: TemplateId = Field(..., description="選択されたデザインテンプレートID")
     layout_id: TextLayout = Field(
         default=TextLayout.CLASSIC,
@@ -244,7 +249,12 @@ class FlyerGenerateCommand(FlyerGenerationRequest):
 class CandidateProposalCommand(FlyerGenerationRequest):
     """候補提案リクエスト。count はステップ 2 のタイル枚数。"""
 
-    count: int = Field(default=8, ge=1, le=16, description="候補背景の枚数")
+    count: int = Field(
+        default=1,
+        ge=1,
+        le=16,
+        description="候補背景の枚数。画面は 1 枚ずつ作り直す",
+    )
 
 
 class CandidateItem(BaseModel):
@@ -262,6 +272,10 @@ class CandidateItem(BaseModel):
     palette_id: str
     accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
     overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+    #: 供給元。`ai` のときだけ課金が起きる。
+    source: str = Field(default="placeholder")
+    #: AI 背景の残り枚数。背景候補のステップだけ入る。
+    ai_remaining: int | None = Field(default=None)
 
 
 class CandidateList(BaseModel):

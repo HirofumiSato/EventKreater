@@ -26,7 +26,15 @@ from src.adapters.prompt_engine.openai_prompt_engine import (
     OpenAIPromptEngine,
     OpenAIStructuredTransport,
 )
-from src.adapters.wiring import build_image_generator, build_prompt_engine
+from src.adapters.wiring import (
+    build_candidate_source,
+    build_image_generator,
+    build_prompt_engine,
+)
+from src.adapters.candidate_source.dalle_candidate_source import DalleCandidateSource
+from src.adapters.candidate_source.placeholder_candidate_source import (
+    PlaceholderCandidateSource,
+)
 from src.domain.exceptions import ImageGenerationTimeoutError, LLMContextGenerationError
 from src.domain.models import LLMGenerationContext, SemanticTheme, TemplateId
 from src.infrastructure.config import Settings
@@ -251,9 +259,10 @@ def test_compose_image_prompt_includes_negative_prompt() -> None:
 
 
 def test_dalle_size_mapping() -> None:
-    assert dalle_size_for_aspect_ratio("9:16") == "1024x1792"
+    # 論理サイズは A4 縦に近い 1024x1536。dall-e-3 へは縦長 1024x1792 に寄せる。
+    assert dalle_size_for_aspect_ratio("9:16") == "1024x1536"
     assert dalle_size_for_aspect_ratio("1:1") == "1024x1024"
-    assert dalle_size_for_aspect_ratio("16:9") == "1792x1024"
+    assert dalle_size_for_aspect_ratio("16:9") == "1536x1024"
 
 
 def test_dalle_success_does_not_use_fallback(tmp_path: Path) -> None:

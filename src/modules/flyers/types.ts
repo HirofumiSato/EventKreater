@@ -15,6 +15,10 @@ export interface FlyerCandidate {
   paletteId: string;
   accentColor: string;
   overlayAlpha: number;
+  /** 背景の供給元。`ai` のときだけ課金が起きる。 */
+  source: string;
+  /** AI 背景の残り枚数。背景候補のステップだけ入る。 */
+  aiRemaining: number | null;
 }
 
 export interface FlyerQuota {

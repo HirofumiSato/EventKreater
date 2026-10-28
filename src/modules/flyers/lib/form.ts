@@ -20,6 +20,11 @@ export interface FlyerFormPayload {
    * チラシの画像生成にも渡し、背景の雰囲気をページと揃える。null は標準。
    */
   themeId: SemanticThemeId | null;
+  /**
+   * 想定する参加者の世代（例: 20代から40代）。
+   * 背景の人物像と光の当て方を寄せるためにサービスへ渡す。null は指定なし。
+   */
+  targetGeneration: string | null;
 }
 
 export function buildFlyerFormPayload(value: EventFormValues): FlyerFormPayload {
@@ -43,6 +48,7 @@ export function buildFlyerFormPayload(value: EventFormValues): FlyerFormPayload 
     rainPolicy: value.rainPolicy,
     capacity: value.capacity,
     themeId: value.themeId,
+    targetGeneration: value.targetGeneration.trim() || null,
   };
 }
 

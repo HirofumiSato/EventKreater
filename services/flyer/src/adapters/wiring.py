@@ -1,7 +1,8 @@
-"""API キーの有無で本番アダプターとモックを切り替える。"""
+"""API キーと設定で本番アダプターとモックを切り替える。"""
 
 from __future__ import annotations
 
+from src.adapters.candidate_source.dalle_candidate_source import DalleCandidateSource
 from src.adapters.candidate_source.placeholder_candidate_source import (
     PlaceholderCandidateSource,
 )
@@ -20,13 +21,38 @@ from src.ports.image_upload_port import ImageUploadPort
 from src.ports.prompt_engine_port import PromptEnginePort
 
 
-def build_candidate_source(settings: Settings) -> CandidateSourcePort:
-    """候補背景の供給元。いまはローカル合成のみ。
+def ai_candidates_enabled(settings: Settings) -> bool:
+    """AI の背景候補を使うか。鍵が無ければ設定に関わらず無効。"""
+    return settings.ai_candidates_active and bool(settings.openai_api_key)
 
-    ネット取得や AI 生成へ差し替えるときは、ここで分岐を足す。
+
+def build_candidate_source(settings: Settings) -> CandidateSourcePort:
+    """候補背景の供給元。
+
+    AI が無効ならローカル合成（グラデーション）だけを使う。有効なら画像生成 API を
+    使い、失敗したときは同じローカル合成へ委譲する。
     """
-    del settings
-    return PlaceholderCandidateSource()
+    placeholder = PlaceholderCandidateSource()
+    if not ai_candidates_enabled(settings):
+        return placeholder
+    return DalleCandidateSource(
+        DalleImageGenerator(
+            api_key=settings.openai_api_key,
+            fallback=StaticFallbackImageGenerator(settings.fallback_dir),
+            timeout_seconds=settings.image_generation_timeout_seconds,
+            # 候補は 1 枚ずつ作る。リトライは原価を倍にするので 1 回に固定する。
+            max_attempts=1,
+            model=settings.openai_image_model,
+            quality=settings.image_quality,
+            size=settings.image_size,
+        ),
+        fallback=placeholder,
+        model=settings.openai_image_model,
+        quality=settings.image_quality,
+        size=settings.image_size,
+        usd_jpy_rate=settings.usd_jpy_rate,
+        max_cost_jpy=settings.max_cost_jpy_per_request,
+    )
 
 
 def build_prompt_engine(settings: Settings) -> PromptEnginePort:
@@ -52,6 +78,8 @@ def build_image_generator(
         timeout_seconds=settings.image_generation_timeout_seconds,
         max_attempts=settings.image_generation_max_attempts,
         model=settings.openai_image_model,
+        quality=settings.image_quality,
+        size=settings.image_size,
     )
 
 
