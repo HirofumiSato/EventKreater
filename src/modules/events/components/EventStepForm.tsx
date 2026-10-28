@@ -38,14 +38,14 @@ interface EventStepFormProps {
   /**
    * 会員だけが下書きを保存できる。true のとき、最終ステップに
    * 「下書き保存」と「プレビューを見る」を並べる。false は未登録として
-   * 「ログインして下書き保存する」「ログインして公開する」の 2 択を出す。
+   * 「ログインして公開/下書き保存」の 1 つを出す。
    */
   canSaveDraft?: boolean;
   onSaveDraft?: () => void;
   savingDraft?: boolean;
   /**
-   * 未登録の幹事には、公開の代わりに「ログインして下書き保存」「ログインして公開」の
-   * 2 択を出す。どちらもここまでの入力を確かめて退避してから認証画面へ送る。
+   * 未登録の幹事には、公開の代わりに「ログインして公開/下書き保存」を出す。
+   * 押すとここまでの入力を確かめて退避し、認証画面へ送る。
    * 認証画面は新規登録とログインを 1 枚で扱うので、遷移先は同じでよい。
    */
   onRequireAuth?: () => void;
@@ -464,6 +464,7 @@ export function EventStepForm({
               必須の入力はあと <strong>{requiredRemaining}</strong> つです。
             </>
           )}
+          {canSaveDraft ? null : " ログインすると、公開と下書き保存を選べます。入力内容は引き継がれます。"}
         </p>
         <div className="form-final__actions">
           {canSaveDraft ? (
@@ -481,26 +482,17 @@ export function EventStepForm({
               </button>
             </>
           ) : (
-            <>
-              {/* 未登録でも、ログイン後と同じ 2 つの位置に置く。戻ってきたときに
-                  帯の形が変わらず、押す場所を覚え直さずに済む。 */}
-              <button
-                type="button"
-                className="btn btn--outline"
-                disabled={locked || actionsDisabled}
-                onClick={requireAuth}
-              >
-                ログインして下書き保存する
-              </button>
-              <button
-                type="button"
-                className="btn btn--primary"
-                disabled={locked || actionsDisabled}
-                onClick={requireAuth}
-              >
-                ログインして公開する
-              </button>
-            </>
+            /* ログインの先で公開と下書き保存のどちらも選べる。押した時点では
+               決まっていないので、ボタンは 1 つにまとめる。2 つ並べると
+               違うことができるように見えて、実際は行き先が同じになる。 */
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={locked || actionsDisabled}
+              onClick={requireAuth}
+            >
+              ログインして公開/下書き保存
+            </button>
           )}
         </div>
       </div>

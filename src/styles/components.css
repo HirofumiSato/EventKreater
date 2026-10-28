@@ -991,25 +991,14 @@ fieldset.field {
     min-height: 2.5rem;
   }
 
-  /* 未ログインの帯は「ログインして下書き保存する」が 1 行に収まらない。横に並べると
-     文字が 2 段に折れて押しにくいので、縦に積む。下段が主操作（公開）になる。 */
-  .form-final--guest .form-final__actions {
-    flex-direction: column;
-  }
-
-  .form-final--guest .form-final__actions .btn {
-    inline-size: 100%;
-  }
-
   /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。
-     未ログインの帯は「ログインして下書き保存する」「ログインして公開する」が
-     1 行に収まらず 2 段になるので、帯の高さを変数で持ち替える。 */
+     未ログインの帯は注記が 1 文増えて 2 段に折れるので、少し高く持つ。 */
   body:has(.form-final) {
     --final-bar-h: 7.5rem;
   }
 
   body:has(.form-final--guest) {
-    --final-bar-h: 10rem;
+    --final-bar-h: 8.5rem;
   }
 
   body:has(.form-final) .page--form,
