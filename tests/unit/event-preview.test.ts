@@ -117,6 +117,41 @@ describe("チラシ生成へテーマを渡す", () => {
     });
     expect(payload.semantic_theme).toBeNull();
   });
+
+  it("タイトル色は未指定なら null で送り、サービスに自動で決めさせる", () => {
+    const auto = toFlyerPayload({
+      ...buildFlyerFormPayload(form()),
+      templateId: "style_1_bar_stylish",
+      layoutId: "classic",
+    });
+    expect(auto.title_color).toBeNull();
+
+    const white = toFlyerPayload({
+      ...buildFlyerFormPayload(form()),
+      templateId: "style_1_bar_stylish",
+      layoutId: "classic",
+      titleColor: "#FFFFFF",
+    });
+    expect(white.title_color).toBe("#FFFFFF");
+  });
+
+  it("タイトル色は #RRGGBB 以外を受け付けない", () => {
+    const base = {
+      title: "ジャズの夜",
+      eventDate: "2026-11-15",
+      eventTime: "19:00〜22:00",
+      price: "3,000円",
+      location: "Jazz Bar MOON 新宿東口",
+      rainPolicy: "RAIN_OR_SHINE" as const,
+      templateId: "style_1_bar_stylish" as const,
+    };
+    expect(GenerateFlyerSchema.safeParse({ ...base, titleColor: "#FFFFFF" }).success).toBe(
+      true,
+    );
+    expect(GenerateFlyerSchema.safeParse({ ...base, titleColor: "white" }).success).toBe(
+      false,
+    );
+  });
 });
 
 describe("チラシ生成リクエストの文字数上限", () => {

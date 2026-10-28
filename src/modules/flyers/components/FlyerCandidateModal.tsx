@@ -23,13 +23,15 @@ const STEP_TITLES: Record<FlyerWizardStep, string> = {
   2: "背景",
   3: "文字の配置",
   4: "配色",
+  5: "タイトル色",
 };
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
   1: "文字の組み方と余白の取り方が変わります。紙も差し色も 3 枚で同じです。",
   2: "背景を選んでください。1枚ずつ作り、気に入らなければ作り直せます。",
   3: "文字をどこにまとめるかを選んでください。背景はそのまま残ります。",
-  4: "最後に色を選んでください。選んだ内容でチラシを保存します。",
+  4: "色を選んでください。日付と罫線の色が変わります。",
+  5: "題名の色を選んでください。自動は写真の明るさに合わせます。選んだ内容でチラシを保存します。",
 };
 
 /**
@@ -43,6 +45,7 @@ const EMPTY_STEPS: Record<FlyerWizardStep, FlyerCandidate[]> = {
   2: [],
   3: [],
   4: [],
+  5: [],
 };
 
 const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
@@ -50,6 +53,7 @@ const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
   2: null,
   3: null,
   4: null,
+  5: null,
 };
 
 interface FlyerCandidateModalProps {
@@ -142,10 +146,14 @@ export function FlyerCandidateModal({
           const background = current[2];
           if (!background) return;
           url = `/api/v1/flyers/candidates/${background.candidateId}/layouts`;
-        } else {
+        } else if (target === 4) {
           const layout = current[3];
           if (!layout) return;
           url = `/api/v1/flyers/candidates/${layout.candidateId}/palettes`;
+        } else {
+          const palette = current[4];
+          if (!palette) return;
+          url = `/api/v1/flyers/candidates/${palette.candidateId}/title-colors`;
         }
         const response = await fetch(url, {
           method: "POST",
@@ -271,7 +279,7 @@ export function FlyerCandidateModal({
     }
     setSelected((prev) => {
       const next = { ...prev, [target]: candidate };
-      for (let later = target + 1; later <= 4; later += 1) {
+      for (let later = target + 1; later <= 5; later += 1) {
         next[later as FlyerWizardStep] = null;
       }
       return next;
@@ -279,7 +287,7 @@ export function FlyerCandidateModal({
     // 後続ステップは親が変われば作り直す。残しておくと別の背景の候補が混ざる。
     setCandidates((prev) => {
       const next = { ...prev };
-      for (let later = target + 1; later <= 4; later += 1) {
+      for (let later = target + 1; later <= 5; later += 1) {
         next[later as FlyerWizardStep] = [];
       }
       return next;
@@ -292,7 +300,7 @@ export function FlyerCandidateModal({
       setError("候補を 1 つ選んでください。");
       return;
     }
-    if (step === 4) {
+    if (step === 5) {
       void confirm();
       return;
     }
@@ -312,7 +320,7 @@ export function FlyerCandidateModal({
   };
 
   const confirm = async () => {
-    const chosen = selected[4];
+    const chosen = selected[5];
     if (!chosen || saving) return;
     setSaving(true);
     setError(null);
@@ -329,6 +337,7 @@ export function FlyerCandidateModal({
           templateId: chosen.templateId,
           layoutId: chosen.layoutId,
           paletteId: chosen.paletteId,
+          titleColor: chosen.titleColor,
         }),
       });
       if (!response.ok) {
@@ -396,7 +405,7 @@ export function FlyerCandidateModal({
             )}
           </div>
           <ol className="wizard__steps">
-            {([1, 2, 3, 4] as FlyerWizardStep[]).map((value) => (
+            {([1, 2, 3, 4, 5] as FlyerWizardStep[]).map((value) => (
               <li
                 key={value}
                 className={[
@@ -596,7 +605,7 @@ export function FlyerCandidateModal({
               ? "保存しています..."
               : loading
                 ? "準備しています..."
-                : step === 4
+                : step === 5
                   ? "このデザインで保存"
                   : "次へ"}
           </button>

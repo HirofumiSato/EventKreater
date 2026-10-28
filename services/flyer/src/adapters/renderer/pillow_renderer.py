@@ -180,6 +180,8 @@ class PillowFlyerRenderer(FlyerRendererPort):
             title_block_width=plan.title_width,
             title_block_height=plan.title_height,
             title_hanging=plan.title_hanging,
+            title_color=format_hex(report.title_color),
+            title_color_adjusted=report.title_color_adjusted,
             contrast_ratio=max(1.0, min(21.0, ratio)),
             backdrop_applied=report.veil_alpha is not None or plan.surface is not None,
             outline_applied=False,

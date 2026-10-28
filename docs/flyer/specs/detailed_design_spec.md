@@ -288,7 +288,7 @@ Client            API Endpoint        Orchestrator      ImageGenAdapter      Loc
 
 ### 5.3. ウィザード候補のライフサイクル
 
-画面は「紙面の性格 → 背景 → 文字配置 → 配色」の 4 ステップで候補を選ぶ。候補は
+画面は「紙面の性格 → 背景 → 文字配置 → 配色 → タイトル色」の 5 ステップで候補を選ぶ。候補は
 1 件につき 3 ファイルを持つ。ステップ 1 の 3 枚は同じサンプル紙面（`paper_ground`）を
 共有し、書体・揃え・面の濃さだけを変えて並べる。地はテーマ色から決定論的に描く
 紙面見本で、画像生成 API は呼ばない。ぼけ玉・偽の水平線・ビネットは持たない。
@@ -306,7 +306,7 @@ static/candidates/
 
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
-*   **課金・回数:** ステップ 1・3・4 と写真の取り込みは消費しない。ステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、グラデーション背景（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
+*   **課金・回数:** ステップ 1・3・4・5 と写真の取り込みは消費しない。ステップ 2 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、グラデーション背景（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
 *   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1528（A4 縦）の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
 *   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・配置・配色・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 
@@ -328,8 +328,10 @@ static/candidates/
 見出しが大きすぎて重なるときは分割をやめ、続けて積む。`top` / `center` / `bottom`
 は 2 つの群を続けて置き、その全体を上端・中央・下端へ寄せる。
 
-配置で変えてよいのは重心だけである。スロットの順序（eyebrow → title → rule →
-meta → facts → note）、文字の目盛り、群の中の間隔は 4 つで共通にする。
+配置で変えてよいのは重心だけである。スロットの順序（eyebrow → meta → title → rule →
+facts → note）、文字の目盛り、群の中の間隔は 4 つで共通にする。日付（eyebrow）と
+時刻（meta）は 1 つの群に置く。片方を上端、片方を下端へ離すと、いつ開く催しなのかを
+目が 2 往復して読むことになる。
 
 タイトルを行のどこで分けるかは `src/domain/title_composition.py` が決め、目盛りから
 どの段を選ぶかは `layout_calculator.fit_to_scale()` が決める。最終行の右寄せ
@@ -342,6 +344,20 @@ meta → facts → note）、文字の目盛り、群の中の間隔は 4 つで
 作り、いま選ばれている色を必ず先頭に置く。テーマ未選択のときは従来の 4 色
 （gold / mono / neon / earth）を並べ替えて返す。並びが変わると、ステップ 3 で見た色と
 確定後の色が食い違うためである。
+
+### 5.6. タイトル色の引き継ぎ
+
+`POST /api/v1/flyers/candidates/{candidate_id}/title-colors` は、選ばれた配色の候補を
+親にして `CandidateKind.TITLE_COLOR` の 4 枚を返す。並びは `auto`（自動） / `ink`（墨） /
+`white`（白） / `accent`（差し色）で固定し、先頭は必ず自動にする。題名の色は写真の
+明るさで変わるため、迷ったら自動へ戻せる場所を先頭に置く。
+
+* `auto` は `title_color` を `None` のまま描く。描画時に `poster.resolve_title_color()` が
+  見出しの群の平均色から墨か白を選ぶ。候補の画像はこの時点で確定する。
+* それ以外は `FlyerGenerationRequest.title_color` に HEX を入れて描く。選んだ色は
+  動かさない。読みにくければベールの向きで地の側を寄せる。
+* `CandidateMeta.title_color_id` に選択肢の ID を残す。確定は候補の JPEG を複写する
+  だけなので、再描画は起きない。
 
 ---
 

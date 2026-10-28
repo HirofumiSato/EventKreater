@@ -113,6 +113,18 @@ async def candidate_palettes(
     return _candidates(request).suggest_palettes(candidate_id, _owner(request))
 
 
+@router.post(
+    "/api/v1/flyers/candidates/{candidate_id}/title-colors",
+    response_model=CandidateList,
+)
+async def candidate_title_colors(
+    candidate_id: str,
+    request: Request,
+) -> CandidateList:
+    """ステップ 5。選んだ配色のまま 4 通りのタイトル色を返す。"""
+    return _candidates(request).suggest_title_colors(candidate_id, _owner(request))
+
+
 @router.get("/api/v1/flyers/candidates/{candidate_id}")
 async def candidate_image(candidate_id: str, request: Request) -> Response:
     """候補画像。BFF がブラウザへ中継する。"""

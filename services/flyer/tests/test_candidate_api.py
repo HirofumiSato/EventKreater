@@ -283,3 +283,84 @@ def test_palette_step_starts_with_the_colour_already_chosen(tmp_path: Path) -> N
         "theme-quiet",
     ]
     assert themed_palettes[0]["accent_color"] == themed["accent_color"]
+
+
+def test_title_colour_step_offers_auto_ink_white_and_accent(tmp_path: Path) -> None:
+    """ステップ 5。先頭は自動で、墨・白・差し色の 4 枚を返す。"""
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        background = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(count=1),
+        ).json()["candidates"][0]
+        palettes = client.post(
+            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
+            json={},
+        ).json()["candidates"]
+        colours = client.post(
+            f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors",
+            json={},
+        ).json()["candidates"]
+
+        assert len(colours) == 4
+        assert {item["kind"] for item in colours} == {"title_color"}
+        assert [item["label"] for item in colours] == ["自動", "墨", "白", "差し色"]
+        assert colours[0]["title_color"] is None
+        assert colours[2]["title_color"] == "#FFFFFF"
+        # 差し色は紙に対して 4.5:1 へ寄せた値。パレットの生の値ではない。
+        accent = colours[3]["title_color"]
+        assert accent is not None and accent.startswith("#")
+        assert accent not in {colours[1]["title_color"], "#FFFFFF"}
+        for item in colours:
+            image = _image(client, item["image_url"])
+            assert image.size == (1080, 1528)
+
+        store = client.app.state.candidate_store  # type: ignore[attr-defined]
+        assert store.load_meta(colours[1]["candidate_id"]).title_color_id == "ink"
+
+
+def test_a_chosen_title_colour_is_saved_as_previewed(tmp_path: Path) -> None:
+    """選んだ 1 枚がそのまま完成品になる。確定時に描き直さない。"""
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        background = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(count=1),
+        ).json()["candidates"][0]
+        palettes = client.post(
+            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
+            json={},
+        ).json()["candidates"]
+        chosen = client.post(
+            f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors",
+            json={},
+        ).json()["candidates"][2]
+
+        preview = client.get(chosen["image_url"]).content
+        saved = client.post(
+            "/api/v1/flyers/generate",
+            json=_body(candidate_id=chosen["candidate_id"]),
+        )
+        assert saved.status_code == 200
+        assert client.get(saved.json()["image_url"]).content == preview
+
+
+def test_title_colour_candidates_belong_to_their_owner(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        background = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(count=1),
+            headers={"X-Flyer-Owner": "owner-a"},
+        ).json()["candidates"][0]
+        palettes = client.post(
+            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
+            json={},
+            headers={"X-Flyer-Owner": "owner-a"},
+        ).json()["candidates"]
+        url = f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors"
+        assert (
+            client.post(url, json={}, headers={"X-Flyer-Owner": "owner-a"}).status_code
+            == 200
+        )
+        assert (
+            client.post(url, json={}, headers={"X-Flyer-Owner": "owner-b"}).status_code
+            == 404
+        )

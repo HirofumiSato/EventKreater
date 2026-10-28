@@ -29,6 +29,7 @@ def _plan(
     lines: tuple[str, ...] = ("ジャズの夜",),
     size: int = 163,
     note: str = "雨天決行",
+    title_color: tuple[int, int, int] | None = None,
 ) -> poster.PosterPlan:
     variant = design.variant_for(template_id)
     colors = design.colors_for(theme_look(None), variant.surface)
@@ -44,6 +45,7 @@ def _plan(
         event_time="19:00〜22:00 (開場 18:30)",
         facts=FACTS,
         note=note,
+        title_color=title_color,
     )
 
 
@@ -169,8 +171,53 @@ def test_the_ink_surface_covers_the_details() -> None:
     assert (x1, x2) == (0, design.CANVAS_WIDTH)
     assert y2 == design.CANVAS_HEIGHT
     for slot in plan.slots:
-        if slot.role == "meta" or slot.role == "note" or slot.role.startswith("fact"):
+        if slot.role == "note" or slot.role.startswith("fact"):
             assert slot.box[1] >= y1, slot.role
+    # 時刻は見出しの群に移した。墨の面は詳細の群から下だけを覆う。
+    meta = plan.slot("meta")
+    assert meta is not None
+    assert meta.box[1] < y1
+
+
+def test_the_date_and_the_time_sit_in_the_same_group() -> None:
+    """日付と開催時間は見出しの群で 1 続きにする。片方を下端へ離さない。"""
+    plan = _plan()
+    eyebrow = plan.slot("eyebrow")
+    meta = plan.slot("meta")
+    title = plan.slot("title")
+    assert eyebrow is not None and meta is not None and title is not None
+    assert eyebrow.box[1] < meta.box[1] < title.box[1]
+    assert meta.box[1] - (eyebrow.box[1] + eyebrow.box[3]) == design.GAP_AFTER_EYEBROW
+    assert title.box[1] - (meta.box[1] + meta.box[3]) == design.GAP_AFTER_META
+
+
+@pytest.mark.parametrize("template_id", list(TemplateId))
+def test_the_time_is_larger_than_the_date_and_smaller_than_the_title(
+    template_id: TemplateId,
+) -> None:
+    plan = _plan(template_id)
+    eyebrow = plan.slot("eyebrow")
+    meta = plan.slot("meta")
+    title = plan.slot("title")
+    assert eyebrow is not None and meta is not None and title is not None
+    assert title.size > meta.size > eyebrow.size
+
+
+def test_a_chosen_title_colour_reaches_the_slot() -> None:
+    plan = _plan(title_color=(255, 255, 255))
+    title = plan.slot("title")
+    assert title is not None
+    assert title.color == (255, 255, 255)
+    assert plan.title_color == (255, 255, 255)
+
+
+def test_the_title_colour_is_automatic_by_default() -> None:
+    """未指定は「自動」。墨を仮に置き、描画時に地の色から決める。"""
+    plan = _plan()
+    title = plan.slot("title")
+    assert title is not None
+    assert plan.title_color is None
+    assert title.color == plan.colors.ink
 
 
 def test_the_quiet_tile_has_no_plate() -> None:

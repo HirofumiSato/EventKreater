@@ -74,6 +74,16 @@
      - 中央寄せの紙面ではぶら下げない
    * - ``test_ink_mass_separates_the_three_tiles``
      - 墨の被覆率が 静けさ < 8%、にぎやかさ > 25%
+   * - ``test_a_dark_photo_gets_a_white_title``
+     - 暗い写真では自動で白い題名になり、4.5 以上
+   * - ``test_a_bright_photo_keeps_the_ink_title``
+     - 明るい写真では墨のまま。色を選び直さない
+   * - ``test_a_chosen_white_title_darkens_the_ground_instead_of_the_type``
+     - 白を選ぶと文字は白のまま、地の側が暗くなる
+   * - ``test_a_chosen_colour_that_cannot_be_read_is_moved_to_the_ink_side``
+     - 地に近い色はベールでは救えず、色を寄せて ``title_color_adjusted`` が立つ
+   * - ``test_resolve_title_color_follows_the_ground``
+     - 自動は地の明度で墨か白、指定色は動かさない
    * - ``test_metadata_records_the_chosen_scale_step``
      - ``RenderMetadata.title_font_size`` が目盛りの段と一致する
 
@@ -114,7 +124,15 @@
    * - ``test_bottom_stack_sits_lower_than_top_stack``
      - 下寄せは上寄せより下にある
    * - ``test_the_ink_surface_covers_the_details``
-     - 墨の面が明細を覆う
+     - 墨の面が明細を覆う。時刻は見出しの群にあり、面の外
+   * - ``test_the_date_and_the_time_sit_in_the_same_group``
+     - 日付と時刻が同じ群で、時刻がタイトルの上
+   * - ``test_the_time_is_larger_than_the_date_and_smaller_than_the_title``
+     - 時刻は日付より大きく、タイトルより小さい
+   * - ``test_a_chosen_title_colour_reaches_the_slot``
+     - 選んだ色がタイトルのスロットに届く
+   * - ``test_the_title_colour_is_automatic_by_default``
+     - 未指定は墨を仮に置き、描画時に決める
    * - ``test_the_quiet_tile_has_no_plate``
      - 静けさには面が無い
    * - ``test_no_icons_pills_or_panels_are_drawn``
@@ -150,6 +168,25 @@
      - ぼけ玉も偽の水平線も無い
    * - ``test_themes_keep_their_own_papers``
      - テーマごとに紙の色が変わる
+
+タイトル色の選択肢
+------------------
+
+ファイルは ``tests/test_title_colors.py`` です。4 通りは並び順を固定し、墨と差し色が
+紙に対して 4.5:1 を満たすことを確かめます。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - テスト
+     - 期待
+   * - ``test_four_choices_start_with_automatic``
+     - ``auto`` / ``ink`` / ``white`` / ``accent`` の順で、先頭の色は ``None``
+   * - ``test_ink_and_accent_stay_readable_on_the_paper``
+     - 3 種 × テーマの全組み合わせで 4.5 以上
+   * - ``test_unknown_ids_fall_back_to_automatic``
+     - 未知の ID は自動へ落とす
 
 タイトルの意味改行
 ------------------

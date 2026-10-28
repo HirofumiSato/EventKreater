@@ -355,3 +355,95 @@ def test_metadata_records_the_chosen_scale_step() -> None:
         metadata.title_font_size,
         design.HEADING_LINE_RATIO,
     )
+
+
+def test_a_dark_photo_gets_a_white_title() -> None:
+    """暗い写真の上で墨を置くと、題名が黒く沈む。地の色から選び直す。"""
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(
+        _png((60, 40, 25)),
+        make_request("焚火とシチューを囲む夕べ"),
+        make_context(),
+    )
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_color == "#FFFFFF"
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+
+
+def test_a_bright_photo_keeps_the_ink_title() -> None:
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(
+        _png((240, 240, 240)),
+        make_request("焚火とシチューを囲む夕べ"),
+        make_context(),
+    )
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_color != "#FFFFFF"
+    assert metadata.title_color_adjusted is False
+
+
+def test_a_chosen_white_title_darkens_the_ground_instead_of_the_type() -> None:
+    """白を選んだら、文字ではなく地を暗くする。選んだ色を変えない。"""
+    renderer = PillowFlyerRenderer()
+    request = make_request("焚火とシチューを囲む夕べ").model_copy(
+        update={"title_color": "#FFFFFF"}
+    )
+    context = make_context()
+    data = renderer.render_flyer(_png((240, 240, 240)), request, context)
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_color == "#FFFFFF"
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+
+    font_path = renderer.font_path_for(request.template_id)
+    stack = stack_for(TextLayout.CLASSIC)
+    plan = poster.plan_for_request(
+        request,
+        title=fit_to_scale(
+            request.title,
+            font_path,
+            _scratch_draw(),
+            max_height=stack.title_height,
+            allow_hanging=False,
+        ),
+        stack=stack,
+        accent=context.suggested_accent_color,
+    )
+    title = plan.slot("title")
+    assert title is not None
+    x, y, width, height = title.box
+    # 題名の地は紙より暗い（白を保つために地を寄せた）。
+    ground = average_rgb(Image.open(BytesIO(data)).convert("RGB"), (x, y, x + width, y + height))
+    assert relative_luminance(*ground) < 0.5
+
+
+def test_a_chosen_colour_that_cannot_be_read_is_moved_to_the_ink_side() -> None:
+    """地とほぼ同じ明るさの色を選んだら、ベールでは救えないので色を寄せる。"""
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(
+        _png((240, 240, 240)),
+        make_request("焚火とシチューを囲む夕べ").model_copy(
+            update={"title_color": "#EEEEEE"}
+        ),
+        make_context(),
+    )
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_color_adjusted is True
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+
+
+def test_resolve_title_color_follows_the_ground() -> None:
+    ink = (31, 41, 55)
+    dark = poster.resolve_title_color(None, ink, (60, 40, 25))
+    assert dark == (255, 255, 255)
+    light = poster.resolve_title_color(None, ink, (240, 240, 240))
+    assert light == ink
+    # 選ばれた色は動かさない。読みにくければベールの向きで地を寄せる。
+    assert poster.resolve_title_color((255, 255, 255), ink, (240, 240, 240)) == (
+        255,
+        255,
+        255,
+    )

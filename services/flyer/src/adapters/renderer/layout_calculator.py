@@ -310,6 +310,9 @@ def veil_alpha(
 
     黒や白の帯を置く代わりに、紙と同じ色を薄く重ねる。写真の上でも「紙が
     1 枚かかっている」ように見え、角丸の板や黒いスクリムを避けられる。
+
+    敷き切っても届かないとき（文字と敷く色が近いとき）は `None` を返す。
+    覆い切れないベールを 1.0 で重ねると、地を塗り潰したうえで読めないままになる。
     """
     text_luminance = relative_luminance(*text_rgb)
     current = contrast_ratio(text_luminance, relative_luminance(*background_rgb))
@@ -320,7 +323,7 @@ def veil_alpha(
         ratio = contrast_ratio(text_luminance, relative_luminance(*blended))
         if not requires_contrast_protection(ratio, minimum):
             return alpha
-    return 1.0
+    return None
 
 
 def average_rgb(

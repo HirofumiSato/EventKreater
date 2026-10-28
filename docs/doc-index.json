@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2558,
+      "lineCount": 2559,
       "headings": [
         {
           "level": 1,
@@ -3690,7 +3690,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 197,
+      "lineCount": 220,
       "headings": [
         {
           "level": 1,
@@ -3719,6 +3719,10 @@
         {
           "level": 3,
           "text": "ステップ 4: 配色"
+        },
+        {
+          "level": 3,
+          "text": "ステップ 5: タイトル色"
         },
         {
           "level": 3,
@@ -4689,7 +4693,7 @@
       "title": "システム詳細設計書",
       "summary": "本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。",
       "preImplementation": false,
-      "lineCount": 406,
+      "lineCount": 422,
       "headings": [
         {
           "level": 1,
@@ -4768,6 +4772,10 @@
           "text": "5.5. 差し色の引き継ぎ"
         },
         {
+          "level": 3,
+          "text": "5.6. タイトル色の引き継ぎ"
+        },
+        {
           "level": 2,
           "text": "6. 例外設計とエラーハンドリングマトリクス"
         },
@@ -4810,7 +4818,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 363,
+      "lineCount": 388,
       "headings": [
         {
           "level": 1,
@@ -5081,7 +5089,7 @@
       "title": "システム要件定義書",
       "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
-      "lineCount": 311,
+      "lineCount": 316,
       "headings": [
         {
           "level": 1,
@@ -5340,7 +5348,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 251,
+      "lineCount": 288,
       "headings": [
         {
           "level": 1,
@@ -5365,6 +5373,10 @@
         {
           "level": 2,
           "text": "紙の地"
+        },
+        {
+          "level": 2,
+          "text": "タイトル色の選択肢"
         },
         {
           "level": 2,
@@ -5415,6 +5427,10 @@
         },
         {
           "path": "services/flyer/tests/test_renderer.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_title_colors.py",
           "exists": true
         },
         {

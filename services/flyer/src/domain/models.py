@@ -42,6 +42,7 @@ class CandidateKind(str, Enum):
     BACKGROUND = "background"
     LAYOUT = "layout"
     PALETTE = "palette"
+    TITLE_COLOR = "title_color"
 
 
 class SemanticTheme(str, Enum):
@@ -146,6 +147,11 @@ class FlyerGenerationRequest(BaseModel):
         default=TextLayout.CLASSIC,
         description="文字ブロックの配置プリセット",
     )
+    title_color: str | None = Field(
+        default=None,
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="タイトルの文字色。未指定なら背景の色に合わせて自動で決める",
+    )
 
     @field_validator("title", "event_date", "event_time", "price", "location", mode="before")
     @classmethod
@@ -213,6 +219,17 @@ class RenderMetadata(BaseModel):
         default=False,
         description="最終行をブロック右端へ寄せたか",
     )
+    #: 実際に描いたタイトルの色。選んだ色と違うことがある（背景に合わせて直すため）。
+    title_color: str = Field(
+        default="#000000",
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="描画に使ったタイトルの文字色",
+    )
+    #: 選ばれた色から変えたか。白を選んで地を暗くした場合などに立つ。
+    title_color_adjusted: bool = Field(
+        default=False,
+        description="背景に合わせてタイトル色を選び直したか",
+    )
     contrast_ratio: float = Field(..., ge=1.0)
     backdrop_applied: bool
     outline_applied: bool
@@ -277,6 +294,12 @@ class CandidateItem(BaseModel):
     palette_id: str
     accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
     overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+    #: タイトルの文字色。`None` は「自動」。
+    title_color: str | None = Field(
+        default=None,
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="タイトルの文字色。None は背景に合わせる",
+    )
     #: 供給元。`ai` のときだけ課金が起きる。
     source: str = Field(default="placeholder")
     #: AI 背景の残り枚数。背景候補のステップだけ入る。
@@ -305,6 +328,12 @@ class CandidateMeta(BaseModel):
     palette_id: str = Field(..., min_length=1)
     accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
     overlay_alpha: float = Field(..., ge=0.0, le=1.0)
+    #: タイトル色ステップで選ばれた ID（auto / ink / white / accent）。
+    title_color_id: str | None = Field(
+        default=None,
+        max_length=32,
+        description="タイトル色の選択肢 ID。古い候補では None。",
+    )
     parent_id: str | None = None
     label: str = Field(..., min_length=1)
     description: str = ""

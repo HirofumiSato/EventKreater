@@ -77,6 +77,8 @@ class PosterPlan:
     colors: design.PosterColors
     slots: tuple[PosterSlot, ...]
     rules: tuple[PosterRule, ...]
+    #: タイトルに選ばれた色。`None` は「自動」で、描画時に地の色から決める。
+    title_color: RGB | None
     #: 文字が載る面 (x1, y1, x2, y2)。`None` なら背景のまま。
     surface: tuple[int, int, int, int] | None
     #: 文字が載りうる縦範囲 (上端, 下端)。
@@ -107,6 +109,10 @@ class DrawReport:
     veil_alpha: float | None
     #: タイトルが載った地とのコントラスト比。
     title_contrast: float
+    #: 実際に描いたタイトルの色。
+    title_color: RGB
+    #: 選ばれた色から変えたか（背景に対して読みにくかったとき）。
+    title_color_adjusted: bool
 
 
 def _fact_row_height(style: design.FactsStyle) -> int:
@@ -156,12 +162,18 @@ def _top_group(
     colors: design.PosterColors,
     y: int,
     date: str,
+    time: str,
     title_lines: Sequence[str],
     title_size: int,
+    title_color: RGB | None,
 ) -> tuple[list[PosterSlot], list[PosterRule], int]:
-    """eyebrow・タイトル・罫線。上端からの高さを返す。"""
+    """日付・時刻・タイトル・罫線。上端からの高さを返す。
+
+    日付と時刻は同じ群に置く。片方を上端、片方を下端へ離すと、いつ開く催しなのかを
+    目が 2 往復して読むことになる。時刻は日付より大きく、タイトルより小さい。
+    """
     align: SlotAlign = variant.align
-    ink, _, accent = _paper_colors(colors)
+    ink, ink_sub, accent = _paper_colors(colors)
     leading = design.line_height(title_size, design.HEADING_LINE_RATIO)
     left, width = design.SIDE_MARGIN, design.CONTENT_WIDTH
     slots: list[PosterSlot] = []
@@ -183,6 +195,21 @@ def _top_group(
         )
         y += eyebrow + design.GAP_AFTER_EYEBROW
 
+    if time:
+        meta = design.line_height(design.META_SIZE, design.LABEL_LINE_RATIO)
+        slots.append(
+            PosterSlot(
+                role="meta",
+                text=time,
+                size=design.META_SIZE,
+                box=(left, y, width, meta),
+                color=ink_sub,
+                align=align,
+                leading=meta,
+            )
+        )
+        y += meta + design.GAP_AFTER_META
+
     height = leading * len(title_lines)
     slots.append(
         PosterSlot(
@@ -190,7 +217,8 @@ def _top_group(
             text="\n".join(title_lines),
             size=title_size,
             box=(left, y, width, height),
-            color=ink,
+            # 「自動」は墨を仮に置き、描画時に地の色から決め直す。
+            color=title_color if title_color is not None else ink,
             align=align,
             leading=leading,
         )
@@ -216,31 +244,20 @@ def _body_group(
     variant: design.PosterVariant,
     colors: design.PosterColors,
     y: int,
-    time: str,
     facts: Sequence[tuple[str, str]],
     note: str,
 ) -> tuple[list[PosterSlot], list[PosterRule], int]:
-    """時刻・明細・雨天の扱い。先頭からの高さを返す。"""
+    """明細と雨天の扱い。先頭からの高さを返す。
+
+    時刻はここに置かない。日付と同じ群（`_top_group`）へまとめ、見出し側で
+    「いつ開くか」を 1 続きで読ませる。
+    """
     align: SlotAlign = variant.align
     ink, ink_sub, _ = _body_colors(variant, colors)
     hairline = _hairline(variant, colors)
     left, width = design.SIDE_MARGIN, design.CONTENT_WIDTH
     slots: list[PosterSlot] = []
     rules: list[PosterRule] = []
-
-    meta = design.line_height(design.META_SIZE, design.LABEL_LINE_RATIO)
-    slots.append(
-        PosterSlot(
-            role="meta",
-            text=time,
-            size=design.META_SIZE,
-            box=(left, y, width, meta),
-            color=ink_sub,
-            align=align,
-            leading=meta,
-        )
-    )
-    y += meta + design.GAP_AFTER_META
 
     rows = [row for row in facts if row[0]]
     row_height = _fact_row_height(variant.facts)
@@ -352,24 +369,27 @@ def build_poster_plan(
     event_time: str,
     facts: Sequence[tuple[str, str]],
     note: str,
+    title_color: RGB | None = None,
 ) -> PosterPlan:
     """スロットの文字・大きさ・位置・色を決める。画像もフォントも触らない。
 
     差し色を使うのは eyebrow と見出し下の罫線だけ。大きな文字には使わない。
+    `title_color` が None のときは墨を仮に置き、実際の地の色を見て描画時に決める。
     """
     top_slots, top_rules, top_h = _top_group(
         variant=variant,
         colors=colors,
         y=0,
         date=event_date,
+        time=event_time,
         title_lines=title_lines,
         title_size=title_size,
+        title_color=title_color,
     )
     body_slots, body_rules, body_h = _body_group(
         variant=variant,
         colors=colors,
         y=0,
-        time=event_time,
         facts=facts,
         note=note,
     )
@@ -428,6 +448,7 @@ def build_poster_plan(
         colors=colors,
         slots=tuple(slots),
         rules=tuple(rules),
+        title_color=title_color,
         surface=surface,
         block=(top_origin, min(design.CANVAS_HEIGHT, block_bottom)),
         title_size=title_size,
@@ -449,6 +470,7 @@ def plan_for_request(
     """依頼から紙面を作る。タイトルは目盛りから選び直さない。
 
     `accent` はステップ 4 で選ばれた配色の差し色。未指定ならテーマの差し色。
+    `title_color` が未指定なら「自動」で、描画時に地の色から決める。
     """
     variant = design.variant_for(request.template_id)
     colors = design.colors_for_theme(
@@ -471,6 +493,7 @@ def plan_for_request(
         event_time=request.event_time,
         facts=facts,
         note=request.rain_policy.value,
+        title_color=parse_hex(request.title_color) if request.title_color else None,
     )
 
 
@@ -478,8 +501,14 @@ def _draw_slot(
     draw: ImageDraw.ImageDraw,
     slot: PosterSlot,
     font: ImageFont.FreeTypeFont,
+    color: RGB | None = None,
 ) -> None:
-    """1 行ずつ、寄せに従って置く。字間は 1 文字ずつ足す。"""
+    """1 行ずつ、寄せに従って置く。字間は 1 文字ずつ足す。
+
+    `color` を渡すと、スロットが持つ色の代わりにそれで描く。背景を見て決めた
+    タイトル色を反映するために使う。
+    """
+    fill = color if color is not None else slot.color
     x, y, width, _ = slot.box
     lines = slot.text.split("\n")
     for index, line in enumerate(lines):
@@ -492,11 +521,11 @@ def _draw_slot(
             origin_x = x
         line_y = y + index * slot.leading
         if slot.letter_spacing <= 0:
-            draw.text((origin_x, line_y), line, font=font, fill=slot.color, anchor="lt")
+            draw.text((origin_x, line_y), line, font=font, fill=fill, anchor="lt")
             continue
         cursor = origin_x
         for char in line:
-            draw.text((cursor, line_y), char, font=font, fill=slot.color, anchor="lt")
+            draw.text((cursor, line_y), char, font=font, fill=fill, anchor="lt")
             cursor += line_width(draw, char, font) + slot.letter_spacing
 
 
@@ -549,21 +578,79 @@ def _veil_color(plan: PosterPlan) -> RGB:
     return plan.colors.paper
 
 
+def _group_holding(
+    groups: Sequence[tuple[int, int, int, int]],
+    box: tuple[int, int, int, int],
+) -> tuple[int, int, int, int] | None:
+    """スロットが属する群の矩形。群は互いに重ならない。"""
+    for area in groups:
+        if _inside(box, area):
+            return area
+    return None
+
+
+def resolve_title_color(
+    preferred: RGB | None,
+    ink: RGB,
+    background: RGB,
+) -> RGB:
+    """タイトルの文字色を、実際に載る地の色から決める。
+
+    `preferred` が None（自動）のときは、墨が 4.5:1 を満たせば墨、満たさなければ
+    白を選ぶ。どちらも満たない中間の地では墨のまま返し、呼び出し側が紙のベールで
+    地を持ち上げる。選ばれた色は動かさない。読みにくければベールの向きで地の方を
+    寄せる（白い紙に白を選んだら、文字ではなく地が暗くなる）。
+    """
+    if preferred is not None:
+        return preferred
+    if design.contrast_ratio(
+        design.relative_luminance(*ink),
+        design.relative_luminance(*background),
+    ) >= design.MIN_CONTRAST:
+        return ink
+    white: RGB = (255, 255, 255)
+    if design.contrast_ratio(
+        design.relative_luminance(*white),
+        design.relative_luminance(*background),
+    ) >= design.MIN_CONTRAST:
+        return white
+    return ink
+
+
+def _title_veil_color(plan: PosterPlan, title_color: RGB) -> RGB:
+    """見出しの群に敷く色。文字が地より明るければ墨、暗ければ紙。"""
+    paper = plan.colors.paper
+    if design.relative_luminance(*title_color) > design.relative_luminance(*paper):
+        return design.surface_for(paper, "ink")
+    return paper
+
+
 def draw_poster(
     canvas: Image.Image,
     plan: PosterPlan,
     font_path: str,
 ) -> DrawReport:
-    """計画をキャンバスへ写す。面 → ベール → 罫線 → 文字の順。"""
+    """計画をキャンバスへ写す。面 → ベール → 罫線 → 文字の順。
+
+    見出しの群だけは順序が違う。地の色を測ってタイトル色を決め、その色に対して
+    ベールの向きと濃さを決めてから敷く。逆にすると、白いタイトルの上に紙色を
+    塗ってしまい、選んだ色が読めなくなる。
+    """
     working = canvas.convert("RGBA")
     if plan.surface is not None:
         working = _paint_rect(working, plan.surface, plan.colors.surface)
 
     veil_color = _veil_color(plan)
     ink, _, _ = _paper_colors(plan.colors)
+    groups = _groups(plan)
+    title = plan.slot("title")
+    title_group = _group_holding(groups, title.box) if title is not None else None
+
     strongest: float | None = None
-    for box in _groups(plan):
+    for box in groups:
         if plan.surface is not None and _inside(box, plan.surface):
+            continue
+        if box == title_group:
             continue
         mean = average_rgb(working, box)
         alpha = veil_alpha(mean, veil_color, ink)
@@ -572,28 +659,57 @@ def draw_poster(
         working = _paint_rect(working, box, veil_color, alpha)
         strongest = max(strongest or 0.0, alpha)
 
-    title = plan.slot("title")
+    title_color = ink
+    behind: tuple[int, int, int, int] | None = None
+    adjusted = False
+    final: dict[str, RGB] = {}
+    if title_group is not None:
+        title_color = resolve_title_color(
+            plan.title_color,
+            ink,
+            average_rgb(working, title_group),
+        )
+        paint = _title_veil_color(plan, title_color)
+        alpha = veil_alpha(average_rgb(working, title_group), paint, title_color)
+        if alpha is not None:
+            working = _paint_rect(working, title_group, paint, alpha)
+            strongest = max(strongest or 0.0, alpha)
+        behind = title_group
+        # ベール後の地に対して、見出しの群の文字を読める濃さへ寄せる。
+        ground = average_rgb(working, behind)
+        for slot in plan.slots:
+            if _inside(slot.box, behind):
+                final[slot.role] = design.ensure_contrast(slot.color, ground)
+        title_color = design.ensure_contrast(title_color, ground)
+        final["title"] = title_color
+        adjusted = plan.title_color is not None and title_color != plan.title_color
+
     title_contrast = 1.0
     if title is not None:
         x, y, width, height = title.box
         mean = average_rgb(working, (x, y, x + width, y + height))
         title_contrast = contrast_ratio(
-            relative_luminance(*title.color),
+            relative_luminance(*title_color),
             relative_luminance(*mean),
         )
 
     draw = ImageDraw.Draw(working)
     for rule in plan.rules:
         x, y, width, thickness = rule.box
-        draw.rectangle((x, y, x + width, y + thickness), fill=rule.color)
+        color = rule.color
+        if behind is not None and _inside((x, y, x + width, y + thickness), behind):
+            color = design.ensure_contrast(color, average_rgb(working, behind))
+        draw.rectangle((x, y, x + width, y + thickness), fill=color)
 
     for slot in plan.slots:
         font = load_font(font_path, slot.size)
-        _draw_slot(draw, slot, font)
+        _draw_slot(draw, slot, font, final.get(slot.role))
     return DrawReport(
         image=working.convert("RGB"),
         veil_alpha=strongest,
         title_contrast=title_contrast,
+        title_color=title_color,
+        title_color_adjusted=adjusted,
     )
 
 
@@ -620,4 +736,5 @@ __all__ = [
     "fit_to_scale",
     "measure_contrast",
     "plan_for_request",
+    "resolve_title_color",
 ]

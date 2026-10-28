@@ -6,8 +6,8 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 103（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 338
-- API ルート: 81（どの文書にも URL が無いもの 0）
+- 文書から参照されているコードパス: 339
+- API ルート: 82（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
 ## コード → 文書
@@ -70,6 +70,7 @@
 | `services/flyer/tests/test_poster_plan.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_prompt_context.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `services/flyer/tests/test_renderer.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
+| `services/flyer/tests/test_title_colors.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_title_composition.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `src/app` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/event-page/index.rst](event-page/index.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/app/account/email/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |

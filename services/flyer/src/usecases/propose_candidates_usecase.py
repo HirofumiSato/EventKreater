@@ -1,6 +1,6 @@
 """ウィザードの候補生成。
 
-紙面の性格 → 背景 → 配置 → 配色 の 4 ステップを、同じ背景の上で決定的に描く。
+紙面の性格 → 背景 → 配置 → 配色 → タイトル色 の 5 ステップを、同じ背景の上で決定的に描く。
 候補はすべて「文字まで合成した完成イメージ」で、確定時は再描画せずそのまま
 保存する。選んだ見た目と完成品がずれない。
 """
@@ -19,6 +19,7 @@ from src.adapters.candidate_source.templates import (
     TEMPLATE_DESCRIPTIONS,
     TEMPLATE_LABELS,
 )
+from src.adapters.candidate_source.title_colors import title_color_candidates
 from src.adapters.renderer.layouts import LAYOUT_DESCRIPTIONS, LAYOUT_LABELS
 from src.domain.exceptions import CandidateNotFoundError
 from src.domain.models import (
@@ -236,6 +237,47 @@ class ProposeCandidatesUseCase:
         ]
         return CandidateList(candidates=items)
 
+    def suggest_title_colors(
+        self,
+        parent_id: str,
+        owner_token_hash: str | None = None,
+    ) -> CandidateList:
+        """ステップ 5。選んだ配色のまま 4 通りのタイトル色を描く。
+
+        先頭は「自動」。背景の明るさから墨か白を選ぶので、迷ったらここへ戻せる。
+        """
+        meta = self._load_owned_meta(parent_id, owner_token_hash)
+        background = self._store.load_background(parent_id)
+        palette = palette_for(
+            meta.palette_id,
+            meta.template_id,
+            meta.request.semantic_theme,
+        )
+        items = [
+            self._make(
+                kind=CandidateKind.TITLE_COLOR,
+                request=meta.request.model_copy(
+                    update={"title_color": option.color}
+                ),
+                context=meta.context,
+                background=background,
+                palette=palette,
+                layout=meta.layout_id,
+                parent_id=parent_id,
+                label=option.label,
+                description=option.description,
+                owner_token_hash=meta.owner_token_hash,
+                source=meta.source,
+                title_color_id=option.title_color_id,
+            )
+            for option in title_color_candidates(
+                meta.request.semantic_theme,
+                meta.template_id,
+                meta.context.suggested_accent_color,
+            )
+        ]
+        return CandidateList(candidates=items)
+
     def finalize(
         self,
         candidate_id: str,
@@ -282,6 +324,7 @@ class ProposeCandidatesUseCase:
         owner_token_hash: str | None = None,
         source: str | None = None,
         recommended: bool = False,
+        title_color_id: str | None = None,
     ) -> CandidateItem:
         image = self._renderer.render_flyer(
             background_bytes=background,
@@ -297,6 +340,7 @@ class ProposeCandidatesUseCase:
             palette_id=palette.palette_id,
             accent_color=palette.accent_color,
             overlay_alpha=palette.overlay_alpha,
+            title_color_id=title_color_id,
             parent_id=parent_id,
             label=label,
             description=description,
@@ -317,6 +361,7 @@ class ProposeCandidatesUseCase:
             palette_id=palette.palette_id,
             accent_color=palette.accent_color,
             overlay_alpha=palette.overlay_alpha,
+            title_color=request.title_color,
             source=source or "placeholder",
             recommended=recommended,
         )

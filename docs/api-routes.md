@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 81
-- エンドポイント（メソッド × パス）: 98
-- 仕様書に記載: 92
+- ルートファイル: 82
+- エンドポイント（メソッド × パス）: 99
+- 仕様書に記載: 93
 - 実装のみ（仕様書に記載なし）: 6
 - 仕様書のみ（実装なし）: 0
 
@@ -53,6 +53,7 @@
 | GET | `/api/v1/flyers/candidates/[id]` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/route.ts` |
 | POST | `/api/v1/flyers/candidates/[id]/layouts` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/layouts/route.ts` |
 | POST | `/api/v1/flyers/candidates/[id]/palettes` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/palettes/route.ts` |
+| POST | `/api/v1/flyers/candidates/[id]/title-colors` | なし | あり | `src/app/api/v1/flyers/candidates/[id]/title-colors/route.ts` |
 | POST | `/api/v1/flyers/candidates/types` | なし | あり | `src/app/api/v1/flyers/candidates/types/route.ts` |
 | POST | `/api/v1/flyers/generate` | なし | あり | `src/app/api/v1/flyers/generate/route.ts` |
 | GET | `/api/v1/flyers/quota` | なし | あり | `src/app/api/v1/flyers/quota/route.ts` |
