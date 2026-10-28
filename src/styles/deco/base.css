@@ -97,12 +97,13 @@
 }
 
 .deco .hero--stage .hero__eyebrow {
-  padding: 0.375rem 0.875rem;
+  padding: 0.375rem 0.75rem;
   border-radius: 999px;
   background: var(--pop-warm);
   color: #1a1916;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  /* 文言が長い（37 文字）。札が 900px の細いコピー列にも収まるよう、字間は詰める。 */
+  letter-spacing: 0.02em;
   transform: rotate(-2.5deg);
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
@@ -122,10 +123,11 @@
        余白の値は幅ごとに変わるので、固定値ではなく 50% - 50vw で戻す。 */
     margin-inline: calc(50% - 50vw);
     /* 1 行に収める。行数が増えると帯が厚くなり、ヒーローの頭が重くなる。
-       文字サイズは画面幅に合わせ、狭い端末でも折り返さない。 */
+       文字サイズは画面幅に合わせ、狭い端末でも折り返さない。
+       文言が長い（37 文字）ので、字間は詰め気味にして読み幅を稼ぐ。 */
     padding: 0.4375rem 0.75rem;
-    font-size: clamp(0.5625rem, 2.84vw, 0.75rem);
-    letter-spacing: 0.03em;
+    font-size: clamp(0.5625rem, 2.6vw, 0.75rem);
+    letter-spacing: 0.02em;
     line-height: 1.5;
     white-space: nowrap;
     text-align: center;
