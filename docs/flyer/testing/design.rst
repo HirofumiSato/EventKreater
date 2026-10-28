@@ -51,7 +51,7 @@
    * - ``test_edge_variance_separates_flat_color_from_noise``
      - 単色は閾値未満、ランダム画素は閾値以上
    * - ``test_calculator_keeps_extreme_titles_inside_the_title_box``
-     - ``JAZZ`` と「あ」40 字が幅 920、高さ 420、3 行以内、44 px 以上
+     - ``JAZZ`` と「あ」40 字が幅 920、高さ 336、3 行以内、44 px 以上
    * - ``test_solid_background_renders_portrait_canvas``
      - 3 テンプレートとも 1080×1528 の JPEG で、コントラスト 4.5 以上
    * - ``test_extreme_titles_render_inside_zone_b``
@@ -62,6 +62,40 @@
      - 画像でないバイト列は ``RenderingError``
    * - ``test_renderer_modules_do_not_reference_external_apis``
      - レンダラーのソースに ``openai``、``httpx``、``requests`` が無い
+   * - ``test_title_breaks_at_the_meaning_boundary``
+     - 3 テンプレートとも「焚火とシチューを囲む / 夕べ」に分かれ、ぶら下げになる
+   * - ``test_short_title_stays_on_one_line``
+     - 1 行に収まるタイトルは改行しない
+   * - ``test_tail_is_not_left_alone_when_the_line_is_one_pixel_short``
+     - 幅が 1 px 足りないときも「べ」だけを最終行に残さない
+   * - ``test_hanging_line_sits_at_the_block_right_edge``
+     - 中央寄せと左寄せのどちらも、最終行の右端がブロック右端に一致する
+   * - ``test_hanging_title_is_recorded_in_metadata``
+     - ``RenderMetadata.title_hanging`` に真が入る
+
+タイトルの意味改行
+------------------
+
+ファイルは ``tests/test_title_composition.py`` です。フォントを使わず、分割の候補だけを検証します。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - テスト
+     - 期待
+   * - ``test_tail_word_is_cut_off_before_it``
+     - 「焚火とシチューの / 夕べ」。末尾の語を最終行へ残す
+   * - ``test_long_title_keeps_the_tail_word_together``
+     - 長い題でも「夕べ」を 1 語のまま最終行に置く
+   * - ``test_one_character_line_never_appears``
+     - どの候補にも 1 文字だけの行が無い
+   * - ``test_small_kana_and_punctuation_do_not_start_a_line``
+     - 小書き仮名、句読点、閉じ括弧から行を始めない
+   * - ``test_katakana_word_is_not_split_at_the_small_kana``
+     - 「ジャズセッシ / ョン」のような切れ目を作らない
+   * - ``test_explicit_space_is_a_break_and_is_trimmed``
+     - 入力された空白を区切りに使い、前後の空白は落とす
 
 アダプター
 ----------

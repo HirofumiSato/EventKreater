@@ -208,6 +208,11 @@ class RenderMetadata(BaseModel):
     title_line_count: int = Field(..., ge=1, le=3)
     title_block_width: int = Field(..., ge=0)
     title_block_height: int = Field(..., ge=0)
+    #: 最終行を右端へぶら下げたか。意味の区切りで短い結びが残ったときだけ立つ。
+    title_hanging: bool = Field(
+        default=False,
+        description="最終行をブロック右端へ寄せたか",
+    )
     contrast_ratio: float = Field(..., ge=1.0)
     backdrop_applied: bool
     outline_applied: bool

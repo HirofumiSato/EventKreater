@@ -23,6 +23,7 @@ from src.adapters.renderer.layout_calculator import (
     Zone,
     average_rgb,
     calculate_optimal_font_and_lines,
+    calculate_title_layout,
     choose_backdrop,
     contrast_ratio,
     edge_variance,
@@ -32,6 +33,7 @@ from src.adapters.renderer.layout_calculator import (
     measure_text_block,
     relative_luminance,
     single_line_height,
+    title_line_origins,
 )
 from src.adapters.renderer.layouts import (
     LayoutZones,
@@ -415,18 +417,25 @@ def _draw_lines(
     alignment: Alignment,
     letter_spacing: int,
     stroke_width: int,
+    hanging: bool = False,
 ) -> None:
     draw = ImageDraw.Draw(canvas)
     line_h = single_line_height(draw, font)
     origin_y = _ink_origin_y(draw, font, ink_top)
+    block_w = max(line_width(draw, line, font, letter_spacing) for line in lines)
+    origins = title_line_origins(
+        draw,
+        lines,
+        font,
+        zone,
+        block_w,
+        alignment,
+        letter_spacing,
+        hanging,
+    )
     for index, line in enumerate(lines):
-        width = line_width(draw, line, font, letter_spacing)
-        if alignment == "center":
-            x = zone.x + max(0, (zone.width - width) // 2)
-        else:
-            x = zone.x
         y = origin_y + int(index * line_h * TITLE_LINE_SPACING_RATIO)
-        _draw_line(draw, (x, y), line, font, fill, letter_spacing, stroke_width)
+        _draw_line(draw, (origins[index], y), line, font, fill, letter_spacing, stroke_width)
 
 
 def _block_top(zone: Zone, block_h: int, alignment: Alignment, letter_spacing: int) -> int:
@@ -509,7 +518,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
             else 0
         )
         probe = ImageDraw.Draw(canvas)
-        title_font, title_lines = calculate_optimal_font_and_lines(
+        title_layout = calculate_title_layout(
             request.title,
             font_path,
             probe,
@@ -517,6 +526,10 @@ class PillowFlyerRenderer(FlyerRendererPort):
             max_h=zones.b.height,
             letter_spacing=spacing,
         )
+        title_font, title_lines = title_layout.font, title_layout.lines
+        if len(title_lines) > 1:
+            # 2 行以上では字間を詰める。意味の区切りを入れる幅を空けるため。
+            spacing = 0
         block_w, block_h = measure_text_block(
             probe,
             title_lines,
@@ -525,7 +538,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
         )
         if block_w > zones.b.width or block_h > zones.b.height:
             spacing = 0
-            title_font, title_lines = calculate_optimal_font_and_lines(
+            title_layout = calculate_title_layout(
                 request.title,
                 font_path,
                 probe,
@@ -533,6 +546,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
                 max_h=zones.b.height,
                 letter_spacing=0,
             )
+            title_font, title_lines = title_layout.font, title_layout.lines
             block_w, block_h = measure_text_block(probe, title_lines, title_font, letter_spacing=0)
         if (
             not title_lines
@@ -569,6 +583,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
             style.alignment,
             spacing,
             2 if outline else 0,
+            hanging=title_layout.hanging,
         )
         canvas = self._draw_schedule(canvas, request, style, font_path, accent, zones.c, ink)
         canvas = self._draw_details(canvas, request, style, font_path, accent, zones.d, ink)
@@ -588,6 +603,7 @@ class PillowFlyerRenderer(FlyerRendererPort):
             title_line_count=len(title_lines),
             title_block_width=block_w,
             title_block_height=block_h,
+            title_hanging=title_layout.hanging,
             contrast_ratio=ratio,
             backdrop_applied=backdrop,
             outline_applied=outline,

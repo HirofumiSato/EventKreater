@@ -63,7 +63,9 @@ app/
 │   ├── security.py                 # レートリミット、バリデーションユーティリティ
 │   └── exceptions.py               # カスタム例外定義
 ├── domain/
-│   └── models.py                   # 業務エンティティ・スキーマ（Pydantic）
+│   ├── models.py                   # 業務エンティティ・スキーマ（Pydantic）
+│   ├── title_composition.py        # タイトルの意味改行（Pillow に依存しない）
+│   └── semantic_theme.py           # テーマの色と明度
 ├── ports/                          # 抽象インターフェース（ABC）
 │   ├── llm_port.py
 │   ├── image_gen_port.py
@@ -321,6 +323,11 @@ static/candidates/
 中央、`bottom_stack` は下）。向きは地の明度で反転する（暗い地は黒、明るい地は白）。
 `style_2_warm_earth` の白カードも文字範囲に合わせて縮む。Zone A は種目名を焼かず、
 座標だけを残して空ける。
+
+タイトルを行のどこで分けるかは `src/domain/title_composition.py` が決め、座標と
+フォントサイズは `adapters/renderer/layout_calculator.py` が決める。ゾーンの座標は
+動かさず、行分けと最終行の右寄せ（ぶら下げ）だけを変える。アルゴリズムは実装仕様
+3.3 にある。
 
 ### 5.5. 差し色の引き継ぎ
 

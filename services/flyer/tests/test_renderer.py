@@ -21,12 +21,15 @@ from src.adapters.renderer.layout_calculator import (
     average_rgb,
     blend_rgb,
     calculate_optimal_font_and_lines,
+    calculate_title_layout,
     choose_backdrop,
     contrast_ratio,
     edge_variance,
+    line_width,
     measure_text_block,
     relative_luminance,
     requires_contrast_protection,
+    title_line_origins,
 )
 from src.adapters.renderer.layouts import zones_for
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
@@ -282,3 +285,112 @@ def test_category_label_is_not_burned_in() -> None:
     zone = zones_for(TextLayout.CLASSIC).a
     values = image.crop(zone.box).tobytes()
     assert max(values) - min(values) <= 8
+
+
+def _scratch_draw() -> ImageDraw.ImageDraw:
+    return ImageDraw.Draw(Image.new("RGB", (8, 8)))
+
+
+@pytest.mark.parametrize("template_id", list(TemplateId))
+def test_title_breaks_at_the_meaning_boundary(template_id: TemplateId) -> None:
+    """「焚火とシチューを囲む / 夕べ」。「べ」だけを最終行へ落とさない。"""
+    renderer = PillowFlyerRenderer()
+    layout = calculate_title_layout(
+        "焚火とシチューを囲む夕べ",
+        renderer.font_path_for(template_id),
+        _scratch_draw(),
+    )
+    assert layout.lines == ["焚火とシチューを囲む", "夕べ"]
+    assert layout.hanging is True
+
+
+def test_tail_is_not_left_alone_when_the_line_is_one_pixel_short() -> None:
+    """本番のフォントでは 10 文字が 920 px をわずかに超える。
+
+    そのとき「焚火とシチューの夕 / べ」にせず、「焚火とシチューの / 夕べ」にする。
+    """
+    renderer = PillowFlyerRenderer()
+    font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)
+    layout = calculate_title_layout(
+        "焚火とシチューの夕べ",
+        font_path,
+        _scratch_draw(),
+        max_w=TITLE_MAX_WIDTH - 1,
+    )
+    assert layout.lines == ["焚火とシチューの", "夕べ"]
+    assert layout.hanging is True
+
+
+def test_short_title_stays_on_one_line() -> None:
+    """1 行に収まるなら改行しない。"""
+    renderer = PillowFlyerRenderer()
+    font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)
+    draw = _scratch_draw()
+    for title in ("ジャズの夜", "JAZZ"):
+        layout = calculate_title_layout(title, font_path, draw)
+        assert layout.lines == [title]
+        assert layout.hanging is False
+
+
+def test_meaning_break_never_leaves_a_single_character_line() -> None:
+    renderer = PillowFlyerRenderer()
+    font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)
+    draw = _scratch_draw()
+    for title in ("焚火とシチューの夕べ", "焚火とシチューを囲む夕べ", "あ" * 40):
+        layout = calculate_title_layout(title, font_path, draw)
+        assert all(len(line) >= 2 for line in layout.lines), (title, layout.lines)
+
+
+@pytest.mark.parametrize("alignment", ["center", "left"])
+def test_hanging_line_sits_at_the_block_right_edge(alignment: str) -> None:
+    """ぶら下げは最終行の右端を、本文ブロックの右端へ揃える。"""
+    renderer = PillowFlyerRenderer()
+    font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)
+    draw = _scratch_draw()
+    layout = calculate_title_layout("焚火とシチューを囲む夕べ", font_path, draw)
+    assert layout.hanging is True
+    zone = zones_for(TextLayout.CLASSIC).b
+    block_w, _ = measure_text_block(draw, layout.lines, layout.font)
+    origins = title_line_origins(
+        draw,
+        layout.lines,
+        layout.font,
+        zone,
+        block_w,
+        alignment,
+        0,
+        layout.hanging,
+    )
+    last_width = line_width(draw, layout.lines[-1], layout.font, 0)
+    assert origins[-1] + last_width == origins[0] + block_w
+    assert origins[0] + block_w <= zone.x + zone.width
+
+
+def test_hanging_title_is_recorded_in_metadata() -> None:
+    renderer = PillowFlyerRenderer()
+    data = renderer.render_flyer(
+        _png((240, 240, 240)),
+        make_request("焚火とシチューを囲む夕べ", TemplateId.STYLE_1_BAR_STYLISH),
+        make_context(TemplateId.STYLE_1_BAR_STYLISH),
+    )
+    assert Image.open(BytesIO(data)).size == (CANVAS_WIDTH, CANVAS_HEIGHT)
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_line_count == 2
+    assert metadata.title_hanging is True
+    assert metadata.title_block_width <= TITLE_MAX_WIDTH
+    assert metadata.title_block_height <= TITLE_MAX_HEIGHT
+
+
+def test_hanging_is_off_when_the_lines_are_balanced() -> None:
+    renderer = PillowFlyerRenderer()
+    data = renderer.render_flyer(
+        _png((240, 240, 240)),
+        make_request("真夜中のジャズセッション", TemplateId.STYLE_1_BAR_STYLISH),
+        make_context(TemplateId.STYLE_1_BAR_STYLISH),
+    )
+    assert Image.open(BytesIO(data)).size == (CANVAS_WIDTH, CANVAS_HEIGHT)
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.title_line_count == 2
+    assert metadata.title_hanging is False

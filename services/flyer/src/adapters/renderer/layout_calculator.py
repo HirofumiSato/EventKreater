@@ -7,10 +7,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageStat
 
 from src.domain.exceptions import FontRenderError
+from src.domain.title_composition import title_splits
 
 #: A4 縦（210:297）を幅 1080 で表した寸法。1080 * 297 / 210 ≒ 1527.4 を偶数に丸める。
 CANVAS_WIDTH: int = 1080
@@ -25,6 +27,15 @@ SHORT_TITLE_MAX_CHARS: int = 10
 SHORT_TITLE_LETTER_SPACING: int = 15
 WCAG_AA_CONTRAST: float = 4.5
 HIGH_FREQUENCY_EDGE_VARIANCE: float = 500.0
+#: タイトルの最終行を「ぶら下げ」にする条件。最終行がこの文字数以下で、
+#: 最長行のこの割合より短いときに、右端へ寄せる。
+HANGING_MAX_CHARS: int = 5
+HANGING_WIDTH_RATIO: float = 0.7
+#: フォントサイズの差がこれ以内なら、大きさは同じとみなして意味で選ぶ。
+TITLE_SIZE_MARGIN: int = 2
+
+#: タイトルの寄せ。`pillow_renderer.Alignment` と同じ値。
+TitleAlignment = Literal["center", "left"]
 
 _FONT_CACHE: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
@@ -238,6 +249,209 @@ def calculate_optimal_font_and_lines(
             return font, lines
 
     raise FontRenderError("テキストを指定領域に収められませんでした")
+
+
+@dataclass(frozen=True)
+class TitleLayout:
+    """タイトルの書体・行・ぶら下げの決定。"""
+
+    font: ImageFont.FreeTypeFont
+    lines: list[str]
+    #: 最終行をブロックの右端へ寄せるか。
+    hanging: bool
+
+
+def _max_fitting_font(
+    lines: list[str],
+    font_path: str,
+    draw: ImageDraw.ImageDraw,
+    max_w: int,
+    max_h: int,
+    min_size: int,
+    max_size: int,
+    line_spacing_ratio: float,
+    letter_spacing: int,
+    max_lines: int,
+) -> ImageFont.FreeTypeFont | None:
+    """行の構成を固定したまま、収まる最大のフォントサイズを二分探索する。"""
+    best: ImageFont.FreeTypeFont | None = None
+    low = min_size
+    high = max_size
+    while low <= high:
+        mid_size = (low + high) // 2
+        font = load_font(font_path, mid_size)
+        if _layout_fits(
+            lines,
+            draw,
+            font,
+            max_w,
+            max_h,
+            line_spacing_ratio,
+            letter_spacing,
+            max_lines,
+        ):
+            best = font
+            low = mid_size + 2
+        else:
+            high = mid_size - 2
+    return best
+
+
+def _semantic_title_layout(
+    text: str,
+    font_path: str,
+    draw: ImageDraw.ImageDraw,
+    max_w: int,
+    max_h: int,
+    min_size: int,
+    max_size: int,
+    line_spacing_ratio: float,
+    letter_spacing: int,
+    max_lines: int,
+) -> tuple[ImageFont.FreeTypeFont | None, list[str]]:
+    """意味の区切りで分けた案のうち、いちばん大きい字で成立するものを選ぶ。
+
+    字体の大きさが近い案が複数あるときは、行数が少ないほうを採る。意味の
+    区切りを優先するあまり、3 行に刻む案が勝たないようにするためである。
+    同数なら意味の評価が高いほうを採る。
+    """
+    fitted: list[tuple[ImageFont.FreeTypeFont, list[str], float]] = []
+    for candidate in title_splits(text, max_lines):
+        lines = list(candidate.lines)
+        font = _max_fitting_font(
+            lines,
+            font_path,
+            draw,
+            max_w,
+            max_h,
+            min_size,
+            max_size,
+            line_spacing_ratio,
+            letter_spacing,
+            max_lines,
+        )
+        if font is not None:
+            fitted.append((font, lines, candidate.score))
+    if not fitted:
+        return (None, [])
+    largest = max(font.size for font, _, _ in fitted)
+    near = [item for item in fitted if item[0].size >= largest - TITLE_SIZE_MARGIN]
+    font, lines, _ = max(near, key=lambda item: (-len(item[1]), item[2], item[0].size))
+    return (font, lines)
+
+
+def _hangs(
+    draw: ImageDraw.ImageDraw,
+    lines: list[str],
+    font: ImageFont.FreeTypeFont,
+    letter_spacing: int,
+) -> bool:
+    """最終行が短いときだけ、右端へぶら下げる。"""
+    if len(lines) < 2:
+        return False
+    last = lines[-1]
+    if not 2 <= len(last) <= HANGING_MAX_CHARS:
+        return False
+    widest = max(line_width(draw, line, font, letter_spacing) for line in lines)
+    if widest <= 0:
+        return False
+    return line_width(draw, last, font, letter_spacing) < widest * HANGING_WIDTH_RATIO
+
+
+def calculate_title_layout(
+    text: str,
+    font_path: str,
+    draw: ImageDraw.ImageDraw,
+    max_w: int = TITLE_MAX_WIDTH,
+    max_h: int = TITLE_MAX_HEIGHT,
+    min_size: int = TITLE_MIN_FONT_SIZE,
+    max_size: int = TITLE_MAX_FONT_SIZE,
+    line_spacing_ratio: float = TITLE_LINE_SPACING_RATIO,
+    letter_spacing: int = 0,
+    max_lines: int = TITLE_MAX_LINES,
+) -> TitleLayout:
+    """タイトルのフォントサイズ・行・ぶら下げを決める。
+
+    1 行に収まるなら改行しない。折り返しが必要なときだけ、意味の区切りで分ける。
+    意味の区切りで分けられないときは、従来どおり文字幅で折り返す。
+    """
+    single_font, single_lines = calculate_optimal_font_and_lines(
+        text,
+        font_path,
+        draw,
+        max_w=max_w,
+        max_h=max_h,
+        min_size=min_size,
+        max_size=max_size,
+        line_spacing_ratio=line_spacing_ratio,
+        letter_spacing=letter_spacing,
+        max_lines=max_lines,
+    )
+    if len(single_lines) <= 1:
+        return TitleLayout(font=single_font, lines=single_lines, hanging=False)
+
+    # 2 行以上になるときは字間を詰める。字間で幅を食うと意味の区切りが入らない。
+    spacing = 0
+    font, lines = _semantic_title_layout(
+        text,
+        font_path,
+        draw,
+        max_w,
+        max_h,
+        min_size,
+        max_size,
+        line_spacing_ratio,
+        spacing,
+        max_lines,
+    )
+    if font is None:
+        font, lines = calculate_optimal_font_and_lines(
+            text,
+            font_path,
+            draw,
+            max_w=max_w,
+            max_h=max_h,
+            min_size=min_size,
+            max_size=max_size,
+            line_spacing_ratio=line_spacing_ratio,
+            letter_spacing=spacing,
+            max_lines=max_lines,
+        )
+    return TitleLayout(
+        font=font,
+        lines=lines,
+        hanging=_hangs(draw, lines, font, spacing),
+    )
+
+
+def title_line_origins(
+    draw: ImageDraw.ImageDraw,
+    lines: list[str],
+    font: ImageFont.FreeTypeFont,
+    zone: Zone,
+    block_w: int,
+    alignment: TitleAlignment,
+    letter_spacing: int = 0,
+    hanging: bool = False,
+) -> list[int]:
+    """行ごとの描画 x。ぶら下げのときだけ最終行をブロック右端へ寄せる。"""
+    if not lines:
+        return []
+    if alignment == "center":
+        left = zone.x + max(0, (zone.width - block_w) // 2)
+    else:
+        left = zone.x
+    origins: list[int] = []
+    last = len(lines) - 1
+    for index, line in enumerate(lines):
+        width = line_width(draw, line, font, letter_spacing)
+        if hanging and index == last:
+            origins.append(left + block_w - width)
+        elif alignment == "center":
+            origins.append(zone.x + max(0, (zone.width - width) // 2))
+        else:
+            origins.append(zone.x)
+    return origins
 
 
 def _linearize_channel(channel: float) -> float:

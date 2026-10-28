@@ -4412,7 +4412,7 @@
       "title": "ドメイン",
       "summary": ":no-undoc-members:",
       "preImplementation": false,
-      "lineCount": 9,
+      "lineCount": 12,
       "headings": [
         {
           "level": 1,
@@ -4556,7 +4556,7 @@
       "title": "文字合成",
       "summary": "基準キャンバスは 1080×1528 px（A4 縦 210:297）です。背景が別サイズでも、中央を基準に覆うように拡大してからこのサイズへ切り出します。出力は品質 90 の JPEG です。",
       "preImplementation": false,
-      "lineCount": 52,
+      "lineCount": 61,
       "headings": [
         {
           "level": 1,
@@ -4685,7 +4685,7 @@
       "title": "システム詳細設計書",
       "summary": "本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。",
       "preImplementation": false,
-      "lineCount": 393,
+      "lineCount": 400,
       "headings": [
         {
           "level": 1,
@@ -4789,7 +4789,12 @@
         }
       ],
       "toctree": [],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "services/flyer/src/domain/title_composition.py",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/flyer/specs/index.rst"
       ]
@@ -4801,7 +4806,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 372,
+      "lineCount": 354,
       "headings": [
         {
           "level": 1,
@@ -4880,6 +4885,10 @@
           "text": "3.3. 動的文字スケーリング・折り返しアルゴリズム"
         },
         {
+          "level": 4,
+          "text": "ぶら下げ（hanging）"
+        },
+        {
           "level": 3,
           "text": "3.4. コントラスト保護数理モデル（WCAG 2.1準拠）"
         },
@@ -4916,6 +4925,10 @@
       "codePaths": [
         {
           "path": "services/flyer/src/domain/prompt_payload.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/title_composition.py",
           "exists": true
         },
         {
@@ -5315,7 +5328,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 139,
+      "lineCount": 173,
       "headings": [
         {
           "level": 1,
@@ -5332,6 +5345,10 @@
         {
           "level": 2,
           "text": "レンダラー"
+        },
+        {
+          "level": 2,
+          "text": "タイトルの意味改行"
         },
         {
           "level": 2,
@@ -5370,6 +5387,10 @@
         },
         {
           "path": "services/flyer/tests/test_renderer.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_title_composition.py",
           "exists": true
         }
       ],

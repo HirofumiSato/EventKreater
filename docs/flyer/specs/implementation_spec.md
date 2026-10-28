@@ -248,75 +248,57 @@ Zone A（`Y: 128 ~ 176`）は種目名を焼かずに空けておく。利用者
 
 タイトルが指定矩形領域（幅 $W_{\max} = 920\text{ px}$, 高さ $H_{\max} = 336\text{ px}$）をはみ出さないよう、**二分探索（Binary Search）によるフォントサイズ自動収束アルゴリズム**を適用する。
 
-$$S \in [S_{\min}, S_{\max}] \quad (S_{\min}=48\text{ px}, S_{\max}=96\text{ px})$$
+$$S \in [S_{\min}, S_{\max}] \quad (S_{\min}=44\text{ px}, S_{\max}=92\text{ px})$$
+
+折り返す位置は文字幅だけでは決めない。幅に収めるだけなら 1 文字ずつ詰めれば足りるが、
+「焚火とシチューの / 夕べ」を「焚火とシチューの夕 / べ」にすると、最終行に 1 文字だけが
+残って読みにくい。そこで次の順で決める。
+
+1. **1 行に収まるなら改行しない。** まず従来どおり二分探索し、1 行で収まればそこで確定する。
+2. **収まらないときは、意味の区切りで分ける。** `src/domain/title_composition.py` の
+   `title_splits` が、助詞の直後・句読点の直後・末尾語の直前・文字種の変わり目・
+   利用者が入れた空白を加点し、読みやすい切り方を評価の高い順に返す。
+3. **その切り方ごとに、収まる最大のフォントサイズを二分探索する。** 最大サイズから
+   2 px 以内の案のうち、行数が少なく、意味の評価が高い案を採る。意味のために
+   極端に文字を小さくしないための足切りである。
+4. 意味の区切りで分けられないときは、従来の文字幅ベースの折り返しへ落とす。
+
+行頭・行末の制約は候補を作る時点で外す。1 文字だけの行、小書き仮名（ゃ・ュ・ッ など）
+から始まる行、句読点や閉じ括弧から始まる行、開き括弧で終わる行は候補にしない。
+
+#### ぶら下げ（hanging）
+
+最終行が 2〜5 文字で、最長行の幅の 70% 未満のとき、最終行だけを本文ブロックの右端へ
+揃える。これが「焚火とシチューの／夕べ」の右下配置にあたる。揃えるのは右端だけで、
+行の高さ・行間・フォントサイズは他の行と変えない。1 行のタイトルではぶら下げない。
+`RenderMetadata.title_hanging` に真偽を残す。
 
 ```python
-from PIL import ImageDraw, ImageFont
-
-
-def calculate_optimal_font_and_lines(
+def calculate_title_layout(
     text: str,
     font_path: str,
     draw: ImageDraw.ImageDraw,
-    max_w: int = 920,
-    max_h: int = 336,
-    min_size: int = 44,
-    max_size: int = 92,
-    line_spacing_ratio: float = 1.3,
-) -> tuple[ImageFont.FreeTypeFont, list[str]]:
-    """指定領域に厳密に収まるフォントサイズと改行行リストを二分探索で算出する。"""
-    best_font = None
-    best_lines = []
-
-    low = min_size
-    high = max_size
-
-    while low <= high:
-        mid_size = (low + high) // 2
-        font = ImageFont.truetype(font_path, mid_size)
-
-        # 文字幅ベースの動的行分割
-        lines = []
-        current_line = ""
-        for char in text:
-            test_line = current_line + char
-            bbox = draw.textbbox((0, 0), test_line, font=font)
-            line_w = bbox[2] - bbox[0]
-            if line_w <= max_w:
-                current_line = test_line
-            else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = char
-        if current_line:
-            lines.append(current_line)
-
-        # 最大行数制限（タイトルは最大3行まで）
-        if len(lines) > 3:
-            high = mid_size - 2
-            continue
-
-        # 描画総高の計算
-        sample_bbox = draw.textbbox((0, 0), "あA", font=font)
-        single_line_h = sample_bbox[3] - sample_bbox[1]
-        total_h = int(
-            single_line_h * len(lines)
-            + (len(lines) - 1) * single_line_h * (line_spacing_ratio - 1.0)
-        )
-
-        if total_h <= max_h:
-            best_font = font
-            best_lines = lines
-            low = mid_size + 2  # さらに大きなサイズを探索
-        else:
-            high = mid_size - 2  # 領域超過のため縮小
-
-    if best_font is None:
-        best_font = ImageFont.truetype(font_path, min_size)
-        best_lines = [text[:15], text[15:30]]
-
-    return best_font, best_lines
+    max_w: int = TITLE_MAX_WIDTH,
+    max_h: int = TITLE_MAX_HEIGHT,
+    min_size: int = TITLE_MIN_FONT_SIZE,
+    max_size: int = TITLE_MAX_FONT_SIZE,
+    letter_spacing: int = 0,
+    max_lines: int = TITLE_MAX_LINES,
+) -> TitleLayout:
+    """1 行優先で、収まらなければ意味の区切りで分ける。"""
+    single_font, single_lines = calculate_optimal_font_and_lines(
+        text, font_path, draw, max_w=max_w, max_h=max_h,
+        min_size=min_size, max_size=max_size,
+        letter_spacing=letter_spacing, max_lines=max_lines,
+    )
+    if len(single_lines) <= 1:
+        return TitleLayout(font=single_font, lines=single_lines, hanging=False)
+    # 2 行以上では字間を詰め、意味の区切りとフォントサイズの両方で選ぶ。
+    ...
 ```
+
+`letter_spacing`（短いタイトルでは 15 px）は 1 行のときだけ使う。2 行以上では 0 にする。
+字間で幅を食うと、意味の区切りを入れる余地がなくなるためである。
 
 ---
 
