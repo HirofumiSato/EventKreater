@@ -324,6 +324,34 @@ export async function collectVariants(page, { maxDays = 31 } = {}) {
 }
 
 /**
+ * セマンティックテーマを差し替える。`theme` が `null` ならテーマ未選択にする。
+ *
+ * テーマはサーバーが `data-semantic-theme` 属性を 1 つ出すだけで決まる（色は静的 CSS）。
+ * 属性を差し替えた DOM は、そのテーマを保存している主催者の画面と同じ HTML になる。
+ * そのため、テーマごとのデモ会員を増やさずに、同じ画面を 5 通り撮れる。
+ *
+ * `null`（未選択）のときは、製品が `SemanticThemeScope` を出さないのと同じく包みごと外す。
+ * 属性を消すだけだと、`--st-*` が未定義のまま `.semantic-theme` の写しだけが残り、
+ * 標準の見た目にならない。
+ *
+ * 属性を変えるだけなので、`markVariants` と同じく `readHtml` の前に呼ぶ。
+ * 適用できたら実際のテーマ（未選択は空文字）を返す。テーマの無い画面では null。
+ */
+export async function applySemanticTheme(page, theme) {
+  return page.evaluate(`(() => {
+    const scope = document.querySelector(".semantic-theme--page");
+    if (!scope) return null;
+    const theme = ${JSON.stringify(theme)};
+    if (theme) {
+      scope.setAttribute("data-semantic-theme", theme);
+      return theme;
+    }
+    scope.replaceWith(...scope.childNodes);
+    return "";
+  })()`);
+}
+
+/**
  * ページの Cookie を使って 1 つの素材を取りに行く。
  *
  * CDP の評価で base64 にして返す。画像は数 100KB になるが、1 画面あたり数枚なので

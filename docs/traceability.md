@@ -157,7 +157,7 @@
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/lib/problem.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/onboarding.md](onboarding.md) |
 | `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
-| `src/lib/semantic-themes.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
+| `src/lib/semantic-themes.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/lib/serializers.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/site-chrome.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/lib/site-nav.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
@@ -267,7 +267,7 @@
 | `src/styles/deco/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/index.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/styles/screens/organizer.css` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
-| `src/styles/themes.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
+| `src/styles/themes.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/styles/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -313,7 +313,7 @@
 | `tests/unit/guest-edit-window.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/unit/hydration-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/line-share.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
-| `tests/unit/mock-sync.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/mock-sync.test.mjs` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `tests/unit/organizer-calendar.test.ts` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-names.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-profile.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/scope.rst](testing/scope.rst) |

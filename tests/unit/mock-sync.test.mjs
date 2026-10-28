@@ -49,6 +49,7 @@ import {
   variantsWanted,
   writeVariantCache,
 } from "../../scripts/lib/mock-variants.mjs";
+import { SEMANTIC_THEMES, SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -376,8 +377,21 @@ describe("画面の目録", () => {
     expect([...new Set(missing)]).toEqual([]);
   });
 
-  it("33 の状態を持つ", () => {
-    expect(expectedFiles()).toHaveLength(33);
+  it("39 の状態を持つ", () => {
+    expect(expectedFiles()).toHaveLength(39);
+  });
+
+  it("テーマの状態は、製品の 5 テーマと未選択をすべて 1 枚ずつ持つ", () => {
+    const rows = screens.filter((row) => row.slug === "organizer-public" && row.theme !== undefined);
+    // undefined（DB のまま）は含めない。null は「テーマ未選択」。
+    const themes = rows.map((row) => row.theme).filter((theme) => theme !== null);
+    expect(new Set(themes)).toEqual(new Set(SEMANTIC_THEME_IDS));
+    expect(rows.filter((row) => row.theme === null)).toHaveLength(1);
+    // 表示名は製品のラベルと同じにする（モックの一覧でテーマ名が食い違わないように）。
+    for (const row of rows) {
+      if (row.theme === null) continue;
+      expect(row.label).toBe(SEMANTIC_THEMES.find((theme) => theme.id === row.theme)?.label);
+    }
   });
 
   it("--only は 0 詰めでも、詰めなくても、ファイル名でも絞れる", () => {
