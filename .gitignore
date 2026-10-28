@@ -15,6 +15,9 @@ storage/flyers
 storage/ui-demo.json
 # mock:sync の撮影（390 / 1280）。目視用で、コミットしない。
 storage/mock-shots/
+# mock:sync の控え。隠し DOM（日付・ステップ）と CSS の対応表。消すと次の撮影で作り直す。
+storage/mock-variants/
+storage/mock-assets.json
 # 作業中の一時ファイル（src の退避、dev のログなど）。リポジトリ直下だけを見る。
 /.tmp-*
 .DS_Store

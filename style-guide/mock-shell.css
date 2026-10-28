@@ -92,3 +92,21 @@ html.is-embed.has-mockbar body {
     padding-bottom: 0 !important;
   }
 }
+
+/* ==========================================================================
+   隠し DOM（`data-mock-hidden`）。
+
+   製品が「開いているステップ」「選んでいる日」しか描かないので、モックは残りを
+   隠して持つ（`scripts/lib/mock-variants.mjs` が合成する）。`mock-interactions.js`
+   が出し入れする。`!important` は、製品の `display: flex` などに負けないため。
+   ========================================================================== */
+[data-mock-hidden="true"] {
+  display: none !important;
+}
+
+/* 音声入力で値が入った瞬間の合図。製品の枠（`[data-voice-target]`）と重ねる。 */
+.voice-filled {
+  transition: background 200ms ease-out;
+  background: #fff6d8;
+}
+

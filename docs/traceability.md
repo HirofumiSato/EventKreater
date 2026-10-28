@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 101（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 304
+- 文書から参照されているコードパス: 306
 - API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -26,12 +26,14 @@
 | `scripts/check-mock-sync.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/check.mjs` | [docs/testing/vitest/index.rst](testing/vitest/index.rst) |
 | `scripts/ci-scope.mjs` | [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
+| `scripts/lib/capture-core.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
 | `scripts/lib/mock-frame.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-hash.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-html.mjs` | `AGENTS.md` / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-index.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-screens.mjs` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `scripts/lib/mock-variants.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
 | `services/flyer/mypy.ini` | `services/flyer/AGENTS.md` |

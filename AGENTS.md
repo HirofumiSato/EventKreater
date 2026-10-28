@@ -84,15 +84,18 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 **製品が正**です。`style-guide/mock-*.html` は製品の DOM を写した生成物で、手で編集しません。
 比較（parity）はしません。見た目を変えたら、次を同じ PR で終わらせます。
 
-モックだけが持つものは 3 つです。画面下部の帯（`style-guide/mock-shell.js` / `mock-shell.css`）、
-画面の一覧（`style-guide/mock-index.html`）、幅の枠（`style-guide/mock-frame.html`）。
-帯は `scripts/lib/mock-html.mjs` の `withMockShell` が `sanitizeHtml` のあとに差し込むので、
-撮り直しても消えません。消せば `npm run check` が止まります。帯と一覧の CSS/JS だけは手で保守します。
+モックだけが持つものは 4 つです。画面下部の帯（`style-guide/mock-shell.js` / `mock-shell.css`）、
+操作の script（`style-guide/mock-interactions.js`）、画面の一覧（`style-guide/mock-index.html`）、
+幅の枠（`style-guide/mock-frame.html`）。
+帯と操作の script は `scripts/lib/mock-html.mjs` の `withMockShell` / `withMockInteractions` が
+`sanitizeHtml` のあとに差し込むので、撮り直しても消えません。消せば `npm run check` が止まります。
+帯・操作・一覧の CSS/JS だけは手で保守します。
 
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
 npm run mock:sync    # 全 33 画面を撮り直す（既定は本番ビルド。30〜35 秒＋ビルド）
 npm run mock:sync -- --only=20,24   # 直した画面だけ（1 画面 5 秒前後）
+npm run mock:sync -- --refresh      # 控え（隠し DOM・CSS・PNG）を使わず取り直す
 npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）
 npm run check:full   # PR の直前に 1 回（Vitest 込み）
 ```
@@ -100,7 +103,11 @@ npm run check:full   # PR の直前に 1 回（Vitest 込み）
 1. 製品を直す（`src/styles/**` → `src/components/ui/**` → 画面 TSX の順）
 2. `npm run mock:sync` でモックを差し替える。部分同期で済ませたときは、コミット前に全体を回す
 3. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
-4. PNG（`storage/mock-shots/`）はコミットしない
+4. PNG（`storage/mock-shots/`）と控え（`storage/mock-variants/`・`storage/mock-assets.json`）はコミットしない
+
+撮り直しは控えで短くなります。隠し DOM（閉じているステップの本文・選んでいない日の一覧）は
+`storage/mock-variants/` に、CSS は `storage/mock-assets.json` に残り、HTML が変わらない画面は撮影を省きます。
+画像だけを差し替えたときなど、DOM に出ない差分は `--refresh` で取り直してください。
 
 同期漏れは `npm run check` が止めます。どうしても通すときだけ `MOCK_SYNC_ALLOW_STALE=1` を付け、
 PR に理由を書きます。手順の正は `docs/ui-review/mock-sync.md` です。

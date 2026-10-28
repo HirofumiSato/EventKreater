@@ -393,15 +393,54 @@ export function selectRows(rows, only) {
  *
  * キーは URL のパス部分（`?` より前）。値はモックのファイル名。
  * 同じパスに複数の状態がある画面は、代表（先頭の状態）を選ぶ。
+ *
+ * デモデータを受け取ったときは、催しや主催者の ID を `*` に置き換えた型も足す。
+ * 撮るたびに ID は変わるので、完全一致だけだと一覧の「編集」「参加者を見る」が
+ * 全部 `#` になる。`*` は 1 セグメントとして `rewriteInternalLinks` が照合する。
  */
-export function linkTargets(rows) {
+export function linkTargets(rows, demo = null) {
   const map = new Map();
   for (const row of rows) {
     const url = pathFor(row, WIDTHS[WIDTHS.length - 1].width);
     const pathname = url.split("?")[0].split("#")[0];
     if (!map.has(pathname)) map.set(pathname, row.file);
   }
+  for (const [pattern, file] of patternsOf(map, demo)) {
+    if (!map.has(pattern)) map.set(pattern, file);
+  }
   return map;
+}
+
+/**
+ * 完全一致の対応表から、デモ ID を `*` にした型を作る。
+ * 長い ID から置き換えるのは、短い ID が長い ID の一部に当たるのを避けるため。
+ */
+function patternsOf(targets, demo) {
+  const ids = demoIds(demo);
+  if (ids.length === 0) return [];
+
+  const patterns = [];
+  for (const [pathname, file] of targets) {
+    let pattern = pathname;
+    for (const id of ids) {
+      pattern = pattern.split(`/${id}/`).join("/*/");
+      if (pattern.endsWith(`/${id}`)) pattern = `${pattern.slice(0, -id.length)}*`;
+    }
+    if (pattern !== pathname) patterns.push([pattern, file]);
+  }
+  return patterns;
+}
+
+/** 目録のパスに出てくるデモデータの ID。短いものは後ろに回す。 */
+function demoIds(demo) {
+  if (!demo) return [];
+  const values = [
+    demo.organizerId,
+    demo.receiptParticipant,
+    demo.inviteCode,
+    ...Object.values(demo.events ?? {}),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+  return [...new Set(values)].sort((left, right) => right.length - left.length);
 }
 
 /**
