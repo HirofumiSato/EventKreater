@@ -414,20 +414,11 @@
   font-weight: 700;
 }
 
+/* 選んだ日（初期表示では今日）は、墨で反転させず淡い面で示す。
+   短冊の色はそのまま読めるので、白の膜を重ねない。 */
 .cal__day.is-selected {
-  background: var(--color-text);
-  color: #fff;
-}
-
-/* 墨地の上でも短冊と日番号が読めるように、面を白の薄い膜で分ける。 */
-.cal__day.is-selected .cal__event,
-.cal__day.is-selected .cal__more {
-  background: rgb(255 255 255 / 0.18);
-  color: #fff;
-}
-
-.cal__day.is-selected .cal__event.is-muted {
-  color: rgb(255 255 255 / 0.72);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
 }
 
 /* セル全体を押せる透明なボタン。日番号と短冊は、この上に重ねて置く。 */
@@ -459,7 +450,8 @@
   text-align: center;
 }
 
-/* セル内の催し名。狭いので 1 行に切り、入りきらない分は「+N」にまとめる。 */
+/* セル内の催し名。狭いので、入りきらない分は折り返して全文を出す。
+   色は凡例（`.cal__legend i`）の点と同じ塗りにして、色の意味を 1 か所で決める。 */
 .cal__events {
   position: relative;
   z-index: 1;
@@ -476,27 +468,26 @@
   padding: 0.1875rem;
   border: 0;
   border-radius: var(--radius-lg);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
+  background: var(--pop-warm);
+  color: var(--tape-ink);
   font-size: 0.5625rem;
   font-weight: 500;
   line-height: 1.35;
   text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
   /* 短冊はモーダルを開くので、セル選択より手前で受ける。 */
   pointer-events: auto;
 }
 
 .cal__event.is-muted {
-  background: var(--color-slate-100);
-  color: var(--color-text-muted);
+  background: var(--color-text-subtle);
+  color: var(--color-surface);
 }
 
 .cal__event.is-waitlist {
-  background: var(--pop-warm-tint);
-  color: var(--pop-warm-deep);
+  background: var(--color-warning-line);
+  color: var(--tape-ink);
 }
 
 .cal__more {

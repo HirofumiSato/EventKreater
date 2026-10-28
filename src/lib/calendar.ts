@@ -117,6 +117,25 @@ export function entriesForDate<T>(grouped: Map<string, T[]>, date: string | null
   return grouped.get(date) ?? [];
 }
 
+/**
+ * 表示中の月の予定を、日付の昇順でまとめて返す。予定のある日だけを返す。
+ * 下の一覧を「選んだ日」ではなく「今月ぶん」で出す画面が使う。
+ * 同じ日の並びは `grouped` の順（呼び出し側が時刻順に整えておく）を保つ。
+ */
+export function entriesForMonth<T>(
+  grouped: Map<string, T[]>,
+  month: string,
+): { date: string; entries: T[] }[] {
+  const days: { date: string; entries: T[] }[] = [];
+  for (const [date, entries] of grouped) {
+    if (date.slice(0, 7) !== month || entries.length === 0) continue;
+    days.push({ date, entries });
+  }
+  // 日付は `YYYY-MM-DD` の固定長なので、文字列の比較がそのまま日付の順になる。
+  days.sort((left, right) => (left.date < right.date ? -1 : left.date > right.date ? 1 : 0));
+  return days;
+}
+
 /** 月内の予定が1件も無いか。空状態の出し分けに使う。 */
 export function countMonthEntries<T>(grouped: Map<string, T[]>, month: string): number {
   let count = 0;

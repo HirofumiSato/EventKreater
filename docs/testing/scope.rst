@@ -147,7 +147,7 @@
 
 .. count-start
 
-59 ファイル、``it`` は 752 件です。内訳は ``tests/unit/`` が 46 ファイル 678 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+59 ファイル、``it`` は 755 件です。内訳は ``tests/unit/`` が 46 ファイル 681 件、``tests/integration/`` が 13 ファイル 74 件です。結合の 74 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -320,7 +320,7 @@
      - LINE 共有の本文（開催日の要約、1 行ずつの項目、空欄の詰め方）と、クエリのエンコード
      - SCR-PUB-01
    * - ``tests/unit/organizer-calendar.test.ts``
-     - 16
+     - 19
      - 主催者カレンダーの月の計算（日本時間・うるう年・42 日固定）と、予定の並び順とセルの表記
      - SCR-ORG-09
    * - ``tests/unit/organizer-names.test.ts``
@@ -398,7 +398,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 678、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 678 件を実行して 74 件を skip します。
+件数の内訳は ``tests/unit/`` が 681、``tests/integration/`` が 74 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 681 件を実行して 74 件を skip します。
 
 .. breakdown-end
 

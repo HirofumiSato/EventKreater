@@ -15,6 +15,7 @@ export {
   currentMonth,
   defaultSelectedDate,
   entriesForDate,
+  entriesForMonth,
   formatCellLabel,
   formatDayHeading,
   formatMonthTitle,

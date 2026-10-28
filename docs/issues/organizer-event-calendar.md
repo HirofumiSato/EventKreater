@@ -225,6 +225,15 @@ const TABS = [
 
 - [ ] `tests/unit/organizer-calendar.test.ts` が上記の純関数を固定している
 
+## その後の変更
+
+画面を通しで見て、次の 4 点を直した（`src/styles/deco/surface.css` / `src/styles/deco/quiet.css` / `CalendarView.tsx`）。
+
+- **帯は折り返して全文を出す。** 1 行で省略すると、同じ日に 2 件以上あるとき催し名の違いが読めない。`white-space: normal` と `overflow-wrap: anywhere` にし、入りきらない分はセルが縦に伸びる（`+N` に畳むのは 3 件を超えたときだけ）。
+- **帯の色は凡例の点に合わせる。** 凡例が色の意味を持つので、帯だけ別の色にしない。公開中・出席は `--pop-warm`、下書き・受付停止・欠席は `--color-text-subtle`、参加要望は `--color-warning-line`。
+- **下の一覧は「今月の催し」にする。** 選んだ日だけを出すと、月に 1 件しかないときに「この日は空いています」ばかりが出る。月の予定を日付の昇順で並べ（`entriesForMonth`）、セルを押したらその日のまとまり（`#cal-day-YYYY-MM-DD`）へ寄せる。帯を押したときは詳細のモーダルだけを開き、画面は動かさない。
+- **今日の面は淡く。** 墨地の反転は、数字を走査する画面では目が止まりすぎる。`is-selected` は `--color-primary-soft` の面にし、日番号は `--color-text` のまま読ませる。墨地を前提にしていた帯の白い膜（`.cal__day.is-selected .cal__event`）は外した。
+
 ## 参考
 
 - `prisma/schema.prisma` — `Event`, `EventSchedule`

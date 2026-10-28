@@ -5,6 +5,7 @@ import {
   countMonthEntries,
   currentMonth,
   entriesForDate,
+  entriesForMonth,
   formatCellLabel,
   formatDayHeading,
   groupSchedulesByDate,
@@ -193,6 +194,45 @@ describe("countMonthEntries", () => {
       ],
     });
     expect(countMonthEntries(groupSchedulesByDate([event]), "2026-10")).toBe(2);
+  });
+});
+
+describe("entriesForMonth", () => {
+  it("月内の日だけを日付の昇順で返す", () => {
+    const event = makeEvent({
+      schedules: [
+        makeSchedule("s1", "2026-10-31", "18:00", "21:00"),
+        makeSchedule("s2", "2026-09-30", "18:00", "21:00"),
+        makeSchedule("s3", "2026-10-01", "10:00", "12:00"),
+        makeSchedule("s4", "2026-11-01", "18:00", "21:00"),
+      ],
+    });
+    const days = entriesForMonth(groupSchedulesByDate([event]), "2026-10");
+    expect(days.map((day) => day.date)).toEqual(["2026-10-01", "2026-10-31"]);
+    expect(days[0].entries).toHaveLength(1);
+  });
+
+  it("同じ日の並びは、まとめたときの時刻順を保つ", () => {
+    const later = makeEvent({
+      id: "event-later",
+      schedules: [makeSchedule("s2", "2026-10-22", "18:00", "21:00")],
+    });
+    const earlier = makeEvent({
+      id: "event-earlier",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      schedules: [makeSchedule("s1", "2026-10-22", "10:00", "12:00")],
+    });
+    const days = entriesForMonth(groupSchedulesByDate([later, earlier]), "2026-10");
+    expect(days).toHaveLength(1);
+    expect(days[0].entries.map((entry) => entry.event.id)).toEqual([
+      "event-earlier",
+      "event-later",
+    ]);
+  });
+
+  it("予定の無い月は空になる", () => {
+    const event = makeEvent({ schedules: [makeSchedule("s1", "2026-10-22", "18:00", "21:00")] });
+    expect(entriesForMonth(groupSchedulesByDate([event]), "2026-12")).toEqual([]);
   });
 });
 

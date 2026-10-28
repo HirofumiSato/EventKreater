@@ -212,7 +212,7 @@ export function buildScreens(demo) {
       name: "主催カレンダー",
       path: "/organizer/calendar",
       auth: "organizer",
-      note: "月グリッドと、選んだ日の催し。複数の開催日はすべて出す。",
+      note: "月グリッドと、今月の催し一覧。複数の開催日はすべて出す。",
     },
     {
       no: "18",

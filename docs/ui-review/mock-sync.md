@@ -97,7 +97,9 @@ PNG（`storage/mock-shots/`）はコミットしません。
 操作を再現したいので、残りを取りに行きます。
 
 1. `markVariants`（`scripts/lib/capture-core.mjs`）が、HTML を読む前に属性だけ付ける
-   （`data-mock-date` / `data-mock-cal-section` / `data-mock-step-key` / `data-mock-step-body`）。見た目は変えない
+   （`data-mock-date` / `data-mock-cal-section` / `data-mock-step-key` / `data-mock-step-body`）。見た目は変えない。
+   日別の一覧は、カレンダーの次の `section` の見出しが選んだ日の「10月28日」で始まるときだけ控える
+   （その月の催しをまとめて出す画面は、日付を押しても中身が変わらないため）
 2. `readHtml` で撮り、`sanitizeHtml` した HTML の指紋（`sourceHash`）を作る
 3. 断片の控え（`storage/mock-variants/<mock-*.html の語幹>.json`）が指紋と合えばそれを使う。
    無ければ `collectVariants` が日付とステップを実際に押して、製品が描いた DOM をそのまま集める

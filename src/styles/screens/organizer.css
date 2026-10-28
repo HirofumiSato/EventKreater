@@ -380,6 +380,35 @@
   }
 }
 
+/* 月の催し一覧。日付ごとに見出しを置き、名簿と同じ行で並べる。
+   カレンダーのセルから寄せたとき、どの日のまとまりかを見失わないよう左に細い帯を出す。
+   帯の太さぶんの余白は常に空け、選んだときに行が横へずれないようにする。 */
+.cal-month {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.cal-month__day {
+  padding-left: 0.75rem;
+  border-left: 3px solid transparent;
+  /* セルから寄せたとき、見出しが画面の上端に貼り付かないようにする。 */
+  scroll-margin-block: 1.5rem;
+}
+
+.cal-month__day.is-selected {
+  border-left-color: var(--color-primary);
+}
+
+.cal-month__date {
+  margin-bottom: 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 未ログインの催し。裏にカレンダーの骨格を置き、白塗りを重ねて案内する。 */
 .organizer-locked {
   position: relative;

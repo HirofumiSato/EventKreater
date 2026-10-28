@@ -115,6 +115,25 @@
     return true;
   }
 
+  /**
+   * 押した日のまとまりへ寄せる。今月ぶんをまとめて出す画面（主催カレンダー）は
+   * 日別のセクションを持たないので、一覧の日付見出し（`#cal-day-<日付>`）を探す。
+   */
+  function scrollToDay(date) {
+    const target = document.getElementById("cal-day-" + date);
+    if (!target) return false;
+    for (const day of document.querySelectorAll(".cal-month__day")) {
+      day.classList.toggle("is-selected", day === target);
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    return true;
+  }
+
+  /** 今月ぶんをまとめて出す画面か。日付を押しても、一覧の中身は変わらない。 */
+  function hasMonthList() {
+    return document.querySelector(".cal-month") !== null;
+  }
+
   function wireCalendar() {
     const cal = document.querySelector(".cal");
     if (!cal) return;
@@ -132,9 +151,11 @@
         }
         const date = cell.getAttribute("data-mock-date");
         if (!date) return;
-        if (!showDay(date)) {
-          toast("この日はモックに写していません。1 枚目に戻します。", "error");
-      }
+        if (showDay(date)) return;
+        if (scrollToDay(date)) return;
+        // 今月ぶんをまとめて出す画面は、予定の無い日を押しても一覧は変わらない。
+        if (hasMonthList()) return;
+        toast("この日はモックに写していません。1 枚目に戻します。", "error");
       });
     }
 

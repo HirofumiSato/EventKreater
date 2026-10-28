@@ -232,6 +232,10 @@ GET /api/v1/user/calendar
 - [ ] `tests/unit/participant-calendar.test.ts` が上記の純関数を固定している
 - [ ] `tests/unit/organizer-calendar.test.ts` が共通化後も通る
 
+## その後の変更
+
+月グリッドの帯を、主催者カレンダーと同じ扱いにした（`src/styles/deco/surface.css`）。1 行で省略せず折り返して全文を出し、塗りは凡例の点に合わせる（公開中・出席は `--pop-warm`、下書き・受付停止・欠席は `--color-text-subtle`、参加要望は `--color-warning-line`）。今日の面は墨地の反転をやめ、`--color-primary-soft` の淡い面にした。日別の一覧を持つ点は変えていない。
+
 ## 参考
 
 - `prisma/schema.prisma` — `Event`, `EventSchedule`, `Participant`

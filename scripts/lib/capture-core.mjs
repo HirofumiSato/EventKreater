@@ -136,7 +136,9 @@ export async function readHtml(page) {
  * 隠し DOM を集めるための目印を付ける。見た目は変えない（属性だけ）。
  *
  *   カレンダーの日セル   … `data-mock-date="YYYY-MM-DD"`（月見出しの年と、セルの読み上げから作る）
- *   日別セクション       … `data-mock-cal-section` / `data-mock-cal-date`（いま選んでいる日）
+ *   日別セクション       … `data-mock-cal-section` / `data-mock-cal-date`（いま選んでいる日）。
+ *                          見出しがその日付で始まる一覧だけを対象にする（今月ぶんをまとめて出す
+ *                          画面は、日付を押しても内容が変わらないので控えない）
  *   ステップの `<li>`    … `data-mock-step-key`、開いている本文に `data-mock-step-body`
  *
  * **`readHtml` の前に呼ぶこと。** 読み取った HTML にだけ目印が入り、製品の画面には残らない
@@ -175,13 +177,24 @@ export async function markVariants(page) {
 
       // 日別の一覧は、カレンダーのすぐ次にある section。カレンダー自体が section に
       // 包まれている画面（主催者の公開ページ）があるので、包みの次も見る。
+      //
+      // ただし、下が「今月の催し」のように日付で切り替わらない一覧の画面（主催カレンダー）
+      // もある。見出しが選んだ日の「10月28日」で始まるときだけ、日別の一覧と見なす。
       const host = cal.closest("section") || cal;
       let section = host.nextElementSibling;
       while (section && section.tagName !== "SECTION") section = section.nextElementSibling;
       if (section && selected) {
-        section.setAttribute("data-mock-cal-section", "true");
-        section.setAttribute("data-mock-cal-date", selected);
-        result.section = selected;
+        const dayMatch = selected.match(/^[0-9]{4}-([0-9]{2})-([0-9]{2})$/);
+        const dayLabel = dayMatch
+          ? String(Number(dayMatch[1])) + "月" + String(Number(dayMatch[2])) + "日"
+          : "";
+        const heading = section.querySelector(".section__head h2");
+        const headingText = ((heading || {}).textContent || "").trim();
+        if (dayLabel && headingText.startsWith(dayLabel)) {
+          section.setAttribute("data-mock-cal-section", "true");
+          section.setAttribute("data-mock-cal-date", selected);
+          result.section = selected;
+        }
       }
     }
 
@@ -226,7 +239,11 @@ export async function collectVariants(page, { maxDays = 31 } = {}) {
       await wait(80);
     }
 
-    const cal = document.querySelector(".cal");
+    // 日付を押して集めるのは、下に「日別の一覧」がある画面だけ。
+    // 今月ぶんをまとめて出す画面（主催カレンダー）は、押しても一覧が変わらない。
+    const cal = document.querySelector("[data-mock-cal-section]")
+      ? document.querySelector(".cal")
+      : null;
     if (cal) {
       const monthText = (cal.querySelector(".cal__month") || {}).textContent || "";
       const yearMatch = monthText.match(/([0-9]{4})/);
