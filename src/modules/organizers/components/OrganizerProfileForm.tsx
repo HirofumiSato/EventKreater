@@ -195,6 +195,31 @@ export function OrganizerProfileForm() {
           void save();
         }}
       >
+        {/* 操作は枠の外・フォームの先頭に置く。保存が主で、プレビューと公開中ページは一段弱くする。
+            スマホではこの行を画面下に固定する（`.profile-actions`）。 */}
+        <div className="btn-row profile-actions">
+          <button type="submit" className="btn btn--primary" disabled={saving}>
+            {saving ? "保存しています…" : "保存する"}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => setPreviewing(true)}
+          >
+            プレビュー
+          </button>
+          {homePath && (
+            <a
+              href={homePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              公開中ページを開く
+            </a>
+          )}
+        </div>
+
         {/* ここから下が公開ページに出る内容だと分かるよう、1 枚の枠にまとめる。 */}
         <section className="card stack">
           <PanelHead
@@ -318,30 +343,6 @@ export function OrganizerProfileForm() {
             </p>
           </fieldset>
         </section>
-
-        {/* 操作は枠の外に置く。保存が主で、プレビューと公開ページは一段弱くする。 */}
-        <div className="btn-row">
-          <button type="submit" className="btn btn--primary" disabled={saving}>
-            {saving ? "保存しています…" : "保存する"}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => setPreviewing(true)}
-          >
-            プレビュー
-          </button>
-          {homePath && (
-            <a
-              href={homePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--outline btn--sm"
-            >
-              公開ページを開く
-            </a>
-          )}
-        </div>
       </form>
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}

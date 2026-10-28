@@ -11,8 +11,10 @@
 //   3. 作成のステップ … 見出しの開閉と「次へ」「戻る」
 //   4. 音声入力 … 録音 → 文字化 → 入力欄へ反映、を疑似タイマーで
 //   5. 共通 … URL のコピー、コピー作成・プレビュー・ログアウトの遷移、API 依存のトースト
+//   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
 //
-// 値や文言を作り直すのは音声入力のサンプルだけ。他の表示は製品の DOM のまま動かす。
+// 値や文言を作り直すのは、音声入力のサンプルと、押したときにしか出ない
+// 絞り込みモーダルの中身だけ。他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
 (function () {
@@ -710,7 +712,7 @@
   ]);
 
   /** この JS が動かしている操作。押してもトーストを出さない。 */
-  const WIRED = ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab";
+  const WIRED = ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab, .list-filters";
 
   function normalized(text) {
     return (text || "").replace(/\s+/g, "").trim();
@@ -805,6 +807,171 @@
     );
   }
 
+  // ---- 6. 一覧の絞り込み -------------------------------------------------
+
+  /** 状態の値 → カードの札の文言。`ALL` は札を見ない。 */
+  const LIST_STATUS_BADGE = { PUBLISHED: "公開中", CLOSED: "受付停止" };
+
+  /** カードの見出しに並ぶ 1 つ目の札（状態）。2 つ目は主催・共同主催。 */
+  function statusBadgeText(card) {
+    const badge = card.querySelector(".event-card__head .badge");
+    return badge ? (badge.textContent || "").trim() : "";
+  }
+
+  /**
+   * 主催一覧の「絞り込む」。640px 未満では状態と開催日をモーダルへ畳む（製品は state で出す）。
+   *
+   * モックでは、隠れているインラインの入力を写してモーダルを組み、状態でカードを
+   * 出し分ける。開催日はカードの札（「11月26日（木）」）から年を読み取れないので、
+   * 条件は受けるが一覧は動かさない。
+   */
+  function wireListFilters() {
+    const bar = document.querySelector(".list-filters");
+    const openButton = bar ? bar.querySelector(".list-filters__open") : null;
+    if (!bar || !openButton) return;
+
+    const rows = Array.from(bar.querySelectorAll(".list-filters__field"))
+      .map((field) => ({
+        label: (field.querySelector(".list-filters__label")?.textContent || "").trim(),
+        control: field.querySelector("select, input"),
+      }))
+      .filter((row) => row.control);
+    if (rows.length === 0) return;
+
+    const grid = document.querySelector(".event-card-grid");
+    const cards = Array.from(document.querySelectorAll(".event-card-grid .event-card"));
+    const statusRow = rows.find((row) => row.control.tagName === "SELECT");
+
+    const filled = (row) => Boolean(row.control.value) && row.control.value !== "ALL";
+
+    /** ボタンの件数は、外に出している「過去の催しを除く」を数えない。 */
+    const syncButton = () => {
+      const count = rows.filter(filled).length;
+      openButton.textContent = count > 0 ? "絞り込む（" + count + "）" : "絞り込む";
+    };
+
+    // 該当が 0 件のときの 1 枚。製品と同じ骨格で、押せば条件を戻せるようにする。
+    let emptyBlock = null;
+    if (grid) {
+      emptyBlock = document.createElement("div");
+      emptyBlock.className = "empty";
+      emptyBlock.setAttribute("data-mock-hidden", "true");
+      emptyBlock.innerHTML =
+        '<p class="empty__title">条件に合う催しはありません。</p>' +
+        '<p class="empty__body">状態や開催日の範囲を広げると見つかります。 ' +
+        '<button type="button" class="text-link">条件を戻す</button></p>';
+      emptyBlock.querySelector("button").addEventListener("click", () => {
+        for (const row of rows) row.control.value = row.control.tagName === "SELECT" ? "ALL" : "";
+        applyListFilter();
+      });
+      grid.after(emptyBlock);
+    }
+
+    /** 確定した条件でカードを出し分ける。ページ割りは写した 1 ページのまま。 */
+    function applyListFilter() {
+      const want = statusRow ? LIST_STATUS_BADGE[statusRow.control.value] || "" : "";
+      let shown = 0;
+      for (const card of cards) {
+        const visible = !want || statusBadgeText(card) === want;
+        if (visible) {
+          card.removeAttribute("data-mock-hidden");
+          shown += 1;
+        } else {
+          card.setAttribute("data-mock-hidden", "true");
+        }
+      }
+      syncButton();
+      // ページ割りの件数は、写した時点のまま。0 件のときだけ出さない。
+      for (const pager of document.querySelectorAll(".pager")) {
+        if (shown === 0) pager.setAttribute("data-mock-hidden", "true");
+        else pager.removeAttribute("data-mock-hidden");
+      }
+      if (emptyBlock) {
+        if (shown === 0 && cards.length > 0) emptyBlock.removeAttribute("data-mock-hidden");
+        else emptyBlock.setAttribute("data-mock-hidden", "true");
+      }
+    }
+
+    let modal = null;
+    let modalControls = [];
+
+    const closeDialog = () => {
+      if (!modal) return;
+      modal.remove();
+      openButton.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("is-modal-open");
+    };
+
+    const buildDialog = () => {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="絞り込みを閉じる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-filter-title">' +
+        '<h3 id="mock-filter-title" class="dialog__title">絞り込む</h3>' +
+        '<div class="filter-dialog"></div>' +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-apply>この条件で絞り込む</button>' +
+        '<button type="button" class="btn btn--ghost btn--block" data-mock-reset>条件を戻す</button>' +
+        "</div></div>";
+
+      const body = host.querySelector(".filter-dialog");
+      modalControls = rows.map((row, index) => {
+        // インラインの入力は 640px 未満で隠れる（`.list-filters__field`）。
+        // 中身だけを写し、`.field` の枠に組み直す。
+        const id = "mock-filter-" + index;
+        const field = document.createElement("div");
+        field.className = "field";
+        const label = document.createElement("label");
+        label.className = "label";
+        label.setAttribute("for", id);
+        label.textContent = row.label;
+        const control = row.control.cloneNode(true);
+        control.id = id;
+        control.value = row.control.value;
+        field.append(label, control);
+        body.append(field);
+        return control;
+      });
+      body.insertAdjacentHTML(
+        "beforeend",
+        '<p class="help">開催日が範囲に入る催しだけを出します。' +
+          "「過去の催しを除く」は一覧の上で切り替えます。</p>",
+      );
+
+      host.querySelector("[data-mock-apply]").addEventListener("click", () => {
+        rows.forEach((row, index) => {
+          row.control.value = modalControls[index].value;
+          row.control.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        closeDialog();
+        applyListFilter();
+        if (rows.some((row) => row.control.tagName !== "SELECT" && row.control.value)) {
+          toast("モックは撮った時点の一覧なので、開催日の絞り込みは再現しません。");
+        }
+      });
+      host.querySelector("[data-mock-reset]").addEventListener("click", () => {
+        for (const control of modalControls) {
+          control.value = control.tagName === "SELECT" ? "ALL" : "";
+        }
+      });
+      host.querySelector(".modal__backdrop").addEventListener("click", closeDialog);
+      return host;
+    };
+
+    openButton.addEventListener("click", () => {
+      if (modal && modal.isConnected) return;
+      if (!modal) modal = buildDialog();
+      // 開くたびに、確定している値をモーダルへ写し直す。
+      modalControls.forEach((control, index) => {
+        control.value = rows[index].control.value;
+      });
+      document.body.append(modal);
+      document.body.classList.add("is-modal-open");
+      openButton.setAttribute("aria-expanded", "true");
+    });
+  }
+
   // ---- 起動 -------------------------------------------------------------
 
   function start() {
@@ -812,6 +979,7 @@
     wireCalendar();
     wireSteps();
     wireVoice();
+    wireListFilters();
     wireActions();
   }
 

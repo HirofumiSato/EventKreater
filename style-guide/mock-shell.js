@@ -37,11 +37,26 @@
   function bar(data) {
     const root = document.createElement("div");
     root.className = "mockbar";
-    root.setAttribute("role", "group");
-    root.setAttribute("aria-label", "モックの切り替え");
+
+    // 既定は閉じる。付箋 1 枚だけを左下に置き、押したときだけ上へ開く。
+    // 製品の写しを読む邪魔をしないための形なので、状態はページの中だけで持つ。
+    const body = document.createElement("div");
+    body.className = "mockbar__body";
+    body.id = "mockbar-body";
+    body.hidden = true;
+    body.setAttribute("role", "group");
+    body.setAttribute("aria-label", "モックの切り替え");
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "mockbar__toggle";
+    toggle.textContent = "モック";
+    toggle.title = "モックの切り替えを開く";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", body.id);
 
     // 帯が出るのは画面のモックだけ（一覧は data-name を持たない）。自分自身を指す心配はない。
-    root.append(link("← 画面一覧", "mock-index.html", "モックの一覧へ戻る"));
+    body.append(link("← 画面一覧", "mock-index.html", "モックの一覧へ戻る"));
 
     const widths = [
       ["スマホ 390", data.frame390, "390px の枠で開き直す"],
@@ -49,23 +64,36 @@
     ];
     for (const [label, href, title] of widths) {
       if (!href) continue;
-      root.append(link(label, href, title));
+      body.append(link(label, href, title));
     }
 
-    if (data.file) root.append(link("HTML", data.file, "帯の無いモックをそのまま開く"));
+    if (data.file) body.append(link("HTML", data.file, "帯の無いモックをそのまま開く"));
 
     const name = document.createElement("span");
     name.className = "mockbar__label";
     name.textContent = data.name;
-    root.append(name);
+    body.append(name);
 
     if (data.path) {
       const path = document.createElement("span");
       path.className = "mockbar__path";
       path.textContent = data.path;
-      root.append(path);
+      body.append(path);
     }
 
+    toggle.addEventListener("click", () => setOpen(body.hidden));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !body.hidden) setOpen(false);
+    });
+
+    function setOpen(open) {
+      body.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.title = open ? "モックの切り替えを閉じる" : "モックの切り替えを開く";
+    }
+
+    // 付箋を下、開いたパネルを上に置く（CSS は column-reverse）。
+    root.append(toggle, body);
     return root;
   }
 

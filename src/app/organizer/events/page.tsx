@@ -15,6 +15,7 @@ import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import type { OrganizerEvent } from "@/modules/events/types";
 import {
+  activeFilterCount,
   clampPage,
   DEFAULT_ORGANIZER_FILTER,
   filterOrganizerEvents,
@@ -25,9 +26,12 @@ import {
   todayInTokyo,
   type OrganizerStatusFilter,
 } from "@/modules/events/lib/event-filters";
-import { Alert, EmptyState, Loading, PageHeader, Section, SectionHead } from "@/components/ui";
+import { Alert, Dialog, EmptyState, Field, Loading, PageHeader, Section, SectionHead } from "@/components/ui";
 
 type LifecycleAction = "close" | "reopen" | "delete";
+
+/** モーダルの中だけで動かす控え。閉じたときに捨てれば、一覧は元の条件のまま。 */
+type FilterDraft = { status: OrganizerStatusFilter; from: string; to: string };
 
 function OrganizerEventsScreen() {
   const router = useRouter();
@@ -48,6 +52,10 @@ function OrganizerEventsScreen() {
   const [excludePast, setExcludePast] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  // 状態と開催日は、スマホではモーダルに畳む。開いた時点の確定値を控えへ写し、
+  // 「この条件で絞り込む」を押すまで一覧は動かさない（背景を押せば元の条件に戻る）。
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftFilter, setDraftFilter] = useState<FilterDraft>({ status: "ALL", from: "", to: "" });
   const [page, setPage] = useState(1);
   const today = todayInTokyo();
 
@@ -153,6 +161,21 @@ function OrganizerEventsScreen() {
     setDateTo("");
   };
 
+  const openFilterDialog = () => {
+    setDraftFilter({ status: statusFilter, from: dateFrom, to: dateTo });
+    setFilterOpen(true);
+  };
+
+  const applyFilterDialog = () => {
+    setStatusFilter(draftFilter.status);
+    setDateFrom(draftFilter.from);
+    setDateTo(draftFilter.to);
+    setFilterOpen(false);
+  };
+
+  // ボタンに添える件数。外に出している「過去の催しを除く」は数えない。
+  const filterCount = activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, from: dateFrom, to: dateTo });
+
   const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
   const closedCount = events.filter((event) => event.status === "CLOSED").length;
 
@@ -207,8 +230,19 @@ function OrganizerEventsScreen() {
       <Section className="section--tight">
         <SectionHead title="一覧" />
 
-        {/* 溜まった催しから目当てを探すための 3 つ。状態・過去・開催日で絞る。 */}
+        {/* 溜まった催しから目当てを探すための 3 つ。状態・過去・開催日で絞る。
+            640px 未満では状態と開催日をモーダルへ畳み、一覧の場所を空ける。
+            過去の除外だけは外に残す（一覧を見ながら 1 押しで切り替えたいため）。 */}
         <div className="list-filters">
+          <button
+            type="button"
+            className="btn btn--outline btn--sm list-filters__open"
+            aria-haspopup="dialog"
+            aria-expanded={filterOpen}
+            onClick={openFilterDialog}
+          >
+            絞り込む{filterCount > 0 ? `（${filterCount}）` : ""}
+          </button>
           <label className="list-filters__field" htmlFor="organizer-filter-status">
             <span className="list-filters__label">状態</span>
             <select
@@ -327,6 +361,82 @@ function OrganizerEventsScreen() {
           </div>
         )}
       </Section>
+
+      {/* スマホの絞り込み。640px 以上ではインラインの入力が出るので、このモーダルは開かない
+          （開いたまま幅を広げたときだけ二重に見えるが、条件は同じなので実害は無い）。 */}
+      {filterOpen && (
+        <Dialog
+          title="絞り込む"
+          titleId="organizer-filter-title"
+          onClose={() => setFilterOpen(false)}
+          closeLabel="絞り込みを閉じる"
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={applyFilterDialog}
+              >
+                この条件で絞り込む
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                onClick={() => setDraftFilter({ status: "ALL", from: "", to: "" })}
+              >
+                条件を戻す
+              </button>
+            </>
+          }
+        >
+          <div className="filter-dialog">
+            <Field label="状態" htmlFor="organizer-filter-status-modal">
+              <select
+                id="organizer-filter-status-modal"
+                className="select"
+                value={draftFilter.status}
+                onChange={(event) => {
+                  // 値を先に取り出す。更新関数は描画のときに走るので、
+                  // その時点の `currentTarget` は null になっている。
+                  const status = event.currentTarget.value as OrganizerStatusFilter;
+                  setDraftFilter((current) => ({ ...current, status }));
+                }}
+              >
+                <option value="ALL">すべて</option>
+                <option value="PUBLISHED">公開中のみ</option>
+                <option value="CLOSED">受付停止のみ</option>
+              </select>
+            </Field>
+            <Field label="開始日" htmlFor="organizer-filter-from-modal">
+              <input
+                id="organizer-filter-from-modal"
+                type="date"
+                className="input"
+                value={draftFilter.from}
+                max={draftFilter.to || undefined}
+                onChange={(event) => {
+                  const from = event.currentTarget.value;
+                  setDraftFilter((current) => ({ ...current, from }));
+                }}
+              />
+            </Field>
+            <Field label="終了日" htmlFor="organizer-filter-to-modal">
+              <input
+                id="organizer-filter-to-modal"
+                type="date"
+                className="input"
+                value={draftFilter.to}
+                min={draftFilter.from || undefined}
+                onChange={(event) => {
+                  const to = event.currentTarget.value;
+                  setDraftFilter((current) => ({ ...current, to }));
+                }}
+              />
+            </Field>
+            <p className="help">開催日が範囲に入る催しだけを出します。「過去の催しを除く」は一覧の上で切り替えます。</p>
+          </div>
+        </Dialog>
+      )}
 
       {/* 一覧の主要な操作は、どこまでスクロールしても押せるよう画面下に固定する。
           上に置くと、件数が増えたときに最初の 1 画面を操作だけが占める。 */}

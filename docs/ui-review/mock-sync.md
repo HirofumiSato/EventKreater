@@ -59,17 +59,21 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 | もの | どこが作るか | 何のために |
 | --- | --- | --- |
-| 画面下部の帯（← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。製品には無い |
-| 操作の script（`mock-interactions.js`） | `withMockInteractions` が帯の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
+| 左下の付箋（開くと「← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス」） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。既定は閉じていて、付箋を押すと上へ開く。製品には無い |
+| 操作の script（`mock-interactions.js`） | `withMockInteractions` が付箋の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、一覧の絞り込み、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
 | 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 33 画面の入口。製品には無い |
 | 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
 
-帯の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
+付箋の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
 巻き込まれて消えます。`scripts/check-mock-sync.mjs` は、目録の各 HTML に `data-mock-shell` と
 `mock-interactions.js` が無ければ `npm run check` を止めます。
 
-枠の中では帯を出しません（`mock-shell.js` が `?embed=1` を見て省きます）。
-`HTML をそのまま開く` は `embed` を付けないので、帯つきで開きます。
+付箋は既定で閉じており、押すたびに開閉します（`aria-expanded` と `Esc`）。状態はページの中だけで
+持ち、次の画面へは持ち越しません。製品の `.action-dock` や `.profile-actions` が画面下に固定される
+画面では、付箋だけをその上へ逃がします（製品の帯は本物の位置のまま撮ります）。
+
+枠の中では付箋を出しません（`mock-shell.js` が `?embed=1` を見て省きます）。
+`HTML をそのまま開く` は `embed` を付けないので、付箋つきで開きます。
 
 ## 遷移リンクと操作
 
@@ -135,10 +139,10 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 - `← 前` / `次 →` と ← → キーで、目録の順に送れる
 - `スマホ 390` / `PC 1280` で幅を切り替える。iframe の幅がそのまま画面の幅になるので、
   メディアクエリもその幅で効く（窓が狭いときは、はみ出さない倍率まで縮めて表示する）
-- `HTML をそのまま開く` で、枠なしのモックを開く（帯つき）
+- `HTML をそのまま開く` で、枠なしのモックを開く（付箋つき）
 - 一覧（`mock-index.html`）の画面名もこの枠へ入る。行の「スマホ」「PC」「HTML」で直接開ける
 
-枠ページ・一覧・帯の 3 ファイルは、`mock:sync` のたびに存在を確認します（消えていれば `npm run check` が止めます）。
+枠ページ・一覧・付箋の 3 ファイルは、`mock:sync` のたびに存在を確認します（消えていれば `npm run check` が止めます）。
 
 ### 撮るときの幅は 1280、見る既定は 390
 
@@ -158,8 +162,8 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 | `style-guide/mock-manifest.json` | する | 画面の一覧、各 HTML の指紋、UI ソースの指紋（`uiHash`） |
 | `style-guide/mock-index.html` | する | モックの一覧ページ（生成物） |
 | `style-guide/mock-frame.html` | する | 幅を選んで見る枠ページ（生成物。iframe で 390 / 1280） |
-| `style-guide/mock-shell.js` | する | 帯を組み立てる（**手で保守する**。製品は読まない） |
-| `style-guide/mock-shell.css` | する | 帯の見た目と隠し DOM（手で保守する。`html.is-embed .mockbar` で枠の中は隠す） |
+| `style-guide/mock-shell.js` | する | 付箋を組み立てる。既定は閉で、押すと開く（**手で保守する**。製品は読まない） |
+| `style-guide/mock-shell.css` | する | 付箋の見た目と隠し DOM（手で保守する。`html.is-embed .mockbar` で枠の中は隠す） |
 | `style-guide/mock-interactions.js` | する | モック専用の操作（**手で保守する**。製品は読まない） |
 | `style-guide/mock-guide.css` | する | 一覧の行と幅の切り替え（手で保守する） |
 | `storage/mock-shots/*.png` | しない | 390 / 1280 の撮影と `index.html`。目視用 |
@@ -202,8 +206,8 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 
 加えて、次の 3 つも見ます。
 
-- 一覧（`mock-index.html`）・枠（`mock-frame.html`）・帯の 2 ファイル（`mock-shell.js` / `mock-shell.css`）・操作の `mock-interactions.js`・`mock-guide.css` が実在するか
-- 目録の各 HTML に、帯の差し込み（`data-mock-shell`）があるか
+- 一覧（`mock-index.html`）・枠（`mock-frame.html`）・付箋の 2 ファイル（`mock-shell.js` / `mock-shell.css`）・操作の `mock-interactions.js`・`mock-guide.css` が実在するか
+- 目録の各 HTML に、付箋の差し込み（`data-mock-shell`）があるか
 - 目録の各 HTML に、操作の script（`mock-interactions.js`）があるか
 
 `uiHash` の対象は次のとおりです（`scripts/lib/mock-hash.mjs`）。

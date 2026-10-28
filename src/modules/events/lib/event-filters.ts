@@ -51,6 +51,20 @@ export function hasActiveFilter(filter: OrganizerListFilter): boolean {
 }
 
 /**
+ * モーダルに畳んだ条件の数。「絞り込む（2）」と出すために使う。
+ *
+ * 過去の除外（`excludePast`）はモーダルの外に常に出しているので数えない。
+ * 数えると、モーダルを開いても消せない条件が件数に残り、数が合わなくなる。
+ */
+export function activeFilterCount(filter: OrganizerListFilter): number {
+  let count = 0;
+  if (filter.status !== "ALL") count += 1;
+  if (filter.from !== "") count += 1;
+  if (filter.to !== "") count += 1;
+  return count;
+}
+
+/**
  * 状態・過去・開催日の範囲で絞る。並び順は API のまま（作った新しい順）で変えない。
  * 今日の催しは「過去」にしない（当日はまだ開催前なので落とさない）。
  */
