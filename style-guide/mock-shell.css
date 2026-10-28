@@ -1,41 +1,80 @@
 /* ==========================================================================
-   mock-shell.css — モックの帯。
+   mock-shell.css — モックの切り替え（左下の付箋）。
 
    モック専用。製品はこのファイルを読まない。
-   帯は製品の見た目ではないので、製品の CSS（assets/*.css）に混ぜず、
-   ここで完結させる。色は帯のためだけの濃い墨と、白の透過線。
+   付箋は製品の見た目ではないので、製品の CSS（assets/*.css）に混ぜず、
+   ここで完結させる。色は帯のためだけの濃い墨と、山吹の付箋。
 
-   帯は body の外側（.deco の外）に置かれる。.deco の変数に頼らない。
+   付箋は body の外側（.deco の外）に置かれる。.deco の変数に頼らない。
    ========================================================================== */
 
+/* 付箋と、開いたときのパネル。閉じているあいだは付箋 1 枚ぶんしか見えない。 */
 .mockbar {
   position: fixed;
   bottom: 0.5rem;
   left: 0.5rem;
-  right: 0.5rem;
   z-index: 100;
+  display: flex;
+  /* 付箋を下、開いたパネルを上へ伸ばす（DOM は付箋が先）。 */
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 0.375rem;
+  max-width: calc(100% - 1rem);
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* 付箋。押すと開閉する。少し傾けて、貼ってあるように見せる。 */
+.mockbar__toggle {
+  padding: 0.3125rem 0.625rem;
+  border: 1px solid rgb(26 25 22 / 0.28);
+  border-radius: 3px;
+  background: #eec24d;
+  color: #1a1916;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.18);
+  transform: rotate(-1.5deg);
+  cursor: pointer;
+}
+
+.mockbar__toggle:hover {
+  background: #f4d06b;
+}
+
+/* 開いているあいだは傾きを戻す。パネルと一緒に読む面になるため。 */
+.mockbar__toggle[aria-expanded="true"] {
+  transform: none;
+}
+
+/* 開いたときのパネル。行き先と画面名をここへまとめる。 */
+.mockbar__body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.375rem;
   width: fit-content;
-  max-width: calc(100% - 1rem);
+  max-width: 100%;
   padding: 0.375rem 0.5rem;
   background: #1a1916;
   color: #d8d4cc;
-  font-family: system-ui, sans-serif;
-  font-size: 0.75rem;
-  line-height: 1.4;
   border-radius: 8px;
 }
 
-/* 帯のぶん、最後の行を空ける。 */
-html.has-mockbar body {
-  padding-bottom: 4.5rem;
+/* display を持つ要素は hidden 属性だけでは消えない。 */
+.mockbar__body[hidden] {
+  display: none;
 }
 
-/* 製品が画面下に固定の操作の帯（`.action-dock`）を持つ画面では、帯をその上へ逃がす。
-   製品の帯は本物の位置（画面の最下部）のまま撮り、モックの帯だけをよける。 */
+/* 付箋のぶん、最後の行を空ける。 */
+html.has-mockbar body {
+  padding-bottom: 3rem;
+}
+
+/* 製品が画面下に固定の帯（`.action-dock`）を持つ画面では、付箋をその上へ逃がす。
+   製品の帯は本物の位置（画面の最下部）のまま撮り、モックの付箋だけをよける。 */
 html.has-mockbar:not(.is-embed):has(.action-dock) body {
   padding-bottom: 7rem;
 }
@@ -44,7 +83,20 @@ html.has-mockbar:not(.is-embed):has(.action-dock) .mockbar {
   bottom: 4.25rem;
 }
 
-/* 枠の中では帯を出さない。枠は本文だけを見るためのもの。 */
+/* 公開プロフィールの操作も、スマホでは画面下に固定される（`.profile-actions`）。
+   3 つのボタンが 2 段になるので、付箋はその上へ逃がす。広い画面では固定しない
+   （操作は見出しの下に戻る）ので、狭い画面だけの指定にする。 */
+@media (max-width: 639px) {
+  html.has-mockbar:not(.is-embed):has(.profile-actions) body {
+    padding-bottom: 8.5rem;
+  }
+
+  html.has-mockbar:not(.is-embed):has(.profile-actions) .mockbar {
+    bottom: 7.25rem;
+  }
+}
+
+/* 枠の中では付箋を出さない。枠は本文だけを見るためのもの。 */
 html.is-embed .mockbar {
   display: none;
 }

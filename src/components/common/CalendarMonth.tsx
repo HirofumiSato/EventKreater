@@ -49,10 +49,18 @@ interface CalendarMonthGridProps {
   selectedDate: string;
   /** その日の予定。月外の日は呼ばない。並び順は呼び出す側で決める。 */
   itemsForDate: (date: string) => CalendarCellItem[];
-  onSelect: (date: string) => void;
+  /**
+   * 日付を選んだ。`reason` は押した場所。
+   * セルと `+N` は「その日の一覧を見たい」、短冊は「詳細を開きたい」ので、
+   * 下に一覧を持つ画面は `reason` で動きを変えられる。
+   */
+  onSelect: (date: string, reason: CalendarSelectReason) => void;
   /** 月の下に出す凡例。色の意味は画面ごとに違うので、呼び出す側が決める。 */
   legend?: ReactNode;
 }
+
+/** 日付を選んだ場所。`item` は短冊（モーダルを開く）、それ以外はセルか `+N`。 */
+export type CalendarSelectReason = "cell" | "item" | "more";
 
 /**
  * 日曜始まりの月グリッド。
@@ -72,7 +80,7 @@ export function CalendarMonthGrid({
 
   const openItem = (item: CalendarCellItem, date: string) => {
     // モーダルの中身と下の一覧がずれないよう、開いた日の予定を選んでおく。
-    onSelect(date);
+    onSelect(date, "item");
     setActiveItem({ item, date });
   };
 
@@ -103,7 +111,7 @@ export function CalendarMonthGrid({
                 aria-label={cell.isOutside ? undefined : formatCellLabel(cell.date, items.length)}
                 aria-pressed={cell.date === selectedDate}
                 disabled={cell.isOutside}
-                onClick={() => onSelect(cell.date)}
+                onClick={() => onSelect(cell.date, "cell")}
               />
               <span className="cal__day-number">{Number(cell.date.slice(8, 10))}</span>
               {items.length > 0 && (
@@ -127,7 +135,7 @@ export function CalendarMonthGrid({
                       type="button"
                       className="cal__more"
                       aria-label={`${formatCellLabel(cell.date, items.length)}。すべて見る`}
-                      onClick={() => onSelect(cell.date)}
+                      onClick={() => onSelect(cell.date, "more")}
                     >
                       +{overflow}
                     </button>

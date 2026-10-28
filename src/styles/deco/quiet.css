@@ -280,8 +280,10 @@
   box-shadow: 0 1px 2px rgb(26 25 22 / 0.05);
 }
 
+/* 選んだ日（初期表示では今日）は、墨で反転させず淡い面で示す。
+   数字を走査する画面なので、反転した 1 マスだけが浮くと目が止まる。 */
 .deco.deco--tape-quiet .cal__day.is-selected {
-  background: var(--color-text);
+  background: var(--color-primary-soft);
 }
 
 .deco.deco--tape-quiet .draft-card,

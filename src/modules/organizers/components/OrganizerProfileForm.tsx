@@ -18,7 +18,7 @@ import {
   type OrganizerProfileStats,
   type ProfileTag,
 } from "@/modules/organizers/types";
-import { Alert, Field, Loading, Panel } from "@/components/ui";
+import { Alert, Field, Loading, Panel, PanelHead } from "@/components/ui";
 
 type LoadState = "loading" | "ready" | "error" | "register" | "not-organizer";
 
@@ -187,150 +187,162 @@ export function OrganizerProfileForm() {
 
   return (
     <div className="stack">
-      <Panel>
-        <div>
-          <p className="eyebrow">公開設定</p>
-          <h2 className="panel__title">{draft.isPublished ? "公開中" : "非公開"}</h2>
-          <p className="panel__note">
-            非公開のあいだは、参加者に名前と催しへの導線だけが出ます。自己紹介・リンク・実績は出ません。
-          </p>
-        </div>
-        <div className="panel__actions">
-          <button type="button" className="btn btn--outline" onClick={() => setPreviewing(true)}>
-            プレビュー
-          </button>
-          {homePath && (
-            <a href={homePath} target="_blank" rel="noopener noreferrer" className="btn btn--outline">
-              公開ページを開く
-            </a>
-          )}
-        </div>
-      </Panel>
-
+      {/* 公開/非公開はフォームの中で切り替える。同じことを言う見出しのパネルは置かない。 */}
       <form
-        className="form form--spaced"
+        className="form"
         onSubmit={(event) => {
           event.preventDefault();
           void save();
         }}
       >
-        <fieldset className="field">
-          <legend className="label">公開</legend>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.isPublished}
-              onChange={(event) => update("isPublished", event.target.checked)}
-            />
-            プロフィールを参加者に公開する
-          </label>
-          <p className="help">オフのままでも、ページと催しへの導線は開けます。</p>
-        </fieldset>
-
-        <Field label="肩書き・ひとこと" htmlFor="profile-headline">
-          <input
-            id="profile-headline"
-            className="input"
-            maxLength={60}
-            value={draft.headline}
-            onChange={(event) => update("headline", event.target.value)}
-            placeholder="渋谷で月いちの読書会をひらいています"
-          />
-          <p className="help">{draft.headline.length}/60</p>
-        </Field>
-
-        <Field label="自己紹介" htmlFor="profile-bio">
-          <textarea
-            id="profile-bio"
-            className="textarea"
-            rows={6}
-            maxLength={400}
-            value={draft.bio}
-            onChange={(event) => update("bio", event.target.value)}
-            placeholder="どんな催しを、どんな人と、どんな気持ちで開いているか。"
-          />
-          <p className="help">{draft.bio.length}/400</p>
-        </Field>
-
-        <Field label="活動エリア" htmlFor="profile-area">
-          <input
-            id="profile-area"
-            className="input"
-            maxLength={50}
-            value={draft.area}
-            onChange={(event) => update("area", event.target.value)}
-            placeholder="東京都渋谷区"
-          />
-        </Field>
-
-        <fieldset className="field">
-          <legend className="label">活動ジャンル（{MAX_PROFILE_TAGS}つまで）</legend>
-          <div className="profile-tag-picker">
-            {PROFILE_TAGS.map((tag) => {
-              const checked = draft.tags.includes(tag);
-              const disabled = !checked && draft.tags.length >= MAX_PROFILE_TAGS;
-              return (
-                <label key={tag} className="check">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={disabled}
-                    onChange={() => toggleTag(tag)}
-                  />
-                  {PROFILE_TAG_LABELS[tag]}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <Field label="X" htmlFor="profile-x">
-          <input
-            id="profile-x"
-            className="input"
-            inputMode="url"
-            maxLength={200}
-            value={draft.xUrl}
-            onChange={(event) => update("xUrl", event.target.value)}
-            placeholder="https://x.com/example"
-          />
-        </Field>
-
-        <Field label="Instagram" htmlFor="profile-instagram">
-          <input
-            id="profile-instagram"
-            className="input"
-            inputMode="url"
-            maxLength={200}
-            value={draft.instagramUrl}
-            onChange={(event) => update("instagramUrl", event.target.value)}
-            placeholder="https://www.instagram.com/example"
-          />
-          <p className="help">公開ページではアイコンで出ます。押すと新しいウィンドウで開きます。</p>
-        </Field>
-
-        <fieldset className="field">
-          <legend className="label">実績</legend>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.showStats}
-              onChange={(event) => update("showStats", event.target.checked)}
-            />
-            主催した回数と活動開始年を表示する
-          </label>
-          <p className="help">
-            {stats
-              ? `いまの実績: 主催 ${stats.eventCount}回・${stats.sinceYear}年から`
-              : "開催済みの催しが1件もないため、表示できる実績はまだありません。"}
-          </p>
-        </fieldset>
-
-        <div className="btn-row">
+        {/* 操作は枠の外・フォームの先頭に置く。保存が主で、プレビューと公開中ページは一段弱くする。
+            スマホではこの行を画面下に固定する（`.profile-actions`）。 */}
+        <div className="btn-row profile-actions">
           <button type="submit" className="btn btn--primary" disabled={saving}>
             {saving ? "保存しています…" : "保存する"}
           </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => setPreviewing(true)}
+          >
+            プレビュー
+          </button>
+          {homePath && (
+            <a
+              href={homePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline btn--sm"
+            >
+              公開中ページを開く
+            </a>
+          )}
         </div>
+
+        {/* ここから下が公開ページに出る内容だと分かるよう、1 枚の枠にまとめる。 */}
+        <section className="card stack">
+          <PanelHead
+            title="公開ページに出る内容"
+            note={
+              draft.isPublished
+                ? "いまは公開中です。参加者のページにこの内容が出ます。"
+                : "いまは非公開です。名前と催しへの導線だけが出ます。自己紹介・リンク・実績は出ません。"
+            }
+          />
+
+          <fieldset className="field">
+            <legend className="label">公開</legend>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.isPublished}
+                onChange={(event) => update("isPublished", event.target.checked)}
+              />
+              プロフィールを参加者に公開する
+            </label>
+            <p className="help">オフのままでも、ページと催しへの導線は開けます。</p>
+          </fieldset>
+
+          <Field label="肩書き・ひとこと" htmlFor="profile-headline">
+            <input
+              id="profile-headline"
+              className="input"
+              maxLength={60}
+              value={draft.headline}
+              onChange={(event) => update("headline", event.target.value)}
+              placeholder="渋谷で月いちの読書会をひらいています"
+            />
+            <p className="help">{draft.headline.length}/60</p>
+          </Field>
+
+          <Field label="自己紹介" htmlFor="profile-bio">
+            <textarea
+              id="profile-bio"
+              className="textarea"
+              rows={6}
+              maxLength={400}
+              value={draft.bio}
+              onChange={(event) => update("bio", event.target.value)}
+              placeholder="どんな催しを、どんな人と、どんな気持ちで開いているか。"
+            />
+            <p className="help">{draft.bio.length}/400</p>
+          </Field>
+
+          <Field label="活動エリア" htmlFor="profile-area">
+            <input
+              id="profile-area"
+              className="input"
+              maxLength={50}
+              value={draft.area}
+              onChange={(event) => update("area", event.target.value)}
+              placeholder="東京都渋谷区"
+            />
+          </Field>
+
+          <fieldset className="field">
+            <legend className="label">活動ジャンル（{MAX_PROFILE_TAGS}つまで）</legend>
+            <div className="profile-tag-picker">
+              {PROFILE_TAGS.map((tag) => {
+                const checked = draft.tags.includes(tag);
+                const disabled = !checked && draft.tags.length >= MAX_PROFILE_TAGS;
+                return (
+                  <label key={tag} className="check">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggleTag(tag)}
+                    />
+                    {PROFILE_TAG_LABELS[tag]}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <Field label="X" htmlFor="profile-x">
+            <input
+              id="profile-x"
+              className="input"
+              inputMode="url"
+              maxLength={200}
+              value={draft.xUrl}
+              onChange={(event) => update("xUrl", event.target.value)}
+              placeholder="https://x.com/example"
+            />
+          </Field>
+
+          <Field label="Instagram" htmlFor="profile-instagram">
+            <input
+              id="profile-instagram"
+              className="input"
+              inputMode="url"
+              maxLength={200}
+              value={draft.instagramUrl}
+              onChange={(event) => update("instagramUrl", event.target.value)}
+              placeholder="https://www.instagram.com/example"
+            />
+            <p className="help">公開ページではアイコンで出ます。押すと新しいウィンドウで開きます。</p>
+          </Field>
+
+          <fieldset className="field">
+            <legend className="label">実績</legend>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.showStats}
+                onChange={(event) => update("showStats", event.target.checked)}
+              />
+              主催した回数と活動開始年を表示する
+            </label>
+            <p className="help">
+              {stats
+                ? `いまの実績: 主催 ${stats.eventCount}回・${stats.sinceYear}年から`
+                : "開催済みの催しが1件もないため、表示できる実績はまだありません。"}
+            </p>
+          </fieldset>
+        </section>
       </form>
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}

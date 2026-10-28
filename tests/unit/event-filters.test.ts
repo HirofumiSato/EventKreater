@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeFilterCount,
   clampPage,
   DEFAULT_ORGANIZER_FILTER,
   filterOrganizerEvents,
@@ -63,6 +64,16 @@ describe("主催一覧の絞り込み", () => {
     expect(hasActiveFilter({ ...DEFAULT_ORGANIZER_FILTER, excludePast: true })).toBe(true);
     expect(hasActiveFilter({ ...DEFAULT_ORGANIZER_FILTER, from: "2026-01-01" })).toBe(true);
     expect(hasActiveFilter({ ...DEFAULT_ORGANIZER_FILTER, to: "2026-12-31" })).toBe(true);
+  });
+
+  /** モーダルに畳むボタンは、外に出している過去の除外を数えない。 */
+  it("「絞り込む」の件数はモーダルの中の条件だけ数える", () => {
+    expect(activeFilterCount(DEFAULT_ORGANIZER_FILTER)).toBe(0);
+    expect(activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, excludePast: true })).toBe(0);
+    expect(activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: "CLOSED" })).toBe(1);
+    expect(
+      activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: "PUBLISHED", from: "2026-10-01", to: "2026-12-31" }),
+    ).toBe(3);
   });
 });
 

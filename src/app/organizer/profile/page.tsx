@@ -15,7 +15,9 @@ export const metadata: Metadata = {
  */
 export default function OrganizerProfilePage() {
   return (
-    <div className="stack">
+    // スマホでは保存などの操作が画面下に固定される（`.profile-actions`）。
+    // 最後の行が帯に隠れないよう、地の側で帯の高さぶん空ける。
+    <div className="stack has-form-dock">
       <PageHeader
         title="公開プロフィール"
         lead="参加者が告知ページの主催者名から開くページです。どんな催しを開いている人かを、自己紹介とリンクで伝えます。"

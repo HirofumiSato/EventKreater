@@ -13,7 +13,7 @@ const TABS = [
   { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
   { href: "/organizer/events/drafts", label: "下書き" },
-  { href: "/organizer/profile", label: "プロフィール" },
+  { href: "/organizer/profile", label: "公開プロフ" },
 ] as const;
 
 export function OrganizerTabs() {

@@ -5278,7 +5278,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1865,
+      "lineCount": 1867,
       "headings": [
         {
           "level": 1,
@@ -7154,7 +7154,7 @@
       "title": "主催者にイベントカレンダー画面を追加し、ホームで紹介する",
       "summary": "> 起票済み: [#14](https://github.com/HirofumiSato/EventKreater/issues/14)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 241,
+      "lineCount": 250,
       "headings": [
         {
           "level": 1,
@@ -7242,6 +7242,10 @@
         },
         {
           "level": 2,
+          "text": "その後の変更"
+        },
+        {
+          "level": 2,
           "text": "参考"
         }
       ],
@@ -7309,6 +7313,14 @@
         },
         {
           "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/quiet.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/surface.css",
           "exists": true
         },
         {
@@ -7440,7 +7452,7 @@
       "title": "主催者自身の紹介ページと、その入力・編集画面を作る",
       "summary": "> 主催者の催しページ（[#21](https://github.com/HirofumiSato/EventKreater/issues/21) / [public-organizer-page.md](public-organizer-page.md)）から、対外的なプロフィールを分離した issue。 > > その後の変更: プロフィールと催しは1画面に統合し、/organizers/[userId]（SCR-PUB-14）の上からプロフィール、カレンダー、一覧を縦に並べる。旧 /organizers/[userId]/events は統合ページへの permanentRedirect にした。eventsPath は廃止し、?view も持たない。公開ページの共通ヘッダーは出さない。リンクは X と Instagram のアイコンだけを出し、Webサイトと LINE は公開しない。未ログインの催しは、飾りのカレンダーの上に白塗りを重ねて案内する。以下の決定は統合前の記録として残す。",
       "preImplementation": false,
-      "lineCount": 179,
+      "lineCount": 183,
       "headings": [
         {
           "level": 1,
@@ -7501,6 +7513,10 @@
         {
           "level": 2,
           "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "その後の変更"
         }
       ],
       "toctree": [],
@@ -7734,7 +7750,7 @@
       "title": "参加者にカレンダー画面を追加し、出欠した催しを日付で俯瞰できるようにする",
       "summary": "> 起票済み: [#19](https://github.com/HirofumiSato/EventKreater/issues/19)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 248,
+      "lineCount": 252,
       "headings": [
         {
           "level": 1,
@@ -7822,6 +7838,10 @@
         },
         {
           "level": 2,
+          "text": "その後の変更"
+        },
+        {
+          "level": 2,
           "text": "参考"
         }
       ],
@@ -7893,6 +7913,10 @@
         },
         {
           "path": "src/styles/components.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/surface.css",
           "exists": true
         },
         {
@@ -10617,7 +10641,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 243,
+      "lineCount": 249,
       "headings": [
         {
           "level": 1,
