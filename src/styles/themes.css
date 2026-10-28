@@ -52,6 +52,7 @@
   --color-text-muted: var(--st-content-secondary);
   --color-text-subtle: color-mix(in srgb, var(--st-content-secondary) 78%, var(--st-surface-base));
   --color-text-faint: color-mix(in srgb, var(--st-content-secondary) 62%, var(--st-surface-base));
+  --color-placeholder: color-mix(in srgb, var(--st-content-secondary) 55%, var(--st-surface-base));
   --color-ink-soft: color-mix(in srgb, var(--st-content-primary) 82%, var(--st-surface-base));
 
   --color-border: var(--st-border-color);
@@ -460,7 +461,7 @@
 
 /* 暗いテーマでは、ブラウザ既定のプレースホルダーが読めない。 */
 .semantic-theme ::placeholder {
-  color: var(--color-text-faint);
+  color: var(--color-placeholder);
 }
 
 /* --------------------------------------------------------------------------

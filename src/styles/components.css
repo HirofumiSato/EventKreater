@@ -1180,7 +1180,7 @@ fieldset.field {
 
 .input::placeholder,
 .textarea::placeholder {
-  color: var(--color-text-faint);
+  color: var(--color-placeholder);
 }
 
 .input:focus,
