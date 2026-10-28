@@ -493,25 +493,36 @@ export function VoiceInputDock({
     let frame = 0;
     let retries = 0;
     let previous = "";
+    // 監視している要素。測る相手ではなく、ResizeObserver の付け替えを見るためだけに持つ。
     let observed: HTMLElement | null = null;
     let cancelled = false;
 
+    /**
+     * いま強調している欄を測り直す。
+     *
+     * 対象は毎回 DOM から引き直す。控えた要素を使い回すと、ステップを開き直して
+     * ノードが差し替わったときに、切り離された要素（矩形がすべて 0）を測り続ける。
+     */
     const measure = () => {
       if (cancelled) return;
-      const target =
-        observed ?? document.querySelector<HTMLElement>('[data-voice-target="true"]');
+      const target = document.querySelector<HTMLElement>('[data-voice-target="true"]');
       if (!target) {
         // ステップを開いた直後は、まだ欄が描画されていないことがある。少しだけ待つ。
         if (retries < 40) {
           retries += 1;
-          frame = window.requestAnimationFrame(measure);
+          frame = window.requestAnimationFrame(retry);
         } else if (previous) {
+          if (observed) resizeObserver?.unobserve(observed);
+          observed = null;
           previous = "";
           setSpotlight(null);
         }
         return;
       }
+      // 見つかったら待ち直しの残りを戻す。次に欄が消えたときも同じだけ待てる。
+      retries = 0;
       if (observed !== target) {
+        if (observed) resizeObserver?.unobserve(observed);
         observed = target;
         resizeObserver?.observe(target);
       }
@@ -524,6 +535,17 @@ export function VoiceInputDock({
         setSpotlight(next);
       }
     };
+
+    /**
+     * 待ち直しの 1 フレーム。
+     *
+     * `frame` を 0 に戻してから測る。戻さないと「実行済みの rAF の ID」が残り、
+     * `schedule` の入口で弾かれ続けて、スクロールしても穴が動かなくなる。
+     */
+    function retry() {
+      frame = 0;
+      measure();
+    }
 
     /** 1 フレームに 1 回だけ測る。スクロール中に何度も呼ばれてもまとめる。 */
     const schedule = () => {
@@ -549,12 +571,16 @@ export function VoiceInputDock({
     });
     // 入れ子のスクロール領域も拾うため capture で待つ。
     window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    // 滑らかなスクロールの止まった位置でもう一度測る。最後の scroll が
+    // 1px 手前で coalesce されても、穴が欄の中央に残るようにする。
+    window.addEventListener("scrollend", schedule, { capture: true, passive: true });
     window.addEventListener("resize", schedule);
 
     return () => {
       cancelled = true;
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("scrollend", schedule, true);
       window.removeEventListener("resize", schedule);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
