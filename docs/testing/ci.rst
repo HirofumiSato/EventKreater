@@ -10,6 +10,35 @@ CI への接続
 
 権限は ``contents: read`` と ``pull-requests: read`` です。後者は変更ファイルの判定が PR の一覧を GitHub API から読むために要ります。CI からリポジトリへ書く操作はしません。
 
+ランナーとアクションの版
+------------------------
+
+``runs-on`` は ``ubuntu-latest`` ではなく ``ubuntu-26.04`` を明示します。2026-10-19 から ``ubuntu-latest`` が Ubuntu 26.04 へ数週間かけて移行しており（`runner-images#14748 <https://github.com/actions/runner-images/issues/14748>`_、完了予定は 11-19）、``-latest`` のままだと OS・apt・プリインストールが日によって変わります。このワークフローはチラシのフォントを apt で入れ、PostgreSQL をサービスコンテナで立てるので、同じ PR が実行日によって別の結果になるのは避けたいところです。版を上げるときは 4 ジョブを 1 本の PR でまとめて変え、この節も直します。
+
+アクションは Node 24 で動くメジャーに揃えています。``actions/*@v4`` は Node 20 で動くため、ランナー側の強制実行が続くうちは毎回 "Node.js 20 is deprecated" の注記が出ます。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - アクション
+     - 版
+     - 上げた理由と、当てはまらない破壊的変更
+   * - ``actions/checkout``
+     - ``v7``
+     - Node 24 と ESM 化。``pull_request_target`` の fork 取得を止める変更は、このワークフローが ``pull_request`` だけを使うため影響しない
+   * - ``actions/setup-node``
+     - ``v7``
+     - Node 24 と ESM 化。``v6`` で自動キャッシュが ``npm`` に限られたが、``cache: npm`` を明示しているため影響しない
+   * - ``actions/cache``
+     - ``v6``
+     - Node 24 と ESM 化。入出力（``path`` / ``key`` / ``cache-hit``）は ``v4`` と同じ
+   * - ``actions/setup-python``
+     - ``v7``
+     - Node 24 と ESM 化。``v7`` で ``pip-install`` 入力が消えたが、使っていない
+
+``actions/cache`` には ``v5`` 系（保守ブランチ）も残っています。``v6`` を選ぶのは、他の 3 つと同じ Node 24 で揃うためです。
+
 ジョブは 4 つです。``check``、``db``、``flyer`` は、それぞれの先頭で変更ファイルを見て走らせる step を選びます。
 
 .. list-table::
@@ -135,7 +164,7 @@ db ジョブ
 .. code-block:: yaml
 
    db:
-     runs-on: ubuntu-latest
+     runs-on: ubuntu-26.04
      services:
        postgres:
          image: postgres:16-alpine
@@ -151,13 +180,13 @@ db ジョブ
            --health-timeout 5s
            --health-retries 10
      steps:
-       - uses: actions/checkout@v4
-       - uses: actions/setup-node@v4
+       - uses: actions/checkout@v7
+       - uses: actions/setup-node@v7
          with:
            node-version: 24
            cache: npm
        # check ジョブと同じ鍵。npm ci の 20 秒を避ける。
-       - uses: actions/cache@v4
+       - uses: actions/cache@v6
          with:
            path: node_modules
            key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
