@@ -41,7 +41,7 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 | 純ロジック | `src/modules/<機能>/lib/*.ts` | DOM と Next に依存しない。テスト対象 |
 | UI | `src/modules/<機能>/components/` | ロジックを持たない |
 | 共通 UI 部品 | `src/components/ui/` | `PageHeader`、`Section`、`Panel`、`Rows`、`Alert`、`Loading`、`EmptyState`、`Badge`、`Dialog`、`Field`。ブロックを直すときはここを 1 回直す |
-| 共有スタイル | `src/styles/` | `index.css` が入口。`tokens` → `base` → `components` → `screens` → `deco`（最後）の順 |
+| 共有スタイル | `src/styles/` | `index.css` が入口。`tokens` → `base` → `components` → `screens` → `deco` → `themes`（最後）の順 |
 | 横断ユーティリティ | `src/lib/` | `schemas.ts`（zod）、`serializers.ts`、`problem.ts`（RFC 7807）、`format.ts`（金額・日付） |
 | DB | `prisma/schema.prisma` | 変更は `prisma/migrations/` に追加 |
 | 振る舞いの仕様 | `tests/**/*.test.ts` | テスト名が日本語の仕様文になっている |

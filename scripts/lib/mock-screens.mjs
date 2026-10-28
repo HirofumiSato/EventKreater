@@ -99,7 +99,7 @@ export function buildScreens(demo) {
       // プロフィールは誰でも読めるが、催しは参加者のログインが要る。
       // 未ログインで開くと、飾りのカレンダーの上に白塗りを重ねる。
       auth: null,
-      note: "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。",
+      note: "プロフィールの下に、カレンダーと一覧。デモは羊皮紙テーマをページ全体に適用。未ログインではカレンダーの上に白塗りを重ねる。",
       states: [
         { key: "guest", label: "未ログイン", path: `/organizers/${demo.organizerId}`, auth: null },
         {
@@ -305,7 +305,7 @@ export function buildScreens(demo) {
       name: "公開プロフィールの編集",
       path: "/organizer/profile",
       auth: "organizer",
-      note: "公開の可否、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
+      note: "公開の可否、アイコン画像、ページの見た目（5テーマ）、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
     },
     {
       no: "28",

@@ -5,6 +5,8 @@
  * 自由入力を許すと表記揺れで読み手に伝わらないため、ジャンルは固定リストにする。
  */
 
+import type { SemanticThemeId } from "@/lib/semantic-themes";
+
 export const PROFILE_TAGS = [
   "MUSIC",
   "FOOD",
@@ -59,6 +61,13 @@ export interface OrganizerProfileContent {
   tags: ProfileTag[];
   links: OrganizerProfileLink[];
   stats: OrganizerProfileStats | null;
+  /**
+   * アイコンの URL。未設定は null（名前の頭文字を出す）。
+   * 非公開でも返す。プロフィールの本文ではなく、その人を示す印だから。
+   */
+  avatarUrl: string | null;
+  /** 公開ページのテーマ。非公開のときは null（標準の見た目）。 */
+  themeId: SemanticThemeId | null;
 }
 
 /** 編集画面の入力。未入力は空文字で持ち、送信時に null へ寄せる。 */
@@ -73,6 +82,8 @@ export interface OrganizerProfileDraft {
   websiteUrl: string;
   lineUrl: string;
   showStats: boolean;
+  /** 公開ページのテーマ。null は標準。 */
+  themeId: SemanticThemeId | null;
 }
 
 /** 編集画面の GET / PUT の応答。 */
@@ -81,6 +92,11 @@ export interface OrganizerProfileDraftResponse {
   profile: OrganizerProfileDraft;
   stats: OrganizerProfileStats | null;
   homePath: string;
+  /**
+   * 設定中のアイコン。画像そのものは `avatar/` の API で別に扱うため、
+   * プロフィールの保存（PUT）とは切り離して返す。
+   */
+  avatarUrl: string | null;
 }
 
 /** 公開プロフィール API の応答。 */
@@ -101,4 +117,5 @@ export const EMPTY_PROFILE_DRAFT: OrganizerProfileDraft = {
   websiteUrl: "",
   lineUrl: "",
   showStats: false,
+  themeId: null,
 };

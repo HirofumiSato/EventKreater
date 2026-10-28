@@ -156,6 +156,65 @@ describeDb("主催者の公開プロフィール（結合）", () => {
     expect(rows[0].headline).toBe("2回目");
   });
 
+  it("選んだテーマが保存され、公開 API に返る", async () => {
+    const organizer = await createUser("テーマを選ぶ主催者");
+    userIds.push(organizer.id);
+    const event = await seedEvent({ userId: organizer.id, role: "OWNER" });
+    eventIds.push(event.id);
+    const token = await signLocalToken({ userId: organizer.id, email: organizer.email });
+
+    const saved = await callOwn(token, "PUT", { isPublished: true, themeId: "neon" });
+    expect(saved.status).toBe(200);
+    expect(saved.body.profile.themeId).toBe("neon");
+
+    const { body } = await callPublic(organizer.id);
+    expect(body.profile.themeId).toBe("neon");
+  });
+
+  it("テーマを外すと標準（null）に戻る", async () => {
+    const organizer = await createUser("テーマを外す主催者");
+    userIds.push(organizer.id);
+    const event = await seedEvent({ userId: organizer.id, role: "OWNER" });
+    eventIds.push(event.id);
+    const token = await signLocalToken({ userId: organizer.id, email: organizer.email });
+
+    await callOwn(token, "PUT", { isPublished: true, themeId: "parchment" });
+    const cleared = await callOwn(token, "PUT", { isPublished: true, themeId: null });
+
+    expect(cleared.body.profile.themeId).toBeNull();
+    const row = await prisma.organizerProfile.findUnique({ where: { userId: organizer.id } });
+    expect(row?.themeId).toBeNull();
+  });
+
+  it("知らないテーマは 400 で弾く", async () => {
+    const organizer = await createUser("知らないテーマを送る主催者");
+    userIds.push(organizer.id);
+    const event = await seedEvent({ userId: organizer.id, role: "OWNER" });
+    eventIds.push(event.id);
+    const token = await signLocalToken({ userId: organizer.id, email: organizer.email });
+
+    const { status, body } = await callOwn(token, "PUT", { themeId: "midnight" });
+
+    expect(status).toBe(400);
+    expect(body.detail).toContain("テーマ");
+  });
+
+  it("非公開に戻すと、テーマも公開 API に出さない", async () => {
+    const organizer = await createUser("テーマを隠す主催者");
+    userIds.push(organizer.id);
+    const event = await seedEvent({ userId: organizer.id, role: "OWNER" });
+    eventIds.push(event.id);
+    const token = await signLocalToken({ userId: organizer.id, email: organizer.email });
+
+    await callOwn(token, "PUT", { isPublished: true, themeId: "neo-brutalism" });
+    await callOwn(token, "PUT", { isPublished: false, themeId: "neo-brutalism" });
+
+    const { body } = await callPublic(organizer.id);
+
+    expect(body.profile.isPublished).toBe(false);
+    expect(body.profile.themeId).toBeNull();
+  });
+
   it("催しが0件の会員のページは 404 にする", async () => {
     const organizer = await createUser("催しの無い会員");
     userIds.push(organizer.id);

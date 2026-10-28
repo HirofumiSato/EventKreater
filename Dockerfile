@@ -51,10 +51,11 @@ ENV PORT=3012
 ENV HOSTNAME=0.0.0.0
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs
-# src/modules/flyers/lib/flyer.ts は process.cwd()/storage/flyers に書き込む。
+# src/modules/flyers/lib/flyer.ts は process.cwd()/storage/flyers に、
+# src/lib/image-assets.ts は process.cwd()/storage/images に書き込む。
 # /app は root 所有なので、先に作って nextjs に渡す（compose のボリューム初期化も
 # この所有者を引き継ぐ）。
-RUN mkdir -p /app/storage/flyers && chown -R nextjs:nodejs /app/storage
+RUN mkdir -p /app/storage/flyers /app/storage/images && chown -R nextjs:nodejs /app/storage
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public

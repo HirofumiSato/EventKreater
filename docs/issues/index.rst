@@ -12,6 +12,7 @@
    event-draft-save-and-preview
    public-organizer-page
    organizer-profile
+   organizer-profile-appearance
    event-owner-and-cohosts
    organizer-revenue-dashboard
    cohost-revenue-allocation

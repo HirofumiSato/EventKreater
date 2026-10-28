@@ -1,0 +1,477 @@
+/* ==========================================================================
+   themes.css — 公開ページのセマンティックテーマ。
+
+   主催者（将来はイベント）が選んだ紙面を、`data-semantic-theme` 属性だけで切り替える。
+   JavaScript は使わない。サーバーが属性を出し、この 1 枚が変数を差し替える。
+
+   層の順番: このファイルは最後に読む。装飾（deco）が付けた硬い影・傾き・
+   固定色を、テーマの意図に合わせて打ち消すため。
+
+   値の持ち方:
+     1. `[data-semantic-theme]` がテーマ固有の `--st-*` を定義する（色の正はここだけ）
+     2. `.semantic-theme` が既存の `--color-*` / `--radius-*` / `--shadow-*` へ写す
+     3. 以降の規則が、公開ページで固定色を持つ部品（カレンダーの短冊など）を寄せる
+
+   テーマを増やすときは、`src/lib/semantic-themes.ts` の ID とこのファイルの
+   `[data-semantic-theme="..."]` を同じ PR で足す。DB の列挙型は増やさない。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. 面。公開ページの地を画面幅いっぱいに広げ、本文だけを読める幅に収める。
+
+   `main.page` の左右余白（1rem）と `.page--narrow`（42rem）の内側に置かれるため、
+   負のマージンで画面端まで戻し、内側の余白で読み幅を作り直す。
+   上下も `main` の余白ぶん広げ、地のクリームが上下に帯で残らないようにする。
+   -------------------------------------------------------------------------- */
+
+.semantic-theme--page {
+  margin-block: -2rem -3rem;
+  margin-inline: calc(50% - 50vw);
+  padding-block: 2rem 3rem;
+  padding-inline: max(1rem, calc((100vw - var(--width-content)) / 2));
+  min-height: 60vh;
+  background-color: var(--st-surface-base);
+  background-image: var(--st-surface-image, none);
+  background-size: var(--st-surface-image-size, auto);
+  background-repeat: var(--st-surface-image-repeat, repeat);
+  color: var(--color-text);
+}
+
+/* --------------------------------------------------------------------------
+   2. トークンの写し。テーマは `--st-*` だけを持ち、部品は既存の名前を見続ける。
+   -------------------------------------------------------------------------- */
+
+.semantic-theme {
+  /* 見出しの書体。羊皮紙だけ明朝にする。Web フォントは増やさない。 */
+  --st-font-heading: var(--font-maru), var(--font);
+
+  --color-bg: var(--st-surface-base);
+  --color-surface: var(--st-surface-raised);
+  --color-text: var(--st-content-primary);
+  --color-text-strong: var(--st-content-primary);
+  --color-text-muted: var(--st-content-secondary);
+  --color-text-subtle: color-mix(in srgb, var(--st-content-secondary) 78%, var(--st-surface-base));
+  --color-text-faint: color-mix(in srgb, var(--st-content-secondary) 62%, var(--st-surface-base));
+  --color-ink-soft: color-mix(in srgb, var(--st-content-primary) 82%, var(--st-surface-base));
+
+  --color-border: var(--st-border-color);
+  --color-border-strong: color-mix(in srgb, var(--st-border-color) 55%, var(--st-content-secondary));
+  --color-line: color-mix(in srgb, var(--st-border-color) 55%, var(--st-surface-base));
+
+  --color-primary: var(--st-accent-primary);
+  --color-primary-hover: color-mix(in srgb, var(--st-accent-primary) 82%, #000000);
+  --color-primary-ring: var(--st-accent-primary);
+  --color-primary-text: var(--st-accent-text);
+  --color-primary-soft: color-mix(in srgb, var(--st-accent-primary) 14%, var(--st-surface-raised));
+  --color-hero: var(--st-surface-base);
+  --color-hero-hover: color-mix(in srgb, var(--st-surface-base) 88%, var(--st-content-primary));
+  --color-slate-100: color-mix(in srgb, var(--st-content-primary) 7%, var(--st-surface-raised));
+
+  --color-success-bg: color-mix(in srgb, var(--st-success) 14%, var(--st-surface-raised));
+  --color-success-border: color-mix(in srgb, var(--st-success) 42%, var(--st-surface-raised));
+  --color-success-line: var(--st-success);
+  --color-success-text: color-mix(in srgb, var(--st-success) 72%, var(--st-content-primary));
+
+  --color-warning-bg: color-mix(in srgb, var(--st-warning) 16%, var(--st-surface-raised));
+  --color-warning-border: color-mix(in srgb, var(--st-warning) 45%, var(--st-surface-raised));
+  --color-warning-line: var(--st-warning);
+  --color-warning-text: color-mix(in srgb, var(--st-warning) 68%, var(--st-content-primary));
+  --color-warning-deep: color-mix(in srgb, var(--st-warning) 78%, var(--st-content-primary));
+  --color-warning-solid: var(--st-warning);
+  --color-warning-solid-hover: color-mix(in srgb, var(--st-warning) 82%, #000000);
+
+  --color-danger-bg: color-mix(in srgb, var(--st-danger) 15%, var(--st-surface-raised));
+  --color-danger-border: color-mix(in srgb, var(--st-danger) 44%, var(--st-surface-raised));
+  --color-danger-line: var(--st-danger);
+  --color-danger-text: color-mix(in srgb, var(--st-danger) 74%, var(--st-content-primary));
+  --color-danger-solid: var(--st-danger);
+  --color-danger-solid-hover: color-mix(in srgb, var(--st-danger) 82%, #000000);
+
+  /* 装飾（deco）が持つ「貼り紙」の色。テーマでは主役にしない。 */
+  --pop-warm: var(--st-accent-primary);
+  --pop-warm-deep: color-mix(in srgb, var(--st-accent-primary) 78%, #000000);
+  --pop-warm-tint: color-mix(in srgb, var(--st-accent-primary) 14%, var(--st-surface-raised));
+  --pop-cool: var(--st-success);
+  --pop-cool-text: color-mix(in srgb, var(--st-success) 72%, var(--st-content-primary));
+  --pop-cool-tint: color-mix(in srgb, var(--st-success) 12%, var(--st-surface-raised));
+  --tape-ink: var(--st-accent-contrast);
+
+  --radius-lg: var(--st-radius-base);
+  --radius-xl: calc(var(--st-radius-base) * 1.5);
+  --radius-2xl: calc(var(--st-radius-base) * 2);
+  --radius-3xl: calc(var(--st-radius-base) * 2.5);
+  --shadow-sm: var(--st-shadow-elevation);
+  --shadow-xl: var(--st-shadow-elevation);
+
+  color: var(--color-text);
+}
+
+/* --------------------------------------------------------------------------
+   3. テーマ 1: Modern Slate（夜のスレート）
+
+   暗い青灰の地に白い文字。影は深く落とし、枠は面の明度差だけで示す。
+   クラブ・ライブなど、写真を主役にしたい催しの既定。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="modern-slate"] {
+  color-scheme: dark;
+  --st-surface-base: #0f172a;
+  --st-surface-raised: #1a2439;
+  --st-content-primary: #f8fafc;
+  --st-content-secondary: #b6c2d4;
+  --st-accent-primary: #4f46e5;
+  --st-accent-text: #a5b4fc;
+  --st-accent-contrast: #ffffff;
+  --st-border-width: 1px;
+  --st-border-color: rgb(148 163 184 / 0.24);
+  --st-radius-base: 8px;
+  --st-shadow-elevation: 0 14px 34px -24px rgb(0 0 0 / 0.9);
+  --st-filter-effect: none;
+  --st-danger: #f87171;
+  --st-warning: #fbbf24;
+  --st-success: #4ade80;
+  --st-surface-image: radial-gradient(1200px 420px at 50% -8%, rgb(79 70 229 / 0.28), transparent 70%);
+  --st-surface-image-repeat: no-repeat;
+  --st-surface-image-size: auto;
+}
+
+/* --------------------------------------------------------------------------
+   4. テーマ 2: Enterprise Clean（クリーン）
+
+   明るい地に細い枠と最小限の影。どの催しにも合わせやすい標準的な見た目。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="enterprise-clean"] {
+  --st-surface-base: #f9fafb;
+  --st-surface-raised: #ffffff;
+  --st-content-primary: #111827;
+  --st-content-secondary: #4b5563;
+  --st-accent-primary: #2563eb;
+  --st-accent-text: #1d4ed8;
+  --st-accent-contrast: #ffffff;
+  --st-border-width: 1px;
+  --st-border-color: #e5e7eb;
+  --st-radius-base: 10px;
+  --st-shadow-elevation: 0 1px 2px rgb(15 23 42 / 0.06);
+  --st-filter-effect: none;
+  --st-danger: #dc2626;
+  --st-warning: #b45309;
+  --st-success: #15803d;
+  --st-surface-image: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. テーマ 3: Parchment（羊皮紙）
+
+   生成りの地に濃い茶の文字。見出しは明朝。読み物として読ませたいときに使う。
+   散乱する暖色の光を弱い放射で表し、影はほぼ落とさない。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="parchment"] {
+  --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-surface-base: #f4eedd;
+  --st-surface-raised: #fbf6e9;
+  --st-content-primary: #2c221e;
+  --st-content-secondary: #6b5a4d;
+  --st-accent-primary: #8b2635;
+  --st-accent-text: #8b2635;
+  --st-accent-contrast: #fdf8ee;
+  --st-border-width: 1px;
+  --st-border-color: #d9cfb8;
+  --st-radius-base: 4px;
+  --st-shadow-elevation: 0 1px 0 rgb(44 34 30 / 0.08);
+  --st-filter-effect: none;
+  --st-danger: #9e4731;
+  --st-warning: #8a5800;
+  --st-success: #3f6b46;
+  --st-surface-image: radial-gradient(rgb(44 34 30 / 0.05) 1px, transparent 1px);
+  --st-surface-image-size: 18px 18px;
+  --st-surface-image-repeat: repeat;
+}
+
+/* --------------------------------------------------------------------------
+   6. テーマ 4: Neo-Brutalism（ネオ・ブルータリズム）
+
+   生成りに近い白、太い黒枠、硬い直角の影、黄色の差し色。
+   角丸は 0。ぼかしは使わない。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="neo-brutalism"] {
+  --st-surface-base: #fffef0;
+  --st-surface-raised: #ffffff;
+  --st-content-primary: #000000;
+  --st-content-secondary: #3a3a33;
+  --st-accent-primary: #ffe600;
+  --st-accent-text: #1a1a00;
+  --st-accent-contrast: #000000;
+  --st-border-width: 3px;
+  --st-border-color: #000000;
+  --st-radius-base: 0px;
+  --st-shadow-elevation: 4px 4px 0 #000000;
+  --st-filter-effect: none;
+  --st-danger: #d92d20;
+  --st-warning: #b45309;
+  --st-success: #157f3c;
+  --st-surface-image: none;
+}
+
+/* --------------------------------------------------------------------------
+   7. テーマ 5: Neon（ネオン）
+
+   黒に近い地にシアンの発光。影は「落とす」のではなく「光らせる」。
+   境界は 1px の半透明ラインだけにして、面の重なりで階層を作る。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="neon"] {
+  color-scheme: dark;
+  --st-surface-base: #080811;
+  --st-surface-raised: #10101d;
+  --st-content-primary: #e2e8f0;
+  --st-content-secondary: #9aa8bd;
+  --st-accent-primary: #00f0ff;
+  --st-accent-text: #00f0ff;
+  --st-accent-contrast: #041014;
+  --st-border-width: 1px;
+  --st-border-color: rgb(0 240 255 / 0.3);
+  --st-radius-base: 6px;
+  --st-shadow-elevation: 0 0 22px -6px rgb(0 240 255 / 0.45);
+  --st-filter-effect: none;
+  --st-danger: #ff5c8a;
+  --st-warning: #ffd166;
+  --st-success: #3ddc97;
+  --st-surface-image: radial-gradient(900px 340px at 50% -6%, rgb(0 240 255 / 0.18), transparent 70%);
+  --st-surface-image-repeat: no-repeat;
+}
+
+/* --------------------------------------------------------------------------
+   8. 装飾（deco）の打ち消し
+
+   `/organizers/[userId]` は導入（pop）のスコープなので、貼り紙の硬い影・傾き・
+   山吹の札が付く。テーマを選んだページでは、その紙面の作法を優先する。
+   詳細度は `.deco .semantic-theme[data-semantic-theme] ...`（クラス 3 + 属性 1）で、
+   `.deco.deco--tape-shadow .card`（クラス 3）より強い。
+   -------------------------------------------------------------------------- */
+
+.deco .semantic-theme[data-semantic-theme] .card,
+.deco .semantic-theme[data-semantic-theme] .panel,
+.deco .semantic-theme[data-semantic-theme] .stat,
+.deco .semantic-theme[data-semantic-theme] .cal,
+.deco .semantic-theme[data-semantic-theme] .organizer-locked__panel,
+.deco .semantic-theme[data-semantic-theme] .alert {
+  border: var(--st-border-width) solid var(--st-border-color);
+  border-radius: var(--radius-xl);
+  background: var(--st-surface-raised);
+  box-shadow: var(--st-shadow-elevation);
+  transform: none;
+}
+
+/* 見出しの札は、テーマでは色を塗らない。紙面の静けさを優先する。 */
+.deco .semantic-theme[data-semantic-theme] .eyebrow {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--st-accent-text);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transform: none;
+}
+
+.deco .semantic-theme[data-semantic-theme] .section__head {
+  border-bottom: var(--st-border-width) solid var(--color-text);
+}
+
+.deco .semantic-theme[data-semantic-theme] .btn--primary {
+  border: var(--st-border-width) solid var(--st-accent-primary);
+  background: var(--st-accent-primary);
+  color: var(--st-accent-contrast);
+  box-shadow: var(--st-shadow-elevation);
+}
+
+.deco .semantic-theme[data-semantic-theme] .btn--primary:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+  box-shadow: var(--st-shadow-elevation);
+}
+
+.deco .semantic-theme[data-semantic-theme] .btn--outline,
+.deco .semantic-theme[data-semantic-theme] .btn--ghost {
+  border: var(--st-border-width) solid var(--st-border-color);
+  background: var(--st-surface-raised);
+  color: var(--st-content-primary);
+  box-shadow: none;
+}
+
+.deco .semantic-theme[data-semantic-theme] .btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--st-content-secondary);
+}
+
+.deco .semantic-theme[data-semantic-theme] .chip {
+  border: var(--st-border-width) solid var(--st-border-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--st-accent-primary) 10%, var(--st-surface-raised));
+  color: var(--st-content-primary);
+  box-shadow: none;
+}
+
+.deco .semantic-theme[data-semantic-theme] .section__title,
+.deco .semantic-theme[data-semantic-theme] .profile-head__name,
+.deco .semantic-theme[data-semantic-theme] h1,
+.deco .semantic-theme[data-semantic-theme] h2,
+.deco .semantic-theme[data-semantic-theme] h3 {
+  font-family: var(--st-font-heading);
+}
+
+/* --------------------------------------------------------------------------
+   9. プロフィールの頭
+
+   モノグラムは地味になりやすいので、テーマの差し色で塗る。
+   アイコン画像を設定したときは、丸の中に切り抜いて収める。
+   -------------------------------------------------------------------------- */
+
+.deco .semantic-theme[data-semantic-theme] .profile-head__avatar {
+  border: var(--st-border-width) solid var(--st-border-color);
+  background: var(--st-accent-primary);
+  color: var(--st-accent-contrast);
+  box-shadow: var(--st-shadow-elevation);
+}
+
+.deco .semantic-theme[data-semantic-theme] .profile-head__title {
+  color: var(--st-content-secondary);
+}
+
+.deco .semantic-theme[data-semantic-theme] .kv {
+  border-top-color: var(--st-border-color);
+}
+
+.deco .semantic-theme[data-semantic-theme] .kv__row {
+  border-bottom-color: var(--color-line);
+}
+
+.deco .semantic-theme[data-semantic-theme] .profile-links a {
+  border-color: var(--st-border-color);
+  color: var(--st-content-secondary);
+}
+
+.deco .semantic-theme[data-semantic-theme] .profile-links a:hover {
+  border-color: var(--st-accent-primary);
+  color: var(--st-accent-text);
+}
+
+/* --------------------------------------------------------------------------
+   10. カレンダー
+
+   短冊は固定の山吹で塗られている。テーマの差し色に置き換えないと、
+   暗い紙面に 1 色だけ別の体系が混ざる。
+   -------------------------------------------------------------------------- */
+
+.deco .semantic-theme[data-semantic-theme] .cal {
+  border-width: var(--st-border-width);
+  border-color: var(--st-border-color);
+  background: var(--st-surface-raised);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__head {
+  border-bottom-color: var(--color-line);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__day {
+  border-color: var(--color-line);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__day:not(.is-outside):hover:not(.is-selected) {
+  background: color-mix(in srgb, var(--st-content-primary) 6%, var(--st-surface-raised));
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__day.is-selected {
+  background: color-mix(in srgb, var(--st-accent-primary) 18%, var(--st-surface-raised));
+  color: var(--st-content-primary);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__day.is-outside {
+  color: color-mix(in srgb, var(--st-content-secondary) 55%, var(--st-surface-raised));
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__event {
+  background: var(--st-accent-primary);
+  color: var(--st-accent-contrast);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__event.is-muted {
+  background: color-mix(in srgb, var(--st-content-secondary) 78%, var(--st-surface-raised));
+  color: var(--st-surface-base);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__event.is-waitlist {
+  background: var(--st-warning);
+  color: var(--st-surface-base);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__more {
+  color: var(--st-content-secondary);
+}
+
+.deco .semantic-theme[data-semantic-theme] .cal__nav button {
+  border-color: var(--st-border-color);
+  color: var(--st-content-primary);
+}
+
+/* 未ログインの白塗り。地の色を透かして、案内の面だけを浮かせる。 */
+.deco .semantic-theme[data-semantic-theme] .organizer-locked__notice {
+  background: color-mix(in srgb, var(--st-surface-base) 64%, transparent);
+}
+
+/* 飾りのカレンダーの短冊は、実物より弱く見せる。 */
+.deco .semantic-theme[data-semantic-theme] .organizer-locked__ghost .cal__event {
+  background: color-mix(in srgb, var(--st-content-secondary) 45%, var(--st-surface-raised));
+}
+
+/* --------------------------------------------------------------------------
+   11. 一覧・補足
+   -------------------------------------------------------------------------- */
+
+.deco .semantic-theme[data-semantic-theme] .rows {
+  border-top-color: var(--st-border-color);
+}
+
+.deco .semantic-theme[data-semantic-theme] .rows__item {
+  border-bottom-color: var(--color-line);
+}
+
+.deco .semantic-theme[data-semantic-theme] a {
+  color: inherit;
+}
+
+.deco .semantic-theme[data-semantic-theme] .text-link,
+.deco .semantic-theme[data-semantic-theme] .rows__title a,
+.deco .semantic-theme[data-semantic-theme] .row a {
+  color: var(--st-accent-text);
+}
+
+.deco .semantic-theme[data-semantic-theme] .text-link:hover,
+.deco .semantic-theme[data-semantic-theme] .rows__title a:hover,
+.deco .semantic-theme[data-semantic-theme] .row a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* 暗いテーマでは、ブラウザ既定のプレースホルダーが読めない。 */
+.semantic-theme ::placeholder {
+  color: var(--color-text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   12. 印刷。テーマは画面のためのもの。紙に出すときは地を塗らない。
+   -------------------------------------------------------------------------- */
+
+@media print {
+  .semantic-theme--page {
+    margin: 0;
+    padding: 0;
+    background: none;
+    color: #000;
+  }
+}

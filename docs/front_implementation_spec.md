@@ -59,7 +59,7 @@ flowchart TD
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。共通ヘッダーは出さない（`siteChrome("/events/…")`）。チラシを画面の上端から始める（`flushTop`）。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する。ログインと作成の入口は本文とフッターが持つ |
 | `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。役割の札（主催者）とリード文は置かない（役割は共通ヘッダーと節が示す）。出欠集計・クォータ残数。冒頭の操作は置かず、「下書き一覧」（件数つき）と「イベント新規作成」を画面下に固定する帯（`.action-dock`）へ移す。390px では 2 つで 1 段にして作成を広く取り、640px 以上では右寄せにする。帯のぶん、本文とフッターの下に余白を残す。公開ページ・プロフィール・売上・契約は主催者の節と SCR-PUB-03 に任せる。要約は「公開中」「受付停止」の 2 つだけで、名前と件数を横に並べた低い札にする（合算の参加者数はカードの数字と重なるので出さない）。一覧の見出しは「一覧」だけにし、説明文は置かない。見出しの下に絞り込みを置く（状態「すべて / 公開中のみ / 受付停止のみ」、開催日の開始日と終了日、過去の催しを除く）。640px 未満では状態と開催日を「絞り込む」ボタン（効いている条件の数を添える）から開くモーダルに畳み、過去の催しを除くだけを外に残す。モーダルは選んだ時点では反映せず、「この条件で絞り込む」で確定して閉じ、背景を押すと元の条件のまま閉じる。640px 以上は畳まず、4 つを 1 行に並べる。絞り込みは画面側で行い（`src/modules/events/lib/event-filters.ts`）、10 件ずつページに割って件数の範囲と前後ページを `pager` に出す。条件を変えたら 1 ページ目へ戻し、0 件になったら「条件を戻す」を出す。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。カードの操作は「参加者を見る」「公開ページ」「編集」「コピー作成」の 4 つで、スマホでは文字を 1 段小さくし、ボタンの高さを 28px まで詰めて 4 つを 1 段に並べ、カードが 2 列になる 900px 以上だけ 2×2 にする（右寄せの縦罫線は折り返しで崩れるので使わない）。編集は一覧で最も使う操作なので、既定から朱で塗った `btn--accent` にする（ホバーでは濃くなるだけで、塗りの有無は変えない）。状態と役割の札は名簿の行と同じ `small` で出し、枠と丸みを持たせない（押せる `.btn` は枠・塗り・丸みを持つので、形で見分けられる）。共有URLと「公開を一時停止」「削除する」を「共有と設定」に畳んで操作の下に置く。一時停止は確認を挟まず `close` を送り、停止中のカードは「公開を再開」（`reopen`）に変える。削除だけ SCR-MOD-03 で確認する。ヘッダー直下のサブタブ（主催一覧 / カレンダー / 売上 / 下書き / プロフィール）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
 | `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、その月の催し一覧を縦に並べる。一覧は日付の昇順で、日付ごとに見出しを置く。日付のセルを押すと一覧のその日へ寄せ、帯（催し名）を押したときは詳細のモーダルだけを開いて画面は動かさない。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。公開中の予定は、一覧から LINE 共有ボタンで告知URLを送れる（SCR-PUB-01 と同じ注意書きを出す）。外部カレンダー連携（`.ics`・購読URL）は持たない |
-| `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram、実績の表示可否。操作（「保存する」「プレビュー」「公開中ページを開く」）は h1 とリードの下に置き、スマホでは画面下に固定する。保存前に SCR-PUB-14 と同じ見た目でプレビューする。保存後は `PUT /api/v1/organizer/profile`。表示名は SCR-PUB-11 で変える |
+| `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、アイコン画像、ページの見た目（標準＋5テーマ）、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram、実績の表示可否。操作（「保存する」「プレビュー」「公開中ページを開く」）は h1 とリードの下に置き、スマホでは画面下に固定する。保存前に SCR-PUB-14 と同じ見た目（テーマ込み）でプレビューする。本文は `PUT /api/v1/organizer/profile`、画像は `POST /api/v1/organizer/profile/avatar`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。ヘッダー直下のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
 | `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。会員は「下書き保存」と「プレビューを見る」の2つで、保存してから SCR-ORG-16 へ進む。未登録の幹事には下書き保存を出さず、従来どおり「公開する」だけを出す（`visibility` は常に `UNLISTED`）。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。`?draftId=` で下書きを復元し、保存のたびに URL へ残す。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る。右下にマイクボタンを固定し、押すと音声入力のパネルを出して、そのまま録音を始める。直前に入力欄を選んでいればその欄から、無ければ上から順に空欄を強調して 1 欄ずつ録音し、確定したら「自動遷移」がオンなら次の空欄へ進んで録音を続け、オフなら同じ欄に留まる（既定はオン）。入力できる欄が尽きたら「入力完了！」を出し、3秒後に音声モードを終了する。強調は DOM フォーカスではなく `data-voice-target` で行い、日付・時刻の OS ピッカーを開かない。音声モードの間は、いま聞いている欄のまわりだけをくり抜いて画面全体を半透明の黒で覆い、それ以外の操作を止める（`src/modules/events/components/VoiceInputDock.tsx`） |
@@ -76,7 +76,7 @@ flowchart TD
 | `/participant` | SCR-PUB-08 | 参加者（ログイン会員） | 会員JWT必須 | 参加者ホーム。これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には `/mypage` への切り替えを出す |
 | `/participant/calendar` | SCR-PUB-12 | 参加者（ログイン会員） | 会員JWT必須 | 参加カレンダー（`GET /api/v1/user/calendar`）。出欠を答えた催しを、選んだ日程の日付に置く（未選択ならイベントの代表日）。出席・欠席・参加要望を出し、欠席は控えめに、参加要望はアンバーで表示する。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。一覧・検索は持たない |
 | `/participant/history` | SCR-PUB-09 | 参加者（ログイン会員） | 会員JWT必須 | 参加履歴（`GET /api/v1/user/participations`）。出欠（出席・参加要望・欠席）・時期の絞り込み、ページ送り、領収書へのリンク。集計に参加要望を出す。主催イベントの情報は出さない |
-| `/organizers/[userId]` | SCR-PUB-14 | 誰でも（未ログイン可）。催しは参加者（ログイン会員） | なし（公開）。催しは `GET /api/v1/public/organizers/[userId]/events` が未ログインに 403 `LOGIN_REQUIRED` | 主催者のページ。共通ヘッダーは出さない（`siteChrome("/organizers/…")`）。プロフィール（`GET /api/v1/public/organizers/[userId]`）の下に、カレンダーと一覧を縦に並べる。名前、頭文字、肩書き、自己紹介、活動エリア、ジャンル、X・Instagram（アイコン。新しいウィンドウで開く）、任意の実績。未作成・非公開なら名前だけを出す（404 にしない）。催しが0件・退会済み・会員が無いときだけ 404。催しは未ログインでは飾りのカレンダーの上に白塗りを重ねて参加者ログインへ送り、月は `?month=YYYY-MM` に持つ（今月より前へは戻れない）。主催者は SCR-PUB-03 の「公開ページを見る」から同じ内容を確認できる。`noindex` |
+| `/organizers/[userId]` | SCR-PUB-14 | 誰でも（未ログイン可）。催しは参加者（ログイン会員） | なし（公開）。催しは `GET /api/v1/public/organizers/[userId]/events` が未ログインに 403 `LOGIN_REQUIRED` | 主催者のページ。共通ヘッダーは出さない（`siteChrome("/organizers/…")`）。プロフィール（`GET /api/v1/public/organizers/[userId]`）の下に、カレンダーと一覧を縦に並べる。アイコン、名前、肩書き、自己紹介、活動エリア、ジャンル、X・Instagram（アイコン。新しいウィンドウで開く）、任意の実績。主催者が選んだテーマをページ全体に適用する。未作成・非公開なら名前とアイコンだけを出す（404 にしない）。催しが0件・退会済み・会員が無いときだけ 404。催しは未ログインでは飾りのカレンダーの上に白塗りを重ねて参加者ログインへ送り、月は `?month=YYYY-MM` に持つ（今月より前へは戻れない）。主催者は SCR-PUB-03 の「公開ページを見る」から同じ内容を確認できる。`noindex` |
 | `/organizers/[userId]/events` | — | — | — | 画面ではない。統合したので `/organizers/[userId]` へ `permanentRedirect`（`?month` だけ引き継ぐ） |
 | `/account` | SCR-PUB-11 | 主催者・参加者（ログイン会員） | 会員JWT必須 | アカウント設定。表示名、メールアドレス、電話番号、パスワード、退会を縦に並べる。冒頭 `h1` は「アカウント設定」。主催者と参加者で同じ画面を使う |
 | `/account/email/verify` | SCR-PUB-11 | 確認リンクを開いた会員 | 確認トークン（ログインは不要） | 新しいメールアドレスの確定。成功したら `/account` へ戻す。無効・期限切れは理由を出す |
@@ -109,11 +109,11 @@ flowchart TD
 | 会員 | SCR-PUB-08 | 参加者ホーム | `/participant` | これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線 |
 | 会員 | SCR-PUB-12 | 参加カレンダー | `/participant/calendar` | 出欠を答えた催しを月グリッドに置く。出席・欠席・参加要望。日付を選ぶとその日の催しが出る |
 | 会員 | SCR-PUB-09 | 参加履歴 | `/participant/history` | 出欠と領収書の一覧。出欠・時期で絞り込み、ページ送りする |
-| 誰でも／会員 | SCR-PUB-14 | 主催者のページ | `/organizers/[userId]` | プロフィール（自己紹介・ジャンル・X/Instagram・実績）の下に、カレンダーと一覧。共通ヘッダーは出さない。非公開なら名前だけを出す。未ログインでは飾りのカレンダーに白塗りを重ね、参加者ログインへ送る。満員は参加要望受付中 |
+| 誰でも／会員 | SCR-PUB-14 | 主催者のページ | `/organizers/[userId]` | アイコン付きプロフィール（自己紹介・ジャンル・X/Instagram・実績）の下に、カレンダーと一覧。主催者のテーマをページ全体に適用。共通ヘッダーは出さない。非公開なら名前とアイコンだけを出す。未ログインでは飾りのカレンダーに白塗りを重ね、参加者ログインへ送る。満員は参加要望受付中 |
 | 会員 | SCR-PUB-11 | アカウント設定 | `/account`（メール確認は `/account/email/verify`） | 表示名、メールアドレス、電話番号、パスワード、退会。変更の前に確認番号を出し、メールは新しいアドレスへのリンクで確定する。管理者は対象外 |
 | 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待。下書きは出さず、件数だけを「下書き一覧」に添える。`?registered=1` で登録完了トーストを出す |
 | 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
-| 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、肩書き、自己紹介、エリア、ジャンル、X・Instagram、実績の表示可否。保存前プレビュー。表示名はアカウント設定で変える |
+| 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、アイコン画像、ページの見た目（5テーマ）、肩書き、自己紹介、エリア、ジャンル、X・Instagram、実績の表示可否。テーマ込みの保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、今月の催し一覧（日付の昇順）。日付を押すと一覧のその日へ寄せる。複数の開催日をすべて出す。前月・次月・今月で移動する |
 | 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。会員は「下書き保存」「プレビューを見る」の2つで保存してから SCR-ORG-16 へ進む。未登録の幹事は「公開する」だけ。枠が無いときも `DRAFT` で退避し、`?draftId=` で復元する。`?ref=` を参照元として送る |
 | 主催 | SCR-ORG-10 | 公開直後の会員登録案内 | `/organizer/register-required` | 共有 URL のコピーと、会員登録・ログイン。名簿・リマインド・領収書・招待は登録後であることを伝える |
@@ -501,6 +501,7 @@ src/
 │   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-14
 │   │   ├── components/OrganizerTabs.tsx         # 主催一覧 / カレンダー / 売上 / 下書き / 公開プロフ（ヘッダー直下のサブタブ）
 │   │   ├── components/OrganizerProfileForm.tsx  # SCR-ORG-14（保存前プレビュー）
+│   │   ├── components/OrganizerAvatarField.tsx  # SCR-ORG-14（アイコンの登録・削除。選ぶとすぐ保存）
 │   │   ├── components/OrganizerProfileView.tsx  # SCR-PUB-14（プロフィール。公開ページとプロフィール編集のプレビューで共用）
 │   │   ├── components/OrganizerPageView.tsx     # SCR-PUB-14（カレンダーと一覧・未ログインの骨組み）
 │   │   ├── components/CalendarView.tsx          # SCR-ORG-13（月グリッドと今月の催し一覧）
@@ -1745,7 +1746,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 ### 14.2. 取得 API
 
-**プロフィール:** `GET /api/v1/public/organizers/[userId]`。認証は要らない。非公開でも 200 を返し、`profile.isPublished` を false にして中身を null・空配列にする（DB の値をそのまま返さない）。
+**プロフィール:** `GET /api/v1/public/organizers/[userId]`。認証は要らない。非公開でも 200 を返し、`profile.isPublished` を false にして中身を null・空配列にする（DB の値をそのまま返さない）。アイコンの `avatarUrl` だけは非公開でも返す。
 
 ```json
 {
@@ -1758,12 +1759,14 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
     "area": "東京都渋谷区",
     "tags": ["LEARNING", "LOCAL"],
     "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
-    "stats": { "eventCount": 12, "sinceYear": 2019 }
+    "stats": { "eventCount": 12, "sinceYear": 2019 },
+    "avatarUrl": "/api/v1/image-assets/{id}/image",
+    "themeId": "parchment"
   }
 }
 ```
 
-`links` は X・Instagram の順で、未入力は飛ばす。Webサイトと LINE は DB に残っても公開しない。`tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）だけを残す。`stats` は `showStats` がオフなら null。
+`links` は X・Instagram の順で、未入力は飛ばす。Webサイトと LINE は DB に残っても公開しない。`tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）だけを残す。`stats` は `showStats` がオフなら null。`themeId` は非公開・未知の値なら null（標準の見た目）。
 
 **催し:** `GET /api/v1/public/organizers/[userId]/events`。認証は `resolveOptionalUserId` を使い、Cookie が壊れていても 401 にはせず未ログインとして扱う。
 
@@ -1815,10 +1818,11 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 **プロフィール:** `src/modules/organizers/components/OrganizerProfileView.tsx`。サーバーコンポーネントからも編集画面のプレビューからも同じ部品を使う。
 
-* `.profile-head` に頭文字のモノグラム、`h1`（主催者名）、肩書き、活動エリア、ジャンルの `.chip`、リンクの `.profile-links` を出す。リンクは X と Instagram のアイコンで、`target="_blank"` と `rel="noopener noreferrer nofollow"`。
+* `.profile-head` にアイコン（`.profile-head__avatar`。`avatarUrl` があれば `<img>`、無ければ名前の頭文字）、`h1`（主催者名）、肩書き、活動エリア、ジャンルの `.chip`、リンクの `.profile-links` を出す。リンクは X と Instagram のアイコンで、`target="_blank"` と `rel="noopener noreferrer nofollow"`。
 * 自己紹介は `.profile-bio` で改行を保持する（`white-space: pre-wrap`）。
+* アイコン画像は 64px で出し、`width` / `height` を付けて CLS を防ぐ。配信は 256px の WebP（`/api/v1/image-assets/{id}/image`）で、Next の画像最適化は通さない（二重の変換を避ける）。
 * 実績は `showStats` がオンのときだけ「主催 N回」「YYYY年から」を出す。
-* 未作成・非公開では「この主催者は、まだプロフィールを公開していません。」だけを出し、名前とモノグラムは残す。
+* 未作成・非公開では「この主催者は、まだプロフィールを公開していません。」だけを出し、名前とアイコン（または頭文字）は残す。
 * `preview` では非公開でも中身を描き、注意書きを添える。
 
 **カレンダーと一覧:** `src/modules/organizers/components/OrganizerPageView.tsx`（クライアント）。
@@ -1829,6 +1833,13 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * 一覧は「次に開催される日が近い順」の全件。催し名、今日以降の全開催日、費用、場所、参加人数と定員、充足率の `.meter` を出す。満員かつ `acceptsWaitlist` なら `badge--waitlist` の「参加要望受付中」、満員で受付終了なら `badge--declined` の「満員」、空きがあれば「残り N 名」を出す。
 * どちらの表示からも催しは `/events/[id]` へ進む。ボタンの文言は満員なら「参加要望を出す」、それ以外は「出欠を答える」。
 * 催しが0件のときは「これから開催される催しはありません。」だけを出す。
+
+**ページのテーマ:** 主催者が選んだテーマは、プロフィールと催しの両方（ページ全体）に効く。`page.tsx` が `<SemanticThemeScope themeId={profile.themeId} page>` で 2 つを包む。
+
+* テーマは `data-semantic-theme` 属性と静的な CSS（`src/styles/themes.css`）だけで適用する。公開ページにテーマ用のクライアント JS は載せず、ハイドレーション後の色替えもしない。
+* `themeId` が null のときは `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
+* 追加する CSS は 5 テーマで数 KB。`backdrop-filter` とアニメーションは使わず、Web フォントも増やさない（`parchment` はシステムの明朝）。
+* 全幅の地は `margin-inline: calc(50% - 50vw)` と内側の余白で作り、本文の読み幅（42rem）は保つ。
 
 ### 14.5. 主催者側の導線
 
@@ -1848,19 +1859,26 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 | パス | `/organizer/profile` |
 | 画面 | `src/app/organizer/profile/page.tsx`（サーバー）→ `OrganizerProfileForm`（クライアント） |
 | 認可 | `requireOrganizerAccount`（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`）＋ `assertOrganizerMember`（催し0件は 403 `NOT_ORGANIZER`） |
-| 取得・保存 | `GET` / `PUT /api/v1/organizer/profile`。応答は `{ name, profile, stats, homePath }` |
-| 入力 | 公開/非公開、肩書き60、自己紹介400、活動エリア50、ジャンル3つまで、X・Instagram、実績の表示可否 |
-| プレビュー | 保存前の下書きを `profileContentFromDraft` で組み立て、`OrganizerProfileView` を `preview` で描く。実績は `stats` を使う |
+| 取得・保存 | `GET` / `PUT /api/v1/organizer/profile`。応答は `{ name, profile, stats, homePath, avatarUrl }`。画像だけは `POST` / `DELETE /api/v1/organizer/profile/avatar` で別に保存する |
+| 入力 | 公開/非公開、アイコン画像、ページの見た目（標準＋5 テーマ）、肩書き60、自己紹介400、活動エリア50、ジャンル3つまで、X・Instagram、実績の表示可否 |
+| プレビュー | 保存前の下書きを `profileContentFromDraft(draft, stats, avatarUrl)` で組み立て、`OrganizerProfileView` を `preview` で描く。`draft.themeId` を `SemanticThemeScope` で包み、公開後と同じ見た目で確かめられる（`page` は付けない。枠の中に収める） |
 | 導線 | 主催者サブタブ、`/mypage`、`/organizer/events` |
 
 表示名（`users.name`）はここでは変えない（SCR-PUB-11 のアカウント設定）。公開する URL は X（`x.com` / `twitter.com`）と Instagram（`instagram.com`）だけ。`https` のみ通す。API は後方互換のため Webサイトと LINE の欄も受け付けるが、編集画面と公開ページには出さない。`OrganizerProfileSchema`（`src/lib/schemas.ts`）が `.strict()` で、知らない項目を受け付けない。
 
-画面は「公開ページに出る内容」の 1 枚の枠（`section.card.stack` ＋ `PanelHead`）に、公開のチェックから実績までの入力をまとめる。公開/非公開の状態はチェックそのものが示すので、冒頭に同じことを言うパネルは置かない。操作は枠の外・フォームの先頭の `btn-row profile-actions` に置き、「保存する」（`btn--primary`）を主、「プレビュー」（`btn--ghost btn--sm`）と「公開中ページを開く」（`btn--outline btn--sm`）を従にする。スマホでは `.profile-actions` を画面下に固定し（`.action-dock` と同じ帯の形）、本文とフッターの下に帯の高さぶんの余白を残す。640px 以上では固定をやめ、見出しの下の横並びに戻す。
+画面は「公開ページに出る内容」の 1 枚の枠（`section.card.stack` ＋ `PanelHead`）に、**アイコン**、公開のチェック、**ページの見た目**、肩書きから実績までの入力をまとめる。公開/非公開の状態はチェックそのものが示すので、冒頭に同じことを言うパネルは置かない。
+
+* アイコンは `OrganizerAvatarField`（クライアント）。80px の枠に現在の画像（無ければ頭文字）、`画像を選ぶ` / `画像を変える`、`削除`、`accept={UPLOAD_ACCEPT}` の隠し input を置く。4MB を超えるファイルは送る前に弾く。成功したら `avatarUrl` を差し替えてトーストを出し、失敗は `readProblem` の文言をその場に出す。「選ぶとすぐに保存されます」と補足する（本文の保存とは別のため）。
+* ページの見た目は `ThemePicker`（クライアント）。`fieldset` ＋ radio で、「標準」と 5 テーマを並べる。各選択肢は `data-semantic-theme` を付けた色見本（`theme-swatch`）で、画像を使わない。選択は `draft.themeId` を更新するだけで、保存は既存の「保存する」が行う。
+* 操作は枠の外・フォームの先頭の `btn-row profile-actions` に置き、「保存する」（`btn--primary`）を主、「プレビュー」（`btn--ghost btn--sm`）と「公開中ページを開く」（`btn--outline btn--sm`）を従にする。スマホでは `.profile-actions` を画面下に固定し（`.action-dock` と同じ帯の形）、本文とフッターの下に帯の高さぶんの余白を残す。640px 以上では固定をやめ、見出しの下の横並びに戻す。
 
 ### 14.7. テスト
 
 * 単体（`tests/unit/public-organizer-page.test.ts`、34件）: 今日以降の絞り込み、次の開催日、掲載条件（下書き・締切・削除・過去日・満員）、並びと同点の決め方、候補日ごとのまとめ、短冊の色と詳細、月の下限、公開ページと旧 URL の転送先。
-* 単体（`tests/unit/organizer-profile.test.ts`、36件）: リンクの順序と URL の検査、実績の数え方、下書きから表示への組み立て、ジャンルの正規化、自己紹介の省略、旧 URL の月の引き継ぎ、`OrganizerProfileSchema` の上限・URL・厳格さ。
+* 単体（`tests/unit/organizer-profile.test.ts`、42件）: リンクの順序と URL の検査、実績の数え方、下書きから表示への組み立て（テーマ・アイコンを含む）、ジャンルの正規化、自己紹介の省略、旧 URL の月の引き継ぎ、非公開の行がテーマと本文を隠してアイコンを残すこと、`OrganizerProfileSchema` の上限・URL・厳格さ・テーマ。
+* 単体（`tests/unit/semantic-theme.test.ts`、10件）: ID の重複・件数・表示名、`normalizeSemanticThemeId` が未知の値と null を落とすこと、`OrganizerProfileSchema` が 5 テーマと null を受け、未知の ID を弾くこと。
+* 単体（`tests/unit/semantic-theme-css.test.ts`、5件）: 各テーマの CSS ブロックと必須トークン、`themes.css` が `index.css` の最後にあること、ぼかし・アニメーションを使わないこと、全幅の面の作り方。
 * 結合（`tests/integration/public-organizer-page.test.ts`、8件）: 未ログインの 403 `LOGIN_REQUIRED`、存在しない・退会済みの 404、筆頭幹事と共同主催の掲載対象、開催日の文字列化、複数候補日の並び、満員と参加要望の数え方、締切済みの除外。`TEST_DATABASE_URL` があるときだけ走る。
-* 結合（`tests/integration/organizer-profile.test.ts`、12件）: 未設定でも名前だけ返す、保存内容の公開、非公開に戻すと隠す、upsert が1行にまとまる、催し0件・退会・不正な UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。
+* 結合（`tests/integration/organizer-profile.test.ts`、16件）: 未設定でも名前だけ返す、保存内容の公開、非公開に戻すと隠す、upsert が1行にまとまる、テーマの保存と公開 API への反映、テーマを外すと null に戻る、未知のテーマ 400、非公開ならテーマも隠す、催し0件・退会・不正な UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。
+* 結合（`tests/integration/organizer-avatar.test.ts`、8件）: PNG の WebP 化と 256px 角、公開 API の `avatarUrl`、差し替えで旧画像が 404、削除で参照とファイルが消える、画像でない本文 422、4MB 超 413、未ログイン 401、不正な UUID 404。`storage/images` の後片付けも行う。
 * 表示の確認は第7節 FE-ORG-08 / 09 / 10 / 15 に従う。

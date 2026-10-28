@@ -1264,3 +1264,55 @@ body:has(.profile-actions) .site-footer {
     min-height: 0;
   }
 }
+
+/* ==========================================================================
+   公開プロフィールのアイコン（SCR-ORG-14）
+
+   画像を選ぶ操作と、いま出る見た目を 1 行に並べる。スマホでは 80px の枠を
+   左に固定し、ボタンと説明を右へ流す（説明が 3 行になっても枠が暴れない）。
+   ========================================================================== */
+
+.avatar-field {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.875rem;
+}
+
+.avatar-field__preview {
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-family: var(--font-maru), var(--font);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.avatar-field__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-field__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.avatar-field__body .btn-row {
+  gap: 0.5rem;
+}
+
+.avatar-field__body .help {
+  margin: 0;
+}

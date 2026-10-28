@@ -83,6 +83,7 @@ export function profileUrlProblem(value: string, hosts: readonly string[], label
 export function profileContentFromDraft(
   draft: OrganizerProfileDraft,
   stats: OrganizerProfileStats | null,
+  avatarUrl: string | null = null,
 ): OrganizerProfileContent {
   return {
     isPublished: draft.isPublished,
@@ -92,6 +93,8 @@ export function profileContentFromDraft(
     tags: draft.tags,
     links: profileLinks(draft),
     stats: draft.showStats ? stats : null,
+    avatarUrl,
+    themeId: draft.themeId,
   };
 }
 

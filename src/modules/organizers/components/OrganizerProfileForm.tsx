@@ -7,6 +7,7 @@ import { readProblem } from "@/lib/problem";
 import { registerUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
+import { OrganizerAvatarField } from "@/modules/organizers/components/OrganizerAvatarField";
 import { profileContentFromDraft } from "@/modules/organizers/lib/profile";
 import {
   EMPTY_PROFILE_DRAFT,
@@ -18,7 +19,7 @@ import {
   type OrganizerProfileStats,
   type ProfileTag,
 } from "@/modules/organizers/types";
-import { Alert, Field, Loading, Panel, PanelHead } from "@/components/ui";
+import { Alert, Field, Loading, Panel, PanelHead, SemanticThemeScope, ThemePicker } from "@/components/ui";
 
 type LoadState = "loading" | "ready" | "error" | "register" | "not-organizer";
 
@@ -32,6 +33,7 @@ export function OrganizerProfileForm() {
   const [draft, setDraft] = useState<OrganizerProfileDraft>({ ...EMPTY_PROFILE_DRAFT });
   const [name, setName] = useState("");
   const [stats, setStats] = useState<OrganizerProfileStats | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [homePath, setHomePath] = useState("");
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export function OrganizerProfileForm() {
     setName(data.name);
     setDraft(data.profile);
     setStats(data.stats);
+    setAvatarUrl(data.avatarUrl);
     setHomePath(data.homePath);
   }, []);
 
@@ -175,11 +178,13 @@ export function OrganizerProfileForm() {
             </button>
           </div>
         </Panel>
-        <OrganizerProfileView
-          name={name}
-          profile={profileContentFromDraft(draft, stats)}
-          preview
-        />
+        <SemanticThemeScope themeId={draft.themeId}>
+          <OrganizerProfileView
+            name={name}
+            profile={profileContentFromDraft(draft, stats, avatarUrl)}
+            preview
+          />
+        </SemanticThemeScope>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </div>
     );
@@ -231,6 +236,13 @@ export function OrganizerProfileForm() {
             }
           />
 
+          <OrganizerAvatarField
+            name={name}
+            avatarUrl={avatarUrl}
+            onChange={setAvatarUrl}
+            onMessage={setToast}
+          />
+
           <fieldset className="field">
             <legend className="label">公開</legend>
             <label className="check">
@@ -242,6 +254,17 @@ export function OrganizerProfileForm() {
               プロフィールを参加者に公開する
             </label>
             <p className="help">オフのままでも、ページと催しへの導線は開けます。</p>
+          </fieldset>
+
+          <fieldset className="field">
+            <legend className="label">ページの見た目</legend>
+            <ThemePicker
+              value={draft.themeId}
+              onChange={(themeId) => update("themeId", themeId)}
+            />
+            <p className="help">
+              選んだ見た目は公開中ページ全体（自己紹介と催しの一覧）に効きます。プレビューで確かめてから保存してください。
+            </p>
           </fieldset>
 
           <Field label="肩書き・ひとこと" htmlFor="profile-headline">
