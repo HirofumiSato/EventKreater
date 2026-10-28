@@ -60,6 +60,9 @@
 
 .hero--stage .hero__eyebrow {
   display: inline-block;
+  /* 1 行を崩さない。長い題字なので、幅が足りないところでは字を小さくする
+     （スマホは deco/base.css が画面幅に合わせて縮める）。 */
+  white-space: nowrap;
   padding: 0.3rem 0.65rem;
   background: var(--color-primary);
   color: #fff;
@@ -79,6 +82,13 @@
   font-size: 2.125rem;
   line-height: 1.35;
   letter-spacing: 0.01em;
+}
+
+/* 折り返しの位置は文言の一部。狭い画面は 3 行、PC（1024px 以上）は 2 行にする。
+   行ごとに span で分け、PC では 1・2 行目を inline に戻して 1 行に詰める。
+   幅で DOM を変えないので、SSR の HTML は 1 つで済む。 */
+.hero--stage .hero__title-line {
+  display: block;
 }
 
 .hero--stage .hero__lead {
@@ -158,6 +168,33 @@
     width: 100%;
     max-width: 19rem;
     margin: 0;
+  }
+}
+
+/* 1024px 以上は PC。見出しを「イベントのチラシとWEBページ、」「5分で簡単作成。」の 2 行にする。
+   1 行目が 16 文字と長いので、札（19rem 固定）を除いた幅をコピーに渡し、
+   見出しの大きさは折り返さない上限（2.5rem）で止める。 */
+@media (min-width: 1024px) {
+  .hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
+  }
+
+  .hero--stage .hero__title {
+    max-width: 40rem;
+    font-size: 2.5rem;
+  }
+
+  .hero--stage .hero__lead {
+    max-width: 40rem;
+  }
+
+  .hero--stage .hero__title-line {
+    display: inline;
+  }
+
+  /* 最後の 1 行だけ手前で改行する（＝1・2 行目がつながる）。 */
+  .hero--stage .hero__title-line:last-child {
+    display: block;
   }
 }
 

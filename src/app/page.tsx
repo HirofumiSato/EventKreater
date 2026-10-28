@@ -11,7 +11,8 @@ import { Section, SectionHead } from "@/components/ui";
 
 const HERO_EYEBROW = (
   <>
-    飯フェス、タコパ、ライブ、占い、撮影会などの<span className="hero__eyebrow-tail">主催者様へ。</span>
+    ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc..{" "}
+    <span className="hero__eyebrow-tail">主催者様へ</span>
   </>
 );
 const HERO_LEAD =
@@ -71,7 +72,18 @@ export default function HomePage() {
         <div className="hero__grid">
           <div className="hero__copy">
             <p className="hero__eyebrow">{HERO_EYEBROW}</p>
-            <h1 className="hero__title">{SITE.tagline}</h1>
+            {/*
+              改行の位置は文言の一部。スマホは 3 行、PC は「イベントのチラシとWEBページ、」と
+              「5分で簡単作成。」の 2 行にする。切り替えは CSS（.hero__title-line）が持ち、
+              幅で DOM を変えない。
+            */}
+            <h1 className="hero__title">
+              {SITE.taglineLines.map((line) => (
+                <span key={line} className="hero__title-line">
+                  {line}
+                </span>
+              ))}
+            </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">
               <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
