@@ -213,8 +213,8 @@
 | `src/modules/events/lib/draft.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/event-filters.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/events.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
-| `src/modules/events/lib/guest-limit.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/lifecycle.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/modules/events/lib/pending-form.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/pricing-mode.ts` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
@@ -273,9 +273,8 @@
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-publish.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-save-preview-publish.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
-| `tests/integration/guest-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/helpers.ts` | [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
-| `tests/integration/hydrate.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/hydrate.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/login-challenge.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/organizer-avatar.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/organizer-profile.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -319,6 +318,7 @@
 | `tests/unit/organizer-names.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-profile.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/participant-calendar.test.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/pending-form.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/problem.test.ts` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/unit/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referrer.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

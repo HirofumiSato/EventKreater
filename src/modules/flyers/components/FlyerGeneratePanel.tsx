@@ -139,7 +139,7 @@ export function FlyerGeneratePanel({
           type="button"
           disabled={disabled || !draftKey || exhausted}
           onClick={openWizard}
-          className="btn btn--sm"
+          className="btn btn--outline btn--sm"
         >
           {previewUrl ? "作り直す" : "チラシを作る"}
         </button>

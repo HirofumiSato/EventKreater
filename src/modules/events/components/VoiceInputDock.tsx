@@ -36,8 +36,11 @@ interface VoiceInputDockProps {
   value: EventFormValues;
   onChange: (value: EventFormValues) => void;
   api: VoiceStepApi;
-  /** 未登録の幹事にだけ主催者名を聞く。 */
-  showOrganizerName: boolean;
+  /**
+   * 未登録の幹事にだけ主催者名を聞く。公開には会員登録が要るようになったため
+   * 作成画面からは渡さないが、欄そのものは残す（音声の対象を決める側が持つ）。
+   */
+  showOrganizerName?: boolean;
   disabled?: boolean;
 }
 
@@ -54,7 +57,7 @@ export function VoiceInputDock({
   value,
   onChange,
   api,
-  showOrganizerName,
+  showOrganizerName = false,
   disabled = false,
 }: VoiceInputDockProps) {
   const [active, setActive] = useState(false);

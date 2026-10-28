@@ -991,19 +991,28 @@ fieldset.field {
     min-height: 2.5rem;
   }
 
-  /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。 */
+  /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。
+     未ログインの帯は注記が 1 文増えて 2 段に折れるので、少し高く持つ。 */
+  body:has(.form-final) {
+    --final-bar-h: 7.5rem;
+  }
+
+  body:has(.form-final--guest) {
+    --final-bar-h: 8.5rem;
+  }
+
   body:has(.form-final) .page--form,
   body:has(.form-final) .site-footer {
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。 */
   .page--form:has(.form-final) .voice-fab {
-    bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   .page--form:has(.form-final) .voice-panel {
-    bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    bottom: calc(var(--final-bar-h) + 4rem + env(safe-area-inset-bottom));
   }
 }
 

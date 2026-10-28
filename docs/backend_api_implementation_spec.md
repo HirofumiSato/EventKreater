@@ -40,7 +40,7 @@ flowchart TD
 
 | エンドポイント | メソッド | 対象画面ID | 認証・認可 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/api/v1/public/events` | POST | SCR-ORG-02 | 任意（会員/ゲスト） | イベント新規作成（課金認可チェック・枠消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存し、未登録のゲストは 403 `REGISTER_REQUIRED` |
+| `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・枠消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する。未登録の幹事は作れない |
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
@@ -148,8 +148,9 @@ sequenceDiagram
     participant Guard as Billing & Auth Guard
     participant DB as PostgreSQL (Prisma)
     participant Stripe as Stripe Checkout
-    Organizer->>Client: 基本7項目入力 + チラシ選択<br/>「公開する」ボタン押下
-    Client->>Route: POST /api/v1/public/events<br/>(Body, Header: auth_token / guestToken)
+    Organizer->>Client: 基本7項目入力 + チラシ選択<br/>「プレビューを見る」ボタン押下
+    Client->>Route: POST /api/v1/public/events<br/>(Body, Header: auth_token)
+    Note over Route,Client: 未ログインなら本文を読まずに 403 REGISTER_REQUIRED<br/>画面は入力を退避してログインへ送る
     Route->>Guard: assertCanCreateEvent(userId)
     alt 課金・利用枠チェック
         Guard->>DB: SELECT * FROM user_usage_quotas WHERE user_id = :userId
@@ -182,7 +183,7 @@ sequenceDiagram
         Route->>DB: INSERT INTO event_organizers (event_id, user_id, role: OWNER)
         Route->>DB: COMMIT
         Route-->>Client: HTTP 201 Created<br/>{ event, shareUrl, manageUrl }
-        Client->>Organizer: 公開完了モーダル表示 (SCR-ORG-04)
+        Client->>Organizer: 告知ページへ移る（SCR-ORG-04）
     end
 ```
 
@@ -538,7 +539,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 
 会員セッションの検証は `verifyLocalToken` が行う。JWT の `jti` に対応する `auth_sessions` 行が存在し、`revoked_at` が空で、`expires_at` が未来であることを確かめる。あわせて `users.deleted_at` が空であることも確かめる。退会済みの会員の JWT は、署名と期限が正しくても使えない。管理 API（`/api/v1/admin/*`）は、さらに毎回 `platform_role = 'ADMIN'` をデータベースで確かめる。
 
-**未登録の幹事（ゲスト幹事）の境界。** 未登録でもイベントを 1 件作って公開できる。ただし、次の API は `assertRegisteredOrganizer` を通し、ゲスト幹事には 403 `REGISTER_REQUIRED` を返す。画面はこのコードを見て `/organizer/register-required?eventId=<id>` へ送る。`GET /api/v1/organizer/events/[id]` 自体は幹事ならゲストでも読め、応答に `registered: boolean`（会員かどうか）を含める。公開直後の案内ページはこれを見て、登録済みの幹事を管理画面へ返す。
+**未登録の幹事（ゲスト幹事）の境界。** 新規作成は会員だけが行える（`POST /api/v1/public/events` は `userId` が無ければ 403 `REGISTER_REQUIRED`）。以前に未登録で作ったイベントの行は残っており、その端末の Cookie では読み取りだけが通る。次の API は `assertRegisteredOrganizer` を通し、ゲスト幹事には 403 `REGISTER_REQUIRED` を返す。画面はこのコードを見て `/organizer/register-required?eventId=<id>` へ送る。`GET /api/v1/organizer/events/[id]` 自体は幹事ならゲストでも読め、応答に `registered: boolean`（会員かどうか）を含める。登録直後の案内ページはこれを見て、登録済みの幹事を管理画面へ返す。
 
 | 対象 | ルート |
 | :--- | :--- |
@@ -555,11 +556,10 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 
 編集（`PUT /api/v1/organizer/events/[id]`）とロック取得（`POST /api/v1/organizer/events/[id]/lock`）は、会員なら常に通り、ゲスト幹事は `events.created_at` から 24 時間以内だけ通る（`assertGuestEditWindow`）。ロックの解放と受付停止・削除は猶予の対象外で、ゲスト幹事でも常に実行できる。
 
-**未登録で作れるのは1件まで。** `POST /api/v1/public/events` で `userId` が無いとき、`collectGuestTokenHashes(req)` のハッシュに一致する `event_organizers` のうち `role = 'OWNER'` を数える（`assertGuestCanCreate`、`src/modules/events/lib/guest-limit.ts`）。1 件以上あれば、作成せずに 403 `REGISTER_REQUIRED` を返す。
+**未登録の端末はイベントを作れない。** `POST /api/v1/public/events` は `resolveUserId` が `null` を返した時点で、本文を読まずに 403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。以前の「未登録でも1件だけ作れる」数え上げ（`assertGuestCanCreate`）は削除した。
 
-* `CO_HOST` は数えない。招待を受けただけの端末を誤って止めないため。
-* `is_deleted = true` も数える。削除と作成を繰り返して上限をすり抜けさせないため。
-* Cookie が無い端末は通す。Cookie を消せば回避できる点は、Cookie 主体のゲスト認証の限界として受け入れる。
+* 理由は 2 つある。出欠を見るには結局 `assertRegisteredOrganizer` が要るため、未登録で作っても直後に登録へ送られること。枠の消費と下書きの復元がゲストだけ別扱いになり、`createEventForGuest` が `createEventForUser` とほぼ同じ処理を二重に持っていたこと。
+* 画面は 403 を受けたら入力を `sessionStorage` に退避してログインへ送る（`docs/front_implementation_spec.md` 12.3.1）。応答の `guestOrganizerToken` は常に `null` にする。
 
 **登録・ログイン後の引き継ぎ。** `POST /api/v1/user/hydrate` は `migrateGuestOrganizers(tx, userId, guestTokens)`（`src/modules/auth/lib/hydrate.ts`）を呼ぶ。端末の `org_token_*` に一致し `user_id` が空の `event_organizers` を会員へ付け替え、`guest_token_hash` を `NULL` にする。付け替えた行のうち `OWNER` の数だけ `user_usage_quotas.free_event_count` に加算し、`FREE_EVENT_LIMIT` で頭打ちにする。`CO_HOST` は加算しない。応答は `{ success, migratedParticipants, migratedOrganizers, promotedOwners, freeEventCount }`。
 
@@ -659,8 +659,8 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 
 主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は既定で `PUBLISHED` である。
 
-- **認可:** 認証済み会員 または ゲスト幹事（未ログイン時はゲスト幹事トークン発行）
-- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。枠は消費しない。未登録のゲストは `DRAFT` を作れず、403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。ゲスト幹事トークンは発行しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
+- **認可:** 会員のみ（`userId` が解決できないときは 403 `REGISTER_REQUIRED`、`type: probs/register-required`）。未登録の幹事はイベントを作れない。作成画面は入力を `sessionStorage` に退避してログインへ送り、戻ってから続きを保存する。
+- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。枠は消費しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
 - **リクエストスキーマ (Zod):**
 
 ```ts
@@ -724,13 +724,13 @@ export const CreateEventSchema = z.object({
       "aspectRatio": "A4"
     }
   },
-  "guestOrganizerToken": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "guestOrganizerToken": null,
   "publicUrl": "/events/e8a93b4c-9f82-4c28-9721-6b8c4d29a581",
   "manageUrl": "/organizer/events/e8a93b4c-9f82-4c28-9721-6b8c4d29a581"
 }
 ```
 
-`status` が `DRAFT` のときは、`publicUrl` が `null` になる。告知ページが無いため、カードや管理画面はリンクを出さない。`guestOrganizerToken` も `null` である（ゲストは下書きを作れない）。
+`status` が `DRAFT` のときは、`publicUrl` が `null` になる。告知ページが無いため、カードや管理画面はリンクを出さない。`guestOrganizerToken` は `status` にかかわらず常に `null` である（作成は会員だけが行える）。応答の形は変えないので、キーの有無で分岐する古いクライアントも壊れない。
 
 ---
 

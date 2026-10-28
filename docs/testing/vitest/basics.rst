@@ -107,7 +107,7 @@
 フックと後片付け
 ----------------
 
-``beforeEach`` / ``afterEach`` は、各 ``it`` の前後に走ります。結合テストでは、作った行を消すために使います（``tests/integration/guest-limit.test.ts``）。
+``beforeEach`` / ``afterEach`` は、各 ``it`` の前後に走ります。結合テストでは、作った行を消すために使います（``tests/integration/hydrate.test.ts``）。
 
 .. code-block:: typescript
 
@@ -127,13 +127,13 @@
 条件付きの実行
 --------------
 
-データベースが無い環境で結合テストを落とさないため、``describe`` 自体を差し替えます。``tests/integration/guest-limit.test.ts`` の 7 行目です。
+データベースが無い環境で結合テストを落とさないため、``describe`` 自体を差し替えます。``tests/integration/hydrate.test.ts`` の先頭です。
 
 .. code-block:: typescript
 
    const describeDb = process.env.TEST_DATABASE_URL ? describe : describe.skip;
 
-   describeDb("assertGuestCanCreate（結合）", () => {
+   describeDb("ゲスト幹事の付け替え（結合）", () => {
      // TEST_DATABASE_URL が無ければ、この中の it は 1 件も実行されない
    });
 

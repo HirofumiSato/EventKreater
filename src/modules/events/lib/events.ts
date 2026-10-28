@@ -318,7 +318,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
     return await prisma.$transaction(async (tx) => {
-      const planType = decision ? await decision.consume(tx) : null;
+      // 枠を消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
+      if (decision) await decision.consume(tx);
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
       const event = await tx.event.create({
         data: {
@@ -351,59 +352,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
       if (input.flyerDraftKey) {
         await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
       }
-      return { event, planType, guestOrganizerToken: null as string | null };
-    });
-  } catch (error) {
-    mapForeignKey(error);
-  }
-}
-
-export async function createEventForGuest(input: CreateEventInput, guestTokenHash: string) {
-  // 未登録の幹事は下書きを持てない。購入の復元は会員だけの導線にする。
-  if (input.status === "DRAFT") {
-    throw new ProblemDetailException({
-      status: 403,
-      title: "Forbidden",
-      type: "probs/register-required",
-      detail: "下書きの保存には会員登録が必要です。",
-      error: "REGISTER_REQUIRED",
-    });
-  }
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
-      const event = await tx.event.create({
-        data: {
-          title: input.title,
-          ...optionCreateData(input),
-          ...addressData(input),
-          rainPolicy: input.rainPolicy,
-          capacity: input.capacity ?? null,
-          targetGeneration: input.targetGeneration ?? null,
-          themeId: input.themeId ?? null,
-          flyerAssetId: input.flyerAssetId ?? null,
-          referrerEventId,
-          // 一覧を持たないため、作成時は常に紹介制で保存する。値は将来のメディアサイト用に残す。
-          visibility: "UNLISTED",
-          rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
-          status: "PUBLISHED",
-          quotaChargedAt: new Date(),
-        },
-        include: { flyerAsset: true, ...eventOptionsInclude },
-      });
-      await tx.eventOrganizer.create({
-        data: {
-          eventId: event.id,
-          guestTokenHash,
-          role: "OWNER",
-          displayName: input.organizerDisplayName ?? null,
-        },
-      });
-      // 未登録の幹事も、作成中の 1 回を公開後のイベントの枠へ引き継ぐ。
-      if (input.flyerDraftKey) {
-        await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
-      }
-      return event;
+      // 作成したイベントだけを返す。未登録の幹事トークンは発行しない（応答では常に null）。
+      return { event };
     });
   } catch (error) {
     mapForeignKey(error);
@@ -411,12 +361,12 @@ export async function createEventForGuest(input: CreateEventInput, guestTokenHas
 }
 
 export function createdEventBody(
-  event: NonNullable<Awaited<ReturnType<typeof createEventForGuest>>>,
-  guestOrganizerToken: string | null,
+  event: NonNullable<Awaited<ReturnType<typeof createEventForUser>>>["event"],
 ) {
   return {
     event: serializeEvent(event),
-    guestOrganizerToken,
+    // 未登録の幹事トークンは発行しない。応答の形は変えず、常に null を返す。
+    guestOrganizerToken: null,
     // 下書きは告知ページが存在しない。カードや管理画面がリンクを出さないよう null を返す。
     publicUrl: event.status === "DRAFT" ? null : `/events/${event.id}`,
     manageUrl: `/organizer/events/${event.id}`,

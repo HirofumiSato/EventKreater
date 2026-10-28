@@ -68,7 +68,8 @@
 ### 4. テスト
 
 - `tests/unit/auth-links.test.ts`: `next` のエンコードと `mode=register` の付与。
-- `tests/unit/guest-draft.test.ts`: 下書きの作成を拒否すること、下書きの応答が公開 URL を返さないこと。
+- `tests/unit/guest-draft.test.ts`: 下書きの応答が `publicUrl: null` になり、`guestOrganizerToken` を返さないこと。
+- `tests/unit/pending-form.test.ts`: ログイン前の入力の退避と復元、取り出すと 1 回で消えること。
 - 既存の画面テストがあれば文言追従。
 
 ## 受け入れ条件
