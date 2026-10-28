@@ -37,11 +37,20 @@ interface EventStepFormProps {
   showOrganizerName?: boolean;
   /**
    * 会員だけが下書きを保存できる。true のとき、最終ステップに
-   * 「下書き保存」と「プレビューを見る」を並べる。false は従来どおり公開だけ。
+   * 「下書き保存」と「プレビューを見る」を並べる。false は未登録として
+   * 「ログインして下書き保存する」「ログインして公開する」の 2 択を出す。
    */
   canSaveDraft?: boolean;
   onSaveDraft?: () => void;
   savingDraft?: boolean;
+  /**
+   * 未登録の幹事には、公開の代わりに「ログインして下書き保存」「ログインして公開」の
+   * 2 択を出す。どちらもここまでの入力を確かめて退避してから認証画面へ送る。
+   * 認証画面は新規登録とログインを 1 枚で扱うので、遷移先は同じでよい。
+   */
+  onRequireAuth?: () => void;
+  /** 利用枠の読み込み中など、最終操作のボタンだけを止めたいとき。入力欄は止めない。 */
+  actionsDisabled?: boolean;
   /** チラシ生成のパネル。最終ステップに出す。 */
   flyerSlot: ReactNode;
   /** 作成中のチラシの画像 URL。モーダルのプレビューに使う。 */
@@ -93,6 +102,8 @@ export function EventStepForm({
   canSaveDraft = false,
   onSaveDraft,
   savingDraft = false,
+  onRequireAuth,
+  actionsDisabled = false,
   flyerSlot,
   flyerPreviewUrl = null,
   voiceSlot,
@@ -269,6 +280,15 @@ export function EventStepForm({
     onSubmit();
   };
 
+  /**
+   * 未登録の幹事の最終操作。ログインの前にここまでの入力を確かめ、
+   * 未入力があればそのステップを開く（「次へ」で進めないのと同じ扱い）。
+   */
+  const requireAuth = () => {
+    if (!validate()) return;
+    onRequireAuth?.();
+  };
+
   const nextDisabled = (key: EventStepKey) => {
     if (key === "basic") return !isBasicStepComplete(value);
     if (key === "pricing") return !isPricingStepComplete(value);
@@ -435,7 +455,7 @@ export function EventStepForm({
       </ol>
       {/* 最後の操作はステップの中に入れない。閉じたステップに隠れると、
           どこを開けば保存・公開できるのか分からなくなる。 */}
-      <div className="form-final">
+      <div className={`form-final${canSaveDraft ? "" : " form-final--guest"}`}>
         <p className="form-final__note">
           {requiredRemaining === 0 ? (
             "必須の入力はそろいました。"
@@ -461,13 +481,26 @@ export function EventStepForm({
               </button>
             </>
           ) : (
-            <button type="submit" className="btn btn--primary" disabled={locked}>
-              {submitting
-                ? "送信中..."
-                : value.flyerAssetId
-                  ? "公開する"
-                  : "チラシなしで公開する"}
-            </button>
+            <>
+              {/* 未登録でも、ログイン後と同じ 2 つの位置に置く。戻ってきたときに
+                  帯の形が変わらず、押す場所を覚え直さずに済む。 */}
+              <button
+                type="button"
+                className="btn btn--outline"
+                disabled={locked || actionsDisabled}
+                onClick={requireAuth}
+              >
+                ログインして下書き保存する
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={locked || actionsDisabled}
+                onClick={requireAuth}
+              >
+                ログインして公開する
+              </button>
+            </>
           )}
         </div>
       </div>

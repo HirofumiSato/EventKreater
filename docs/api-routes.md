@@ -89,7 +89,7 @@
 | POST | `/api/v1/organizer/profile/avatar` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/avatar/route.ts` |
 | DELETE | `/api/v1/organizer/profile/avatar` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/avatar/route.ts` |
 | GET | `/api/v1/organizer/revenue` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/revenue/route.ts` |
-| POST | `/api/v1/public/events` | 条件付き（collectGuestTokenHashes, resolveUserId） | あり | `src/app/api/v1/public/events/route.ts` |
+| POST | `/api/v1/public/events` | 条件付き（resolveUserId） | あり | `src/app/api/v1/public/events/route.ts` |
 | GET | `/api/v1/public/events/[id]` | 条件付き（collectGuestTokenHashes, resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/route.ts` |
 | GET | `/api/v1/public/events/[id]/receipt` | 条件付き（resolveUserId） | あり | `src/app/api/v1/public/events/[id]/receipt/route.ts` |
 | POST | `/api/v1/public/events/[id]/rsvp` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/rsvp/route.ts` |

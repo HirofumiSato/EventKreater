@@ -147,7 +147,7 @@
 
 .. count-start
 
-63 ファイル、``it`` は 801 件です。内訳は ``tests/unit/`` が 49 ファイル 715 件、``tests/integration/`` が 14 ファイル 86 件です。結合の 86 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+63 ファイル、``it`` は 805 件です。内訳は ``tests/unit/`` が 50 ファイル 723 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -211,9 +211,9 @@
      - 28
      - 見込み売上・領収書発行額・差額・平均単価の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、名簿に出す申込時点の金額、同じプランの再保存で金額を保つこと
      - SCR-ORG-06 / SCR-ORG-11 / SCR-ORG-12
-   * - ``tests/integration/guest-limit.test.ts``
-     - 4
-     - 未登録は筆頭幹事として 1 件まで。共同幹事だけなら数えない。削除済みでも数える
+   * - ``tests/unit/pending-form.test.ts``
+     - 8
+     - 登録前の入力の退避と復元、取り出すと 1 回で消えること、壊れた値と形の違う値を捨てること、保存先が無い・書けない環境でも落ちないこと
      - SCR-ORG-02
    * - ``tests/integration/hydrate.test.ts``
      - 5
@@ -317,7 +317,7 @@
      - SCR-ORG-02
    * - ``tests/unit/guest-draft.test.ts``
      - 3
-     - 未登録は下書きを作れず 403 ``REGISTER_REQUIRED``。公開済みは告知 URL とゲスト幹事トークンを返す
+     - 作成の応答。下書きは公開 URL を返さない。公開済みは告知 URL を返す。``guestOrganizerToken`` は状態にかかわらず常に null
      - SCR-ORG-02
    * - ``tests/unit/line-share.test.ts``
      - 15
@@ -414,7 +414,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 715、``tests/integration/`` が 86 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 715 件を実行して 86 件を skip します。
+件数の内訳は ``tests/unit/`` が 723、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 723 件を実行して 82 件を skip します。
 
 .. breakdown-end
 

@@ -736,7 +736,7 @@ export function ThemeSection({
         </p>
       </fieldset>
       {onPreview && (
-        <button type="button" className="btn btn--outline" disabled={disabled} onClick={onPreview}>
+        <button type="button" className="btn btn--ghost btn--sm" disabled={disabled} onClick={onPreview}>
           ここまでの内容をプレビュー
         </button>
       )}

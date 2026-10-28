@@ -87,7 +87,7 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
 
 - `tests/unit/event-payload-schema.test.ts`: `status` の既定値・`DRAFT` の受理。
 - `tests/unit/checkout-intent.test.ts`（新規）: `returnTo` の許可リスト、`draftId` の型。
-- `tests/unit/guest-draft.test.ts`: ゲストの `DRAFT` 拒否と、下書きの応答が `publicUrl: null` になること。
+- `tests/unit/guest-draft.test.ts`: 下書きの応答が `publicUrl: null` になり、`guestOrganizerToken` を返さないこと。作成は会員だけが行えるため、ゲストの `DRAFT` 拒否は `POST /api/v1/public/events` の 403 で見る。
 - `tests/integration/draft-publish.test.ts`（新規）: 402 → 下書き → publish で1回だけ消費、二重 publish で二重消費しない、`PAST_DUE` は 402。`TEST_DATABASE_URL` があるときだけ走る。
 
 ## 受け入れ条件

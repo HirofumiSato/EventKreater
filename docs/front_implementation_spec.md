@@ -62,10 +62,10 @@ flowchart TD
 | `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、アイコン画像、ページの見た目（標準＋5テーマ）、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram、実績の表示可否。操作（「保存する」「プレビュー」「公開中ページを開く」）は h1 とリードの下に置き、スマホでは画面下に固定する。保存前に SCR-PUB-14 と同じ見た目（テーマ込み）でプレビューする。本文は `PUT /api/v1/organizer/profile`、画像は `POST /api/v1/organizer/profile/avatar`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。ヘッダー直下のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
 | `/organizer/events/[id]/revenue` | SCR-ORG-12 | 主催幹事 | 会員JWT必須（名簿と同じ 403 `REGISTER_REQUIRED`） | 売上の内訳。冒頭 `h1` は画面名、催し名はリード。プラン別・開催回別の人数と小計、プラン未選択の案内 |
-| `/organizer/events/new` | SCR-ORG-02 | 主催幹事 | 任意（作成時スキップ可） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。スマホ（640px 未満）ではこの帯を画面下に固定し、帯の高さぶん本文とフッターの下に余白を残す（音声ボタンとパネルも帯の上へ逃がす）。会員は「下書き保存」と「プレビューを見る」の2つで、保存してから SCR-ORG-16 へ進む。スマホの「プレビューを見る」は保存の前に、ここまでの内容を告知ページと同じ部品・同じテーマのモーダルで確かめ、モーダルの「下書き保存してプレビューへ」で SCR-ORG-16 へ進む。広い画面は従来どおり直接 SCR-ORG-16 へ進む。未登録の幹事には下書き保存を出さず、従来どおり「公開する」だけを出す（`visibility` は常に `UNLISTED`）。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。`?draftId=` で下書きを復元し、保存のたびに URL へ残す。未登録のまま公開したら `/organizer/register-required?eventId=` へ送る。右下にマイクボタンを固定し、押すと音声入力のパネルを出して、そのまま録音を始める。直前に入力欄を選んでいればその欄から、無ければ上から順に空欄を強調して 1 欄ずつ録音し、確定したら「自動遷移」がオンなら次の空欄へ進んで録音を続け、オフなら同じ欄に留まる（既定はオン）。入力できる欄が尽きたら「入力完了！」を出し、3秒後に音声モードを終了する。強調は DOM フォーカスではなく `data-voice-target` で行い、日付・時刻の OS ピッカーを開かない。音声モードの間は、いま聞いている欄のまわりだけをくり抜いて画面全体を半透明の黒で覆い、それ以外の操作を止める（`src/modules/events/components/VoiceInputDock.tsx`） |
+| `/organizer/events/new` | SCR-ORG-02 | 主催幹事（会員） | 会員JWT必須（未ログインは入力内容を退避してログインへ） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。スマホ（640px 未満）ではこの帯を画面下に固定し、帯の高さぶん本文とフッターの下に余白を残す（音声ボタンとパネルも帯の上へ逃がす）。会員は「下書き保存」と「プレビューを見る」の2つで、保存してから SCR-ORG-16 へ進む。スマホの「プレビューを見る」は保存の前に、ここまでの内容を告知ページと同じ部品・同じテーマのモーダルで確かめ、モーダルの「下書き保存してプレビューへ」で SCR-ORG-16 へ進む。広い画面は従来どおり直接 SCR-ORG-16 へ進む。未ログインのときは、会員と同じ位置に「ログインして下書き保存する」（`btn--outline`）と「ログインして公開する」（`btn--primary`）の2つを出し、どちらも必須の入力を確かめてから入力を `sessionStorage` に退避し、`loginUrl(next)` で `/auth/register` へ送る（認証画面は新規登録とログインを1枚で扱う）。戻ってきたら退避した内容を復元し、会員と同じ2つのボタンで続きを選ぶ（下書き保存かプレビューかは本人が決める）。入力内容は公開の直前に告知ページのプレビューで確かめられるため、未ログインの間に公開まで進める経路は持たない（`visibility` は常に `UNLISTED`）。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。`?draftId=` で下書きを復元し、保存のたびに URL へ残す。右下にマイクボタンを固定し、押すと音声入力のパネルを出して、そのまま録音を始める。直前に入力欄を選んでいればその欄から、無ければ上から順に空欄を強調して 1 欄ずつ録音し、確定したら「自動遷移」がオンなら次の空欄へ進んで録音を続け、オフなら同じ欄に留まる（既定はオン）。入力できる欄が尽きたら「入力完了！」を出し、3秒後に音声モードを終了する。強調は DOM フォーカスではなく `data-voice-target` で行い、日付・時刻の OS ピッカーを開かない。音声モードの間は、いま聞いている欄のまわりだけをくり抜いて画面全体を半透明の黒で覆い、それ以外の操作を止める（`src/modules/events/components/VoiceInputDock.tsx`） |
 | `/organizer/events/drafts` | SCR-ORG-15 | 主催幹事 / 共同幹事 | 会員JWT | 下書き一覧。冒頭 `h1` は画面名。自分の `DRAFT` だけを出す（`GET /api/v1/organizer/events` を画面側で絞る）。各カードから SCR-ORG-16 のプレビュー、SCR-ORG-05 の編集、削除（SCR-MOD-03）へ進む。下書きの間は枠を消費しない旨を書く。主催一覧へ戻る導線を置く |
 | `/organizer/events/[id]/preview` | SCR-ORG-16 | 主催幹事 / 共同幹事 | 幹事JWT（`GET /api/v1/organizer/events/[id]`）。公開は筆頭幹事の会員のみ | 下書きのプレビュー。`noindex`。公開操作は共通ヘッダー直下の全幅バー（パネルではない）から行う。チラシ以降は SCR-PUB-01 と同じ `PosterHero`・`EventMetaCard`・出欠フォームで見た目を確かめ、出欠は操作できない。選んだテーマ（`themeId`）と対象世代も反映する。参加履歴・主催者勧誘カードは出さない。「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、成功したら告知ページへ移る。枠不足は 402 で SCR-MOD-01（戻り先はこの画面）。オーナー以外には公開ボタンを出さず、その旨を書く。公開済みの ID を開いたときは告知ページへのリンクを出す |
-| `/organizer/register-required` | SCR-ORG-10 | 未登録の幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・リマインド・領収書・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
+| `/organizer/register-required` | SCR-ORG-10 | 既存のゲスト幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。新規作成からは到達しない（作成は会員のみ）。以前に未登録で作ったイベントを持つ端末の受け皿として残す。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・リマインド・領収書・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
 | `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る。冒頭に筆頭幹事だけ表示する幹事パネル（`CoHostPanel`）を置き、主催 / 共同主催の一覧、招待URLの発行、共同主催者の解除を行う。解除はその場で確認を出し、実行後に一覧を読み直す |
 | `/events/[id]/receipt` | SCR-PUB-04 | 参加者本人 | 出欠 Cookie または会員 | 自分の参加費領収書。共通ヘッダーは出さない。フッターは残し、上端の余白は普段どおり |
 | `/organizer/events/[id]/receipts/[participantId]` | SCR-ORG-09 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 幹事向け領収書。印刷しない冒頭 `h1` は画面名。催し名と宛名はリード。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -115,7 +115,7 @@ flowchart TD
 | 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
 | 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、アイコン画像、ページの見た目（5テーマ）、肩書き、自己紹介、エリア、ジャンル、X・Instagram、実績の表示可否。テーマ込みの保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、今月の催し一覧（日付の昇順）。日付を押すと一覧のその日へ寄せる。複数の開催日をすべて出す。前月・次月・今月で移動する |
-| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。会員は「下書き保存」「プレビューを見る」の2つで保存してから SCR-ORG-16 へ進む。未登録の幹事は「公開する」だけ。枠が無いときも `DRAFT` で退避し、`?draftId=` で復元する。`?ref=` を参照元として送る。定員のステップに「対象世代」（placeholder「20代から40代」）を置き、チラシのステップの先頭でイベントページのテーマを 5 つから選ぶ。テーマは告知ページの見た目と、チラシ画像生成の雰囲気へ渡る。スマホは `form-final` を画面下に固定し、「プレビューを見る」はモーダルで確認する |
+| 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。会員は「下書き保存」「プレビューを見る」の2つで保存してから SCR-ORG-16 へ進む。未ログインは同じ位置の「ログインして下書き保存する」「ログインして公開する」から入力を退避してログインへ送り、戻ったら復元して本人が続きを選ぶ。枠が無いときも `DRAFT` で退避し、`?draftId=` で復元する。`?ref=` を参照元として送る。定員のステップに「対象世代」（placeholder「20代から40代」）を置き、チラシのステップの先頭でイベントページのテーマを 5 つから選ぶ。テーマは告知ページの見た目と、チラシ画像生成の雰囲気へ渡る。スマホは `form-final` を画面下に固定し、「プレビューを見る」はモーダルで確認する |
 | 主催 | SCR-ORG-10 | 公開直後の会員登録案内 | `/organizer/register-required` | 共有 URL のコピーと、会員登録・ログイン。名簿・リマインド・領収書・招待は登録後であることを伝える |
 | 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。下書きは公開状態を選べる（その場で公開も可）。チラシのステップの先頭でイベントページのテーマを選べる。「プレビュー」から SCR-ORG-16 を開ける。未登録の幹事は作成から24時間以内 |
 | 主催 | SCR-ORG-15 | 下書き一覧 | `/organizer/events/drafts` | 自分の下書きだけを並べ、プレビュー・編集・削除を行う。下書きの間は枠を消費しない |
@@ -335,8 +335,8 @@ graph TD
     ORG03 -->|作成へ戻る| ORG02
     ORG03 -->|編集へ戻る| ORG05
     ORG02 -->|下書き保存してプレビューを見る| ORG16
-    ORG02 -->|公開できる（未登録の幹事のみ）| ORG04
-    ORG02 -->|公開時: 未登録| ORG10
+    ORG02 -->|未ログイン: 入力を退避してログイン| PUB02
+    PUB02 -->|ログイン後に戻る（入力を復元）| ORG02
     ORG02 -->|公開時: 上限到達 HTTP 402（下書きを保存）| MOD01
     ORG02 -->|下書きを公開: 枠あり| ORG04
     ORG02 -->|下書きを公開: 枠なし 402| MOD01
@@ -1264,7 +1264,7 @@ export interface PricingOption {
 | **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
 | **FE-BILL-07** | **枠不足の下書き退避と復元** | 無料枠を使い切った会員が新規作成で「公開」を押し、Checkout を完了して戻る | HTTP 402 の時点で `status=DRAFT` のイベントが1件だけできていること。`draftId` が Checkout に渡り、戻ると `/organizer/events/new?draftId=...` でフォームが復元されること。復元後に公開すると `PUBLISHED` になり、枠が1つだけ減ること |
 | **FE-BILL-08** | **複製下書きの二重課金防止** | 複製した下書きを編集画面から公開する | 公開時には枠が減らないこと（複製時に消費済み）。`POST /api/v1/organizer/events/[id]/publish` を二度呼んでも枠が減らないこと |
-| **FE-BILL-09** | **ゲストは下書きを作れない** | 未ログインのゲスト幹事が枠不足の公開を行う | `DRAFT` は作られず、403 `REGISTER_REQUIRED` で SCR-ORG-10 へ送られること。料金モーダルだけを出して下書きを残さないこと |
+| **FE-BILL-09** | **未ログインでは作れない** | 未ログインで作成画面を埋め、「ログインして公開する」を押す | 必須が埋まっていれば入力が `sessionStorage` に退避され、`/auth/register?mode=login&next=/organizer/events/new` へ送られること。ログイン後に戻ると入力とチラシが復元され、「下書き保存」「プレビューを見る」に変わっていること。`DRAFT` もイベントも作られないこと |
 | **FE-BILL-10** | **Checkout の戻り先の制限** | `returnTo` に外部 URL を渡して Checkout を作る | 400 で拒否され、Stripe のセッションが作られないこと |
 | **FE-ADM-01** | **秘匿ログイン** | 公開ナビとフッターに管理コンソールのリンクが無い状態で `/console/login` を直接開く | 公開ヘッダーを出さず、管理者ログインだけを表示すること |
 | **FE-ADM-02** | **非管理者の拒否** | 一般会員のメールとパスワードでログインする | 同じ失敗メッセージのまま `/console/login` に留まること |
@@ -1502,11 +1502,11 @@ interface OrganizerInviteCardProps {
 
 | # | ステップ | 入力 | 必須 | 完了の条件（`src/modules/events/lib/steps.ts`） |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | 催しの名前と開催日時 | `title`、`schedules`、未登録の幹事だけ `organizerDisplayName` | 必須 | 名前が入り、全行の日付・開始・終了が埋まっている |
+| 1 | 催しの名前と開催日時 | `title`、`schedules` | 必須 | 名前が入り、全行の日付・開始・終了が埋まっている |
 | 2 | 費用プラン | `pricePlans`（男女別の切り替えを含む） | 必須 | 全行にプラン名と 0 以上の整数の金額がある |
 | 3 | 開催場所 | `venueName`・住所・`rainPolicy` | 必須 | `refineEventAddress` と同じ条件。住所を入れ始めたら都道府県・市区町村・番地まで、入れていなければ会場名か旧形式の場所 |
 | 4 | 定員と申し込み期限 | `capacity`、`rsvpDeadline` | 任意 | 「51以上」を選んだときだけ人数が入っている |
-| 5 | チラシの用意 | SCR-ORG-08 と SCR-ORG-03 | 任意 | チラシがあるか、「チラシなしで公開する」で送信した |
+| 5 | チラシの用意 | SCR-ORG-08 と SCR-ORG-03 | 任意 | チラシがあるか、無いままでも保存・公開できる |
 
 * 開閉は `<ol>` とボタン（`aria-expanded` / `aria-controls`）で行い、閉じたステップの入力欄は描画しない。開いた見出しへフォーカスを移し、自動展開は `aria-live="polite"` で知らせる。
 * 必須ステップが**新たに**埋まったときだけ、次の必須ステップを開いて今のステップを畳む（`isForward`）。過去のステップを開き直して編集しても、後ろのステップは開閉しない。
@@ -1514,20 +1514,31 @@ interface OrganizerInviteCardProps {
 * 各ステップに「次へ」「戻る」を置く。完了していない必須ステップがある間は「次へ」を押せない。
 * 「51以上」を選んだことは保存値から分からない（空にすると無制限と同じになる）ため、選択の状態は画面が持つ（`src/modules/events/lib/capacity.ts`）。`?draftId=` の復元値が 51 以上なら「51以上」＋数値入力を初期表示する。
 * `?draftId=` を復元したら、`resumeStepKey` で最初の未完了の必須ステップを開く。全部済んでいればステップ4を開く。
-* 公開はステップ5の送信ボタンだけ。必須が残っていれば、そのステップを開いてエラーを出す。送信本文は `toEventRequest` で、API は変えない。
+* 最後の操作はステップの外側（`form-final`）に置く。必須が残っていれば、押したときにそのステップを開いてエラーを出す。送信本文は `toEventRequest` で、API は変えない。会員は「下書き保存」と「プレビューを見る」（スマホはモーダルで確認）、未ログインは「ログインして下書き保存する」「ログインして公開する」を同じ位置に並べる。チラシの有無で文言は変えない。
 * ステップ3の会場名の下に「過去の会場から選ぶ」を置く（`src/modules/events/components/VenueSelectModal.tsx`）。開くと `GET /api/v1/venues` の候補を新しい順に並べ、選ぶと会場名・郵便番号・都道府県・市区町村・町域・番地・建物名をまとめて入れて閉じる。候補はこの端末とアカウントの過去イベントから作られ、他人の会場は出ない。各候補の「削除」は `DELETE /api/v1/venues/[id]` を呼び、その場で一覧から消す。候補が無いときは「イベントを下書き保存するか公開すると、次回からここに出ます」と案内する。編集画面（SCR-ORG-05）の同じセクションにも出る。
 
 続いて `ref` の扱い。
 
 1. `ref` があれば `toEventRequest(form, referrerEventId)` で `referrerEventId` を本文に載せる。
 2. 電話番号の確認へ回るときは `next=/organizer/events/new?ref=<id>` を組み立て、`/auth/register?step=phone&next=...` に載せる。`QuotaStatusBanner` の `nextPath` にも同じ値を使う。
-3. 201 の応答に `guestOrganizerToken` がある（未登録の幹事）なら、`PublishSuccessModal` を出さずに `router.replace('/organizer/register-required?eventId=<id>')` へ送る。会員の幹事は今までどおりモーダルを出す。
-4. 403 の `error` が `REGISTER_REQUIRED` なら、未登録のまま 1 件作った端末が 2 件目を試した状態である。作成は行われていないので、この画面に留まり「2件目からは会員登録が必要です」のカードを出す。会員登録・ログインのリンクには `next=/organizer/events/new`（`ref` があればそれを含む）を載せる。`sendToRegisterRequired` は使わない（`eventId` がまだ無い）。
+3. 201 の応答に `guestOrganizerToken` は入らない（未登録の幹事は作成できない）。`PublishSuccessModal` は作成画面では使わない。公開の完了は SCR-ORG-16 の「公開する」から告知ページへ移って知らせる。
+4. 403 の `error` が `REGISTER_REQUIRED` なら、セッションが切れていた状態である。入力を `sessionStorage` に退避して `loginUrl(next)` へ送り、戻ってきたら復元する。作成は行われていないので、エラー文は出さない。
 5. 402 のときは、入力を `POST /api/v1/public/events` に `status: "DRAFT"` で送り、下書きを 1 件だけ作る。返った `id` を `draftId` に入れ、`openPricingModal({ draftId, returnTo: nextPath })` で `PricingModal`（`context="create"`）を開く。下書きが作れなかったときは料金モーダルを出さず、エラーのトーストを出す。入力はそのまま画面に残す。
 6. `?draftId=` で開いたときは `GET /api/v1/organizer/events/[id]` で下書きを読み、フォームへ戻す。読み込み中は送信を止める。失敗したらトーストで知らせ、空のフォームで編集を続けられるようにする。復元したフォームは公開状態を `DRAFT` のまま保持する。
-7. `draftId` がある状態の送信は、`POST /api/v1/public/events` ではなく `POST /api/v1/organizer/events/[id]/publish` を呼び、フォームの内容も本文に載せる。402 は同じく `PricingModal` を開き、409 は「このイベントはすでに公開されています」のトーストを出す。成功したら `refreshQuota()` のあと公開完了モーダルを開く。
+7. `draftId` がある状態の下書き保存は `POST /api/v1/organizer/events/[id]/draft`、公開は `POST /api/v1/organizer/events/[id]/publish`（SCR-ORG-16）へ進む。
+
+  1530|### 12.3.1. ログイン前の入力の退避（`src/modules/events/lib/pending-form.ts`）
+
+未ログインで作成画面を開いても、入力と作成中のチラシは失わない。最後の操作を押した時点で、必須がすべて埋まっているかを確かめてから 1 件だけ `sessionStorage` に置き、`loginUrl(next)` で `/auth/register` へ送る。
+
+* 保存するのは `form`・`flyerPreview`・`savedAt` の 3 つ。キーは `event:pending-form`。
+* 戻ってきたら `takePendingForm()` で 1 度だけ取り出して消す。取り出したらトーストで「登録前に入力した内容を復元しました」と知らせる。読むのは `?draftId=` が無いときだけで、下書きの復元とは併用しない。
+* 形の違う値と壊れた JSON は捨て、空のフォームで上書きしない。`sessionStorage` が触れない環境（プライベートモードなど）でも遷移は止めない。
+* 復元のあとは会員と同じ 2 つのボタンになる。下書き保存かプレビューかは本人が選ぶ（押した側の意図は引き継がない）。
 
 ### 12.4. SCR-ORG-10（`/organizer/register-required`）
+
+作成は会員だけが行えるようになったため、この画面は新規作成からは到達しない。以前に未登録で作ったイベントを持つ端末の受け皿として残す（`guestOrganizerToken` を持つ既存データの行き先）。
 
 `src/app/organizer/register-required/page.tsx`。`useSearchParams()` を使うため `Suspense` で包む。同階層の `layout.tsx`（サーバーコンポーネント）で `robots: { index: false, follow: false }` を出す。画面がクライアントコンポーネントなので、`metadata` は layout に置く。
 
@@ -1570,14 +1581,13 @@ interface OrganizerInviteCardProps {
 
 `src/lib/schemas.ts` の `CreateEventSchema` に `referrerEventId: z.string().uuid().nullish()` を足す。`src/modules/events/lib/events.ts` の `resolveReferrerEventId` が `isEligibleReferrer`（`src/modules/events/lib/referrer.ts`）で判定し、`is_deleted = false` かつ `status` が `PUBLISHED` / `CLOSED` のイベントだけを通す。見つからなければ `null` にして作成を続ける。`referrer_event_id` は自己参照の外部キーで、参照元が消えたら `NULL` に戻す。
 
-### 12.8. 未登録で作れるのは1件だけ
+### 12.8. 作成は会員だけが行える
 
-`src/modules/events/lib/guest-limit.ts` の `assertGuestCanCreate(guestTokenHashes)` を `POST /api/v1/public/events` の未ログイン経路で呼ぶ。端末の `org_token_*` のハッシュに一致する `event_organizers` のうち `role = OWNER` を数え、1 件以上あれば 403 `REGISTER_REQUIRED` を返す。
+`POST /api/v1/public/events` は `userId` が無ければ 403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。画面はこのコードを見て入力を `sessionStorage` に退避し、`loginUrl(next)` へ送る（12.3.1）。
 
-* `CO_HOST` は数えない。招待を受けただけの端末が自分のイベントを作れなくなるのを避ける。
-* 論理削除済みのイベントも数える。会員の `free_event_count` が削除で戻らないのと同じく、作成の消費として扱う。削除と作成を繰り返して上限をすり抜けないようにする。
-* 402（課金）ではなく 403 `REGISTER_REQUIRED` にする。未登録の幹事は支払い手段を持たないため、登録案内へ送るのが正しい。
-* Cookie を持たない端末は通す。Cookie を消せば回避できる点は、Cookie 主体のゲスト認証の構造的な限界として受け入れる。
+* 以前の「未登録でも1件だけ作れる」経路（`assertGuestCanCreate` と `createEventForGuest`）は削除した。未登録で作れると、出欠を見るのに結局登録が要るうえ、枠の消費と下書きの復元がゲストだけ別扱いになっていた。
+* 既存のゲスト幹事（`guest_token_hash` を持つ `event_organizers`）の行は残す。ログイン時の `migrateGuestOrganizers` で会員へ付け替え、`/organizer/register-required`（SCR-ORG-10）はその受け皿として残す。
+* 作成の応答の `guestOrganizerToken` は常に `null`。形を変えないのは、応答を読む古いクライアントを壊さないためである。
 
 ### 12.9. 登録後の引き継ぎ
 

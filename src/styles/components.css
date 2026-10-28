@@ -991,19 +991,39 @@ fieldset.field {
     min-height: 2.5rem;
   }
 
-  /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。 */
+  /* 未ログインの帯は「ログインして下書き保存する」が 1 行に収まらない。横に並べると
+     文字が 2 段に折れて押しにくいので、縦に積む。下段が主操作（公開）になる。 */
+  .form-final--guest .form-final__actions {
+    flex-direction: column;
+  }
+
+  .form-final--guest .form-final__actions .btn {
+    inline-size: 100%;
+  }
+
+  /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。
+     未ログインの帯は「ログインして下書き保存する」「ログインして公開する」が
+     1 行に収まらず 2 段になるので、帯の高さを変数で持ち替える。 */
+  body:has(.form-final) {
+    --final-bar-h: 7.5rem;
+  }
+
+  body:has(.form-final--guest) {
+    --final-bar-h: 10rem;
+  }
+
   body:has(.form-final) .page--form,
   body:has(.form-final) .site-footer {
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。 */
   .page--form:has(.form-final) .voice-fab {
-    bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   .page--form:has(.form-final) .voice-panel {
-    bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    bottom: calc(var(--final-bar-h) + 4rem + env(safe-area-inset-bottom));
   }
 }
 

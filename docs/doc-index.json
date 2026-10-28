@@ -2414,6 +2414,10 @@
           "exists": true
         },
         {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
           "path": "docs/voice-input.rst",
           "exists": true
         },
@@ -2475,10 +2479,6 @@
         },
         {
           "path": "src/modules/auth/lib/rate-limits.ts",
-          "exists": true
-        },
-        {
-          "path": "src/modules/events/lib/guest-limit.ts",
           "exists": true
         },
         {
@@ -5302,7 +5302,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1885,
+      "lineCount": 1895,
       "headings": [
         {
           "level": 1,
@@ -5466,7 +5466,7 @@
         },
         {
           "level": 3,
-          "text": "12.8. 未登録で作れるのは1件だけ"
+          "text": "12.8. 作成は会員だけが行える"
         },
         {
           "level": 3,
@@ -5720,7 +5720,7 @@
           "exists": true
         },
         {
-          "path": "src/modules/events/lib/guest-limit.ts",
+          "path": "src/modules/events/lib/pending-form.ts",
           "exists": true
         },
         {
@@ -7384,7 +7384,7 @@
       "title": "SCR-PUB-03（主催者マイページ）を主催者エリアに戻し、画面遷移の定義を1本化する",
       "summary": "> 画面遷移の総点検で見つかった、文書どうしの食い違いを直す issue。課金まわりの実装変更は [draft-checkout-and-publish.md](draft-checkout-and-publish.md) に分けた。",
       "preImplementation": false,
-      "lineCount": 93,
+      "lineCount": 94,
       "headings": [
         {
           "level": 1,
@@ -7479,6 +7479,10 @@
         },
         {
           "path": "tests/unit/guest-draft.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/pending-form.test.ts",
           "exists": true
         }
       ],
@@ -10115,10 +10119,6 @@
           "exists": true
         },
         {
-          "path": "tests/integration/guest-limit.test.ts",
-          "exists": true
-        },
-        {
           "path": "tests/integration/hydrate.test.ts",
           "exists": true
         },
@@ -10291,6 +10291,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/pending-form.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/problem.test.ts",
           "exists": true
         },
@@ -10436,11 +10440,11 @@
           "exists": true
         },
         {
-          "path": "tests/integration/guest-limit.test.ts",
+          "path": "tests/integration/helpers.ts",
           "exists": true
         },
         {
-          "path": "tests/integration/helpers.ts",
+          "path": "tests/integration/hydrate.test.ts",
           "exists": true
         },
         {
