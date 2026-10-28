@@ -318,7 +318,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
     return await prisma.$transaction(async (tx) => {
-      const planType = decision ? await decision.consume(tx) : null;
+      // 枠を消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
+      if (decision) await decision.consume(tx);
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
       const event = await tx.event.create({
         data: {
@@ -351,7 +352,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
       if (input.flyerDraftKey) {
         await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
       }
-      return { event, planType, guestOrganizerToken: null as string | null };
+      // 作成したイベントだけを返す。未登録の幹事トークンは発行しない（応答では常に null）。
+      return { event };
     });
   } catch (error) {
     mapForeignKey(error);
