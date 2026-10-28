@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "22f6970c98907bffbcc560797969d697ed28502dba01ecdd9c26d23063a181e1",
+  "uiHash": "c6a37b2f4ce412c30f1296fab1305f9f987203f645fca4d2cc8aadd4912b60b0",
   "screens": [
     {
       "no": "01",
@@ -52,8 +52,8 @@
       "state": "guest",
       "label": "未ログイン",
       "file": "mock-event.html",
-      "path": "/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9",
-      "hash": "728c642fe981d2d2f253f7afeef43f4758da0ae10f0d5b9f4e8341cee2eee71f"
+      "path": "/events/8972603f-161e-466b-8299-a669d0b2bee2",
+      "hash": "55382f4cd730b7070c80dbf2ea328c05124465a928049424979e905a16280e06"
     },
     {
       "no": "04",
@@ -64,8 +64,8 @@
       "state": "member",
       "label": "ログイン済み",
       "file": "mock-event-member.html",
-      "path": "/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9",
-      "hash": "a9064eb49544f7c36aaa97d04ef249fe7fdc6151ba089a366070beb5f74c2873"
+      "path": "/events/8972603f-161e-466b-8299-a669d0b2bee2",
+      "hash": "c793f9da06db83c44e40bff2b477394f9d9f44b0cd35701582bb1bd36854e4c5"
     },
     {
       "no": "04",
@@ -76,8 +76,8 @@
       "state": "full",
       "label": "満員",
       "file": "mock-event-full.html",
-      "path": "/events/4c06fc22-797d-48e2-a272-1e2ca956d2f0",
-      "hash": "1b1c026f228716b0afe3e2f5081914649707e6995e84d6e523eb7db251267f70"
+      "path": "/events/68614fa9-598f-46a1-a946-767090629f46",
+      "hash": "f094e398cbb041a268d3f90504577b5f3627627752db1dbc61f8685946b3a8c3"
     },
     {
       "no": "04",
@@ -88,8 +88,8 @@
       "state": "closed",
       "label": "受付停止",
       "file": "mock-event-closed.html",
-      "path": "/events/5260edd1-fae8-4c67-98ec-fe155657b819",
-      "hash": "b509db55c7971039c0d6514fa9371cf63a5bdf4f15a2292250a3c8f4093821df"
+      "path": "/events/f69d4152-f70a-48bf-965d-5b42a3b60a1e",
+      "hash": "450ec7bc5e10ae670ab674dc2ff9a69cb4febe492a993b338323e8298d2c52e4"
     },
     {
       "no": "05",
@@ -100,8 +100,8 @@
       "state": "default",
       "label": "",
       "file": "mock-event-receipt.html",
-      "path": "/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9/receipt",
-      "hash": "e967d4c113bb01342521a02e2ad8068e48e94eb021f448bb14a884476a79d735"
+      "path": "/events/8972603f-161e-466b-8299-a669d0b2bee2/receipt",
+      "hash": "89eb53372786376811e198151dcd30922a3ffb928c77864d1c6d3cd5a9b3f1a0"
     },
     {
       "no": "06",
@@ -245,7 +245,7 @@
       "label": "",
       "file": "mock-invitation.html",
       "path": "/invitations/ui-demo-cohost-invite-code",
-      "hash": "2d002317410d45198ecaa2c651feb45b7672dc42a049b25a9632022bbaa44f20"
+      "hash": "e656d2d7a06ae11b737e070dc1143fbe832f8235c1c3c0e96e2f8afc0f0d384c"
     },
     {
       "no": "11",
@@ -293,7 +293,7 @@
       "label": "",
       "file": "mock-participant-calendar.html",
       "path": "/participant/calendar",
-      "hash": "a45536246a611490067313f8ff5c0e6b3072a67a92da6e2a820343ae957d87f9"
+      "hash": "54192e178ca0edefe2453596100db326bca2f5681ee528d73284aa84ad4b2c53"
     },
     {
       "no": "15",
@@ -329,7 +329,7 @@
       "label": "",
       "file": "mock-organizer.html",
       "path": "/organizer/events",
-      "hash": "c001f310c666dfc7c0e52c17b9e4e75dfbbf8618d4ec09d3a7c6a5bcd1164662"
+      "hash": "e6e21e5c1dc1d5dc6bd43bfe8a1b875d462bfdddc998ae3aa7969cc6984caaa2"
     },
     {
       "no": "17",
@@ -364,8 +364,8 @@
       "state": "default",
       "label": "",
       "file": "mock-revenue-detail.html",
-      "path": "/organizer/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9/revenue",
-      "hash": "523b3ffe2b514c60bdd369e6f344cddc833d098fe3086cfcd60c6e2349fc5041"
+      "path": "/organizer/events/8972603f-161e-466b-8299-a669d0b2bee2/revenue",
+      "hash": "d932088cceda17d3c173edc8e2fa9b3ff18d70d44beb1a8e3ce0681b5dcdfb02"
     },
     {
       "no": "20",
@@ -388,8 +388,8 @@
       "state": "default",
       "label": "",
       "file": "mock-edit.html",
-      "path": "/organizer/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9/edit",
-      "hash": "009772719d58fcad6f7d0c91df41c7d9c06b90ea09ce0cd514d5bd2d46393fe0"
+      "path": "/organizer/events/8972603f-161e-466b-8299-a669d0b2bee2/edit",
+      "hash": "80540da9e9255ad97de98f5239383ca1e361c1fabd06293eda23acf98cc0daaf"
     },
     {
       "no": "22",
@@ -412,8 +412,8 @@
       "state": "default",
       "label": "",
       "file": "mock-preview.html",
-      "path": "/organizer/events/12c47ce8-1d65-457a-9c61-d88dccc3a8bb/preview",
-      "hash": "3cdc1b1ccadeb20380fbe1df85f0468c46ffd863ca4f9e4078f0971fe105a9ff"
+      "path": "/organizer/events/6052496b-88a5-4fcc-b818-dce10dd3ff54/preview",
+      "hash": "cfa04172404ba9fbef6d8c35708cd144b563c02072dda36180d19ca0a8f4e407"
     },
     {
       "no": "24",
@@ -424,8 +424,8 @@
       "state": "default",
       "label": "",
       "file": "mock-roster.html",
-      "path": "/organizer/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9/participants",
-      "hash": "19ec8d8722462db6340801370ce15457cbc82b3ef8fcafc6a7bf76f5c453185d"
+      "path": "/organizer/events/8972603f-161e-466b-8299-a669d0b2bee2/participants",
+      "hash": "91274e6fa92cf4d41ce2c10283f7aa01aa715f228f3d2ee3bf18b4c2c93a2998"
     },
     {
       "no": "25",
@@ -436,8 +436,8 @@
       "state": "default",
       "label": "",
       "file": "mock-receipt.html",
-      "path": "/organizer/events/d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9/receipts/574fd7df-fdbf-467a-a4b1-795409073c1c",
-      "hash": "b51f54964f2deae73a6f5d53cf6b7b50fff2cec04b94e558e8fb9ac5b54caf8e"
+      "path": "/organizer/events/8972603f-161e-466b-8299-a669d0b2bee2/receipts/f5b504dd-5932-4ccd-8f69-c1b0f4d43655",
+      "hash": "2129010eae6fe6f004ea66098dee9bc5d33e803a3abce8d5a484d5ad17ef172e"
     },
     {
       "no": "26",
@@ -448,8 +448,8 @@
       "state": "default",
       "label": "",
       "file": "mock-register-required.html",
-      "path": "/organizer/register-required?event=d90cae5b-3fb9-4bbf-9074-3dbaa42c42a9",
-      "hash": "09df7a6f91c53b6eb2f8b94cf1cc8a1907dedaa357b533037a7d4c1605db7f9a"
+      "path": "/organizer/register-required?event=8972603f-161e-466b-8299-a669d0b2bee2",
+      "hash": "6bb4f39ddc2765fbf599e904415094278c418c087880b7458c9cb445fab61e8a"
     },
     {
       "no": "27",

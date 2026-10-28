@@ -23,6 +23,7 @@ import {
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
 import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
 import type {
   VoiceField,
   VoiceFieldKey,
@@ -64,7 +65,8 @@ export function VoiceInputDock({
   const [phase, setPhase] = useState<VoicePhase>("armed");
   const [cursor, setCursor] = useState<VoiceFieldKey | null>(null);
   const [touched, setTouched] = useState<ReadonlySet<VoiceFieldKey>>(new Set());
-  const [includeOptional, setIncludeOptional] = useState(false);
+  // 既定で任意の欄も聞く。空欄でよい欄まで一度に埋めたい利用者が多いため。
+  const [includeOptional, setIncludeOptional] = useState(true);
   // 1 欄入れたら次の欄へ移るか。既定はオン。オフなら同じ欄に留めて言い直しを待つ。
   const [autoAdvance, setAutoAdvance] = useState(true);
   // 入力できる欄が尽きた印。「入力完了！」を出してから 3 秒で音声モードを抜ける。
@@ -212,12 +214,8 @@ export function VoiceInputDock({
   const fillAddressFromPostalCode = useCallback(
     async (postalCode: string) => {
       try {
-        const response = await fetch(`/api/v1/geo/postal-codes/${postalCode}`);
-        if (!response.ok) return;
-        const body = (await response.json()) as {
-          results?: { prefecture: string; city: string; town: string }[];
-        };
-        const first = body.results?.[0];
+        const found = await lookupPostalCode(postalCode);
+        const first = found[0];
         if (!first || !mountedRef.current) return;
         const nextValue: EventFormValues = {
           ...valueRef.current,

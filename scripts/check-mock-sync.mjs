@@ -77,6 +77,42 @@ export function missingInteractions(names, contents) {
 }
 
 /**
+ * 音声入力の写しが欠けていないか。
+ *
+ * `mock-interactions.js` は手で保守するので、製品の音声入力を直したときに写しだけが
+ * 古いまま残りうる。撮り直しても戻らないため、要る印が消えていたら `npm run check` で止める。
+ * 見るのは 3 つ。覆い（穴あきの黒）、既定でオンになる「任意の項目も聞く」、郵便番号の住所補完。
+ */
+export function missingVoiceSimulation(source) {
+  if (typeof source !== "string" || source.length === 0) {
+    return [
+      "style-guide/mock-interactions.js がありません。音声入力の写しを作り直してください。",
+    ];
+  }
+
+  const problems = [];
+  if (!source.includes("voice-scrim")) {
+    problems.push(
+      "style-guide/mock-interactions.js に音声モードの覆い（voice-scrim）がありません。製品に合わせて直してください。",
+    );
+  }
+  if (!/data-voice-optional[^>]*\schecked/.test(source)) {
+    problems.push(
+      "style-guide/mock-interactions.js の「任意の項目も聞く」が既定でチェックされていません。製品に合わせて直してください。",
+    );
+  }
+  const addressFill =
+    source.includes("event-postal-code") &&
+    ["event-prefecture", "event-city", "event-town"].every((id) => source.includes(id));
+  if (!addressFill) {
+    problems.push(
+      "style-guide/mock-interactions.js に郵便番号から住所を埋める写しがありません。製品に合わせて直してください。",
+    );
+  }
+  return problems;
+}
+
+/**
  * 同期しているかを判定する。ブラウザもファイルも触らない純ロジック（テスト対象）。
  *
  * @param {object|null} manifest  `style-guide/mock-manifest.json` の中身
@@ -170,6 +206,7 @@ export async function collect() {
     fileHashes.set(file, hashOf(buffer));
     if (buffer && file.endsWith(".html")) contents.set(file, buffer.toString("utf8"));
   }
+  const interactions = await readBytes(path.join(STYLE_DIR, "mock-interactions.js"));
   const extraFiles = await readdir(STYLE_DIR).catch(() => []);
   return {
     problems: [
@@ -183,6 +220,7 @@ export async function collect() {
       }),
       ...missingShell(expected, contents),
       ...missingInteractions(expected, contents),
+      ...missingVoiceSimulation(interactions ? interactions.toString("utf8") : ""),
     ],
     expected,
   };

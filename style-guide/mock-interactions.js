@@ -289,6 +289,7 @@
     if (id.startsWith("plan-amount-")) return "3000";
     if (id.startsWith("plan-note-")) return "1 ドリンク付";
     if (id === "event-venue-name") return "河川敷公園 第 2 広場";
+    if (id === "event-postal-code") return "1540005";
     if (id === "event-prefecture") return "東京都";
     if (id === "event-city") return "世田谷区";
     if (id === "event-town") return "三宿";
@@ -301,11 +302,46 @@
     return "";
   }
 
+  /**
+   * 郵便番号から入る住所。製品は API を呼ぶので、モックは見本の 1 件だけを持つ。
+   * 郵便番号の見本（1540005）と同じ住所にして、音声で入れたときに 3 欄が埋まるようにする。
+   */
+  const MOCK_ADDRESSES = {
+    "1540005": { prefecture: "東京都", city: "世田谷区", town: "三宿" },
+  };
+
+  const ADDRESS_FIELDS = ["event-prefecture", "event-city", "event-town"];
+
+  /**
+   * 郵便番号が入ったら住所 3 欄を埋め、埋めた欄は巡回から外す。
+   * 製品の VoiceInputDock は補完のあとで次の欄を決めるので、都道府県を聞き直さない。
+   */
+  function fillAddressFromPostalCode(code) {
+    const address = MOCK_ADDRESSES[code];
+    if (!address) return;
+    for (const id of ADDRESS_FIELDS) {
+      const target = document.getElementById(id);
+      if (!target) continue;
+      target.value = address[id.replace("event-", "")];
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      target.classList.add("voice-filled");
+      window.setTimeout(() => target.classList.remove("voice-filled"), 900);
+    }
+    voice.fields = voice.fields.filter((entry) => !ADDRESS_FIELDS.includes(entry.field.id));
+  }
+
   function labelOf(field) {
     const labels = field.labels;
     const text = labels && labels.length > 0 ? (labels[0].textContent || "").trim() : "";
     return text || field.getAttribute("aria-label") || field.placeholder || "この項目";
   }
+
+  /**
+   * 質問文に使う短い名前。製品の欄名（「郵便番号」など）に合わせる。
+   * ラベルの全文（「郵便番号から住所を入れる」）をそのまま「〜は？」に繋ぐと読みにくい。
+   */
+  const SHORT_LABELS = { "event-postal-code": "郵便番号" };
 
   /** 音声で埋められる入力欄を、画面の順に集める。 */
   function voiceFields() {
@@ -320,7 +356,7 @@
       if (field.tagName === "SELECT" && field.id !== "event-rain-policy") continue;
       const value = sampleValue(field.id);
       if (!value) continue;
-      fields.push({ field, label: labelOf(field), value });
+      fields.push({ field, label: SHORT_LABELS[field.id] ?? labelOf(field), value });
     }
     return fields;
   }
@@ -386,7 +422,7 @@
       icon("right") +
       "</button></div>" +
       '<div class="voice-panel__options">' +
-      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional> 任意の項目も聞く</label>' +
+      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional checked> 任意の項目も聞く</label>' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 自動遷移</label>' +
       "</div>";
 
@@ -550,6 +586,9 @@
 
     field.classList.add("voice-filled");
     window.setTimeout(() => field.classList.remove("voice-filled"), 900);
+
+    // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
+    if (field.id === "event-postal-code") fillAddressFromPostalCode(entry.value);
 
     const status = voice.panel.querySelector(".voice-panel__status");
     if (status) status.hidden = true;
