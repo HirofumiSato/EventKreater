@@ -48,24 +48,24 @@
 | :---- | :---- |
 | `src/modules/events/lib/events.ts` | `saveEventDraft`（行ロック → 状態確認 → `syncEventOptions` → 更新 → チラシ回数の付け替え） |
 | `src/modules/events/lib/draft.ts` | `assertDraftSaveStatus`。保存入口で状態変更を受け付けない |
-| `src/modules/events/lib/lifecycle.ts` | `assertCanStopEvent`。下書きの受付停止を 409 で断る |
+| `src/modules/events/lib/lifecycle.ts` | `assertCanStopEvent` / `assertCanReopenEvent`。下書きの受付停止と、停止以外の再開を 409 で断る |
 | `src/modules/events/lib/steps.ts` | `firstIncompleteDraftStep` / `isDraftReady`。下書きに要る3ステップを明示 |
 | `src/lib/schemas.ts` | `SaveEventDraftSchema`（`UpdateEventSchema` + `flyerDraftKey`） |
 | `src/app/api/v1/organizer/events/[id]/draft/route.ts` | 下書きの上書き保存。オーナー会員のみ |
-| `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts` | `close` の前に `assertCanStopEvent` |
+| `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts` | `close` の前に `assertCanStopEvent`、`reopen` の前に `assertCanReopenEvent` |
 | `src/modules/billing/lib/checkout-return.ts` | 戻り先に `/organizer/events/<uuid>/preview` を追加 |
 | `src/modules/events/components/EventStepForm.tsx` | 最終ステップの2ボタン。保存とプレビューで同じ検証を通す |
 | `src/app/organizer/events/new/page.tsx` | `saveDraft`。1回目は作成、2回目以降は専用 API。URL に `draftId` を残す |
 | `src/app/organizer/events/[id]/preview/page.tsx` / `PreviewClient.tsx` | プレビューと公開。`noindex` |
 | `src/app/organizer/events/drafts/page.tsx` | 下書き一覧と削除 |
 | `src/app/organizer/events/page.tsx` / `src/app/mypage/page.tsx` | `DRAFT` を表示から外す |
-| `src/modules/organizers/components/EventLifecycleModal.tsx` | 下書きでは停止を出さず、削除だけにする |
+| `src/modules/organizers/components/EventLifecycleModal.tsx` | 削除の確認だけを持つ。受付停止と再開は一覧のカードから直接行う |
 | `src/lib/serializers.ts` | `serializeOrganizerSummary` に `userId` を足し、プレビューから公開プロフィールへリンクする |
 
 ## テスト
 
 - `tests/unit/draft-save.test.ts`: 下書きの入力条件（`SaveEventDraftSchema`）、保存入口の状態制限、保存できるステップ
-- `tests/unit/draft-lifecycle.test.ts`: 下書きの受付停止が 409
+- `tests/unit/draft-lifecycle.test.ts`: 下書きの受付停止が 409、受付停止以外の再開が 409
 - `tests/unit/checkout-intent.test.ts`: プレビューの戻り先を許可し、類似パスを拒否する
 - `tests/integration/draft-save-preview-publish.test.ts`（`TEST_DATABASE_URL` があるときだけ）: 下書き作成で枠を消費しない、保存で状態が変わらない、公開で1回だけ消費する、枠切れは 402、公開済みの保存は 409、存在しない ID は 404
 

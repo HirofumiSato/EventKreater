@@ -10,6 +10,11 @@ interface EventCardProps {
   event: OrganizerEvent;
   busy: boolean;
   onClone: () => void;
+  /** 出欠の受付を止める（告知ページは残す）。 */
+  onStop: () => void;
+  /** 受付停止を公開中へ戻す。 */
+  onResume: () => void;
+  /** 削除の確認を開く。 */
   onDelete: () => void;
 }
 
@@ -18,7 +23,7 @@ function statusTone(status: OrganizerEvent["status"]): "success" | "neutral" {
   return status === "PUBLISHED" ? "success" : "neutral";
 }
 
-export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
+export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: EventCardProps) {
   const ratio = event.capacity
     ? Math.min(100, Math.round((event.stats.attendingCount / event.capacity) * 100))
     : null;
@@ -129,11 +134,24 @@ export function EventCard({ event, busy, onClone, onDelete }: EventCardProps) {
             {event.role === "OWNER" && (
               <div className="event-card__danger">
                 <p className="help">
-                  公開をやめると告知ページは見られなくなります。削除すると元に戻せません。
+                  {event.status === "CLOSED"
+                    ? "いま出欠を受け付けていません。公開を再開すると、また回答を受け付けます。"
+                    : "一時停止すると、告知ページは残したまま出欠だけを止めます。削除すると元に戻せません。"}
                 </p>
-                <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
-                  公開をやめる・削除
-                </button>
+                <div className="event-card__danger-actions">
+                  {event.status === "CLOSED" ? (
+                    <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onResume}>
+                      公開を再開
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onStop}>
+                      公開を一時停止
+                    </button>
+                  )}
+                  <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
+                    削除する
+                  </button>
+                </div>
               </div>
             )}
           </div>

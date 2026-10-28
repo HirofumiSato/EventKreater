@@ -33,6 +33,7 @@ export const TOOL_FILES = [
   "mock-frame.html",
   "mock-shell.js",
   "mock-shell.css",
+  "mock-interactions.js",
   "mock-guide.css",
 ];
 
@@ -51,6 +52,25 @@ export function missingShell(names, contents) {
     if (html.includes("data-mock-shell")) continue;
     problems.push(
       `style-guide/${name} にモックの帯がありません。\`npm run mock:sync\` を実行してください。`,
+    );
+  }
+  return problems;
+}
+
+/**
+ * 各モックに「モック専用の操作」が入っているか。
+ *
+ * 帯と同じで、`withMockInteractions` を通さずに書き出すと消える。消えると
+ * カレンダーの日付も音声入力も動かないまま（見た目は同じなので）気づきにくい。
+ */
+export function missingInteractions(names, contents) {
+  const problems = [];
+  for (const name of names) {
+    const html = contents.get(name);
+    if (html === undefined) continue;
+    if (html.includes("mock-interactions.js")) continue;
+    problems.push(
+      `style-guide/${name} に操作の script がありません。\`npm run mock:sync\` を実行してください。`,
     );
   }
   return problems;
@@ -162,6 +182,7 @@ export async function collect() {
         tools: TOOL_FILES,
       }),
       ...missingShell(expected, contents),
+      ...missingInteractions(expected, contents),
     ],
     expected,
   };

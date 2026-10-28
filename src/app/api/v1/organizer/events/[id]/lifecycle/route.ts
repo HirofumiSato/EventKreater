@@ -4,7 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertOwner } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { LifecycleSchema } from "@/lib/schemas";
-import { assertCanStopEvent } from "@/modules/events/lib/lifecycle";
+import { assertCanReopenEvent, assertCanStopEvent } from "@/modules/events/lib/lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +36,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         data: { status: "CLOSED" },
       });
       return NextResponse.json({ success: true, status: "CLOSED" });
+    }
+
+    if (input.action === "reopen") {
+      assertCanReopenEvent(existing);
+      // 公開の枠は公開時に消費済みなので、ここでは状態だけを戻す。
+      await prisma.event.update({
+        where: { id: existing.id },
+        data: { status: "PUBLISHED" },
+      });
+      return NextResponse.json({ success: true, status: "PUBLISHED" });
     }
 
     await prisma.$transaction([

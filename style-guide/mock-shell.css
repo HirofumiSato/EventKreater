@@ -34,6 +34,16 @@ html.has-mockbar body {
   padding-bottom: 4.5rem;
 }
 
+/* 製品が画面下に固定の操作の帯（`.action-dock`）を持つ画面では、帯をその上へ逃がす。
+   製品の帯は本物の位置（画面の最下部）のまま撮り、モックの帯だけをよける。 */
+html.has-mockbar:not(.is-embed):has(.action-dock) body {
+  padding-bottom: 7rem;
+}
+
+html.has-mockbar:not(.is-embed):has(.action-dock) .mockbar {
+  bottom: 4.25rem;
+}
+
 /* 枠の中では帯を出さない。枠は本文だけを見るためのもの。 */
 html.is-embed .mockbar {
   display: none;
@@ -82,3 +92,21 @@ html.is-embed.has-mockbar body {
     padding-bottom: 0 !important;
   }
 }
+
+/* ==========================================================================
+   隠し DOM（`data-mock-hidden`）。
+
+   製品が「開いているステップ」「選んでいる日」しか描かないので、モックは残りを
+   隠して持つ（`scripts/lib/mock-variants.mjs` が合成する）。`mock-interactions.js`
+   が出し入れする。`!important` は、製品の `display: flex` などに負けないため。
+   ========================================================================== */
+[data-mock-hidden="true"] {
+  display: none !important;
+}
+
+/* 音声入力で値が入った瞬間の合図。製品の枠（`[data-voice-target]`）と重ねる。 */
+.voice-filled {
+  transition: background 200ms ease-out;
+  background: #fff6d8;
+}
+

@@ -5278,7 +5278,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1863,
+      "lineCount": 1865,
       "headings": [
         {
           "level": 1,
@@ -5685,6 +5685,10 @@
         },
         {
           "path": "src/modules/events/lib/capacity.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/event-filters.ts",
           "exists": true
         },
         {
@@ -8685,7 +8689,7 @@
       "title": "全体システム要件定義書（機能横断・共通編）",
       "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1110,
+      "lineCount": 1111,
       "headings": [
         {
           "level": 1,
@@ -9767,7 +9771,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 510,
+      "lineCount": 514,
       "headings": [
         {
           "level": 1,
@@ -9922,6 +9926,10 @@
         },
         {
           "path": "tests/unit/event-details.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-filters.test.ts",
           "exists": true
         },
         {
@@ -10609,7 +10617,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 184,
+      "lineCount": 243,
       "headings": [
         {
           "level": 1,
@@ -10642,6 +10650,22 @@
         {
           "level": 2,
           "text": "モックだけが持つもの"
+        },
+        {
+          "level": 2,
+          "text": "遷移リンクと操作"
+        },
+        {
+          "level": 3,
+          "text": "リンクは URL の型で解決する"
+        },
+        {
+          "level": 3,
+          "text": "製品の別状態は「隠し DOM」として合成する"
+        },
+        {
+          "level": 3,
+          "text": "控え（2 回目以降を短くする）"
         },
         {
           "level": 2,
@@ -10683,6 +10707,10 @@
           "exists": true
         },
         {
+          "path": "scripts/lib/capture-core.mjs",
+          "exists": true
+        },
+        {
           "path": "scripts/lib/mock-frame.mjs",
           "exists": true
         },
@@ -10700,6 +10728,10 @@
         },
         {
           "path": "scripts/lib/mock-screens.mjs",
+          "exists": true
+        },
+        {
+          "path": "scripts/lib/mock-variants.mjs",
           "exists": true
         },
         {

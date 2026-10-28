@@ -8,28 +8,47 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { evaluateSync, missingShell, sha256, TOOL_FILES } from "../../scripts/check-mock-sync.mjs";
+import {
+  evaluateSync,
+  missingInteractions,
+  missingShell,
+  sha256,
+  TOOL_FILES,
+} from "../../scripts/check-mock-sync.mjs";
 import { frameHtml, frameSrc, frameUrl } from "../../scripts/lib/mock-frame.mjs";
 import { indexHtml, scopeOfHtml } from "../../scripts/lib/mock-index.mjs";
 import {
   applyAssetMap,
   assetName,
   imageSources,
+  matchLinkTarget,
   parseSrcset,
   rewriteInternalLinks,
   sanitizeHtml,
   stylesheetHrefs,
+  withMockInteractions,
   withMockShell,
   withNotice,
 } from "../../scripts/lib/mock-html.mjs";
 import { computeUiHash, normalizeNewlines, uiSourceFiles } from "../../scripts/lib/mock-hash.mjs";
 import {
   expectedFiles,
+  linkTargets as buildLinkTargets,
   pageFileFor,
   pathFor,
   placeholderScreens,
   selectRows,
 } from "../../scripts/lib/mock-screens.mjs";
+import {
+  mergeCalendarDays,
+  mergeStepBodies,
+  mergeVariants,
+  readVariantCache,
+  shouldReuseShots,
+  sourceHashOf,
+  variantsWanted,
+  writeVariantCache,
+} from "../../scripts/lib/mock-variants.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -111,8 +130,7 @@ describe("製品の HTML をモックに整える", () => {
     expect(rewritten).toContain('<a href="#">空</a>');
   });
 
-  it("注意書きは doctype の直後に入る", () => {
-    const html = withNotice("<!doctype html><html lang=\"ja\"></html>", {
+  it("注意書きは doctype の直後に入る", () => {    const html = withNotice("<!doctype html><html lang=\"ja\"></html>", {
       name: "ホーム",
       path: "/",
     });
@@ -503,5 +521,250 @@ describe("同期の判定", () => {
   it("目録に無い HTML が残っていれば止める", () => {
     const problems = judge({ extraFiles: [...files, "mock-old.html"] });
     expect(problems.some((problem) => problem.includes("mock-old.html"))).toBe(true);
+  });
+});
+
+describe("リンクを URL の型で解決する", () => {
+  const demo = { events: { main: "ev-main", full: "ev-full" }, organizerId: "org-1" };
+  const rows = [
+    { path: "/organizer/events/ev-main/edit", file: "mock-edit.html" },
+    { path: "/organizer/events/ev-main/participants", file: "mock-roster.html" },
+    { path: "/organizer/events/ev-full/participants", file: "mock-roster.html" },
+    { path: "/events/ev-main", file: "mock-event.html" },
+    { path: "/events/ev-main/receipt", file: "mock-event-receipt.html" },
+    { path: "/events/ev-main?invite=ev-main", file: "mock-event.html" },
+  ];
+
+  it("デモ ID を * にした型も対応表に入る", () => {
+    const targets = buildLinkTargets(rows, demo);
+    expect(targets.get("/organizer/events/*/edit")).toBe("mock-edit.html");
+    expect(targets.get("/organizer/events/*/participants")).toBe("mock-roster.html");
+    expect(targets.get("/events/*")).toBe("mock-event.html");
+    expect(targets.get("/events/*/receipt")).toBe("mock-event-receipt.html");
+  });
+
+  it("デモデータが無ければ、完全一致の対応表のまま", () => {
+    const targets = buildLinkTargets(rows);
+    expect(targets.get("/organizer/events/*/edit")).toBeUndefined();
+    expect(targets.get("/events/ev-main")).toBe("mock-event.html");
+  });
+
+  it("撮るたびに変わる ID でも、型が合えばモックへ向く", () => {
+    const targets = buildLinkTargets(rows, demo);
+    const html = [
+      '<a href="/organizer/events/2026-abc/edit">編集</a>',
+      '<a href="/organizer/events/2026-abc/participants">参加者を見る</a>',
+      '<a href="/events/2026-abc">公開ページ</a>',
+      '<a href="/events/2026-abc/receipt">領収書</a>',
+      '<a href="/events/2026-abc/unknown">未知</a>',
+    ].join("\n");
+    const out = rewriteInternalLinks(html, targets);
+
+    expect(out).toContain('<a href="mock-edit.html">編集</a>');
+    expect(out).toContain('<a href="mock-roster.html">参加者を見る</a>');
+    expect(out).toContain('<a href="mock-event.html">公開ページ</a>');
+    expect(out).toContain('<a href="mock-event-receipt.html">領収書</a>');
+    expect(out).toContain('<a href="#">未知</a>');
+  });
+
+  it("完全一致を型より先に採り、型どうしは * が少ないほうを採る", () => {
+    const targets = new Map([
+      ["/a/b", "exact.html"],
+      ["/*/*", "loose.html"],
+      ["/a/*", "tight.html"],
+    ]);
+    expect(matchLinkTarget("/a/b", targets)).toBe("exact.html");
+    expect(matchLinkTarget("/x/b", targets)).toBe("loose.html");
+    expect(matchLinkTarget("/a/c", targets)).toBe("tight.html");
+    expect(matchLinkTarget("/a/c/d", targets)).toBe(null);
+  });
+
+  it("* は 1 セグメントだけに当たる（末尾の / は同じに見る）", () => {
+    const targets = new Map([["/organizer/events/*/edit", "mock-edit.html"]]);
+    expect(matchLinkTarget("/organizer/events/x/edit", targets)).toBe("mock-edit.html");
+    expect(matchLinkTarget("/organizer/events/x/y/edit", targets)).toBe(null);
+    expect(matchLinkTarget("/organizer/events/x/edit/", targets)).toBe("mock-edit.html");
+  });
+});
+
+describe("モック専用の操作の script", () => {
+  const html =
+    '<!doctype html>\n<html lang="ja"><head><meta charset="utf-8"></head><body><main>本文</main></body></html>';
+
+  it("帯の script の直後に置く（defer なので順に動く）", () => {
+    const shelled = withMockShell(html, { file: "mock-home.html", name: "01 ホーム" });
+    const out = withMockInteractions(shelled);
+    expect(out).toContain('<script src="mock-interactions.js" defer></script>');
+    expect(out.indexOf("mock-shell.js")).toBeLessThan(out.indexOf("mock-interactions.js"));
+    expect(out.indexOf("mock-interactions.js")).toBeLessThan(out.indexOf("</body>"));
+  });
+
+  it("帯が無い HTML では body の閉じタグの直前に置く", () => {
+    const out = withMockInteractions(html);
+    expect(out).toContain('<script src="mock-interactions.js" defer></script>');
+    expect(out.indexOf("mock-interactions.js")).toBeLessThan(out.indexOf("</body>"));
+  });
+
+  it("二重には足さない", () => {
+    const once = withMockInteractions(html);
+    expect(withMockInteractions(once)).toBe(once);
+  });
+
+  it("操作の script が無い HTML を検出する", () => {
+    const contents = new Map([
+      ["mock-home.html", withMockInteractions(html)],
+      ["mock-service.html", html],
+    ]);
+    const problems = missingInteractions(["mock-home.html", "mock-service.html"], contents);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("mock-service.html");
+    expect(problems[0]).toContain("mock:sync");
+  });
+});
+
+describe("隠し DOM の合成", () => {
+  it("閉じているステップの本文を、見出しの直後へ隠して差し込む", () => {
+    const html =
+      '<ol class="event-steps">' +
+      '<li class="event-step" data-mock-step-key="basic"><h2 class="event-step__heading"><button class="event-step__toggle" aria-controls="event-step-basic">基本</button></h2></li>' +
+      "</ol>";
+    const out = mergeStepBodies(html, {
+      basic: '<div id="event-step-basic" class="event-step__body">本文</div>',
+    });
+
+    expect(out).toContain('data-mock-step-body="basic"');
+    expect(out).toContain('data-mock-hidden="true"');
+    expect(out.indexOf("id=\"event-step-basic\"")).toBeGreaterThan(out.indexOf("</h2>"));
+    expect(out.indexOf("</h2>")).toBeLessThan(out.indexOf("id=\"event-step-basic\""));
+  });
+
+  it("すでに本文があるステップは二重にしない", () => {
+    const html =
+      '<li class="event-step" data-mock-step-key="pricing" data-mock-step-body="pricing">' +
+      '<h2></h2><div id="event-step-pricing">本文</div></li>';
+    const out = mergeStepBodies(html, { pricing: '<div id="event-step-pricing">写し</div>' });
+    expect(out.match(/id="event-step-pricing"/g)).toHaveLength(1);
+    expect(out).toBe(html);
+  });
+
+  it("目印の無いステップは触らない", () => {
+    const html = '<li class="event-step"><h2></h2></li>';
+    expect(mergeStepBodies(html, { basic: "<div id=\"event-step-basic\">本文</div>" })).toBe(html);
+  });
+
+  it("選んでいない日の一覧を、いまの日の次へ隠して並べる", () => {
+    const html =
+      '<div class="cal"></div>' +
+      '<section class="section" data-mock-cal-section="true" data-mock-cal-date="2026-10-28">' +
+      "<h2>10月28日</h2></section>";
+    const out = mergeCalendarDays(html, {
+      "2026-10-29": '<section class="section"><h2>10月29日</h2></section>',
+      "2026-10-28": '<section class="section"><h2>写し</h2></section>',
+    });
+
+    expect(out).not.toContain("data-mock-cal-section");
+    expect(out).toContain('data-mock-cal-date="2026-10-28"');
+    expect(out).toContain('data-mock-cal-date="2026-10-29"');
+    expect(out).toContain('data-mock-hidden="true"');
+    expect(out.match(/data-mock-cal-date="2026-10-28"/g)).toHaveLength(1);
+    // 隠す日は、いまの日の後ろに置く。
+    expect(out.indexOf("10月28日")).toBeLessThan(out.indexOf("10月29日"));
+  });
+
+  it("日別セクションの目印が無ければ何もしない", () => {
+    const html = '<div class="cal"></div>';
+    expect(mergeCalendarDays(html, { "2026-10-29": "<section></section>" })).toBe(html);
+  });
+
+  it("集めてきた断片に残る目印は落としてから付け直す", () => {
+    const html =
+      '<section class="section" data-mock-cal-section="true" data-mock-cal-date="2026-10-28">' +
+      "<h2>10月28日</h2></section>";
+    const out = mergeCalendarDays(html, {
+      "2026-10-29":
+        '<section class="section" data-mock-cal-section="true" data-mock-cal-date="2026-10-28">' +
+        "<h2>10月29日</h2></section>",
+    });
+
+    expect(out.match(/data-mock-cal-date="2026-10-29"/g)).toHaveLength(1);
+    expect(out.match(/data-mock-cal-date="2026-10-28"/g)).toHaveLength(1);
+    expect(out).not.toContain("data-mock-cal-section");
+  });
+
+  it("本文に残る目印も重ねない", () => {
+    const html = '<li class="event-step" data-mock-step-key="basic"><h2></h2></li>';
+    const out = mergeStepBodies(html, {
+      basic: '<div data-mock-step-body="basic" id="event-step-basic">本文</div>',
+    });
+    expect(out.match(/data-mock-step-body="basic"/g)).toHaveLength(1);
+    expect(out.match(/data-mock-hidden="true"/g)).toHaveLength(1);
+  });
+
+  it("集めるべき断片があるかを、目印から判断する", () => {
+    expect(variantsWanted('<li data-mock-step-key="basic"></li>')).toEqual({
+      steps: true,
+      days: false,
+      wanted: true,
+    });
+    expect(
+      variantsWanted(
+        '<li data-mock-step-key="basic"></li><div id="event-step-basic" data-mock-step-body="basic"></div>',
+      ),
+    ).toEqual({ steps: false, days: false, wanted: false });
+    expect(
+      variantsWanted('<i data-mock-date="2026-10-28"></i><section data-mock-cal-section="true"></section>'),
+    ).toEqual({ steps: false, days: true, wanted: true });
+  });
+
+  it("ステップとカレンダーを 1 回で合成する", () => {
+    const html =
+      '<li class="event-step" data-mock-step-key="basic"><h2></h2></li>' +
+      '<section class="section" data-mock-cal-section="true" data-mock-cal-date="2026-10-28"></section>';
+    const out = mergeVariants(html, {
+      steps: { basic: '<div id="event-step-basic">本文</div>' },
+      calendarDays: { "2026-10-29": "<section></section>" },
+    });
+    expect(out).toContain("event-step-basic");
+    expect(out).toContain('data-mock-cal-date="2026-10-29"');
+  });
+});
+
+describe("断片の控え", () => {
+  it("同じ HTML なら同じ指紋、1 文字変えれば変わる", () => {
+    expect(sourceHashOf("<div></div>")).toBe(sourceHashOf("<div></div>"));
+    expect(sourceHashOf("<div></div>")).not.toBe(sourceHashOf("<div> </div>"));
+  });
+
+  it("書いた控えを、同じ指紋のときだけ読む", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "mock-variants-"));
+    const file = path.join(dir, "mock-create.json");
+    const hash = sourceHashOf("clean");
+
+    await writeVariantCache(file, {
+      sourceHash: hash,
+      path: "/organizer/events/new",
+      uiHash: "ui-1",
+      steps: { basic: "<div>本文</div>" },
+      calendarDays: {},
+    });
+
+    const hit = await readVariantCache(file, hash);
+    expect(hit.steps.basic).toBe("<div>本文</div>");
+    expect(await readVariantCache(file, "other")).toBe(null);
+  });
+
+  it("壊れた控えは捨てて、生成を止めない", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "mock-variants-"));
+    const file = path.join(dir, "mock-broken.json");
+    writeFileSync(file, "{ これは JSON ではない");
+    expect(await readVariantCache(file, "x")).toBe(null);
+    expect(await readVariantCache(path.join(dir, "missing.json"), "x")).toBe(null);
+  });
+
+  it("変化が無く PNG がそろっているときだけ撮影を省く", () => {
+    expect(shouldReuseShots({ changed: false, shotsExist: true })).toBe(true);
+    expect(shouldReuseShots({ changed: true, shotsExist: true })).toBe(false);
+    expect(shouldReuseShots({ changed: false, shotsExist: false })).toBe(false);
+    expect(shouldReuseShots({ changed: false, shotsExist: true, refresh: true })).toBe(false);
   });
 });

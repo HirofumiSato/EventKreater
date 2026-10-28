@@ -310,7 +310,8 @@ export const OrganizerParticipantSchema = z
   .superRefine(refineAttendanceChoice);
 
 export const LifecycleSchema = z.object({
-  action: z.enum(["close", "delete"]),
+  // `close`（受付停止）と `reopen`（公開の再開）は対で使う。`delete` は論理削除。
+  action: z.enum(["close", "reopen", "delete"]),
 });
 
 export const IssueReceiptSchema = z.object({

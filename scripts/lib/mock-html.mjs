@@ -87,6 +87,24 @@ export function withMockShell(html, { file = "", name = "", path = "", frame390 
   return insertBeforeClosing(withStylesheet, "body", script);
 }
 
+/**
+ * モック専用の操作（`style-guide/mock-interactions.js`）を読み込ませる。
+ *
+ * 製品の DOM は水和済みの写しなので、ボタンを押しても何も起きない。モックでは
+ * 遷移・開閉・音声入力の流れをなぞれるようにしたいので、帯の script の直後に 1 行足す。
+ * どちらも `defer` なので、HTML に書いた順で動く（帯が先、操作が後）。
+ *
+ * **`withMockShell` のあとに呼ぶこと。** 帯より先に置くと、帯の script を探す側が
+ * 見つけられない（`mock-shell.js` が無い HTML では body の末尾へ足す）。
+ */
+export function withMockInteractions(html) {
+  if (html.includes("mock-interactions.js")) return html;
+  const script = '<script src="mock-interactions.js" defer></script>';
+  const shell = /<script\b[^>]*src="mock-shell\.js"[^>]*><\/script>/i;
+  if (shell.test(html)) return html.replace(shell, (tag) => `${tag}\n  ${script}`);
+  return insertBeforeClosing(html, "body", script);
+}
+
 /** 閉じタグの直前に 1 行足す。閉じタグが無ければ開きタグの直後に置く。 */
 function insertBeforeClosing(html, tag, content) {
   const closing = new RegExp(`</${tag}>`, "i");
@@ -163,7 +181,14 @@ export function applyAssetMap(html, { stylesheets = new Map(), images = new Map(
   return next;
 }
 
-/** 内部リンクを、対応するモックへ向ける。対応表に無いものは `#` にする。 */
+/**
+ * 内部リンクを、対応するモックへ向ける。対応表に無いものは `#` にする。
+ *
+ * 対応表のキーは完全一致のパスのほかに、`*` を 1 セグメントとして持つ型も使える
+ * （`/organizer/events/<id>/edit` に対する `/organizer/events/<任意>/edit` のような形）。
+ * 催しの ID は撮るたびに変わるので、完全一致だけでは「編集」「参加者を見る」が
+ * 全部 `#` になっていた。
+ */
 export function rewriteInternalLinks(html, targets) {
   return html.replace(/<a\b[^>]*>/gi, (tag) => {
     const href = attributeOf(tag, "href");
@@ -173,9 +198,51 @@ export function rewriteInternalLinks(html, targets) {
     if (isExternalOrAnchor(raw)) return tag;
 
     const pathname = raw.split("?")[0].split("#")[0] || "/";
-    const target = targets.get(pathname);
+    const target = matchLinkTarget(pathname, targets);
     return replaceAttribute(tag, "href", target ?? "#");
   });
+}
+
+/**
+ * パスに合うモックを探す。完全一致を先に見て、無ければ `*` の型と比べる。
+ *
+ * 型はセグメント数が同じものだけを比べ、`*` が少ない（文字が合うところが多い）型を選ぶ。
+ * `events` の 1 階層だけの型と、その下の `receipt` まで含む型は長さが違うので取り違えない。
+ */
+export function matchLinkTarget(pathname, targets) {
+  const exact = targets.get(pathname);
+  if (exact) return exact;
+
+  const segments = pathSegments(pathname);
+  let best = null;
+  let bestLiteral = -1;
+  for (const [pattern, file] of targets) {
+    if (!pattern.includes("*")) continue;
+    const patternSegments = pathSegments(pattern);
+    if (patternSegments.length !== segments.length) continue;
+
+    let literal = 0;
+    let matched = true;
+    for (let index = 0; index < segments.length; index += 1) {
+      if (patternSegments[index] === "*") continue;
+      if (patternSegments[index] !== segments[index]) {
+        matched = false;
+        break;
+      }
+      literal += 1;
+    }
+    if (!matched) continue;
+    if (literal > bestLiteral) {
+      best = file;
+      bestLiteral = literal;
+    }
+  }
+  return best ?? null;
+}
+
+/** パスをセグメントに分ける。末尾の `/` は無視する（`/a/` と `/a` を同じに扱う）。 */
+function pathSegments(pathname) {
+  return pathname.split("/").filter((segment) => segment !== "");
 }
 
 /** 外部リンク・ページ内アンカー・特殊スキームは触らない。 */

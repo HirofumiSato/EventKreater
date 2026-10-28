@@ -133,6 +133,180 @@ export async function readHtml(page) {
 }
 
 /**
+ * 隠し DOM を集めるための目印を付ける。見た目は変えない（属性だけ）。
+ *
+ *   カレンダーの日セル   … `data-mock-date="YYYY-MM-DD"`（月見出しの年と、セルの読み上げから作る）
+ *   日別セクション       … `data-mock-cal-section` / `data-mock-cal-date`（いま選んでいる日）
+ *   ステップの `<li>`    … `data-mock-step-key`、開いている本文に `data-mock-step-body`
+ *
+ * **`readHtml` の前に呼ぶこと。** 読み取った HTML にだけ目印が入り、製品の画面には残らない
+ * （ページは撮り終えたら閉じる）。カレンダーの無い画面・ステップの無い画面では何もしない。
+ */
+export async function markVariants(page) {
+  return page.evaluate(`(() => {
+    const result = { steps: 0, days: 0, section: "" };
+
+    const cal = document.querySelector(".cal");
+    if (cal) {
+      const monthText = (cal.querySelector(".cal__month") || {}).textContent || "";
+      const yearMatch = monthText.match(/([0-9]{4})/);
+      const year = yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
+      const monthMatch = monthText.match(/([0-9]{1,2})月/);
+
+      let selected = null;
+      for (const cell of cal.querySelectorAll(".cal__day")) {
+        if (cell.classList.contains("is-outside")) continue;
+        const button = cell.querySelector(".cal__select");
+        if (!button) continue;
+
+        const label = button.getAttribute("aria-label") || "";
+        const labelMatch = label.match(/([0-9]{1,2})月([0-9]{1,2})日/);
+        const dayText = (cell.querySelector(".cal__day-number") || {}).textContent || "";
+        const month = labelMatch ? Number(labelMatch[1]) : monthMatch ? Number(monthMatch[1]) : 0;
+        const day = labelMatch ? Number(labelMatch[2]) : Number(dayText.trim());
+        if (!month || !day) continue;
+
+        const iso =
+          String(year) + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+        cell.setAttribute("data-mock-date", iso);
+        result.days += 1;
+        if (button.getAttribute("aria-pressed") === "true") selected = iso;
+      }
+
+      // 日別の一覧は、カレンダーのすぐ次にある section。カレンダー自体が section に
+      // 包まれている画面（主催者の公開ページ）があるので、包みの次も見る。
+      const host = cal.closest("section") || cal;
+      let section = host.nextElementSibling;
+      while (section && section.tagName !== "SECTION") section = section.nextElementSibling;
+      if (section && selected) {
+        section.setAttribute("data-mock-cal-section", "true");
+        section.setAttribute("data-mock-cal-date", selected);
+        result.section = selected;
+      }
+    }
+
+    for (const item of document.querySelectorAll(".event-step")) {
+      const toggle = item.querySelector(".event-step__toggle");
+      const body = item.querySelector(".event-step__body");
+      const id = (toggle && toggle.getAttribute("aria-controls")) || (body && body.id) || "";
+      const key = id.replace(/^event-step-/, "");
+      if (!key || key === id) continue;
+      item.setAttribute("data-mock-step-key", key);
+      if (body) body.setAttribute("data-mock-step-body", key);
+      result.steps += 1;
+    }
+
+    return result;
+  })()`);
+}
+
+/**
+ * 閉じているステップの本文と、選んでいない日の一覧を集める。
+ *
+ * 製品の画面を実際に押して、製品が描いた DOM をそのまま持ち帰る（値も見た目も作らない）。
+ * 押した状態は最後に戻すが、**撮影のあとに呼ぶこと**（押している間の画面を残さない）。
+ */
+export async function collectVariants(page, { maxDays = 31 } = {}) {
+  return page.evaluate(`(async () => {
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const out = { steps: {}, calendarDays: {} };
+
+    const steps = Array.from(document.querySelectorAll(".event-step"));
+    for (const item of steps) {
+      const key = item.getAttribute("data-mock-step-key");
+      if (!key) continue;
+      if (item.querySelector(".event-step__body")) continue;
+      const toggle = item.querySelector(".event-step__toggle");
+      if (!toggle) continue;
+      toggle.click();
+      await wait(160);
+      const body = document.getElementById("event-step-" + key);
+      if (body) out.steps[key] = body.outerHTML;
+      toggle.click();
+      await wait(80);
+    }
+
+    const cal = document.querySelector(".cal");
+    if (cal) {
+      const monthText = (cal.querySelector(".cal__month") || {}).textContent || "";
+      const yearMatch = monthText.match(/([0-9]{4})/);
+      const year = yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
+      const monthMatch = monthText.match(/([0-9]{1,2})月/);
+
+      // 目印（data-mock-date）は React の再描画で消えることがあるので、日付は毎回
+      // 読み上げ文から作り直す。押す対象は「何番目のセルか」で覚える。
+      const dateOf = (cell) => {
+        const button = cell.querySelector(".cal__select");
+        if (!button) return "";
+        const label = button.getAttribute("aria-label") || "";
+        const labelMatch = label.match(/([0-9]{1,2})月([0-9]{1,2})日/);
+        const dayText = (cell.querySelector(".cal__day-number") || {}).textContent || "";
+        const month = labelMatch ? Number(labelMatch[1]) : monthMatch ? Number(monthMatch[1]) : 0;
+        const day = labelMatch ? Number(labelMatch[2]) : Number(dayText.trim());
+        if (!month || !day) return "";
+        return String(year) + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+      };
+
+      const cells = () =>
+        Array.from(cal.querySelectorAll(".cal__day")).filter(
+          (cell) =>
+            !cell.classList.contains("is-outside") && cell.querySelector(".cal__select"),
+        );
+
+      const all = cells();
+      const selectedIndex = all.findIndex((cell) => {
+        const button = cell.querySelector(".cal__select");
+        return button && button.getAttribute("aria-pressed") === "true";
+      });
+
+      const daySection = () => {
+        const host = cal.closest("section") || cal;
+        let section = host.nextElementSibling;
+        while (section && section.tagName !== "SECTION") section = section.nextElementSibling;
+        return section;
+      };
+
+      const withEvents = [];
+      const withoutEvents = [];
+      all.forEach((cell, index) => {
+        (cell.classList.contains("has-event") ? withEvents : withoutEvents).push(index);
+      });
+      // 予定のある日を先に、そのあと空いている日。全部そろえると、どの日を押しても
+      // その日の一覧が出る（空の日は同じ文面だが、見出しの日付は日ごとに違う）。
+      const targets = withEvents
+        .concat(withoutEvents)
+        .filter((index) => index !== selectedIndex)
+        .slice(0, ${Number(maxDays)});
+
+      for (const index of targets) {
+        const cell = cells()[index];
+        if (!cell) continue;
+        const button = cell.querySelector(".cal__select");
+        if (!button) continue;
+        button.click();
+        await wait(180);
+        const section = daySection();
+        const date = dateOf(cells()[index] || cell);
+        if (section && date) out.calendarDays[date] = section.outerHTML;
+      }
+
+      // 元の日へ戻してから、画面の先頭へ。撮影はこの前に済ませてある。
+      if (selectedIndex >= 0) {
+        const restored = cells()[selectedIndex];
+        const button = restored ? restored.querySelector(".cal__select") : null;
+        if (button) {
+          button.click();
+          await wait(180);
+        }
+      }
+      window.scrollTo(0, 0);
+    }
+
+    return out;
+  })()`);
+}
+
+/**
  * ページの Cookie を使って 1 つの素材を取りに行く。
  *
  * CDP の評価で base64 にして返す。画像は数 100KB になるが、1 画面あたり数枚なので

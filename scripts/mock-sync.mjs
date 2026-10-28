@@ -3,6 +3,7 @@
 //   npm run mock:sync                  # 全画面。本番ビルドを配って撮る（既定）
 //   npm run mock:sync -- --only=20,24  # No. で絞る（画面 1 枚 5 秒前後）
 //   npm run mock:sync -- --no-shots    # HTML だけ（PNG を撮らない）
+//   npm run mock:sync -- --refresh     # 控え（断片・CSS・PNG）を使わずに取り直す
 //   npm run mock:sync -- --dev         # 開発サーバーで撮る（保存がそのまま出る）
 //
 // 前提: `npm run db:seed:ui` でデモデータを作ってあること（storage/ui-demo.json）。
@@ -10,9 +11,14 @@
 // 比較はしない。製品の DOM をそのまま写し、CSS と画像を style-guide/assets/ に
 // 落として、リンクだけモック同士の行き来に付け替える。判定は scripts/check-mock-sync.mjs
 // がソースのハッシュで行う（ブラウザを使わない）。
+//
+// 撮り直しの時間を短くするため、3 つをローカルに控える（`storage/` 配下、コミットしない）。
+//   断片 … 閉じているステップの本文と、選んでいない日の一覧（storage/mock-variants/）
+//   CSS  … 撮るたびに同じ CSS を取り直さない（storage/mock-assets.json）
+//   PNG  … 変化の無い画面の 390 / 1280 を撮らない（storage/mock-shots/）
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,6 +30,7 @@ import {
   rewriteInternalLinks,
   sanitizeHtml,
   stylesheetHrefs,
+  withMockInteractions,
   withMockShell,
   withNotice,
 } from "./lib/mock-html.mjs";
@@ -40,10 +47,21 @@ import {
   WIDTHS,
 } from "./lib/mock-screens.mjs";
 import {
+  fragmentsOf,
+  mergeVariants,
+  readVariantCache,
+  shouldReuseShots,
+  sourceHashOf,
+  variantsWanted,
+  writeVariantCache,
+} from "./lib/mock-variants.mjs";
+import {
   clearEventLock,
+  collectVariants,
   editEventId,
   fetchResource,
   isSameOrigin,
+  markVariants,
   openCapturePage,
   readHtml,
   reissueEmailChangeTokens,
@@ -56,6 +74,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STYLE_DIR = path.join(ROOT, "style-guide");
 const ASSETS_DIR = path.join(STYLE_DIR, "assets");
 const SHOTS_DIR = path.join(ROOT, "storage", "mock-shots");
+const VARIANTS_DIR = path.join(ROOT, "storage", "mock-variants");
+const ASSET_CACHE = path.join(ROOT, "storage", "mock-assets.json");
 const MANIFEST = path.join(STYLE_DIR, "mock-manifest.json");
 const DEMO_FILE = path.join(ROOT, "storage", "ui-demo.json");
 const WIDE = WIDTHS[WIDTHS.length - 1];
@@ -67,6 +87,7 @@ const only = valueOf("--only")
   .map((item) => item.trim())
   .filter(Boolean);
 const noShots = args.includes("--no-shots");
+const refresh = args.includes("--refresh");
 const useDev = args.includes("--dev");
 const concurrencyArg = valueOf("--concurrency");
 const concurrency =
@@ -98,6 +119,49 @@ async function writeIfChanged(file, content) {
   return true;
 }
 
+/**
+ * 前回の CSS の控え。UI ソースの指紋が同じときだけ使う。
+ *
+ * CSS は 33 画面すべてが同じファイルを指すので、画面ごとに取り直すと 33 往復になる。
+ * 指紋が変われば全部捨てる（`--refresh` でも捨てる）。
+ */
+async function readStylesheetCache(uiHash) {
+  try {
+    const data = JSON.parse(await readFile(ASSET_CACHE, "utf8"));
+    if (data.uiHash !== uiHash || typeof data.stylesheets !== "object") return new Map();
+    const usable = [];
+    for (const [href, name] of Object.entries(data.stylesheets)) {
+      if (typeof name !== "string") continue;
+      try {
+        await stat(path.join(ASSETS_DIR, name));
+        usable.push([href, name]);
+      } catch {
+        // 片付いた素材は使わない（取り直す）。
+      }
+    }
+    return new Map(usable);
+  } catch {
+    return new Map();
+  }
+}
+
+/** 断片の控えの置き場所。1 画面 1 ファイル。 */
+function variantCachePath(row) {
+  return path.join(VARIANTS_DIR, row.file.replace(/\.html$/, ".json"));
+}
+
+/** PNG が 2 枚そろっているか。そろっていなければ撮り直す。 */
+async function shotsExist(stem) {
+  for (const size of WIDTHS) {
+    try {
+      await stat(path.join(SHOTS_DIR, `${stem}-${size.width}.png`));
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
 async function main() {
   const started = Date.now();
 
@@ -117,10 +181,15 @@ async function main() {
 
   const full = rows.length === allRows.length;
   const previous = await readJson(MANIFEST);
-  const linkTargets = buildLinkTargets(allRows);
+  const linkTargets = buildLinkTargets(allRows, demo);
+  // 控えの有効性は UI ソースの指紋で決める。最後にも同じ値を manifest へ書く。
+  const uiHashNow = computeUiHash(ROOT);
+  uiHashNowForRun = uiHashNow;
+  const stylesheetCache = refresh ? new Map() : await readStylesheetCache(uiHashNow);
 
   await mkdir(ASSETS_DIR, { recursive: true });
   await mkdir(SHOTS_DIR, { recursive: true });
+  await mkdir(VARIANTS_DIR, { recursive: true });
 
   // この画面は開くとトークンを消費する。撮る前に同じ値で発行し直す。
   if (rows.some((row) => row.slug === "account-verify")) {
@@ -172,7 +241,7 @@ async function main() {
           const row = queue.shift();
           if (!row) break;
           try {
-            const captured = await captureRow(page, row, linkTargets);
+            const captured = await captureRow(page, row, linkTargets, stylesheetCache);
             results.set(row.file, captured.entry);
             if (captured.changed) updated += 1;
           } catch (error) {
@@ -203,7 +272,7 @@ async function main() {
 
   // 部分同期では uiHash を進めない。進めると「撮っていない画面」まで
   // 同期済みに見えてしまう。コミット前は全体を回す。
-  const uiHash = full ? computeUiHash(ROOT) : (previous?.uiHash ?? null);
+  const uiHash = full ? uiHashNow : (previous?.uiHash ?? null);
   const entries = new Map((previous?.screens ?? []).map((entry) => [entry.file, entry]));
   for (const [file, entry] of results) entries.set(file, entry);
 
@@ -218,6 +287,12 @@ async function main() {
     widths: WIDTHS.map((size) => size.width),
     uiHash,
     screens: ordered,
+  });
+
+  // CSS の控え。次回は同じ指紋のあいだ、この対応表から引く。
+  await writeJson(ASSET_CACHE, {
+    uiHash: uiHashNow,
+    stylesheets: Object.fromEntries(stylesheetCache),
   });
 
   const wrote = await writeIndex(ordered);
@@ -239,9 +314,10 @@ async function main() {
   }
 
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
-  const shots = noShots ? "" : ` / PNG ${results.size * WIDTHS.length} 枚`;
+  const shots = noShots ? "" : ` / PNG ${shotsWritten} 枚（変化の無い画面は省略）`;
   log(
     `\n${ordered.length} 画面を同期しました（HTML 更新 ${updated + wrote + framed} / ${seconds}s${shots}）。` +
+      (refresh ? "\n--refresh のため、控えを使わずに取り直しました。" : "") +
       (full ? "" : "\n部分同期です。コミット前に `npm run mock:sync`（全体）を実行してください。"),
   );
   log(`一覧: ${path.relative(ROOT, path.join(STYLE_DIR, "mock-index.html"))}`);
@@ -262,7 +338,7 @@ function shotStem(entry) {
 }
 
 /** 1 画面 × 1 状態を開き、HTML と PNG を書き出す。 */
-async function captureRow(page, row, linkTargets) {
+async function captureRow(page, row, linkTargets, stylesheetCache) {
   const started = Date.now();
   const url = `${webUrl}${pathFor(row, WIDE.width)}`;
   const eventId = editEventId(url);
@@ -279,25 +355,63 @@ async function captureRow(page, row, linkTargets) {
   await page.setViewport(WIDE.width, WIDE.height);
   await page.applyAuth(row.auth);
   await page.waitForReady(url);
+  await page.evaluate("window.scrollTo(0, 0)");
 
+  // 目印を付けてから HTML を読む。付けるのは属性だけなので見た目は変わらない。
+  await markVariants(page);
   const raw = await readHtml(page);
-  const wideShot = await page.captureScreenshot();
-  let narrowShot = null;
+
+  const clean = sanitizeHtml(raw);
+  const wanted = variantsWanted(clean);
+  const sourceHash = sourceHashOf(clean);
+  const cacheFile = variantCachePath(row);
+  const cache = wanted.wanted && !refresh ? await readVariantCache(cacheFile, sourceHash) : null;
+
+  const file = path.join(STYLE_DIR, row.file);
+  const current = await readFile(file, "utf8").catch(() => null);
+  const stem = shotStem(row);
+
+  // 控えがあれば先に合成して、HTML に差が出るかを見る。差が無く PNG がそろっていれば
+  // 撮らない（撮影がいちばん重い）。断片を集めるのは、この判定より後。
+  let built = await buildHtml(page, clean, row, linkTargets, fragmentsOf(cache), stylesheetCache);
+  let htmlChanged = current !== built.content;
+
+  let skipShots = noShots;
   if (!noShots) {
+    skipShots = shouldReuseShots({
+      changed: htmlChanged,
+      refresh,
+      shotsExist: await shotsExist(stem),
+    });
+  }
+
+  if (!skipShots) {
+    const wideShot = await page.captureScreenshot();
     await page.setViewport(NARROW.width, NARROW.height);
     await settle(page);
-    narrowShot = await page.captureScreenshot();
-  }
-
-  const html = await buildHtml(page, raw, row, linkTargets);
-  const file = path.join(STYLE_DIR, row.file);
-  const htmlChanged = await writeIfChanged(file, html.content);
-
-  if (!noShots) {
-    const stem = shotStem(row);
+    const narrowShot = await page.captureScreenshot();
     await writeFile(path.join(SHOTS_DIR, `${stem}-${WIDE.width}.png`), wideShot.data);
     await writeFile(path.join(SHOTS_DIR, `${stem}-${NARROW.width}.png`), narrowShot.data);
+    shotsWritten += WIDTHS.length;
   }
+
+  // 控えが無ければ、製品の画面を押して隠し DOM を集める。押した状態は
+  // 収集の最後に戻すが、撮影は必ずこの前に済ませる。
+  if (wanted.wanted && !cache) {
+    await page.setViewport(WIDE.width, WIDE.height);
+    await settle(page);
+    const collected = await collectVariants(page);
+    await writeVariantCache(cacheFile, {
+      sourceHash,
+      path: pathFor(row, WIDE.width),
+      uiHash: uiHashNowForRun,
+      steps: collected.steps,
+      calendarDays: collected.calendarDays,
+    });
+    built = await buildHtml(page, clean, row, linkTargets, collected, stylesheetCache);
+  }
+
+  htmlChanged = await writeIfChanged(file, built.content);
 
   // 次の行のために、ロックを返してから離れる。
   if (eventId) {
@@ -309,7 +423,7 @@ async function captureRow(page, row, linkTargets) {
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
   log(
     `${htmlChanged ? "更新" : "同じ"} ${row.no} ${row.file}${row.label ? `（${row.label}）` : ""} ${seconds}s` +
-      (html.assets.failed > 0 ? `  素材 ${html.assets.failed} 件は元の URL のまま` : ""),
+      (built.assets.failed > 0 ? `  素材 ${built.assets.failed} 件は元の URL のまま` : ""),
   );
 
   return {
@@ -324,7 +438,7 @@ async function captureRow(page, row, linkTargets) {
       label: row.label,
       file: row.file,
       path: pathFor(row, WIDE.width),
-      hash: createHash("sha256").update(normalizeNewlines(Buffer.from(html.content))).digest("hex"),
+      hash: createHash("sha256").update(normalizeNewlines(Buffer.from(built.content))).digest("hex"),
     },
   };
 }
@@ -332,17 +446,28 @@ async function captureRow(page, row, linkTargets) {
 // 撮っている最中の URL。`captureRow` の中だけで使う。
 let webUrl = "";
 
+/** この実行の UI ソースの指紋。断片の控えに残す。 */
+let uiHashNowForRun = "";
+
+/** 実行中に取った素材。同じ画像を画面ごとに取り直さない。 */
+const runAssets = new Map();
+
+/** 実際に書いた PNG の枚数。省略した画面があるとログの数字が変わる。 */
+let shotsWritten = 0;
+
 /** 製品の HTML を、単体で開けるモックに整える。 */
-async function buildHtml(page, raw, row, linkTargets) {
-  const clean = sanitizeHtml(raw);
+async function buildHtml(page, clean, row, linkTargets, fragments, stylesheetCache) {
   const assets = { written: 0, failed: 0 };
 
   const stylesheets = new Map();
   for (const href of stylesheetHrefs(clean)) {
     if (!isSameOrigin(href, webUrl)) continue;
-    const saved = await saveAsset(page, href, assets);
+    const cached = stylesheetCache.get(href);
+    const saved = cached ?? (await saveAsset(page, href, assets));
     if (saved) stylesheets.set(href, saved);
   }
+  // 使った CSS を控えへ戻す。次回はここから引く。
+  for (const [href, name] of stylesheets) stylesheetCache.set(href, name);
 
   const images = new Map();
   for (const url of imageSources(clean)) {
@@ -352,6 +477,9 @@ async function buildHtml(page, raw, row, linkTargets) {
   }
 
   let html = applyAssetMap(clean, { stylesheets, images });
+  // 隠し DOM は、素材とリンクの差し替えより前に合成する。合成した本文にも
+  // 画像・リンクが入っているので、同じ規則で通す必要がある。
+  html = mergeVariants(html, fragments);
   html = rewriteInternalLinks(html, linkTargets);
   html = withNotice(html, { name: row.name, path: pathFor(row, WIDE.width) });
   // 帯は製品に無い。sanitizeHtml のあとで足す（先に足すと script が落とされる）。
@@ -362,6 +490,8 @@ async function buildHtml(page, raw, row, linkTargets) {
     frame390: frameUrl(row.file, WIDTHS[0].width),
     frame1280: frameUrl(row.file, WIDE.width),
   });
+  // 操作の script は帯の直後。どちらも defer なので、この順で動く。
+  html = withMockInteractions(html);
   return { content: `${html}\n`, assets };
 }
 
@@ -371,6 +501,9 @@ function labelOf(row) {
 }
 
 async function saveAsset(page, url, assets) {
+  const memo = runAssets.get(url);
+  if (memo) return memo;
+
   const response = await fetchResource(page, url);
   if (!response.ok) {
     assets.failed += 1;
@@ -385,7 +518,9 @@ async function saveAsset(page, url, assets) {
     await writeFile(file, response.buffer);
     assets.written += 1;
   }
-  return `assets/${name}`;
+  const saved = `assets/${name}`;
+  runAssets.set(url, saved);
+  return saved;
 }
 
 /** 一覧ページ。モック同士の行き来だけを載せる（画像はローカルの PNG 側）。 */

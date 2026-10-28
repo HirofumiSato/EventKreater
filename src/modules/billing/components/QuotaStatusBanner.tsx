@@ -66,7 +66,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
           }`;
 
   return (
-    <div className={`alert ${tone}`} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+    <div className={`alert ${tone} alert--compact`}>
       <p>
         {message}{" "}
         {needsPhone && (

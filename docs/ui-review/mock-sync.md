@@ -6,6 +6,7 @@
 ```text
 製品の src を変更 → npm run mock:sync → style-guide/mock-*.html をコミット
                                      ↘ storage/mock-shots/*.png（ローカルのみ）
+                                     ↘ storage/mock-variants/*.json（隠し DOM の控え。ローカルのみ）
 
 npm run check → ソースの指紋と manifest を比べる → 違えば「mock:sync を実行してください」で止まる
 ```
@@ -42,6 +43,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | `npm run mock:sync` | 全 33 画面（28 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
 | `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。`--only=04-event-member` でも絞れる |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
+| `npm run mock:sync -- --refresh` | 控え（断片・CSS・PNG）を使わず、全画面を取り直す（下の「控え」を参照） |
 | `npm run mock:sync -- --dev` | 開発サーバー（3012）で撮る。保存がそのまま出るが、CSS の当たり方が本番とずれることがある |
 | `npm run mock:check` | 同期の判定だけ（`npm run check` の中でも走る） |
 | `npm run mock:serve` | 生成したモックを `http://127.0.0.1:4321/style-guide/mock-index.html` で配る |
@@ -52,21 +54,71 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 ## モックだけが持つもの
 
-モックは製品の写しですが、**製品に存在しない**ものが 3 つだけあります。どれも `npm run mock:sync` が
+モックは製品の写しですが、**製品に存在しない**ものが 4 つだけあります。どれも `npm run mock:sync` が
 毎回書き出すので、撮り直しても消えません。手で `mock-*.html` を直さないでください。
 
 | もの | どこが作るか | 何のために |
 | --- | --- | --- |
 | 画面下部の帯（← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。製品には無い |
+| 操作の script（`mock-interactions.js`） | `withMockInteractions` が帯の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
 | 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 33 画面の入口。製品には無い |
 | 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
 
 帯の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
-巻き込まれて消えます。`scripts/check-mock-sync.mjs` は、目録の各 HTML に `data-mock-shell` が
-無ければ `npm run check` を止めます。
+巻き込まれて消えます。`scripts/check-mock-sync.mjs` は、目録の各 HTML に `data-mock-shell` と
+`mock-interactions.js` が無ければ `npm run check` を止めます。
 
 枠の中では帯を出しません（`mock-shell.js` が `?embed=1` を見て省きます）。
 `HTML をそのまま開く` は `embed` を付けないので、帯つきで開きます。
+
+## 遷移リンクと操作
+
+### リンクは URL の型で解決する
+
+内部リンクは、目録（`scripts/lib/mock-screens.mjs`）のパスに**完全一致**すればそのモックへ向けます。
+催しや主催者の ID は撮るたびに変わるので、完全一致だけだと一覧の「編集」「参加者を見る」が
+全部 `#` になっていました。`linkTargets(rows, demo)` は、目録のパスに出てくるデモ ID を `*` に
+置き換えた型も登録します。
+
+| 製品のリンク | 向くモック |
+| --- | --- |
+| `/organizer/events/<任意ID>/edit` | `mock-edit.html` |
+| `/organizer/events/<任意ID>/participants` | `mock-roster.html` |
+| `/organizer/events/<任意ID>/revenue` | `mock-revenue-detail.html` |
+| `/events/<任意ID>` | `mock-event.html` |
+
+`*` は 1 セグメントだけに当たります。セグメント数が同じ型どうしでは、`*` が少ない（文字が合う
+ところが多い）型を選びます。クエリとハッシュは従来どおり落とします。型にも合わない内部リンクは
+`#` のままです（API が要るので、遷移しないことを許容します）。
+
+### 製品の別状態は「隠し DOM」として合成する
+
+製品は「開いているステップ」の本文と「選んでいる日」の一覧しか描きません。モックは 1 枚で
+操作を再現したいので、残りを取りに行きます。
+
+1. `markVariants`（`scripts/lib/capture-core.mjs`）が、HTML を読む前に属性だけ付ける
+   （`data-mock-date` / `data-mock-cal-section` / `data-mock-step-key` / `data-mock-step-body`）。見た目は変えない
+2. `readHtml` で撮り、`sanitizeHtml` した HTML の指紋（`sourceHash`）を作る
+3. 断片の控え（`storage/mock-variants/<mock-*.html の語幹>.json`）が指紋と合えばそれを使う。
+   無ければ `collectVariants` が日付とステップを実際に押して、製品が描いた DOM をそのまま集める
+4. `mergeVariants`（`scripts/lib/mock-variants.mjs`）が、閉じている本文と選んでいない日の一覧を
+   `data-mock-hidden="true"` 付きで差し込む
+5. `mock-interactions.js` が `data-mock-hidden` を出し入れする
+
+押して集めるのは**撮影のあと**です。押した状態が PNG に残らないようにするためです。
+集め終えたら元の日付に戻し、先頭へスクロールします。
+
+### 控え（2 回目以降を短くする）
+
+| 控え | 置き場所（コミットしない） | 何を省くか | 無効になる条件 |
+| --- | --- | --- | --- |
+| 断片 | `storage/mock-variants/<画面>.json` | 日付・ステップを押して集める往復（1 画面 1〜6 秒） | 合成前の HTML の指紋（`sourceHash`）が変わったとき。`--refresh` でも捨てる |
+| CSS | `storage/mock-assets.json`（`{ uiHash, stylesheets }`） | 同じ CSS を画面ごとに取り直す往復 | `uiHash` が変わったとき。`--refresh` でも捨てる |
+| 素材（同一実行内） | メモリの表 | 同じ画像を 33 画面ぶん取り直す往復 | 実行が終われば消える |
+| PNG | `storage/mock-shots/*.png` | 変化の無い画面の 390 / 1280 撮影 | 生成した HTML が既存ファイルと違うとき、PNG が欠けているとき、`--refresh` |
+
+DB やデモデータが変われば画面上の DOM も変わるので、断片の控えは自然に外れます。画像だけが
+変わった場合など、DOM に出ない差分は `npm run mock:sync -- --refresh` で取り直してください。
 
 ## 端末の幅で見る（`mock-frame.html`）
 
@@ -105,9 +157,12 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 | `style-guide/mock-index.html` | する | モックの一覧ページ（生成物） |
 | `style-guide/mock-frame.html` | する | 幅を選んで見る枠ページ（生成物。iframe で 390 / 1280） |
 | `style-guide/mock-shell.js` | する | 帯を組み立てる（**手で保守する**。製品は読まない） |
-| `style-guide/mock-shell.css` | する | 帯の見た目（手で保守する。`html.is-embed .mockbar` で枠の中は隠す） |
+| `style-guide/mock-shell.css` | する | 帯の見た目と隠し DOM（手で保守する。`html.is-embed .mockbar` で枠の中は隠す） |
+| `style-guide/mock-interactions.js` | する | モック専用の操作（**手で保守する**。製品は読まない） |
 | `style-guide/mock-guide.css` | する | 一覧の行と幅の切り替え（手で保守する） |
 | `storage/mock-shots/*.png` | しない | 390 / 1280 の撮影と `index.html`。目視用 |
+| `storage/mock-variants/*.json` | しない | 隠し DOM の控え。消すと次の撮影で取り直す |
+| `storage/mock-assets.json` | しない | CSS の対応表。消すと次の撮影で取り直す |
 
 `style-guide/index.html` と `style-guide.css` は**部品見本**で、同期の対象外です。
 
@@ -120,7 +175,8 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
   リンクを差し替える（Tailwind の preflight まで含めて製品と同じ見た目にするため）
 - 同一オリジンの画像（`/samples/…`、`/api/v1/flyer-assets/…`、`/_next/image?…`）を取得して
   `style-guide/assets/<hash>.<ext>` に保存し、`src` と `srcset` を差し替える。`data:` はそのまま
-- 内部リンクは、目録（`scripts/lib/mock-screens.mjs`）のパスに一致すればそのモックへ、それ以外は `#` へ
+- 内部リンクは、目録（`scripts/lib/mock-screens.mjs`）のパスに一致すればそのモックへ、
+  一致しなければ `#` へ。撮るたびに変わる ID は `*` の型で照合する（上の「遷移リンクと操作」）
 - 先頭に「生成物。`npm run mock:sync` で作り直す。手で編集しない」のコメントを入れる
 - 中身が同じなら書き換えない（2 回続けて実行しても差分が出ない）
 
@@ -142,10 +198,11 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 2. 目録にある画面の HTML がそろっているか
 3. 書き出した HTML が manifest の指紋のままか（手で直していないか）
 
-加えて、次の 2 つも見ます。
+加えて、次の 3 つも見ます。
 
-- 一覧（`mock-index.html`）・枠（`mock-frame.html`）・帯の 3 ファイル（`mock-shell.js` / `mock-shell.css` / `mock-guide.css`）が実在するか
+- 一覧（`mock-index.html`）・枠（`mock-frame.html`）・帯の 2 ファイル（`mock-shell.js` / `mock-shell.css`）・操作の `mock-interactions.js`・`mock-guide.css` が実在するか
 - 目録の各 HTML に、帯の差し込み（`data-mock-shell`）があるか
+- 目録の各 HTML に、操作の script（`mock-interactions.js`）があるか
 
 `uiHash` の対象は次のとおりです（`scripts/lib/mock-hash.mjs`）。
 
@@ -173,6 +230,8 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 | 画面が「他の人が編集中」になる | `mock:sync` がロックを消せていない。`npm run mock:sync -- --only=21` で撮り直す |
 | 1 画面だけ `NG` と出る | その画面の API かデモデータ。`manifest` は前回のままなので、直してから全体を回す |
 | CSS が当たらない（`--dev`） | 本番ビルドで撮り直す（`--dev` は開発サーバーの都合で CSS が `<link>` にならないことがある） |
+| カレンダーの日付や音声入力が動かない | `mock-interactions.js` が読まれているか（`npm run check` が止める）。それでも動かなければ `npm run mock:sync -- --refresh` |
+| 反映が古い（画像だけ差し替えた等） | `npm run mock:sync -- --refresh`（控えを使わずに取り直す） |
 | 枠ページが「画面」だけになる | `mock-frame.html` が古い。`npm run mock:sync` で作り直す |
 
 ## 画面を足すとき
