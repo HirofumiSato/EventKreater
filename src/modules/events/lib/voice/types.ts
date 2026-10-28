@@ -76,7 +76,7 @@ export interface VoiceField {
 export interface VoiceFieldScope extends VoiceFieldOptions {
   /**
    * 既定値を持つ欄（雨天時の方針・定員・申し込み期限）も巡回するか。
-   * これらは「空欄」にならないため、既定では対象外にする。
+   * これらは「空欄」にならないため、対象はパネルの切り替えで決める（既定はオン）。
    */
   includeOptional: boolean;
   /** このセッションで一度でも音声で入れた欄。任意欄を聞き直さないために使う。 */

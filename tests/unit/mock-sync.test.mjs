@@ -1,7 +1,7 @@
 // モックの生成と同期の仕様。scripts/lib/mock-html.mjs / mock-hash.mjs / mock-screens.mjs /
 // check-mock-sync.mjs を直接読み込む。ブラウザも DB も使わない。
 
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import {
   evaluateSync,
   missingInteractions,
   missingShell,
+  missingVoiceSimulation,
   sha256,
   TOOL_FILES,
 } from "../../scripts/check-mock-sync.mjs";
@@ -681,6 +682,45 @@ describe("モック専用の操作の script", () => {
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("mock-service.html");
     expect(problems[0]).toContain("mock:sync");
+  });
+});
+
+describe("音声入力の写し", () => {
+  // 製品の音声入力（覆い・既定でオンの任意項目・郵便番号の住所補完）を写した印。
+  const complete =
+    'const scrim = "voice-scrim";' +
+    '<input type="checkbox" data-voice-optional checked>' +
+    "event-postal-code event-prefecture event-city event-town";
+
+  it("覆い・任意の項目・郵便番号の補完がそろっていれば通す", () => {
+    expect(missingVoiceSimulation(complete)).toEqual([]);
+  });
+
+  it("覆いが無ければ止める", () => {
+    const problems = missingVoiceSimulation(complete.replace("voice-scrim", "scrim"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("voice-scrim");
+  });
+
+  it("「任意の項目も聞く」が既定でチェックされていなければ止める", () => {
+    const problems = missingVoiceSimulation(complete.replace(" checked>", ">"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("任意の項目も聞く");
+  });
+
+  it("郵便番号から住所を埋める写しが無ければ止める", () => {
+    const problems = missingVoiceSimulation(complete.replace("event-town", "town"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("郵便番号");
+  });
+
+  it("ファイルが空なら止める", () => {
+    expect(missingVoiceSimulation("")).toHaveLength(1);
+  });
+
+  it("実際の mock-interactions.js は 3 つとも持っている", () => {
+    const source = readFileSync(path.join(ROOT, "style-guide", "mock-interactions.js"), "utf8");
+    expect(missingVoiceSimulation(source)).toEqual([]);
   });
 });
 

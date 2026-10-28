@@ -147,7 +147,7 @@
 
 .. count-start
 
-63 ファイル、``it`` は 814 件です。内訳は ``tests/unit/`` が 50 ファイル 732 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+64 ファイル、``it`` は 829 件です。内訳は ``tests/unit/`` が 51 ファイル 747 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -307,6 +307,10 @@
      - 24
      - 音声で埋める欄の並びと巡回。空欄の飛ばし方、未登録の幹事の主催者名、任意の欄、戻る、入力欄の id からの逆引き、パッチの適用
      - SCR-ORG-02
+   * - ``tests/unit/postal-code-search.test.ts``
+     - 9
+     - 郵便番号から住所を引く共通の検索。7 桁で自動検索する条件（同じコードは引き直さない・全角も可）、控えと同時実行のまとめ、7 桁に満たないときの非通信、失敗を控えないこと
+     - SCR-ORG-02
    * - ``tests/unit/voice-mock.test.ts``
      - 16
      - 課金せずに試すためのモック。有効判定（本番では無効）、全欄の入力例が読めること、鍵なしで外部を呼ばないこと、API の応答と回数制限の扱い、起動ログの出し分けと 1 度だけ出すこと
@@ -376,7 +380,7 @@
      - 金額（``3,000円`` / ``¥3,000``）、保存形式の日付と月の見出し、日時の表記、壊れた値の据え置き、日本時間の今月の範囲（UTC の月末が翌月になる場合を含む）
      - 全画面の共通表示
    * - ``tests/unit/mock-sync.test.mjs``
-     - 72
+     - 78
      - HTML の整形（script・Next の CSS リンク・コメントの除去、``lang`` と body のクラスの保持）、アセットの差し替え（``/_next/image``・``/samples``・``data:``）、内部リンクの対応付けと未知リンクの ``#``、``uiHash`` の一致と変化（改行が CRLF でも LF でも同じ）、同期要否（manifest 無し・ハッシュ不一致・一致・HTML 欠け）、目録の No の重複と ``page.tsx`` の実在、``--only`` の絞り込み、枠ページ（iframe・幅の切り替え・状態の表記・エスケープ・生成物の欠け）
      - 該当なし（検査）
    * - ``tests/integration/draft-publish.test.ts``
@@ -414,7 +418,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 732、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 732 件を実行して 82 件を skip します。
+件数の内訳は ``tests/unit/`` が 747、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 747 件を実行して 82 件を skip します。
 
 .. breakdown-end
 
