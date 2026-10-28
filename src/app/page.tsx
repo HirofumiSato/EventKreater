@@ -99,8 +99,8 @@ export default function HomePage() {
             </div>
           </div>
           <figure className="hero__poster">
-            <img src="/samples/flyer-autumn.jpg" alt="生成されたチラシの例（秋の芋煮会）" width={1080} height={1920} />
-            <figcaption>入力した内容から、このチラシが5分でできます。</figcaption>
+            <img src="/samples/flyer-autumn.jpg" alt="実際に作ったチラシ（焚き火とシチューの夕べ）" width={1080} height={1528} />
+            <figcaption>実際に作ったチラシ</figcaption>
           </figure>
         </div>
       </section>
