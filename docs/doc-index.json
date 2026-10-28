@@ -9688,7 +9688,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 204,
+      "lineCount": 233,
       "headings": [
         {
           "level": 1,
@@ -9697,6 +9697,10 @@
         {
           "level": 2,
           "text": "置き場所"
+        },
+        {
+          "level": 2,
+          "text": "ランナーとアクションの版"
         },
         {
           "level": 2,

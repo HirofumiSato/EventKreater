@@ -14,6 +14,13 @@ permissions:
   # 変更ファイルの判定が PR の一覧を GitHub API から読む。
   pull-requests: read
 
+# ランナーは `-latest` にせず版を固定する。2026-10-19 から `ubuntu-latest` が
+# Ubuntu 26.04 へ数週間かけて移行しており、切り替わる日によって OS・apt・
+# プリインストールが変わる。チラシのフォントを apt で入れ、PostgreSQL を
+# サービスで立てているので、同じ PR が日によって別の結果になるのを避ける。
+# 版を上げるときは 1 本の PR で 4 ジョブまとめて変え、`ci.rst` も直す。
+# 参照: https://github.com/actions/runner-images/issues/14748
+
 jobs:
   # 手元の `npm run check:full` と同じ。lint、tsc --noEmit、DB を使わない Vitest、
   # モックの同期漏れの検査。
@@ -21,12 +28,12 @@ jobs:
   # tests/setup/db.ts は TEST_DATABASE_URL が無ければ何も差し替えないため、
   # DATABASE_URL はダミーで足りる。PostgreSQL も Stripe も呼ばない。
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -45,7 +52,7 @@ jobs:
       - name: node_modules を戻す
         id: node-cache
         if: steps.scope.outputs.code != 'false'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
@@ -74,12 +81,12 @@ jobs:
   # 依存は入れない。生成スクリプトは node:fs / node:path しか import しないため、
   # npm ci（20 秒）を省ける。
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -90,7 +97,7 @@ jobs:
 
       - run: npm run docs:links
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -100,7 +107,7 @@ jobs:
       # 復元した venv は作成時の Python を指すので、壊れていたら捨てて作り直す。
       - name: Python 環境を戻す
         id: venv
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .venv-docs
           key: ${{ runner.os }}-docs-venv-${{ hashFiles('docs/requirements.txt') }}
@@ -118,7 +125,7 @@ jobs:
   # 部分ユニーク索引（event_organizers_one_owner など）や CHECK 制約を作らないため、
   # それらを見ている結合テストが落ちる。
   db:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     services:
       postgres:
@@ -136,9 +143,9 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -152,7 +159,7 @@ jobs:
       - name: node_modules を戻す
         id: node-cache
         if: steps.scope.outputs.code != 'false'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json', 'prisma/schema.prisma') }}
@@ -187,7 +194,7 @@ jobs:
   #   別ジョブのままだと、必須に登録しない限り型エラーが通ってしまう。
   # どちらが落ちたかは step 名（pytest / mypy）で分かる。
   flyer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # apt のミラーが遅い日に「日本語フォントを入れる」で止まり続けるのを、
     # 6 時間ではなく 10 分で失敗として返す。
     timeout-minutes: 10
@@ -195,10 +202,10 @@ jobs:
       run:
         working-directory: services/flyer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 判定だけは Node で動かす。既定の working-directory を打ち消す。
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -209,7 +216,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/ci-scope.mjs
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.scope.outputs.flyer != 'false'
         with:
           python-version: "3.12"
@@ -221,7 +228,7 @@ jobs:
       - name: フォントのキャッシュを戻す
         id: fonts
         if: steps.scope.outputs.flyer != 'false'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .noto-fonts
           key: noto-cjk-regular-1
@@ -261,7 +268,7 @@ jobs:
       - name: venv を戻す
         id: venv
         if: steps.scope.outputs.flyer != 'false'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: services/flyer/.venv
           key: ${{ runner.os }}-flyer-venv-${{ hashFiles('services/flyer/requirements.txt') }}
