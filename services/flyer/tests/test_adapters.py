@@ -37,6 +37,7 @@ from src.adapters.candidate_source.placeholder_candidate_source import (
 )
 from src.domain.exceptions import ImageGenerationTimeoutError, LLMContextGenerationError
 from src.domain.models import LLMGenerationContext, SemanticTheme, TemplateId
+from src.domain.pricing import DEFAULT_IMAGE_MODEL, DEFAULT_IMAGE_QUALITY, DEFAULT_IMAGE_SIZE
 from src.infrastructure.config import Settings
 from tests.support import make_context, make_request
 
@@ -153,6 +154,22 @@ def test_blank_api_key_selects_mocks(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert settings.openai_api_key is None
     assert isinstance(build_prompt_engine(settings), MockPromptEngine)
     assert isinstance(build_image_generator(settings), MockImageGenerator)
+
+
+def test_blank_image_settings_fall_back_to_defaults(tmp_path: Path) -> None:
+    """compose が ``${VAR:-}`` で空文字を渡しても既定で動く。"""
+    settings = Settings(
+        storage_dir=tmp_path / "tmp",
+        fallback_dir=tmp_path / "bg",
+        openai_text_model="",
+        openai_image_model="",
+        image_quality="",
+        image_size="",
+    )
+    assert settings.openai_text_model == "gpt-4o-mini"
+    assert settings.openai_image_model == DEFAULT_IMAGE_MODEL
+    assert settings.image_quality == DEFAULT_IMAGE_QUALITY
+    assert settings.image_size == DEFAULT_IMAGE_SIZE
 
 
 def test_configured_api_key_selects_openai_adapters(tmp_path: Path) -> None:

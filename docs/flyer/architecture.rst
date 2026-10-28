@@ -31,7 +31,7 @@
    ├── ports/                  抽象ポート
    ├── adapters/
    │   ├── prompt_engine/      gpt-4o-mini とモック
-   │   ├── image_generator/    gpt-image-1 / dall-e-3、モック、静的背景
+   │   ├── image_generator/    gpt-image-2.5 / dall-e-3、モック、静的背景
    │   ├── candidate_source/   AI 背景とローカル合成（グラデーション）
    │   └── renderer/           Pillow 合成と幾何計算
    └── infrastructure/         設定、ローカルファイル保存、AI 回数枠

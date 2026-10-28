@@ -6,17 +6,54 @@
 気づける。
 
 価格は OpenAI の公表価格（USD / 1 枚）の概算。実装前に現行の料金ページで確認する。
+`gpt-image-2.5` 系はトークン課金（画像出力 $30 / 1M トークン）で、1 枚あたりの額は
+公表されていない。ここでは公式ガイドの代表サイズで公開されている換算値
+（1024x1536 / low = 約 $0.0047）を、安全側に切り上げて持つ。
 """
 
 from __future__ import annotations
 
 #: 背景生成の標準構成。A4 縦（1080×1528）に切り抜いたときの欠落が最も小さい。
-DEFAULT_IMAGE_MODEL: str = "gpt-image-1"
+#: `gpt-image-1` は 2026-10-23 に API が停止したため、現行の `gpt-image-2.5` 系を使う。
+DEFAULT_IMAGE_MODEL: str = "gpt-image-2.5-flare"
 DEFAULT_IMAGE_QUALITY: str = "low"
 DEFAULT_IMAGE_SIZE: str = "1024x1536"
 
 #: 1 枚あたりの USD。表に無い組み合わせは安全側（そのモデルの最高額）へ倒す。
+#: `gpt-image-1` は停止済み、`gpt-image-1.5` は 2026-12-01 停止予定。移行中の
+#: 切り戻しが予算ガードで止まらないよう、両方の行は残してある。
 IMAGE_PRICES_USD: dict[tuple[str, str, str], float] = {
+    # 現行。1024x1536 / low の換算値 $0.00474 を切り上げる。
+    ("gpt-image-2.5-flare", "low", "1024x1536"): 0.005,
+    ("gpt-image-2.5-flare", "medium", "1024x1536"): 0.011,
+    ("gpt-image-2.5-flare", "high", "1024x1536"): 0.042,
+    ("gpt-image-2.5-flare", "low", "1536x1024"): 0.005,
+    ("gpt-image-2.5-flare", "medium", "1536x1024"): 0.011,
+    ("gpt-image-2.5-flare", "high", "1536x1024"): 0.042,
+    ("gpt-image-2.5-flare", "low", "1024x1024"): 0.006,
+    ("gpt-image-2.5-flare", "medium", "1024x1024"): 0.014,
+    ("gpt-image-2.5-flare", "high", "1024x1024"): 0.053,
+    # sunburst は flare と同じトークン単価。編集の精度だけが違う。
+    ("gpt-image-2.5-sunburst", "low", "1024x1536"): 0.005,
+    ("gpt-image-2.5-sunburst", "medium", "1024x1536"): 0.011,
+    ("gpt-image-2.5-sunburst", "high", "1024x1536"): 0.042,
+    ("gpt-image-2.5-sunburst", "low", "1536x1024"): 0.005,
+    ("gpt-image-2.5-sunburst", "medium", "1536x1024"): 0.011,
+    ("gpt-image-2.5-sunburst", "high", "1536x1024"): 0.042,
+    ("gpt-image-2.5-sunburst", "low", "1024x1024"): 0.006,
+    ("gpt-image-2.5-sunburst", "medium", "1024x1024"): 0.014,
+    ("gpt-image-2.5-sunburst", "high", "1024x1024"): 0.053,
+    # 非推奨（2026-12-01 停止）。切り戻し用に残す。
+    ("gpt-image-1.5", "low", "1024x1536"): 0.013,
+    ("gpt-image-1.5", "medium", "1024x1536"): 0.050,
+    ("gpt-image-1.5", "high", "1024x1536"): 0.200,
+    ("gpt-image-1.5", "low", "1536x1024"): 0.013,
+    ("gpt-image-1.5", "medium", "1536x1024"): 0.050,
+    ("gpt-image-1.5", "high", "1536x1024"): 0.200,
+    ("gpt-image-1.5", "low", "1024x1024"): 0.009,
+    ("gpt-image-1.5", "medium", "1024x1024"): 0.034,
+    ("gpt-image-1.5", "high", "1024x1024"): 0.133,
+    # 停止済み（2026-10-23）。記録として残す。
     ("gpt-image-1", "low", "1024x1536"): 0.016,
     ("gpt-image-1", "medium", "1024x1536"): 0.063,
     ("gpt-image-1", "high", "1024x1536"): 0.250,

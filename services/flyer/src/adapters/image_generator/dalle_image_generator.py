@@ -1,6 +1,6 @@
 """OpenAI Images API の背景生成。失敗時は静的フォールバックへ委譲する。
 
-`gpt-image-1` と `dall-e-3` を同じアダプターで扱う。サイズと画質の語彙が違うため、
+`gpt-image-2.5` 系と `dall-e-3` を同じアダプターで扱う。サイズと画質の語彙が違うため、
 要求値は論理サイズ（``1024x1536`` など）で受け取り、クライアントがモデルに合わせて
 寄せる。
 """
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 ImageSize = Literal["1024x1024", "1024x1536", "1536x1024"]
 GptImageSize = Literal["1024x1024", "1536x1024", "1024x1536", "auto"]
 DalleSize = Literal["1024x1024", "1024x1792", "1792x1024"]
-GptImageQuality = Literal["low", "medium", "high", "auto"]
+GptImageQuality = Literal["low", "medium", "high", "xhigh", "max", "auto"]
 DalleQuality = Literal["standard", "hd"]
 
 MAX_IMAGE_BYTES: int = 20 * 1024 * 1024
@@ -53,7 +53,10 @@ _GPT_IMAGE_SIZES: dict[str, GptImageSize] = {
     "auto": "auto",
 }
 
-_GPT_IMAGE_QUALITIES: frozenset[str] = frozenset({"low", "medium", "high", "auto"})
+#: gpt-image-2.5 系は xhigh / max も受ける。gpt-image-1 系は high まで。
+_GPT_IMAGE_QUALITIES: frozenset[str] = frozenset(
+    {"low", "medium", "high", "xhigh", "max", "auto"}
+)
 
 #: 論理的な縦横比ごとの要求サイズ。`9:16` は「縦長」の合図として扱う。
 _ASPECT_SIZES: dict[str, ImageSize] = {
@@ -64,7 +67,7 @@ _ASPECT_SIZES: dict[str, ImageSize] = {
 
 
 def uses_gpt_image_vocabulary(model: str) -> bool:
-    """`gpt-image-1` 系か。サイズ・画質・応答形式の扱いが dall-e-3 と違う。"""
+    """`gpt-image` 系か。サイズ・画質・応答形式の扱いが dall-e-3 と違う。"""
     return model.startswith("gpt-image")
 
 
@@ -176,7 +179,7 @@ class OpenAIDalleClient:
 
     async def _request(self, *, prompt: str, size: str, timeout: float) -> ImagesResponse:
         if uses_gpt_image_vocabulary(self._model):
-            # gpt-image-1 は response_format を受け付けず、常に b64_json を返す。
+            # gpt-image 系は response_format を受け付けず、常に b64_json を返す。
             return await self._client.images.generate(
                 model=self._model,
                 prompt=prompt,

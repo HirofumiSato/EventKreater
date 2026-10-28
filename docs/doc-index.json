@@ -3624,7 +3624,7 @@
       "title": "設定",
       "summary": "設定は src.infrastructure.config.Settings です。環境変数名はフィールド名の大文字です（例: OPENAI_API_KEY）。空文字の API キーは未設定と同じです。",
       "preImplementation": false,
-      "lineCount": 70,
+      "lineCount": 72,
       "headings": [
         {
           "level": 1,
@@ -3632,7 +3632,12 @@
         }
       ],
       "toctree": [],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "services/flyer/src/domain/pricing.py",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/flyer/index.rst"
       ]

@@ -52,7 +52,7 @@
 | `services/flyer/src/domain/exceptions.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/domain/layout_prompts.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `services/flyer/src/domain/models.py` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pydantic.rst](flyer/libraries/pydantic.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
-| `services/flyer/src/domain/pricing.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/system_requirements.md](flyer/specs/system_requirements.md) |
+| `services/flyer/src/domain/pricing.py` | [docs/flyer/configuration.rst](flyer/configuration.rst) / [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/system_requirements.md](flyer/specs/system_requirements.md) |
 | `services/flyer/src/domain/prompt_payload.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) |
 | `services/flyer/src/infrastructure/storage/local_candidate_store.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/main.py` | [docs/flyer/architecture.rst](flyer/architecture.rst) / [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/local_run.rst](flyer/local_run.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / `llms.txt` / `services/flyer/AGENTS.md` |

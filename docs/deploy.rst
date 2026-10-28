@@ -161,7 +161,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    * - ``OPENAI_API_KEY``
      - 本番では必須。**未設定でも起動します。** そのときはモックのアダプターに切り替わり、本物ではない候補が静かに返ります
    * - ``OPENAI_TEXT_MODEL`` / ``OPENAI_IMAGE_MODEL``
-     - 任意。既定は ``gpt-4o-mini`` と ``gpt-image-1``（``IMAGE_QUALITY=low``、``IMAGE_SIZE=1024x1536``）
+     - 任意。既定は ``gpt-4o-mini`` と ``gpt-image-2.5-flare``（``IMAGE_QUALITY=low``、``IMAGE_SIZE=1024x1536``）
    * - ``STORAGE_DIR`` / ``CANDIDATE_DIR`` / ``FALLBACK_DIR``
      - 上の ``fly.toml`` で固定。ボリュームを外すと再起動で候補が消えます
    * - ``CANDIDATE_TTL_SECONDS`` / ``TTL_SECONDS``

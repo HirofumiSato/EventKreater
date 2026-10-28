@@ -30,7 +30,7 @@ LAYOUT_NEGATIVE_SPACE_HINTS: dict[TextLayout, str] = {
 #:
 #: 1024x1536 を 1080 幅へ拡大すると 1080x1620 になり、上下 46px ずつ（5.7%）が落ちる。
 #: dall-e-3 の 1024x1792 では 1080x1890 になり、上下 181px ずつ（19.2%）落ちる。
-#: 既定は gpt-image-1 だが、モデルを差し替えても構図が破綻しないよう厳しい側に寄せる。
+#: 既定は gpt-image-2.5 系だが、モデルを差し替えても構図が破綻しないよう厳しい側に寄せる。
 CROP_SAFE_AREA_HINT: str = (
     "Keep the subject and focal point inside the central 85% of the frame; "
     "the top and bottom edges are cropped when fitted to A4."
