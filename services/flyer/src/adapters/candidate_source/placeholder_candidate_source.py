@@ -1,13 +1,13 @@
 """API キーが無くても動く、ローカル合成の候補背景。
 
-テーマの色で「写真らしい」サンプル紙面を描く。画像モデルを呼ばないので、
-候補枚数を増やしても課金も待ち時間も増えない。テーマごとに同じ絵柄を使うため、
-3 枚並べたときに色ではなく書体の差だけが見える。
+テーマの紙色を濃さだけ変えた紙を返す。画像モデルを呼ばないので、候補枚数を
+増やしても課金も待ち時間も増えない。ステップ 1 の 3 枚は同じ紙を共有するため、
+並べたときに色ではなく書体と寄せの差だけが見える。
 """
 
 from __future__ import annotations
 
-from src.adapters.candidate_source.sample_ground import render_sample_ground
+from src.adapters.candidate_source.paper_ground import PAPER_TONE_COUNT, render_paper
 from src.domain.models import (
     FlyerGenerationRequest,
     LLMGenerationContext,
@@ -15,21 +15,17 @@ from src.domain.models import (
 )
 from src.ports.candidate_source_port import BackgroundOption, CandidateSourcePort
 
-#: ステップ 2 の作り直しで出す見本の名前。配置だけを変え、色は変えない。
+#: ステップ 2 の作り直しで出す紙の名前。地の濃さだけを変え、色相は変えない。
 _VARIANT_LABELS: tuple[tuple[str, str], ...] = (
-    ("定番", "テーマの色をそのまま使った背景"),
-    ("明るめ", "光を強くした軽い印象"),
-    ("落ち着き", "光を弱めた大人の雰囲気"),
-    ("立体的", "ぼけ玉を増やした奥行きのある背景"),
-    ("シック", "端を暗く落とした落ち着いた背景"),
-    ("彩り", "差し色の返りを効かせた背景"),
-    ("淡め", "淡く柔らかい背景"),
-    ("深め", "深みのある暗い背景"),
+    ("定番", "テーマの紙色をそのまま"),
+    ("明るめ", "紙をわずかに明るく"),
+    ("落ち着き", "紙をわずかに沈めて"),
+    ("深め", "紙を濃く落として"),
 )
 
 
 class PlaceholderCandidateSource(CandidateSourcePort):
-    """テーマ色のサンプル紙面だけで候補を埋める。原価ゼロ。"""
+    """テーマ色の紙だけで候補を埋める。原価ゼロ。"""
 
     @property
     def source_id(self) -> str:
@@ -41,8 +37,9 @@ class PlaceholderCandidateSource(CandidateSourcePort):
         *,
         variant: int = 0,
     ) -> bytes:
-        """ステップ 1 の見本。3 枚で同じ地を共有する。"""
-        return render_sample_ground(theme, variant)
+        """ステップ 1 の見本。3 枚で同じ紙を共有する（tone は 0 固定）。"""
+        del variant
+        return render_paper(theme, 0)
 
     async def suggest_backgrounds(
         self,
@@ -57,7 +54,7 @@ class PlaceholderCandidateSource(CandidateSourcePort):
             label, description = _VARIANT_LABELS[index % len(_VARIANT_LABELS)]
             options.append(
                 BackgroundOption(
-                    background=render_sample_ground(request.semantic_theme, index),
+                    background=render_paper(request.semantic_theme, index % PAPER_TONE_COUNT),
                     label=label,
                     description=description,
                     source="placeholder",

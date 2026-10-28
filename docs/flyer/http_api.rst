@@ -37,8 +37,9 @@ HTTP API
 
 ``POST /api/v1/flyers/generate`` と同じ 7 項目を送ります。``template_id`` と
 ``layout_id`` は無視され、3 種の紙面の性格（静けさ／やわらかさ／にぎやかさ）の
-完成イメージが返ります。3 枚は同じ地・同じ差し色で、書体と寄せだけが違います。
-``semantic_theme`` に合う 1 枚は ``recommended`` が ``true`` になります。
+完成イメージが返ります。3 枚は同じ紙・同じ差し色・同じ格子で、書体・寄せ・
+面の濃さだけが違います。``semantic_theme`` に合う 1 枚は ``recommended`` が
+``true`` になります。
 
 .. code-block:: json
 
@@ -48,7 +49,7 @@ HTTP API
          "candidate_id": "0f6a...",
          "kind": "type",
          "label": "静けさ",
-         "description": "写真を静かに見せます。文字は中央に、余白を広く。",
+         "description": "明朝で中央に組む。余白を広く取り、罫線は短く。",
          "image_url": "/api/v1/flyers/candidates/0f6a...",
          "template_id": "style_1_bar_stylish",
          "layout_id": "classic",
@@ -72,8 +73,8 @@ HTTP API
 ``target_generation``（例: ``"20代から40代"``、50 文字まで）を送ると、想定する
 参加者をプロンプトの文脈に足します。値が変われば人物・衣装・光の当て方の指示も
 変わるので、同じ催しでも背景の雰囲気が寄ります。``layout_id`` は余白の指示に使い、
-ステップ 2 では ``classic``（上部 3 分の 2 を空ける）を渡します。``count`` は何枚
-作るかだけで、プロンプトには渡しません。
+ステップ 2 では ``classic``（上下の帯を空け、真ん中に被写体を置く）を渡します。
+``count`` は何枚作るかだけで、プロンプトには渡しません。
 
 応答の各候補には ``source``（``ai`` / ``placeholder`` / ``upload``）と
 ``ai_remaining``（AI で作れる残り枚数。背景のステップだけ）が付きます。

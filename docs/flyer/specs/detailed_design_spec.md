@@ -80,7 +80,11 @@ app/
 │   │   ├── openai_dalle_adapter.py # DALL-E 3実装
 │   │   └── comfyui_adapter.py      # Mac mini用 ComfyUI API実装
 │   ├── renderer/
-│   │   └── pillow_renderer.py      # Pillow文字・幾何学合成実装
+│   │   ├── design.py               # 目盛り・余白・色の役割・3 変奏（Pillow 非依存）
+│   │   ├── poster.py               # build_poster_plan（純関数）と draw_poster
+│   │   ├── layouts.py              # 積みの基準位置（split / top / center / bottom）
+│   │   ├── layout_calculator.py    # fit_to_scale・コントラスト・文字計測
+│   │   └── pillow_renderer.py      # 面 → plan → 描画 の 3 段
 │   └── storage/
 │       └── local_storage.py        # 一時ファイルI/O
 ├── services/
@@ -285,9 +289,9 @@ Client            API Endpoint        Orchestrator      ImageGenAdapter      Loc
 ### 5.3. ウィザード候補のライフサイクル
 
 画面は「紙面の性格 → 背景 → 文字配置 → 配色」の 4 ステップで候補を選ぶ。候補は
-1 件につき 3 ファイルを持つ。ステップ 1 の 3 枚は同じサンプル紙面（`sample_ground`）を
-共有し、書体・揃え・保護レイヤーの形だけを変えて並べる。地はテーマ色から
-決定論的に描く合成画像で、画像生成 API は呼ばない。
+1 件につき 3 ファイルを持つ。ステップ 1 の 3 枚は同じサンプル紙面（`paper_ground`）を
+共有し、書体・揃え・面の濃さだけを変えて並べる。地はテーマ色から決定論的に描く
+紙面見本で、画像生成 API は呼ばない。ぼけ玉・偽の水平線・ビネットは持たない。
 
 ```text
 static/candidates/
@@ -308,26 +312,28 @@ static/candidates/
 
 ### 5.4. 文字配置プリセット
 
-`TextLayout` は 5 つのゾーン（A 予備、B タイトル、C 日時、D 詳細、E フッター）を
-まとめて動かす。要素単位の微調整は許さない。座標を動かすとコントラスト保証と
-自動縮小の前提が崩れるためである。
+`TextLayout` は「積みの基準位置」と「タイトルに許す高さ」の 2 つだけを持つ。
+要素単位の微調整は許さない。座標を動かすとコントラスト保証と目盛りの前提が
+崩れるためである。スロットの y は `adapters/renderer/poster.py` の
+`build_poster_plan()` が 8 px の目盛りに載せて決める。
 
-| `layout_id` | 意図 | 文字が載る範囲（1080×1528） |
-| :--- | :--- | :--- |
-| `classic` | 上から順に詰める。既定値 | y 128〜1402 |
-| `top_stack` | 下半分を空け、下に被写体を置ける | y 88〜1138 |
-| `center_stack` | 中央にまとめ、上下に余白を残す | y 334〜1282 |
-| `bottom_stack` | 上半分を空け、上に被写体を置ける | y 558〜1496 |
+| `layout_id` | 意図 | 積みの基準（`StackAnchor`） | タイトル上限 |
+| :--- | :--- | :--- | :--- |
+| `classic` | 見出しは上、詳細は下。写真の主役が真ん中に残る（既定値） | `split` | 480 px |
+| `top_stack` | 文字を上へ。下半分が空くので下に被写体を置ける | `top` | 440 px |
+| `center_stack` | 中央に置く。上下に余白が残る | `center` | 440 px |
+| `bottom_stack` | 文字を下へ。上半分が空くので上に被写体を置ける | `bottom` | 400 px |
 
-背景の遮光グラデーションは文字の側を濃くする（`top_stack` は上、`center_stack` は
-中央、`bottom_stack` は下）。向きは地の明度で反転する（暗い地は黒、明るい地は白）。
-`style_2_warm_earth` の白カードも文字範囲に合わせて縮む。Zone A は種目名を焼かず、
-座標だけを残して空ける。
+`split` は見出しの群を `TOP_SAFE`（128）、詳細の群を `BOTTOM_SAFE` から上へ詰める。
+見出しが大きすぎて重なるときは分割をやめ、続けて積む。`top` / `center` / `bottom`
+は 2 つの群を続けて置き、その全体を上端・中央・下端へ寄せる。
 
-タイトルを行のどこで分けるかは `src/domain/title_composition.py` が決め、座標と
-フォントサイズは `adapters/renderer/layout_calculator.py` が決める。ゾーンの座標は
-動かさず、行分けと最終行の右寄せ（ぶら下げ）だけを変える。アルゴリズムは実装仕様
-3.3 にある。
+配置で変えてよいのは重心だけである。スロットの順序（eyebrow → title → rule →
+meta → facts → note）、文字の目盛り、群の中の間隔は 4 つで共通にする。
+
+タイトルを行のどこで分けるかは `src/domain/title_composition.py` が決め、目盛りから
+どの段を選ぶかは `layout_calculator.fit_to_scale()` が決める。最終行の右寄せ
+（ぶら下げ）は左寄せの変奏でだけ使う。アルゴリズムは実装仕様 3.3 にある。
 
 ### 5.5. 差し色の引き継ぎ
 

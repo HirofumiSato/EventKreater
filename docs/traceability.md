@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 103（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 334
+- 文書から参照されているコードパス: 338
 - API ルート: 81（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -45,7 +45,9 @@
 | `services/flyer/src/adapters/image_generator/dalle_image_generator.py` | [docs/flyer/libraries/httpx.rst](flyer/libraries/httpx.rst) / [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) |
 | `services/flyer/src/adapters/prompt_engine/openai_prompt_engine.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `services/flyer/src/adapters/renderer` | [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/libraries/pillow.rst](flyer/libraries/pillow.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / `services/flyer/README.md` |
+| `services/flyer/src/adapters/renderer/design.py` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) |
 | `services/flyer/src/adapters/renderer/layout_calculator.py` | `services/flyer/AGENTS.md` |
+| `services/flyer/src/adapters/renderer/poster.py` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) |
 | `services/flyer/src/adapters/wiring.py` | `services/flyer/AGENTS.md` |
 | `services/flyer/src/api/errors.py` | [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) |
 | `services/flyer/src/api/routes.py` | [docs/flyer/catchup/python_project.rst](flyer/catchup/python_project.rst) / [docs/flyer/libraries/fastapi.rst](flyer/libraries/fastapi.rst) / [docs/flyer/libraries/index.rst](flyer/libraries/index.rst) / [docs/flyer/reference/http.rst](flyer/reference/http.rst) / [docs/flyer/sphinx_structure.rst](flyer/sphinx_structure.rst) / [docs/flyer/swagger.rst](flyer/swagger.rst) / `services/flyer/README.md` |
@@ -64,6 +66,8 @@
 | `services/flyer/tests/test_api_integration.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_cost_budget.py` | [docs/flyer/libraries/openai.rst](flyer/libraries/openai.rst) / [docs/flyer/specs/system_requirements.md](flyer/specs/system_requirements.md) |
 | `services/flyer/tests/test_domain.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
+| `services/flyer/tests/test_paper_ground.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
+| `services/flyer/tests/test_poster_plan.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_prompt_context.py` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `services/flyer/tests/test_renderer.py` | [docs/flyer/libraries/pytest.rst](flyer/libraries/pytest.rst) / [docs/flyer/testing/design.rst](flyer/testing/design.rst) |
 | `services/flyer/tests/test_title_composition.py` | [docs/flyer/testing/design.rst](flyer/testing/design.rst) |

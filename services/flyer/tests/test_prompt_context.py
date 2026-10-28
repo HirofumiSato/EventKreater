@@ -156,7 +156,8 @@ def test_user_message_uses_whitelist_and_carries_intent() -> None:
     assert payload["generation_purpose"] == GENERATION_PURPOSE
     assert payload["title"] == "タコパの夜"
     assert payload["composition_hint"] == (
-        "The upper two thirds must stay uncluttered for a text overlay.\n" + CROP_SAFE_AREA_HINT
+        "The top and bottom bands must stay uncluttered for text; "
+        "the middle band is free for the subject.\n" + CROP_SAFE_AREA_HINT
     )
     assert "count" not in payload
 

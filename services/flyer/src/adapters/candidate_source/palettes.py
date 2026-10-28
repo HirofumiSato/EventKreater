@@ -55,8 +55,8 @@ def theme_palettes(theme: SemanticTheme | None) -> tuple[Palette, ...]:
     accent = parse_hex(look.accent)
     base = parse_hex(look.base)
     ink = parse_hex(look.ink)
-    # レンダラーの light スクリムは 0.55 を下限にしている。ここで揃えておくと、
-    # メタに残る overlay_alpha と実際の遮光が食い違わない。
+    # レンダラーは紙色のベールを 0.2〜1.0 で重ねる（`veil_alpha`）。ここで
+    # メタに残す値を揃えておき、表示と実際の遮光が食い違わないようにする。
     alpha = 0.55
     return (
         Palette(

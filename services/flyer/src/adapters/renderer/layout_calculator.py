@@ -1,41 +1,46 @@
-"""幾何レイアウトと WCAG コントラスト計算。
+"""文字の計測と、目盛りから字を選ぶ処理。
 
-外部 API には触れない。フォントサイズは実装仕様書 3.3 の二分探索、
-可読性は 3.4 の相対輝度とコントラスト比で決める。
+外部 API には触れない。文字サイズは「その枠に入る最大値」ではなく
+`design.TYPE_SCALE` の段から選ぶ。段の外の値を作らないことで、紙面ごとに
+階層が崩れない。可読性の判定（相対輝度・コントラスト比）もここに置く。
+
+紙面の寸法と比の数値は `design.py` が持つ。このモジュールはそれを再輸出する。
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Sequence
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageStat
 
+from src.adapters.renderer.design import (  # 再輸出して既存の参照を保つ
+    BASELINE,
+    CANVAS_HEIGHT,
+    CANVAS_WIDTH,
+    HEADING_LINE_RATIO,
+    MIN_CONTRAST,
+    SHORT_TITLE_MAX_CHARS,
+    SHORT_TITLE_TRACKING,
+    TITLE_MAX_HEIGHT,
+    TITLE_MAX_LINES,
+    TITLE_MAX_WIDTH,
+    TITLE_STEPS,
+    WCAG_AA_CONTRAST,
+    blend_rgb,
+    contrast_ratio,
+    line_height,
+    relative_luminance,
+    requires_contrast_protection,
+)
 from src.domain.exceptions import FontRenderError
 from src.domain.title_composition import title_splits
 
-#: A4 縦（210:297）を幅 1080 で表した寸法。1080 * 297 / 210 ≒ 1527.4 を偶数に丸める。
-CANVAS_WIDTH: int = 1080
-CANVAS_HEIGHT: int = 1528
-TITLE_MAX_WIDTH: int = 920
-TITLE_MAX_HEIGHT: int = 336
-TITLE_MIN_FONT_SIZE: int = 44
-TITLE_MAX_FONT_SIZE: int = 92
-TITLE_MAX_LINES: int = 3
-TITLE_LINE_SPACING_RATIO: float = 1.3
-SHORT_TITLE_MAX_CHARS: int = 10
-SHORT_TITLE_LETTER_SPACING: int = 15
-WCAG_AA_CONTRAST: float = 4.5
 HIGH_FREQUENCY_EDGE_VARIANCE: float = 500.0
-#: タイトルの最終行を「ぶら下げ」にする条件。最終行がこの文字数以下で、
+#: 最終行を「ぶら下げ」にする条件。最終行がこの文字数以下で、
 #: 最長行のこの割合より短いときに、右端へ寄せる。
 HANGING_MAX_CHARS: int = 5
 HANGING_WIDTH_RATIO: float = 0.7
-#: フォントサイズの差がこれ以内なら、大きさは同じとみなして意味で選ぶ。
-TITLE_SIZE_MARGIN: int = 2
-
-#: タイトルの寄せ。`pillow_renderer.Alignment` と同じ値。
-TitleAlignment = Literal["center", "left"]
 
 _FONT_CACHE: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
@@ -53,13 +58,6 @@ class Zone:
     @property
     def box(self) -> tuple[int, int, int, int]:
         return (self.x, self.y, self.x + self.width, self.y + self.height)
-
-
-ZONE_A = Zone("A", 80, 128, TITLE_MAX_WIDTH, 48)
-ZONE_B = Zone("B", 80, 192, TITLE_MAX_WIDTH, TITLE_MAX_HEIGHT)
-ZONE_C = Zone("C", 80, 576, TITLE_MAX_WIDTH, 208)
-ZONE_D = Zone("D", 80, 828, TITLE_MAX_WIDTH, 384)
-ZONE_E = Zone("E", 80, 1290, TITLE_MAX_WIDTH, 112)
 
 
 def load_font(font_path: str, size: int) -> ImageFont.FreeTypeFont:
@@ -104,28 +102,17 @@ def single_line_height(draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont) 
     return max(1, int(bbox[3] - bbox[1]))
 
 
-def block_height(single_line_h: int, line_count: int, line_spacing_ratio: float) -> int:
-    """実装仕様書 3.3 の総高さ。"""
-    if line_count <= 0:
-        return 0
-    return int(
-        single_line_h * line_count
-        + (line_count - 1) * single_line_h * (line_spacing_ratio - 1.0)
-    )
-
-
 def measure_text_block(
     draw: ImageDraw.ImageDraw,
-    lines: list[str],
+    lines: Sequence[str],
     font: ImageFont.FreeTypeFont,
     letter_spacing: int = 0,
-    line_spacing_ratio: float = TITLE_LINE_SPACING_RATIO,
 ) -> tuple[int, int]:
-    """折り返し済みテキストブロックの幅と高さ。"""
+    """折り返し済みテキストブロックの幅と高さ。高さは目盛りに載せる。"""
     if not lines:
         return (0, 0)
     width = max(line_width(draw, line, font, letter_spacing) for line in lines)
-    height = block_height(single_line_height(draw, font), len(lines), line_spacing_ratio)
+    height = line_height(int(font.size), HEADING_LINE_RATIO) * len(lines)
     return (width, height)
 
 
@@ -134,215 +121,52 @@ def _wrap_lines(
     draw: ImageDraw.ImageDraw,
     font: ImageFont.FreeTypeFont,
     max_w: int,
-    letter_spacing: int,
 ) -> list[str]:
+    """文字幅だけで折り返す。意味の区切りが取れないときの最後の手段。"""
     lines: list[str] = []
     current_line = ""
     for char in text:
         test_line = current_line + char
-        if line_width(draw, test_line, font, letter_spacing) <= max_w:
+        if line_width(draw, test_line, font) <= max_w:
             current_line = test_line
             continue
         if current_line:
             lines.append(current_line)
-            current_line = char
-        else:
-            current_line = char
+        current_line = char
     if current_line:
         lines.append(current_line)
     return lines
 
 
-def _layout_fits(
-    lines: list[str],
-    draw: ImageDraw.ImageDraw,
-    font: ImageFont.FreeTypeFont,
-    max_w: int,
-    max_h: int,
-    line_spacing_ratio: float,
-    letter_spacing: int,
-    max_lines: int,
-) -> bool:
-    if not lines or len(lines) > max_lines:
-        return False
-    width, height = measure_text_block(
-        draw,
-        lines,
-        font,
-        letter_spacing,
-        line_spacing_ratio,
-    )
-    return width <= max_w and height <= max_h
-
-
-def calculate_optimal_font_and_lines(
-    text: str,
-    font_path: str,
-    draw: ImageDraw.ImageDraw,
-    max_w: int = TITLE_MAX_WIDTH,
-    max_h: int = TITLE_MAX_HEIGHT,
-    min_size: int = TITLE_MIN_FONT_SIZE,
-    max_size: int = TITLE_MAX_FONT_SIZE,
-    line_spacing_ratio: float = TITLE_LINE_SPACING_RATIO,
-    letter_spacing: int = 0,
-    max_lines: int = TITLE_MAX_LINES,
-) -> tuple[ImageFont.FreeTypeFont, list[str]]:
-    """指定領域に収まるフォントサイズと改行を二分探索で求める。"""
-    best_font: ImageFont.FreeTypeFont | None = None
-    best_lines: list[str] = []
-    low = min_size
-    high = max_size
-
-    while low <= high:
-        mid_size = (low + high) // 2
-        font = load_font(font_path, mid_size)
-        lines = _wrap_lines(text, draw, font, max_w, letter_spacing)
-        if len(lines) > max_lines:
-            high = mid_size - 2
-            continue
-        if _layout_fits(
-            lines,
-            draw,
-            font,
-            max_w,
-            max_h,
-            line_spacing_ratio,
-            letter_spacing,
-            max_lines,
-        ):
-            best_font = font
-            best_lines = lines
-            low = mid_size + 2
-        else:
-            high = mid_size - 2
-
-    if best_font is not None and best_lines:
-        return best_font, best_lines
-
-    fallback_font = load_font(font_path, min_size)
-    sliced = [part for part in (text[:15], text[15:30]) if part]
-    if _layout_fits(
-        sliced,
-        draw,
-        fallback_font,
-        max_w,
-        max_h,
-        line_spacing_ratio,
-        letter_spacing,
-        max_lines,
-    ):
-        return fallback_font, sliced
-
-    for size in range(min_size, 7, -1):
-        font = load_font(font_path, size)
-        lines = _wrap_lines(text, draw, font, max_w, letter_spacing)
-        if _layout_fits(
-            lines,
-            draw,
-            font,
-            max_w,
-            max_h,
-            line_spacing_ratio,
-            letter_spacing,
-            max_lines,
-        ):
-            return font, lines
-
-    raise FontRenderError("テキストを指定領域に収められませんでした")
-
-
 @dataclass(frozen=True)
-class TitleLayout:
-    """タイトルの書体・行・ぶら下げの決定。"""
+class TitleFit:
+    """目盛りから選んだタイトルの組み方。"""
 
     font: ImageFont.FreeTypeFont
     lines: list[str]
-    #: 最終行をブロックの右端へ寄せるか。
+    #: 目盛りの段。`design.TYPE_SCALE` のどれか。
+    size: int
+    width: int
+    #: 目盛りに載せたブロックの高さ（行数 × 行送り）。
+    height: int
+    letter_spacing: int
+    #: 最終行をブロックの右端へ寄せるか。左寄せのときだけ使う。
     hanging: bool
 
 
-def _max_fitting_font(
-    lines: list[str],
-    font_path: str,
-    draw: ImageDraw.ImageDraw,
-    max_w: int,
-    max_h: int,
-    min_size: int,
-    max_size: int,
-    line_spacing_ratio: float,
-    letter_spacing: int,
-    max_lines: int,
-) -> ImageFont.FreeTypeFont | None:
-    """行の構成を固定したまま、収まる最大のフォントサイズを二分探索する。"""
-    best: ImageFont.FreeTypeFont | None = None
-    low = min_size
-    high = max_size
-    while low <= high:
-        mid_size = (low + high) // 2
-        font = load_font(font_path, mid_size)
-        if _layout_fits(
-            lines,
-            draw,
-            font,
-            max_w,
-            max_h,
-            line_spacing_ratio,
-            letter_spacing,
-            max_lines,
-        ):
-            best = font
-            low = mid_size + 2
-        else:
-            high = mid_size - 2
-    return best
-
-
-def _semantic_title_layout(
-    text: str,
-    font_path: str,
-    draw: ImageDraw.ImageDraw,
-    max_w: int,
-    max_h: int,
-    min_size: int,
-    max_size: int,
-    line_spacing_ratio: float,
-    letter_spacing: int,
-    max_lines: int,
-) -> tuple[ImageFont.FreeTypeFont | None, list[str]]:
-    """意味の区切りで分けた案のうち、いちばん大きい字で成立するものを選ぶ。
-
-    字体の大きさが近い案が複数あるときは、行数が少ないほうを採る。意味の
-    区切りを優先するあまり、3 行に刻む案が勝たないようにするためである。
-    同数なら意味の評価が高いほうを採る。
-    """
-    fitted: list[tuple[ImageFont.FreeTypeFont, list[str], float]] = []
-    for candidate in title_splits(text, max_lines):
-        lines = list(candidate.lines)
-        font = _max_fitting_font(
-            lines,
-            font_path,
-            draw,
-            max_w,
-            max_h,
-            min_size,
-            max_size,
-            line_spacing_ratio,
-            letter_spacing,
-            max_lines,
-        )
-        if font is not None:
-            fitted.append((font, lines, candidate.score))
-    if not fitted:
-        return (None, [])
-    largest = max(font.size for font, _, _ in fitted)
-    near = [item for item in fitted if item[0].size >= largest - TITLE_SIZE_MARGIN]
-    font, lines, _ = max(near, key=lambda item: (-len(item[1]), item[2], item[0].size))
-    return (font, lines)
+def _candidates(text: str, max_lines: int) -> list[list[str]]:
+    """1 行の案を先頭に、意味の区切りで分けた案を評価順に並べる。"""
+    candidates: list[list[str]] = [[text]]
+    for split in title_splits(text, max_lines):
+        lines = list(split.lines)
+        if lines not in candidates:
+            candidates.append(lines)
+    return candidates
 
 
 def _hangs(
     draw: ImageDraw.ImageDraw,
-    lines: list[str],
+    lines: Sequence[str],
     font: ImageFont.FreeTypeFont,
     letter_spacing: int,
 ) -> bool:
@@ -358,146 +182,98 @@ def _hangs(
     return line_width(draw, last, font, letter_spacing) < widest * HANGING_WIDTH_RATIO
 
 
-def calculate_title_layout(
+def fit_to_scale(
     text: str,
     font_path: str,
     draw: ImageDraw.ImageDraw,
-    max_w: int = TITLE_MAX_WIDTH,
-    max_h: int = TITLE_MAX_HEIGHT,
-    min_size: int = TITLE_MIN_FONT_SIZE,
-    max_size: int = TITLE_MAX_FONT_SIZE,
-    line_spacing_ratio: float = TITLE_LINE_SPACING_RATIO,
-    letter_spacing: int = 0,
+    *,
+    steps: Sequence[int] = TITLE_STEPS,
+    max_width: int = TITLE_MAX_WIDTH,
+    max_height: int = TITLE_MAX_HEIGHT,
     max_lines: int = TITLE_MAX_LINES,
-) -> TitleLayout:
-    """タイトルのフォントサイズ・行・ぶら下げを決める。
+    allow_hanging: bool = False,
+) -> TitleFit:
+    """目盛りの大きい段から順に試し、最初に収まった組み方を返す。
 
-    1 行に収まるなら改行しない。折り返しが必要なときだけ、意味の区切りで分ける。
-    意味の区切りで分けられないときは、従来どおり文字幅で折り返す。
+    同じ段で複数の切り方が収まるときは、行数が少ないほうを採る。字間は 1 行の
+    ときだけ開く。行を分けたときに字間を足すと、意味の区切りの幅が残らない。
     """
-    single_font, single_lines = calculate_optimal_font_and_lines(
-        text,
-        font_path,
-        draw,
-        max_w=max_w,
-        max_h=max_h,
-        min_size=min_size,
-        max_size=max_size,
-        line_spacing_ratio=line_spacing_ratio,
-        letter_spacing=letter_spacing,
-        max_lines=max_lines,
-    )
-    if len(single_lines) <= 1:
-        return TitleLayout(font=single_font, lines=single_lines, hanging=False)
+    normalized = " ".join(text.split())
+    spacing = SHORT_TITLE_TRACKING if len(normalized) <= SHORT_TITLE_MAX_CHARS else 0
+    candidates = _candidates(normalized, max_lines)
 
-    # 2 行以上になるときは字間を詰める。字間で幅を食うと意味の区切りが入らない。
-    spacing = 0
-    font, lines = _semantic_title_layout(
-        text,
-        font_path,
-        draw,
-        max_w,
-        max_h,
-        min_size,
-        max_size,
-        line_spacing_ratio,
-        spacing,
-        max_lines,
-    )
-    if font is None:
-        font, lines = calculate_optimal_font_and_lines(
-            text,
-            font_path,
-            draw,
-            max_w=max_w,
-            max_h=max_h,
-            min_size=min_size,
-            max_size=max_size,
-            line_spacing_ratio=line_spacing_ratio,
-            letter_spacing=spacing,
-            max_lines=max_lines,
-        )
-    return TitleLayout(
+    for size in steps:
+        leading = line_height(size, HEADING_LINE_RATIO)
+        font = load_font(font_path, size)
+        fitting: list[tuple[int, int, list[str], int]] = []
+        for order, lines in enumerate(candidates):
+            if len(lines) > max_lines:
+                continue
+            if leading * len(lines) > max_height:
+                continue
+            tracking = spacing if len(lines) == 1 else 0
+            width = max(line_width(draw, line, font, tracking) for line in lines)
+            if width > max_width:
+                continue
+            fitting.append((len(lines), order, lines, width))
+        if fitting:
+            _, _, lines, width = min(fitting, key=lambda item: (item[0], item[1]))
+            tracking = spacing if len(lines) == 1 else 0
+            return TitleFit(
+                font=font,
+                lines=lines,
+                size=size,
+                width=width,
+                height=leading * len(lines),
+                letter_spacing=tracking,
+                hanging=allow_hanging and _hangs(draw, lines, font, tracking),
+            )
+
+    # どの段でも収まらないときは、最小の段で文字幅だけ折り返す。
+    smallest = steps[-1] if steps else 42
+    font = load_font(font_path, smallest)
+    lines = _wrap_lines(normalized, draw, font, max_width)[:max_lines]
+    leading = line_height(smallest, HEADING_LINE_RATIO)
+    width = max((line_width(draw, line, font) for line in lines), default=0)
+    if not lines or width > max_width:
+        raise FontRenderError("タイトルを指定領域に収められませんでした")
+    return TitleFit(
         font=font,
         lines=lines,
-        hanging=_hangs(draw, lines, font, spacing),
+        size=smallest,
+        width=width,
+        height=leading * len(lines),
+        letter_spacing=0,
+        hanging=False,
     )
 
 
 def title_line_origins(
     draw: ImageDraw.ImageDraw,
-    lines: list[str],
+    lines: Sequence[str],
     font: ImageFont.FreeTypeFont,
-    zone: Zone,
-    block_w: int,
-    alignment: TitleAlignment,
+    box: tuple[int, int, int, int],
+    alignment: str,
     letter_spacing: int = 0,
     hanging: bool = False,
 ) -> list[int]:
     """行ごとの描画 x。ぶら下げのときだけ最終行をブロック右端へ寄せる。"""
     if not lines:
         return []
-    if alignment == "center":
-        left = zone.x + max(0, (zone.width - block_w) // 2)
-    else:
-        left = zone.x
+    x, _, width, _ = box
+    block_w = max(line_width(draw, line, font, letter_spacing) for line in lines)
+    left = x + max(0, (width - block_w) // 2) if alignment == "center" else x
     origins: list[int] = []
     last = len(lines) - 1
     for index, line in enumerate(lines):
-        width = line_width(draw, line, font, letter_spacing)
+        line_w = line_width(draw, line, font, letter_spacing)
         if hanging and index == last:
-            origins.append(left + block_w - width)
+            origins.append(left + block_w - line_w)
         elif alignment == "center":
-            origins.append(zone.x + max(0, (zone.width - width) // 2))
+            origins.append(left + (block_w - line_w) // 2)
         else:
-            origins.append(zone.x)
+            origins.append(left)
     return origins
-
-
-def _linearize_channel(channel: float) -> float:
-    if channel <= 0.04045:
-        return channel / 12.92
-    return float(((channel + 0.055) / 1.055) ** 2.4)
-
-
-def relative_luminance(red: float, green: float, blue: float) -> float:
-    """WCAG 2.1 の相対輝度。1 を超える値は 0–255 の sRGB として扱う。"""
-    if red > 1.0 or green > 1.0 or blue > 1.0:
-        red /= 255.0
-        green /= 255.0
-        blue /= 255.0
-    return (
-        0.2126 * _linearize_channel(red)
-        + 0.7152 * _linearize_channel(green)
-        + 0.0722 * _linearize_channel(blue)
-    )
-
-
-def contrast_ratio(luminance_1: float, luminance_2: float) -> float:
-    """コントラスト比。明るい方を分子に取る。"""
-    lighter = max(luminance_1, luminance_2)
-    darker = min(luminance_1, luminance_2)
-    return (lighter + 0.05) / (darker + 0.05)
-
-
-def requires_contrast_protection(
-    ratio: float,
-    minimum: float = WCAG_AA_CONTRAST,
-) -> bool:
-    """通常文字の WCAG 2.1 AA（4.5:1）を下回るか。"""
-    return ratio < minimum
-
-
-def blend_rgb(
-    background: tuple[int, int, int],
-    foreground: tuple[int, int, int],
-    alpha: float,
-) -> tuple[int, int, int]:
-    """foreground を alpha（0–1）で background に合成する。"""
-    red = int(round(foreground[0] * alpha + background[0] * (1.0 - alpha)))
-    green = int(round(foreground[1] * alpha + background[1] * (1.0 - alpha)))
-    blue = int(round(foreground[2] * alpha + background[2] * (1.0 - alpha)))
-    return (red, green, blue)
 
 
 def choose_backdrop(
@@ -522,6 +298,29 @@ def choose_backdrop(
         if not requires_contrast_protection(ratio, minimum):
             return pad, selected_alpha
     return pad, selected_alpha
+
+
+def veil_alpha(
+    background_rgb: tuple[int, int, int],
+    veil_rgb: tuple[int, int, int],
+    text_rgb: tuple[int, int, int],
+    minimum: float = WCAG_AA_CONTRAST,
+) -> float | None:
+    """紙の色を薄く敷いて読みやすさを確保する。必要な不透明度を返す。
+
+    黒や白の帯を置く代わりに、紙と同じ色を薄く重ねる。写真の上でも「紙が
+    1 枚かかっている」ように見え、角丸の板や黒いスクリムを避けられる。
+    """
+    text_luminance = relative_luminance(*text_rgb)
+    current = contrast_ratio(text_luminance, relative_luminance(*background_rgb))
+    if not requires_contrast_protection(current, minimum):
+        return None
+    for alpha in (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
+        blended = blend_rgb(background_rgb, veil_rgb, alpha)
+        ratio = contrast_ratio(text_luminance, relative_luminance(*blended))
+        if not requires_contrast_protection(ratio, minimum):
+            return alpha
+    return 1.0
 
 
 def average_rgb(
@@ -553,3 +352,39 @@ def hex_to_rgb(color: str) -> tuple[int, int, int]:
         int(stripped[2:4], 16),
         int(stripped[4:6], 16),
     )
+
+
+__all__ = [
+    "BASELINE",
+    "CANVAS_HEIGHT",
+    "CANVAS_WIDTH",
+    "HIGH_FREQUENCY_EDGE_VARIANCE",
+    "HANGING_MAX_CHARS",
+    "HANGING_WIDTH_RATIO",
+    "MIN_CONTRAST",
+    "SHORT_TITLE_MAX_CHARS",
+    "SHORT_TITLE_TRACKING",
+    "TITLE_MAX_HEIGHT",
+    "TITLE_MAX_LINES",
+    "TITLE_MAX_WIDTH",
+    "TITLE_STEPS",
+    "TitleFit",
+    "WCAG_AA_CONTRAST",
+    "Zone",
+    "average_rgb",
+    "blend_rgb",
+    "choose_backdrop",
+    "contrast_ratio",
+    "edge_variance",
+    "fit_to_scale",
+    "hex_to_rgb",
+    "line_height",
+    "line_width",
+    "load_font",
+    "measure_text_block",
+    "relative_luminance",
+    "requires_contrast_protection",
+    "single_line_height",
+    "title_line_origins",
+    "veil_alpha",
+]

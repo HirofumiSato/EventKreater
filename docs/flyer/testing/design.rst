@@ -48,30 +48,108 @@
      - 黒 0、白 1、白黒の比 21。4.49 は保護が必要、4.5 は不要
    * - ``test_backdrop_is_required_only_when_contrast_is_short``
      - 白地に白文字なら黒の板。不透明度 0.5 では 4.5 未満、採用値は 0.65
+   * - ``test_veil_reaches_readability_with_paper_colour``
+     - 紙色のベールが必要な不透明度だけ濃くなり、4.5 に届く
    * - ``test_edge_variance_separates_flat_color_from_noise``
      - 単色は閾値未満、ランダム画素は閾値以上
-   * - ``test_calculator_keeps_extreme_titles_inside_the_title_box``
-     - ``JAZZ`` と「あ」40 字が幅 920、高さ 336、3 行以内、44 px 以上
+   * - ``test_fit_to_scale_keeps_titles_inside_the_content_box``
+     - ``JAZZ`` と「あ」40 字が幅 888、高さ 480、3 行以内、目盛りの段に載る
+   * - ``test_larger_space_allows_a_larger_step``
+     - タイトルに許す高さが大きいほど、選ばれる段が大きい
    * - ``test_solid_background_renders_portrait_canvas``
      - 3 テンプレートとも 1080×1528 の JPEG で、コントラスト 4.5 以上
-   * - ``test_extreme_titles_render_inside_zone_b``
-     - 短いタイトルは字間 15。40 字は字間 0。いずれも枠内
-   * - ``test_high_frequency_background_still_renders``
-     - ノイズ背景でも描画でき、縁取りフラグが立つ
+   * - ``test_extreme_titles_render_inside_the_page``
+     - 短いタイトルは 1 行、40 字は 3 行以内。いずれも安全域の内側
+   * - ``test_high_frequency_background_is_veiled_until_readable``
+     - ノイズ背景でもベールで 4.5 に届き、縁取りは使わない
    * - ``test_invalid_background_raises_rendering_error``
      - 画像でないバイト列は ``RenderingError``
    * - ``test_renderer_modules_do_not_reference_external_apis``
      - レンダラーのソースに ``openai``、``httpx``、``requests`` が無い
-   * - ``test_title_breaks_at_the_meaning_boundary``
-     - 3 テンプレートとも「焚火とシチューを囲む / 夕べ」に分かれ、ぶら下げになる
-   * - ``test_short_title_stays_on_one_line``
-     - 1 行に収まるタイトルは改行しない
-   * - ``test_tail_is_not_left_alone_when_the_line_is_one_pixel_short``
-     - 幅が 1 px 足りないときも「べ」だけを最終行に残さない
-   * - ``test_hanging_line_sits_at_the_block_right_edge``
-     - 中央寄せと左寄せのどちらも、最終行の右端がブロック右端に一致する
-   * - ``test_hanging_title_is_recorded_in_metadata``
-     - ``RenderMetadata.title_hanging`` に真が入る
+   * - ``test_title_breaks_at_a_meaning_boundary_not_one_character``
+     - 「焚火とシチューを囲む / 夕べ」に分かれ、1 文字だけの行を残さない
+   * - ``test_short_title_stays_on_one_line_with_tracking``
+     - 10 文字以下は 1 行のまま、字間が 6 px 開く
+   * - ``test_hanging_is_off_for_centred_paper``
+     - 中央寄せの紙面ではぶら下げない
+   * - ``test_ink_mass_separates_the_three_tiles``
+     - 墨の被覆率が 静けさ < 8%、にぎやかさ > 25%
+   * - ``test_metadata_records_the_chosen_scale_step``
+     - ``RenderMetadata.title_font_size`` が目盛りの段と一致する
+
+紙面の計画
+----------
+
+ファイルは ``tests/test_poster_plan.py`` です。``build_poster_plan`` は画像もフォントも
+触らないので、目盛りと縦のリズムを Pillow なしで検証します。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - テスト
+     - 期待
+   * - ``test_every_size_comes_from_the_scale``
+     - すべてのスロットの文字サイズが目盛りに含まれる
+   * - ``test_every_vertical_position_sits_on_the_8px_baseline``
+     - すべての y が 8 の倍数
+   * - ``test_text_stays_inside_the_safe_area``
+     - 文字は上下 128 px の安全域の内側
+   * - ``test_the_accent_is_used_for_exactly_one_text_slot``
+     - 差し色の文字は eyebrow の 1 スロットだけ
+   * - ``test_the_three_tiles_share_one_grid``
+     - 3 種で本文の格子と左右の余白が同一
+   * - ``test_the_title_is_the_largest_text_on_the_page``
+     - タイトルが紙面で最も大きい
+   * - ``test_meta_is_smaller_than_the_title_and_larger_than_the_note``
+     - 時刻はタイトルより小さく、note より大きい
+   * - ``test_facts_carry_labels_instead_of_icons``
+     - 会場 / 参加費 / 定員のラベルがある
+   * - ``test_two_column_facts_put_the_value_on_the_right``
+     - 2 列の変奏では値が右寄せ
+   * - ``test_slots_do_not_overlap``
+     - スロット同士が重ならない
+   * - ``test_layouts_only_move_the_stack``
+     - 4 配置で動くのは群の起点だけ
+   * - ``test_bottom_stack_sits_lower_than_top_stack``
+     - 下寄せは上寄せより下にある
+   * - ``test_the_ink_surface_covers_the_details``
+     - 墨の面が明細を覆う
+   * - ``test_the_quiet_tile_has_no_plate``
+     - 静けさには面が無い
+   * - ``test_no_icons_pills_or_panels_are_drawn``
+     - 描画関数にアイコン・ピル・パネルが無い
+   * - ``test_accent_of_a_dark_theme_is_still_readable``
+     - 暗いテーマの差し色も 4.5 以上
+   * - ``test_neon_yellow_is_darkened_for_a_light_paper``
+     - 黄は紙に対して墨側へ寄る
+   * - ``test_the_surface_steps_are_ordered_by_darkness``
+     - paper < band < ink の順に暗い
+
+紙の地
+------
+
+ファイルは ``tests/test_paper_ground.py`` です。ステップ 1 の 3 枚が 1 枚の紙を
+共有することと、写真らしさを作らないことを検証します。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - テスト
+     - 期待
+   * - ``test_paper_matches_the_canvas``
+     - 1080×1528 の PNG
+   * - ``test_same_theme_paints_the_same_bytes``
+     - 同じテーマなら同一バイト列
+   * - ``test_step_one_shares_one_paper_across_the_three_tiles``
+     - 3 種が同じ紙を使う
+   * - ``test_tones_go_dark_as_the_index_grows``
+     - 濃さの番号が増えるほど暗い
+   * - ``test_paper_has_no_photo_texture``
+     - ぼけ玉も偽の水平線も無い
+   * - ``test_themes_keep_their_own_papers``
+     - テーマごとに紙の色が変わる
 
 タイトルの意味改行
 ------------------
