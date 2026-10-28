@@ -63,12 +63,14 @@ import {
   fetchResource,
   isSameOrigin,
   markVariants,
+  missingDemoRecords,
   openCapturePage,
   readHtml,
   reissueEmailChangeTokens,
   reissueVerifyUserSession,
   settle,
 } from "./lib/capture-core.mjs";
+import { captureProblem, captureProblemMessage } from "./lib/mock-found.mjs";
 import { ensureHarness, prewarm, sleep } from "./lib/ui-harness.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -179,6 +181,18 @@ async function main() {
   const allRows = expandScreens(screens);
   const rows = selectRows(allRows, only);
   if (rows.length === 0) throw new Error("対象の画面がありません。--only の指定を確認してください。");
+
+  // 撮る前に、デモデータの ID が DB に残っているかを見る。ずれていると
+  // 存在しない主催者・催しの 404 を写し、気づかないままモックに残る（PR #90）。
+  const missing = await missingDemoRecords(demo);
+  if (missing.length > 0) {
+    const shown = missing.slice(0, 3).join(" / ");
+    const rest = missing.length > 3 ? ` ほか ${missing.length - 3} 件` : "";
+    throw new Error(
+      `storage/ui-demo.json の ID が DB にありません（${shown}${rest}）。\n` +
+        "`npm run db:seed:ui` でデモデータを作り直してから、撮り直してください。",
+    );
+  }
 
   const full = rows.length === allRows.length;
   const previous = await readJson(MANIFEST);
@@ -355,7 +369,20 @@ async function captureRow(page, row, linkTargets, stylesheetCache) {
 
   await page.setViewport(WIDE.width, WIDE.height);
   await page.applyAuth(row.auth);
+  // 画面ごとに記録を空にする。同じタブを使い回すので、前の画面の応答を
+  // そのまま持ち越すと、どの画面の異常か分からなくなる。
+  page.resetErrors();
   await page.waitForReady(url);
+
+  // 404 の写しを残さない。デモデータと DB がずれていると、この画面は
+  // 「見つかりません」になる（PR #90 で 12 画面がそうなっていた）。
+  const problem = captureProblem({
+    httpErrors: page.takeErrors().httpErrors,
+    title: await page.evaluate("document.title"),
+    url,
+  });
+  if (problem) throw new Error(captureProblemMessage(problem));
+
   await page.evaluate("window.scrollTo(0, 0)");
 
   // 目録がテーマを指定していれば、サーバーが出した属性を差し替える。テーマは属性

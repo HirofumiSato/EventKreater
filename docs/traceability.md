@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 102（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 322
+- 文書から参照されているコードパス: 323
 - API ルート: 81（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -29,6 +29,7 @@
 | `scripts/ci-scope.mjs` | [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
 | `scripts/lib/capture-core.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
+| `scripts/lib/mock-found.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-frame.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-hash.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-html.mjs` | `AGENTS.md` / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |

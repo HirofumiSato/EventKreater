@@ -147,7 +147,7 @@
 
 .. count-start
 
-63 ファイル、``it`` は 805 件です。内訳は ``tests/unit/`` が 50 ファイル 723 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+63 ファイル、``it`` は 811 件です。内訳は ``tests/unit/`` が 50 ファイル 729 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -376,7 +376,7 @@
      - 金額（``3,000円`` / ``¥3,000``）、保存形式の日付と月の見出し、日時の表記、壊れた値の据え置き、日本時間の今月の範囲（UTC の月末が翌月になる場合を含む）
      - 全画面の共通表示
    * - ``tests/unit/mock-sync.test.mjs``
-     - 66
+     - 72
      - HTML の整形（script・Next の CSS リンク・コメントの除去、``lang`` と body のクラスの保持）、アセットの差し替え（``/_next/image``・``/samples``・``data:``）、内部リンクの対応付けと未知リンクの ``#``、``uiHash`` の一致と変化（改行が CRLF でも LF でも同じ）、同期要否（manifest 無し・ハッシュ不一致・一致・HTML 欠け）、目録の No の重複と ``page.tsx`` の実在、``--only`` の絞り込み、枠ページ（iframe・幅の切り替え・状態の表記・エスケープ・生成物の欠け）
      - 該当なし（検査）
    * - ``tests/integration/draft-publish.test.ts``
@@ -414,7 +414,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 723、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 723 件を実行して 82 件を skip します。
+件数の内訳は ``tests/unit/`` が 729、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 729 件を実行して 82 件を skip します。
 
 .. breakdown-end
 

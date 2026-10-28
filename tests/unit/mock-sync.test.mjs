@@ -31,6 +31,7 @@ import {
   withNotice,
 } from "../../scripts/lib/mock-html.mjs";
 import { computeUiHash, normalizeNewlines, uiSourceFiles } from "../../scripts/lib/mock-hash.mjs";
+import { captureProblem, captureProblemMessage } from "../../scripts/lib/mock-found.mjs";
 import {
   expectedFiles,
   linkTargets as buildLinkTargets,
@@ -535,6 +536,53 @@ describe("同期の判定", () => {
   it("目録に無い HTML が残っていれば止める", () => {
     const problems = judge({ extraFiles: [...files, "mock-old.html"] });
     expect(problems.some((problem) => problem.includes("mock-old.html"))).toBe(true);
+  });
+});
+
+describe("404 の写しを残さない", () => {
+  const url = "http://localhost:3014/organizers/abc";
+
+  it("題名が Next.js の 404 なら止める", () => {
+    expect(captureProblem({ title: "404: This page could not be found.", url })).toEqual({
+      kind: "title",
+      detail: "404: This page could not be found.",
+    });
+  });
+
+  it("題名が製品の「見つかりません」なら止める", () => {
+    expect(captureProblem({ title: "主催者が見つかりません", url })?.kind).toBe("title");
+    expect(captureProblem({ title: "イベントが見つかりません", url })?.kind).toBe("title");
+  });
+
+  it("同じ出所の 4xx / 5xx なら止める", () => {
+    expect(
+      captureProblem({
+        httpErrors: ["404 http://localhost:3014/api/v1/public/organizers/abc"],
+        title: "佐藤 みのり",
+        url,
+      }),
+    ).toEqual({ kind: "http", detail: "404 http://localhost:3014/api/v1/public/organizers/abc" });
+  });
+
+  it("別のホストの失敗は数えない", () => {
+    expect(
+      captureProblem({ httpErrors: ["404 https://cdn.example.com/a.png"], title: "秋の芋煮会", url }),
+    ).toBeNull();
+  });
+
+  it("題名も応答も正常なら通す", () => {
+    expect(
+      captureProblem({ httpErrors: [], title: "秋の芋煮会", url }),
+    ).toBeNull();
+  });
+
+  it("撮れなかったときは、デモデータの作り直しを案内する", () => {
+    const message = captureProblemMessage({
+      kind: "title",
+      detail: "主催者が見つかりません",
+    });
+    expect(message).toContain("主催者が見つかりません");
+    expect(message).toContain("db:seed:ui");
   });
 });
 
