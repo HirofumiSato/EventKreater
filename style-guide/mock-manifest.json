@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "8383dec8ba49e41910250210acc9b74ca4c1e5253d003d16e5760d1f0426be5b",
+  "uiHash": "55f3d23913c85c8bc5f4340028bd0775a5dc4b497e0f92f9b183a6af4ce9f39f",
   "screens": [
     {
       "no": "01",
@@ -377,7 +377,7 @@
       "label": "",
       "file": "mock-create.html",
       "path": "/organizer/events/new",
-      "hash": "64f41e054833f5eab5b503ae58f614ce9812789572836aedb1f6604dfd360831"
+      "hash": "10a5d0f160df603265bbad1ca85ac19ce79becadf4a9f29e778ada759286e329"
     },
     {
       "no": "21",

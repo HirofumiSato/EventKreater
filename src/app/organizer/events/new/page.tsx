@@ -14,7 +14,7 @@ import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
 import { normalizeSemanticThemeId } from "@/lib/semantic-themes";
 import { SITE } from "@/lib/site";
-import { loginUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
+import { phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
 import { readFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { savePendingForm, takePendingForm } from "@/modules/events/lib/pending-form";
@@ -222,12 +222,13 @@ function NewEventScreen() {
   };
 
   /**
-   * 未登録の幹事の最終操作。入力を退避してからログインへ送る。
+   * 未ログインの幹事の最終操作。入力を退避してから認証画面へ送る。
+   * 新規の幹事が多数派なので、登録から始める（既存会員は画面側でログインへ切り替える）。
    * 戻ってきたらこの画面で復元し、下書き保存かプレビューを選び直せる。
    */
   const goAuth = () => {
     savePendingForm(form, flyerPreview);
-    window.location.href = loginUrl(nextPath);
+    window.location.href = registerUrl(nextPath);
   };
 
   return (

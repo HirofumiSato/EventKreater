@@ -464,7 +464,7 @@ export function EventStepForm({
               必須の入力はあと <strong>{requiredRemaining}</strong> つです。
             </>
           )}
-          {canSaveDraft ? null : " ログインすると、公開と下書き保存を選べます。入力内容は引き継がれます。"}
+          {canSaveDraft ? null : " 登録・ログインのあと、公開と下書き保存を選べます。入力内容は引き継がれます。"}
         </p>
         <div className="form-final__actions">
           {canSaveDraft ? (
