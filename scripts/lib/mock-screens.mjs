@@ -28,6 +28,8 @@ export const MOCK_GROUPS = [
  * - `path`   … 開く URL。幅で変わる画面（使い捨てトークンなど）は関数
  * - `auth`   … `storage/ui-demo.json` のトークン名。null なら未ログイン
  * - `states` … 複数の状態を持つ画面だけ。先頭が既定（ファイル名に接尾辞を付けない）
+ * - `theme`  … 状態ごとにセマンティックテーマを差し替える。文字列はそのテーマ ID、
+ *              `null` はテーマ未選択（包みごと外す）、省けば DB のまま
  *
  * 開いた時点で状態が変わる画面（編集画面のロックなど）は `serial: true`。
  * 幅を同時に開くと後から開いた側が別の状態になるため、1 本ずつ開く。
@@ -99,7 +101,7 @@ export function buildScreens(demo) {
       // プロフィールは誰でも読めるが、催しは参加者のログインが要る。
       // 未ログインで開くと、飾りのカレンダーの上に白塗りを重ねる。
       auth: null,
-      note: "プロフィールの下に、カレンダーと一覧。デモは羊皮紙テーマをページ全体に適用。未ログインではカレンダーの上に白塗りを重ねる。",
+      note: "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
       states: [
         { key: "guest", label: "未ログイン", path: `/organizers/${demo.organizerId}`, auth: null },
         {
@@ -107,6 +109,50 @@ export function buildScreens(demo) {
           label: "ログイン済み",
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
+        },
+        // 保存されているテーマはデモでは羊皮紙なので、ほかの 4 つと標準は
+        // 撮る直前に属性を差し替えて作る（`applySemanticTheme`）。
+        {
+          key: "theme-none",
+          label: "テーマ未選択",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: null,
+        },
+        {
+          key: "theme-modern-slate",
+          label: "夜のスレート",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "modern-slate",
+        },
+        {
+          key: "theme-enterprise-clean",
+          label: "クリーン",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "enterprise-clean",
+        },
+        {
+          key: "theme-parchment",
+          label: "羊皮紙",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "parchment",
+        },
+        {
+          key: "theme-neo-brutalism",
+          label: "ネオ・ブルータリズム",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "neo-brutalism",
+        },
+        {
+          key: "theme-neon",
+          label: "ネオン",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "neon",
         },
       ],
     },
@@ -340,6 +386,9 @@ export function expandScreens(screens) {
         label: state.label ?? "",
         auth: state.auth ?? null,
         path: state.path,
+        // `theme` は省くと「DB のまま」、`null` は「テーマ未選択」。undefined と null を
+        // 区別するため、既定値は入れずにそのまま渡す。
+        theme: state.theme,
         canonical,
         file,
         fileName: file.replace(/\.html$/, ""),

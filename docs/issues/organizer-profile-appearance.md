@@ -271,6 +271,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - `overflow: hidden` と `img { width: 100%; height: 100%; object-fit: cover; }` で丸に収める。
 - テーマ未選択なら `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
 - `generateMetadata` の `openGraph.images` に `avatarUrl` があれば載せる（`metadataBase` があるので相対 URL でよい）。
+- モック（`style-guide/`）は 06 主催者のページに、未ログイン・ログイン済みに加えて標準と 5 テーマの状態を持つ（計 8 枚）。属性を差し替えて撮るので、テーマごとのデモ会員は増やしていない（[ui-review/mock-sync.md](../ui-review/mock-sync.md)）。
 
 ### 8. パフォーマンス
 
@@ -304,6 +305,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - 結合 `tests/integration/organizer-avatar.test.ts`（8件）: 小さな PNG の `POST` で 201・DB 行・`GET /api/v1/image-assets/{id}/image` が WebP で返る、`POST` の差し替えで旧画像が 404 になる、`DELETE` で参照が NULL になり画像が 404、4MB 超は 413、JPEG でないバイト列は 422。`storage/images` の後片付けをする。
 - 結合 `tests/integration/organizer-profile.test.ts`（16件）: `PUT` で `themeId` が保存され公開 API に返る、未知の `themeId` は 400、アイコンの URL が応答に載る。
 - チラシ側の `tests/unit/flyer-upload.test.ts` は、再エクスポート経由でそのまま通る。
+- 単体 `tests/unit/mock-sync.test.mjs`: 目録（39 状態）が 5 テーマと未選択を 1 枚ずつ持ち、表示名が `SEMANTIC_THEMES` のラベルと一致すること。
 
 ## ドキュメント
 

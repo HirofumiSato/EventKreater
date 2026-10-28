@@ -93,7 +93,7 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
-npm run mock:sync    # 全 33 画面を撮り直す（既定は本番ビルド。30〜35 秒＋ビルド）
+npm run mock:sync    # 全 39 画面を撮り直す（既定は本番ビルド。40〜50 秒＋ビルド）
 npm run mock:sync -- --only=20,24   # 直した画面だけ（1 画面 5 秒前後）
 npm run mock:sync -- --refresh      # 控え（隠し DOM・CSS・PNG）を使わず取り直す
 npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）

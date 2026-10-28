@@ -56,6 +56,7 @@ import {
   writeVariantCache,
 } from "./lib/mock-variants.mjs";
 import {
+  applySemanticTheme,
   clearEventLock,
   collectVariants,
   editEventId,
@@ -356,6 +357,15 @@ async function captureRow(page, row, linkTargets, stylesheetCache) {
   await page.applyAuth(row.auth);
   await page.waitForReady(url);
   await page.evaluate("window.scrollTo(0, 0)");
+
+  // 目録がテーマを指定していれば、サーバーが出した属性を差し替える。テーマは属性
+  // だけで決まるので、そのテーマを保存している主催者と同じ DOM になる。
+  if (row.theme !== undefined) {
+    const applied = await applySemanticTheme(page, row.theme);
+    if (applied === null) {
+      log(`注意 ${row.no} ${row.file}  テーマの適用範囲（.semantic-theme--page）がありません`);
+    }
+  }
 
   // 目印を付けてから HTML を読む。付けるのは属性だけなので見た目は変わらない。
   await markVariants(page);
