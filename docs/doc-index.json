@@ -5430,7 +5430,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1895,
+      "lineCount": 1896,
       "headings": [
         {
           "level": 1,
@@ -5828,6 +5828,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/components/PostalCodeField.tsx",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/components/VenueSelectModal.tsx",
           "exists": true
         },
@@ -5849,6 +5853,10 @@
         },
         {
           "path": "src/modules/events/lib/pending-form.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/postal-code-search.ts",
           "exists": true
         },
         {
@@ -10185,7 +10193,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 530,
+      "lineCount": 534,
       "headings": [
         {
           "level": 1,
@@ -10420,6 +10428,10 @@
         },
         {
           "path": "tests/unit/pending-form.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/postal-code-search.test.ts",
           "exists": true
         },
         {
@@ -11047,7 +11059,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 288,
+      "lineCount": 298,
       "headings": [
         {
           "level": 1,
@@ -11084,6 +11096,10 @@
         {
           "level": 2,
           "text": "モックだけが持つもの"
+        },
+        {
+          "level": 3,
+          "text": "音声入力の写しは製品に合わせて手で直す"
         },
         {
           "level": 2,
@@ -11228,7 +11244,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 394,
+      "lineCount": 400,
       "headings": [
         {
           "level": 1,
@@ -11315,6 +11331,10 @@
         },
         {
           "path": "src/modules/events/components/VoiceInputDock.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/postal-code-search.ts",
           "exists": true
         },
         {
