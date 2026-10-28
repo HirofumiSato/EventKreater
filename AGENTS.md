@@ -110,7 +110,8 @@ npm run check:full   # PR の直前に 1 回（Vitest 込み）
 画像だけを差し替えたときなど、DOM に出ない差分は `--refresh` で取り直してください。
 
 同期漏れは `npm run check` が止めます。どうしても通すときだけ `MOCK_SYNC_ALLOW_STALE=1` を付け、
-PR に理由を書きます。手順の正は `docs/ui-review/mock-sync.md` です。
+PR に理由を書きます。404 の写しは `mock:sync` が撮る前に止めます（`storage/ui-demo.json` の ID が
+DB に無い、または画面が「見つかりません」になった場合）。手順の正は `docs/ui-review/mock-sync.md` です。
 
 ## 画面の組み方（スマホが先）
 

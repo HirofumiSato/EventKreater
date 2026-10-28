@@ -21,6 +21,24 @@ npm run db:seed:ui
 
 `storage/ui-demo.json`（トークンと催しの ID）を読みます。このファイルはコミットしません。
 
+## 404 の写しを残さない
+
+`storage/ui-demo.json` の ID が DB とずれると、主催者・催しの画面は 404 になります。そのまま撮ると
+モックに「見つかりません」の絵が残り、画面の確認ができないまま `npm run check` も通ります
+（`check` が見るのはソースの指紋だけのため）。`mock:sync` は撮る前に 2 段で止めます。
+
+| いつ | 何を見るか | 止まったとき |
+| --- | --- | --- |
+| 撮る前 | `ui-demo.json` の `events.*` / `organizerId` / `coHostId` / `participantId` が DB にあるか（ビルドもブラウザも使わない） | `storage/ui-demo.json の ID が DB にありません（…）` |
+| 1 画面ごと | その画面の 4xx / 5xx（`ui-browser` が期待どおりの 4xx を除いた残り）と `document.title` | `NG 04 mock-event.html  「見つかりません」の画面でした（…）` |
+
+どちらも `npm run db:seed:ui` でデモデータを作り直し、`npm run mock:sync` をやり直せば解消します。
+止まった回は `mock-manifest.json` を書き換えないので、モックは前回のまま残ります（壊れた写しで
+上書きされません）。
+
+判定そのものは `scripts/lib/mock-found.mjs`（ブラウザも DB も知らない）にあり、`tests/unit/mock-sync.test.mjs`
+が題名・応答・別ホストの扱いを固定しています。
+
 ## 3 手順
 
 ```powershell

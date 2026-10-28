@@ -42,6 +42,56 @@ export async function clearEventLock(eventId) {
 }
 
 /**
+ * `storage/ui-demo.json` が指す行が DB に残っているか。足りないものを返す。
+ *
+ * デモデータを作り直すと ID が変わる。古いファイルのまま撮ると、存在しない
+ * 主催者・催しの 404 を写してしまう（PR #90）。撮る前にここで気づく。
+ * 空配列なら揃っている。
+ */
+export async function missingDemoRecords(demo) {
+  const events = Object.entries(demo?.events ?? {});
+  const users = [
+    ["organizerId", demo?.organizerId],
+    ["coHostId", demo?.coHostId],
+    ["participantId", demo?.participantId],
+  ].filter(([, id]) => typeof id === "string" && id.length > 0);
+  if (events.length === 0 && users.length === 0) return [];
+
+  const prisma = new PrismaClient();
+  try {
+    const missing = [];
+
+    const knownEvents = new Set(
+      (
+        await prisma.event.findMany({
+          where: { id: { in: events.map(([, id]) => id) }, isDeleted: false },
+          select: { id: true },
+        })
+      ).map((row) => row.id),
+    );
+    for (const [key, id] of events) {
+      if (!knownEvents.has(id)) missing.push(`events.${key} ${id}`);
+    }
+
+    const knownUsers = new Set(
+      (
+        await prisma.user.findMany({
+          where: { id: { in: users.map(([, id]) => id) } },
+          select: { id: true },
+        })
+      ).map((row) => row.id),
+    );
+    for (const [key, id] of users) {
+      if (!knownUsers.has(id)) missing.push(`${key} ${id}`);
+    }
+
+    return missing;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
  * 確認用の会員を探す。
  *
  * 一度撮ると、その会員のアドレスは `emailChangeTargets` のどれかへ変わっている。
