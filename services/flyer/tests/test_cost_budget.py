@@ -49,15 +49,16 @@ def test_wizard_cost_at_stronger_yen_is_even_lower() -> None:
     assert _wizard_cost(150.0) < _wizard_cost(STRESS_USD_JPY_RATE)
 
 
-def test_single_image_cost_is_about_three_yen() -> None:
+def test_single_image_cost_is_about_one_yen() -> None:
     unit = estimate_image_cost_jpy(
         DEFAULT_IMAGE_MODEL,
         DEFAULT_IMAGE_QUALITY,
         DEFAULT_IMAGE_SIZE,
         STRESS_USD_JPY_RATE,
     )
-    assert unit == pytest.approx(3.2)
-    assert unit < 5.0
+    # 1024x1536 / low は $0.005（公式の換算 $0.00474 を切り上げ）。1 USD = 200 円。
+    assert unit == pytest.approx(1.0)
+    assert unit < 2.0
 
 
 def test_yen_rate_that_breaks_the_target_is_known() -> None:
@@ -69,7 +70,7 @@ def test_yen_rate_that_breaks_the_target_is_known() -> None:
     # 画像 3 枚だけで 10 円に届く為替。
     break_even = TARGET_JPY_PER_REQUEST / unit_usd
     assert break_even > 200.0
-    assert break_even == pytest.approx(208.3, abs=0.1)
+    assert break_even == pytest.approx(666.7, abs=0.1)
 
     with pytest.raises(AssertionError):
         assert _wizard_cost(break_even + 10.0) < TARGET_JPY_PER_REQUEST

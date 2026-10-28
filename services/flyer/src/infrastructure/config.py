@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain.pricing import (
@@ -17,6 +17,17 @@ from src.domain.pricing import (
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+#: 文字生成の既定モデル。
+DEFAULT_TEXT_MODEL: str = "gpt-4o-mini"
+
+#: 空文字が来たときに戻す既定。フィールド名で引く。
+_ENV_DEFAULTS: dict[str, str] = {
+    "openai_text_model": DEFAULT_TEXT_MODEL,
+    "openai_image_model": DEFAULT_IMAGE_MODEL,
+    "image_quality": DEFAULT_IMAGE_QUALITY,
+    "image_size": DEFAULT_IMAGE_SIZE,
+}
+
 
 class Settings(BaseSettings):
     """実行時設定。詳細設計の TTL は 3600 秒。"""
@@ -24,10 +35,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     openai_api_key: str | None = Field(default=None)
-    openai_text_model: str = "gpt-4o-mini"
-    #: 背景画像のモデル。A4 縦への欠落が小さい gpt-image-1 を既定にする。
+    openai_text_model: str = DEFAULT_TEXT_MODEL
+    #: 背景画像のモデル。A4 縦への欠落が小さく、現行世代で最も安いものを既定にする。
     openai_image_model: str = DEFAULT_IMAGE_MODEL
-    #: 画質。gpt-image-1 は low / medium / high、dall-e-3 は standard / hd。
+    #: 画質。gpt-image-2.5 系は low / medium / high / xhigh / max、dall-e-3 は standard / hd。
     image_quality: str = DEFAULT_IMAGE_QUALITY
     #: 要求する画像サイズ。モデルに無い値はクライアントが寄せる。
     image_size: str = DEFAULT_IMAGE_SIZE
@@ -68,6 +79,25 @@ class Settings(BaseSettings):
         """空文字は「未設定」と同じ。キーの有無に従う。"""
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator(
+        "openai_text_model",
+        "openai_image_model",
+        "image_quality",
+        "image_size",
+        mode="before",
+    )
+    @classmethod
+    def blank_setting_uses_default(cls, value: object, info: ValidationInfo) -> object:
+        """空文字は既定へ戻す。
+
+        compose は ``OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-}`` で未設定を空文字として
+        渡す。ここで受け止めないと、モデル名が空になって別の経路へ落ちる。
+        """
+        name = info.field_name
+        if name is not None and isinstance(value, str) and not value.strip():
+            return _ENV_DEFAULTS[name]
         return value
 
     @property

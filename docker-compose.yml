@@ -56,6 +56,11 @@ services:
       target: dev
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # 空なら flyer 側の既定（pricing.py）へ戻る。ここで既定値を二重に持たない。
+      OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-}
+      IMAGE_QUALITY: ${IMAGE_QUALITY:-}
+      IMAGE_SIZE: ${IMAGE_SIZE:-}
       STORAGE_DIR: /data/tmp
       CANDIDATE_DIR: /data/candidates
       FALLBACK_DIR: /data/backgrounds

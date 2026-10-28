@@ -120,8 +120,8 @@ def test_ai_source_falls_back_when_generation_fails() -> None:
 
 def test_ai_source_stops_at_the_budget() -> None:
     generator = _FakeGenerator()
-    # 1 枚 3.2 円。上限 9.5 円では 3 枚目に入る前に打ち切る。
-    source = _source(generator, max_cost_jpy=9.5)
+    # 1 枚 1 円。上限 2.5 円では 3 枚目に入る前に打ち切る。
+    source = _source(generator, max_cost_jpy=2.5)
 
     options = asyncio.run(
         source.suggest_backgrounds(make_request(), make_context(), 3)
@@ -160,7 +160,7 @@ def test_llm_cost_matches_the_budget_calculation() -> None:
         DEFAULT_IMAGE_QUALITY,
         DEFAULT_IMAGE_SIZE,
         STRESS_USD_JPY_RATE,
-    ) == pytest.approx(3.2)
+    ) == pytest.approx(1.0)
     wizard = estimate_wizard_cost_jpy(
         3,
         model=DEFAULT_IMAGE_MODEL,
@@ -282,3 +282,12 @@ def test_size_and_quality_are_normalized_per_model() -> None:
     assert resolved_image_quality("gpt-image-1", "hd") == "high"
     assert resolved_image_quality("dall-e-3", "low") == "standard"
     assert resolved_image_quality("dall-e-3", "high") == "hd"
+
+
+def test_gpt_image_2_5_keeps_extended_qualities() -> None:
+    """gpt-image-2.5 系は xhigh / max をそのまま渡す。low へ丸めない。"""
+    stub, _ = _generate("gpt-image-2.5-flare", "xhigh")
+
+    assert stub.images.calls[0]["quality"] == "xhigh"
+    assert resolved_image_quality("gpt-image-2.5-flare", "max") == "max"
+    assert resolved_image_quality("gpt-image-2.5-sunburst", "high") == "high"

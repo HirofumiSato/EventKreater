@@ -64,7 +64,7 @@ OpenAI を使うとき
    $env:OPENAI_API_KEY = "sk-..."
    python -m uvicorn src.main:app --reload
 
-この場合、プロンプトは ``gpt-4o-mini``、背景は ``gpt-image-1``（``low`` / ``1024x1536``）です。``gpt-image-1`` は組織認証が要ります。未認証だと 400 が返り、グラデーションへ落ちます。画像生成には最大で約 25 秒かかります。失敗したときは静的背景で合成し、``status`` が ``fallback_used`` になります。
+この場合、プロンプトは ``gpt-4o-mini``、背景は ``gpt-image-2.5-flare``（``low`` / ``1024x1536``）です。``gpt-image-1`` は 2026-10-23 に API が停止しており、指定すると 400 が返ってグラデーションへ落ちます。画像生成には最大で約 25 秒かかります。失敗したときは静的背景で合成し、``status`` が ``fallback_used`` になります。
 
 ステップ 2 の背景候補も AI で作る
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -78,7 +78,7 @@ OpenAI を使うとき
    $env:AI_CANDIDATE_MAX_PER_HOUR = "20"   # 手元で試すときだけ
    python -m uvicorn src.main:app --reload
 
-起動ログに ``AI 背景候補: 有効 model=gpt-image-1 ...`` と出れば有効です。``AI_CANDIDATES_ENABLED=0`` にすると、キーがあってもグラデーションだけを返します。
+起動ログに ``AI 背景候補: 有効 model=gpt-image-2.5-flare ...`` と出れば有効です。``AI_CANDIDATES_ENABLED=0`` にすると、キーがあってもグラデーションだけを返します。
 
 ``/docs`` の ``POST /api/v1/flyers/candidates`` を ``count`` を ``1`` にして Execute すると、応答の ``source`` が ``ai``（生成できた）か ``placeholder``（グラデーション）になります。``ai_remaining`` は 1 時間あたりの残り枚数です。
 
