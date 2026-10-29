@@ -2180,7 +2180,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `templateId` | `style_1_bar_stylish`、`style_2_warm_earth`、`style_3_vibrant_pop` |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack`（省略時 `classic`） |
 
-本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`semantic_theme`、`target_generation`、`template_id`、`layout_id`、`title_color`）に合わせる。`themeId` があれば `semantic_theme` として送り、サービスはその英語の方向付け（`design_direction`）を LLM のユーザー JSON に足す。`targetGeneration` は空でなければ `target_generation` として送る。`titleColor` は未指定なら `title_color: null` で送り、サービスが写真の明るさからタイトル色を決める。待ち時間は 90 秒。
+本アプリはサービスへ渡すとき、雨天方針を表示用の日本語にし、定員は `先着{n}名`（20 文字以内のときだけ）にする。開催日も紙面に焼ける日本語（`2026-11-14` → `2026年11月14日（土）`）へ直してから渡す（`formatFullDateJa`）。ISO のまま渡すと、紙面では細いハイフンが並ぶだけで日付として読めない。フィールド名はサービスのスネークケース（`event_date`、`event_time`、`rain_policy`、`semantic_theme`、`target_generation`、`template_id`、`layout_id`、`title_color`）に合わせる。`themeId` があれば `semantic_theme` として送り、サービスはその英語の方向付け（`design_direction`）を LLM のユーザー JSON に足す。`targetGeneration` は空でなければ `target_generation` として送る。`titleColor` は未指定なら `title_color: null` で送り、サービスが写真の明るさからタイトル色を決める。待ち時間は 90 秒。
 
 ### 9.2. ウィザード候補 API（本アプリ）
 

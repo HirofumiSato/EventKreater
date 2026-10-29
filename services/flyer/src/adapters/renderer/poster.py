@@ -11,7 +11,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from datetime import date as Date
 from typing import Literal, Sequence
 
 from PIL import Image, ImageDraw, ImageFont
@@ -42,6 +44,29 @@ BAND_PADDING = 24
 BETWEEN_GROUPS = design.GAP_AFTER_RULE
 #: これ以上あいたら別の群とみなす（保護の範囲を決める）。
 GROUP_GAP = 40
+
+#: `2026-11-14` のような ISO の日付。紙面ではこの形を使わない。
+_ISO_DATE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+_WEEKDAYS: tuple[str, ...] = ("月", "火", "水", "木", "金", "土", "日")
+
+
+def display_date(text: str) -> str:
+    """紙面に置く日付。ISO のまま来た値は日本語の表記へ直す。
+
+    `2026-11-14` をそのまま焼くと、細いハイフンが並ぶだけで日付として読めない。
+    呼び出し側が整形して渡すのが本来だが、描画は最後の関門なのでここでも直す。
+    整形済みの文字列と、ISO でない値はそのまま返す。
+    """
+    match = _ISO_DATE.match(text.strip())
+    if match is None:
+        return text
+    year, month, day = (int(part) for part in match.groups())
+    try:
+        weekday = _WEEKDAYS[Date(year, month, day).weekday()]
+    except ValueError:
+        # 実在しない日付は描画を止めず、渡された文字列をそのまま置く。
+        return text
+    return f"{year}年{month}月{day}日（{weekday}）"
 
 
 @dataclass(frozen=True)
@@ -198,7 +223,7 @@ def _top_group(
         slots.append(
             PosterSlot(
                 role="eyebrow",
-                text=date,
+                text=display_date(date),
                 size=design.EYEBROW_SIZE,
                 box=(left, y, width, eyebrow),
                 color=accent,
@@ -779,6 +804,7 @@ __all__ = [
     "PosterRule",
     "PosterSlot",
     "build_poster_plan",
+    "display_date",
     "draw_poster",
     "fit_to_scale",
     "measure_contrast",

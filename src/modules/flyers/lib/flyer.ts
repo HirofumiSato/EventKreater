@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "fs/promises";
 import path from "path";
 import { ProblemDetailException } from "@/lib/exceptions";
+import { formatFullDateJa } from "@/lib/format";
 import type { GenerateFlyerInput } from "@/lib/schemas";
 import { RAIN_POLICY_LABELS } from "@/modules/events/types";
 import type { FlyerCandidate, FlyerCandidateKind } from "@/modules/flyers/types";
@@ -28,7 +29,9 @@ export function flyerCapacityLabel(capacity: number | null | undefined): string 
 export function toFlyerPayload(input: GenerateFlyerInput) {
   return {
     title: input.title,
-    event_date: input.eventDate,
+    // 紙面に焼く文字。ISO の `2026-11-14` を渡すと、細いハイフンが並ぶだけで
+    // 日付として読めない。年と曜日まで含めた日本語にしてから渡す。
+    event_date: formatFullDateJa(input.eventDate),
     event_time: input.eventTime,
     price: input.price,
     location: input.location,

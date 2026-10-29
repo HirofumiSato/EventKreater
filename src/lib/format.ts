@@ -38,6 +38,18 @@ export function formatDateJa(date: string): string {
   return `${month}月${day}日（${weekday}）`;
 }
 
+/**
+ * 保存形式の日付 → 年を含む表記。「2026-11-14」→「2026年11月14日（土）」。
+ *
+ * チラシのように紙面へ焼く場所で使う。`formatDateJa` は年を落とすため、
+ * そのまま使うと利用者が年を知る手がかりが消える。壊れた値はそのまま返す。
+ */
+export function formatFullDateJa(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return date;
+  return `${Number(match[1])}年${formatDateJa(date)}`;
+}
+
 /** 保存形式の月 → 見出し用。「2026-10」→「2026年10月」。壊れた値はそのまま返す。 */
 export function formatMonthJa(month: string): string {
   const match = /^(\d{4})-(\d{2})$/.exec(month);

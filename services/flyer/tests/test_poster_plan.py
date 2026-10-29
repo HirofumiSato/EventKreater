@@ -289,3 +289,40 @@ def test_the_surface_steps_are_ordered_by_darkness() -> None:
     ink = design.colors_for(look, "ink").surface
     assert design.relative_luminance(*ink) < design.relative_luminance(*band)
     assert design.relative_luminance(*band) < design.relative_luminance(*paper)
+
+
+def test_an_iso_date_is_written_in_japanese() -> None:
+    """`2026-11-14` のまま焼くと、細いハイフンが並ぶだけで日付に読めない。
+
+    呼び出し側が整形して渡すのが本来だが、描画の側でも ISO を見たら直す。
+    """
+    assert poster.display_date("2026-11-14") == "2026年11月14日（土）"
+    assert poster.display_date("2027-01-01") == "2027年1月1日（金）"
+
+
+def test_a_poster_plan_never_prints_an_iso_date() -> None:
+    variant = design.variant_for(TemplateId.STYLE_1_BAR_STYLISH)
+    colors = design.colors_for(theme_look(None), variant.surface)
+    plan = build_poster_plan(
+        variant=variant,
+        colors=colors,
+        stack=stack_for(TextLayout.CLASSIC),
+        title_lines=["秋のゆるごはん会"],
+        title_size=163,
+        title_width=800,
+        title_hanging=False,
+        event_date="2026-11-14",
+        event_time="18:30〜21:00",
+        facts=FACTS,
+        note="雨天決行",
+        title_color=None,
+    )
+    eyebrow = plan.slot("eyebrow")
+    assert eyebrow is not None
+    assert eyebrow.text == "2026年11月14日（土）"
+
+
+def test_a_date_that_is_not_iso_is_left_alone() -> None:
+    """整形済みの文字列・実在しない日付は、勝手に書き換えない。"""
+    assert poster.display_date("2026年11月15日(日)") == "2026年11月15日(日)"
+    assert poster.display_date("2026-02-30") == "2026-02-30"

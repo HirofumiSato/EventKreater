@@ -109,7 +109,7 @@ class FlyerGenerationRequest(BaseModel):
         ...,
         min_length=4,
         max_length=30,
-        description="開催日（例: 2026年11月15日(日)）",
+        description="開催日（例: 2026年11月15日(日)）。ISO の 2026-11-15 も描画側で日本語に直す",
     )
     event_time: str = Field(
         ...,
