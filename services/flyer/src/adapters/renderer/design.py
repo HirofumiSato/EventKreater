@@ -80,6 +80,17 @@ Align = Literal["center", "left"]
 Surface = Literal["paper", "band", "ink"]
 FactsStyle = Literal["stacked", "two_column", "hero"]
 
+#: 面を敷くときの不透明度。写真を透かして地を残す。
+#: 足りないときだけ `draw_poster` が墨の 4.5:1 に届く濃さまで上げる。
+SURFACE_ALPHA: dict[Surface, float] = {
+    # 面を敷かないので値は使われない。
+    "paper": 1.0,
+    # 紙を 7% 沈めた帯。写真が 18% 透ける。
+    "band": 0.82,
+    # 墨の面。写真が 14% 透ける。
+    "ink": 0.86,
+}
+
 
 def snap(value: float) -> int:
     """8px の目盛りへ丸める。"""
@@ -326,6 +337,7 @@ __all__ = [
     "SHORT_TITLE_MAX_CHARS",
     "SHORT_TITLE_TRACKING",
     "SIDE_MARGIN",
+    "SURFACE_ALPHA",
     "TITLE_MAX_HEIGHT",
     "TITLE_MAX_LINES",
     "TITLE_MAX_WIDTH",

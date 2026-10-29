@@ -59,6 +59,12 @@ class PosterSlot:
     leading: int
     letter_spacing: int = 0
 
+    @property
+    def area(self) -> tuple[int, int, int, int]:
+        """(x1, y1, x2, y2)。`box` は (x, y, 幅, 高さ) なので取り違えない。"""
+        x, y, width, height = self.box
+        return (x, y, x + width, y + height)
+
 
 @dataclass(frozen=True)
 class PosterRule:
@@ -67,6 +73,12 @@ class PosterRule:
     role: str
     box: tuple[int, int, int, int]
     color: RGB
+
+    @property
+    def area(self) -> tuple[int, int, int, int]:
+        """(x1, y1, x2, y2)。`box` は (x, y, 幅, 高さ) なので取り違えない。"""
+        x, y, width, height = self.box
+        return (x, y, x + width, y + height)
 
 
 @dataclass(frozen=True)
@@ -107,6 +119,8 @@ class DrawReport:
     image: Image.Image
     #: 紙のベールを敷いた最大の不透明度。敷かなければ None。
     veil_alpha: float | None
+    #: 面を敷いた不透明度。面が無ければ None。
+    surface_alpha: float | None
     #: タイトルが載った地とのコントラスト比。
     title_contrast: float
     #: 実際に描いたタイトルの色。
@@ -568,6 +582,11 @@ def _groups(plan: PosterPlan) -> list[tuple[int, int, int, int]]:
 
 
 def _inside(box: tuple[int, int, int, int], area: tuple[int, int, int, int]) -> bool:
+    """`box` が `area` の内側か。どちらも (x1, y1, x2, y2)。
+
+    `PosterSlot.box` / `PosterRule.box` は (x, y, 幅, 高さ) なので、そのまま
+    渡さず `area` を通す。高さを下端と比べると必ず内側と判定されてしまう。
+    """
     return box[0] >= area[0] and box[1] >= area[1] and box[2] <= area[2] and box[3] <= area[3]
 
 
@@ -637,14 +656,38 @@ def draw_poster(
     塗ってしまい、選んだ色が読めなくなる。
     """
     working = canvas.convert("RGBA")
-    if plan.surface is not None:
-        working = _paint_rect(working, plan.surface, plan.colors.surface)
-
     veil_color = _veil_color(plan)
     ink, _, _ = _paper_colors(plan.colors)
+    body_ink, _, _ = _body_colors(plan.variant, plan.colors)
+    final: dict[str, RGB] = {}
+
+    # 面は写真を透かして敷く。透かすほど地が動くので、面の上の文字色は
+    # 面を敷いたあとの実色から決め直す（下の `surface_ground`）。
+    surface_alpha: float | None = None
+    surface_ground: RGB | None = None
+    if plan.surface is not None:
+        surface_alpha = design.SURFACE_ALPHA[plan.variant.surface]
+        needed = veil_alpha(
+            average_rgb(working, plan.surface),
+            plan.colors.surface,
+            body_ink,
+        )
+        if needed is not None:
+            surface_alpha = max(surface_alpha, needed)
+        working = _paint_rect(
+            working,
+            plan.surface,
+            plan.colors.surface,
+            surface_alpha,
+        )
+        surface_ground = average_rgb(working, plan.surface)
+        for slot in plan.slots:
+            if _inside(slot.area, plan.surface):
+                final[slot.role] = design.ensure_contrast(slot.color, surface_ground)
+
     groups = _groups(plan)
     title = plan.slot("title")
-    title_group = _group_holding(groups, title.box) if title is not None else None
+    title_group = _group_holding(groups, title.area) if title is not None else None
 
     strongest: float | None = None
     for box in groups:
@@ -662,7 +705,6 @@ def draw_poster(
     title_color = ink
     behind: tuple[int, int, int, int] | None = None
     adjusted = False
-    final: dict[str, RGB] = {}
     if title_group is not None:
         title_color = resolve_title_color(
             plan.title_color,
@@ -678,7 +720,7 @@ def draw_poster(
         # ベール後の地に対して、見出しの群の文字を読める濃さへ寄せる。
         ground = average_rgb(working, behind)
         for slot in plan.slots:
-            if _inside(slot.box, behind):
+            if _inside(slot.area, behind):
                 final[slot.role] = design.ensure_contrast(slot.color, ground)
         title_color = design.ensure_contrast(title_color, ground)
         final["title"] = title_color
@@ -697,7 +739,11 @@ def draw_poster(
     for rule in plan.rules:
         x, y, width, thickness = rule.box
         color = rule.color
-        if behind is not None and _inside((x, y, x + width, y + thickness), behind):
+        if surface_ground is not None and plan.surface is not None:
+            if _inside(rule.area, plan.surface):
+                # 面の上の罫線は 4.5:1 を狙わない。文字より弱く、地より強く残す。
+                color = design.blend_rgb(surface_ground, body_ink, 0.24)
+        if behind is not None and _inside(rule.area, behind):
             color = design.ensure_contrast(color, average_rgb(working, behind))
         draw.rectangle((x, y, x + width, y + thickness), fill=color)
 
@@ -707,6 +753,7 @@ def draw_poster(
     return DrawReport(
         image=working.convert("RGB"),
         veil_alpha=strongest,
+        surface_alpha=surface_alpha,
         title_contrast=title_contrast,
         title_color=title_color,
         title_color_adjusted=adjusted,

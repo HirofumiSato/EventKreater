@@ -224,6 +224,24 @@ def test_the_quiet_tile_has_no_plate() -> None:
     assert _plan(TemplateId.STYLE_1_BAR_STYLISH).surface is None
 
 
+def test_a_slot_area_is_a_rectangle_and_the_box_is_not() -> None:
+    """box は (x, y, 幅, 高さ)。矩形として比べるのは `area` だけにする。
+
+    高さを下端と取り違えると、詳細のスロットまで見出しの群の内側と判定され、
+    帯の文字が写真の地に対して白へ押し上げられる（帯と同化する）。
+    """
+    plan = _plan(TemplateId.STYLE_2_WARM_EARTH)
+    value = plan.slot("fact_value_0")
+    title = plan.slot("title")
+    assert value is not None and title is not None
+    x, y, width, height = value.box
+    assert value.area == (x, y, x + width, y + height)
+    title_group = poster._group_holding(poster._groups(plan), title.area)
+    assert title_group is not None
+    assert not poster._inside(value.area, title_group)
+    assert poster._inside(value.area, plan.surface or (0, 0, 0, 0))
+
+
 def test_no_icons_pills_or_panels_are_drawn() -> None:
     """区切りは罫線。クリップアートのアイコンとピルは持たない。"""
     source = inspect.getsource(poster)
