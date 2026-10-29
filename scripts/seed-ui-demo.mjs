@@ -639,6 +639,40 @@ try {
     },
   });
 
+  // マイページの「新着」と、ヘッダーの札の未読数バッジを撮るための通知。
+  // 未読の出席 1 件と、既読の参加要望 1 件を置く（札のバッジは「1」になる）。
+  await prisma.notification.deleteMany({ where: { userId: organizer.id } });
+  const attendingRow =
+    main.participants.find((row) => row.name === PARTICIPANT.name) ?? main.participants[0];
+  const waitlistedRow =
+    full.participants.find((row) => row.status === "WAITLISTED") ?? full.participants[0];
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: organizer.id,
+        eventId: main.event.id,
+        participantId: attendingRow.id,
+        kind: "RSVP_ATTENDING",
+        title: "参加表明がありました",
+        body: `${attendingRow.name} さんが「${main.event.title}」に出席します。`,
+        dedupeKey: sha256(`ui-demo-notification-attending-${main.event.id}`),
+        readAt: null,
+        createdAt: new Date(Date.now() - 20 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: full.event.id,
+        participantId: waitlistedRow.id,
+        kind: "RSVP_WAITLISTED",
+        title: "参加要望が届きました",
+        body: `${waitlistedRow.name} さんが「${full.event.title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        dedupeKey: sha256(`ui-demo-notification-waitlisted-${full.event.id}`),
+        readAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
   const tokens = {
     organizer: await issueSessionToken(organizer),
     participant: await issueSessionToken(participant),

@@ -123,6 +123,7 @@ erDiagram
 | **DiscountKind** | `PERCENT`, `FREE` | 割引の種類。`FREE` は `percent = 100` の別名 |
 | **BillingNoticeKind** | `FREE_PERIOD_ENDING_3D`, `FREE_PERIOD_ENDING_1D` | 0 円月額の終了前に送る案内の種別 |
 | **RsvpStatus** | `ATTENDING`, `DECLINED` | 出欠意思表示（参加 / 不参加） |
+| **NotificationKind** | `RSVP_ATTENDING`, `RSVP_WAITLISTED` | 主催者へ届けるアプリ内通知の種別（出席の表明 / 参加要望）。欠席と取り消しは通知しない |
 | **AccountChangeKind** | `NAME`, `EMAIL`, `PHONE`, `PASSWORD`, `WITHDRAW`, `REACTIVATE` | 会員が自分の情報を変えた種別。`WITHDRAW` は退会、`REACTIVATE` は退会済み行の復帰 |
 
 ---
@@ -707,8 +708,35 @@ model ImageAsset {
   user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   organizerProfile OrganizerProfile?
 
-  @@index([userId, isDeleted])
-  @@map("image_assets")
+// =============================================================
+// 11. 主催者へのアプリ内通知
+// =============================================================
+
+/// 参加者の出席・参加要望を主催者へ知らせる 1 行。メールは送らない。
+/// 文面は作成時点で確定して持つ（催し名を後から変えても過去の通知は変わらない）。
+model Notification {
+  id            String           @id @default(uuid()) @db.Uuid
+  /// 受け取る会員。ゲスト主催者（userId を持たない行）には作らない。
+  userId        String           @map("user_id") @db.Uuid
+  eventId       String           @map("event_id") @db.Uuid
+  /// 通知の元になった出欠行。取り消されても通知は残すため SetNull。
+  participantId String?          @map("participant_id") @db.Uuid
+  kind          NotificationKind
+  title         String           @db.VarChar(100)
+  body          String           @db.VarChar(300)
+  /// 同じ出欠行の同じ変化を二重に作らない指紋（sha256 の hex）。再送と競合を吸収する。
+  dedupeKey     String           @unique @map("dedupe_key") @db.VarChar(64)
+  /// 読んだ日時。NULL は未読。未読数はこの列で数える。
+  readAt        DateTime?        @map("read_at") @db.Timestamptz
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 ```
 
@@ -1143,6 +1171,28 @@ CREATE TABLE image_assets (
 );
 
 CREATE INDEX image_assets_user_id_is_deleted_idx ON image_assets (user_id, is_deleted);
+
+-- 13. 主催者へのアプリ内通知（参加表明・参加要望）
+-- 文面は作成時点で焼き付ける。メールの宛先や配信結果は持たない。
+CREATE TYPE "NotificationKind" AS ENUM ('RSVP_ATTENDING', 'RSVP_WAITLISTED');
+
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    participant_id UUID NULL REFERENCES participants(id) ON DELETE SET NULL,
+    kind "NotificationKind" NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    body VARCHAR(300) NOT NULL,
+    dedupe_key VARCHAR(64) NOT NULL UNIQUE,
+    read_at TIMESTAMPTZ NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX notifications_user_id_read_at_created_at_idx
+    ON notifications (user_id, read_at, created_at);
+CREATE INDEX notifications_user_id_created_at_idx
+    ON notifications (user_id, created_at);
 ```
 
 > `image_assets` は `organizer_profiles` より先に作る必要がある（外部キーの向き）。

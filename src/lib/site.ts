@@ -36,6 +36,8 @@ export const SITE = {
     participantCalendar: { href: "/participant/calendar", label: "参加カレンダー" },
     participantHistory: { href: "/participant/history", label: "参加履歴" },
     mypage: { href: "/mypage", label: "主催者マイページ" },
+    /** 主催者の新着（参加表明・参加要望）。マイページの節へ直接飛ぶ。 */
+    notifications: { href: "/mypage#notifications", label: "通知" },
     account: { href: "/account", label: "アカウント" },
     terms: { href: "/terms", label: "利用規約" },
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。

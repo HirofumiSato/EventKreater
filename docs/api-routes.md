@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 82
-- エンドポイント（メソッド × パス）: 99
-- 仕様書に記載: 93
+- ルートファイル: 83
+- エンドポイント（メソッド × パス）: 101
+- 仕様書に記載: 95
 - 実装のみ（仕様書に記載なし）: 6
 - 仕様書のみ（実装なし）: 0
 
@@ -63,6 +63,8 @@
 | POST | `/api/v1/internal/billing/notices` | なし | あり | `src/app/api/v1/internal/billing/notices/route.ts` |
 | GET | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | あり | `src/app/api/v1/invitations/[code]/route.ts` |
 | POST | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | なし | `src/app/api/v1/invitations/[code]/route.ts` |
+| GET | `/api/v1/notifications` | 必須（requireUserId） | あり | `src/app/api/v1/notifications/route.ts` |
+| PATCH | `/api/v1/notifications` | 必須（requireUserId） | あり | `src/app/api/v1/notifications/route.ts` |
 | GET | `/api/v1/organizer/events` | 条件付き（collectGuestTokenHashes, resolveUserId） | あり | `src/app/api/v1/organizer/events/route.ts` |
 | GET | `/api/v1/organizer/events/[id]` | 条件付き（assertGuestEditWindow, assertLockHolder, assertOrganizer, assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/route.ts` |
 | PUT | `/api/v1/organizer/events/[id]` | 条件付き（assertGuestEditWindow, assertLockHolder, assertOrganizer, assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/route.ts` |

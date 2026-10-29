@@ -569,7 +569,23 @@ export const OrganizerProfileSchema = z
 
 export type OrganizerProfileFormInput = z.infer<typeof OrganizerProfileSchema>;
 
+// ---- 主催者へのアプリ内通知 ----
 
+/**
+ * 既読にする通知。`all: true` なら未読をすべて、`ids` なら指定した分だけを既読にする。
+ * どちらも無い要求は 400（画面の不具合を黙って通さない）。
+ */
+export const MarkNotificationsSchema = z
+  .object({
+    all: z.boolean().optional(),
+    ids: z.array(z.string().uuid("通知の ID が不正です")).max(100).optional(),
+  })
+  .refine((value) => value.all === true || (value.ids?.length ?? 0) > 0, {
+    message: "既読にする通知を指定してください。",
+    path: ["ids"],
+  });
+
+export type MarkNotificationsInput = z.infer<typeof MarkNotificationsSchema>;
 
 export type GenerateFlyerInput = z.infer<typeof GenerateFlyerSchema>;
 export type ProposeCandidatesInput = z.infer<typeof ProposeCandidatesSchema>;

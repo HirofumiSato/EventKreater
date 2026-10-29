@@ -131,6 +131,12 @@ enum PlatformRole {
   ADMIN
 }
 
+/// 主催者へ届けるアプリ内通知の種別。文面は作成時点で確定して保存する。
+enum NotificationKind {
+  RSVP_ATTENDING
+  RSVP_WAITLISTED
+}
+
 enum LoginChallengeChannel {
   SMS
   EMAIL
@@ -200,6 +206,7 @@ model User {
   emailChangeRequests     EmailChangeRequest[]
   organizerProfile        OrganizerProfile?
   imageAssets             ImageAsset[]
+  notifications           Notification[]
 
   @@index([deletedAt])
   @@map("users")
@@ -670,6 +677,7 @@ model Event {
   revenueSetting EventRevenueSetting?
   revenueShares  EventRevenueShare[]
   flyerGenerationLogs FlyerGenerationLog[]
+  notifications  Notification[]
 
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
@@ -812,6 +820,7 @@ model Participant {
   schedule  EventSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
   pricePlan EventPricePlan? @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
   receipt   Receipt?
+  notifications Notification[]
 
   @@unique([eventId, userId])
   @@index([eventId, status])
@@ -895,6 +904,37 @@ model ReminderDelivery {
 
   @@index([eventId, createdAt])
   @@map("reminder_deliveries")
+}
+
+// =============================================================
+// 9-2. 主催者へのアプリ内通知
+// =============================================================
+
+/// 参加者の出席・参加要望を主催者へ知らせる 1 行。メールは送らない。
+/// 文面は作成時点で確定して持つ（催し名を後から変えても過去の通知は変わらない）。
+model Notification {
+  id            String           @id @default(uuid()) @db.Uuid
+  /// 受け取る会員。ゲスト主催者（userId を持たない行）には作らない。
+  userId        String           @map("user_id") @db.Uuid
+  eventId       String           @map("event_id") @db.Uuid
+  /// 通知の元になった出欠行。取り消されても通知は残すため SetNull。
+  participantId String?          @map("participant_id") @db.Uuid
+  kind          NotificationKind
+  title         String           @db.VarChar(100)
+  body          String           @db.VarChar(300)
+  /// 同じ出欠行の同じ変化を二重に作らない指紋（sha256 の hex）。再送と競合を吸収する。
+  dedupeKey     String           @unique @map("dedupe_key") @db.VarChar(64)
+  /// 読んだ日時。NULL は未読。未読数はこの列で数える。
+  readAt        DateTime?        @map("read_at") @db.Timestamptz
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // =============================================================

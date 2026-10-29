@@ -12,6 +12,8 @@ import {
   viewerRole,
   viewerRoleLabel,
 } from "@/lib/site-nav";
+import { useUnreadNotifications } from "@/modules/notifications/hooks/useNotifications";
+import { formatUnreadCount } from "@/modules/notifications/lib/unread";
 
 /**
  * 共通ヘッダー。
@@ -36,6 +38,9 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  // 通知は主催者にしか作られない。参加者の端末で 60 秒ごとに叩かない。
+  const { unreadCount } = useUnreadNotifications(Boolean(viewer?.isOrganizer));
+  const unreadLabel = formatUnreadCount(unreadCount);
 
   useEffect(() => {
     let active = true;
@@ -118,6 +123,8 @@ export function Navbar() {
     if (action) userMenuLinks.push(action);
     userMenuLinks.push(SITE.nav.mypage);
   }
+  // 通知は主催者にだけ作られる。参加者のメニューには出さない。
+  if (viewer?.isOrganizer && role !== "admin") userMenuLinks.push(SITE.nav.notifications);
   if (role !== "admin") userMenuLinks.push(SITE.nav.account);
 
   /** 2 つのメニューは同時に開かない。開けると帯が重なって読めなくなる。 */
@@ -196,13 +203,23 @@ export function Navbar() {
                 className="site-user__button"
                 aria-expanded={userMenuOpen}
                 aria-controls="site-user-menu"
-                aria-label={`${viewer.name}（${roleLabel}）のメニュー`}
+                aria-label={
+                  unreadCount > 0
+                    ? `${viewer.name}（${roleLabel}）のメニュー、未読 ${unreadCount} 件`
+                    : `${viewer.name}（${roleLabel}）のメニュー`
+                }
                 onClick={toggleUserMenu}
               >
                 <span className="site-user__avatar" aria-hidden="true">
                   {initial}
                 </span>
               </button>
+              {unreadLabel ? (
+                // 未読の数。色だけで伝えないよう、件数はボタンの aria-label が持つ。
+                <span className="site-user__badge" aria-hidden="true">
+                  {unreadLabel}
+                </span>
+              ) : null}
               <div className="site-user-menu" id="site-user-menu" data-open={userMenuOpen ? "true" : "false"}>
                 <p className="site-user-menu__head">
                   <span className="site-user__avatar" aria-hidden="true">
@@ -221,6 +238,11 @@ export function Navbar() {
                         aria-current={pathname === nav.href ? "page" : undefined}
                       >
                         {nav.label}
+                        {nav.href === SITE.nav.notifications.href && unreadLabel ? (
+                          <span className="site-user-menu__count" aria-hidden="true">
+                            {unreadLabel}
+                          </span>
+                        ) : null}
                       </Link>
                     ))}
                   </nav>

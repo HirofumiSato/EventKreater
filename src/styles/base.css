@@ -248,6 +248,30 @@ svg {
   outline-offset: -2px;
 }
 
+/* 未読数の札。390px のバーは「ブランド・作成・頭文字」で埋まっているので、
+   ベルを足さずに頭文字の右上へ重ねる。絶対配置なのでヘッダーの幅も高さも変えない。
+   数字は 1〜9 と `9+` の 2 桁までしか入らない（`formatUnreadCount`）。 */
+.site-user__badge {
+  position: absolute;
+  z-index: 1;
+  top: 0.125rem;
+  right: 0.125rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  /* 押せるのは札（ボタン）だけ。バッジは数を見せるだけなので当たり判定を持たない。 */
+  pointer-events: none;
+}
+
 /* メニューは札の真下に、右端を揃えて開く。狭い端末で画面からはみ出さないよう、
    幅は 15rem を上限に、余白の分だけ縮める。 */
 .site-user-menu {
@@ -293,12 +317,28 @@ svg {
 .site-user-menu__link {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   min-height: 2.75rem;
   padding-inline: 0.5rem;
   border-radius: var(--radius-lg);
   color: var(--color-text-muted);
   font-size: 0.875rem;
   text-decoration: none;
+}
+
+/* 通知の行に添える未読数。行き先の文字と同じ行に、右端でそろえる。 */
+.site-user-menu__count {
+  margin-inline-start: auto;
+  min-width: 1.125rem;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .site-user-menu__link:hover,
