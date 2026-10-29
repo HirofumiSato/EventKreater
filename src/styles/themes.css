@@ -52,6 +52,9 @@
   --color-text-muted: var(--st-content-secondary);
   --color-text-subtle: color-mix(in srgb, var(--st-content-secondary) 78%, var(--st-surface-base));
   --color-text-faint: color-mix(in srgb, var(--st-content-secondary) 62%, var(--st-surface-base));
+  /* 案内文は「入力欄の面」を基準に薄くする。地（--st-surface-base）を基準にすると、
+     面と地の明度差が大きいテーマ（暗い紙面の白い欄）で濃さが崩れる。 */
+  --color-placeholder: color-mix(in srgb, var(--st-content-secondary) 28%, var(--st-surface-raised));
   --color-ink-soft: color-mix(in srgb, var(--st-content-primary) 82%, var(--st-surface-base));
 
   --color-border: var(--st-border-color);
@@ -318,6 +321,17 @@
   box-shadow: none;
 }
 
+/* 入力欄。`.deco .input` は面を白で固定するので、暗いテーマでは地に白い板が浮き、
+   テーマの明るい字（--color-text）と同化して入力した文字が読めなくなる。
+   面も字も紙面に合わせ、案内文はその面を基準に薄くする。 */
+.deco .semantic-theme[data-semantic-theme] .input,
+.deco .semantic-theme[data-semantic-theme] .textarea,
+.deco .semantic-theme[data-semantic-theme] .select {
+  border: var(--st-border-width) solid var(--st-border-color);
+  background: var(--st-surface-raised);
+  color: var(--st-content-primary);
+}
+
 .deco .semantic-theme[data-semantic-theme] .section__title,
 .deco .semantic-theme[data-semantic-theme] .profile-head__name,
 .deco .semantic-theme[data-semantic-theme] h1,
@@ -458,9 +472,10 @@
   color: var(--color-primary-hover);
 }
 
-/* 暗いテーマでは、ブラウザ既定のプレースホルダーが読めない。 */
+/* 暗いテーマでは、ブラウザ既定のプレースホルダーが読めない。
+   色は `--color-placeholder`（入力欄の面を基準に薄くした灰色）で明示する。 */
 .semantic-theme ::placeholder {
-  color: var(--color-text-faint);
+  color: var(--color-placeholder);
 }
 
 /* --------------------------------------------------------------------------
