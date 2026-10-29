@@ -1301,13 +1301,21 @@
 
 .org-subnav__inner {
   display: flex;
-  gap: 0.25rem;
+  /* 390px の幅で「ホーム」を足しても 5 本が収まるよう、狭い画面を既定にして詰める。 */
+  gap: 0.125rem;
   overflow-x: auto;
   width: min(100%, var(--width-page));
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 0.5rem;
   padding-bottom: 0.125rem;
   scrollbar-width: none;
+}
+
+@media (min-width: 640px) {
+  .org-subnav__inner {
+    gap: 0.25rem;
+    padding-inline: 1rem;
+  }
 }
 
 .org-subnav__inner::-webkit-scrollbar {

@@ -3,6 +3,7 @@ import { SITE } from "@/lib/site";
 import {
   type Viewer,
   siteNavConfig,
+  userMenuConfig,
   viewerInitial,
   viewerRole,
   viewerRoleLabel,
@@ -100,6 +101,67 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
       const config = siteNavConfig("/service", viewer);
 
       expect(config.links).not.toContainEqual(SITE.nav.console);
+    }
+  });
+});
+
+/**
+ * 頭文字の札を押して開くメニュー。節（`OrganizerTabs`）と同じ行き先を重ねない。
+ */
+describe("頭文字のメニューの並び", () => {
+  it("参加者はアカウントだけを持ち、通知と下書きは出さない", () => {
+    expect(userMenuConfig("/participant", participant)).toEqual([SITE.nav.account]);
+  });
+
+  it("主催者でも参加者画面では通知だけを足す", () => {
+    expect(userMenuConfig("/participant", organizer)).toEqual([
+      SITE.nav.notifications,
+      SITE.nav.account,
+    ]);
+  });
+
+  it("節がある主催者画面では、マイページを重ねず下書きを受ける", () => {
+    for (const pathname of [
+      "/mypage",
+      "/organizer/events",
+      "/organizer/calendar",
+      "/organizer/revenue",
+      "/organizer/profile",
+    ]) {
+      const links = userMenuConfig(pathname, organizer);
+
+      expect(links).toEqual([
+        SITE.nav.participantSwitch,
+        SITE.nav.notifications,
+        SITE.nav.organizerDrafts,
+        SITE.nav.account,
+      ]);
+      // ホーム（`/mypage`）は節が持つ。メニューに同じ行き先を重ねない。
+      expect(links).not.toContainEqual(SITE.nav.mypage);
+    }
+  });
+
+  it("節を出さない作業画面では、マイページへの入口をメニューに残す", () => {
+    for (const pathname of [
+      "/organizer/events/new",
+      "/organizer/events/abc/edit",
+      "/organizer/events/abc/preview",
+      "/organizer/events/abc/receipts/xyz",
+      "/invitations/abc",
+    ]) {
+      expect(userMenuConfig(pathname, organizer)).toEqual([
+        SITE.nav.participantSwitch,
+        SITE.nav.mypage,
+        SITE.nav.notifications,
+        SITE.nav.organizerDrafts,
+        SITE.nav.account,
+      ]);
+    }
+  });
+
+  it("管理者は会員向けの行き先を持たない", () => {
+    for (const pathname of ["/service", "/participant", "/organizer/events", "/mypage"]) {
+      expect(userMenuConfig(pathname, admin)).toEqual([]);
     }
   });
 });
