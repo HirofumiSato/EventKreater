@@ -19,6 +19,7 @@
    organizer-event-calendar
    participant-calendar
    waitlist
+   rsvp-notifications
    auth-attempt-limits
    auth-session-skip-and-challenge-resend
    venue-suggestions

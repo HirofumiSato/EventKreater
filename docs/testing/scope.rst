@@ -147,7 +147,7 @@
 
 .. count-start
 
-66 ファイル、``it`` は 849 件です。内訳は ``tests/unit/`` が 53 ファイル 764 件、``tests/integration/`` が 13 ファイル 85 件です。結合の 85 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+68 ファイル、``it`` は 877 件です。内訳は ``tests/unit/`` が 54 ファイル 785 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -227,6 +227,14 @@
      - 8
      - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題は件数を数えない。公開の再開は枠を再消費する。複製は下書きの時点では消費しない
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
+  * - ``tests/unit/rsvp-notification.test.ts``
+     - 21
+     - 通知する変化（新規・欠席から・要望から出席へ・同じ状態の再送信・出席から要望や欠席へ）、出席と参加要望の文面と 300 文字での切り詰め、名簿への行き先、二重作成を防ぐ指紋（同じ入力で安定・宛先が違えば別）、宛先からゲスト主催者と自分を落とすこと、未読数の ``9+``
+     - SCR-PUB-03 / SCR-ORG-06
+  * - ``tests/integration/rsvp-notifications.test.ts``
+     - 7
+     - オーナーと共同幹事にだけ作られること、自分が主催する催しへの自分の出欠は他の主催者にだけ作られること、同じ変化を 2 回呼んでも増えないこと、出席と参加要望の種別、既読が自分の行だけ変わること、他の会員の通知は一覧に出ず既読にもできないこと、未ログインは 401
+     - SCR-PUB-03 / SCR-ORG-06
    * - ``tests/integration/revenue.test.ts``
      - 6
      - プラン金額を編集しても申込済みの見込み売上が変わらない。領収書発行額との差額。不参加は売上に含めない
@@ -426,7 +434,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 764、``tests/integration/`` が 85 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 764 件を実行して 85 件を skip します。
+件数の内訳は ``tests/unit/`` が 785、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 785 件を実行して 92 件を skip します。
 
 .. breakdown-end
 

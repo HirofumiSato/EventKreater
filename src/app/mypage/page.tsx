@@ -7,6 +7,9 @@ import { StripePortalButton } from "@/modules/billing/components/StripePortalBut
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { NotificationList } from "@/modules/notifications/components/NotificationList";
+import { announceNotificationsChanged } from "@/modules/notifications/hooks/useNotifications";
+import type { NotificationsResponse, RsvpNotification } from "@/modules/notifications/types";
 import { readProblem } from "@/lib/problem";
 import { loginUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
@@ -33,6 +36,10 @@ export default function MyPage() {
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [ownProfile, setOwnProfile] = useState<OrganizerProfileDraftResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 新着（参加表明・参加要望）。主催者だけが持つ。
+  const [notifications, setNotifications] = useState<RsvpNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [marking, setMarking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -52,12 +59,22 @@ export default function MyPage() {
       // 主催者だけが公開プロフィールを持つ。まだ催しが無い会員は 403 なので、その場合は節を出さない。
       const ownRes = profileBody.isOrganizer ? await fetch("/api/v1/organizer/profile") : null;
       const ownBody = ownRes?.ok ? ((await ownRes.json()) as OrganizerProfileDraftResponse) : null;
+      // 新着は主催者だけが持つ。参加者の端末では問い合わせない。
+      const notificationsBody = profileBody.isOrganizer
+        ? await fetch("/api/v1/notifications?limit=10").then(async (res) =>
+            res.ok ? ((await res.json()) as NotificationsResponse) : null,
+          )
+        : null;
       if (!active) return;
       setProfile(profileBody);
       // 下書きは出欠の統計を持たないため、要約には公開済みと受付停止だけを出す。
       // 下書きの管理は主催一覧の「下書き一覧」が受け持つ。
       setEvents(eventsBody.events.filter((event) => event.status !== "DRAFT"));
       setOwnProfile(ownBody);
+      if (notificationsBody) {
+        setNotifications(notificationsBody.notifications);
+        setUnreadCount(notificationsBody.unreadCount);
+      }
       await fetch("/api/v1/user/hydrate", { method: "POST" });
     };
     void load().catch((cause: unknown) => {
@@ -71,6 +88,41 @@ export default function MyPage() {
   const logout = async () => {
     await fetch("/api/v1/auth/logout", { method: "POST" });
     window.location.href = "/";
+  };
+
+  /** 既読の送信。応答の未読数をそのまま反映し、ヘッダーのバッジにも知らせる。 */
+  const markRead = async (ids?: string[]) => {
+    if (marking) return;
+    setMarking(true);
+    const readAt = new Date().toISOString();
+    try {
+      const res = await fetch("/api/v1/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ids && ids.length > 0 ? { ids } : { all: true }),
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as { unreadCount: number };
+      setUnreadCount(body.unreadCount);
+      // 楽観的にはせず、送れた分だけ既読にする（失敗したら未読のまま残す）。
+      const target = ids && ids.length > 0 ? new Set(ids) : null;
+      setNotifications((current) =>
+        current.map((row) =>
+          !target || target.has(row.id) ? { ...row, readAt: row.readAt ?? readAt } : row,
+        ),
+      );
+      announceNotificationsChanged();
+    } catch {
+      // 既読にできなかっただけ。未読のまま残し、次の読み込みで取り直す。
+    } finally {
+      setMarking(false);
+    }
+  };
+
+  /** 行を押したとき。名簿へ移る前に、その 1 件だけ既読にする。 */
+  const openNotification = (notification: RsvpNotification) => {
+    if (notification.readAt !== null) return;
+    void markRead([notification.id]);
   };
 
   if (error) {
@@ -132,6 +184,17 @@ export default function MyPage() {
         onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/mypage" })}
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
+
+      {/* 新着は数字のすぐ下に置く。契約や催しより先に、誰かが答えたことが目に入る。 */}
+      {profile.isOrganizer && (
+        <NotificationList
+          notifications={notifications}
+          unreadCount={unreadCount}
+          marking={marking}
+          onMarkAll={() => void markRead()}
+          onOpen={openNotification}
+        />
+      )}
 
       <Section>
         <SectionHead title="直近の催し" note={<>{SUMMARY_LIMIT}件まで。すべては主催一覧で見られます。

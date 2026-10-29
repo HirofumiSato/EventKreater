@@ -15,6 +15,7 @@ import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { chooseRsvpTarget, findMyParticipant } from "@/modules/participants/lib/rsvp";
+import { notifyRsvpSubmitted } from "@/modules/notifications/lib/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -107,7 +108,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           if (stale) await tx.participant.delete({ where: { id: stale.id } });
           // クッキーが残した行を指しているときだけ、そのまま使い続ける。
           const keepCookie = !stale && found.matchedBy === "token" && found.participant.id === target.id;
-          return { participant: updated, rawToken: keepCookie ? existingRaw : null, created: false };
+          return {
+            participant: updated,
+            rawToken: keepCookie ? existingRaw : null,
+            created: false,
+            // 通知の判定に使う。同じ状態の再送信では知らせない。
+            previousStatus: target.status,
+          };
         }
 
         const status = await resolveStatusForCapacity(tx, event.id, input.status);
@@ -131,7 +138,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             waitlistedAt: status === "WAITLISTED" ? new Date() : null,
           },
         });
-        return { participant: created, rawToken, created: true };
+        return { participant: created, rawToken, created: true, previousStatus: null };
       });
 
     // 同じ会員の同時送信で一意制約に当たったら、1 回だけ「更新」としてやり直す。
@@ -139,6 +146,23 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       if (!userId || !isUniqueViolation(error)) throw error;
       return submit();
     });
+
+    // 主催者へアプリ内通知を残す。通知はおまけなので、失敗しても出欠は成立させる。
+    try {
+      await notifyRsvpSubmitted({
+        eventId: event.id,
+        eventTitle: event.title,
+        participantId: result.participant.id,
+        participantName: result.participant.name,
+        participantUserId: result.participant.userId,
+        created: result.created,
+        previousStatus: result.previousStatus,
+        nextStatus: result.participant.status,
+        changedAt: result.participant.updatedAt,
+      });
+    } catch (error) {
+      console.error("参加表明の通知に失敗しました", error);
+    }
 
     const attendingCount = await prisma.participant.count({
       where: { eventId: event.id, status: "ATTENDING" },

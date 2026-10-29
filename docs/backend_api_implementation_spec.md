@@ -95,6 +95,8 @@ flowchart TD
 | `/api/v1/user/phone/confirm` | POST | SCR-PUB-11 | 会員必須 | 新しい電話番号の確認コードを照合する。他の端末のログインを切る |
 | `/api/v1/user` | DELETE | SCR-PUB-11 | 会員必須 | 退会（論理削除）。筆頭幹事のイベントを閉じ、サブスクを即時解約し、確認済みの電話番号だけを残す |
 | `/api/v1/user/participations` | GET | SCR-PUB-09 | 会員必須 | 参加履歴の一覧。`status`（ATTENDING/DECLINED）、`scope`（all/upcoming/past）、`page`、`limit` |
+| `/api/v1/notifications` | GET | SCR-PUB-03 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
+| `/api/v1/notifications` | PATCH | SCR-PUB-03 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.19） |
 | `/api/v1/admin/session` | GET | SCR-ADM-04 | 管理者必須 | 管理者セッションの確認。ログイン済みならホームへ進む判定にも使う |
 | `/api/v1/admin/session` | POST | SCR-ADM-00 | 不要 | 管理者ログイン。`ADMIN` かつパスワード一致かつ確認済み電話があるとき、確認番号チャレンジを始める。着地は SCR-ADM-04 |
 | `/api/v1/admin/session` | DELETE | SCR-ADM-04 | 不要 | 管理者セッション Cookie の削除 |
@@ -1360,6 +1362,54 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 - `Content-Type: image/webp`、`Cache-Control: public, max-age=31536000, immutable`、`X-Content-Type-Options: nosniff`。
 - ID は差し替えのたびに新しくなるため、内容は変わらない。長期キャッシュで安全。
 - 将来のイベント表紙（`kind = EVENT_COVER`）も同じ URL の形で配る。
+
+### 5.19. GET / PATCH `/api/v1/notifications`（主催者へのアプリ内通知）
+
+対象画面は SCR-PUB-03（主催者マイページの新着）と、共通ヘッダーの頭文字の札に出す未読数のバッジ。認可は `requireUserId(req)`（未ログインは 401）。**自分の行しか読めない・既読にできない。**
+
+参加者が出席または参加要望を送ると、その催しの会員主催者（`OWNER` / `CO_HOST`）へ `notifications` の行が作られる。ゲスト主催者（`user_id IS NULL`）と、自分自身の出欠は宛先にしない。作るのは `src/modules/notifications/lib/notify.ts` の `notifyRsvpSubmitted()` で、出欠のトランザクションがコミットした後に呼ぶ。**通知の作成に失敗しても出欠の送信は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
+
+- 通知する変化は「出席の新規表明」「参加要望の新規発生」「欠席・要望からの出席」「要望からの出席」だけ。同じ状態の再送信、出席から要望・欠席への変更、取り消し、幹事の承認操作では作らない。
+- 文面は作成時点の催し名・参加者名を焼き付ける（`title` 100 文字、`body` 300 文字）。後から名前を変えても過去の通知は変わらない。
+- 同じ出欠行の同じ変化は `dedupe_key`（sha256）の一意制約で 1 行に抑える。同時送信・リトライで増えない。
+
+**GET `/api/v1/notifications?limit=20`**
+
+`limit` は 1〜50（既定 20）。`created_at` の降順。`unreadCount` は `read_at IS NULL` の件数。
+
+```json
+{
+  "unreadCount": 2,
+  "notifications": [
+    {
+      "id": "…",
+      "kind": "RSVP_ATTENDING",
+      "title": "参加表明がありました",
+      "body": "佐藤 みのり さんが「秋の芋煮会」に出席します。",
+      "eventId": "…",
+      "participantId": "…",
+      "href": "/organizer/events/<eventId>/participants",
+      "readAt": null,
+      "createdAt": "2026-10-29T09:55:00.000Z"
+    }
+  ]
+}
+```
+
+`kind` は `RSVP_ATTENDING` または `RSVP_WAITLISTED`。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る）。`href` は名簿の画面で、サーバーが組み立てる。
+
+**PATCH `/api/v1/notifications`**
+
+```json
+{ "all": true }
+```
+
+または `{ "ids": ["…"] }`（最大 100 件）。`all` も `ids` も無い要求は 400。`updateMany({ where: { userId, readAt: null, ... } })` で既読にし、`{ "unreadCount": 0 }` を返す。他の会員の ID を混ぜても `userId` で絞るので何も起きない。
+
+| 状態 | error | 意味 |
+| :---- | :---- | :---- |
+| 400 | - | 本文が JSON でない、`ids` が UUID でない、`all` も `ids` も無い |
+| 401 | - | 未ログイン、またはセッションが無効 |
 
 ---
 
