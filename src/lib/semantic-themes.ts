@@ -45,7 +45,7 @@ export const SEMANTIC_THEMES: readonly SemanticThemeDefinition[] = [
   {
     id: "neo-brutalism",
     label: "ネオ・ブルータリズム",
-    note: "太い黒枠と硬い影。手づくりのチラシらしい勢いが出ます。",
+    note: "墨の枠と紙を重ねた影。手づくりのチラシらしい、落ち着いた勢い。",
   },
   {
     id: "neon",

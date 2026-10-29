@@ -236,7 +236,7 @@ class PosterColors:
 def ensure_contrast(color: RGB, background: RGB, minimum: float = MIN_CONTRAST) -> RGB:
     """背景に対して最低コントラストを満たすまで、黒か白へ寄せる。
 
-    ネオ・ブルータリズムの黄（#FFE600）や夜のスレートの藍（#4F46E5）は、そのまま
+    ネオ・ブルータリズムの黄（#FFD84D）や夜のスレートの藍（#4F46E5）は、そのまま
     では明るい紙に載せられない。色相を捨てずに濃さだけを動かす。
     """
     if contrast_ratio(_luminance(color), _luminance(background)) >= minimum:
