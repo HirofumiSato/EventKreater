@@ -851,6 +851,22 @@
   /** 状態の値 → カードの札の文言。`ALL` は札を見ない。 */
   const LIST_STATUS_BADGE = { PUBLISHED: "公開中", CLOSED: "受付停止" };
 
+  /** 並び順のアイコン。製品の DOM（lucide の SVG）から写したもの。 */
+  const SORT_ICONS = {
+    desc:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"' +
+      ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+      ' class="lucide lucide-arrow-down-narrow-wide icon" aria-hidden="true">' +
+      '<path d="m3 16 4 4 4-4"></path><path d="M7 20V4"></path><path d="M11 4h4"></path>' +
+      '<path d="M11 8h7"></path><path d="M11 12h10"></path></svg>',
+    asc:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"' +
+      ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+      ' class="lucide lucide-arrow-up-narrow-wide icon" aria-hidden="true">' +
+      '<path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path><path d="M11 12h4"></path>' +
+      '<path d="M11 16h7"></path><path d="M11 20h10"></path></svg>',
+  };
+
   /** カードの見出しに並ぶ 1 つ目の札（状態）。2 つ目は主催・共同主催。 */
   function statusBadgeText(card) {
     const badge = card.querySelector(".event-card__head .badge");
@@ -880,6 +896,33 @@
     const grid = document.querySelector(".event-card-grid");
     const cards = Array.from(document.querySelectorAll(".event-card-grid .event-card"));
     const statusRow = rows.find((row) => row.control.tagName === "SELECT");
+
+    // 開催日の昇順降順。製品は `sortDate` で並べ替えるが、モックの札には年が無い。
+    // 撮った一覧は 1 年ぶんだけなので、月日（M月D日）だけで並べ替える。
+    const sortButton = bar.querySelector(".list-filters__sort");
+    if (sortButton && grid) {
+      const dateOf = (card) => {
+        const label = card.querySelector(".event-card__meta")?.textContent || "";
+        const found = /(\d+)月(\d+)日/.exec(label);
+        return found ? Number(found[1]) * 100 + Number(found[2]) : 0;
+      };
+      let order = "desc";
+      sortButton.addEventListener("click", () => {
+        order = order === "asc" ? "desc" : "asc";
+        const direction = order === "asc" ? 1 : -1;
+        const sorted = [...cards].sort((left, right) => {
+          const a = dateOf(left);
+          const b = dateOf(right);
+          if (a === b) return 0;
+          return a < b ? -direction : direction;
+        });
+        for (const card of sorted) grid.append(card);
+        const label = order === "asc" ? "開催日の新しい順に並べ替える" : "開催日の古い順に並べ替える";
+        sortButton.setAttribute("aria-label", label);
+        sortButton.title = label;
+        sortButton.innerHTML = SORT_ICONS[order];
+      });
+    }
 
     const filled = (row) => Boolean(row.control.value) && row.control.value !== "ALL";
 

@@ -1,9 +1,10 @@
 /**
- * 主催一覧の絞り込みとページ割り。
+ * 主催一覧の絞り込み・並べ替え・ページ割り。
  *
  * 一覧 API（`GET /api/v1/organizer/events`）は全件を返す。マイページとカレンダーが
  * 全件前提で作られているため、絞り込みとページ割りは画面側で持つ。
- * 催しは年を跨いで溜まり続けるので、状態・過去・開催日で絞り、1 ページ 10 件ずつ出す。
+ * 催しは年を跨いで溜まり続けるので、状態・過去・開催日で絞り、開催日の昇順降順で
+ * 並べ替え、1 ページ 10 件ずつ出す。
  *
  * 判定は文字列（`sortDate` は `YYYY-MM-DD`）の比較だけで済ませる。
  * 日付を `Date` に戻すと、時差で 1 日ずれる余地が生まれる。
@@ -12,6 +13,9 @@ import type { EventStatus } from "@/modules/events/types";
 
 /** 「すべて」「公開中のみ」「受付停止のみ」。 */
 export type OrganizerStatusFilter = "ALL" | "PUBLISHED" | "CLOSED";
+
+/** 開催日の並び順。`asc` は古い順、`desc` は新しい順。 */
+export type OrganizerSortOrder = "asc" | "desc";
 
 /** 1 ページに並べるカードの枚数。 */
 export const ORGANIZER_PAGE_SIZE = 10;
@@ -33,6 +37,14 @@ export const DEFAULT_ORGANIZER_FILTER: OrganizerListFilter = {
   from: "",
   to: "",
 };
+
+/**
+ * 開いた直後の並び順。新しい開催日から出す。
+ *
+ * 既定の絞り込みは過去も含むため、古い順にすると何年も前の催しが先頭に来る。
+ * API が返す「作った新しい順」とも向きが揃う。
+ */
+export const DEFAULT_ORGANIZER_SORT: OrganizerSortOrder = "desc";
 
 const TOKYO_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -66,6 +78,7 @@ export function activeFilterCount(filter: OrganizerListFilter): number {
 
 /**
  * 状態・過去・開催日の範囲で絞る。並び順は API のまま（作った新しい順）で変えない。
+ * 開催日で並べ替えるのは `sortOrganizerEvents` の役目で、絞り込みとは分けて呼ぶ。
  * 今日の催しは「過去」にしない（当日はまだ開催前なので落とさない）。
  */
 export function filterOrganizerEvents<T extends { status: EventStatus; sortDate: string }>(
@@ -79,6 +92,24 @@ export function filterOrganizerEvents<T extends { status: EventStatus; sortDate:
     if (filter.from !== "" && row.sortDate < filter.from) return false;
     if (filter.to !== "" && row.sortDate > filter.to) return false;
     return true;
+  });
+}
+
+/**
+ * 開催日（`sortDate`）で並べ替える。新しい順（`desc`）と古い順（`asc`）を切り替える。
+ *
+ * 同じ開催日の催しは、渡された並び（API の作った新しい順）のままにする。
+ * `Array.prototype.sort` は安定なので、比較で 0 を返せば元の順が残る。
+ * 日付は `YYYY-MM-DD` の文字列のまま比べる（`Date` に戻すと時差で 1 日ずれる余地が生まれる）。
+ */
+export function sortOrganizerEvents<T extends { sortDate: string }>(
+  rows: readonly T[],
+  order: OrganizerSortOrder,
+): T[] {
+  const direction = order === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    if (a.sortDate === b.sortDate) return 0;
+    return a.sortDate < b.sortDate ? -direction : direction;
   });
 }
 

@@ -147,7 +147,7 @@
 
 .. count-start
 
-66 ファイル、``it`` は 845 件です。内訳は ``tests/unit/`` が 53 ファイル 760 件、``tests/integration/`` が 13 ファイル 85 件です。結合の 85 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+66 ファイル、``it`` は 849 件です。内訳は ``tests/unit/`` が 53 ファイル 764 件、``tests/integration/`` が 13 ファイル 85 件です。結合の 85 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -280,7 +280,7 @@
      - 下書き保存の必須項目、保存と同時の公開状態の変更を断る、次に開くステップの判定
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-filters.test.ts``
-     - 11
+     - 15
      - 主催一覧の絞り込み（状態・過去・開催日）、10 件ずつのページ割り、日本時間の今日
      - SCR-ORG-01
    * - ``tests/unit/flyer-download.test.ts``
@@ -426,7 +426,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 760、``tests/integration/`` が 85 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 760 件を実行して 85 件を skip します。
+件数の内訳は ``tests/unit/`` が 764、``tests/integration/`` が 85 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 764 件を実行して 85 件を skip します。
 
 .. breakdown-end
 
