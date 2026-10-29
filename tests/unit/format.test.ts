@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { currentMonthBounds, formatDateJa, formatDateTimeJa, formatMonthJa, isoDate, yen, yenMark } from "@/lib/format";
+import {
+  currentMonthBounds,
+  formatDateJa,
+  formatDateTimeJa,
+  formatFullDateJa,
+  formatMonthJa,
+  isoDate,
+  yen,
+  yenMark,
+} from "@/lib/format";
 
 describe("yen / yenMark", () => {
   it("3桁区切りで円を付ける", () => {
@@ -28,6 +37,17 @@ describe("formatDateJa / formatMonthJa", () => {
   it("壊れた値はそのまま返す", () => {
     expect(formatDateJa("2026/10/22")).toBe("2026/10/22");
     expect(formatMonthJa("2026")).toBe("2026");
+  });
+});
+
+describe("formatFullDateJa", () => {
+  it("紙面用に年と曜日まで付ける", () => {
+    expect(formatFullDateJa("2026-11-14")).toBe("2026年11月14日（土）");
+    expect(formatFullDateJa("2027-01-01")).toBe("2027年1月1日（金）");
+  });
+
+  it("壊れた値はそのまま返す", () => {
+    expect(formatFullDateJa("2026/11/14")).toBe("2026/11/14");
   });
 });
 

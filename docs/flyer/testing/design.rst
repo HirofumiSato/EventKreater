@@ -151,6 +151,12 @@
      - 黄は紙に対して墨側へ寄る
    * - ``test_the_surface_steps_are_ordered_by_darkness``
      - paper < band < ink の順に暗い
+  * - ``test_an_iso_date_is_written_in_japanese``
+     - ``2026-11-14`` は ``2026年11月14日（土）`` になる
+  * - ``test_a_poster_plan_never_prints_an_iso_date``
+     - ISO を渡しても eyebrow は日本語の日付
+  * - ``test_a_date_that_is_not_iso_is_left_alone``
+     - 整形済みの日付と実在しない日付は書き換えない
 
 紙の地
 ------

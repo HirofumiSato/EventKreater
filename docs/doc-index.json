@@ -5348,7 +5348,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 296,
+      "lineCount": 302,
       "headings": [
         {
           "level": 1,
@@ -10275,7 +10275,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 534,
+      "lineCount": 538,
       "headings": [
         {
           "level": 1,
@@ -10450,6 +10450,10 @@
         },
         {
           "path": "tests/unit/flyer-download.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-payload.test.ts",
           "exists": true
         },
         {
