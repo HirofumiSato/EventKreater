@@ -10275,7 +10275,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 538,
+      "lineCount": 542,
       "headings": [
         {
           "level": 1,
@@ -10498,6 +10498,10 @@
         },
         {
           "path": "tests/unit/organizer-calendar.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-invite.test.ts",
           "exists": true
         },
         {

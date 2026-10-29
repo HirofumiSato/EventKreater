@@ -588,10 +588,28 @@
 }
 
 /* 追従の出欠バー（スマホだけ）に本文の末尾が隠れないよう、同じ高さを空ける。
-   バーと対なので、片方だけ変えない。 */
+   バーと対なので、片方だけ変えない。バーはボタン行（約 52px）と、
+   主催者への誘いの帯（罫線 + 12px の字 + 余白で約 40px）の 2 段になる。
+   帯を出さない相手（この催しの幹事）には、前と同じ高さだけを空ける。 */
 @media (max-width: 767px) {
   .event-page {
     padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  .event-page:has(.sticky-rsvp__invite) {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* バーはページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ
+   空けて、バーがフッターの文字に重ならないようにする（`.action-dock` と同じ形）。 */
+@media (max-width: 767px) {
+  body:has(.sticky-rsvp) .site-footer {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  body:has(.sticky-rsvp__invite) .site-footer {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }
 

@@ -7,6 +7,7 @@ import { EventMetaCard } from "@/modules/events/components/EventMetaCard";
 import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { StickyRsvpBar } from "@/modules/attendance/components/StickyRsvpBar";
 import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInviteCard";
+import { showsOrganizerInvite } from "@/modules/events/lib/organizer-invite";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
@@ -114,6 +115,7 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         organizerHref={
           event.organizers.owner?.userId ? `/organizers/${event.organizers.owner.userId}` : null
         }
+        showInvite={showsOrganizerInvite(event.viewer)}
       />
       </div>
     </SemanticThemeScope>
