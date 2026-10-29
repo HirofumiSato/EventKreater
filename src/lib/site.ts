@@ -36,6 +36,14 @@ export const SITE = {
     participantCalendar: { href: "/participant/calendar", label: "参加カレンダー" },
     participantHistory: { href: "/participant/history", label: "参加履歴" },
     mypage: { href: "/mypage", label: "主催者マイページ" },
+    /**
+     * 主催者画面の節（`OrganizerTabs`）の先頭。同じ `/mypage` でも、
+     * 参加者画面のバーでは「主催者マイページ」、主催者の節では「ホーム」と呼ぶ。
+     * 並びの違う面で同じ文言にすると、どちらのエリアの入口か読めなくなる。
+     */
+    organizerHome: { href: "/mypage", label: "ホーム" },
+    /** 下書き（SCR-ORG-15）。主催者の節からは外し、頭文字のメニューが受ける。 */
+    organizerDrafts: { href: "/organizer/events/drafts", label: "下書き" },
     /** 主催者の新着（参加表明・参加要望）。マイページの節へ直接飛ぶ。 */
     notifications: { href: "/mypage#notifications", label: "通知" },
     account: { href: "/account", label: "アカウント" },

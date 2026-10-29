@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SITE } from "@/lib/site";
 
 /**
  * 主催者画面の本文内サブタブ。
- * ヘッダーの行き先（FE-PUB-03）は変えず、主催一覧・カレンダー・売上のあいだだけを行き来させる。
+ * ヘッダーの行き先（FE-PUB-03）は変えず、主催者としての画面のあいだだけを行き来させる。
  * ヘッダーに同じ行き先を重ねないため、ここは「節」の切り替えとして置く。
+ * 先頭の「ホーム」は `/mypage`（SCR-PUB-03）で、節のどの画面からでも戻れる。
+ * 下書き（SCR-ORG-15）は催しの一覧の一種なので、ここには置かず頭文字のメニューが持つ。
  */
 const TABS = [
+  SITE.nav.organizerHome,
   { href: "/organizer/events", label: "主催一覧" },
   { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
-  { href: "/organizer/events/drafts", label: "下書き" },
   { href: "/organizer/profile", label: "公開プロフ" },
 ] as const;
 

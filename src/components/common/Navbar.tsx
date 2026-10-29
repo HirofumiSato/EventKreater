@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SITE } from "@/lib/site";
 import {
-  type NavLink,
   type Viewer,
   siteNavConfig,
+  userMenuConfig,
   viewerInitial,
   viewerRole,
   viewerRoleLabel,
@@ -114,18 +114,10 @@ export function Navbar() {
   const menuAction = compactAction ? action : undefined;
 
   /**
-   * 頭文字の札を押して開くメニューの中身。
-   * 主催者画面では、バーから外した「参加者として見る」と「主催者マイページ」をここが受ける。
-   * 管理者は管理コンソールしか持たないので、会員向けの行き先を出さない。
+   * 頭文字の札を押して開くメニューの中身。並びは `site-nav.ts` の `userMenuConfig` が決める。
+   * 主催者画面では、バーから外した「参加者として見る」と、節に重ならない「下書き」をここが受ける。
    */
-  const userMenuLinks: NavLink[] = [];
-  if (organizerView) {
-    if (action) userMenuLinks.push(action);
-    userMenuLinks.push(SITE.nav.mypage);
-  }
-  // 通知は主催者にだけ作られる。参加者のメニューには出さない。
-  if (viewer?.isOrganizer && role !== "admin") userMenuLinks.push(SITE.nav.notifications);
-  if (role !== "admin") userMenuLinks.push(SITE.nav.account);
+  const userMenuLinks = viewer ? userMenuConfig(pathname, viewer) : [];
 
   /** 2 つのメニューは同時に開かない。開けると帯が重なって読めなくなる。 */
   const toggleNav = () => {
@@ -229,7 +221,7 @@ export function Navbar() {
                   <span className="site-user__role">{roleLabel}</span>
                 </p>
                 {userMenuLinks.length > 0 ? (
-                  <nav className="site-user-menu__links" aria-label="アカウント">
+                  <nav className="site-user-menu__links" aria-label="メニュー">
                     {userMenuLinks.map((nav) => (
                       <Link
                         key={nav.href + nav.label}
