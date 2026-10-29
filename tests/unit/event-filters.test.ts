@@ -3,12 +3,14 @@ import {
   activeFilterCount,
   clampPage,
   DEFAULT_ORGANIZER_FILTER,
+  DEFAULT_ORGANIZER_SORT,
   filterOrganizerEvents,
   hasActiveFilter,
   ORGANIZER_PAGE_SIZE,
   pageCountOf,
   pageRangeLabel,
   paginate,
+  sortOrganizerEvents,
   todayInTokyo,
 } from "@/modules/events/lib/event-filters";
 
@@ -74,6 +76,52 @@ describe("主催一覧の絞り込み", () => {
     expect(
       activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: "PUBLISHED", from: "2026-10-01", to: "2026-12-31" }),
     ).toBe(3);
+  });
+});
+
+/** 開催日の昇順降順。既定は新しい順で、同じ日付は元の並びを保つ。 */
+describe("主催一覧の並べ替え", () => {
+  it("既定は開催日の新しい順", () => {
+    expect(DEFAULT_ORGANIZER_SORT).toBe("desc");
+    expect(sortOrganizerEvents(rows, DEFAULT_ORGANIZER_SORT).map((row) => row.title)).toEqual([
+      "年末の会",
+      "次の会",
+      "先月の会",
+      "止めた会",
+    ]);
+  });
+
+  it("古い順に切り替えられる", () => {
+    expect(sortOrganizerEvents(rows, "asc").map((row) => row.title)).toEqual([
+      "止めた会",
+      "先月の会",
+      "次の会",
+      "年末の会",
+    ]);
+  });
+
+  it("同じ開催日の催しは、渡された並びのままにする", () => {
+    const sameDay = [
+      { sortDate: "2026-11-08", title: "先に作った会" },
+      { sortDate: "2026-11-01", title: "別の日" },
+      { sortDate: "2026-11-08", title: "後に作った会" },
+    ] as const;
+    expect(sortOrganizerEvents(sameDay, "desc").map((row) => row.title)).toEqual([
+      "先に作った会",
+      "後に作った会",
+      "別の日",
+    ]);
+    expect(sortOrganizerEvents(sameDay, "asc").map((row) => row.title)).toEqual([
+      "別の日",
+      "先に作った会",
+      "後に作った会",
+    ]);
+  });
+
+  it("元の配列は書き換えない", () => {
+    const input = [...rows];
+    sortOrganizerEvents(input, "asc");
+    expect(input.map((row) => row.title)).toEqual(["先月の会", "次の会", "止めた会", "年末の会"]);
   });
 });
 

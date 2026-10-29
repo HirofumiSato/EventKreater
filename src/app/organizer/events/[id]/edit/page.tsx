@@ -186,6 +186,14 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           いま編集中のあいだ、ほかの人は保存できません。保存すると、この制限は解除されます。
         </div>
       )}
+      {lock.status === "conflict" && !lock.conflictVisible && (
+        <Alert tone="warning" as="div" className="alert--compact">
+          <p>{lock.conflict?.holderName} が編集中のため、いまは閲覧のみです。保存するには編集権を引き継ぎます。</p>
+          <button type="button" className="btn btn--sm btn--outline" onClick={lock.reopenConflict}>
+            編集権を引き継ぐ
+          </button>
+        </Alert>
+      )}
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {form.status === "DRAFT" && (
         <QuotaStatusBanner
@@ -237,10 +245,10 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         }
       />
       <LockConflictModal
-        isOpen={lock.status === "conflict" && Boolean(lock.conflict)}
+        isOpen={lock.conflictVisible}
         holderName={lock.conflict?.holderName ?? ""}
         takingOver={takingOver}
-        onRetry={() => void lock.refresh()}
+        onDismiss={lock.dismissConflict}
         onTakeover={async () => {
           setTakingOver(true);
           try {

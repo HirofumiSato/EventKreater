@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-react";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
@@ -18,12 +19,15 @@ import {
   activeFilterCount,
   clampPage,
   DEFAULT_ORGANIZER_FILTER,
+  DEFAULT_ORGANIZER_SORT,
   filterOrganizerEvents,
   hasActiveFilter,
   pageCountOf,
   pageRangeLabel,
   paginate,
+  sortOrganizerEvents,
   todayInTokyo,
+  type OrganizerSortOrder,
   type OrganizerStatusFilter,
 } from "@/modules/events/lib/event-filters";
 import { Alert, Dialog, EmptyState, Field, Loading, PageHeader, Section, SectionHead } from "@/components/ui";
@@ -56,6 +60,8 @@ function OrganizerEventsScreen() {
   // 「この条件で絞り込む」を押すまで一覧は動かさない（背景を押せば元の条件に戻る）。
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftFilter, setDraftFilter] = useState<FilterDraft>({ status: "ALL", from: "", to: "" });
+  // 並べ替えは絞り込みとは別に持つ。「条件を戻す」でも触らない（見たい順は残す）。
+  const [sortOrder, setSortOrder] = useState<OrganizerSortOrder>(DEFAULT_ORGANIZER_SORT);
   const [page, setPage] = useState(1);
   const today = todayInTokyo();
 
@@ -63,15 +69,19 @@ function OrganizerEventsScreen() {
     () => ({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, excludePast, from: dateFrom, to: dateTo }),
     [statusFilter, excludePast, dateFrom, dateTo],
   );
-  const filtered = useMemo(() => filterOrganizerEvents(events, filter, today), [events, filter, today]);
+  const filtered = useMemo(
+    () => sortOrganizerEvents(filterOrganizerEvents(events, filter, today), sortOrder),
+    [events, filter, today, sortOrder],
+  );
   const currentPage = clampPage(page, filtered.length);
   const totalPages = pageCountOf(filtered.length);
   const visible = paginate(filtered, currentPage);
 
-  // 条件を変えたら 1 ページ目へ戻す。3 ページ目を見たまま絞ると、空のページに着地する。
+  // 条件か並び順を変えたら 1 ページ目へ戻す。3 ページ目を見たまま絞ると、
+  // 並べ替えで別の催しが着地して、見ていた催しを見失う。
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, excludePast, dateFrom, dateTo]);
+  }, [statusFilter, excludePast, dateFrom, dateTo, sortOrder]);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events");
@@ -176,6 +186,10 @@ function OrganizerEventsScreen() {
   // ボタンに添える件数。外に出している「過去の催しを除く」は数えない。
   const filterCount = activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, from: dateFrom, to: dateTo });
 
+  // 並べ替えはアイコンだけなので、押すと何が起きるかを読み上げとツールチップで補う。
+  // いまの並び（昇順か降順か）はアイコンの向きで示す。
+  const sortLabel = sortOrder === "asc" ? "開催日の新しい順に並べ替える" : "開催日の古い順に並べ替える";
+
   const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
   const closedCount = events.filter((event) => event.status === "CLOSED").length;
 
@@ -232,7 +246,7 @@ function OrganizerEventsScreen() {
 
         {/* 溜まった催しから目当てを探すための 3 つ。状態・過去・開催日で絞る。
             640px 未満では状態と開催日をモーダルへ畳み、一覧の場所を空ける。
-            過去の除外だけは外に残す（一覧を見ながら 1 押しで切り替えたいため）。 */}
+            過去の除外だけは外に残し、並び順（開催日の昇順降順）も 1 押しで切り替える。 */}
         <div className="list-filters">
           <button
             type="button"
@@ -278,6 +292,21 @@ function OrganizerEventsScreen() {
               onChange={(event) => setDateTo(event.currentTarget.value)}
             />
           </label>
+          {/* 開催日の昇順降順。スマホでは「絞り込む」の隣に並び、640px 以上では
+              日付の入力の後ろに付く。DOM の順のまま置けるので、読み上げと焦点の順も変わらない。 */}
+          <button
+            type="button"
+            className="btn btn--outline btn--sm list-filters__sort"
+            aria-label={sortLabel}
+            title={sortLabel}
+            onClick={() => setSortOrder((current) => (current === "asc" ? "desc" : "asc"))}
+          >
+            {sortOrder === "asc" ? (
+              <ArrowUpNarrowWide className="icon" aria-hidden="true" />
+            ) : (
+              <ArrowDownNarrowWide className="icon" aria-hidden="true" />
+            )}
+          </button>
           <label className="check list-filters__check">
             <input
               type="checkbox"

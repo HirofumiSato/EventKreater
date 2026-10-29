@@ -1144,13 +1144,14 @@ body:has(.action-dock) .site-footer {
 }
 
 /* 一覧の絞り込み。状態・開催日の範囲・過去の表示をまとめる。
-   スマホでは状態と開催日をモーダルへ畳み、「絞り込む」と「過去の催しを除く」だけを
-   1 行に残す（一覧の場所を空けるため）。640px からは 4 つを 1 行に並べる。 */
+   スマホでは状態と開催日をモーダルへ畳み、「絞り込む」「並び順」「過去の催しを除く」
+   だけを 1 行に残す（一覧の場所を空けるため）。640px からは 4 つと並び順を 1 行に並べる。 */
 .list-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  /* 見えているボタンを左に寄せ、過去の除外だけを右端へ送る（下の margin-left）。 */
+  justify-content: flex-start;
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
@@ -1167,9 +1168,18 @@ body:has(.action-dock) .site-footer {
   letter-spacing: 0.04em;
 }
 
+/* 過去の除外だけは右端に寄せる。並び順のボタンと間が空きすぎないよう、
+   余った幅はこの左にだけ入れる。 */
 .list-filters__check {
   align-self: center;
+  margin-left: auto;
   font-size: 0.8125rem;
+}
+
+/* 並び順。アイコンだけのボタンなので、幅はアイコンのぶんに詰める。
+   `.deco .btn--sm` の左右の余白に負けないよう、`.btn` まで重ねて指定する。 */
+.list-filters .list-filters__sort.btn {
+  padding-inline: 0.5rem;
 }
 
 /* モーダルの中の入力。日付の 2 つを横に並べると 390px ではラベルと押し合うので、
@@ -1186,11 +1196,12 @@ body:has(.action-dock) .site-footer {
 
 @media (min-width: 640px) {
   .list-filters {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, max-content));
-    justify-content: start;
+    /* 状態・開始日・終了日・並び順・過去の除外で 5 つ。入力の最小幅（9.5rem）を
+       保ったまま 640px 付近では 1 行に入りきらないので、そのときは過去の除外だけを
+       次の行へ回す（狭い列に押し込めて重ねるより読める）。 */
+    flex-wrap: wrap;
     align-items: end;
-    gap: 0.75rem;
+    gap: 0.5rem 0.75rem;
   }
 
   .list-filters__field {
@@ -1209,6 +1220,7 @@ body:has(.action-dock) .site-footer {
   }
 
   .list-filters__check {
+    margin-left: 0;
     padding-bottom: 0.5rem;
   }
 }
