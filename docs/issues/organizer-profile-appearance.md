@@ -97,7 +97,7 @@ erDiagram
 | `modern-slate` | 夜のスレート | 暗い地に白い文字。写真が映え、落ち着いて読めます。 |
 | `enterprise-clean` | クリーン | 明るい地に細い枠。どんな催しにも合わせやすい標準的な見た目。 |
 | `parchment` | 羊皮紙 | 生成りの地に明朝。読み物として、ゆっくり読ませたいとき。 |
-| `neo-brutalism` | ネオ・ブルータリズム | 太い黒枠と硬い影。手づくりのチラシらしい勢いが出ます。 |
+| `neo-brutalism` | ネオ・ブルータリズム | 墨の枠と紙を重ねた影。手づくりのチラシらしい、落ち着いた勢い。 |
 | `neon` | ネオン | 黒地にシアンの発光。クラブ・ライブ・夜の催し向け。 |
 
 ### 2. `src/styles/themes.css`
@@ -114,10 +114,10 @@ erDiagram
 | `--st-content-secondary` | 補足・ラベル |
 | `--st-accent-primary` | 差し色 |
 | `--st-accent-contrast` | 差し色の上に置く文字 |
-| `--st-border-width` | 枠の太さ（ブルータリズムは 3px） |
+| `--st-border-width` | 枠の太さ（ブルータリズムは 2px） |
 | `--st-border-color` | 枠の色 |
 | `--st-radius-base` | 角丸の基準（ブルータリズムは 0） |
-| `--st-shadow-elevation` | 影（ブルータリズムは `4px 4px 0 #000`） |
+| `--st-shadow-elevation` | 影（ブルータリズムは `4px 4px 0 #e2dbc4`） |
 
 書き方は 3 段:
 

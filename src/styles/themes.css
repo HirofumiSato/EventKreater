@@ -195,26 +195,32 @@
 /* --------------------------------------------------------------------------
    6. テーマ 4: Neo-Brutalism（ネオ・ブルータリズム）
 
-   生成りに近い白、太い黒枠、硬い直角の影、黄色の差し色。
+   生成りの紙、墨の細い枠、紙を重ねたような硬い影、山吹の差し色。
    角丸は 0。ぼかしは使わない。
+
+   枠は 2px に留める。3px まで太くすると、角丸の無い小さな部品（チップ・入力欄・
+   カレンダーの送り）で線だけが先に立ち、紙面ではなくワイヤーフレームに見える。
+   影は純黒を敷かず、地から一段暗くした紙の色（#e2dbc4）を 4px ずらす。
+   黒い硬い影は「貼った紙」ではなく「縁取りを二重にした板」に見えていた。
+   墨も純黒ではなく、わずかに茶を含む #17150f にして、生成りの地と馴染ませる。
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="neo-brutalism"] {
-  --st-surface-base: #fffef0;
-  --st-surface-raised: #ffffff;
-  --st-content-primary: #000000;
-  --st-content-secondary: #3a3a33;
-  --st-accent-primary: #ffe600;
-  --st-accent-text: #1a1a00;
-  --st-accent-contrast: #000000;
-  --st-border-width: 3px;
-  --st-border-color: #000000;
+  --st-surface-base: #faf7ee;
+  --st-surface-raised: #fffdf6;
+  --st-content-primary: #17150f;
+  --st-content-secondary: #56504a;
+  --st-accent-primary: #ffd84d;
+  --st-accent-text: #2a2100;
+  --st-accent-contrast: #17150f;
+  --st-border-width: 2px;
+  --st-border-color: #17150f;
   --st-radius-base: 0px;
-  --st-shadow-elevation: 4px 4px 0 #000000;
+  --st-shadow-elevation: 4px 4px 0 #e2dbc4;
   --st-filter-effect: none;
-  --st-danger: #d92d20;
-  --st-warning: #b45309;
-  --st-success: #157f3c;
+  --st-danger: #c0392b;
+  --st-warning: #a8611b;
+  --st-success: #2f7d4f;
   --st-surface-image: none;
 }
 
