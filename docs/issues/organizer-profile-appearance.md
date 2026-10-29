@@ -133,7 +133,7 @@ erDiagram
 - 未ログインの白塗り `.organizer-locked__notice` → 地を 64% 透かす
 - ジャンルチップ `.chip`、`.eyebrow` の札、`.profile-head__avatar` のモノグラム
 - `.btn--primary` / `.btn--outline` / `.btn--ghost` の枠と影
-- 入力欄 `.input` / `.textarea` / `.select`（`.deco` が面を白で固定している）→ `--st-surface-raised` と `--st-content-primary`。暗いテーマでは地に白い板が浮き、テーマの明るい字と同化して入力した文字が読めなくなるため。案内文は `--color-placeholder`（`--st-content-secondary` を 35% 混ぜる）で、地ではなく**入力欄の面**を基準に薄くする
+- 入力欄 `.input` / `.textarea` / `.select`（`.deco` が面を白で固定している）→ `--st-surface-raised` と `--st-content-primary`。暗いテーマでは地に白い板が浮き、テーマの明るい字と同化して入力した文字が読めなくなるため。案内文は `--color-placeholder`（`--st-content-secondary` を 28% 混ぜる）で、地ではなく**入力欄の面**を基準に薄くする
 
 `parchment` の見出しはシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）。Web フォントは 1 つも増やしていない。
 

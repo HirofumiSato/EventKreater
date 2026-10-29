@@ -54,7 +54,7 @@
   --color-text-faint: color-mix(in srgb, var(--st-content-secondary) 62%, var(--st-surface-base));
   /* 案内文は「入力欄の面」を基準に薄くする。地（--st-surface-base）を基準にすると、
      面と地の明度差が大きいテーマ（暗い紙面の白い欄）で濃さが崩れる。 */
-  --color-placeholder: color-mix(in srgb, var(--st-content-secondary) 35%, var(--st-surface-raised));
+  --color-placeholder: color-mix(in srgb, var(--st-content-secondary) 28%, var(--st-surface-raised));
   --color-ink-soft: color-mix(in srgb, var(--st-content-primary) 82%, var(--st-surface-base));
 
   --color-border: var(--st-border-color);

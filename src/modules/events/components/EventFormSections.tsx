@@ -60,6 +60,7 @@ export function BasicSection({
           disabled={disabled}
           value={value.title}
           onChange={(event) => set("title", event.target.value)}
+          placeholder="例: 秋の芋煮会"
           className="input"
         />
       </Field>
