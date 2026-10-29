@@ -23,6 +23,7 @@ const REQUIRED_TOKENS = [
   "--st-content-primary",
   "--st-content-secondary",
   "--st-accent-primary",
+  "--st-accent-text",
   "--st-accent-contrast",
   "--st-border-width",
   "--st-border-color",
@@ -73,7 +74,7 @@ describe("セマンティックテーマの CSS", () => {
     // `.deco .input` は面を白で固定する。暗いテーマでは字が明るいままなので、
     // 上書きしないと白地に白字になり、入力した文字が読めない。
     expect(THEMES_CSS).toMatch(
-      /\.deco \.semantic-theme\[data-semantic-theme\] \.input,\s*\n\s*\.deco \.semantic-theme\[data-semantic-theme\] \.textarea,\s*\n\s*\.deco \.semantic-theme\[data-semantic-theme\] \.select \{[^}]*background: var\(--st-surface-raised\);[^}]*color: var\(--st-content-primary\)/,
+      /:where\(\.deco\) \.semantic-theme\[data-semantic-theme\] \.input,\s*\n\s*:where\(\.deco\) \.semantic-theme\[data-semantic-theme\] \.textarea,\s*\n\s*:where\(\.deco\) \.semantic-theme\[data-semantic-theme\] \.select \{[^}]*background: var\(--st-surface-raised\);[^}]*color: var\(--st-content-primary\)/,
     );
   });
 

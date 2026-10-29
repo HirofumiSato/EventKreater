@@ -291,6 +291,8 @@ UI 監査と生成された索引
      - ホーム画面（SCR-PUB-00）の UI/UX 監査
    * - :doc:`ui-review/mock-sync`
      - 製品の DOM からモックを生成する手順（``npm run mock:sync``・同期漏れの止め方）
+   * - :doc:`ui-review/theme-review`
+     - テーマを 1 つ足すときの合格条件。トークンの契約、5 つのゲート、390 / 1280 の目視項目
    * - :doc:`api-routes`
      - 生成物。``src/app/api/**/route.ts`` と API 仕様の突き合わせ
    * - :doc:`traceability`

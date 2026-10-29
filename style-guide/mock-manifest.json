@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "315fb10f21f8f60b211b14f2897695e0721c45b8c02f0778770e8e825ac495bd",
+  "uiHash": "6dd3e26b38f23665dc3e7654a1509c6bc4db0f19f03aab890f56663b39c2d760",
   "screens": [
     {
       "no": "01",
@@ -17,7 +17,7 @@
       "label": "",
       "file": "mock-home.html",
       "path": "/",
-      "hash": "321c2e9f001a9f425ada6a1bf2f192b4b4df73003243eb2f4a391f2713818bd3"
+      "hash": "fe0a959ac479ce856b358d0b89388807146ecf002c1c71690ec3c10912a321ab"
     },
     {
       "no": "02",
@@ -29,7 +29,7 @@
       "label": "",
       "file": "mock-service.html",
       "path": "/service",
-      "hash": "db461bd799c358c33c9b994dd347cbd808915f802797eccedf517dde4e65fbdc"
+      "hash": "1f232ed82c5d9f386d216e752039bcf36a3062c6aea127feb07dfec7cd624973"
     },
     {
       "no": "03",
@@ -41,7 +41,7 @@
       "label": "",
       "file": "mock-terms.html",
       "path": "/terms",
-      "hash": "85abf02f2cdac17486c39e0ff280eb018c5cf5efef31ec50543c0425219626d3"
+      "hash": "65e4540c27c09ab58455ae132b26b2349dd753da6d53adaad6e9460a6aa209a3"
     },
     {
       "no": "04",
@@ -52,8 +52,8 @@
       "state": "guest",
       "label": "未ログイン",
       "file": "mock-event.html",
-      "path": "/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150",
-      "hash": "0b3b813c91437310e988a577d6e807cb11f4e14ae4931ce89996ee1844b03345"
+      "path": "/events/225d8e12-46f3-4106-97fb-8be4e0a52992",
+      "hash": "e9ace245139711c974c6239e84f3b8e4ef791707e2f6b4eeca283e83e8119c07"
     },
     {
       "no": "04",
@@ -64,8 +64,8 @@
       "state": "member",
       "label": "ログイン済み",
       "file": "mock-event-member.html",
-      "path": "/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150",
-      "hash": "3565e3b34a15e70528f3e0f8fe56fda13186149d3714bc8a7186a45582a355a5"
+      "path": "/events/225d8e12-46f3-4106-97fb-8be4e0a52992",
+      "hash": "059fef161b39a431782c0a6d5143717aed57990a4a102c690ec03bacd571428b"
     },
     {
       "no": "04",
@@ -76,8 +76,8 @@
       "state": "full",
       "label": "満員",
       "file": "mock-event-full.html",
-      "path": "/events/48b7059c-4de4-4516-80ee-ed993056169a",
-      "hash": "615abca4e9f2640b515c51b6b935f947df97e1236f736f75dd368ce75a960b95"
+      "path": "/events/bdb113cd-ced2-44b6-b106-0a15cac9f70d",
+      "hash": "7495fed1b307a63efd584bee379236c6326360fa9d34f7c3be4f182437b4a023"
     },
     {
       "no": "04",
@@ -88,8 +88,8 @@
       "state": "closed",
       "label": "受付停止",
       "file": "mock-event-closed.html",
-      "path": "/events/ae1ead52-b98e-4179-b125-29dfa960f665",
-      "hash": "926481274e79d3dc52eb08dd873d23c092c44d35d6a9bafb0e7924d979ad4d0b"
+      "path": "/events/46943c3e-bc21-48ec-bf72-b7a0703e0951",
+      "hash": "aa94ae254c2ca87d711e5d1f4f297fc9f18925c70b6544c8e05e8d9be405668b"
     },
     {
       "no": "05",
@@ -100,104 +100,152 @@
       "state": "default",
       "label": "",
       "file": "mock-event-receipt.html",
-      "path": "/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150/receipt",
-      "hash": "12893b2b59d940357dc5cad54e0468b45d9be58632fdde1f6fd949a0329d88b5"
+      "path": "/events/225d8e12-46f3-4106-97fb-8be4e0a52992/receipt",
+      "hash": "4018de1d1ad46a49cb8135df8e0313f419e11a08699e8bd625a5eeea1cc1ec7a"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "guest",
       "label": "未ログイン",
       "file": "mock-organizer-public.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "eebfeef94ef2748676d3c9669cda77a92266a5ab705e72346124267f05353b5c"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "279c9e89d5bfbfd443f67b50ecbe1c7ef02ea0f1e116073fea1273e3002bcb58"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "member",
       "label": "ログイン済み",
       "file": "mock-organizer-public-member.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "3eed89b8e88f672c8f645a19fd592f37d24568396833e7cfeb1244dcc0ca2997"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "ad26e2eda1c5f0c0200482bf5834b2a74193206ccd73cbef569ea2c380d668bd"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-none",
       "label": "テーマ未選択",
       "file": "mock-organizer-public-theme-none.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "6e43fa4aed5a477e404c725e7a504c778430f1891d3db19d6f1edd9f29d3cb38"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "6d95d53de39f55995fe05911af5a2af37a65b2299ba4a66219f31fc420790267"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-modern-slate",
       "label": "夜のスレート",
       "file": "mock-organizer-public-theme-modern-slate.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "7faedfc25df3090e0d75277d5026d0c21039046cd62e6b36cd3627ed4a38f351"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "58b57de357f0b3513e5d40950ce12776d8e55237b10f3b8803e5c1ff5a69337f"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-enterprise-clean",
       "label": "クリーン",
       "file": "mock-organizer-public-theme-enterprise-clean.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "75d93cd8577e90ab0e8ef6fbbcb4288352a2a36403e7507fe2555695247a893c"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "f0c851bf89d0cd6be03326c3661c43224623f69df69a50b2848e26c6f60bf498"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-parchment",
       "label": "羊皮紙",
       "file": "mock-organizer-public-theme-parchment.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "fc84760560fffb89e2c8016c8b2ccf2f02711c79b54b70aa2150085c670f813a"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "1a1b25c7b09be5993e7cc6a6503eca3da29a3d2fe17739fb6c66a28fcbdc1ace"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-neo-brutalism",
       "label": "ネオ・ブルータリズム",
       "file": "mock-organizer-public-theme-neo-brutalism.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "96972dca692d802d72369afacbe7d37dc825e87e9481b6e74267ae4653510055"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "9946d7a94d8ec7c4df51c0be2a0969da7de54f0e8422e71c0786bc290c7c5b04"
     },
     {
       "no": "06",
       "group": "public",
       "slug": "organizer-public",
       "name": "主催者のページ",
-      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       "state": "theme-neon",
       "label": "ネオン",
       "file": "mock-organizer-public-theme-neon.html",
-      "path": "/organizers/295450b9-83e6-4259-a100-50fcde13d369",
-      "hash": "83247414c33ef6f4db81153fe148f182e6d0f8cbed6bf81d04c5f481e16fc068"
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "abf034dc5b0f1a9b7a4314859bf4197603988125188862adc9ef27e016a3f769"
+    },
+    {
+      "no": "06",
+      "group": "public",
+      "slug": "organizer-public",
+      "name": "主催者のページ",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
+      "state": "theme-washi",
+      "label": "和紙と藍",
+      "file": "mock-organizer-public-theme-washi.html",
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "fcfeec8e6e155417ad646aff475051bea533fabed8128f91903234a554f90eaf"
+    },
+    {
+      "no": "06",
+      "group": "public",
+      "slug": "organizer-public",
+      "name": "主催者のページ",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
+      "state": "theme-sage",
+      "label": "余白",
+      "file": "mock-organizer-public-theme-sage.html",
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "82192423f5f17337d77a6f9e2cdb647ef87c30266f818d59b79ed4822846dc88"
+    },
+    {
+      "no": "06",
+      "group": "public",
+      "slug": "organizer-public",
+      "name": "主催者のページ",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
+      "state": "theme-candy",
+      "label": "キャンディ",
+      "file": "mock-organizer-public-theme-candy.html",
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "a576629ad495a7b9c33f6a89097d69c34416e360a662d9522a584ab1eaaca98b"
+    },
+    {
+      "no": "06",
+      "group": "public",
+      "slug": "organizer-public",
+      "name": "主催者のページ",
+      "note": "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
+      "state": "theme-dusk",
+      "label": "夕暮れ",
+      "file": "mock-organizer-public-theme-dusk.html",
+      "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
+      "hash": "6e715ed05cd52e4e6cb605359921076f1279c49384008e65906f91bf1d72d659"
     },
     {
       "no": "07",
@@ -209,7 +257,7 @@
       "label": "",
       "file": "mock-register.html",
       "path": "/auth/register",
-      "hash": "04c846b14fca814b8db745c34ad1f3f2dccf18902cc29b54c596ef0cf9329958"
+      "hash": "e5fbe635b0ddba077bdfa7d63708d7fad3f3b31e91113359b720fa587b44782e"
     },
     {
       "no": "08",
@@ -221,7 +269,7 @@
       "label": "",
       "file": "mock-verify.html",
       "path": "/auth/verify?token=ui-demo-email-verify-token",
-      "hash": "486e2c367de686ca5f9152841045edf9309b849133fd8a8e6c93b604392598e1"
+      "hash": "3ffe0a171e9c2f4d22243946f3e530eeb4988675899d4aa53efdafc3e1379146"
     },
     {
       "no": "09",
@@ -233,7 +281,7 @@
       "label": "",
       "file": "mock-participant-login.html",
       "path": "/participant/login",
-      "hash": "54973c7a9925885de2e5d1d8a677dfcddb2005c4338610201510ecc636885eb4"
+      "hash": "ac876f42c9665f0cf85164c299f3d36eeaf817082cace6f3915a70ea23c278f8"
     },
     {
       "no": "10",
@@ -245,7 +293,7 @@
       "label": "",
       "file": "mock-invitation.html",
       "path": "/invitations/ui-demo-cohost-invite-code",
-      "hash": "3de1c0b0e7042c676ef4c960d4ccab8bf080f6ed98b5648c2da6cffff661d616"
+      "hash": "e89598b235751a9978dda23115f77955902d99de28f805724463fd5553209e98"
     },
     {
       "no": "11",
@@ -257,7 +305,7 @@
       "label": "",
       "file": "mock-account.html",
       "path": "/account",
-      "hash": "d9098a1e52500d4850c1477a671ef8d542cf8b0436ca94ad2517112c163dde46"
+      "hash": "a3d04f33c744e66286c95b050e20c68ac93bd79596581631199952710b3afdf3"
     },
     {
       "no": "12",
@@ -269,7 +317,7 @@
       "label": "",
       "file": "mock-account-verify.html",
       "path": "/account/email/verify?token=ui-demo-email-change-token-1280",
-      "hash": "ec3b0b7e1c4fb10eefa6d60f1873eb2df15089e88ad92ae82df9d2ca5b490e6e"
+      "hash": "c09c32dc40220ce2cd75fdd921525f2872e61f20da7f9c012b91cea549676bf9"
     },
     {
       "no": "13",
@@ -281,7 +329,7 @@
       "label": "",
       "file": "mock-participant.html",
       "path": "/participant",
-      "hash": "ba83d4ee0e06b0345b84fc62aeb6fab3be23a28766d8e0ded7bc4a731b90718e"
+      "hash": "6bff5927735e8cffc8272d8d601af9dd803e95f4100c3b747e4b6e7d2ce9705b"
     },
     {
       "no": "14",
@@ -293,7 +341,7 @@
       "label": "",
       "file": "mock-participant-calendar.html",
       "path": "/participant/calendar",
-      "hash": "2d1bf74a0fa9b65f0d0943e1a3343a21a405d271bc1d1bdfdb55d1e896b96f10"
+      "hash": "9a4b53edf95e5f78f02094aaf5358f84d2c525182f70bbac8ec17d83875fbb98"
     },
     {
       "no": "15",
@@ -305,7 +353,7 @@
       "label": "履歴あり",
       "file": "mock-participant-history.html",
       "path": "/participant/history",
-      "hash": "df2dddb3f07a2803da001d1f5535469f4ef4b4d707772f2950bd10773ccc5da0"
+      "hash": "8b0c694c813cb8efdb65db98e04fb0f33c2868a1841128d5986f7223d9296ff5"
     },
     {
       "no": "15",
@@ -317,7 +365,7 @@
       "label": "履歴なし",
       "file": "mock-participant-history-empty.html",
       "path": "/participant/history",
-      "hash": "4042e5643531e84263cf5ba312565eaa01399a0a6540a5e2c41a08c2b151e2c7"
+      "hash": "1a8e16c91b35386dfada6990c66104a72f2950b54376fe837347b9759f013528"
     },
     {
       "no": "16",
@@ -329,7 +377,7 @@
       "label": "",
       "file": "mock-organizer.html",
       "path": "/organizer/events",
-      "hash": "e352129c9bdb079c4f91563a46d5e7635918ab0a76c81fb434acb57af9a9183a"
+      "hash": "c096ab07cce23e914f46faad6d9bb63b1d21a633d217ee5598bd2cc4188c30fe"
     },
     {
       "no": "17",
@@ -341,7 +389,7 @@
       "label": "",
       "file": "mock-organizer-calendar.html",
       "path": "/organizer/calendar",
-      "hash": "6360029a63c26eee8c91d84f3ed34ded45fcacc4a67ef9025316200e1f28fc22"
+      "hash": "2e15b970412171a0bf1a7a54c37e410351834d312e2a8f3e29ceee981da197ed"
     },
     {
       "no": "18",
@@ -353,7 +401,7 @@
       "label": "",
       "file": "mock-revenue.html",
       "path": "/organizer/revenue",
-      "hash": "913f542b8d299acf490190f4c2e4d24c9242dfb2d095c89881bff23385447ad6"
+      "hash": "da822a4fec495ca95ff13b522c5e99327e71d7a11e2b5c91649cd34f9b097b2f"
     },
     {
       "no": "19",
@@ -364,8 +412,8 @@
       "state": "default",
       "label": "",
       "file": "mock-revenue-detail.html",
-      "path": "/organizer/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150/revenue",
-      "hash": "ef42a387b4b0ffc3571424b27fd02611e8fbbf988da1bf69566de4ad34b63d6e"
+      "path": "/organizer/events/225d8e12-46f3-4106-97fb-8be4e0a52992/revenue",
+      "hash": "d140fe6212f3d9ddee7ea15ca89c9812fac4ada1609afe2554e36c3cba2b34d8"
     },
     {
       "no": "20",
@@ -377,7 +425,7 @@
       "label": "",
       "file": "mock-create.html",
       "path": "/organizer/events/new",
-      "hash": "5df6435d8d0aa1ea81a4ed665ce4188dfadf46b201665599369ba3ca24cfd1ab"
+      "hash": "a30020073a1c7babf9d8615360d8d706b91239f66b85ab9bc6ec4ed90a9df254"
     },
     {
       "no": "21",
@@ -388,8 +436,8 @@
       "state": "default",
       "label": "",
       "file": "mock-edit.html",
-      "path": "/organizer/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150/edit",
-      "hash": "fb0baff7a7b8a6fa273f365cb8f4aa8634acc8101d34ade131dce342057498cb"
+      "path": "/organizer/events/225d8e12-46f3-4106-97fb-8be4e0a52992/edit",
+      "hash": "c8b2c71d96a46b4dbb5cb2755b0263f6d65855892303c1f1db215daa11073169"
     },
     {
       "no": "22",
@@ -401,7 +449,7 @@
       "label": "",
       "file": "mock-drafts.html",
       "path": "/organizer/events/drafts",
-      "hash": "bf49fb791cb225a9175102ea9aeb022016eec3a5dee24dae7183ccbd2983ed52"
+      "hash": "63e8e0ebacff59a43241d4f7086cec869dee761037ff45924d994f94c718438b"
     },
     {
       "no": "23",
@@ -412,8 +460,8 @@
       "state": "default",
       "label": "",
       "file": "mock-preview.html",
-      "path": "/organizer/events/0096dad6-409b-4f95-9b59-538bb4e2764a/preview",
-      "hash": "f4ce6f8df4f92d2e15d35b5db32bbbbdcde51280eac95e82a934dd4aca2d7c4d"
+      "path": "/organizer/events/7fd203b7-c083-4d5b-8a98-6aac02f252a6/preview",
+      "hash": "f3625f5860b0f9a1a3c7c4858819874c676b092f29aa73859b0f6761046ed0ca"
     },
     {
       "no": "24",
@@ -424,8 +472,8 @@
       "state": "default",
       "label": "",
       "file": "mock-roster.html",
-      "path": "/organizer/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150/participants",
-      "hash": "3e7051b84292c5bed012893af89c544036e5411c8a2a8b33159c387e7eb782bd"
+      "path": "/organizer/events/225d8e12-46f3-4106-97fb-8be4e0a52992/participants",
+      "hash": "1fdb859c040d1b70f44f1f2950f4166bb31a240ec1cfa669bbb8693054ba6e66"
     },
     {
       "no": "25",
@@ -436,8 +484,8 @@
       "state": "default",
       "label": "",
       "file": "mock-receipt.html",
-      "path": "/organizer/events/e6d6fc84-ce52-4722-953f-0e3a2bb47150/receipts/1cc228ce-62e1-4d2a-8586-c909c8ae0c77",
-      "hash": "2a657cb1500f53b6664fb7b9b6c0f58e2e835d557841c9cc223924788b04ada3"
+      "path": "/organizer/events/225d8e12-46f3-4106-97fb-8be4e0a52992/receipts/cfe865be-e3b8-4667-89c7-894a322872e9",
+      "hash": "371242273d95799a432ff4fac6aff115b098759d0ecec8dd0ab66e893d39c3c2"
     },
     {
       "no": "26",
@@ -448,20 +496,20 @@
       "state": "default",
       "label": "",
       "file": "mock-register-required.html",
-      "path": "/organizer/register-required?event=e6d6fc84-ce52-4722-953f-0e3a2bb47150",
-      "hash": "4fd01bdd2a9ac61b0511fedffcbab4b05b224d713ed7045ed5e917e61d2a3fac"
+      "path": "/organizer/register-required?event=225d8e12-46f3-4106-97fb-8be4e0a52992",
+      "hash": "bdf1af9053c17dd1ea9196867e4a20f4890a8bfd7b1b2bdf4807989949828303"
     },
     {
       "no": "27",
       "group": "organizer",
       "slug": "organizer-profile",
       "name": "公開プロフィールの編集",
-      "note": "公開の可否、アイコン画像、ページの見た目（5テーマ）、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
+      "note": "公開の可否、アイコン画像、ページの見た目（用途グループごとのテーマ）、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
       "state": "default",
       "label": "",
       "file": "mock-organizer-profile.html",
       "path": "/organizer/profile",
-      "hash": "e49abb8dce18eaf908efc7adf36ef3023c40487225e01d53b7c68a2ef6a7a5f7"
+      "hash": "e67a63492dfd94b7405b3d0172bba5f45b09db5ff72afd836987069dff08585b"
     },
     {
       "no": "28",
@@ -473,7 +521,7 @@
       "label": "",
       "file": "mock-mypage.html",
       "path": "/mypage",
-      "hash": "9839638ee6b4725264ac83b5881f6abce58ceb53ea2c2ac960ffd12eb5638082"
+      "hash": "65e34a814fb46c70b2fa0b840e911ed6f891aaf756a37ff1a43e3d526a5b4517"
     }
   ]
 }

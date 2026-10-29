@@ -147,7 +147,7 @@
 
 .. count-start
 
-68 ファイル、``it`` は 877 件です。内訳は ``tests/unit/`` が 54 ファイル 785 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+69 ファイル、``it`` は 921 件です。内訳は ``tests/unit/`` が 55 ファイル 829 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -368,12 +368,16 @@
      - 出欠の選択肢（出席・参加要望）と残席、席を確保済みの人の扱い、待ち順の決め方
      - SCR-PUB-04
    * - ``tests/unit/semantic-theme.test.ts``
-     - 10
-     - セマンティックテーマの ID と表示名（5 件・重複なし・空でない）、未知の値と NULL の正規化、スキーマが 5 テーマと NULL を受け未知の ID を 400 にすること
+     - 11
+     - セマンティックテーマの ID と表示名（9 件・重複なし・空でない）、用途グループと所属の一致、未知の値と NULL の正規化、スキーマが 9 テーマと NULL を受け未知の ID を 400 にすること
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/semantic-theme-css.test.ts``
      - 7
-     - テーマの ID と ``themes.css`` の対応（全テーマのブロックと必須 10 トークン）、``themes.css`` を ``index.css`` の最後に読むこと、ぼかしとアニメーションを持たないこと、全幅の面の広げ方
+     - テーマの ID と ``themes.css`` の対応（全テーマのブロックと必須 11 トークン）、``themes.css`` を ``index.css`` の最後に読むこと、ぼかしとアニメーションを持たないこと、全幅の面の広げ方、入力欄と案内文の基準
+     - SCR-ORG-14 / SCR-PUB-14
+   * - ``tests/unit/semantic-theme-quality.test.ts``
+     - 43
+     - 9 テーマのコントラスト（本文 7:1・補足と差し色 4.5:1・押せる部品の境界 3:1）、トークンの網羅性と未使用検出、テーマ固有セレクタの禁止、5 軸で近すぎるテーマが無いこと
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/design-scope.test.ts``
      - 8
@@ -434,7 +438,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 785、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 785 件を実行して 92 件を skip します。
+件数の内訳は ``tests/unit/`` が 829、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 829 件を実行して 92 件を skip します。
 
 .. breakdown-end
 

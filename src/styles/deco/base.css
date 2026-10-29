@@ -12,6 +12,8 @@
 
 .deco {
   --font-maru: "Zen Maru Gothic";
+  /* 見出しと数字の書体。テーマは `--st-font-heading` でこれを差し替える。 */
+  --font-display: var(--font-maru), var(--font);
   --radius-lg: 8px;
   --radius-xl: 14px;
   --radius-2xl: 20px;
@@ -44,7 +46,7 @@
 .deco .event-step__title,
 .deco .event-card__title,
 .deco .table-card__title {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   letter-spacing: 0.01em;
 }
 

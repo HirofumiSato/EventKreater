@@ -69,4 +69,8 @@
   --width-form: 28rem;
   --font: "Zen Kaku Gothic New", sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* 見出し・数字・料金に使う書体。本文（--font）とは別に、1 段だけ間を置く。
+     `.deco` が丸ゴシックを入れ、テーマ（themes.css）は `--st-font-heading` で
+     さらに差し替える。部品はこの名前だけを見るので、書体の正はここ 1 箇所になる。 */
+  --font-display: var(--font);
 }

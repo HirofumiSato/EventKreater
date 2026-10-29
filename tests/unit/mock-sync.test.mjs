@@ -379,11 +379,15 @@ describe("画面の目録", () => {
     expect([...new Set(missing)]).toEqual([]);
   });
 
-  it("39 の状態を持つ", () => {
-    expect(expectedFiles()).toHaveLength(39);
+  it("テーマを 1 つ足すと、モックは 1 枚増える", () => {
+    const themeRows = screens.filter((row) => row.theme !== undefined);
+    // テーマ未選択 1 枚 + 全テーマ 1 枚ずつ。
+    expect(themeRows).toHaveLength(SEMANTIC_THEME_IDS.length + 1);
+    // テーマ以外の状態は 33 枚。画面そのものを足したときだけ、この数を直す。
+    expect(expectedFiles()).toHaveLength(33 + themeRows.length);
   });
 
-  it("テーマの状態は、製品の 5 テーマと未選択をすべて 1 枚ずつ持つ", () => {
+  it("テーマの状態は、製品のすべてのテーマと未選択を 1 枚ずつ持つ", () => {
     const rows = screens.filter((row) => row.slug === "organizer-public" && row.theme !== undefined);
     // undefined（DB のまま）は含めない。null は「テーマ未選択」。
     const themes = rows.map((row) => row.theme).filter((theme) => theme !== null);

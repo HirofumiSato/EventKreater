@@ -731,6 +731,7 @@ export function ThemeSection({
           name="event-theme"
           value={value.themeId}
           onChange={(themeId) => onChange({ ...value, themeId })}
+          variant="compact"
         />
         <p className="help">
           選ぶと告知ページの配色が変わります。チラシの画像生成にも、このテーマの雰囲気を渡します。
