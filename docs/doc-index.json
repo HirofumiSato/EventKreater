@@ -4560,7 +4560,7 @@
       "title": "文字合成",
       "summary": "基準キャンバスは 1080×1528 px（A4 縦 210:297）です。背景が別サイズでも、中央を基準に覆うように拡大してからこのサイズへ切り出します。出力は品質 90 の JPEG です。",
       "preImplementation": false,
-      "lineCount": 96,
+      "lineCount": 102,
       "headings": [
         {
           "level": 1,
@@ -4818,7 +4818,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 388,
+      "lineCount": 401,
       "headings": [
         {
           "level": 1,
@@ -5348,7 +5348,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 288,
+      "lineCount": 296,
       "headings": [
         {
           "level": 1,

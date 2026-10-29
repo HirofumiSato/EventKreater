@@ -86,6 +86,12 @@
      - 自動は地の明度で墨か白、指定色は動かさない
    * - ``test_metadata_records_the_chosen_scale_step``
      - ``RenderMetadata.title_font_size`` が目盛りの段と一致する
+   * - ``test_detail_text_stays_dark_on_the_translucent_band``
+     - 暗い写真の上でも帯の明細は墨のまま。白へ押し上げられない
+   * - ``test_the_band_lets_the_background_through``
+     - 地が明るいほど帯も明るい。帯は写真を透かす
+   * - ``test_the_surface_alpha_is_reported``
+     - ``RenderMetadata.overlay_alpha`` が ``design.SURFACE_ALPHA`` の実値
 
 紙面の計画
 ----------
@@ -135,6 +141,8 @@
      - 未指定は墨を仮に置き、描画時に決める
    * - ``test_the_quiet_tile_has_no_plate``
      - 静けさには面が無い
+   * - ``test_a_slot_area_is_a_rectangle_and_the_box_is_not``
+     - 詳細のスロットは見出しの群の内側ではない。``area`` は (x1, y1, x2, y2)
    * - ``test_no_icons_pills_or_panels_are_drawn``
      - 描画関数にアイコン・ピル・パネルが無い
    * - ``test_accent_of_a_dark_theme_is_still_readable``

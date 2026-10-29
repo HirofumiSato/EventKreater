@@ -30,7 +30,13 @@ from src.adapters.renderer.layout_calculator import (
 from src.adapters.renderer.layouts import stack_for
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
 from src.domain.exceptions import RenderingError
-from src.domain.models import SemanticTheme, TemplateId, TextLayout
+from src.domain.models import (
+    FlyerGenerationRequest,
+    LLMGenerationContext,
+    SemanticTheme,
+    TemplateId,
+    TextLayout,
+)
 from tests.support import make_context, make_request
 
 
@@ -291,6 +297,94 @@ def test_top_stack_leaves_the_lower_band_empty() -> None:
     band_top = top.start + 720
     mean = average_rgb(image, (96, band_top, CANVAS_WIDTH - 96, CANVAS_HEIGHT - 96))
     assert all(abs(channel - 240) <= 8 for channel in mean), mean
+
+
+def _plan_for(
+    request: object,
+    context: object,
+) -> poster.PosterPlan:
+    """レンダラーと同じ手順で計画を組む。帯の座標をテストから引くために使う。"""
+
+    assert isinstance(request, FlyerGenerationRequest)
+    assert isinstance(context, LLMGenerationContext)
+    variant = design.variant_for(request.template_id)
+    stack = stack_for(request.layout_id)
+    title = fit_to_scale(
+        request.title,
+        PillowFlyerRenderer().font_path_for(request.template_id),
+        _scratch_draw(),
+        max_width=design.CONTENT_WIDTH,
+        max_height=stack.title_height,
+        allow_hanging=variant.align == "left",
+    )
+    return poster.plan_for_request(
+        request,
+        title=title,
+        stack=stack,
+        accent=context.suggested_accent_color,
+    )
+
+
+def _dark_pixels(image: Image.Image, box: tuple[int, int, int, int]) -> int:
+    """矩形の中で、帯の地に対して十分に暗い画素の数。"""
+    return sum(
+        1
+        for y in range(box[1], box[3])
+        for x in range(box[0], box[2])
+        if relative_luminance(*image.getpixel((x, y))) < 0.2
+    )
+
+
+def test_detail_text_stays_dark_on_the_translucent_band() -> None:
+    """帯の文字色は、写真の地ではなく帯の色に対して決める。
+
+    暗い写真の平均色で決めると墨が白へ押し上げられ、明るい帯と同化する。
+    """
+    request = make_request(template_id=TemplateId.STYLE_2_WARM_EARTH)
+    context = make_context(TemplateId.STYLE_2_WARM_EARTH)
+    plan = _plan_for(request, context)
+    assert plan.surface is not None
+    data = PillowFlyerRenderer().render_flyer(_png((20, 20, 20)), request, context)
+    image = Image.open(BytesIO(data)).convert("RGB")
+    x1, y1, x2, y2 = plan.surface
+    band = (x1 + 96, y1 + 16, x2 - 96, y2 - 16)
+    assert _dark_pixels(image, band) > 500, average_rgb(image, band)
+
+
+def test_the_band_lets_the_background_through() -> None:
+    """帯は写真を透かす。地が変われば帯の色も変わる。"""
+    request = make_request(template_id=TemplateId.STYLE_2_WARM_EARTH)
+    context = make_context(TemplateId.STYLE_2_WARM_EARTH)
+    plan = _plan_for(request, context)
+    assert plan.surface is not None
+    renderer = PillowFlyerRenderer()
+    dark = Image.open(
+        BytesIO(renderer.render_flyer(_png((20, 20, 20)), request, context))
+    ).convert("RGB")
+    light = Image.open(
+        BytesIO(renderer.render_flyer(_png((250, 250, 250)), request, context))
+    ).convert("RGB")
+    mean_dark = average_rgb(dark, plan.surface)
+    mean_light = average_rgb(light, plan.surface)
+    assert sum(mean_light) - sum(mean_dark) > 60, (mean_dark, mean_light)
+
+
+@pytest.mark.parametrize(
+    "template_id",
+    [TemplateId.STYLE_2_WARM_EARTH, TemplateId.STYLE_3_VIBRANT_POP],
+)
+def test_the_surface_alpha_is_reported(template_id: TemplateId) -> None:
+    """面の不透明度は描画の実値。1.0 で塗り潰したことにしない。"""
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(
+        _png((250, 250, 250)),
+        make_request(template_id=template_id),
+        make_context(template_id),
+    )
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    variant = design.variant_for(template_id)
+    assert metadata.overlay_alpha == pytest.approx(design.SURFACE_ALPHA[variant.surface])
 
 
 def test_layout_change_alters_the_output() -> None:

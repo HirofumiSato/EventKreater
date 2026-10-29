@@ -174,7 +174,11 @@ class PillowFlyerRenderer(FlyerRendererPort):
             template_id=request.template_id,
             layout_id=layout,
             accent_color=format_hex(plan.colors.accent),
-            overlay_alpha=1.0 if plan.surface is not None else (report.veil_alpha or 0.0),
+            overlay_alpha=(
+                report.surface_alpha
+                if report.surface_alpha is not None
+                else (report.veil_alpha or 0.0)
+            ),
             title_font_size=plan.title_size,
             title_line_count=plan.title_line_count,
             title_block_width=plan.title_width,
