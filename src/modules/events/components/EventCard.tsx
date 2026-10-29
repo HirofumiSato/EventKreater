@@ -94,7 +94,7 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
           参加者を見る
         </Link>
         {event.status !== "DRAFT" && (
-          <Link href={publicPath} className="btn btn--ghost btn--sm">
+          <Link href={publicPath} target="_blank" rel="noopener noreferrer" className="btn btn--ghost btn--sm">
             公開ページ
           </Link>
         )}
