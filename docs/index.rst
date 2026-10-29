@@ -78,6 +78,7 @@
 
    ui-review/home-audit
    ui-review/mock-sync
+   ui-review/theme-review
 
 .. toctree::
    :maxdepth: 2

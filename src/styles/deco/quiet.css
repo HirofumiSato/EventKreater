@@ -72,7 +72,7 @@
 .deco.deco--tape-quiet .stat__value {
   margin-top: 0;
   color: var(--color-text);
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.2;

@@ -1347,7 +1347,7 @@ body:has(.profile-actions) .site-footer {
   border-radius: 999px;
   background: var(--pop-warm);
   color: var(--tape-ink);
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 700;
 }

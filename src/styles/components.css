@@ -1896,122 +1896,268 @@ fieldset.field {
 }
 
 /* ==========================================================================
-   テーマの選択肢（SCR-ORG-14）。公開ページの見た目を、選ぶ前に色で確かめられる。
+   テーマの選択肢（SCR-ORG-14）。公開ページの見た目を、選ぶ前にその場で確かめられる。
 
-   色見本は画像を持たない。`data-semantic-theme` を付けた面が、themes.css の
-   トークン（--st-*）をそのまま読むので、テーマを足しても読み込みは増えない。
-   スマホは 1 列、640px から 2 列。選択肢の説明が長いので、3 列にはしない。
+   9 つを縦に並べると選びにくいので、用途グループの見出し＋チップで選ばせる。
+   チップの丸は 3 色（地・面・差し色）を横に割っただけ。画像を持たないので、
+   テーマを増やしても読み込みは増えない。
+   見本は 1 枚だけ。`data-semantic-theme` を差し替えると、themes.css のトークンが
+   そのまま効く（見本用の CSS をテーマごとに書かない）。
+   スマホはチップが折り返して 2〜3 行、見本はその下。640px から 2 列。
    ========================================================================== */
 
-.theme-options {
+.theme-picker {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.875rem;
 }
 
-.theme-option {
-  position: relative;
+.theme-picker__groups {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
-  align-items: center;
   gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
+}
+
+.theme-picker__group {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.theme-picker__group-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.theme-picker__group-note {
+  color: var(--color-text-faint);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.theme-picker__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.theme-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6875rem 0.25rem 0.25rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: 999px;
   background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  line-height: 1.3;
   cursor: pointer;
 }
 
-/* ラジオは見せないが、キーボードの操作は残す（見た目だけを消す）。 */
-.theme-option input {
+/* ラジオは見せないが、キーボードの操作は残す（矢印キーで次のテーマへ移る）。 */
+.theme-chip input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 
-.theme-option:hover {
+.theme-chip:hover {
   border-color: var(--color-border-strong);
 }
 
-.theme-option:has(input:checked) {
+.theme-chip:has(input:checked) {
   border-color: var(--color-text);
   box-shadow: inset 0 0 0 1px var(--color-text);
 }
 
-.theme-option:has(input:focus-visible) {
+.theme-chip:has(input:focus-visible) {
   outline: 2px solid var(--color-primary-ring);
   outline-offset: 2px;
 }
 
-.theme-swatch {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 0.1875rem;
-  height: 2.75rem;
-  padding: 0.375rem;
+.theme-chip:has(input:disabled) {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* 3 色の丸。左から地・面・差し色。 */
+.theme-chip__dot {
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--st-surface-base) 0 33.33%,
+    var(--st-surface-raised) 33.33% 66.66%,
+    var(--st-accent-primary) 66.66% 100%
+  );
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+.theme-chip__dot--plain {
+  background: linear-gradient(90deg, #fdf3e4 0 50%, #fffdf8 50% 100%);
+}
+
+.theme-chip__label {
+  white-space: nowrap;
+}
+
+.theme-preview {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* 見本の面。テーマが無いときは --st-* が未定義なので、必ずフォールバックを書く。 */
+.theme-preview__frame {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem;
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-bg);
+  background-image: var(--st-surface-image, none);
+  background-repeat: var(--st-surface-image-repeat, repeat);
+  background-size: var(--st-surface-image-size, auto);
+  color: var(--color-text);
+}
+
+.theme-preview__card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: var(--st-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-lg);
-  /* 見本の中は、テーマの地と字をそのまま見せる。 */
-  background: var(--st-surface-base, var(--color-bg));
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
-.theme-swatch__card {
-  height: 0.5rem;
-  border-radius: 2px;
-  background: var(--st-surface-raised, var(--color-surface));
-  box-shadow: var(--st-shadow-elevation, none);
+.theme-preview__eyebrow {
+  color: var(--color-primary-text);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
-.theme-swatch__line {
-  width: 70%;
-  height: 0.1875rem;
-  border-radius: 999px;
-  background: var(--st-content-primary, var(--color-text));
-  opacity: 0.8;
+.theme-preview__title {
+  font-family: var(--st-font-heading, var(--font-display));
+  font-size: 0.9375rem;
+  font-weight: var(--st-heading-weight, 700);
+  letter-spacing: var(--st-heading-tracking, 0.01em);
+  line-height: 1.5;
 }
 
-.theme-swatch__accent {
-  width: 40%;
-  height: 0.1875rem;
-  border-radius: 999px;
-  background: var(--st-accent-primary, var(--color-primary));
+.theme-preview__meta {
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.5;
 }
 
-/* 「標準」はいまの見た目。テーマの変数を持たないので、地の色を直接置く。 */
-.theme-swatch--default {
-  background: #fdf3e4;
-}
-
-.theme-swatch--default .theme-swatch__card {
-  background: #fffdf8;
-  box-shadow: 2px 2px 0 rgb(26 25 22 / 0.15);
-}
-
-.theme-swatch--default .theme-swatch__line {
-  background: #1a1916;
-}
-
-.theme-option__body {
+.theme-preview__chips {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.theme-preview__chip {
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 0.625rem;
+  line-height: 1.6;
+}
+
+.theme-preview__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.theme-preview__input {
+  display: flex;
+  flex: 1;
+  align-items: center;
   min-width: 0;
-  flex-direction: column;
+  min-height: 1.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+  font-size: 0.625rem;
+}
+
+.theme-preview__button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--st-accent-primary, var(--color-primary));
+  color: var(--st-accent-contrast, #ffffff);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.theme-preview__cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.125rem;
 }
 
-.theme-option__label {
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.4;
+.theme-preview__day {
+  display: grid;
+  place-items: center;
+  min-height: 1.375rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.theme-option__note {
+.theme-preview__day--on {
+  background: var(--st-accent-primary, var(--color-primary));
+  color: var(--st-accent-contrast, #ffffff);
+  font-weight: 700;
+}
+
+.theme-preview__caption {
   color: var(--color-text-subtle);
   font-size: 0.75rem;
   line-height: 1.6;
 }
 
+/* ステップの中では、見本を低くして入力の流れを切らない。 */
+.theme-picker--compact .theme-preview__cal {
+  display: none;
+}
+
 @media (min-width: 640px) {
-  .theme-options {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* 見本は横に置ける幅があるときだけ。ステップの中（--compact）は、入力欄の列が
+     448px ほどしかないので 1 列のまま（チップが折り返して 2〜3 行になる）。 */
+  .theme-picker:not(.theme-picker--compact) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .theme-picker:not(.theme-picker--compact) .theme-preview {
+    position: sticky;
+    top: 1rem;
   }
 }

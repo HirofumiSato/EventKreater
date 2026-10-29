@@ -150,7 +150,8 @@ HTTP API
 ``semantic_theme`` は任意です。指定すると、そのテーマの英語の方向付け
 （``design_direction``）を LLM のユーザー JSON に足し、背景の雰囲気を告知ページと
 揃えます。候補は ``modern-slate`` / ``enterprise-clean`` / ``parchment`` /
-``neo-brutalism`` / ``neon`` です。省略したときの出力は従来と同じです。
+``neo-brutalism`` / ``neon`` / ``washi`` / ``sage`` / ``candy`` / ``dusk`` です。
+省略したときの出力は従来と同じです。
 
 ``title_color`` も任意です。``#RRGGBB`` を渡すと題名をその色で描きます。
 省略（``null``）すると、見出しの群の平均色から墨か白を選びます。暗い写真で墨を

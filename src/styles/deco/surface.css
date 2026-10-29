@@ -58,7 +58,7 @@
 }
 
 .plan-card__name {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
 }
@@ -77,7 +77,7 @@
 
 .plan-card__price {
   margin-top: 0.375rem;
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -337,7 +337,7 @@
 }
 
 .cal__month {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -650,7 +650,7 @@
 }
 
 .poster-hero__fallback-title {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.4;
@@ -664,7 +664,7 @@
 }
 
 .event-sheet__title {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.35;
@@ -766,7 +766,7 @@
 }
 
 .rsvp__title {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 700;
 }
@@ -941,7 +941,7 @@
 }
 
 .receipt-sheet__title {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.3em;
@@ -965,7 +965,7 @@
 
 .receipt-sheet__amount {
   margin-top: 1rem;
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -1032,7 +1032,7 @@
 }
 
 .ledger__value {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -1087,7 +1087,7 @@
 
 .org-invite__title {
   margin-top: 0.625rem;
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.5;
@@ -1159,7 +1159,7 @@
   border-radius: 999px;
   background: var(--pop-warm);
   color: var(--tape-ink);
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
 }
@@ -1173,7 +1173,7 @@
 }
 
 .profile-head__name {
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.4;
@@ -1613,7 +1613,7 @@
 
 .roster-summary__value {
   color: var(--color-text);
-  font-family: var(--font-maru), var(--font);
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;

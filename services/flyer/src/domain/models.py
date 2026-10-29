@@ -57,6 +57,10 @@ class SemanticTheme(str, Enum):
     PARCHMENT = "parchment"
     NEO_BRUTALISM = "neo-brutalism"
     NEON = "neon"
+    WASHI = "washi"
+    SAGE = "sage"
+    CANDY = "candy"
+    DUSK = "dusk"
 
     @property
     def design_direction(self) -> str:
@@ -83,6 +87,22 @@ _THEME_DIRECTIONS: dict[SemanticTheme, str] = {
     ),
     SemanticTheme.NEON: (
         "black ground, cyan neon glow, night club energy, wet reflections, high contrast"
+    ),
+    SemanticTheme.WASHI: (
+        "washi paper fiber ground, indigo accent, serif mincho headings with wide tracking, "
+        "quiet seasonal mood, soft indirect light"
+    ),
+    SemanticTheme.SAGE: (
+        "pale sage ground, shadowless flat surfaces, generous white space, "
+        "short measure and calm breathing, soft daylight"
+    ),
+    SemanticTheme.CANDY: (
+        "peach cream ground, round soft shapes, rose pink accent, playful bright light, "
+        "friendly and sweet atmosphere"
+    ),
+    SemanticTheme.DUSK: (
+        "deep warm brown ground, orange sunset rim light, dusk outdoor gathering, "
+        "glowing warm highlights, relaxed evening mood"
     ),
 }
 

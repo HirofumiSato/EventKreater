@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 114,
+    "docs": 115,
     "preImplementation": 15,
-    "markdown": 49,
+    "markdown": 50,
     "rst": 65,
     "orphan": 1
   },
@@ -3694,7 +3694,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 220,
+      "lineCount": 221,
       "headings": [
         {
           "level": 1,
@@ -5516,7 +5516,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1908,
+      "lineCount": 1909,
       "headings": [
         {
           "level": 2,
@@ -5753,6 +5753,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/ui-review/theme-review.md",
+          "exists": true
+        },
         {
           "path": "src/app/account/email/verify/page.tsx",
           "exists": true
@@ -6034,6 +6038,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/semantic-theme-quality.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/semantic-theme.test.ts",
           "exists": true
         },
@@ -6053,7 +6061,7 @@
       "title": "利用枠管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 172,
+      "lineCount": 173,
       "headings": [
         {
           "level": 1,
@@ -6089,6 +6097,7 @@
         "docs/issues/index.rst",
         "docs/ui-review/home-audit.md",
         "docs/ui-review/mock-sync.md",
+        "docs/ui-review/theme-review.md",
         "docs/api-routes.md",
         "docs/traceability.md"
       ],
@@ -7716,7 +7725,7 @@
       "title": "公開プロフィールにアイコン画像とセマンティックテーマを足す",
       "summary": "> [organizer-profile.md](organizer-profile.md) の「スコープ外」から切り出した issue。プロフィールの本文（肩書き・自己紹介・リンク）は動いている前提で、そこに「その人らしさ」を出す手段を 2 つ足す。",
       "preImplementation": false,
-      "lineCount": 344,
+      "lineCount": 368,
       "headings": [
         {
           "level": 1,
@@ -7911,6 +7920,10 @@
         },
         {
           "path": "tests/unit/semantic-theme-css.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-quality.test.ts",
           "exists": true
         },
         {
@@ -9890,7 +9903,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 309,
+      "lineCount": 311,
       "headings": [
         {
           "level": 1,
@@ -10413,7 +10426,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 550,
+      "lineCount": 554,
       "headings": [
         {
           "level": 1,
@@ -10696,6 +10709,10 @@
         },
         {
           "path": "tests/unit/semantic-theme-css.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-quality.test.ts",
           "exists": true
         },
         {
@@ -11466,6 +11483,103 @@
         },
         {
           "path": "tests/unit/mock-sync.test.mjs",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/ui-review/theme-review.md",
+      "sphinxDoc": "ui-review/theme-review",
+      "format": "markdown",
+      "title": "テーマを 1 つ足すときの合格条件",
+      "summary": "公開ページのセマンティックテーマ（data-semantic-theme）を増やすときの手順と、 人手で確かめる項目をまとめます。機械で止められるものは tests/unit/semantic-theme-quality.test.ts と services/flyer/tests/test_theme_parity.py が先に落とします。 このページは、その上で目で見ないと分からないものだけを扱います。",
+      "preImplementation": false,
+      "lineCount": 120,
+      "headings": [
+        {
+          "level": 1,
+          "text": "テーマを 1 つ足すときの合格条件"
+        },
+        {
+          "level": 2,
+          "text": "9 つのテーマと用途"
+        },
+        {
+          "level": 2,
+          "text": "トークンの契約"
+        },
+        {
+          "level": 2,
+          "text": "機械が止めるもの"
+        },
+        {
+          "level": 2,
+          "text": "目で見る手順"
+        },
+        {
+          "level": 2,
+          "text": "チェック項目"
+        },
+        {
+          "level": 2,
+          "text": "新しいテーマを足すときに触るファイル"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/flyer/http_api.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/flyer/swagger.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/issues/organizer-profile-appearance.md",
+          "exists": true
+        },
+        {
+          "path": "scripts/lib/mock-screens.mjs",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/models.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/semantic_theme.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_theme_parity.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_theme_parity.py",
+          "exists": true
+        },
+        {
+          "path": "src/lib/semantic-themes.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/themes.css",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/semantic-theme-quality.test.ts",
           "exists": true
         }
       ],

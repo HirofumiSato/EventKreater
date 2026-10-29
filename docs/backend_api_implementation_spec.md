@@ -48,7 +48,7 @@ flowchart TD
 | `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマを空にする（アイコンの `avatarUrl` は返す）。会員が無い・退会済み・催しが0件は 404 |
 | `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 5 テーマのいずれか |
+| `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 9 テーマのいずれか |
 | `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.17） |
 | `/api/v1/organizer/profile/avatar` | DELETE | SCR-ORG-14 | 同左 | アイコンの削除。以後は名前の頭文字に戻る（5.17） |
 | `/api/v1/image-assets/[id]/image` | GET | SCR-ORG-14、SCR-PUB-14 | 不要 | 会員が上げた画像の配信。WebP・1 年キャッシュ。論理削除済みは 404（5.18） |
@@ -694,7 +694,7 @@ export const CreateEventSchema = z.object({
   /** 想定する参加者の世代。空欄は NULL で、告知ページに「対象」として出さない。 */
   targetGeneration: z.string().trim().max(50).nullable().optional(),
   /** 告知ページのセマンティックテーマ。null は標準。未知の ID は 400。 */
-  themeId: z.enum(['modern-slate', 'enterprise-clean', 'parchment', 'neo-brutalism', 'neon']).nullable().default(null),
+  themeId: z.enum(['modern-slate', 'enterprise-clean', 'parchment', 'neo-brutalism', 'neon', 'washi', 'sage', 'candy', 'dusk']).nullable().default(null),
   flyerAssetId: z.string().uuid().nullable().optional(),
   rsvpDeadline: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
   /** 告知ページの勧誘カードから来たときの参照元。存在しない・削除済み・下書きなら NULL として保存する。 */
@@ -774,7 +774,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
 6. `{ event }` を返す。
 
 - **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
-- **対象世代とテーマ:** `targetGeneration`（50 文字まで）と `themeId` はどちらも任意で、`events.target_generation`・`events.theme_id` に保存する。`themeId` は `null`（標準）または 5 テーマのいずれかで、未知の値は 400 にする。更新（`PUT .../organizer/events/[id]`）と下書き保存（`POST .../draft`）も同じ 2 項目を受け取る。
+- **対象世代とテーマ:** `targetGeneration`（50 文字まで）と `themeId` はどちらも任意で、`events.target_generation`・`events.theme_id` に保存する。`themeId` は `null`（標準）または 9 テーマのいずれかで、未知の値は 400 にする。更新（`PUT .../organizer/events/[id]`）と下書き保存（`POST .../draft`）も同じ 2 項目を受け取る。
 - **枠:** 消費しない。公開時に 1 回だけ消費する。
 - **行ロック:** 公開と同時に走っても、後から来た保存が公開済みの催しを上書きしない。
 
@@ -1200,7 +1200,7 @@ POST /api/v1/organizer/events/[id]/reminders
 - `links` は X → Instagram → Webサイト → LINE の順。空文字の項目は飛ばす。
 - `tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）に無い値を落とす。
 - `stats` は `show_stats = true` のときだけ。開催済み（`status != DRAFT`・未削除・今日以前の開催日がある）催しの件数と、その最も早い開催日の年。共同主催も1件として数える。
-- `themeId` は `is_published = true` のときだけ、既知の 5 テーマのいずれか。非公開・未知の値は `null`（標準の見た目）。
+- `themeId` は `is_published = true` のときだけ、既知の 9 テーマのいずれか。非公開・未知の値は `null`（標準の見た目）。
 - `avatarUrl` は `avatar_image_id` があれば `/api/v1/image-assets/{id}/image`。**非公開でも返す**（本文ではなく、その人を示す印のため）。
 
 ```json
@@ -1272,7 +1272,7 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `websiteUrl` | `https` のみ。ホストは問わない。後方互換のため受け付けるが、公開ページには出さない |
 | `lineUrl` | `https` のみ。ホストは `lin.ee` / `line.me`。後方互換のため受け付けるが、公開ページには出さない |
 | `isPublished` / `showStats` | 真偽値。既定は false |
-| `themeId` | `modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` のいずれか、または null（標準）。未知の値は 400 |
+| `themeId` | `modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` / `washi` / `sage` / `candy` / `dusk` のいずれか、または null（標準）。未知の値は 400 |
 
 URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.17 の `avatar` で別に保存する。
 
@@ -2269,7 +2269,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 | `location` | 2 文字以上 60 文字以内 |
 | `rainPolicy` | `RAIN_OR_SHINE`、`CANCEL_ON_RAIN`、`POSTPONE_ON_RAIN`、`INDOOR` |
 | `capacity` | 正の整数、または省略 |
-| `themeId` | `modern-slate`、`enterprise-clean`、`parchment`、`neo-brutalism`、`neon` のいずれか、または省略（未指定は標準） |
+| `themeId` | `modern-slate`、`enterprise-clean`、`parchment`、`neo-brutalism`、`neon`、`washi`、`sage`、`candy`、`dusk` のいずれか、または省略（未指定は標準） |
 | `targetGeneration` | 50 文字以内の自由文、または省略。サービスは読者層としてプロンプトに使う |
 | `templateId` | `style_1_bar_stylish`、`style_2_warm_earth`、`style_3_vibrant_pop` |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack`（省略時 `classic`） |

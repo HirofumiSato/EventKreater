@@ -101,7 +101,7 @@ export function buildScreens(demo) {
       // プロフィールは誰でも読めるが、催しは参加者のログインが要る。
       // 未ログインで開くと、飾りのカレンダーの上に白塗りを重ねる。
       auth: null,
-      note: "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面を 5 つぶん撮り、未選択（標準）も 1 枚置く。",
+      note: "プロフィールの下に、カレンダーと一覧。未ログインではカレンダーの上に白塗りを重ねる。テーマは同じ画面をすべてのテーマぶん撮り、未選択（標準）も 1 枚置く。",
       states: [
         { key: "guest", label: "未ログイン", path: `/organizers/${demo.organizerId}`, auth: null },
         {
@@ -110,7 +110,7 @@ export function buildScreens(demo) {
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
         },
-        // 保存されているテーマはデモでは羊皮紙なので、ほかの 4 つと標準は
+        // 保存されているテーマはデモでは羊皮紙なので、ほかの 8 つと標準は
         // 撮る直前に属性を差し替えて作る（`applySemanticTheme`）。
         {
           key: "theme-none",
@@ -153,6 +153,34 @@ export function buildScreens(demo) {
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
           theme: "neon",
+        },
+        {
+          key: "theme-washi",
+          label: "和紙と藍",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "washi",
+        },
+        {
+          key: "theme-sage",
+          label: "余白",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "sage",
+        },
+        {
+          key: "theme-candy",
+          label: "キャンディ",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "candy",
+        },
+        {
+          key: "theme-dusk",
+          label: "夕暮れ",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "dusk",
         },
       ],
     },
@@ -351,7 +379,7 @@ export function buildScreens(demo) {
       name: "公開プロフィールの編集",
       path: "/organizer/profile",
       auth: "organizer",
-      note: "公開の可否、アイコン画像、ページの見た目（5テーマ）、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
+      note: "公開の可否、アイコン画像、ページの見た目（用途グループごとのテーマ）、肩書き、自己紹介、エリア、ジャンル、X と Instagram。",
     },
     {
       no: "28",

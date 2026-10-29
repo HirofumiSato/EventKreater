@@ -1,24 +1,35 @@
 import { describe, expect, it } from "vitest";
 import {
   SEMANTIC_THEMES,
+  SEMANTIC_THEME_GROUPS,
   SEMANTIC_THEME_IDS,
   isSemanticThemeId,
   normalizeSemanticThemeId,
   semanticTheme,
+  themesInGroup,
 } from "@/lib/semantic-themes";
 import { OrganizerProfileSchema } from "@/lib/schemas";
 
 describe("SEMANTIC_THEMES", () => {
-  it("初期は 5 つ。ID は重複しない", () => {
-    expect(SEMANTIC_THEME_IDS).toHaveLength(5);
-    expect(new Set(SEMANTIC_THEME_IDS).size).toBe(5);
-    expect(SEMANTIC_THEMES.map((theme) => theme.id)).toEqual([...SEMANTIC_THEME_IDS]);
+  it("ID は重複せず、定義と一対一で対応する", () => {
+    expect(SEMANTIC_THEME_IDS.length).toBeGreaterThan(0);
+    expect(new Set(SEMANTIC_THEME_IDS).size).toBe(SEMANTIC_THEME_IDS.length);
+    expect(SEMANTIC_THEMES.map((theme) => theme.id).sort()).toEqual([...SEMANTIC_THEME_IDS].sort());
   });
 
   it("表示名と説明が空でない", () => {
     for (const theme of SEMANTIC_THEMES) {
       expect(theme.label.trim()).not.toBe("");
       expect(theme.note.trim()).not.toBe("");
+    }
+  });
+
+  it("すべてのテーマが用途グループに入る", () => {
+    const grouped = SEMANTIC_THEME_GROUPS.flatMap((group) => themesInGroup(group.id));
+    expect(grouped.map((theme) => theme.id).sort()).toEqual([...SEMANTIC_THEME_IDS].sort());
+    for (const group of SEMANTIC_THEME_GROUPS) {
+      expect(themesInGroup(group.id).length, `${group.id} が空`).toBeGreaterThan(0);
+      expect(group.label.trim()).not.toBe("");
     }
   });
 
@@ -56,7 +67,7 @@ describe("normalizeSemanticThemeId", () => {
 });
 
 describe("OrganizerProfileSchema のテーマ", () => {
-  it("5 テーマと null を受け付ける", () => {
+  it("すべてのテーマと null を受け付ける", () => {
     for (const id of SEMANTIC_THEME_IDS) {
       expect(OrganizerProfileSchema.parse({ themeId: id }).themeId).toBe(id);
     }

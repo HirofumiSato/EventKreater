@@ -6,7 +6,7 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 
 ## 最初に読む順
 
-0. `llms.txt` — AI 向けの入口。最初に読む 21 リンクだけを置く
+0. `llms.txt` — AI 向けの入口。最初に読む 22 リンクだけを置く
 1. `docs/onboarding.md` — 全体を 90 分で掴む順路。人間と AI が同じものを使う
 2. `docs/README.md` — どの文書が何から派生し、何で検証されるか。既知の乖離もここにある
 3. `docs/sitemap.rst` — ドキュメント全体の見取り図。`toctree` に無いページは検索にも出ない

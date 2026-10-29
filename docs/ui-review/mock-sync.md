@@ -169,7 +169,7 @@ DB やデモデータが変われば画面上の DOM も変わるので、断片
 | `theme: "neon"` | そのテーマを保存している状態。属性を書き換えるだけ |
 | `theme: null` | テーマ未選択（標準）。包み（`.semantic-theme--page`）ごと外す。属性を消すだけだと `--st-*` が未定義のまま `.semantic-theme` の写しだけが残り、標準の見た目にならない |
 
-06 主催者のページは、未ログイン・ログイン済みに加えて、標準と 5 テーマの計 8 枚を持ちます
+06 主催者のページは、未ログイン・ログイン済みに加えて、標準と 9 テーマの計 12 枚を持ちます
 （`mock-organizer-public-theme-neon.html` など）。テーマ名は `src/lib/semantic-themes.ts` の
 ラベルと同じで、ずれると `tests/unit/mock-sync.test.mjs` が止めます。テーマを足したら、
 `screens` の `states` にも 1 行足してから `npm run mock:sync` を回してください。
