@@ -333,10 +333,16 @@ P0 は情報の並べ替えに留まり、画面の印象は変わらなかっ�
 | `src/styles/base.css` | `body` に `overflow-x: clip` |
 | `src/styles/components.css` | `.hero--stage`（全幅の墨地・2カラム）、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` を追加。墨地と朱の帯ではフォーカスリングを白に（朱のリングは墨地で 2.89:1 しかない） |
 | `src/app/page.tsx` | ヒーローを `.hero__grid`（コピー＋チラシ）に変更。`card-grid` を `feature-list` / `step-list` に置換。末尾を `cta-band` に変更 |
-| `public/samples/flyer-autumn.jpg` | 作成画面（`/organizer/events/new`）で「焚き火とシチューの夕べ」を作り、AI 背景＋静けさ／上にまとめる／ゴールドで生成した実物。1080×1528（A4） |
+| `public/samples/flyer-autumn.jpg` | デモ催し「秋の芋煮会」の見本。AI 背景＋静けさ／標準／テーマ未指定で作り直した実物。1080×1528（A4）。タイトルは 1 行（`秋の芋煮会`） |
+| `public/samples/flyer-gohan.jpg` | デモ催し「秋のゆるごはん会」の見本。AI 背景＋やわらかさ／標準／羊皮紙で作り直した実物。1080×1528（A4）。タイトルは意味の切れ目で 2 行（`秋のゆる / ごはん会`） |
+| `public/samples/flyer-craft-market.jpg` | デモ催し「手しごとの市 秋の道具市」の見本。AI 背景＋静けさ／標準／和紙で作り直した実物。1080×1528（A4）。タイトルは意味の切れ目で 2 行（`手しごとの市 / 秋の道具市`） |
+| `public/samples/flyer-halloween.jpg` | デモ催し「ハロウィン おやこマルシェ」の見本。AI 背景＋にぎやかさ／下にまとめる／キャンディで作り直した実物。1080×1528（A4）。タイトルは意味の切れ目で 2 行（`ハロウィン / おやこマルシェ`） |
+| `public/samples/flyer-bonfire.jpg` | デモ催し「川辺の焚き火ナイト」の見本。AI 背景＋暖色／中央にまとめる／夕暮れで作り直した実物。1080×1528（A4）。タイトルは意味の切れ目で 2 行（`川辺の / 焚き火ナイト`） |
 | `style-guide/*` | 角の値を 0 に更新。`.hero--stage`、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` の見本を追加 |
 
 チラシ画像は次の手順で取り直せる。作成画面でイベントを最後まで入力し、ステップ 5 の「チラシを作る」で紙面の性格・背景・文字の配置・配色・タイトル色を選んで保存し、`storage/flyers/<flyerAssetId>.jpg` を `public/samples/flyer-autumn.jpg` へコピーする。API キーが無いときはテーマ色で描くサンプル紙面でも同じ手順で作れる。
+`flyer-bonfire.jpg` も同じ手順で、デモ催し（`川辺の焚き火ナイト`）を作り直してから `storage/flyers/` の実ファイルと差し替える。**見本を作り直したら、seed が古い画像を配り直さないよう同じ PR で `public/samples/**` を更新する**（手順は `AGENTS.md` の「チラシの見本」）。
+手順はどの見本でも同じで、デモ催しの `storage/flyers/<flyerAssetId>.jpg` と `public/samples/<見本>.jpg` を同じ画像にそろえる。`storage/flyers/` の画像は URL が変わらないため、開いたままの画面には古い絵が残る（`Cache-Control: immutable`）。見比べるときは再読み込みする。
 
 ### 9.3. 実測（1440px / 390px）
 
