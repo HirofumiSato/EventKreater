@@ -164,6 +164,7 @@ a.card,
    面は薄い山吹で塗る（`--pop-warm-tint`）。売り込みの朱は使わず、紙の付箋と同じ
    暖色に留める。テーマ付きのページでは 14% の差し色に置き換わり、暗い紙面でも
    濃さが崩れない。左右と下端はバーの余白を打ち消して、色を画面の端まで届かせる。
+   縦の余白は持たない。帯そのものを 1 行ぶんの薄い面として扱う。
    ボタンではないので、`.btn` の形（枠・塗り・角丸）は使わない。 */
 .sticky-rsvp__invite {
   /* 折り返して必ず 1 段下へ。ボタン 2 つとは幅を分け合わない。 */
@@ -174,21 +175,20 @@ a.card,
   background: var(--pop-warm-tint);
   color: var(--color-text-muted);
   font-size: 0.75rem;
-  /* 帯の縦幅は、押せる高さ（24px 以上）を残して詰める。 */
-  line-height: 1.4;
+  line-height: 1.5;
   text-align: center;
 }
 
-/* 幅いっぱいを押せるようにする。行そのものが当たり判定になるので、
-   字が小さくても押しやすい（高さは 27px 前後）。 */
+/* 幅いっぱいを押せるようにする。上下の余白は持たず、行の高さ（18px）だけ。
+   端末の安全領域（ホームインジケータ）ぶんだけは下に残す。 */
 .sticky-rsvp__invite a {
   display: block;
-  padding: 0.3125rem 1rem calc(0.3125rem + env(safe-area-inset-bottom));
+  padding: 0 1rem env(safe-area-inset-bottom);
   color: inherit;
   text-decoration: underline;
   /* 下線は本文の色を薄く引く。強い色で引くと、出欠のボタンと同じ強さに見える。 */
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-  text-underline-offset: 0.25em;
+  text-underline-offset: 0.2em;
 }
 
 .sticky-rsvp__invite a:hover {
