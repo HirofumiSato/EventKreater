@@ -159,3 +159,48 @@ a.card,
 }
 
 /* チラシ候補ウィザード。React が開閉を持つので、checkbox ではなくクラスで出す。 */
+
+/* 追従バーの下段。出欠の導線ではなく、次の主催者を拾う細い帯。
+   面は薄い山吹で塗る（`--pop-warm-tint`）。売り込みの朱は使わず、紙の付箋と同じ
+   暖色に留める。テーマ付きのページでは 14% の差し色に置き換わり、暗い紙面でも
+   濃さが崩れない。左右と下端はバーの余白を打ち消して、色を画面の端まで届かせる。
+   縦の余白は持たない。帯そのものを 1 行ぶんの薄い面として扱う。
+   ボタンではないので、`.btn` の形（枠・塗り・角丸）は使わない。 */
+.sticky-rsvp__invite {
+  /* 折り返して必ず 1 段下へ。ボタン 2 つとは幅を分け合わない。 */
+  flex: 1 0 100%;
+  /* バーの padding（左右 1rem・下 0.625rem + 安全領域）を打ち消す。 */
+  margin: 0 -1rem calc(-0.625rem - env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-line);
+  background: var(--pop-warm-tint);
+  /* 字は差し色（`--color-primary-text`）1 色。地の淡い山吹とは 5.5〜17:1 の
+     コントラストになる。差し色は面の明度から決まるので、テーマを変えても濃さが
+     反転しない。以前はマウスオーバーでこの色へ寄せていたが、スマホには hover が
+     無く端末で見え方が変わるため、既定からこの色にして触っても動かさない。 */
+  color: var(--color-primary-text);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 幅いっぱいを押せるようにする。上下の余白は持たず、行の高さ（18px）だけ。
+   端末の安全領域（ホームインジケータ）ぶんだけは下に残す。 */
+.sticky-rsvp__invite a {
+  display: block;
+  padding: 0 1rem env(safe-area-inset-bottom);
+  color: inherit;
+  text-decoration: underline;
+  /* 下線は本文の色を薄く引く。強い色で引くと、出欠のボタンと同じ強さに見える。 */
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+/* 触れたら下線だけ濃くする。字の色は動かさない（PC とスマホで同じ色にする）。 */
+.sticky-rsvp__invite a:hover {
+  text-decoration-color: currentColor;
+}
+
+.sticky-rsvp__invite a:focus-visible {
+  outline: 2px solid var(--color-primary-ring);
+  outline-offset: 2px;
+}

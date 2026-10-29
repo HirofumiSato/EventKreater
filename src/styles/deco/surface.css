@@ -588,9 +588,19 @@
 }
 
 /* 追従の出欠バー（スマホだけ）に本文の末尾が隠れないよう、同じ高さを空ける。
-   バーと対なので、片方だけ変えない。 */
+   バーと対なので、片方だけ変えない。バーはボタン行（約 52px）と、
+   主催者への誘いの帯（12px の 1 行で約 18px）の 2 段になる。
+   4.5rem は帯を出さない相手のぶんも含むので、帯の有無で変えない。 */
 @media (max-width: 767px) {
   .event-page {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* バーはページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ
+   空けて、バーがフッターの文字に重ならないようにする（`.action-dock` と同じ形）。 */
+@media (max-width: 767px) {
+  body:has(.sticky-rsvp) .site-footer {
     padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 }

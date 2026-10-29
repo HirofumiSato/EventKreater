@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE } from "@/lib/site";
 
 interface StickyRsvpBarProps {
   attendingCount: number;
@@ -8,6 +9,8 @@ interface StickyRsvpBarProps {
   closed: boolean;
   /** 主催者の公開ページ。会員の幹事のときだけ、左に並べる。 */
   organizerHref?: string | null;
+  /** 下段に「あなたもイベントを開きませんか」の帯を出すか。条件は `showsOrganizerInvite` が持つ。 */
+  showInvite?: boolean;
 }
 
 /**
@@ -15,6 +18,7 @@ interface StickyRsvpBarProps {
  *
  * 参加人数は札（EventMetaCard）にも出るので、狭い画面では落とす（CSS 側）。
  * ボタンは 2 つまで。主催者のページと、出欠の回答。
+ * 下段の帯（`showInvite`）は出欠の導線ではないので、ボタンとして数えない。
  */
 export function StickyRsvpBar({
   attendingCount,
@@ -23,6 +27,7 @@ export function StickyRsvpBar({
   answered,
   closed,
   organizerHref = null,
+  showInvite = false,
 }: StickyRsvpBarProps) {
   const full = capacity !== null && attendingCount >= capacity;
   return (
@@ -46,6 +51,11 @@ export function StickyRsvpBar({
         <a href="#rsvp" className="btn btn--primary btn--sm">
           {answered ? "回答を変更" : full ? "参加要望を出す" : "出欠を答える"}
         </a>
+      )}
+      {showInvite && (
+        <p className="sticky-rsvp__invite">
+          <Link href={SITE.nav.home.href}>あなたもイベントを開きませんか</Link>
+        </p>
       )}
     </div>
   );
