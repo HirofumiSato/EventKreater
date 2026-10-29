@@ -1155,9 +1155,12 @@
           <p class="sg-lead">中身は <code>.dialog</code> です。角は 20px、柔らかい影。画面の上に出すときは、チェックボックスとラベルだけで開閉します。</p>
 
           <figure class="sg-specimen">
-            <figcaption class="sg-caption"><code>.dialog</code> <code>.countdown</code> <code>.dialog__actions</code></figcaption>
+            <figcaption class="sg-caption"><code>.dialog</code> <code>.dialog__close</code> <code>.countdown</code> <code>.dialog__actions</code></figcaption>
             <div class="sg-stage">
               <div class="dialog dialog--sample">
+                <button class="dialog__close" type="button" aria-label="引き続き閲覧のみ">
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
                 <div class="dialog__icon">
                   <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5"></path><path d="M12 16h.01"></path><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"></path></svg>
                 </div>
@@ -1166,8 +1169,8 @@
                 <p class="countdown"><span>無操作による自動解放まで</span><span class="countdown__time">02:14</span></p>
                 <p class="alert alert--error" role="alert">前の人の未保存の編集内容は破棄されます。</p>
                 <div class="dialog__actions">
-                  <button class="btn btn--block" type="button">閲覧モードで確認する（編集不可）</button>
-                  <button class="btn btn--danger btn--block" type="button">破棄して編集権を引き継ぐ</button>
+                  <button class="btn btn--block" type="button">引き続き閲覧のみ</button>
+                  <button class="btn btn--danger btn--block" type="button">編集権を引き継ぐ</button>
                 </div>
                 <p class="dialog__note">引き継いだ場合、現在作業中の幹事の未保存内容は反映されません。</p>
               </div>
@@ -1183,6 +1186,9 @@
                 <div class="modal">
                   <label class="modal__backdrop" for="demo-modal" aria-label="閉じる"></label>
                   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+                    <label class="dialog__close" for="demo-modal" aria-label="閉じる">
+                      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    </label>
                     <h3 class="dialog__title" id="demo-modal-title">共同幹事の招待URL</h3>
                     <p class="dialog__body">このURLを知っている人が共同幹事になれます。</p>
                     <p class="quote">https://example.com/invitations/abc123</p>

@@ -23,19 +23,24 @@ interface LockFailure {
 export function useEditLock(eventId: string, holderName: string, enabled: boolean) {
   const [lockToken, setLockToken] = useState<string | null>(null);
   const [conflict, setConflict] = useState<LockConflict | null>(null);
+  // 競合の案内を閉じたか。閉じたあとは、裏の定期確認が同じ 409 を見ても開き直さない。
+  const [conflictDismissed, setConflictDismissed] = useState(false);
   const [status, setStatus] = useState<"idle" | "acquiring" | "held" | "conflict" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const tokenRef = useRef<string | null>(null);
   const holderRef = useRef(holderName);
   holderRef.current = holderName;
 
-  const applyConflict = useCallback((data: LockFailure) => {
+  const applyConflict = useCallback((data: LockFailure, options?: { keepDismissed?: boolean }) => {
     tokenRef.current = null;
     setLockToken(null);
     setConflict({
       holderName: data.holderName || "他の幹事",
     });
     setStatus("conflict");
+    // 自分で保存を押したときなど、いま起きた競合は必ず知らせる。
+    // 裏の確認で見つけただけの競合は、一度閉じた案内を開き直さない。
+    if (!options?.keepDismissed) setConflictDismissed(false);
   }, []);
 
   const acquire = useCallback(
@@ -59,7 +64,7 @@ export function useEditLock(eventId: string, holderName: string, enabled: boolea
       if (res.status === 409) {
         // 古いトークンで送ったリクエストの遅延応答は、現在の保持状態を壊さない。
         if (requestToken !== tokenRef.current) return;
-        applyConflict(data);
+        applyConflict(data, { keepDismissed: options?.silent });
         return;
       }
       if (res.status === 403 && isRegisterRequired(data)) {
@@ -79,6 +84,7 @@ export function useEditLock(eventId: string, holderName: string, enabled: boolea
       tokenRef.current = data.lockToken;
       setLockToken(data.lockToken);
       setConflict(null);
+      setConflictDismissed(false);
       setStatus("held");
     },
     [applyConflict, eventId],
@@ -174,14 +180,27 @@ export function useEditLock(eventId: string, holderName: string, enabled: boolea
     [applyConflict, eventId],
   );
 
+  // 案内を閉じる（引き続き閲覧のみ）。ロックは取りに行かない。
+  const dismissConflict = useCallback(() => {
+    setConflictDismissed(true);
+  }, []);
+
+  // 閉じたあとで、やはり引き継ぎたいとき。案内を開き直すだけ。
+  const reopenConflict = useCallback(() => {
+    setConflictDismissed(false);
+  }, []);
+
   return {
     lockToken,
     conflict,
+    // 案内を出すか。閉じたあとは、裏の定期確認が同じ 409 を見ても開き直さない。
+    conflictVisible: status === "conflict" && Boolean(conflict) && !conflictDismissed,
     status,
     error,
     hasLock: status === "held" && Boolean(lockToken),
     forceTakeover,
-    refresh: () => acquire(),
+    dismissConflict,
+    reopenConflict,
     saveWithLock,
     release,
     releaseAwait,
