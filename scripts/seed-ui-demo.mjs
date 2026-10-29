@@ -115,7 +115,8 @@ const STORAGE = path.join(ROOT, "storage");
 const FLYER_DIR = path.join(STORAGE, "flyers");
 const IMAGE_DIR = path.join(STORAGE, "images");
 const OUT_FILE = path.join(STORAGE, "ui-demo.json");
-const SAMPLE_FLYER = path.join(ROOT, "public", "samples", "flyer-autumn.jpg");
+/** チラシの見本。催しごとに 1 枚を写して、撮り直しても見た目が変わらないようにする。 */
+const SAMPLE_DIR = path.join(ROOT, "public", "samples");
 
 /** デモ主催者のアイコン。内容も ID も固定にして、撮り直しても画像名が変わらないようにする。 */
 const DEMO_AVATAR_ID = "8f3c1d2e-5a4b-4c6d-9e70-2b1a4c8d6f31";
@@ -217,10 +218,10 @@ async function issueSessionToken(user) {
 }
 
 /** サンプルのチラシ画像を storage に置き、配信用の行を作る。 */
-async function createFlyer(userId, title) {
+async function createFlyer(userId, title, sample = "flyer-autumn.jpg") {
   const id = randomUUID();
   await mkdir(FLYER_DIR, { recursive: true });
-  await copyFile(SAMPLE_FLYER, path.join(FLYER_DIR, `${id}.jpg`));
+  await copyFile(path.join(SAMPLE_DIR, sample), path.join(FLYER_DIR, `${id}.jpg`));
   return prisma.flyerAsset.create({
     data: {
       id,
@@ -349,6 +350,18 @@ try {
 
   const flyerMain = await createFlyer(organizer.id, "秋の芋煮会");
   const flyerDraft = await createFlyer(organizer.id, "下書きの披露宴");
+  const flyerGohan = await createFlyer(organizer.id, "秋のゆるごはん会", "flyer-gohan.jpg");
+  const flyerCraft = await createFlyer(
+    organizer.id,
+    "手しごとの市 秋の道具市",
+    "flyer-craft-market.jpg",
+  );
+  const flyerHalloween = await createFlyer(
+    organizer.id,
+    "ハロウィン おやこマルシェ",
+    "flyer-halloween.jpg",
+  );
+  const flyerBonfire = await createFlyer(organizer.id, "川辺の焚き火ナイト", "flyer-bonfire.jpg");
 
   /**
    * 催しを 1 件作り、日程・費用プラン・幹事・出欠をまとめて入れる。
@@ -360,7 +373,15 @@ try {
         title: input.title,
         sortDate: toDate(input.sortDate),
         location: input.location,
+        postalCode: input.postalCode ?? null,
+        prefecture: input.prefecture ?? null,
+        city: input.city ?? null,
+        town: input.town ?? null,
+        addressLine: input.addressLine ?? null,
+        building: input.building ?? null,
         venueName: input.venueName ?? null,
+        targetGeneration: input.targetGeneration ?? null,
+        themeId: input.themeId ?? null,
         rainPolicy: input.rainPolicy ?? "RAIN_OR_SHINE",
         capacity: input.capacity ?? null,
         status: input.status,
@@ -391,6 +412,17 @@ try {
       const chosenSchedule =
         row.scheduleIndex === undefined ? null : event.schedules[row.scheduleIndex];
       const isParticipantUser = row.asParticipantUser === true;
+      // 開催日を過ぎた催しでも不自然にならないよう、申し込んだ日時を開催日から逆算できる。
+      // 指定が無いときは「直近 10 時間のあいだに申し込んだ」並びにする。
+      const appliedAt =
+        row.appliedDaysBefore === undefined
+          ? new Date(Date.now() - (10 - index) * 3600 * 1000)
+          : (() => {
+              const at = new Date(toDate(input.sortDate).getTime() - row.appliedDaysBefore * DAY_MS);
+              // 申し込み時刻は昼前後に散らす。日付の境界をまたがない範囲に収める。
+              at.setUTCHours(2 + (row.appliedDaysBefore % 9), (row.appliedDaysBefore * 7) % 60, 0, 0);
+              return at;
+            })();
       const record = await prisma.participant.create({
         data: {
           eventId: event.id,
@@ -407,7 +439,7 @@ try {
           priceAudience: plan ? plan.audience : null,
           waitlistedAt:
             row.status === "WAITLISTED" ? new Date(Date.now() - (index + 1) * 3600 * 1000) : null,
-          createdAt: new Date(Date.now() - (10 - index) * 3600 * 1000),
+          createdAt: appliedAt,
         },
       });
       if (row.receipt) {
@@ -579,6 +611,187 @@ try {
     plans: [{ name: "一般", audience: "ANY", amount: 6000, note: null }],
   });
 
+  /**
+   * ここから下は、手で作ってあったデモ催しを seed に取り込んだもの。
+   *
+   * 10 月の 2 件は開催日を過ぎた状態で残し、「過去の催しを除く」の絞り込みと
+   * 受付終了の表示を確かめる。申し込み期限は開催日の前日 23:59 に置く。
+   * 残る 2 件は公開中で、うち 1 件は参加者ゼロのまま置く。
+   */
+  const craftDate = addDays(today, -20);
+  const halloweenDate = addDays(today, -13);
+  const bonfireDate = addDays(today, 1);
+  const gohanDate = addDays(today, 15);
+
+  const craftMarket = await createEvent({
+    title: "手しごとの市 秋の道具市",
+    sortDate: craftDate,
+    location: "旧校舎ギャラリー（東京都世田谷区）",
+    venueName: "旧校舎ギャラリー",
+    rainPolicy: "INDOOR",
+    capacity: 60,
+    status: "PUBLISHED",
+    flyerAssetId: flyerCraft.id,
+    targetGeneration: "30代から60代",
+    themeId: "washi",
+    rsvpDeadline: tokyoDateTime(addDays(craftDate, -1), "23:59"),
+    schedules: [schedule(craftDate, "10:00", "16:00", 0)],
+    plans: [{ name: "入場", audience: "ANY", amount: 0, note: "どなたでも" }],
+    participants: [
+      {
+        name: "田中 ちひろ",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "木のスプーンを探しに来ます。",
+        appliedDaysBefore: 11,
+      },
+      {
+        name: "大野 健",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "知人の工房が出るので寄ります。",
+        appliedDaysBefore: 9,
+      },
+      {
+        name: "森 あやめ",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "午後から伺います。",
+        appliedDaysBefore: 6,
+      },
+      {
+        name: "小林 修",
+        gender: "MALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "用事が入ってしまいました。次回に。",
+        appliedDaysBefore: 4,
+      },
+    ],
+  });
+
+  const halloween = await createEvent({
+    title: "ハロウィン おやこマルシェ",
+    sortDate: halloweenDate,
+    location: "世田谷公園 芝生広場（東京都世田谷区）",
+    venueName: "世田谷公園 芝生広場",
+    rainPolicy: "CANCEL_ON_RAIN",
+    capacity: 40,
+    status: "PUBLISHED",
+    flyerAssetId: flyerHalloween.id,
+    targetGeneration: "未就学児とその家族",
+    themeId: "candy",
+    rsvpDeadline: tokyoDateTime(addDays(halloweenDate, -1), "23:59"),
+    schedules: [schedule(halloweenDate, "11:00", "15:00", 0)],
+    plans: [
+      { name: "おやつ付き", audience: "ANY", amount: 500, note: "子どもは無料" },
+      { name: "子ども", audience: "ANY", amount: 0, note: "未就学児" },
+    ],
+    participants: [
+      {
+        name: "佐々木 ゆい",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "子どもと仮装で参加します。",
+        appliedDaysBefore: 8,
+      },
+      {
+        name: "佐々木 はると",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 1,
+        scheduleIndex: 0,
+        comment: "5 歳です。おやつは家で食べます。",
+        appliedDaysBefore: 8,
+      },
+      {
+        name: "中村 みなみ",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "おやつ付きでお願いします。",
+        appliedDaysBefore: 5,
+      },
+    ],
+  });
+
+  const bonfire = await createEvent({
+    title: "川辺の焚き火ナイト",
+    sortDate: bonfireDate,
+    location: "河川敷公園 第2広場（東京都世田谷区）",
+    venueName: "河川敷公園 第2広場",
+    rainPolicy: "POSTPONE_ON_RAIN",
+    capacity: 20,
+    status: "PUBLISHED",
+    flyerAssetId: flyerBonfire.id,
+    targetGeneration: "20代から40代",
+    themeId: "dusk",
+    rsvpDeadline: tokyoDateTime(addDays(bonfireDate, -1), "23:59"),
+    schedules: [schedule(bonfireDate, "18:00", "21:00", 0)],
+    plans: [{ name: "一般", audience: "ANY", amount: 2500, note: "薪と汁物付" }],
+    participants: [
+      {
+        name: "石井 直人",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "焚き火、久しぶりです。",
+        appliedDaysBefore: 7,
+      },
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "汁物は何か持っていきますか？",
+        appliedDaysBefore: 3,
+      },
+      {
+        name: "岡本 涼太",
+        gender: "MALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "出張で行けなくなりました。",
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  const gohan = await createEvent({
+    title: "秋のゆるごはん会",
+    sortDate: gohanDate,
+    location: "ごはん屋 まめ 東京都世田谷区北沢2-14-3 2F",
+    postalCode: "1550031",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "北沢",
+    addressLine: "2-14-3",
+    building: "2F",
+    venueName: "ごはん屋 まめ",
+    rainPolicy: "INDOOR",
+    capacity: 20,
+    status: "PUBLISHED",
+    flyerAssetId: flyerGohan.id,
+    targetGeneration: "20代〜30代",
+    themeId: "parchment",
+    rsvpDeadline: tokyoDateTime(addDays(gohanDate, -3), "23:59"),
+    schedules: [schedule(gohanDate, "18:30", "21:00", 0)],
+    plans: [
+      { name: "ごはん代", audience: "ANY", amount: 3500, note: "飲み物は別会計（実費）" },
+    ],
+  });
+
   // 共同幹事の招待（1 件だけ有効なコードを持つ）。前回の行は消してから作り直す。
   await prisma.eventInvitation.deleteMany({
     where: { inviteCodeHash: sha256(INVITE_CODE) },
@@ -700,6 +913,10 @@ try {
       takoyaki: takoyaki.event.id,
       lastMonth: lastMonth.event.id,
       draft: draft.event.id,
+      craftMarket: craftMarket.event.id,
+      halloween: halloween.event.id,
+      bonfire: bonfire.event.id,
+      gohan: gohan.event.id,
     },
     participantId: participant.id,
     organizerId: organizer.id,
@@ -732,6 +949,10 @@ try {
   console.log(`    第3回 たこ焼きパーティー（チラシなし）: ${takoyaki.event.id}`);
   console.log(`    先月の芋煮会（過去日・領収書）: ${lastMonth.event.id}`);
   console.log(`    下書きの披露宴（下書き）: ${draft.event.id}`);
+  console.log(`    手しごとの市 秋の道具市（過去日・和紙と藍）: ${craftMarket.event.id}`);
+  console.log(`    ハロウィン おやこマルシェ（過去日・キャンディ）: ${halloween.event.id}`);
+  console.log(`    川辺の焚き火ナイト（明日・夕暮れ）: ${bonfire.event.id}`);
+  console.log(`    秋のゆるごはん会（公開中・羊皮紙）: ${gohan.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);
   console.log(`  書き出し: storage/ui-demo.json`);
   if (!tokens.organizer) {
