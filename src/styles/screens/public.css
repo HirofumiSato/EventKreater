@@ -161,24 +161,29 @@ a.card,
 /* チラシ候補ウィザード。React が開閉を持つので、checkbox ではなくクラスで出す。 */
 
 /* 追従バーの下段。出欠の導線ではなく、次の主催者を拾う細い帯。
-   売り込みに見えないよう面は塗らず（バーの地のまま）、罫線と小さめの字だけで区切る。
-   色は `--color-*` 経由なので、暗い紙面のテーマでも濃さが崩れない。
+   面は薄い山吹で塗る（`--pop-warm-tint`）。売り込みの朱は使わず、紙の付箋と同じ
+   暖色に留める。テーマ付きのページでは 14% の差し色に置き換わり、暗い紙面でも
+   濃さが崩れない。左右と下端はバーの余白を打ち消して、色を画面の端まで届かせる。
    ボタンではないので、`.btn` の形（枠・塗り・角丸）は使わない。 */
 .sticky-rsvp__invite {
   /* 折り返して必ず 1 段下へ。ボタン 2 つとは幅を分け合わない。 */
   flex: 1 0 100%;
-  margin: 0;
-  padding-top: 0.5rem;
+  /* バーの padding（左右 1rem・下 0.625rem + 安全領域）を打ち消す。 */
+  margin: 0 -1rem calc(-0.625rem - env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-line);
+  background: var(--pop-warm-tint);
   color: var(--color-text-muted);
   font-size: 0.75rem;
-  line-height: 1.6;
+  /* 帯の縦幅は、押せる高さ（24px 以上）を残して詰める。 */
+  line-height: 1.4;
   text-align: center;
 }
 
+/* 幅いっぱいを押せるようにする。行そのものが当たり判定になるので、
+   字が小さくても押しやすい（高さは 27px 前後）。 */
 .sticky-rsvp__invite a {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
+  display: block;
+  padding: 0.3125rem 1rem calc(0.3125rem + env(safe-area-inset-bottom));
   color: inherit;
   text-decoration: underline;
   /* 下線は本文の色を薄く引く。強い色で引くと、出欠のボタンと同じ強さに見える。 */
