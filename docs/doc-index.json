@@ -10275,7 +10275,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 534,
+      "lineCount": 538,
       "headings": [
         {
           "level": 1,
@@ -10450,6 +10450,10 @@
         },
         {
           "path": "tests/unit/flyer-download.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-payload.test.ts",
           "exists": true
         },
         {

@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 103（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 339
+- 文書から参照されているコードパス: 340
 - API ルート: 82（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -320,6 +320,7 @@
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/flyer-payload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
