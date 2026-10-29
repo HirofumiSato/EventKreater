@@ -68,6 +68,8 @@
      - レンダラーのソースに ``openai``、``httpx``、``requests`` が無い
    * - ``test_title_breaks_at_a_meaning_boundary_not_one_character``
      - 「焚火とシチューを囲む / 夕べ」に分かれ、1 文字だけの行を残さない
+   * - ``test_title_drops_a_step_instead_of_cutting_inside_a_word``
+     - 「川辺の焚き火ナイト」は 130px の「川辺の / 焚き火ナイト」。高さ 480 と 440 の両方
    * - ``test_short_title_stays_on_one_line_with_tracking``
      - 10 文字以下は 1 行のまま、字間が 6 px 開く
    * - ``test_hanging_is_off_for_centred_paper``
@@ -225,6 +227,12 @@
      - 「ジャズセッシ / ョン」のような切れ目を作らない
    * - ``test_explicit_space_is_a_break_and_is_trimmed``
      - 入力された空白を区切りに使い、前後の空白は落とす
+   * - ``test_compound_word_is_not_cut_at_its_script_change``
+     - 「川辺の焚 / き火ナイト」ではなく「川辺の / 焚き火ナイト」を先に返す
+   * - ``test_phrase_only_rejects_a_cut_inside_a_word``
+     - 語の区切りだけで切れた案に印が立ち、語中の切り方には立たない
+   * - ``test_phrase_only_keeps_the_tail_word_on_its_own_line``
+     - 助詞のあとで切った案は語の区切りとして扱う
 
 アダプター
 ----------

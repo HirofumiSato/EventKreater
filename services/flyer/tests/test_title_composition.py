@@ -11,6 +11,7 @@ _SAMPLES = (
     "真夜中のジャズセッション",
     "秋の焚火とシチューの夕べ 夜長を楽しむ",
     "焚火、シチュー、夕べ",
+    "川辺の焚き火ナイト",
     "JAZZ NIGHT SESSION",
     "あ" * 40,
 )
@@ -81,3 +82,28 @@ def test_semantic_break_is_marked_as_such() -> None:
     assert splits
     assert any(split.semantic for split in splits)
     assert all(split.score > -100.0 for split in splits)
+
+
+def test_compound_word_is_not_cut_at_its_script_change() -> None:
+    """「川辺の焚 / き火ナイト」より「川辺の / 焚き火ナイト」を先に返す。
+
+    「焚き火」の漢字と仮名の変わり目は語の途中。文字種が変わるというだけで
+    大きな文字のまま語を割らないよう、末尾語の加点は漢字に続く場合に止める。
+    """
+    assert _best_lines("川辺の焚き火ナイト") == ("川辺の", "焚き火ナイト")
+
+
+def test_phrase_only_rejects_a_cut_inside_a_word() -> None:
+    """語の区切りだけで切れた案にだけ印が立つ。"""
+    splits = title_splits("川辺の焚き火ナイト")
+    phrases = [split.lines for split in splits if split.phrase_only]
+    assert ("川辺の", "焚き火ナイト") in phrases
+    assert ("川辺の焚", "き火ナイト") not in phrases
+    assert ("川辺の焚き火", "ナイト") not in phrases
+
+
+def test_phrase_only_keeps_the_tail_word_on_its_own_line() -> None:
+    """助詞のあとで切った案は語の区切りとして扱う。"""
+    splits = title_splits("焚火とシチューの夕べ")
+    phrases = [split.lines for split in splits if split.phrase_only]
+    assert ("焚火とシチューの", "夕べ") in phrases

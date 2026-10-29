@@ -171,6 +171,27 @@ def test_title_breaks_at_a_meaning_boundary_not_one_character() -> None:
     assert fit.lines[-1] != "べ"
 
 
+@pytest.mark.parametrize("max_height", [design.TITLE_MAX_HEIGHT, 440])
+def test_title_drops_a_step_instead_of_cutting_inside_a_word(max_height: int) -> None:
+    """「川辺の焚き火ナイト」は 1 段下げて「川辺の / 焚き火ナイト」で組む。
+
+    163px でも「川辺の焚 / き火ナイト」なら幅に収まるが、語の途中で折るより
+    130px に落として意味の切れ目で分けるほうが読みやすい。
+    """
+    renderer = PillowFlyerRenderer()
+    font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)
+    fit = fit_to_scale(
+        "川辺の焚き火ナイト",
+        font_path,
+        _scratch_draw(),
+        max_height=max_height,
+    )
+    assert fit.lines == ["川辺の", "焚き火ナイト"]
+    assert fit.size == 130
+    assert fit.width <= design.CONTENT_WIDTH
+    assert fit.height <= max_height
+
+
 def test_short_title_stays_on_one_line_with_tracking() -> None:
     renderer = PillowFlyerRenderer()
     font_path = renderer.font_path_for(TemplateId.STYLE_1_BAR_STYLISH)

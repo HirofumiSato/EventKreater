@@ -70,6 +70,8 @@ interface FlyerCandidateModalProps {
 interface CandidateResponse {
   candidates?: FlyerCandidate[];
   quota?: FlyerQuota;
+  /** AI で背景を作れず、テーマの下地へ落ちたか。背景のステップだけ立つ。 */
+  aiFallback?: boolean;
 }
 
 export function FlyerCandidateModal({
@@ -87,6 +89,7 @@ export function FlyerCandidateModal({
   const [selected, setSelected] =
     useState<Record<FlyerWizardStep, FlyerCandidate | null>>(EMPTY_SELECTION);
   const [quota, setQuota] = useState<FlyerQuota | null>(null);
+  const [aiFallback, setAiFallback] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -103,6 +106,7 @@ export function FlyerCandidateModal({
     setSelected(EMPTY_SELECTION);
     setQuota(null);
     setError(null);
+    setAiFallback(false);
     setRegisterRequired(false);
     setSessionExpired(false);
     setSaving(false);
@@ -173,6 +177,7 @@ export function FlyerCandidateModal({
         }
         setCandidates((prev) => ({ ...prev, [target]: next }));
         setSelected((prev) => ({ ...prev, [target]: next[0] }));
+        setAiFallback(target === 2 && data.aiFallback === true);
         setStep(target);
         if (data.quota) {
           setQuota(data.quota);
@@ -534,6 +539,14 @@ export function FlyerCandidateModal({
                 );
               })}
             </div>
+          )}
+
+          {step === 2 && aiFallback && !uploadSelected && (
+            <Alert tone="warning">
+              {aiExhausted
+                ? "AIの作成回数の上限です。テーマの下地で表示しています。"
+                : "AIで背景を作れませんでした。テーマの下地で表示しています。作り直せます。"}
+            </Alert>
           )}
 
           {step === 2 && !loading && (

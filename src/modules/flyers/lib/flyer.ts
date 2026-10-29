@@ -159,6 +159,13 @@ export interface FlyerCandidateDto {
   recommended?: boolean;
 }
 
+/** 1 ステップ分の候補と、AI が代替背景へ落ちたか。 */
+export interface FlyerCandidateList {
+  candidates: FlyerCandidate[];
+  /** AI で背景を作れず、テーマの下地を代替に返したか。背景のステップだけ立つ。 */
+  aiFallback: boolean;
+}
+
 function serializeCandidate(dto: FlyerCandidateDto): FlyerCandidate {
   return {
     candidateId: dto.candidate_id,
@@ -182,7 +189,7 @@ async function postCandidateRequest(
   path: string,
   body: unknown,
   ownerTokenHash?: string,
-): Promise<FlyerCandidate[]> {
+): Promise<FlyerCandidateList> {
   const base = flyerApiBase();
   let response: Response;
   try {
@@ -205,7 +212,10 @@ async function postCandidateRequest(
   if (!response.ok) {
     throw problemFromService(response.status, await readFlyerMessage(response));
   }
-  const payload = (await response.json()) as { candidates?: FlyerCandidateDto[] };
+  const payload = (await response.json()) as {
+    candidates?: FlyerCandidateDto[];
+    ai_fallback?: boolean;
+  };
   if (!Array.isArray(payload.candidates) || payload.candidates.length === 0) {
     throw new ProblemDetailException({
       status: 502,
@@ -213,7 +223,10 @@ async function postCandidateRequest(
       detail: "チラシ生成サービスの応答が不正です。",
     });
   }
-  return payload.candidates.map(serializeCandidate);
+  return {
+    candidates: payload.candidates.map(serializeCandidate),
+    aiFallback: payload.ai_fallback === true,
+  };
 }
 
 /** ステップ 1。3 種の紙面の性格の完成イメージ。 */
@@ -221,11 +234,12 @@ export async function proposeTypeCandidates(
   input: GenerateFlyerInput,
   ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
-  return postCandidateRequest(
+  const { candidates } = await postCandidateRequest(
     "/api/v1/flyers/candidates/types",
     toFlyerPayload(input),
     ownerTokenHash,
   );
+  return candidates;
 }
 
 /** ステップ 2。選んだ紙面の性格の背景タイル。 */
@@ -233,7 +247,7 @@ export async function proposeBackgroundCandidates(
   input: GenerateFlyerInput,
   count: number,
   ownerTokenHash?: string,
-): Promise<FlyerCandidate[]> {
+): Promise<FlyerCandidateList> {
   return postCandidateRequest(
     "/api/v1/flyers/candidates",
     {
@@ -250,11 +264,12 @@ export async function proposeLayoutCandidates(
   ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
   assertFlyerAssetId(candidateId);
-  return postCandidateRequest(
+  const { candidates } = await postCandidateRequest(
     `/api/v1/flyers/candidates/${candidateId}/layouts`,
     {},
     ownerTokenHash,
   );
+  return candidates;
 }
 
 /** ステップ 4。選んだ配置のまま 4 通りの配色。 */
@@ -263,11 +278,12 @@ export async function proposePaletteCandidates(
   ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
   assertFlyerAssetId(candidateId);
-  return postCandidateRequest(
+  const { candidates } = await postCandidateRequest(
     `/api/v1/flyers/candidates/${candidateId}/palettes`,
     {},
     ownerTokenHash,
   );
+  return candidates;
 }
 
 /** ステップ 5。選んだ配色のまま 4 通りのタイトル色。 */
@@ -276,11 +292,12 @@ export async function proposeTitleColorCandidates(
   ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
   assertFlyerAssetId(candidateId);
-  return postCandidateRequest(
+  const { candidates } = await postCandidateRequest(
     `/api/v1/flyers/candidates/${candidateId}/title-colors`,
     {},
     ownerTokenHash,
   );
+  return candidates;
 }
 
 /**

@@ -3474,7 +3474,7 @@
       "title": "画像の基本",
       "summary": "/flyer/overview と /flyer/rendering は、ポスターを 1 枚のビットマップとして扱います。ビットマップは、色のついた点の格子です。",
       "preImplementation": false,
-      "lineCount": 42,
+      "lineCount": 46,
       "headings": [
         {
           "level": 1,
@@ -3502,7 +3502,16 @@
         }
       ],
       "toctree": [],
-      "codePaths": [],
+      "codePaths": [
+        {
+          "path": "public/samples",
+          "exists": true
+        },
+        {
+          "path": "scripts/seed-ui-demo.mjs",
+          "exists": true
+        }
+      ],
       "includedBy": [
         "docs/flyer/catchup/index.rst"
       ]
@@ -3694,7 +3703,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 221,
+      "lineCount": 224,
       "headings": [
         {
           "level": 1,
@@ -5352,7 +5361,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 302,
+      "lineCount": 310,
       "headings": [
         {
           "level": 1,
@@ -10426,7 +10435,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 554,
+      "lineCount": 558,
       "headings": [
         {
           "level": 1,
@@ -10601,6 +10610,10 @@
         },
         {
           "path": "tests/unit/event-steps.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-candidates.test.ts",
           "exists": true
         },
         {
@@ -11055,7 +11068,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 433,
+      "lineCount": 435,
       "headings": [
         {
           "level": 1,
@@ -11253,6 +11266,10 @@
           "exists": true
         },
         {
+          "path": "public/samples/flyer-bonfire.jpg",
+          "exists": true
+        },
+        {
           "path": "scripts/lib/mock-screens.mjs",
           "exists": true
         },
@@ -11312,7 +11329,7 @@
       "title": "製品からモックを生成する手順",
       "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
       "preImplementation": false,
-      "lineCount": 298,
+      "lineCount": 300,
       "headings": [
         {
           "level": 1,
@@ -11409,6 +11426,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "public/samples",
+          "exists": true
+        },
         {
           "path": "scripts/check-mock-sync.mjs",
           "exists": true

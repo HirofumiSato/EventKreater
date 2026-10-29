@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 105（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 354
+- 文書から参照されているコードパス: 357
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -22,8 +22,9 @@
 | `prisma/migrations/20261028120000_organizer_profile_theme_and_avatar/migration.sql` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `prisma/migrations/20261029190000_rsvp_notifications/migration.sql` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
-| `public/samples` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-bonfire.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
 | `scripts/check-mock-sync.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/check.mjs` | [docs/testing/vitest/index.rst](testing/vitest/index.rst) |
@@ -37,6 +38,7 @@
 | `scripts/lib/mock-index.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-screens.mjs` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `scripts/lib/mock-variants.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `scripts/seed-ui-demo.mjs` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
 | `services/flyer/mypy.ini` | `services/flyer/AGENTS.md` |
@@ -330,6 +332,7 @@
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/flyer-candidates.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-payload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

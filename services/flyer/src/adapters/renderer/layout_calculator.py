@@ -154,13 +154,21 @@ class TitleFit:
     hanging: bool
 
 
-def _candidates(text: str, max_lines: int) -> list[list[str]]:
-    """1 行の案を先頭に、意味の区切りで分けた案を評価順に並べる。"""
-    candidates: list[list[str]] = [[text]]
+def _candidates(text: str, max_lines: int) -> list[tuple[list[str], bool]]:
+    """1 行の案を先頭に、意味の区切りで分けた案を評価順に並べる。
+
+    2 つ目は「すべての切れ目が語の区切りで説明できるか」。文字種の変わり目だけで
+    切った案（「川辺の焚 / き火ナイト」）は False で、大きさを優先する段でだけ使う。
+    """
+    candidates: list[tuple[list[str], bool]] = [([text], True)]
+    seen: set[tuple[str, ...]] = {(text,)}
     for split in title_splits(text, max_lines):
         lines = list(split.lines)
-        if lines not in candidates:
-            candidates.append(lines)
+        key = tuple(lines)
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append((lines, split.phrase_only))
     return candidates
 
 
@@ -197,37 +205,45 @@ def fit_to_scale(
 
     同じ段で複数の切り方が収まるときは、行数が少ないほうを採る。字間は 1 行の
     ときだけ開く。行を分けたときに字間を足すと、意味の区切りの幅が残らない。
+
+    探索は 2 段に分ける。まず語の区切り（空白・句読点・助詞・末尾語）だけで
+    切った案を大きい段から試し、どれも収まらないときだけ文字種の変わり目で
+    切った案まで広げる。「川辺の焚 / き火ナイト」のように語の途中で折るより、
+    1 段小さくして「川辺の / 焚き火ナイト」で組むほうが読みやすい。
     """
     normalized = " ".join(text.split())
     spacing = SHORT_TITLE_TRACKING if len(normalized) <= SHORT_TITLE_MAX_CHARS else 0
     candidates = _candidates(normalized, max_lines)
 
-    for size in steps:
-        leading = line_height(size, HEADING_LINE_RATIO)
-        font = load_font(font_path, size)
-        fitting: list[tuple[int, int, list[str], int]] = []
-        for order, lines in enumerate(candidates):
-            if len(lines) > max_lines:
-                continue
-            if leading * len(lines) > max_height:
-                continue
-            tracking = spacing if len(lines) == 1 else 0
-            width = max(line_width(draw, line, font, tracking) for line in lines)
-            if width > max_width:
-                continue
-            fitting.append((len(lines), order, lines, width))
-        if fitting:
-            _, _, lines, width = min(fitting, key=lambda item: (item[0], item[1]))
-            tracking = spacing if len(lines) == 1 else 0
-            return TitleFit(
-                font=font,
-                lines=lines,
-                size=size,
-                width=width,
-                height=leading * len(lines),
-                letter_spacing=tracking,
-                hanging=allow_hanging and _hangs(draw, lines, font, tracking),
-            )
+    for phrase_only_required in (True, False):
+        for size in steps:
+            leading = line_height(size, HEADING_LINE_RATIO)
+            font = load_font(font_path, size)
+            fitting: list[tuple[int, int, list[str], int]] = []
+            for order, (lines, phrase_only) in enumerate(candidates):
+                if phrase_only_required and not phrase_only:
+                    continue
+                if len(lines) > max_lines:
+                    continue
+                if leading * len(lines) > max_height:
+                    continue
+                tracking = spacing if len(lines) == 1 else 0
+                width = max(line_width(draw, line, font, tracking) for line in lines)
+                if width > max_width:
+                    continue
+                fitting.append((len(lines), order, lines, width))
+            if fitting:
+                _, _, lines, width = min(fitting, key=lambda item: (item[0], item[1]))
+                tracking = spacing if len(lines) == 1 else 0
+                return TitleFit(
+                    font=font,
+                    lines=lines,
+                    size=size,
+                    width=width,
+                    height=leading * len(lines),
+                    letter_spacing=tracking,
+                    hanging=allow_hanging and _hangs(draw, lines, font, tracking),
+                )
 
     # どの段でも収まらないときは、最小の段で文字幅だけ折り返す。
     smallest = steps[-1] if steps else 42
