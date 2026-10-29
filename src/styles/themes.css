@@ -52,7 +52,6 @@
   --color-text-muted: var(--st-content-secondary);
   --color-text-subtle: color-mix(in srgb, var(--st-content-secondary) 78%, var(--st-surface-base));
   --color-text-faint: color-mix(in srgb, var(--st-content-secondary) 62%, var(--st-surface-base));
-  --color-placeholder: color-mix(in srgb, var(--st-content-secondary) 55%, var(--st-surface-base));
   --color-ink-soft: color-mix(in srgb, var(--st-content-primary) 82%, var(--st-surface-base));
 
   --color-border: var(--st-border-color);
@@ -459,7 +458,10 @@
   color: var(--color-primary-hover);
 }
 
-/* 暗いテーマでは、ブラウザ既定のプレースホルダーが読めない。 */
+/* プレースホルダーはテーマで変えない。入力欄は `.deco` が全てのテーマで
+   白い面にするため、テーマの字の色（暗いテーマでは明るい）を混ぜると
+   かえって濃くなる。案内文はどの紙面でも同じ薄いグレーに揃える。
+   ブラウザ既定の色はテーマの地によって読めないので、変数で明示する。 */
 .semantic-theme ::placeholder {
   color: var(--color-placeholder);
 }

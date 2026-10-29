@@ -18,9 +18,11 @@
   --color-text-muted: #3f3c36;
   --color-text-subtle: #5c574e;
   --color-text-faint: #6b655c;
-  /* 入力欄の案内文。打った文字（--color-text）と取り違えないよう薄くし、
-     面からは浮かない濃さに留める。--color-text-faint は脚注・進捗の文字なので分ける。 */
-  --color-placeholder: #a09b93;
+  /* 入力欄の案内文。白地に対して約 1.6:1。読ませる文字ではなく
+     「ここに何かを書く」印なので、薄さを優先し、視認できる下限に置く。
+     打った文字（--color-text）とはっきり差を付けるため、
+     脚注・進捗に使う --color-text-faint とは共有しない。 */
+  --color-placeholder: #c6c1ba;
   --color-border: #d5d0c6;
   --color-border-strong: #b7b1a6;
   --color-line: #e4e0d8;
