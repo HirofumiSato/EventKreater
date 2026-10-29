@@ -131,7 +131,7 @@
    * - ``STRIPE_PRICE_ID_UNLIMITED``
      - テストモードで作った公開し放題 2,980 円（JPY、月次）の Price ID
    * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
-     - 任意。値上げ前に加入した 980 円の公開し放題の Price。新規の申込には使わず、既存契約の検証だけに使う
+     - 任意。値上げ前に加入した 980 円の公開し放題の Price。新規の申込には使わず、既存契約の検証だけに使う。名前を変える前の ``STRIPE_PRICE_ID_MONTHLY_980`` が設定されていれば、そちらも同じ用途で読みます
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 任意。テストモードの単発 299 円 Price。空なら Checkout が 299 円の ``price_data`` をその場で作る。付与時はどちらも 299 円であること
    * - ``NEXT_PUBLIC_APP_URL``

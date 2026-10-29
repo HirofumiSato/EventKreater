@@ -261,7 +261,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      - 公開し放題の Price ID
    * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
      - 任意
-     - 値上げ前に加入した 980 円の公開し放題の Price ID。既存契約の検証だけに使います
+     - 値上げ前に加入した 980 円の公開し放題の Price ID。既存契約の検証だけに使います。名前を変える前の ``STRIPE_PRICE_ID_MONTHLY_980`` も同じ用途で読みます
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 必須
      - 単発の Price ID
