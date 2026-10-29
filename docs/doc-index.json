@@ -7715,7 +7715,7 @@
       "title": "公開プロフィールにアイコン画像とセマンティックテーマを足す",
       "summary": "> [organizer-profile.md](organizer-profile.md) の「スコープ外」から切り出した issue。プロフィールの本文（肩書き・自己紹介・リンク）は動いている前提で、そこに「その人らしさ」を出す手段を 2 つ足す。",
       "preImplementation": false,
-      "lineCount": 343,
+      "lineCount": 344,
       "headings": [
         {
           "level": 1,

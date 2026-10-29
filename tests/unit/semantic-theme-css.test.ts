@@ -68,4 +68,23 @@ describe("セマンティックテーマの CSS", () => {
   it("全幅の面は負のマージンで画面端まで広げる", () => {
     expect(THEMES_CSS).toMatch(/\.semantic-theme--page\s*\{[^}]*margin-inline:\s*calc\(50% - 50vw\)/);
   });
+
+  it("入力欄の面と字をテーマに合わせる（暗い紙面に白い板と白い字を残さない）", () => {
+    // `.deco .input` は面を白で固定する。暗いテーマでは字が明るいままなので、
+    // 上書きしないと白地に白字になり、入力した文字が読めない。
+    expect(THEMES_CSS).toMatch(
+      /\.deco \.semantic-theme\[data-semantic-theme\] \.input,\s*\n\s*\.deco \.semantic-theme\[data-semantic-theme\] \.textarea,\s*\n\s*\.deco \.semantic-theme\[data-semantic-theme\] \.select \{[^}]*background: var\(--st-surface-raised\);[^}]*color: var\(--st-content-primary\)/,
+    );
+  });
+
+  it("案内文は入力欄の面を基準に薄くする", () => {
+    // 地（--st-surface-base）を基準にすると、面と地の明度差が大きいテーマで濃さが崩れる。
+    const scope = THEMES_CSS.slice(
+      THEMES_CSS.indexOf(".semantic-theme {"),
+      THEMES_CSS.indexOf('[data-semantic-theme="modern-slate"]'),
+    );
+    expect(scope).toMatch(
+      /--color-placeholder:\s*color-mix\(in srgb, var\(--st-content-secondary\) \d+%, var\(--st-surface-raised\)\)/,
+    );
+  });
 });

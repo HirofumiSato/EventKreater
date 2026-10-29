@@ -147,7 +147,7 @@
 
 .. count-start
 
-64 ファイル、``it`` は 831 件です。内訳は ``tests/unit/`` が 51 ファイル 749 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+64 ファイル、``it`` は 833 件です。内訳は ``tests/unit/`` が 51 ファイル 751 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -356,7 +356,7 @@
      - セマンティックテーマの ID と表示名（5 件・重複なし・空でない）、未知の値と NULL の正規化、スキーマが 5 テーマと NULL を受け未知の ID を 400 にすること
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/semantic-theme-css.test.ts``
-     - 5
+     - 7
      - テーマの ID と ``themes.css`` の対応（全テーマのブロックと必須 10 トークン）、``themes.css`` を ``index.css`` の最後に読むこと、ぼかしとアニメーションを持たないこと、全幅の面の広げ方
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/design-scope.test.ts``
@@ -418,7 +418,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 749、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 749 件を実行して 82 件を skip します。
+件数の内訳は ``tests/unit/`` が 751、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 751 件を実行して 82 件を skip します。
 
 .. breakdown-end
 
