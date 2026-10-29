@@ -235,7 +235,7 @@ export function priceIdForPlan(plan: SubscriptionProduct): string | null {
 }
 
 /**
- * 旧・980 円の作り放題 Price。値上げ前に加入した人は、この Price のまま
+ * 旧・980 円の公開し放題 Price。値上げ前に加入した人は、この Price のまま
  * 回数を数えない契約を続ける。新規の申込には使わない。
  */
 export function legacyUnlimitedPriceId(): string | null {
@@ -251,7 +251,7 @@ export function planForPriceId(priceId: string | null | undefined): Subscription
   return null;
 }
 
-/** DB の加入プランから、契約の種類を引く。未設定（NONE）は作り放題として扱う。 */
+/** DB の加入プランから、契約の種類を引く。未設定（NONE）は公開し放題として扱う。 */
 export function planOfQuota(plan: SubscriptionPlan): SubscriptionProduct {
   return plan === "MONTHLY_8" ? "MONTHLY_8" : "UNLIMITED";
 }

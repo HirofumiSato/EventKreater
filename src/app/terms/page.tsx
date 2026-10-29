@@ -6,7 +6,7 @@ import {
   FREE_EVENT_LIMIT,
   ONE_TIME_PRICE_JPY,
   SUBSCRIPTION_8_PRICE_JPY,
-  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
 import { PageHeader, Panel } from "@/components/ui";
@@ -51,7 +51,8 @@ export default function TermsPage() {
 
       <div className="notice">
         <strong>要約</strong>　公開は累計 {FREE_EVENT_LIMIT} 回まで無料。単発は {yen(ONE_TIME_PRICE_JPY)}、
-        月額は月{SUBSCRIPTION_EVENT_LIMIT}回まで {yen(SUBSCRIPTION_8_PRICE_JPY)}、作り放題 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。
+        月額は公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで {yen(SUBSCRIPTION_8_PRICE_JPY)}、
+        公開し放題 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}（いずれも税込）。
         0円のキャンペーンは条件と終了日を明記します。
         解約はいつでもでき、日割りの返金はしません。
       </div>
@@ -100,13 +101,17 @@ export default function TermsPage() {
             <strong>単発チケット</strong>: 1回分 {yen(ONE_TIME_PRICE_JPY)}。イベントを1回公開するごとに1回分を消費します。
           </li>
           <li>
-            <strong>月{SUBSCRIPTION_EVENT_LIMIT}回プラン</strong>: 月額 {yen(SUBSCRIPTION_8_PRICE_JPY)}。
-            暦月（日本時間）に{SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日0時（日本時間）に戻ります。
-            {SUBSCRIPTION_EVENT_LIMIT}回を超えて公開するときは、単発チケットを購入するか、作り放題へ変更します。
+            <strong>月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</strong>: 月額{" "}
+            {yen(SUBSCRIPTION_8_PRICE_JPY)}。公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}
+            件まで掲載できます。「公開中」とは、公開の状態にあり、削除されておらず、開催日が当日以降である
+            イベントをいいます。開催日を過ぎたイベント、公開を一時停止したイベント、削除したイベントは数えません。
+            {SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}
+            件を超えて公開するときは、単発チケットを購入するか、公開し放題へ変更します。
           </li>
           <li>
-            <strong>作り放題</strong>: 月額 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。
-            契約が有効なあいだ、イベント作成の回数は数えません。
+            <strong>公開し放題</strong>: 月額 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。
+            契約が有効なあいだ、公開中のイベント数を数えません。同時に公開する件数が著しく多いなど、
+            本サービスの運営に支障が生じるおそれがある場合、運営者は個別に利用をお断りすることがあります。
           </li>
         </ul>
         <p>
@@ -175,7 +180,7 @@ export default function TermsPage() {
         <p>
           運営者は、月額プランを対象とする0円キャンペーンを実施することがあります。このキャンペーンでは、
           無料期間の終了後、登録された支払い方法へ、加入したプランの月額
-          （月{SUBSCRIPTION_EVENT_LIMIT}回プランは {yen(SUBSCRIPTION_8_PRICE_JPY)}、作り放題は
+          （月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランは {yen(SUBSCRIPTION_8_PRICE_JPY)}、公開し放題は
           {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。いずれも税込）を自動で請求します。
           利用者は、申込み時にクレジットカードを登録するものとします。
         </p>

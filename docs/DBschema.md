@@ -1,4 +1,4 @@
-# データベース物理設計書（DBschema.md）
+﻿# データベース物理設計書（DBschema.md）
 
 ## イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書
 
@@ -15,7 +15,7 @@
 3. **PostgreSQL固有のアトミック排他制御（Pessimistic Lease Lock）:**
    - 共同幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
 4. **マネタイズ基盤（課金クォータ・Stripe連携）の完全統合:**
-   - 主催者の利用枠（累計2回無料、単発299円クレジット、月8回980円・作り放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。
+   - 主催者の利用枠（累計2回無料、単発299円クレジット、月額で8件まで公開980円・公開し放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の回数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
    - 決済監査ログ（`billing_transactions`）および Webhook冪等性制御（`stripe_webhook_events`）を統合し、二重課金・二重付与を物理遮断する。
 5. **筆頭作成者（オーナー）のみ枠消費ルール:**
    - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）の枠は消費しない。
@@ -105,7 +105,8 @@ erDiagram
 | 列挙型名 | 定義値 | 概要 |
 | :---- | :---- | :---- |
 | **SubscriptionStatus** | `NONE`, `ACTIVE`, `PAST_DUE`, `CANCELED`, `INCOMPLETE` | サブスクリプション契約状態 |
-| **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（月8回980円 / 作り放題2980円 / 未加入） |
+| **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（月額で8件まで公開980円 / 公開し放題2980円 / 未加入） |
+| **QuotaSource** | `FREE_TRIAL`, `PAID_CREDIT`, `SUBSCRIPTION` | イベントを公開したときの利用枠。公開中の件数に数えるのは `SUBSCRIPTION` だけ |
 | **PaymentType** | `ONE_TIME`, `SUBSCRIPTION` | 決済種別（単発299円 / 月額） |
 | **PaymentStatus** | `PENDING`, `SUCCEEDED`, `FAILED`, `REFUNDED`, `DISPUTED` | 決済ステータス。`DISPUTED` は異議申立 |
 | **RainPolicy** | `RAIN_OR_SHINE`, `CANCEL_ON_RAIN`, `POSTPONE_ON_RAIN`, `INDOOR` | 雨天時の催行方針 |
@@ -338,10 +339,6 @@ model UserUsageQuota {
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
   /// 加入中の定額プラン。subscription_status が ACTIVE のときだけ意味を持つ。
   subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
-  /// MONTHLY_8 で今月すでに公開した回数。暦月（JST）が変わったら作り直す。
-  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
-  /// monthly_event_count を数えた暦月（例 "2026-10"）。NULL はまだ数えていない。
-  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -469,6 +466,10 @@ model Event {
   /// この日時（日本時間で入力）になると出欠の新規登録と変更を止める。空なら期限なし。
   rsvpDeadline DateTime?   @map("rsvp_deadline") @db.Timestamptz
   isDeleted    Boolean     @default(false) @map("is_deleted")
+  /// 公開のときに利用枠を消費した日時。下書きと複製では NULL。
+  quotaChargedAt DateTime? @map("quota_charged_at") @db.Timestamptz
+  /// どの利用枠から公開したか。公開中の件数に数えるのは SUBSCRIPTION だけ。
+  quotaSource  QuotaSource? @map("quota_source")
   /// 告知ページの勧誘カードから作ったときの参照元。直接の参照元だけを持ち、消えたら NULL に戻す。
   referrerEventId String?  @map("referrer_event_id") @db.Uuid
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
@@ -720,6 +721,7 @@ model ImageAsset {
 CREATE TYPE subscription_status_enum AS ENUM ('NONE', 'ACTIVE', 'PAST_DUE', 'CANCELED', 'INCOMPLETE');
 
 CREATE TYPE subscription_plan_enum AS ENUM ('NONE', 'MONTHLY_8', 'UNLIMITED');
+CREATE TYPE quota_source_enum AS ENUM ('FREE_TRIAL', 'PAID_CREDIT', 'SUBSCRIPTION');
 
 CREATE TYPE payment_type_enum AS ENUM ('ONE_TIME', 'SUBSCRIPTION');
 
@@ -848,8 +850,6 @@ CREATE TABLE user_usage_quotas (
     paid_credits INT NOT NULL DEFAULT 0 CHECK (paid_credits >= 0),
     subscription_status subscription_status_enum NOT NULL DEFAULT 'NONE',
     subscription_plan subscription_plan_enum NOT NULL DEFAULT 'NONE',
-    monthly_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (monthly_event_count >= 0),
-    monthly_period_key VARCHAR(7) NULL,
     current_period_end TIMESTAMPTZ NULL,
     stripe_customer_id VARCHAR(255) UNIQUE NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NULL,

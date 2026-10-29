@@ -5,10 +5,9 @@ import { requireUserId } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import {
   FREE_EVENT_LIMIT,
-  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countPublishedSubscriptionEvents,
   isSubscriptionActive,
-  jstMonthKey,
-  monthlyRemaining,
 } from "@/modules/billing/lib/quota";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
@@ -40,18 +39,22 @@ export async function GET(req: NextRequest) {
     const isSubActive = isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now);
     const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
     const phoneVerified = Boolean(user?.phoneVerifiedAt);
-    const capped = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
-    const monthlyUsed = quota.monthlyPeriodKey === jstMonthKey(now) ? quota.monthlyEventCount : 0;
-    const remainingMonthly = monthlyRemaining(
-      quota.monthlyPeriodKey,
-      quota.monthlyEventCount,
-      now,
-    );
+    // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+    const countedPlan = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
+    const publishedCount = countedPlan
+      ? await countPublishedSubscriptionEvents(prisma, userId, now)
+      : 0;
+    const remainingPublished = countedPlan
+      ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
+      : null;
+    const capped = countedPlan && (remainingPublished ?? 0) === 0;
+    // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられないので、
+    // 未加入のときだけ canCreate に数える。
     const canCreate =
       quota.subscriptionStatus !== "PAST_DUE" &&
-      ((isSubActive && (!capped || remainingMonthly > 0)) ||
+      ((isSubActive && !capped) ||
         quota.paidCredits > 0 ||
-        (remainingFree > 0 && phoneVerified));
+        (!isSubActive && remainingFree > 0 && phoneVerified));
 
     let planType:
       | "FREE_TRIAL"
@@ -98,9 +101,9 @@ export async function GET(req: NextRequest) {
       paidCredits: quota.paidCredits,
       subscriptionStatus: quota.subscriptionStatus,
       subscriptionPlan: quota.subscriptionPlan,
-      monthlyEventCount: monthlyUsed,
-      monthlyLimit: SUBSCRIPTION_EVENT_LIMIT,
-      remainingMonthly: quota.subscriptionPlan === "MONTHLY_8" ? remainingMonthly : null,
+      publishedEventCount: publishedCount,
+      publishedEventLimit: SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+      remainingPublished,
       currentPeriodEnd: quota.currentPeriodEnd ? quota.currentPeriodEnd.toISOString() : null,
       canCreate,
       planType,

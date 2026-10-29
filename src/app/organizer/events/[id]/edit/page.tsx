@@ -257,6 +257,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         onSelectSubscription={quotaState.startSubscriptionCheckout}
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
+        currentPlan={quotaState.quota?.subscriptionPlan}
         context="edit"
         onGranted={() => {
           void quotaState.refreshQuota();

@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
+import type { QuotaSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
-import { assertCanCreateEvent, consumeEventQuota } from "@/modules/billing/lib/quota";
+import { assertCanCreateEvent, consumeEventQuota, quotaSourceOf } from "@/modules/billing/lib/quota";
 import {
   audiencesForGender,
   composeEventTime,
@@ -319,7 +320,7 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   try {
     return await prisma.$transaction(async (tx) => {
       // 枠を消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
-      if (decision) await decision.consume(tx);
+      const quotaSource = decision ? quotaSourceOf(await decision.consume(tx)) : null;
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
       const event = await tx.event.create({
         data: {
@@ -338,6 +339,7 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           status: input.status,
           // 即公開はここで枠を消費している。下書きは公開時に消費する。
           quotaChargedAt: isDraft ? null : new Date(),
+          quotaSource,
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });
@@ -399,13 +401,13 @@ export function eventUpdateData(input: UpdateEventInput) {
 
 /**
  * 下書きを公開する直前に、まだ枠を消費していなければ消費する。
- * 複製は作成時に消費済み（`quotaChargedAt` が入っている）なので、二重に引かない。
+ * 公開済みのまま再公開する経路はないので、二重に引くことはない。
  */
 export async function consumeQuotaForDraftPublish(
   tx: Prisma.TransactionClient,
   userId: string,
   eventId: string,
-): Promise<{ charged: boolean }> {
+): Promise<{ charged: boolean; quotaSource: QuotaSource | null }> {
   const rows = await tx.$queryRaw<Array<{ status: string; quota_charged_at: Date | null }>>`
     SELECT "status", "quota_charged_at" FROM "events"
     WHERE "id" = ${eventId}::uuid AND "is_deleted" = false
@@ -427,9 +429,9 @@ export async function consumeQuotaForDraftPublish(
       error: "ALREADY_PUBLISHED",
     });
   }
-  if (row.quota_charged_at) return { charged: false };
-  await consumeEventQuota(tx, userId);
-  return { charged: true };
+  if (row.quota_charged_at) return { charged: false, quotaSource: null };
+  const type = await consumeEventQuota(tx, userId);
+  return { charged: true, quotaSource: quotaSourceOf(type) };
 }
 
 /**
@@ -442,14 +444,14 @@ export async function publishDraftEvent(
   input: UpdateEventInput | null = null,
 ) {
   return prisma.$transaction(async (tx) => {
-    const { charged } = await consumeQuotaForDraftPublish(tx, userId, eventId);
+    const { charged, quotaSource } = await consumeQuotaForDraftPublish(tx, userId, eventId);
     if (input) await syncEventOptions(tx, eventId, input);
     return tx.event.update({
       where: { id: eventId },
       data: {
         ...(input ? eventUpdateData(input) : {}),
         status: "PUBLISHED",
-        ...(charged ? { quotaChargedAt: new Date() } : {}),
+        ...(charged ? { quotaChargedAt: new Date(), quotaSource } : {}),
       },
       include: { flyerAsset: true, ...eventOptionsInclude },
     });

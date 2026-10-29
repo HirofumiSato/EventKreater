@@ -5,7 +5,7 @@ import { useState } from "react";
 import {
   ONE_TIME_PRICE_JPY,
   SUBSCRIPTION_8_PRICE_JPY,
-  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
@@ -28,6 +28,8 @@ interface PricingModalProps {
   } | null;
   freeGrantRemaining?: number;
   onGranted?: () => void;
+  /** 加入中の定額プラン。「現在のプラン」を出して、同じ札を押せなくする。 */
+  currentPlan?: "NONE" | "MONTHLY_8" | "UNLIMITED";
   /** 開いた画面。キャンセル時の文言を合わせる。 */
   context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
@@ -80,6 +82,7 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
           </span>
         )}
       </p>
+      {charged > 0 && <p className="help">（税込）</p>}
       {discounted && deadline && (
         <p className="help">
           {quote?.campaignEndsAt ? `${endsAtLabel(quote.campaignEndsAt)} まで` : ""}
@@ -97,6 +100,7 @@ export function PricingModal({
   onSelectSubscription,
   quotes,
   freeGrantRemaining,
+  currentPlan = "NONE",
   onGranted,
   context = "list",
 }: PricingModalProps) {
@@ -177,11 +181,11 @@ export function PricingModal({
             </button>
           </article>
           <article className="card">
-            <p className="eyebrow">月に{SUBSCRIPTION_EVENT_LIMIT}回まで</p>
-            <h4 className="card__title">月{SUBSCRIPTION_EVENT_LIMIT}回プラン</h4>
+            <p className="eyebrow">公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで</p>
+            <h4 className="card__title">月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
             <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
             <p className="card__body">
-              月{SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。
+              公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。開催が終わったものと一時停止したものは数えません。
               {subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -189,22 +193,24 @@ export function PricingModal({
             <button
               type="button"
               onClick={() => void handleSubscription("MONTHLY_8")}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === "MONTHLY_8"}
               className="btn btn--block"
             >
-              {loadingPlan === "MONTHLY_8"
-                ? "Stripeへ接続中..."
-                : subscription8?.chargedPrice === 0
-                  ? "0円で定期購入を始める"
-                  : "月8回プランを始める"}
+              {currentPlan === "MONTHLY_8"
+                ? "現在のプラン"
+                : loadingPlan === "MONTHLY_8"
+                  ? "Stripeへ接続中..."
+                  : subscription8?.chargedPrice === 0
+                    ? "0円で定期購入を始める"
+                    : `月額で${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランを始める`}
             </button>
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
-            <p className="eyebrow">回数を気にせず作る</p>
-            <h4 className="card__title">作り放題</h4>
+            <p className="eyebrow">公開中の件数を数えない</p>
+            <h4 className="card__title">公開し放題</h4>
             <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
             <p className="card__body">
-              契約が有効なあいだ、イベント作成の回数は数えません。
+              公開中のイベント数を数えません。教室や常設の催しなど、同時に多く掲載する人向けです。
               {subscriptionUnlimited?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -212,14 +218,16 @@ export function PricingModal({
             <button
               type="button"
               onClick={() => void handleSubscription("UNLIMITED")}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === "UNLIMITED"}
               className="btn btn--primary btn--block"
             >
-              {loadingPlan === "UNLIMITED"
-                ? "Stripeへ接続中..."
-                : subscriptionUnlimited?.chargedPrice === 0
-                  ? "0円で定期購入を始める"
-                  : "定期購入で作り放題"}
+              {currentPlan === "UNLIMITED"
+                ? "現在のプラン"
+                : loadingPlan === "UNLIMITED"
+                  ? "Stripeへ接続中..."
+                  : subscriptionUnlimited?.chargedPrice === 0
+                    ? "0円で定期購入を始める"
+                    : "定期購入で公開し放題"}
             </button>
           </article>
         </div>

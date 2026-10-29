@@ -59,12 +59,12 @@ export interface UserQuota {
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan?: UserSubscriptionPlan;
-  /** 月8回プランで、今月すでに公開した回数。 */
-  monthlyEventCount?: number;
-  /** 月8回プランの上限（8）。 */
-  monthlyLimit?: number;
-  /** 月8回プランで、今月あと何回公開できるか。作り放題では null。 */
-  remainingMonthly?: number | null;
+  /** 月額で8件まで公開プランで、いま公開中のイベント数。公開し放題と未加入は 0。 */
+  publishedEventCount?: number;
+  /** 月額で8件まで公開プランの上限（8）。 */
+  publishedEventLimit?: number;
+  /** あと何件公開できるか。公開し放題と未加入は null。 */
+  remainingPublished?: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
   planType:
@@ -95,7 +95,7 @@ export interface PricingOption {
   campaignName?: string | null;
   currency: string;
   interval?: string;
-  /** 月8回プランだけが持つ上限。 */
+  /** 月額で8件まで公開プランだけが持つ上限。 */
   eventLimit?: number;
 }
 

@@ -244,6 +244,7 @@ export default function MyPage() {
         onSelectSubscription={quotaState.startSubscriptionCheckout}
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
+        currentPlan={quotaState.quota?.subscriptionPlan}
         context="mypage"
         onGranted={() => void quotaState.refreshQuota()}
       />

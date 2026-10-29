@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
-import { consumeEventQuota } from "@/modules/billing/lib/quota";
 import { serializeEvent } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     try {
       const event = await prisma.$transaction(async (tx) => {
-        await consumeEventQuota(tx, userId);
+        // 複製は下書きなので、ここでは枠を消費しない。公開（publish）で消費する。
         const created = await tx.event.create({
           data: {
             title,
@@ -72,8 +71,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             visibility: "UNLISTED",
             rsvpDeadline: source.rsvpDeadline,
             status: "DRAFT",
-            // 複製は作成時に枠を消費する。公開時の二重消費を避けるため、消費済みを残す。
-            quotaChargedAt: new Date(),
+            // 複製は下書き。枠は公開のときに消費する。
+            quotaChargedAt: null,
             schedules: {
               create: source.schedules.map((row) => ({
                 eventDate: row.eventDate,

@@ -56,8 +56,8 @@ interface FormValues {
 const TARGET_LABEL: Record<CampaignTarget, string> = {
   ONE_TIME: "単発のみ",
   SUBSCRIPTION: "定額プランの両方",
-  SUBSCRIPTION_8: "月8回プランのみ",
-  SUBSCRIPTION_UNLIMITED: "作り放題のみ",
+  SUBSCRIPTION_8: "月額で8件まで公開プランのみ",
+  SUBSCRIPTION_UNLIMITED: "公開し放題のみ",
   BOTH: "すべて",
 };
 
@@ -301,8 +301,8 @@ export default function AdminPricingPage() {
               <option value="BOTH">すべて（単発と定額プラン）</option>
               <option value="ONE_TIME">単発のみ</option>
               <option value="SUBSCRIPTION">定額プランの両方</option>
-              <option value="SUBSCRIPTION_8">月8回プランのみ</option>
-              <option value="SUBSCRIPTION_UNLIMITED">作り放題のみ</option>
+              <option value="SUBSCRIPTION_8">月額で8件まで公開プランのみ</option>
+              <option value="SUBSCRIPTION_UNLIMITED">公開し放題のみ</option>
             </select>
           </Field>
           <Field label="割引の種類" htmlFor="campaign-kind">
@@ -389,12 +389,12 @@ export default function AdminPricingPage() {
           <Alert tone="info" as="div">
             <p>
               販売価格のプレビュー: 単発 {yenMark(previewOneTime)}
-              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yenMark(ONE_TIME_PRICE_JPY)}）` : ""} / 月8回{" "}
+              {previewOneTime !== ONE_TIME_PRICE_JPY ? `（定価 ${yenMark(ONE_TIME_PRICE_JPY)}）` : ""} / 8件まで公開
               {yenMark(previewSubscription8)}
               {previewSubscription8 !== SUBSCRIPTION_8_PRICE_JPY
                 ? `（定価 ${yenMark(SUBSCRIPTION_8_PRICE_JPY)}）`
                 : ""}{" "}
-              / 作り放題 {yenMark(previewUnlimited)}
+              / 公開し放題 {yenMark(previewUnlimited)}
               {previewUnlimited !== SUBSCRIPTION_UNLIMITED_PRICE_JPY
                 ? `（定価 ${yenMark(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}）`
                 : ""}
@@ -462,9 +462,9 @@ export default function AdminPricingPage() {
                       {row.discountKind === "FREE" ? "無料（0円）" : `${row.percent}%OFF`}
                       <div className="data__muted">
                         {row.discountKind === "PERCENT"
-                          ? `単発 ${yenMark(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 月8回 ${yenMark(
+                          ? `単発 ${yenMark(roundChargedPrice(ONE_TIME_PRICE_JPY, row.percent))} / 8件まで公開 ${yenMark(
                               roundChargedPrice(SUBSCRIPTION_8_PRICE_JPY, row.percent),
-                            )} / 作り放題 ${yenMark(
+                            )} / 公開し放題 ${yenMark(
                               roundChargedPrice(SUBSCRIPTION_UNLIMITED_PRICE_JPY, row.percent),
                             )}`
                           : row.target === "SUBSCRIPTION" ||

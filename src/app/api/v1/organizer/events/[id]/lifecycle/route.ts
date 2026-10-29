@@ -4,7 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertOwner } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { LifecycleSchema } from "@/lib/schemas";
-import { assertCanReopenEvent, assertCanStopEvent } from "@/modules/events/lib/lifecycle";
+import { assertCanReopenEvent, assertCanStopEvent, reopenEvent } from "@/modules/events/lib/lifecycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ interface RouteContext {
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
-    await assertOwner(req, params.id);
+    const ctx = await assertOwner(req, params.id);
     const input = LifecycleSchema.parse(await req.json());
     const existing = await prisma.event.findFirst({
       where: { id: params.id, isDeleted: false },
@@ -40,11 +40,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     if (input.action === "reopen") {
       assertCanReopenEvent(existing);
-      // 公開の枠は公開時に消費済みなので、ここでは状態だけを戻す。
-      await prisma.event.update({
-        where: { id: existing.id },
-        data: { status: "PUBLISHED" },
-      });
+      // 一時停止は枠を空ける。再開はもう一度枠を消費するので、満杯なら 402 で断る。
+      await reopenEvent(ctx.userId, existing.id);
       return NextResponse.json({ success: true, status: "PUBLISHED" });
     }
 

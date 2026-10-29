@@ -2029,15 +2029,11 @@
       "path": "docs/backend_api_implementation_spec.md",
       "sphinxDoc": "backend_api_implementation_spec",
       "format": "markdown",
-      "title": "バックエンドAPI実装仕様書",
+      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2559,
+      "lineCount": 2603,
       "headings": [
-        {
-          "level": 1,
-          "text": "バックエンドAPI実装仕様書"
-        },
         {
           "level": 2,
           "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）"
@@ -2068,7 +2064,7 @@
         },
         {
           "level": 3,
-          "text": "3.3. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス"
+          "text": "3.3. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス"
         },
         {
           "level": 3,
@@ -2104,7 +2100,7 @@
         },
         {
           "level": 3,
-          "text": "4.3. イベント作成認可ミドルウェア (assertCanCreateEvent)"
+          "text": "4.3. 公開の認可ロジック (assertCanCreateEvent / consumeEventQuota)"
         },
         {
           "level": 2,
@@ -2513,7 +2509,7 @@
       "title": "機能別企画要件定義書",
       "summary": "本ドキュメントは、イベント告知ページ生成機能における「無料体験を通じた主催者の獲得」と「単発購入・月額サブスクリプションによる収益化」を両立するための目的関数と業務境界を定義する。",
       "preImplementation": false,
-      "lineCount": 198,
+      "lineCount": 235,
       "headings": [
         {
           "level": 1,
@@ -2548,6 +2544,10 @@
           "text": "2.2. 独自の提供価値（Core Value Proposition）"
         },
         {
+          "level": 5,
+          "text": "公開し放題の定義"
+        },
+        {
           "level": 4,
           "text": "2.3. 利用枠判定・認可ゲートフロー（Gate Flow）"
         },
@@ -2560,6 +2560,10 @@
           "text": "2.5. ユニットエコノミクス仮説"
         },
         {
+          "level": 5,
+          "text": "損益分岐点"
+        },
+        {
           "level": 4,
           "text": "2.6. やらないことリスト（Non-Goals）"
         },
@@ -2569,7 +2573,11 @@
         },
         {
           "level": 4,
-          "text": "批判1: 単発299円の存在によるサブスクリプション（月8回980円）の共食い（Cannibalization）"
+          "text": "批判1: 単発299円の存在によるサブスクリプション（月額で8件まで公開プラン 980円）の共食い（Cannibalization）"
+        },
+        {
+          "level": 4,
+          "text": "批判1-b: 暦月の回数カウントによる「1か月加入で2か月分を登録して解約」する往復"
         },
         {
           "level": 4,
@@ -2602,15 +2610,11 @@
       "path": "docs/billing_and_quota_system_requirements.md",
       "sphinxDoc": "billing_and_quota_system_requirements",
       "format": "markdown",
-      "title": "システム要件定義書",
-      "summary": "本ドキュメントは、「利用枠（クォータ）管理＆課金決済基盤 機能別企画要件定義書」に基づき、Stripe Hosted Checkout、Webhookイベントハンドリング、クォータテーブル設計、およびイベント作成認可ゲートのシステム要件・アーキテクチャを定義する。",
+      "title": "Stripe 決済設定",
+      "summary": "STRIPE_PUBLISHABLE_KEY=\"pk_test_...\" STRIPE_WEBHOOK_SECRET=\"whsec_...\" STRIPE_PRICE_ID_MONTHLY_8=\"price_...\" STRIPE_PRICE_ID_UNLIMITED=\"price_...\"",
       "preImplementation": false,
-      "lineCount": 625,
+      "lineCount": 662,
       "headings": [
-        {
-          "level": 1,
-          "text": "システム要件定義書"
-        },
         {
           "level": 2,
           "text": "イベント主催者向け 利用枠（クォータ）管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）"
@@ -2645,7 +2649,7 @@
         },
         {
           "level": 4,
-          "text": "3.2. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス"
+          "text": "3.2. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス"
         },
         {
           "level": 4,
@@ -2701,7 +2705,7 @@
         },
         {
           "level": 4,
-          "text": "6.2. 定額プラン加入セッション作成（月8回 / 作り放題）"
+          "text": "6.2. 定額プラン加入セッション作成（月額で8件まで公開 / 公開し放題）"
         },
         {
           "level": 4,
@@ -2713,7 +2717,7 @@
         },
         {
           "level": 4,
-          "text": "6.5. イベント作成認可ミドルウェア・ロジック (assertCanCreateEvent)"
+          "text": "6.5. 公開の認可ロジック (assertCanCreateEvent / consumeEventQuota)"
         },
         {
           "level": 3,
@@ -2725,7 +2729,7 @@
         },
         {
           "level": 1,
-          "text": "旧・980円の作り放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）"
+          "text": "旧・980円の公開し放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）"
         },
         {
           "level": 1,
@@ -2782,7 +2786,7 @@
       "title": "データベース操作",
       "summary": "このアプリのデータベースは PostgreSQL です。スキーマの正は prisma/schema.prisma で、適用済みの SQL は prisma/migrations/ にあります。 初期マイグレーションは 20261018171707_init_schema_with_billing です。",
       "preImplementation": false,
-      "lineCount": 346,
+      "lineCount": 340,
       "headings": [
         {
           "level": 1,
@@ -2848,15 +2852,11 @@
       "path": "docs/DBschema.md",
       "sphinxDoc": "DBschema",
       "format": "markdown",
-      "title": "データベース物理設計書（DBschema.md）",
+      "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
       "lineCount": 1579,
       "headings": [
-        {
-          "level": 1,
-          "text": "データベース物理設計書（DBschema.md）"
-        },
         {
           "level": 2,
           "text": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書"
@@ -3181,15 +3181,11 @@
       "path": "docs/event-page/local-operations.md",
       "sphinxDoc": "event-page/local-operations",
       "format": "markdown",
-      "title": "ローカル環境の起動・停止・操作",
+      "title": "必要なもの",
       "summary": "このページは、手元のマシンで PostgreSQL と Next.js を起動し、画面とコマンドからアプリを操作する手順です。アプリは http://localhost:3000 、データベースは 127.0.0.1:5432 の event_platform_lp を使います。",
       "preImplementation": false,
       "lineCount": 142,
       "headings": [
-        {
-          "level": 1,
-          "text": "ローカル環境の起動・停止・操作"
-        },
         {
           "level": 2,
           "text": "必要なもの"
@@ -5509,15 +5505,11 @@
       "path": "docs/front_implementation_spec.md",
       "sphinxDoc": "front_implementation_spec",
       "format": "markdown",
-      "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
+      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1896,
+      "lineCount": 1906,
       "headings": [
-        {
-          "level": 1,
-          "text": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）"
-        },
         {
           "level": 2,
           "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）"
@@ -8874,7 +8866,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 331,
+      "lineCount": 333,
       "headings": [
         {
           "level": 1,
@@ -9186,15 +9178,11 @@
       "path": "docs/overall_system_requirements_common.md",
       "sphinxDoc": "overall_system_requirements_common",
       "format": "markdown",
-      "title": "全体システム要件定義書（機能横断・共通編）",
-      "summary": "システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
+      "title": "1. 文書概要・目的",
+      "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1111,
+      "lineCount": 1113,
       "headings": [
-        {
-          "level": 1,
-          "text": "全体システム要件定義書（機能横断・共通編）"
-        },
         {
           "level": 2,
           "text": "1. 文書概要・目的"
@@ -9439,15 +9427,11 @@
       "path": "docs/pricing_campaign_requirements.md",
       "sphinxDoc": "pricing_campaign_requirements",
       "format": "markdown",
-      "title": "価格キャンペーン要件定義書（pricing_campaign_requirements.md）",
-      "summary": "本ドキュメントは、管理コンソールから単発チケット（定価 299 円）と2つの定額プラン（月8回 980 円 / 作り放題 2,980 円）の販売価格を期間限定で制御する機能の要件と実装方針を定める。あわせて、0 円販売時の課金・通知・利用規約の扱いを定義する。",
+      "title": "イベント主催者向け 販売価格の期間制御・0円販売・無料期間の自動課金",
+      "summary": "本ドキュメントは、管理コンソールから単発チケット（定価 299 円）と2つの定額プラン（月額で8件まで公開 980 円 / 公開し放題 2,980 円）の販売価格を期間限定で制御する機能の要件と実装方針を定める。あわせて、0 円販売時の課金・通知・利用規約の扱いを定義する。",
       "preImplementation": false,
       "lineCount": 285,
       "headings": [
-        {
-          "level": 1,
-          "text": "価格キャンペーン要件定義書（pricing_campaign_requirements.md）"
-        },
         {
           "level": 2,
           "text": "イベント主催者向け 販売価格の期間制御・0円販売・無料期間の自動課金"
@@ -9490,7 +9474,7 @@
         },
         {
           "level": 2,
-          "text": "4. 0 円の定額プラン（月8回 / 作り放題）"
+          "text": "4. 0 円の定額プラン（月額で8件まで公開 / 公開し放題）"
         },
         {
           "level": 3,

@@ -278,13 +278,8 @@ try {
     upsertVerifyUser(),
   ]);
 
-  // スクリーンショット用の加入状態。月8回プランの途中にして、残り回数の表示を撮る。
-  const monthlyPeriodKey = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-  }).format(new Date());
-
+  // スクリーンショット用の加入状態。月額で8件まで公開プランの途中にして、
+  // 「公開中のイベント 3 / 8 件」のバナーを撮る。数えるのは開催日が今日以降の3件。
   await prisma.userUsageQuota.upsert({
     where: { userId: organizer.id },
     create: {
@@ -292,8 +287,6 @@ try {
       freeEventCount: 1,
       subscriptionStatus: "ACTIVE",
       subscriptionPlan: "MONTHLY_8",
-      monthlyEventCount: 3,
-      monthlyPeriodKey,
       currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
     },
     update: {
@@ -301,8 +294,6 @@ try {
       paidCredits: 0,
       subscriptionStatus: "ACTIVE",
       subscriptionPlan: "MONTHLY_8",
-      monthlyEventCount: 3,
-      monthlyPeriodKey,
       currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
@@ -377,6 +368,8 @@ try {
         rsvpDeadline: input.rsvpDeadline ?? null,
         flyerAssetId: input.flyerAssetId ?? null,
         quotaChargedAt: input.status === "DRAFT" ? null : new Date(),
+        // デモの催しは定額プランから公開した扱いにする。公開中の件数はこの値で数える。
+        quotaSource: input.status === "DRAFT" ? null : "SUBSCRIPTION",
         organizers: {
           create: [
             { userId: organizer.id, role: "OWNER" },
