@@ -1,11 +1,11 @@
 export const FREE_EVENT_LIMIT = 2;
 export const ONE_TIME_PRICE_JPY = 299;
-/** 月8回プランの月額（税込）。 */
+/** 月額で8件まで公開プランの月額（税込）。 */
 export const SUBSCRIPTION_8_PRICE_JPY = 980;
-/** 作り放題の月額（税込）。 */
+/** 公開し放題の月額（税込）。 */
 export const SUBSCRIPTION_UNLIMITED_PRICE_JPY = 2980;
-/** 月8回プランで、暦月（JST）に公開できる回数。 */
-export const SUBSCRIPTION_EVENT_LIMIT = 8;
+/** 月額で8件まで公開プランで、同時に公開しておけるイベント数。 */
+export const SUBSCRIPTION_PUBLISHED_EVENT_LIMIT = 8;
 
 /** 定額プランの種類。DB の SubscriptionPlan と揃える（NONE は未加入）。 */
 export type ServicePlanId = "free" | "single" | "subscription-8" | "subscription-unlimited";
@@ -87,23 +87,23 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
   ),
   planFrom(
     "subscription-8",
-    "月8回プラン",
+    "月額で8件まで公開プラン",
     "月",
-    `月に${SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。`,
+    `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。開催が終わったものと一時停止したものは数えません。`,
     SUBSCRIPTION_8_PRICE_JPY,
     [
-      `月に${SUBSCRIPTION_EVENT_LIMIT}回まで公開できる`,
-      "回数は毎月1日（日本時間）に戻る",
+      `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで`,
+      "上限を超えるときは単発チケットを1件ずつ",
       "解約はいつでも。次の更新で止まる",
     ],
   ),
   planFrom(
     "subscription-unlimited",
-    "作り放題",
+    "公開し放題",
     "月",
-    "契約が有効なあいだ、イベント作成の回数は数えません。",
+    "公開中のイベント数を数えません。教室や常設の催しなど、同時に多く掲載する人向けです。",
     SUBSCRIPTION_UNLIMITED_PRICE_JPY,
-    ["月の回数を気にせず作れる", "毎月の自動更新", "解約はいつでも。次の更新で止まる"],
+    ["公開中のイベント数が無制限", "月額2,980円（税込）", "解約はいつでも。次の更新で止まる"],
     true,
   ),
 ];

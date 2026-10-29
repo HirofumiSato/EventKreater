@@ -20,11 +20,19 @@ enum SubscriptionStatus {
 }
 
 /// 有料の定額プラン。NONE は未加入。
-/// MONTHLY_8 は暦月 8 回まで、UNLIMITED は回数を数えない。
+/// MONTHLY_8 は公開中のイベントを同時に 8 件まで、UNLIMITED（公開し放題）は件数を数えない。
 enum SubscriptionPlan {
   NONE
   MONTHLY_8
   UNLIMITED
+}
+
+/// イベントがどの利用枠から公開されたか。
+/// 公開中の件数を数えるのは SUBSCRIPTION だけ。単発と無料枠は枠の外に置く。
+enum QuotaSource {
+  FREE_TRIAL
+  PAID_CREDIT
+  SUBSCRIPTION
 }
 
 enum PaymentType {
@@ -41,7 +49,7 @@ enum PaymentStatus {
 }
 
 /// 価格キャンペーンの適用対象。
-/// SUBSCRIPTION は定額プランの両方（8 回・作り放題）に効く、旧来の指定。
+/// SUBSCRIPTION は定額プランの両方（8 件・公開し放題）に効く、旧来の指定。
 enum PricingTarget {
   ONE_TIME
   SUBSCRIPTION
@@ -270,10 +278,6 @@ model UserUsageQuota {
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
   /// 加入中の定額プラン。subscription_status が ACTIVE のときだけ意味を持つ。
   subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
-  /// MONTHLY_8 で今月すでに公開した回数。暦月が変わったら作り直す。
-  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
-  /// monthly_event_count を数えた暦月（JST の "2026-10"）。NULL はまだ数えていない。
-  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -641,9 +645,11 @@ model Event {
   /// この日時（日本時間で入力）になると出欠の新規登録と変更を止める。空なら期限なし。
   rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz
   isDeleted    Boolean         @default(false) @map("is_deleted")
-  /// 利用枠を消費した時刻。複製は下書きの作成時に消費するため、この列で「支払い済みの下書き」を表す。
-  /// 新規作成の 402 から作った下書きは NULL のまま残し、公開時に消費する。
+  /// 利用枠を消費した時刻。公開のときに消費する（下書きの作成では消費しない）。
   quotaChargedAt DateTime?     @map("quota_charged_at") @db.Timestamptz
+  /// どの利用枠から公開したか。公開中の件数を数えるのは SUBSCRIPTION だけ。
+  /// 単発（PAID_CREDIT）と無料（FREE_TRIAL）は件数に含めない。
+  quotaSource  QuotaSource?    @map("quota_source")
   /// 告知ページの「あなたもイベントを作りませんか？」から作ったときの参照元。
   /// 紹介の連鎖は数えず、直接の参照元だけを持つ。消えたイベントは NULL に戻す。
   referrerEventId String?      @map("referrer_event_id") @db.Uuid

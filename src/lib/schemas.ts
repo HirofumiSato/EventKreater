@@ -390,7 +390,7 @@ export const CheckoutIntentSchema = z.object({
 
 export type CheckoutIntent = z.infer<typeof CheckoutIntentSchema>;
 
-/** 定額プランの申込。プランを省略したときは作り放題として扱う。 */
+/** 定額プランの申込。プランを省略したときは公開し放題として扱う。 */
 export const SubscriptionCheckoutSchema = CheckoutIntentSchema.extend({
   plan: z.enum(["MONTHLY_8", "UNLIMITED"]).optional(),
 });

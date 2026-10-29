@@ -1,4 +1,4 @@
-本番デプロイ
+﻿本番デプロイ
 ============
 
 このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。
@@ -255,13 +255,13 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      - Webhook の署名シークレット。違うと ``/api/v1/webhooks/stripe`` が 400 を返します
    * - ``STRIPE_PRICE_ID_MONTHLY_8``
      - 必須
-     - 月8回プランの Price ID
+     - 月額で8件まで公開プランの Price ID
    * - ``STRIPE_PRICE_ID_UNLIMITED``
      - 必須
-     - 作り放題の Price ID
+     - 公開し放題の Price ID
    * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
      - 任意
-     - 値上げ前に加入した 980 円の作り放題の Price ID。既存契約の検証だけに使います
+     - 値上げ前に加入した 980 円の公開し放題の Price ID。既存契約の検証だけに使います
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 必須
      - 単発の Price ID
@@ -351,7 +351,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
 4. Stripe を本番に向ける
 ------------------------
 
-1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（月8回プラン 980 円、作り放題 2,980 円、単発 299 円）。
+1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（月額で8件まで公開プラン 980 円、公開し放題 2,980 円、単発 299 円）。
 2. Webhook のエンドポイントを ``https://example.com/api/v1/webhooks/stripe`` にします。
 3. 受け取るイベントは、テストモードで使ったものと同じにします。署名シークレットを ``STRIPE_WEBHOOK_SECRET`` に入れます。
 4. 返金は Dashboard から行います。アプリに返金の口はありません。

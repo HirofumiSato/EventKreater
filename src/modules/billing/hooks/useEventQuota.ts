@@ -52,9 +52,11 @@ export function useEventQuota() {
       intentRef.current = intent;
       // 開くたびに最新の販売価格を取り直す。
       void fetchQuota();
+      // 公開し放題は公開中の件数に上限がないので、選ぶものが無い。
+      if (quota?.subscriptionPlan === "UNLIMITED" && quota.subscriptionStatus === "ACTIVE") return;
       setIsPricingModalOpen(true);
     },
-    [fetchQuota],
+    [fetchQuota, quota?.subscriptionPlan, quota?.subscriptionStatus],
   );
 
   /**

@@ -1,4 +1,4 @@
-テスト範囲のフロー
+﻿テスト範囲のフロー
 ==================
 
 読む順の 8 番です。前は :doc:`vitest/practice`、次は :doc:`first-cases` です。
@@ -80,7 +80,7 @@
        end
        subgraph bill["課金"]
            direction TB
-           MOD01["SCR-MOD-01: 課金プランモーダル<br/>299円単発 / 月8回980円 / 作り放題2980円"]
+           MOD01["SCR-MOD-01: 課金プランモーダル<br/>299円単発 / 月額で8件まで公開980円 / 公開し放題2980円"]
            ST_CHECK["Stripe Hosted Checkout"]
            ST_PORTAL["Stripe Customer Portal"]
        end
@@ -128,7 +128,7 @@
        ORG10 -.->|"E2E これから: ログイン"| PUB02
        ORG10 -.->|"共有URLを配る"| PUB01
        ORG10 -.->|"登録済みは管理画面へ"| ORG01
-       MOD01 -.->|"人手: 単発299円 / 月8回980円 / 作り放題2980円"| ST_CHECK
+       MOD01 -.->|"人手: 単発299円 / 月額で8件まで公開980円 / 公開し放題2980円"| ST_CHECK
        ST_CHECK -.->|"人手: 決済成功"| ORG02
        ST_PORTAL -.->|"人手: 完了後に復帰"| ORG01
        ADM00 -.->|"ADMIN かつパスワード一致"| ADM04
@@ -147,7 +147,7 @@
 
 .. count-start
 
-66 ファイル、``it`` は 841 件です。内訳は ``tests/unit/`` が 53 ファイル 759 件、``tests/integration/`` が 13 ファイル 82 件です。結合の 82 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+66 ファイル、``it`` は 845 件です。内訳は ``tests/unit/`` が 53 ファイル 760 件、``tests/integration/`` が 13 ファイル 85 件です。結合の 85 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -188,8 +188,8 @@
      - チラシ生成の利用枠の判定。残数、上限、会員とゲストの扱い
      - SCR-ORG-08
    * - ``tests/unit/subscription-plans.test.ts``
-     - 12
-     - 月8回 980 円・作り放題 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、暦月（JST）の切り替わりと残り回数、Price ID から加入プランへの対応（旧 980 円は作り放題として引き継ぐ）
+     - 13
+     - 月額で8件まで公開 980 円・公開し放題 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方と枠の記録先（単発・無料枠は枠の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題として引き継ぐ）
      - SCR-MOD-01 / SCR-PUB-06 / SCR-ADM-05
    * - ``tests/unit/event-details.test.ts``
      - 40
@@ -224,8 +224,8 @@
      - 筆頭幹事の付け替え、二度呼んでも枠が増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/integration/subscription-quota.test.ts``
-     - 5
-     - 月8回プランは公開のたびに今月の回数を 1 増やす。8 回で 402 ``MONTHLY_LIMIT_EXCEEDED``、月が変われば数え直す、作り放題は数えない、上限でも単発クレジットがあればそちらを使う
+     - 8
+     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題は件数を数えない。公開の再開は枠を再消費する。複製は下書きの時点では消費しない
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
    * - ``tests/integration/revenue.test.ts``
      - 6
@@ -426,7 +426,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 759、``tests/integration/`` が 82 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 759 件を実行して 82 件を skip します。
+件数の内訳は ``tests/unit/`` が 760、``tests/integration/`` が 85 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 760 件を実行して 85 件を skip します。
 
 .. breakdown-end
 

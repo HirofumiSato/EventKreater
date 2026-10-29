@@ -19,8 +19,8 @@ import {
 /** 割引の検証で出す商品名。 */
 const PRICING_KIND_LABEL: Record<PricingKind, string> = {
   ONE_TIME: "単発",
-  SUBSCRIPTION_8: "月8回プラン",
-  SUBSCRIPTION_UNLIMITED: "作り放題",
+  SUBSCRIPTION_8: "月額で8件まで公開プラン",
+  SUBSCRIPTION_UNLIMITED: "公開し放題",
 };
 
 export interface CampaignInput {

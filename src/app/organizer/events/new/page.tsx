@@ -300,6 +300,7 @@ function NewEventScreen() {
         onSelectSubscription={quotaState.startSubscriptionCheckout}
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
+        currentPlan={quotaState.quota?.subscriptionPlan}
         context="create"
         onGranted={() => {
           setToastTone("success");

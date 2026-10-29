@@ -1,4 +1,4 @@
-# バックエンドAPI実装仕様書
+﻿# バックエンドAPI実装仕様書
 
 ## チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）
 
@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月8回980円/作り放題2980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/公開中8件まで980円/公開し放題2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・API境界・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計（DBschema.md）】<br>PostgreSQL 16・Prismaスキーマ・アトミック排他クエリ・クォータ/決済テーブル"]
     D["【本設計書：バックエンドAPI実装仕様】<br>全エンドポイント定義・Mermaidシーケンス・Zod検証・Stripe Webhook冪等処理"]
@@ -56,7 +56,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
-| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点で枠を1つ消費する。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点で枠を1つ消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催幹事（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
@@ -68,10 +68,10 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/reminders` | POST | SCR-ORG-06 | 幹事（会員のみ） | 会員参加者へリマインドメールを送り、送信記録を残す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
-| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、この時点で枠を1つ消費して `quota_charged_at` を入れる。`publicUrl` は `null` |
+| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、枠は消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
 | `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` は公開の枠を消費しない |
+| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` は枠を消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
@@ -235,7 +235,7 @@ sequenceDiagram
 
 ---
 
-### 3.3. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス
+### 3.3. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス
 
 初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout の `plan` で選び、Webhook では Price ID から `subscription_plan` を決める。
 
@@ -573,19 +573,32 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 }
 ```
 
-### 4.3. イベント作成認可ミドルウェア (`assertCanCreateEvent`)
+### 4.3. 公開の認可ロジック (`assertCanCreateEvent` / `consumeEventQuota`)
 
 ```ts
-import { SUBSCRIPTION_EVENT_LIMIT } from '@/modules/billing/lib/plans';
+import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from '@/modules/billing/lib/plans';
 
-/** 暦月のキー（日本時間）。月8回プランの数え直しはこの値が変わったときに行う。 */
-export function jstMonthKey(now: Date): string {
+/** 日本時間の「今日」を、UTC 0 時の Date で返す（event_date と揃える）。 */
+export function jstToday(now: Date): Date {
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, '0')}`;
+  return new Date(Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()));
+}
+
+/** 公開中のイベント数。8 件プランの上限はこの件数で判定する。 */
+export async function countPublishedSubscriptionEvents(db, userId: string, now = new Date()) {
+  return db.event.count({
+    where: {
+      status: 'PUBLISHED',
+      isDeleted: false,
+      quotaSource: 'SUBSCRIPTION',
+      schedules: { some: { eventDate: { gte: jstToday(now) } } },
+      organizers: { some: { userId, role: 'OWNER' } },
+    },
+  });
 }
 
 /**
- * 消費の入口。行をロックしてから、`monthly_period_key` が今月と違えば 0 回から数え直す。
+ * 消費の入口。行をロックしてから、公開中のイベントを数えて枠を決める。
  * 参照だけの `assertCanCreateEvent` は同じ判定を読み取りで行う。
  */
 export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: string) {
@@ -596,23 +609,16 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
     quota.currentPeriodEnd !== null &&
     quota.currentPeriodEnd > now;
 
-  // 1. 作り放題（回数を数えない）
+  // 1. 公開し放題（公開中の件数を数えない）
   if (subscriptionActive && quota.subscriptionPlan !== 'MONTHLY_8') {
     return 'SUBSCRIPTION_UNLIMITED';
   }
-  // 2. 月8回プラン（暦月で数え直す）
+  // 2. 月額で8件まで公開プラン（公開中のイベントを数える）
   if (subscriptionActive) {
-    const key = jstMonthKey(now);
-    const used = quota.monthlyPeriodKey === key ? quota.monthlyEventCount : 0;
-    if (used < SUBSCRIPTION_EVENT_LIMIT) {
-      await tx.userUsageQuota.update({
-        where: { userId },
-        data: { monthlyPeriodKey: key, monthlyEventCount: used + 1 },
-      });
-      return 'SUBSCRIPTION_MONTHLY_8';
-    }
+    const published = await countPublishedSubscriptionEvents(tx, userId, now);
+    if (published < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT) return 'SUBSCRIPTION_MONTHLY_8';
   }
-  // 3. 単発クレジット
+  // 3. 単発クレジット（8 件が埋まっていても使える）
   if (quota.paidCredits >= 1) {
     await tx.userUsageQuota.update({
       where: { userId },
@@ -629,24 +635,28 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
     });
     return 'FREE_TRIAL';
   }
-  // 5. 上限超過 (402)。月8回の上限だけが理由なら作り放題への変更を案内する。
-  throw monthlyExhausted(quota, now) ? monthlyLimitExceeded() : quotaExceeded();
+  // 5. 上限超過 (402)。8 件プランの上限だけが理由なら公開し放題への変更を案内する。
+  throw subscriptionActive && quota.subscriptionPlan === 'MONTHLY_8'
+    ? publishedEventsFull()
+    : quotaExceeded();
 }
 ```
 
-402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。
+消費した種別は `quotaSourceOf(type)` で `Event.quota_source` に写す。公開の各入口（新規公開・下書きの公開・再開）は、この値を `quota_charged_at` と一緒に書く。複製は下書きを作るだけなので消費しない。
+
+402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
 
 ```json
 {
   "type": "probs/quota-exceeded",
   "title": "Payment Required",
   "status": 402,
-  "detail": "無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月8回プラン（980円）、作り放題（2,980円）のいずれかをご利用ください。",
+  "detail": "無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。",
   "error": "QUOTA_EXCEEDED",
   "pricingOptions": [
     { "type": "SINGLE", "name": "単発生成チケット", "price": 299, "listPrice": 299, "currency": "JPY" },
-    { "type": "SUBSCRIPTION_8", "name": "月8回プラン", "price": 980, "listPrice": 980, "currency": "JPY", "interval": "month", "eventLimit": 8 },
-    { "type": "SUBSCRIPTION_UNLIMITED", "name": "作り放題", "price": 2980, "listPrice": 2980, "currency": "JPY", "interval": "month" }
+    { "type": "SUBSCRIPTION_8", "name": "月額で8件まで公開プラン", "price": 980, "listPrice": 980, "currency": "JPY", "interval": "month", "eventLimit": 8 },
+    { "type": "SUBSCRIPTION_UNLIMITED", "name": "公開し放題", "price": 2980, "listPrice": 2980, "currency": "JPY", "interval": "month" }
   ]
 }
 ```
@@ -741,7 +751,7 @@ SCR-ORG-02 の購入後の復元と、SCR-ORG-05 の「公開する」から呼�
 1. `assertOrganizer` で幹事権限を確認し、`role` が `OWNER` であること。`CO_HOST` と未登録のゲスト幹事は 403、未ログインは 401。
 2. 本文は任意。付けるときは `UpdateEventSchema`（編集の保存と同じ形）で検証する。付いていれば `syncEventOptions` と `eventUpdateData` で公開と同時に保存する。
 3. `events` の行を `SELECT ... FOR UPDATE` で取る。無い、または削除済みは 404。`status` が `DRAFT` でなければ 409（`error: "ALREADY_PUBLISHED"`）。
-4. `quota_charged_at` が `NULL` のとき、`consumeEventQuota(userId, tx)` で枠を1つ消費し、`quota_charged_at = NOW()` にする。すでに入っているとき（複製した下書き）は消費しない。
+4. `quota_charged_at` が `NULL` のとき、`consumeEventQuota(userId, tx)` で枠を1つ消費し、`quota_charged_at = NOW()` と `quota_source`（消費した種別）を書く。すでに入っているときは消費しない。
 5. `status = PUBLISHED` にして、`{ event, publicUrl, manageUrl }` を返す。
 
 - **枠が無いとき:** 例外でトランザクションが巻き戻り、402 を返す。`status` と `quota_charged_at` は変わらないので、下書きはそのまま残る。
@@ -1369,53 +1379,87 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
   "remainingFree": 1,
   "paidCredits": 0,
   "subscriptionStatus": "NONE",
+  "subscriptionPlan": "NONE",
+  "publishedEventCount": 0,
+  "publishedEventLimit": 8,
+  "remainingPublished": null,
   "currentPeriodEnd": null,
   "canCreate": true,
-  "planType": "FREE_TRIAL"
+  "planType": "FREE_TRIAL",
+  "phoneVerified": true
 }
 ```
+
+`publishedEventCount` / `remainingPublished` は、加入中の月額で8件まで公開プランでだけ数える。それ以外は `0` と `null` を返す（公開し放題は件数を数えない）。
 
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
 ```ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveAuthContext } from '@/lib/guards';
+import {
+  FREE_EVENT_LIMIT,
+  SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countPublishedSubscriptionEvents,
+  isSubscriptionActive,
+} from '@/modules/billing/lib/quota';
 
 export async function GET(req: NextRequest) {
   const { userId } = await resolveAuthContext(req);
   if (!userId) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
-  const quota = await prisma.userUsageQuota.findUnique({
-    where: { userId },
-  });
+  const now = new Date();
+  const quota = await prisma.userUsageQuota.findUnique({ where: { userId } });
   if (!quota) {
     return NextResponse.json({ error: 'QUOTA_NOT_FOUND' }, { status: 404 });
   }
-  const now = new Date();
-  const isSubActive =
-    quota.subscriptionStatus === 'ACTIVE' &&
-    quota.currentPeriodEnd !== null &&
-    quota.currentPeriodEnd > now;
-  const remainingFree = Math.max(0, 2 - quota.freeEventCount);
-  const canCreate = isSubActive || quota.paidCredits > 0 || remainingFree > 0;
+  const isSubActive = isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now);
+  const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { phoneVerifiedAt: true },
+  });
+  const phoneVerified = Boolean(user?.phoneVerifiedAt);
+  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+  const countedPlan = isSubActive && quota.subscriptionPlan === 'MONTHLY_8';
+  const publishedCount = countedPlan
+    ? await countPublishedSubscriptionEvents(prisma, userId, now)
+    : 0;
+  const remainingPublished = countedPlan
+    ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
+    : null;
+  const capped = countedPlan && (remainingPublished ?? 0) === 0;
+  // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられない。
+  const canCreate =
+    quota.subscriptionStatus !== 'PAST_DUE' &&
+    ((isSubActive && !capped) ||
+      quota.paidCredits > 0 ||
+      (!isSubActive && remainingFree > 0 && phoneVerified));
   let planType = 'NONE';
-  if (isSubActive) planType = 'SUBSCRIPTION';
-  else if (quota.paidCredits > 0) planType = 'PAID_CREDIT';
+  if (isSubActive) {
+    planType = quota.subscriptionPlan === 'MONTHLY_8' ? 'SUBSCRIPTION_MONTHLY_8' : 'SUBSCRIPTION_UNLIMITED';
+  } else if (quota.paidCredits > 0) planType = 'PAID_CREDIT';
   else if (remainingFree > 0) planType = 'FREE_TRIAL';
   return NextResponse.json({
     freeEventCount: quota.freeEventCount,
-    freeLimit: 2,
+    freeLimit: FREE_EVENT_LIMIT,
     remainingFree,
     paidCredits: quota.paidCredits,
     subscriptionStatus: quota.subscriptionStatus,
+    subscriptionPlan: quota.subscriptionPlan,
+    publishedEventCount: publishedCount,
+    publishedEventLimit: SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+    remainingPublished,
     currentPeriodEnd: quota.currentPeriodEnd,
     canCreate,
     planType,
+    phoneVerified,
   });
 }
 ```
+
+`canCreate` が `false` でも、公開中の 8 件が埋まっていて単発クレジットが残っていれば `true` になる（単発は枠の外）。
 
 ---
 
@@ -1513,7 +1557,7 @@ export async function POST(req: NextRequest) {
 
 ### 6.3. POST `/api/v1/billing/checkout/subscription`（定額プラン加入セッション発行）
 
-主催者が月8回プラン（980円/月）または作り放題（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
+主催者が月額で8件まで公開プラン（980円/月）または公開し放題（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
 - **リクエスト Body:** `SubscriptionCheckoutSchema` = `CheckoutIntentSchema` + `plan`（`"MONTHLY_8"` / `"UNLIMITED"`）。`plan` を省略したときは `UNLIMITED`。`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。既に有効な定額契約があるときは 409 `ALREADY_SUBSCRIBED`。
@@ -1901,7 +1945,7 @@ export interface ProblemDetails {
 | :---- | :---- | :---- |
 | **400** | `probs/validation-error` | 入力パラメータの Zod スキーマ検証違反、Stripe 署名不正 |
 | **401** | `probs/unauthorized` | 有効な認証情報（JWT/トークン）の欠落 |
-| **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月8回980円/作り放題2980円）。月8回の上限だけが理由なら `MONTHLY_LIMIT_EXCEEDED` |
+| **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月額で8件まで公開980円/公開し放題2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
 | **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料枠消費（`PHONE_REQUIRED`） |
 | **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・リマインド・領収書・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
@@ -2456,7 +2500,7 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 - `startsAt` / `endsAt` は JST の `datetime-local` 文字列として解釈する（`+09:00` を補う）。
 - `endsAt > startsAt`、期間は最大 12 か月。
 - `discountKind = "FREE"` は `percent = 100` に固定する。
-- 単発・月8回・作り放題それぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
+- 単発・月額で8件まで公開・公開し放題それぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
 - 成功時は 201 と `{ "campaign": { ... } }`。監査ログを 1 行作る。
 
 ### 11.3. PATCH `/api/v1/admin/pricing-campaigns/[id]`
@@ -2507,9 +2551,9 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
     "subscriptionUnlimited": { "...": "..." }
   },
   "subscriptionPlan": "MONTHLY_8",
-  "monthlyEventCount": 3,
-  "monthlyLimit": 8,
-  "remainingMonthly": 5,
+  "publishedEventCount": 3,
+  "publishedEventLimit": 8,
+  "remainingPublished": 5,
   "freeGrantRemaining": 1,
   "discount": {
     "percent": 100,

@@ -1,4 +1,4 @@
-# フロントエンド画面・コンポーネント実装設計書（`front_implementation_spec.md`）
+﻿# フロントエンド画面・コンポーネント実装設計書（`front_implementation_spec.md`）
 
 ## チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）
 
@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/月8回980円/作り放題2980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/公開中8件まで980円/公開し放題2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計＆API仕様】<br>user_usage_quotas・Stripe Webhook・アトミック排他・同期verify API"]
     D["【本設計書：フロントエンド実装仕様】<br>画面遷移・Tailwind UI・useEditLock・useEventQuota・PricingModal・Portal遷移"]
@@ -54,7 +54,7 @@ flowchart TD
 | パス | 画面ID | 対象アクター | 認可・アクセス条件 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
 | `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc.. 主催者様へ`）、見出しは `SITE.taglineLines`（「イベントのチラシと」「WEBページ、」「5分で簡単作成。」の 3 分割。スマホは 3 行、1024px 以上は 1・2 行目をつなげて 2 行）。LP として扱い、共通ヘッダーは出さない。墨地のヒーローを画面の上端から始め、メインの上端の余白も 0 にする（`siteChrome("/")` の `flushTop`）。ログインの入口は、ヒーローに「主催者ログイン」と「参加者ログイン」を並べ、フッターにも両方を置く。料金への導線はヒーローに置かない（フッターの「サービスと料金」が持つ）。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
-| `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月8回980円、作り放題2980円。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
+| `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額で8件まで公開980円、公開し放題2980円（いずれも税込）。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円の定額プランの自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。共通ヘッダーは出さない（`siteChrome("/events/…")`）。チラシを画面の上端から始める（`flushTop`）。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。イベントがテーマ（`themeId`）を持つときは、ページ全体をそのテーマで描く（未設定なら今の見た目のまま）。対象世代（`targetGeneration`）があれば、メタ情報に「対象」の行を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。画面下の追従バー（スマホのみ）の下段に、ホーム（`/`）へ送る帯「あなたもイベントを開きませんか」を置く。出す条件は勧誘カードと同じ（`showsOrganizerInvite`）。面は薄い山吹（`--pop-warm-tint`）で塗り、罫線と 12px の字だけで区切る。字は差し色（`--color-primary-text`）1 色で、hover でも変えない（スマホに hover が無く、端末で見え方が変わるため）。左右と下端は画面の端まで届かせ、上下の余白は持たない（帯は 1 行ぶんの 18px）。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する。ログインと作成の入口は本文とフッターが持つ |
 | `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。役割の札（主催者）とリード文は置かない（役割は共通ヘッダーと節が示す）。出欠集計・クォータ残数。冒頭の操作は置かず、「下書き一覧」（件数つき）と「イベント新規作成」を画面下に固定する帯（`.action-dock`）へ移す。390px では 2 つで 1 段にして作成を広く取り、640px 以上では右寄せにする。帯のぶん、本文とフッターの下に余白を残す。公開ページ・プロフィール・売上・契約は主催者の節と SCR-PUB-03 に任せる。要約は「公開中」「受付停止」の 2 つだけで、名前と件数を横に並べた低い札にする（合算の参加者数はカードの数字と重なるので出さない）。一覧の見出しは「一覧」だけにし、説明文は置かない。見出しの下に絞り込みを置く（状態「すべて / 公開中のみ / 受付停止のみ」、開催日の開始日と終了日、過去の催しを除く）。640px 未満では状態と開催日を「絞り込む」ボタン（効いている条件の数を添える）から開くモーダルに畳み、過去の催しを除くだけを外に残す。モーダルは選んだ時点では反映せず、「この条件で絞り込む」で確定して閉じ、背景を押すと元の条件のまま閉じる。640px 以上は畳まず、4 つを 1 行に並べる。絞り込みは画面側で行い（`src/modules/events/lib/event-filters.ts`）、10 件ずつページに割って件数の範囲と前後ページを `pager` に出す。条件を変えたら 1 ページ目へ戻し、0 件になったら「条件を戻す」を出す。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。カードの操作は「参加者を見る」「公開ページ」「編集」「コピー作成」の 4 つで、スマホでは文字を 1 段小さくし、ボタンの高さを 28px まで詰めて 4 つを 1 段に並べ、カードが 2 列になる 900px 以上だけ 2×2 にする（右寄せの縦罫線は折り返しで崩れるので使わない）。編集は一覧で最も使う操作なので、既定から朱で塗った `btn--accent` にする（ホバーでは濃くなるだけで、塗りの有無は変えない）。状態と役割の札は名簿の行と同じ `small` で出し、枠と丸みを持たせない（押せる `.btn` は枠・塗り・丸みを持つので、形で見分けられる）。共有URLと「公開を一時停止」「削除する」を「共有と設定」に畳んで操作の下に置く。一時停止は確認を挟まず `close` を送り、停止中のカードは「公開を再開」（`reopen`）に変える。削除だけ SCR-MOD-03 で確認する。ヘッダー直下のサブタブ（主催一覧 / カレンダー / 売上 / 下書き / プロフィール）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
@@ -131,7 +131,7 @@ flowchart TD
 | モーダル | SCR-ORG-04 | 公開完了モーダル | 公開成功時（SCR-ORG-02 上） | 共有リンクと、管理画面への復帰。LINE共有は公開ページとカレンダーに置く |
 | モーダル | SCR-MOD-02 | 排他ロック競合モーダル | SCR-ORG-05 上（HTTP 409） | 他幹事の編集中通知と、強制引き継ぎ（Takeover） |
 | モーダル | SCR-MOD-03 | 削除確認モーダル | SCR-ORG-01・SCR-ORG-15 上（筆頭幹事のみ） | 完全削除（`isDeleted`）の確認だけを持つ。出欠受付停止（`CLOSED`）と公開の再開（`reopen`）は確認を挟まずカードから実行する（戻せる操作のため） |
-| モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・プレビュー・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月8回980円 / 作り放題2980円の選択と Checkout 起動。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ。月8回の上限で 402 のときは作り放題を先頭に出す |
+| モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・プレビュー・主催一覧・マイページ上（HTTP 402） | 単発299円 / 月額で8件まで公開980円 / 公開し放題2980円の選択と Checkout 起動。公開し放題は公開中のイベント数を数えないことを本文で示す。加入中の札には「現在のプラン」を出して押せなくする。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。作成時は `draftId` を Checkout に引き継ぐ。公開中のイベントが8件で 402（`PUBLISHED_EVENTS_FULL`）のときは公開し放題を先頭に出す |
 | 外部 | — | Stripe Hosted Checkout | Stripe ホスト画面 | カード決済とサブスク加入。成功時は `session_id` 付きで SCR-ORG-02 へ戻る |
 | 外部 | — | Stripe Customer Portal | Stripe ホスト画面 | 筆頭幹事の解約とカード変更。SCR-PUB-03 から開き、完了後は SCR-PUB-03 へ戻る。参加者の出欠では開かない |
 | 管理者 | SCR-ADM-00 | 管理者ログイン | `/console/login` | 公開ナビに出さない。パスワードのあと確認番号。確認済み電話が必須 |
@@ -211,7 +211,7 @@ graph TD
         MOD03["SCR-MOD-03: 削除確認モーダル<br/>(筆頭幹事のみ)"]:::modal
         subgraph bill["課金（筆頭幹事の利用枠だけ）"]
             direction TB
-            MOD01["SCR-MOD-01: 課金プランモーダル<br/>(299円単発 / 月8回980円 / 作り放題2980円)"]:::modal
+            MOD01["SCR-MOD-01: 課金プランモーダル<br/>(299円単発 / 公開中8件まで980円 / 公開し放題2980円)"]:::modal
             ST_CHECK["Stripe Hosted Checkout<br/>(カード決済・サブスク加入)"]:::stripe
             ST_PORTAL["Stripe Customer Portal<br/>(筆頭幹事の解約・カード変更)"]:::stripe
         end
@@ -368,7 +368,7 @@ graph TD
     ORG07 -.->|未ログイン: ログインしてから受諾| PUB02
 
     %% 課金・Stripe
-    MOD01 -->|単発299円 / 月8回980円 / 作り放題2980円を選択| ST_CHECK
+    MOD01 -->|単発299円 / 公開中8件まで980円 / 公開し放題2980円を選択| ST_CHECK
     MOD01 -->|閉じる（作成から）| ORG02
     MOD01 -->|閉じる（一覧・マイページから）| ORG01
     ST_CHECK -->|決済成功: redirect session_id| ORG02
@@ -554,7 +554,7 @@ src/
 
 ### 4.1. PricingModal.tsx（SCR-MOD-01: 課金プラン選択・Checkout遷移モーダル）
 
-イベント作成時に HTTP 402（QUOTA_EXCEEDED）が発生した際、または主催者一覧でアップグレードを押した際に表示する。単発チケットと2つの定額プラン（月8回 / 作り放題）を選ぶと、バックエンドから Stripe Hosted Checkout の URL を取得して画面遷移する。`quotes` があるときは販売価格と定価を併記し、期限とキャンペーン名を出す。単発が 0 円のときのボタンは「無料で受け取る」で、Stripe へは行かず、その場で付与する。0 円の定額プランはカード登録を必須にし、無料期間の終了後に自動で有料へ切り替わることを本文と `/terms` へのリンクで示す。月8回の上限で 402 になったときは、作り放題を先頭に出す。
+イベント作成時に HTTP 402（QUOTA_EXCEEDED）が発生した際、または主催者一覧でアップグレードを押した際に表示する。単発チケットと2つの定額プラン（月額で8件まで公開 / 公開し放題）を選ぶと、バックエンドから Stripe Hosted Checkout の URL を取得して画面遷移する。`quotes` があるときは販売価格と定価を併記し、期限とキャンペーン名を出す。単発が 0 円のときのボタンは「無料で受け取る」で、Stripe へは行かず、その場で付与する。0 円の定額プランはカード登録を必須にし、無料期間の終了後に自動で有料へ切り替わることを本文と `/terms` へのリンクで示す。公開中のイベントが8件で 402（`PUBLISHED_EVENTS_FULL`）になったときは、公開し放題を先頭に出す。
 
 ```tsx
 "use client";
@@ -564,7 +564,7 @@ import { useState } from "react";
 import {
   ONE_TIME_PRICE_JPY,
   SUBSCRIPTION_8_PRICE_JPY,
-  SUBSCRIPTION_EVENT_LIMIT,
+  SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
@@ -731,11 +731,11 @@ export function PricingModal({
             </button>
           </article>
           <article className="card">
-            <p className="eyebrow">月に{SUBSCRIPTION_EVENT_LIMIT}回まで</p>
-            <h4 className="card__title">月{SUBSCRIPTION_EVENT_LIMIT}回プラン</h4>
+            <p className="eyebrow">公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで</p>
+            <h4 className="card__title">月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
             <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
             <p className="card__body">
-              月{SUBSCRIPTION_EVENT_LIMIT}回まで公開できます。回数は毎月1日に戻ります。
+              公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。開催が終わったものと一時停止したものは数えません。
               {subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -743,22 +743,24 @@ export function PricingModal({
             <button
               type="button"
               onClick={() => void handleSubscription("MONTHLY_8")}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === "MONTHLY_8"}
               className="btn btn--block"
             >
-              {loadingPlan === "MONTHLY_8"
-                ? "Stripeへ接続中..."
-                : subscription8?.chargedPrice === 0
-                  ? "0円で定期購入を始める"
-                  : "月8回プランを始める"}
+              {currentPlan === "MONTHLY_8"
+                ? "現在のプラン"
+                : loadingPlan === "MONTHLY_8"
+                  ? "Stripeへ接続中..."
+                  : subscription8?.chargedPrice === 0
+                    ? "0円で定期購入を始める"
+                    : `月額で${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランを始める`}
             </button>
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
-            <p className="eyebrow">回数を気にせず作る</p>
-            <h4 className="card__title">作り放題</h4>
+            <p className="eyebrow">公開中の件数を数えない</p>
+            <h4 className="card__title">公開し放題</h4>
             <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
             <p className="card__body">
-              契約が有効なあいだ、イベント作成の回数は数えません。
+              公開中のイベント数を数えません。教室や常設の催しなど、同時に多く掲載する人向けです。
               {subscriptionUnlimited?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -766,14 +768,16 @@ export function PricingModal({
             <button
               type="button"
               onClick={() => void handleSubscription("UNLIMITED")}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === "UNLIMITED"}
               className="btn btn--primary btn--block"
             >
-              {loadingPlan === "UNLIMITED"
-                ? "Stripeへ接続中..."
-                : subscriptionUnlimited?.chargedPrice === 0
-                  ? "0円で定期購入を始める"
-                  : "定期購入で作り放題"}
+              {currentPlan === "UNLIMITED"
+                ? "現在のプラン"
+                : loadingPlan === "UNLIMITED"
+                  ? "Stripeへ接続中..."
+                  : subscriptionUnlimited?.chargedPrice === 0
+                    ? "0円で定期購入を始める"
+                    : "定期購入で公開し放題"}
             </button>
           </article>
         </div>
@@ -963,13 +967,14 @@ export const StripePortalButton: React.FC<StripePortalButtonProps> = ({
 
 ### 4.4. QuotaStatusBanner.tsx（クォータ残数＆プラン状態表示バー）
 
-主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月8回 / 作り放題）を出し、月8回プランでは今月の残り回数（`remainingMonthly`）だけを「月8回プランに加入中。今月は残り 5 回です。」の形で出す。使用回数と上限の対や、自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達した月は作り放題への変更を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
+主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月額で8件まで公開 / 公開し放題）を出し、月額で8件まで公開プランでは「公開中のイベント 5 / 8 件（あと3件公開できます）」の形で、公開中の件数と上限、残りを出す。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題への変更と、公開の一時停止・削除を促す。公開し放題では「公開し放題に加入中です。公開中のイベント数に上限はありません。」だけを出す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
 
 ```tsx
 "use client";
 
 import Link from "next/link";
 import type { UserQuota } from "@/modules/events/types";
+import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from "@/modules/billing/lib/plans";
 
 interface QuotaStatusBannerProps {
   quota: UserQuota | null;
@@ -996,14 +1001,16 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
     : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
-    const remaining = Math.max(0, quota.remainingMonthly ?? 0);
+    const count = quota.publishedEventCount ?? 0;
+    const limit = quota.publishedEventLimit ?? SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
+    const remaining = Math.max(0, quota.remainingPublished ?? 0);
     const head =
       remaining === 0
-        ? "月8回プランに加入中。今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
-        : `月8回プランに加入中。今月は残り ${remaining} 回です。`;
+        ? `公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
+        : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
     return `${head}${detail}`;
   }
-  return `作り放題に加入中です。イベント作成の回数は数えません。${detail}`;
+  return `公開し放題に加入中です。公開中のイベント数に上限はありません。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -1033,6 +1040,9 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
 
+  // 公開し放題は 402 が起きないので、プランを勧めるボタンを出さない。
+  const showUpgradeButton = !isSubscribed || quota.subscriptionPlan === "MONTHLY_8";
+
   return (
     <div className={`alert ${tone} alert--compact`}>
       <p>
@@ -1048,9 +1058,9 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
           </Link>
         )}
       </p>
-      {!isSubscribed && (
+      {showUpgradeButton && (
         <button type="button" onClick={onOpenPricing} className="btn btn--primary btn--sm">
-          {freeTicketAvailable ? "0円チケットを受け取る" : "プランを見る"}
+          {freeTicketAvailable ? "0円チケットを受け取る" : "公開し放題プランを見る"}
         </button>
       )}
     </div>
@@ -1227,11 +1237,11 @@ export interface UserQuota {
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan: SubscriptionPlan;
-  /** 今月すでに公開した回数。暦月（JST）が変われば 0 として返る。 */
-  monthlyEventCount: number;
-  monthlyLimit: number;
-  /** 月8回プランの残り。作り放題と未加入は null。 */
-  remainingMonthly: number | null;
+  /** 公開中のイベント数。月額で8件まで公開プランだけが数える。 */
+  publishedEventCount: number;
+  publishedEventLimit: number;
+  /** あと何件公開できるか。公開し放題と未加入は null。 */
+  remainingPublished: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
   planType: "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION_MONTHLY_8" | "SUBSCRIPTION_UNLIMITED" | "NONE";
@@ -1257,8 +1267,8 @@ export interface PricingOption {
 | :---- | :---- | :---- | :---- |
 | **FE-BILL-01** | **課金モーダル起動** | 2回無料枠消化済みの主催者が新規作成で「公開」をクリック | HTTP 402を検知し、`PricingModal` が画面遷移なしで即座にポップアップすること |
 | **FE-BILL-02** | **単発購入Checkout遷移** | `PricingModal` で「単発で購入する (299円)」をクリック | ローディング表示後、Stripe Hosted Checkout 画面へ正常にリダイレクトされること |
-| **FE-BILL-03** | **定額プランCheckout遷移** | `PricingModal` で「月8回プランを始める (980円/月)」または「定期購入で作り放題 (2980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ、選んだ階層の Price で正常にリダイレクトされること。`metadata.plan` が `MONTHLY_8` / `UNLIMITED` であること |
-| **FE-BILL-03b** | **月8回の上限表示** | 月8回プランで今月8回公開したあと主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「今月の上限に達しました」を出し、`PricingModal` は作り放題を先頭に出すこと。402 の `error` が `MONTHLY_LIMIT_EXCEEDED` であること |
+| **FE-BILL-03** | **定額プランCheckout遷移** | `PricingModal` で「月額で8件まで公開プランを始める (980円/月)」または「定期購入で公開し放題 (2980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ、選んだ階層の Price で正常にリダイレクトされること。`metadata.plan` が `MONTHLY_8` / `UNLIMITED` であること |
+| **FE-BILL-03b** | **公開中の上限表示** | 月額で8件まで公開プランで公開中が8件のときに主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「公開中のイベントが8件に達しました」を出し、`PricingModal` は公開し放題を先頭に出すこと。402 の `error` が `PUBLISHED_EVENTS_FULL` であること |
 | **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、枠加算を確認して作成が認可されること。応答の `draftId` が URL に残り、開いていた画面から動かないこと |
 | **FE-BILL-05** | **Customer Portal遷移** | 主催一覧、またはマイページで「プラン・カード管理」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
 | **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
@@ -1325,7 +1335,7 @@ export interface PricingOption {
 | SCR-ADM-01 | `src/app/console/users/page.tsx` | 冒頭 `h1` は「会員検索・権限変更」。`GET /api/v1/admin/users`。401 はログインへ戻す。403 は「このページは利用できません。」だけを出す。権限の保存は `PATCH /api/v1/admin/users/[id]`。`actorId` と一致する行は変更できない |
 | SCR-ADM-02 | `src/app/console/events/page.tsx` | 冒頭 `h1` は「イベント検索」。`GET /api/v1/admin/events`。`publicPath` がある行だけ告知ページへリンクする |
 | SCR-ADM-03 | `src/app/console/payments/page.tsx` | 冒頭 `h1` は「利用枠の決済履歴」。`GET /api/v1/admin/payments`。会員名、メール、Stripe のセッション ID・請求書 ID・PaymentIntent ID で検索する。状態は手続き中、支払済み、失敗、返金済み、異議申立 |
-| SCR-ADM-05 | `src/app/console/pricing/page.tsx` | 冒頭 `h1` は「料金キャンペーン」。`GET/POST /api/v1/admin/pricing-campaigns`、`PATCH /api/v1/admin/pricing-campaigns/[id]`、`POST /api/v1/admin/pricing-campaigns/[id]/stop`。作成・編集フォームは名前、対象（単発／月8回／作り放題／定額2階層／両方）、割引の種類、割引率、開始・終了（JST）、優先度、0円の上限回数を持つ。入力中の割引率から単発と2つの定額の販売価格を即時プレビューする。停止は確認ダイアログを出し、既存購入者の割引が続くことを明記する |
+| SCR-ADM-05 | `src/app/console/pricing/page.tsx` | 冒頭 `h1` は「料金キャンペーン」。`GET/POST /api/v1/admin/pricing-campaigns`、`PATCH /api/v1/admin/pricing-campaigns/[id]`、`POST /api/v1/admin/pricing-campaigns/[id]/stop`。作成・編集フォームは名前、対象（単発／月額で8件まで公開／公開し放題／定額2階層／両方）、割引の種類、割引率、開始・終了（JST）、優先度、0円の上限回数を持つ。入力中の割引率から単発と2つの定額の販売価格を即時プレビューする。停止は確認ダイアログを出し、既存購入者の割引が続くことを明記する |
 
 ログイン後の共通バーは `src/modules/admin/components/AdminChrome.tsx` である。「管理コンソール」と、ホーム、会員、イベント、決済、料金のナビだけを出す。画面名は各ページの `h1` である。ログアウトは `DELETE /api/v1/admin/session` のあと `/console/login` へ戻す。ログアウト時はセッション行を失効させる。
 
@@ -1359,9 +1369,9 @@ Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ
 
 | 画面 | 取得元 | 表示 |
 | :---- | :---- | :---- |
-| SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える。単発・月8回・作り放題の3枚を出す |
+| SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える。単発・月額で8件まで公開・公開し放題の3枚を出す |
 | SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` を保持し、`quotes`（`oneTime` / `subscription8` / `subscriptionUnlimited`）として渡す | 同じく販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
-| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「月8回プランに加入中。今月は残り 5 回です。」「作り放題に加入中です。イベント作成の回数は数えません。」を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
+| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「公開中のイベント 5 / 8 件（あと3件公開できます）」「公開し放題に加入中です。公開中のイベント数に上限はありません。」を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
 | SCR-ADM-05 `/console/pricing` | `GET /api/v1/admin/pricing-campaigns` | 一覧に成立件数、売上、割引総額を出す。フォームは入力中の割引率から販売価格を即時計算する |
 
 ### 10.2. `PricingModal` の props
@@ -1388,7 +1398,7 @@ interface PricingModalProps {
 
 `context` はキャンセルボタンの文言だけに使う。`create` は「キャンセルして作成に戻る」、`edit` は「キャンセルして編集に戻る」、`preview` は「キャンセルしてプレビューに戻る」、`list` と `mypage` は「閉じる」。作成画面の 402 では下書きが既に保存されているので、閉じても入力は失われない。
 
-`onSelectSubscription(plan)` は選んだ階層を `POST /api/v1/billing/checkout/subscription` の `plan` に載せる。月8回の上限で 402 になったとき（`error = "MONTHLY_LIMIT_EXCEEDED"`）は、作り放題のカードを先頭に出して変更を促す。
+`onSelectSubscription(plan)` は選んだ階層を `POST /api/v1/billing/checkout/subscription` の `plan` に載せる。公開中のイベントが8件で 402 になったとき（`error = "PUBLISHED_EVENTS_FULL"`）は、公開し放題のカードを先頭に出して変更を促す。
 
 ### 10.3. `useEventQuota` の追加
 

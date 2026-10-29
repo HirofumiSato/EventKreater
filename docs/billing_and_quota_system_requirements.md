@@ -1,4 +1,4 @@
-# システム要件定義書
+﻿# システム要件定義書
 
 ## イベント主催者向け 利用枠（クォータ）管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）
 
@@ -38,27 +38,31 @@ flowchart LR
 
 ### 2. クォータ判定ルールと消費仕様
 
-主催者がイベント作成・複製を要求した際、以下の優先順位に従って判定および枠消費を行う。
+主催者がイベントを公開・再公開する際、以下の優先順位に従って判定および枠消費を行う。判定は公開の瞬間だけ行う。下書きの作成と複製では消費しない。
 
 #### 2.1. クォータ判定・消費の優先順位
 
-1. **第1優先：定額プラン（月8回 980円 / 作り放題 2,980円）**
+1. **第1優先：定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）**
    - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`
    - 処理: プランを見て分岐する。
-     - `subscription_plan = 'UNLIMITED'`: 作成を即時認可。枠（クレジット）は消費せず、回数も数えない。
-     - `subscription_plan = 'MONTHLY_8'`: 暦月（JST）で数える。`monthly_period_key` が今月と違えば 0 回から数え直し、`monthly_event_count` が 8 未満なら 1 増やして認可。8 回に達した月は第2優先へ落ちる。
+     - `subscription_plan = 'UNLIMITED'`（公開し放題）: 公開を即時認可。枠（クレジット）は消費せず、公開中のイベント数も数えない。
+     - `subscription_plan = 'MONTHLY_8'`: 公開中のイベント数を数える。8 件未満なら認可（`quota_source = 'SUBSCRIPTION'`）。8 件に達していれば第2優先へ落ちる。
+   - 「公開中」の定義: `status = 'PUBLISHED'`、`is_deleted = false`、`quota_source = 'SUBSCRIPTION'`、`EventOrganizer.role = 'OWNER'` が本人、かつ開催日（`EventSchedule.event_date`）の最大値が今日（JST）以降。開催日を過ぎたもの、`CLOSED`、削除済みは数えない。単発と無料枠で公開したものは枠の外なので含めない。
 2. **第2優先：単発購入済みクレジット（299円/回）**
    - 判定条件: `paid_credits >= 1`
-   - 処理: `paid_credits` を 1 デクリメント（消費）し、作成を認可。
+   - 処理: `paid_credits` を 1 デクリメント（消費）し、公開を認可（`quota_source = 'PAID_CREDIT'`）。8 件が埋まっていても使える。
 3. **第3優先：無料トライアル枠（累計2回まで）**
    - 判定条件: サブスクが有効でなく、`free_event_count < 2` かつ、その会員の `phone_verified_at` が入っていること。
-   - 処理: `free_event_count` を 1 インクリメントし、作成を認可。
+   - 処理: `free_event_count` を 1 インクリメントし、公開を認可（`quota_source = 'FREE_TRIAL'`）。
    - 電話番号が未確認のときは HTTP 403（`PHONE_REQUIRED`）。枠は減らさない。
+   - 加入中は無料枠を使わない（8 件プランの上限に達した人が無料枠で抜けないようにする）。
 4. **上限到達（未認可）**
    - 判定条件: 上記すべてに該当しない場合。
-   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。月8回プランで今月の上限に達しただけなら `error = "MONTHLY_LIMIT_EXCEEDED"` とし、作り放題への変更を案内する。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
+   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。月額で8件まで公開プランで公開中が 8 件に達しただけなら `error = "PUBLISHED_EVENTS_FULL"` とし、公開し放題への変更を案内する。それ以外は `QUOTA_EXCEEDED`。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
 
-加入中の会員は無料トライアル枠へは戻らない。月8回プランで上限に達した月は、単発クレジットがあればそれを使い、無ければ 402 で作り放題を案内する。
+加入中の会員は無料トライアル枠へは戻らない。月額で8件まで公開プランで枠が埋まっているときは、単発クレジットがあればそれを使い、無ければ 402 で公開し放題を案内する。
+
+枠が空くのは「開催日を過ぎる」「公開を一時停止（`CLOSED`）」「削除（論理削除）」の3つだけ。使わなかった枠は翌月へ繰り越さない。解約後も既存の掲載は残し、新規の公開だけを止める。移行前に上限を超えている会員は、既存を消さず新規公開だけ止める（グランドファザー）。
 
 無料 2 回の主体は会員行ではなく、確認済み電話番号である。同じ番号で別メールや別 Google アカウントから入っても、会員行は増えず、枠も増えない。
 
@@ -117,7 +121,7 @@ sequenceDiagram
 
 ---
 
-#### 3.2. 定額プラン（月8回 980円 / 作り放題 2,980円）ライフサイクルシーケンス
+#### 3.2. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス
 
 初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout 作成時の `plan`（`MONTHLY_8` / `UNLIMITED`）で選び、Webhook では Price ID から `subscription_plan` を決める。Stripe Customer Portal で階層を変更したときも Price ID から判定し直す。
 
@@ -190,7 +194,7 @@ flowchart TD
 
 | テーブル名 | 論理名 | 役割・責務 |
 | :---- | :---- | :---- |
-| `user_usage_quotas` | ユーザー利用枠クォータ | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層・今月の作成回数を一元管理 |
+| `user_usage_quotas` | ユーザー利用枠クォータ | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層を一元管理。月額で8件まで公開プランの上限は、この行の回数ではなく公開中のイベント数で判定する |
 | `billing_transactions` | 課金決済トランザクション | Stripe決済（単発/定期）の監査ログ、金額、セッションID履歴 |
 | `stripe_webhook_events` | Webhook冪等性管理ログ | 処理済みStripe Event IDを記録し二重処理を物理遮断 |
 | `pricing_campaigns` | 価格キャンペーン | 期間・対象・割引率・優先度・停止日時。定価は変更しない |
@@ -213,10 +217,16 @@ CREATE TYPE subscription_status_enum AS ENUM (
     'INCOMPLETE'  -- 初回決済処理中
 );
 
+CREATE TYPE quota_source_enum AS ENUM (
+    'FREE_TRIAL',   -- 無料枠（累計2回）
+    'PAID_CREDIT',  -- 単発チケット
+    'SUBSCRIPTION'  -- 定額プラン（公開中の件数に数える）
+);
+
 CREATE TYPE subscription_plan_enum AS ENUM (
     'NONE',       -- 未加入
-    'MONTHLY_8',  -- 月8回プラン（980円/月）
-    'UNLIMITED'   -- 作り放題（2,980円/月）
+    'MONTHLY_8',  -- 月額で8件まで公開プラン（980円/月）
+    'UNLIMITED'   -- 公開し放題（2,980円/月）
 );
 
 CREATE TABLE user_usage_quotas (
@@ -225,8 +235,6 @@ CREATE TABLE user_usage_quotas (
     paid_credits INT NOT NULL DEFAULT 0 CHECK (paid_credits >= 0),
     subscription_status subscription_status_enum NOT NULL DEFAULT 'NONE',
     subscription_plan subscription_plan_enum NOT NULL DEFAULT 'NONE',
-    monthly_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (monthly_event_count >= 0),
-    monthly_period_key VARCHAR(7) NULL,
     current_period_end TIMESTAMPTZ NULL,
     stripe_customer_id VARCHAR(255) UNIQUE NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NULL,
@@ -294,6 +302,13 @@ enum SubscriptionPlan {
   UNLIMITED
 }
 
+/// イベントがどの利用枠から公開されたか。公開中の件数を数えるのは SUBSCRIPTION だけ。
+enum QuotaSource {
+  FREE_TRIAL
+  PAID_CREDIT
+  SUBSCRIPTION
+}
+
 enum PaymentType {
   ONE_TIME
   SUBSCRIPTION
@@ -312,8 +327,6 @@ model UserUsageQuota {
   paidCredits          Int                @default(0) @map("paid_credits")
   subscriptionStatus   SubscriptionStatus @default(NONE) @map("subscription_status")
   subscriptionPlan     SubscriptionPlan   @default(NONE) @map("subscription_plan")
-  monthlyEventCount    Int                @default(0) @map("monthly_event_count") @db.SmallInt
-  monthlyPeriodKey     String?            @map("monthly_period_key") @db.VarChar(7)
   currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz
   stripeCustomerId     String?            @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -323,6 +336,18 @@ model UserUsageQuota {
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
   @@map("user_usage_quotas")
+}
+
+/// 公開したときの枠を残す。公開中の件数を数えるのはこの列が SUBSCRIPTION のものだけ。
+model Event {
+  id             String       @id @db.Uuid
+  status         EventStatus
+  isDeleted      Boolean      @default(false) @map("is_deleted")
+  quotaChargedAt DateTime?    @map("quota_charged_at") @db.Timestamptz
+  quotaSource    QuotaSource? @map("quota_source")
+  schedules      EventSchedule[]
+  @@index([quotaSource, status, isDeleted])
+  @@map("events")
 }
 
 model BillingTransaction {
@@ -396,7 +421,7 @@ model StripeWebhookEvent {
 }
 ```
 
-#### 6.2. 定額プラン加入セッション作成（月8回 / 作り放題）
+#### 6.2. 定額プラン加入セッション作成（月額で8件まで公開 / 公開し放題）
 
 - **URL:** `POST /api/v1/billing/checkout/subscription`
 - **認可:** 認証済み主催者（JWT セッション）
@@ -456,7 +481,7 @@ model StripeWebhookEvent {
 
 - **URL:** `GET /api/v1/billing/quota`
 - **認可:** 認証済み主催者（JWT セッション）
-- **補足:** `remainingMonthly` は月8回プランのときだけ数値、作り放題と未加入は `null`。`monthlyEventCount` は暦月（JST）が変わると 0 として返す。
+- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、公開し放題と未加入は `0`。
 - **レスポンス (200 OK):**
 
 ```json
@@ -467,26 +492,39 @@ model StripeWebhookEvent {
   "paidCredits": 1,
   "subscriptionStatus": "ACTIVE",
   "subscriptionPlan": "MONTHLY_8",
-  "monthlyEventCount": 3,
-  "monthlyLimit": 8,
-  "remainingMonthly": 5,
+  "publishedEventCount": 3,
+  "publishedEventLimit": 8,
+  "remainingPublished": 5,
   "currentPeriodEnd": "2026-11-19T00:00:00.000Z",
   "canCreate": true,
   "planType": "SUBSCRIPTION_MONTHLY_8"
 }
 ```
 
-#### 6.5. イベント作成認可ミドルウェア・ロジック (`assertCanCreateEvent`)
+#### 6.5. 公開の認可ロジック (`assertCanCreateEvent` / `consumeEventQuota`)
 
 ```ts
 import { prisma } from '@/lib/prisma';
 import { ProblemDetailException } from '@/lib/exceptions';
-import { SUBSCRIPTION_EVENT_LIMIT } from '@/modules/billing/lib/plans';
+import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from '@/modules/billing/lib/plans';
 
-/** 暦月のキー（日本時間）。月8回プランの数え直しはこの値が変わったときに行う。 */
-export function jstMonthKey(now: Date): string {
+/** 日本時間の「今日」を、UTC 0 時の Date で返す（event_date と揃える）。 */
+export function jstToday(now: Date): Date {
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, '0')}`;
+  return new Date(Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()));
+}
+
+/** 公開中のイベント数。8件プランの上限はこの件数で判定する。 */
+export async function countPublishedSubscriptionEvents(db, userId: string, now = new Date()) {
+  return db.event.count({
+    where: {
+      status: 'PUBLISHED',
+      isDeleted: false,
+      quotaSource: 'SUBSCRIPTION',
+      schedules: { some: { eventDate: { gte: jstToday(now) } } },
+      organizers: { some: { userId, role: 'OWNER' } },
+    },
+  });
 }
 
 export async function assertCanCreateEvent(userId: string) {
@@ -503,19 +541,18 @@ export async function assertCanCreateEvent(userId: string) {
     quota.subscriptionStatus === 'ACTIVE' &&
     quota.currentPeriodEnd !== null &&
     quota.currentPeriodEnd > now;
-  // 月8回プランで今月の上限に達しているか。記録した月が違えば 0 回から数え直す。
-  const usedThisMonth =
-    quota.monthlyPeriodKey === jstMonthKey(now) ? quota.monthlyEventCount : 0;
+  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
   const capped =
     subscriptionActive &&
     quota.subscriptionPlan === 'MONTHLY_8' &&
-    usedThisMonth >= SUBSCRIPTION_EVENT_LIMIT;
+    (await countPublishedSubscriptionEvents(prisma, userId, now)) >=
+      SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
 
-  // 1. 定額プラン（作り放題、または月8回でまだ今月の枠が残っている）
+  // 1. 定額プラン（公開し放題、または8件プランで枠が残っている）
   if (subscriptionActive && !capped) {
     return { type: 'SUBSCRIPTION', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 2. 単発クレジット
+  // 2. 単発クレジット（8件が埋まっていても使える）
   if (quota.paidCredits >= 1) {
     return { type: 'PAID_CREDIT', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
@@ -523,14 +560,14 @@ export async function assertCanCreateEvent(userId: string) {
   if (!subscriptionActive && quota.freeEventCount < 2) {
     return { type: 'FREE_TRIAL', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 4. 上限超過。月8回の上限なら作り放題への変更を案内する。
+  // 4. 上限超過。8件プランの上限なら公開し放題への変更を案内する。
   throw capped
-    ? monthlyLimitExceeded()
+    ? publishedEventsFull()
     : new ProblemDetailException({
         status: 402,
         title: 'Payment Required',
         detail:
-          '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月8回プラン（980円）、作り放題（2,980円）のいずれかをご利用ください。',
+          '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。',
         pricingOptions: {
           oneTimePrice: 299,
           subscription8MonthlyPrice: 980,
@@ -540,7 +577,7 @@ export async function assertCanCreateEvent(userId: string) {
 }
 ```
 
-実際の実装は `src/modules/billing/lib/quota.ts` にあり、消費時のロック行再読込と `monthly_period_key` の更新まで含む。上の抜粋は分岐の順序だけを示す。
+実際の実装は `src/modules/billing/lib/quota.ts` にあり、消費時のロック行再読込（`SELECT ... FOR UPDATE`）まで含む。上の抜粋は分岐の順序だけを示す。公開の判定は `assertCanCreateEvent`（事前確認）と `consumeEventQuota`（イベントと同じトランザクションでの消費）の2つで同じ規則を使う。
 
 ---
 
@@ -561,7 +598,7 @@ STRIPE_PUBLISHABLE_KEY="pk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 STRIPE_PRICE_ID_MONTHLY_8="price_..."
 STRIPE_PRICE_ID_UNLIMITED="price_..."
-# 旧・980円の作り放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）
+# 旧・980円の公開し放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）
 STRIPE_PRICE_ID_MONTHLY_980_LEGACY=""
 STRIPE_PRICE_ID_ONE_TIME="price_..."
 # 0円月額の終了前案内（3日前・1日前）を送るバッチの合言葉
@@ -604,7 +641,7 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 - 申込時に作った `PENDING` の `billing_transactions.amount` と、Checkout Session / Invoice の金額を突き合わせる。`listAmount` にはその階層の定価を残す。
 - 0 円の初回請求は `payment_status = "no_payment_required"` を通す。
 - 定額の更新請求は、`amount_paid <= 階層の定価` かつ、定価未満ならクーポン（`invoice.discount` または `total_discount_amounts`）が付いていることを条件にする。
-- 旧 980 円の作り放題 Price（`STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）で加入した契約は、`UNLIMITED` として扱い、回数を数えない。値上げ後も定価 980 円で検証する。
+- 旧 980 円の公開し放題 Price（`STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）で加入した契約は、`UNLIMITED` として扱い、公開中の件数を数えない。値上げ後も定価 980 円で検証する。
 
 #### 8.5. 終了前通知
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { UserQuota } from "@/modules/events/types";
+import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from "@/modules/billing/lib/plans";
 
 interface QuotaStatusBannerProps {
   quota: UserQuota | null;
@@ -28,14 +29,16 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
     : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
-    const remaining = Math.max(0, quota.remainingMonthly ?? 0);
+    const count = quota.publishedEventCount ?? 0;
+    const limit = quota.publishedEventLimit ?? SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
+    const remaining = Math.max(0, quota.remainingPublished ?? 0);
     const head =
       remaining === 0
-        ? "月8回プランに加入中。今月の上限に達しました。作り放題へ変更すると回数を気にせず作れます。"
-        : `月8回プランに加入中。今月は残り ${remaining} 回です。`;
+        ? `公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
+        : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
     return `${head}${detail}`;
   }
-  return `作り放題に加入中です。イベント作成の回数は数えません。${detail}`;
+  return `公開し放題に加入中です。公開中のイベント数に上限はありません。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -65,6 +68,9 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
 
+  // 公開し放題は 402 が起きないので、プランを勧めるボタンを出さない。
+  const showUpgradeButton = !isSubscribed || quota.subscriptionPlan === "MONTHLY_8";
+
   return (
     <div className={`alert ${tone} alert--compact`}>
       <p>
@@ -80,9 +86,9 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
           </Link>
         )}
       </p>
-      {!isSubscribed && (
+      {showUpgradeButton && (
         <button type="button" onClick={onOpenPricing} className="btn btn--primary btn--sm">
-          {freeTicketAvailable ? "0円チケットを受け取る" : "使い放題プランを見る"}
+          {freeTicketAvailable ? "0円チケットを受け取る" : "公開し放題プランを見る"}
         </button>
       )}
     </div>
