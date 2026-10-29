@@ -100,6 +100,9 @@ class TitleSplit:
     score: float
     #: 助詞・句読点・末尾語・文字種の変わり目という根拠があるか。
     semantic: bool
+    #: すべての切れ目が語の区切り（空白・句読点・助詞・末尾語）で説明できるか。
+    #: 文字種の変わり目だけで切った案（「川辺の焚 / き火ナイト」）は False。
+    phrase_only: bool = False
 
 
 def _script_of(char: str) -> str:
@@ -118,6 +121,11 @@ def _script_of(char: str) -> str:
     return "other"
 
 
+def _is_kanji(char: str) -> bool:
+    """漢字か。末尾語が複合語の一部になっているかの判定に使う。"""
+    return _script_of(char) == "kanji"
+
+
 def _tail_word_at(text: str, index: int) -> bool:
     """`index` から始まる部分が題の結びの語か。"""
     remainder = text[index:].lstrip()
@@ -126,37 +134,54 @@ def _tail_word_at(text: str, index: int) -> bool:
     return any(remainder.startswith(word) for word in _TAIL_WORDS)
 
 
-def _boundary(text: str, index: int) -> tuple[float, bool]:
-    """`index` の直前で改行したときの評価。返すのは (加点, 意味の根拠があるか)。"""
+@dataclass(frozen=True)
+class _Cut:
+    """切り目 1 か所の評価。"""
+
+    score: float
+    #: 意味の根拠があるか。文字種の変わり目も含む。
+    semantic: bool
+    #: 語の区切りとして説明できるか。文字種の変わり目だけの切り目は False。
+    phrase: bool
+
+
+def _boundary(text: str, index: int) -> _Cut:
+    """`index` の直前で改行したときの評価。"""
     left = text[index - 1]
     right = text[index]
     if left.isspace() or right.isspace():
-        return (_SPACE_BONUS, True)
+        return _Cut(_SPACE_BONUS, True, True)
     if left in _NO_LINE_END or right in _NO_LINE_START:
-        return (_FORBIDDEN, False)
+        return _Cut(_FORBIDDEN, False, False)
     score = 0.0
     semantic = False
+    phrase = False
     if left in _PARTICLES:
         score += _PARTICLE_BONUS
         semantic = True
+        phrase = True
     if left in _PUNCTUATION:
         # 句読点のあとは、そこで句が終わっている。
         score += _PUNCTUATION_BONUS
         semantic = True
+        phrase = True
     if right in _PARTICLES:
         score -= _PARTICLE_HEAD_PENALTY
     if right in _SMALL_KANA:
         # 小書き仮名から行を始めると、前の語から切り離されて見える。
-        return (_FORBIDDEN, False)
+        return _Cut(_FORBIDDEN, False, False)
     left_script = _script_of(left)
     right_script = _script_of(right)
     if left_script != right_script:
         score += _SCRIPT_BONUS.get((left_script, right_script), 0.3)
         semantic = True
-    if _tail_word_at(text, index):
+    # 漢字に直接つながる語（「焚き火ナイト」の「ナイト」）は、まだ複合語の
+    # 途中であることが多い。そこを切れ目として勧めない。
+    if _tail_word_at(text, index) and not _is_kanji(left):
         score += _TAIL_WORD_BONUS
         semantic = True
-    return (score, semantic)
+        phrase = True
+    return _Cut(score, semantic, phrase)
 
 
 def _lines_for(text: str, cuts: tuple[int, ...]) -> tuple[str, ...] | None:
@@ -178,26 +203,37 @@ def _score_lines(
     text: str,
     cuts: tuple[int, ...],
     lines: tuple[str, ...],
-) -> tuple[float, bool] | None:
-    """切り方 1 つの評価。行頭・行末に置けない切り方なら None。"""
+) -> tuple[float, bool, bool] | None:
+    """切り方 1 つの評価。行頭・行末に置けない切り方なら None。
+
+    返すのは (点, 意味の根拠があるか, 語の区切りだけで切れているか)。
+    """
     total = 0.0
     semantic = False
+    phrase_only = True
     for cut in cuts:
-        score, is_semantic = _boundary(text, cut)
-        if score <= _FORBIDDEN:
+        boundary = _boundary(text, cut)
+        if boundary.score <= _FORBIDDEN:
             return None
-        total += score
-        semantic = semantic or is_semantic
+        total += boundary.score
+        semantic = semantic or boundary.semantic
+        phrase_only = phrase_only and boundary.phrase
     lengths = [len(line) for line in lines]
     average = sum(lengths) / len(lengths)
     imbalance = sum(abs(length - average) for length in lengths) / len(lengths)
     total -= _IMBALANCE_PENALTY * imbalance
     total -= _EXTRA_LINE_PENALTY * (len(lines) - 2)
     # 末尾の語だけが最終行に残る形は、紙面では右へぶら下げる。2 行のときだけ勧める。
-    if len(lines) == 2 and lines[1] in _TAIL_WORDS:
+    # 漢字に直接つながる語は複合語の途中なので、ここでも勧めない。
+    first_cut = cuts[0]
+    if (
+        len(lines) == 2
+        and lines[1] in _TAIL_WORDS
+        and not _is_kanji(text[first_cut - 1])
+    ):
         total += _TAIL_LINE_BONUS
         semantic = True
-    return (total, semantic)
+    return (total, semantic, phrase_only)
 
 
 def title_splits(text: str, max_lines: int = 3) -> list[TitleSplit]:
@@ -220,11 +256,16 @@ def title_splits(text: str, max_lines: int = 3) -> list[TitleSplit]:
             scored = _score_lines(normalized, cuts, lines)
             if scored is None:
                 continue
-            score, semantic = scored
+            score, semantic, phrase_only = scored
             known = best.get(lines)
             if known is not None and known.score >= score:
                 continue
-            best[lines] = TitleSplit(lines=lines, score=score, semantic=semantic)
+            best[lines] = TitleSplit(
+                lines=lines,
+                score=score,
+                semantic=semantic,
+                phrase_only=phrase_only,
+            )
     ranked = sorted(best.values(), key=lambda item: item.score, reverse=True)
     return ranked[:_MAX_CANDIDATES]
 

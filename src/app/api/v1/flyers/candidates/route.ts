@@ -15,14 +15,14 @@ export async function POST(req: NextRequest) {
     const input = ProposeCandidatesSchema.parse(await req.json());
     const owner = await resolveFlyerOwner(req);
     const scope = await resolveFlyerQuotaScope(req, input.draftKey, input.eventId);
-    const candidates = await proposeBackgroundCandidates(
+    const { candidates, aiFallback } = await proposeBackgroundCandidates(
       input,
       // 画面は 1 枚ずつ出して作り直させる。AI の課金を 1 回 1 枚に抑える。
       input.count ?? 1,
       owner.ownerTokenHash,
     );
     const quota = await readFlyerQuota(scope, owner);
-    const response = NextResponse.json({ candidates, quota });
+    const response = NextResponse.json({ candidates, aiFallback, quota });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);
     return response;
   } catch (error) {

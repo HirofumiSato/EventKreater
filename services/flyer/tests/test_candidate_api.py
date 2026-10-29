@@ -114,14 +114,42 @@ def test_wizard_chain_produces_selectable_candidate(tmp_path: Path) -> None:
 
 def test_placeholder_backgrounds_report_source_and_remaining(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
-        backgrounds = client.post(
+        payload = client.post(
             "/api/v1/flyers/candidates",
             json=_body(count=1),
-        ).json()["candidates"]
+        ).json()
+        backgrounds = payload["candidates"]
         assert len(backgrounds) == 1
         assert backgrounds[0]["source"] == "placeholder"
         # AI が無効でも残り枚数の枠は返す（画面がボタンを出せるように）。
         assert backgrounds[0]["ai_remaining"] == 3
+        # AI を使わない構成では代替へ落ちていない。
+        assert payload["ai_fallback"] is False
+
+
+class _FailingGenerator(MockImageGenerator):
+    """生成に失敗したことにする生成器。AI は代替背景へ落ちる。"""
+
+    used_fallback = True
+
+
+def test_ai_failure_reports_the_fallback_to_the_client(tmp_path: Path) -> None:
+    """AI で作れなかったことを、候補とは別に画面へ伝える。"""
+    source = DalleCandidateSource(
+        _FailingGenerator(),
+        fallback=PlaceholderCandidateSource(),
+        usd_jpy_rate=200.0,
+        max_cost_jpy=9.5,
+    )
+    quota = MemoryAiGenerationQuota(3, 3600)
+    app = create_app(_settings(tmp_path), candidate_source=source, ai_quota=quota)
+    with TestClient(app) as client:
+        payload = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(count=1),
+        ).json()
+    assert payload["candidates"][0]["source"] == "placeholder"
+    assert payload["ai_fallback"] is True
 
 
 def test_ai_backgrounds_stop_after_three_per_hour(tmp_path: Path) -> None:
@@ -135,16 +163,21 @@ def test_ai_backgrounds_stop_after_three_per_hour(tmp_path: Path) -> None:
     app = create_app(_settings(tmp_path), candidate_source=source, ai_quota=quota)
     with TestClient(app) as client:
         seen: list[tuple[str, int | None]] = []
+        fallbacks: list[bool] = []
         for _ in range(4):
-            candidate = client.post(
+            payload = client.post(
                 "/api/v1/flyers/candidates",
                 json=_body(count=1),
-            ).json()["candidates"][0]
+            ).json()
+            candidate = payload["candidates"][0]
             seen.append((candidate["source"], candidate["ai_remaining"]))
+            fallbacks.append(payload["ai_fallback"])
 
         # 初回と作り直し 2 回までは AI。4 回目はグラデーションへ落ちる。
         assert seen[:3] == [("ai", 2), ("ai", 1), ("ai", 0)]
         assert seen[3] == ("placeholder", 0)
+        # 上限に達した回だけ、代替へ落ちたことを伝える。
+        assert fallbacks == [False, False, False, True]
 
 
 def test_layout_candidates_inherit_source(tmp_path: Path) -> None:

@@ -147,7 +147,7 @@
 
 .. count-start
 
-69 ファイル、``it`` は 926 件です。内訳は ``tests/unit/`` が 55 ファイル 834 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+70 ファイル、``it`` は 929 件です。内訳は ``tests/unit/`` が 56 ファイル 837 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -299,6 +299,10 @@
      - 11
      - A4 PDF のページ寸法、チラシ画像と QR の埋め込み、WebP の変換、PDF の URL とファイル名
      - SCR-ORG-05 / SCR-ORG-16
+   * - ``tests/unit/flyer-candidates.test.ts``
+     - 3
+     - 背景の候補応答。AI が代替背景へ落ちた印（``ai_fallback``）を読み、古い応答は代替なしとみなし、背景以外のステップは候補の配列だけを返す
+     - SCR-ORG-08
    * - ``tests/unit/flyer-payload.test.ts``
      - 2
      - サービスへ渡す値。日付は紙面に焼ける日本語（年と曜日）へ直し、雨の扱いは表示用の札にする
@@ -438,7 +442,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 834、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 834 件を実行して 92 件を skip します。
+件数の内訳は ``tests/unit/`` が 837、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 837 件を実行して 92 件を skip します。
 
 .. breakdown-end
 

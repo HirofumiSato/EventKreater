@@ -113,6 +113,22 @@ npm run check:full   # PR の直前に 1 回（Vitest 込み）
 PR に理由を書きます。404 の写しは `mock:sync` が撮る前に止めます（`storage/ui-demo.json` の ID が
 DB に無い、または画面が「見つかりません」になった場合）。手順の正は `docs/ui-review/mock-sync.md` です。
 
+## チラシの見本（`public/samples/**`）
+
+`public/samples/*.jpg` は、画面と DB の見本になる完成済みのチラシです。
+`scripts/seed-ui-demo.mjs` はこれを `storage/flyers/` へコピーするだけで、描画はしません。
+そのため、**チラシを作り直したら同じ PR でサンプルも差し替えます**。差し替えを忘れると、
+`npm run db:seed:ui` のたびに古い見本（古い文字サイズや下地）へ戻ります。
+
+1. 催しの見本を作り直す（ウィザードのステップ 1〜5、または `services/flyer` の API）
+2. できた画像を `storage/flyers/<flyerAssetId>.jpg` から `public/samples/<対応する名前>.jpg` へ上書きコピーする
+3. 同じ催しを直に直したときは、`storage/flyers/<flyerAssetId>.jpg` も同じ画像にそろえる（seed を回さずに済む）
+4. 画像は指紋（`computeUiHash`）に入らないので、`npm run mock:sync -- --refresh` で撮り直す
+5. 何を作り直したか（題・テーマ・テンプレート）を `docs/ui-review/home-audit.md` の一覧へ 1 行足す
+
+対応する名前は `scripts/seed-ui-demo.mjs` の `createFlyer(...)` の第 3 引数です
+（`flyer-autumn.jpg`・`flyer-gohan.jpg`・`flyer-bonfire.jpg` など）。
+
 ## 画面の組み方（スマホが先）
 
 参加者はスマホで開き、主催者の PC は従です。画面は幅 390px を基準に組み、広い画面向けの差分だけを足します。

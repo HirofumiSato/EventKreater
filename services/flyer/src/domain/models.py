@@ -334,6 +334,9 @@ class CandidateList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     candidates: list[CandidateItem]
+    #: AI で背景を作れず、テーマの下地を代替に返したか。背景のステップだけ立つ。
+    #: 画面はこれを見て「AI の上限」か「生成の失敗」かを伝える。
+    ai_fallback: bool = False
 
 
 class CandidateMeta(BaseModel):

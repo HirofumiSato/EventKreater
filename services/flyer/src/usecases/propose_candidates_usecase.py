@@ -125,6 +125,9 @@ class ProposeCandidatesUseCase:
         used = sum(1 for option in options if option.source == "ai")
         if used:
             self._ai_quota.consume(owner_token_hash, used)
+        # AI を設定しているのに 1 枚も作れなかったときは、代替背景へ落ちている。
+        # 画面が「上限」か「失敗」かを出せるよう、理由ではなく事実だけを返す。
+        ai_fallback = self._source.source_id == "ai" and used == 0
         remaining = self._ai_quota.remaining(owner_token_hash)
         items = [
             self._make(
@@ -142,7 +145,7 @@ class ProposeCandidatesUseCase:
             ).model_copy(update={"ai_remaining": remaining})
             for option in options
         ]
-        return CandidateList(candidates=items)
+        return CandidateList(candidates=items, ai_fallback=ai_fallback)
 
     async def create_uploaded_background(
         self,
