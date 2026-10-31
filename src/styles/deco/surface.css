@@ -1382,15 +1382,6 @@
   margin-left: 0.375rem;
 }
 
-/* 数字の単位。値より 1 段落とす。 */
-.stat__unit {
-  margin-left: 0.125rem;
-  color: var(--color-text-subtle);
-  font-family: var(--font);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
 /* イベントの札。行ではなく面で見せる。 */
 .event-card {
   display: grid;

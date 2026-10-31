@@ -211,15 +211,9 @@
   letter-spacing: 0.04em;
 }
 
-.card-grid,
-.stat-grid {
+.card-grid {
   display: grid;
   gap: 1rem;
-}
-
-/* 主催一覧の要約。件数だけなので、狭い画面でも 2 つを横に並べて縦を取らない。 */
-.stat-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .card,
@@ -234,22 +228,6 @@
 .card {
   padding: 1.25rem;
 }
-
-/* 件数の札。数字は 1 行で足りるので、名前と横に並べ、縦を取らない。
-   一覧の上に置くもので、読ませるのは数字だけ。 */
-.stat {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-}
-
-
 
 .card__title {
   font-size: 1rem;
@@ -488,11 +466,6 @@
   .step-row__body {
     margin-top: 0;
   }
-}
-
-.stat__label {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
 }
 
 .stat__value {

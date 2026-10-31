@@ -44,7 +44,6 @@
 
 .deco.deco--tape-shadow .feature-row,
 .deco.deco--tape-shadow .card,
-.deco.deco--tape-shadow .stat,
 .deco.deco--tape-shadow .panel,
 .deco.deco--tape-shadow .table-card,
 .deco.deco--tape-shadow .event-step,
@@ -101,14 +100,6 @@
 }
 
 /* 傾きは 0.5 度まで。1 度を超えると、行が揃って見えなくなる。 */
-.deco.deco--tape-shadow .stat {
-  transform: rotate(-0.5deg);
-}
-
-.deco.deco--tape-shadow .stat:nth-child(even) {
-  transform: rotate(0.5deg);
-}
-
 .deco.deco--tape-shadow .event-card:nth-of-type(odd) {
   transform: rotate(-0.45deg);
 }

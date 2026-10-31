@@ -40,7 +40,6 @@
 
 .deco.deco--tape-quiet .feature-row,
 .deco.deco--tape-quiet .card,
-.deco.deco--tape-quiet .stat,
 .deco.deco--tape-quiet .panel,
 .deco.deco--tape-quiet .table-card,
 .deco.deco--tape-quiet .event-step,
@@ -59,16 +58,6 @@
    数字。色を塗らず、墨で置く。差は見出しの言葉で付ける。
    -------------------------------------------------------------------------- */
 
-.deco.deco--tape-quiet .stat {
-  padding: 0.375rem 0.75rem;
-}
-
-.deco.deco--tape-quiet .stat__label {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-}
-
 .deco.deco--tape-quiet .stat__value {
   margin-top: 0;
   color: var(--color-text);
@@ -78,19 +67,6 @@
   line-height: 1.2;
   border-bottom: 0;
 }
-
-.deco.deco--tape-quiet .stat__unit {
-  margin-left: 0.125rem;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-
-
-
-
-
 
 .deco.deco--tape-quiet .organizer-tabs__link.is-current {
   border-bottom-color: var(--color-text);

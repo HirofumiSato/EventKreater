@@ -190,9 +190,6 @@ function OrganizerEventsScreen() {
   // いまの並び（昇順か降順か）はアイコンの向きで示す。
   const sortLabel = sortOrder === "asc" ? "開催日の新しい順に並べ替える" : "開催日の古い順に並べ替える";
 
-  const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
-  const closedCount = events.filter((event) => event.status === "CLOSED").length;
-
   return (
     <div className="stack has-action-dock">
       <PageHeader title="主催イベント一覧" />
@@ -220,25 +217,6 @@ function OrganizerEventsScreen() {
             {SITE.nav.organizerLogin.label}
           </Link>
         </Alert>
-      )}
-
-      {!loading && !error && (
-        <div className="stat-grid">
-          <div className="stat">
-            <p className="stat__label">公開中</p>
-            <p className="stat__value">
-              {publishedCount}
-              <span className="stat__unit">件</span>
-            </p>
-          </div>
-          <div className="stat">
-            <p className="stat__label">受付停止</p>
-            <p className="stat__value">
-              {closedCount}
-              <span className="stat__unit">件</span>
-            </p>
-          </div>
-        </div>
       )}
 
       <Section className="section--tight">
