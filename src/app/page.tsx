@@ -73,9 +73,8 @@ export default function HomePage() {
           <div className="hero__copy">
             <p className="hero__eyebrow">{HERO_EYEBROW}</p>
             {/*
-              改行の位置は文言の一部。スマホは 3 行、PC は「イベントのチラシとWEBページ、」と
-              「5分で簡単作成。」の 2 行にする。切り替えは CSS（.hero__title-line）が持ち、
-              幅で DOM を変えない。
+              改行の位置は文言の一部。どの幅も 3 行のままで、文字サイズだけを
+              幅に合わせて上げる（CSS の .hero__title が持つ）。幅で DOM を変えない。
             */}
             <h1 className="hero__title">
               {SITE.taglineLines.map((line) => (

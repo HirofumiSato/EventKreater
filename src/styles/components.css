@@ -76,17 +76,20 @@
   white-space: nowrap;
 }
 
+/* 2 行目「告知&出欠ウェブページ、」が 13 文字で最も長い（約 11.8em）。
+   360px の端末でも 1 行に収まる 1.5rem から始め、幅が広がるほど上げる。
+   3 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。 */
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
-  font-size: 2.125rem;
+  font-size: 1.5rem;
   line-height: 1.35;
   letter-spacing: 0.01em;
 }
 
-/* 折り返しの位置は文言の一部。狭い画面は 3 行、PC（1024px 以上）は 2 行にする。
-   行ごとに span で分け、PC では 1・2 行目を inline に戻して 1 行に詰める。
-   幅で DOM を変えないので、SSR の HTML は 1 つで済む。 */
+/* 折り返しの位置は文言の一部。幅で行数を変えず、どの幅も 3 行にする。
+   PC で 1・2 行目をつなげると 21 文字になり、折り返さない大きさまで落とすと
+   ヒーローの見出しとして小さすぎるため、行は分けたまま大きさだけを上げる。 */
 .hero--stage .hero__title-line {
   display: block;
 }
@@ -146,6 +149,12 @@
   margin: 2rem auto 0;
 }
 
+@media (min-width: 640px) {
+  .hero--stage .hero__title {
+    font-size: 2rem;
+  }
+}
+
 @media (min-width: 900px) {
   .hero--stage {
     padding: 4.5rem 1.5rem;
@@ -158,8 +167,10 @@
     gap: 3rem;
   }
 
+  /* 900〜1023px はコピーが約 28rem まで細る。見出しは 3.4vw で追い、
+     2 行目が折り返さない 2.5rem で止める。 */
   .hero--stage .hero__title {
-    font-size: clamp(2.5rem, 3.4vw, 3.25rem);
+    font-size: clamp(2rem, 3.4vw, 2.5rem);
   }
 
   /* 広い画面ではコピーの右に、札として置く。 */
@@ -171,9 +182,8 @@
   }
 }
 
-/* 1024px 以上は PC。見出しを「イベントのチラシとWEBページ、」「5分で簡単作成。」の 2 行にする。
-   1 行目が 16 文字と長いので、札（19rem 固定）を除いた幅をコピーに渡し、
-   見出しの大きさは折り返さない上限（2.5rem）で止める。 */
+/* 1024px 以上は PC。札（19rem 固定）を除いた幅をコピーに渡す。
+   見出しは 3 行のまま。2 行目（約 11.8em）が収まる 2.5rem まで上げる。 */
 @media (min-width: 1024px) {
   .hero__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
@@ -186,15 +196,6 @@
 
   .hero--stage .hero__lead {
     max-width: 40rem;
-  }
-
-  .hero--stage .hero__title-line {
-    display: inline;
-  }
-
-  /* 最後の 1 行だけ手前で改行する（＝1・2 行目がつながる）。 */
-  .hero--stage .hero__title-line:last-child {
-    display: block;
   }
 }
 
