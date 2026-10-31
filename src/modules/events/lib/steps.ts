@@ -28,8 +28,8 @@ export const EVENT_STEPS: readonly EventStep[] = [
   },
   {
     key: "pricing",
-    title: "費用プラン",
-    hint: "参加者が選ぶ金額です。あとから追加できます。",
+    title: "費用と割引",
+    hint: "参加者が選ぶ金額です。割引は任意です。",
     mandatory: true,
   },
   {
@@ -208,7 +208,12 @@ export function summarizeStep(key: EventStepKey, value: EventFormValues): string
         .slice(0, 2)
         .map((row) => `${row.name.trim()} ${formatYen(Number(row.amount || 0))}`)
         .join(" / ");
-      return plans.length > 2 ? `${text} ほか${plans.length - 2}件` : text;
+      const planPart = plans.length > 2 ? `${text} ほか${plans.length - 2}件` : text;
+      // 割引は任意なので、入っているときだけ畳んだ行に足す。
+      const discountCount = value.discounts.filter(
+        (row) => hasText(row.name) && row.amount.trim() !== "",
+      ).length;
+      return discountCount > 0 ? `${planPart} / 割引${discountCount}件` : planPart;
     }
     case "location":
       return composeLocation(value) || null;

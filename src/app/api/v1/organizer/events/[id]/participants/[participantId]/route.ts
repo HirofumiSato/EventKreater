@@ -6,12 +6,20 @@ import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
 import {
   assertCapacityAllows,
+  keepDiscountSnapshot,
   keepPriceSnapshot,
   lockEventForCapacity,
   resolveAttendanceChoice,
+  resolveDiscountChoice,
 } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
-import { formatEventDate, formatEventDateLabel, participantPriceDisplay } from "@/lib/serializers";
+import {
+  formatEventDate,
+  formatEventDateLabel,
+  participantPriceDisplay,
+  serializeParticipantDiscounts,
+} from "@/lib/serializers";
+import { discountTotal, payableAmount } from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +64,42 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       await assertCapacityAllows(tx, params.id, input.status, current.id);
       const choice = await resolveAttendanceChoice(tx, params.id, input);
       const snapshot = keepPriceSnapshot(current, choice);
+      /**
+       * 割引の扱い。欠席・参加要望に変えたら消す。出席なら、幹事が選び直したときだけ入れ替える。
+       * `discountIds` を省略した更新（名前だけの修正）では、参加者が選んだ割引を消さない。
+       */
+      let discountsData:
+        | {
+            deleteMany: Record<string, never>;
+            create?: {
+              discountId: string | null;
+              name: string;
+              amount: number;
+              note: string | null;
+              sortOrder: number;
+            }[];
+          }
+        | undefined;
+      if (input.status !== "ATTENDING") {
+        discountsData = { deleteMany: {} };
+      } else if (input.discountIds !== undefined) {
+        const chosen = await resolveDiscountChoice(tx, params.id, input.status, input.discountIds);
+        const currentDiscounts = await tx.participantDiscount.findMany({
+          where: { participantId: current.id },
+          select: { discountId: true, name: true, amount: true, note: true },
+        });
+        const kept = keepDiscountSnapshot(currentDiscounts, chosen);
+        discountsData = {
+          deleteMany: {},
+          create: kept.map((row, sortOrder) => ({
+            discountId: row.discountId,
+            name: row.name,
+            amount: row.amount,
+            note: row.note,
+            sortOrder,
+          })),
+        };
+      }
       return tx.participant.update({
         where: { id: current.id },
         data: {
@@ -69,8 +113,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           waitlistedAt:
             input.status === "WAITLISTED" ? (current.waitlistedAt ?? new Date()) : null,
           ...snapshot,
+          ...(discountsData ? { discounts: discountsData } : {}),
         },
-        include: { schedule: true, pricePlan: true },
+        include: { schedule: true, pricePlan: true, discounts: { orderBy: { sortOrder: "asc" } } },
       });
     });
     const waitlistRows = await prisma.participant.findMany({
@@ -92,6 +137,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           : null,
         pricePlanLabel: price.label,
         pricePlanAmount: price.amount,
+        discounts: serializeParticipantDiscounts(updated.discounts),
+        discountAmount: discountTotal(updated.discounts),
+        payableAmount: payableAmount({ priceAmount: price.amount, discounts: updated.discounts }),
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
         waitlistedAt: updated.waitlistedAt ? updated.waitlistedAt.toISOString() : null,

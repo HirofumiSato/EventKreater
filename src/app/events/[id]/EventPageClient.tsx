@@ -69,6 +69,7 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           eventId={event.id}
           schedules={event.schedules}
           pricePlans={event.pricePlans}
+          discounts={event.discounts}
           initialRsvp={event.myRsvp}
           capacity={event.capacity}
           attendingCount={event.attendingCount}

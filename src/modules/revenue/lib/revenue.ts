@@ -16,6 +16,29 @@ export interface RevenueParticipant {
   pricePlanName: string | null;
   priceAudience: PriceAudience | null;
   scheduleId: string | null;
+  /**
+   * 申込時に選んだ割引の写し。省略した呼び出し（テストなど）は割引なしとして扱う。
+   * 合計額をプラン金額から引き、支払額は 0 円で止める。
+   */
+  discounts?: readonly { amount: number }[];
+}
+
+/** 割引の合計額。負の値は数えない（0 円未満の値引きは定義できない）。 */
+export function discountTotal(rows: readonly { amount: number }[] | undefined): number {
+  if (!rows || rows.length === 0) return 0;
+  return rows.reduce((total, row) => total + Math.max(0, row.amount), 0);
+}
+
+/**
+ * 割引を引いた支払額。0 円未満にはしない。
+ * プラン未選択（null）は null のまま返し、売上の分母に入れない。
+ */
+export function payableAmount(row: {
+  priceAmount: number | null;
+  discounts?: readonly { amount: number }[];
+}): number | null {
+  if (row.priceAmount === null) return null;
+  return Math.max(0, row.priceAmount - discountTotal(row.discounts));
 }
 
 export interface RevenueSummary {
@@ -64,7 +87,7 @@ export function summarizeRevenue(
       continue;
     }
     paidAttendingCount += 1;
-    expectedRevenue += row.priceAmount;
+    expectedRevenue += payableAmount(row) ?? 0;
   }
 
   const issuedRevenue = receipts.reduce((total, receipt) => total + receipt.amount, 0);
@@ -88,13 +111,16 @@ export interface PlanRevenueRow {
   /** 出欠確定時点の金額。同じプランでも編集をまたぐと別の行になる。 */
   amount: number;
   attendingCount: number;
+  /** 割引の合計額。支払額 = 見込み売上（この行の小計） + 割引の小計。 */
+  discountSubtotal: number;
+  /** 割引を引いた小計。 */
   subtotal: number;
 }
 
 /**
- * プラン別の内訳。金額が同じでもプラン名が違えば別行にする。
- * 名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある
- * （出欠の途中でプラン金額を変えた場合）。その差は隠さずにそのまま見せる。
+ * プラン別の内訳。金額が同じでもプラン名や割引額が違えば別行にする。
+ * 名前・金額・割引はスナップショットなので、同じ名前で金額が違う行が並ぶことがある
+ * （出欠の途中でプラン金額や割引を変えた場合）。その差は隠さずにそのまま見せる。
  */
 export function groupByPlan(participants: readonly RevenueParticipant[]): PlanRevenueRow[] {
   const rows = new Map<string, PlanRevenueRow>();
@@ -102,11 +128,13 @@ export function groupByPlan(participants: readonly RevenueParticipant[]): PlanRe
     if (row.status !== "ATTENDING" || row.priceAmount === null) continue;
     const name = row.pricePlanName ?? "プラン名なし";
     const audience = row.priceAudience ?? "ANY";
-    const key = `${audience}\u0000${name}\u0000${row.priceAmount}`;
+    const discount = discountTotal(row.discounts);
+    const key = `${audience}\u0000${name}\u0000${row.priceAmount}\u0000${discount}`;
     const current = rows.get(key);
     if (current) {
       current.attendingCount += 1;
-      current.subtotal += row.priceAmount;
+      current.discountSubtotal += discount;
+      current.subtotal += payableAmount(row) ?? 0;
       continue;
     }
     rows.set(key, {
@@ -114,7 +142,8 @@ export function groupByPlan(participants: readonly RevenueParticipant[]): PlanRe
       audience,
       amount: row.priceAmount,
       attendingCount: 1,
-      subtotal: row.priceAmount,
+      discountSubtotal: discount,
+      subtotal: payableAmount(row) ?? 0,
     });
   }
   return [...rows.values()].sort((a, b) => {
@@ -128,6 +157,9 @@ export interface ScheduleRevenueRow {
   /** 開催日時が消えた参加者（SetNull）は null。 */
   scheduleId: string | null;
   attendingCount: number;
+  /** 割引の合計額。 */
+  discountSubtotal: number;
+  /** 割引を引いた小計。 */
   subtotal: number;
 }
 
@@ -137,16 +169,19 @@ export function groupBySchedule(participants: readonly RevenueParticipant[]): Sc
   for (const row of participants) {
     if (row.status !== "ATTENDING") continue;
     const key = row.scheduleId;
+    const discount = discountTotal(row.discounts);
     const current = rows.get(key);
     if (current) {
       current.attendingCount += 1;
-      current.subtotal += row.priceAmount ?? 0;
+      current.discountSubtotal += discount;
+      current.subtotal += payableAmount(row) ?? 0;
       continue;
     }
     rows.set(key, {
       scheduleId: key,
       attendingCount: 1,
-      subtotal: row.priceAmount ?? 0,
+      discountSubtotal: discount,
+      subtotal: payableAmount(row) ?? 0,
     });
   }
   return [...rows.values()];
@@ -170,5 +205,8 @@ export interface ScheduleRevenueView {
   scheduleId: string | null;
   label: string;
   attendingCount: number;
+  /** 割引の合計額。 */
+  discountSubtotal: number;
+  /** 割引を引いた小計。 */
   subtotal: number;
 }

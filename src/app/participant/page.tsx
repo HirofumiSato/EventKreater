@@ -137,6 +137,7 @@ export default function ParticipantHomePage() {
               <p className="event-card__meta">
                 {nextItem.scheduleLabel ?? nextItem.event.sortDate}
                 {nextItem.pricePlanLabel ? ` ・ ${nextItem.pricePlanLabel}` : ""}
+                {nextItem.discountLabel ? ` ・ ${nextItem.discountLabel}` : ""}
                 <br />
                 {nextItem.event.location}
               </p>
@@ -192,7 +193,8 @@ export default function ParticipantHomePage() {
                 <Row
                   title={<><Link href={`/events/${row.event.id}`}>{row.event.title}</Link></>}
                   meta={<>{row.scheduleLabel ?? row.event.sortDate}
-                      {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""} ／ {row.event.location}</>}
+                      {row.pricePlanLabel ? ` ・ ${row.pricePlanLabel}` : ""}
+                      {row.discountLabel ? ` ・ ${row.discountLabel}` : ""} ／ {row.event.location}</>}
                   aside={<><Badge tone={rsvpStatusTone(row.status)} small>
                     {row.statusLabel}
                   </Badge></>}

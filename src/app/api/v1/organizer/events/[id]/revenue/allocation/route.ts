@@ -105,6 +105,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
             pricePlanName: true,
             priceAudience: true,
             scheduleId: true,
+            discounts: { select: { amount: true } },
           },
         },
         receipts: { select: { amount: true } },

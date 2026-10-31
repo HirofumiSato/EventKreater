@@ -126,6 +126,29 @@ export interface EventPricePlanOption {
   price: string;
 }
 
+/** 参加者が申込時に選べる割引。すべての費用プランに適用する。 */
+export interface EventDiscountOption {
+  id: string;
+  /** 「友達と参加」のような条件名。 */
+  name: string;
+  /** 値引き額（円）。 */
+  amount: number;
+  note: string | null;
+  /** 表示用に合成した「友達と参加 500円引き（2人以上のとき）」。 */
+  label: string;
+}
+
+/** 申込時点で選んだ割引の写し。定義を編集・削除しても金額は動かない。 */
+export interface ParticipantDiscountSnapshot {
+  /** 選んだ割引の定義。定義が消えたら null。 */
+  discountId: string | null;
+  name: string;
+  amount: number;
+  note: string | null;
+  /** 表示用に合成した 1 行。 */
+  label: string;
+}
+
 export interface ScheduleDraft {
   key: string;
   id?: string;
@@ -144,10 +167,22 @@ export interface PricePlanDraft {
   note: string;
 }
 
+/** 割引の入力途中の行。金額は入力途中の空欄を許すため文字列で持つ。 */
+export interface DiscountDraft {
+  key: string;
+  id?: string;
+  name: string;
+  /** 入力途中の空欄を許すため文字列で持つ。送信時に数値へ変える。 */
+  amount: string;
+  note: string;
+}
+
 export interface EventFormValues {
   title: string;
   schedules: ScheduleDraft[];
   pricePlans: PricePlanDraft[];
+  /** 参加者が申込時に選べる割引。0 件でもよい。 */
+  discounts: DiscountDraft[];
   /** ゲスト幹事の公開表示名。会員として作るときはサーバーが無視する。 */
   organizerDisplayName: string;
   /** 構造化住所が無いときだけ使う旧・自由入力の開催場所。 */
@@ -218,6 +253,8 @@ export interface PublicEvent {
   sortDate: string;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
+  /** 申込時に選べる割引。0 件なら告知ページに行を出さない。 */
+  discounts: EventDiscountOption[];
   location: string;
   rainPolicy: RainPolicy;
   capacity: number | null;
@@ -263,6 +300,8 @@ export interface MyRsvp {
   comment: string | null;
   scheduleId: string | null;
   pricePlanId: string | null;
+  /** 申込時に選んだ割引の写し。無ければ空配列。 */
+  discounts: ParticipantDiscountSnapshot[];
   /** 参加要望のときの待ち順（1始まり）。要望でなければ null。 */
   waitlistPosition: number | null;
 }
@@ -278,6 +317,7 @@ export interface PublicOrganizerEvent {
   sortDate: string;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
+  discounts: EventDiscountOption[];
   location: string;
   capacity: number | null;
   attendingCount: number;
@@ -306,6 +346,7 @@ export interface OrganizerEvent {
   sortDate: string;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
+  discounts: EventDiscountOption[];
   location: string;
   rainPolicy: RainPolicy;
   capacity: number | null;
@@ -347,6 +388,12 @@ export interface ParticipantRow {
   pricePlanLabel: string | null;
   /** 領収書の金額の初期値に使う。プラン未選択なら null。 */
   pricePlanAmount: number | null;
+  /** 申込時に選んだ割引。無ければ空配列。 */
+  discounts: ParticipantDiscountSnapshot[];
+  /** 割引の合計額（円）。無ければ 0。 */
+  discountAmount: number;
+  /** 割引を引いた支払額。プラン未選択なら null。 */
+  payableAmount: number | null;
   createdAt: string;
   updatedAt: string;
   /** 参加要望を出した日時。要望でなければ null。 */
@@ -383,6 +430,16 @@ export function createPricePlanDraft(partial?: Partial<PricePlanDraft>): PricePl
     id: partial?.id,
     name: partial?.name ?? "",
     audience: partial?.audience ?? "ANY",
+    amount: partial?.amount ?? "",
+    note: partial?.note ?? "",
+  };
+}
+
+export function createDiscountDraft(partial?: Partial<DiscountDraft>): DiscountDraft {
+  return {
+    key: partial?.key ?? crypto.randomUUID(),
+    id: partial?.id,
+    name: partial?.name ?? "",
     amount: partial?.amount ?? "",
     note: partial?.note ?? "",
   };
@@ -509,7 +566,8 @@ function draftTimeRange(row: EventScheduleOption): { startTime: string; endTime:
 export function draftsFromOptions(event: {
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
-}): Pick<EventFormValues, "schedules" | "pricePlans"> {
+  discounts?: EventDiscountOption[];
+}): Pick<EventFormValues, "schedules" | "pricePlans" | "discounts"> {
   return {
     schedules:
       event.schedules.length > 0
@@ -535,6 +593,16 @@ export function draftsFromOptions(event: {
             }),
           )
         : [createPricePlanDraft()],
+    // 割引は任意。0 件なら空配列のまま（行を足さない）。
+    discounts: (event.discounts ?? []).map((row) =>
+      createDiscountDraft({
+        key: row.id,
+        id: row.id,
+        name: row.name,
+        amount: String(row.amount),
+        note: row.note ?? "",
+      }),
+    ),
   };
 }
 
@@ -560,6 +628,16 @@ export function toEventRequest(form: EventFormValues, referrerEventId?: string |
       amount: Number(amount || 0),
       note: note.trim() || null,
     })),
+    // 割引は任意。空の行（名前も金額も空）は送らない。名前だけ入れて金額が空の行は 0 円として送り、
+    // サーバーが 400 を返すので、画面はその場でエラーを出せる。
+    discounts: form.discounts
+      .filter((row) => row.name.trim() !== "" || row.amount.trim() !== "" || row.note.trim() !== "")
+      .map(({ id, name, amount, note }) => ({
+        ...(id ? { id } : {}),
+        name,
+        amount: Number(amount || 0),
+        note: note.trim() || null,
+      })),
     // 構造化住所があるときはサーバーが組み立てる。無いときだけ旧・自由入力を送る。
     ...(structured
       ? {
@@ -701,6 +779,8 @@ export const EMPTY_EVENT_FORM: EventFormValues = {
   organizerDisplayName: "",
   schedules: [createScheduleDraft({ key: "schedule-initial" })],
   pricePlans: [createPricePlanDraft({ key: "plan-initial" })],
+  // 割引は任意。既定は 0 件で、必要になったら「割引を追加」で足す。
+  discounts: [],
   location: "",
   postalCode: "",
   prefecture: "",

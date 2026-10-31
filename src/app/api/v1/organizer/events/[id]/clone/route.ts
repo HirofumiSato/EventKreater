@@ -91,6 +91,15 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
                 sortOrder: row.sortOrder,
               })),
             },
+            // 割引も複製する。参加者の選択は複製しない（別のイベントの出欠なので）。
+            discounts: {
+              create: source.discounts.map((row) => ({
+                name: row.name,
+                amount: row.amount,
+                note: row.note,
+                sortOrder: row.sortOrder,
+              })),
+            },
           },
           include: { flyerAsset: true, ...eventOptionsInclude },
         });

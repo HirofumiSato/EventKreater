@@ -37,6 +37,7 @@ function makeEvent(overrides: Partial<OrganizerEvent> = {}): OrganizerEvent {
     sortDate: "2026-10-22",
     schedules: [],
     pricePlans: [],
+    discounts: [],
     location: "河原",
     rainPolicy: "RAIN_OR_SHINE",
     capacity: null,

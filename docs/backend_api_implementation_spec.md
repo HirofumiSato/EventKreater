@@ -70,7 +70,7 @@ flowchart TD
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
 | `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、枠は消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
 | `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
-| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` は枠を消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
@@ -552,6 +552,8 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 
 名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。領収書の発行画面が使う既定額（`pricePlanAmount`）も同じ値になる。
 
+割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計）、`payableAmount`（`pricePlanAmount` から割引を引いた支払額。0 円で止める）を返す。`payableAmount` が `null` なのはプラン未選択の行だけで、領収書の発行画面の既定額もこの値を使う。名簿の変更（`PATCH`）は `discountIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。
+
 横断の売上（`GET /api/v1/organizer/revenue`）は会員の幹事だけが使える。ゲスト幹事の Cookie では 403 `REGISTER_REQUIRED`、未ログインは 401 を返す（`requireOrganizerAccount`）。
 
 編集（`PUT /api/v1/organizer/events/[id]`）とロック取得（`POST /api/v1/organizer/events/[id]/lock`）は、会員なら常に通り、ゲスト幹事は `events.created_at` から 24 時間以内だけ通る（`assertGuestEditWindow`）。ロックの解放と受付停止・削除は猶予の対象外で、ゲスト幹事でも常に実行できる。
@@ -686,6 +688,13 @@ export const CreateEventSchema = z.object({
     name: z.string().min(1, 'プラン名を入力してください').max(50),
     price: z.string().min(1, '費用を入力してください').max(50),
   })).min(1).max(8),
+  /** 任意の割引。0〜8 件で、すべての費用プランに適用する。省略すると 0 件。 */
+  discounts: z.array(z.object({
+    id: z.string().uuid().optional(),
+    name: z.string().trim().min(1, '割引名を入力してください').max(50),
+    amount: z.number().int().min(1).max(9_999_999),
+    note: z.string().trim().max(100).nullable().optional(),
+  })).max(8).default([]),
   location: z.string().min(1, '開催場所を入力してください').max(150),
   rainPolicy: z.enum(['RAIN_OR_SHINE', 'CANCEL_ON_RAIN', 'POSTPONE_ON_RAIN', 'INDOOR']),
   capacity: z.number().int().positive().nullable().optional(),
@@ -719,6 +728,15 @@ export const CreateEventSchema = z.object({
     "pricePlans": [
       { "id": "33333333-3333-4333-8333-333333333333", "name": "プランA", "price": "3,000円（1ドリンク付）" },
       { "id": "44444444-4444-4444-8444-444444444444", "name": "プランB", "price": "2,000円（学生）" }
+    ],
+    "discounts": [
+      {
+        "id": "55555555-5555-4555-8555-555555555555",
+        "name": "友達と参加",
+        "amount": 500,
+        "note": "2人以上のとき",
+        "label": "友達と参加 500円引き（2人以上のとき）"
+      }
     ],
     "location": "Cafe & Bar Moonlight, 新宿区",
     "rainPolicy": "RAIN_OR_SHINE",
@@ -797,6 +815,15 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
   "pricePlans": [
     { "id": "33333333-3333-4333-8333-333333333333", "name": "プランA", "price": "3,000円（1ドリンク付）" }
   ],
+  "discounts": [
+    {
+      "id": "55555555-5555-4555-8555-555555555555",
+      "name": "友達と参加",
+      "amount": 500,
+      "note": "2人以上のとき",
+      "label": "友達と参加 500円引き（2人以上のとき）"
+    }
+  ],
   "location": "Cafe & Bar Moonlight, 新宿区",
   "rainPolicy": "RAIN_OR_SHINE",
   "capacity": 30,
@@ -820,7 +847,16 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
     "id": "p1a2b3c4-1111-2222-3333-444455556666",
     "name": "佐藤",
     "status": "ATTENDING",
-    "comment": "楽しみにしています！少し遅れるかもしれません。"
+    "comment": "楽しみにしています！少し遅れるかもしれません。",
+    "discounts": [
+      {
+        "discountId": "55555555-5555-4555-8555-555555555555",
+        "name": "友達と参加",
+        "amount": 500,
+        "note": "2人以上のとき",
+        "label": "友達と参加 500円引き（2人以上のとき）"
+      }
+    ]
   }
 }
 ```
@@ -838,6 +874,8 @@ export const SubmitRsvpSchema = z.object({
   comment: z.string().max(500).optional(),
   scheduleId: z.string().uuid().optional(),
   pricePlanId: z.string().uuid().optional(),
+  /** 申込時に選んだ割引。0〜8 件で、出席のときだけ保存する。 */
+  discountIds: z.array(z.string().uuid()).max(8).default([]),
 });
 ```
 
@@ -849,6 +887,7 @@ export const SubmitRsvpSchema = z.object({
   5. 同じ会員の同時送信で一意制約に当たった場合は、1 回だけ更新としてやり直す。
   6. `Set-Cookie: rsvp_token_<id>=<token>; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure` をセット。会員の行を使い続ける場合は新しいトークンを発行しない。
   7. 出席にしたときは、選んだ費用プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
+  8. 出席にしたときは、`discountIds` を `event_discounts` と突き合わせ、名前・金額・補足を `participant_discounts` に写す（スナップショット）。重複した ID は畳み、イベントに属さない ID が混ざっていれば 400 `DISCOUNT_NOT_FOUND`。更新で同じ割引を選び直しただけなら申込時点の金額を保つ（`keepDiscountSnapshot`）。欠席・参加要望にしたときは行を消し、`myRsvp.discounts` は空になる。定義を後から編集・削除しても、保存済みの写しは動かない。
 - **取消（DELETE）:** 申し込み期限後も取り消せる。対象行の決め方は POST と同じで、Cookie と `userId` の両方を受け付ける。削除後は Cookie を消す。
 
 ---
@@ -1083,7 +1122,7 @@ POST /api/v1/organizer/events/[id]/reminders
 
 - `period` は受け取った絞り込みをそのまま返す。`from` と `to` は `YYYY-MM-DD`、`status` は受け取った値か `null`。
 - `totals` は、返した `events` の参加者をまとめて集計した値である。合計は `events` の各行の単純和と一致する。
-- 金額は `participants.price_amount`（出欠確定時点のスナップショット）の合計である。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。
+- 金額は `participants.price_amount`（出欠確定時点のスナップショット）から、申込時に選んだ割引の合計を引いた額の合計である（0 円で止める）。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。割引は 4 つの売上 API（`/organizer/revenue`、`/organizer/events/[id]/revenue`、`allocation`、`participants`）で同じように効く。
 - `issuedRevenue` は `receipts.amount` の合計であり、決済や入金の記録ではない。`unreconciled` は `expectedRevenue − issuedRevenue` で、負にもなる。未回収額ではない。
 - `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
 - 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
@@ -1102,18 +1141,18 @@ POST /api/v1/organizer/events/[id]/reminders
   "event": { "id": "20ccffe6-...", "title": "秋の音楽会", "sortDate": "2026-11-14", "status": "PUBLISHED" },
   "summary": { "expectedRevenue": 8000, "issuedRevenue": 3000, "unreconciled": 5000, "attendingCount": 4, "paidAttendingCount": 3, "unassignedPlanCount": 1, "declinedCount": 1, "receiptCount": 1, "averagePerAttendee": 2667 },
   "byPlan": [
-    { "name": "一般", "audience": "ANY", "amount": 3000, "attendingCount": 2, "subtotal": 6000 },
-    { "name": "学生", "audience": "MALE", "amount": 2000, "attendingCount": 1, "subtotal": 2000 }
+    { "name": "一般", "audience": "ANY", "amount": 3000, "attendingCount": 2, "discountSubtotal": 500, "subtotal": 5500 },
+    { "name": "学生", "audience": "MALE", "amount": 2000, "attendingCount": 1, "discountSubtotal": 0, "subtotal": 2000 }
   ],
   "bySchedule": [
-    { "scheduleId": "5c9c25cb-...", "label": "2026-11-14 19:00〜21:00", "attendingCount": 4, "subtotal": 8000 }
+    { "scheduleId": "5c9c25cb-...", "label": "2026-11-14 19:00〜21:00", "attendingCount": 4, "discountSubtotal": 500, "subtotal": 7500 }
   ]
 }
 ```
 
 - `event.sortDate` は `YYYY-MM-DD` の文字列である。
-- `byPlan` は対象（`audience`）・プラン名・金額の 3 つをキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額を変えた場合）。その差は隠さずに別行で見せる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
-- `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。並びはラベルの昇順で、`日時なし` は最後へ送る。
+- `byPlan` は対象（`audience`）・プラン名・金額の 3 つと、選んだ割引の合計をキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額や割引を変えた場合）。その差は隠さずに別行で見せる。`discountSubtotal` はその行の割引の合計、`subtotal` は割引を引いた小計である。並びは対象のアルファベット順、小計の降順、名前の五十音順。
+- `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。`discountSubtotal` と `subtotal` の意味は `byPlan` と同じ。並びはラベルの昇順で、`日時なし` は最後へ送る。
 - 日程を選んでいない出席者を代表日に寄せることはない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
 - 削除済みのイベントは 404。他幹事のイベントは 403。
 

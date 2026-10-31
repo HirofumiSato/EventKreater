@@ -1,4 +1,4 @@
-import { composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
+import { composeDiscountText, composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
 import type { EventFormValues, FlyerAsset } from "@/modules/events/types";
 
 /**
@@ -19,6 +19,15 @@ export interface EventFormPreview {
     note: string | null;
     /** 表示用に合成した「3,000円（1ドリンク付）」。 */
     price: string;
+  }[];
+  /** 参加者が申込時に選べる割引。入力途中の空行は落とす。 */
+  discounts: {
+    id: string;
+    name: string;
+    amount: number;
+    note: string | null;
+    /** 表示用に合成した「友達と参加 500円引き（2人以上のとき）」。 */
+    label: string;
   }[];
   location: string;
   rainPolicy: EventFormValues["rainPolicy"];
@@ -60,6 +69,19 @@ export function eventFormToPreview(
         price: row.amount === "" ? "金額未入力" : composePriceText({ amount, note: row.note }),
       };
     }),
+    // 名前も金額も空の行は、まだ入力していない行として落とす。
+    discounts: value.discounts
+      .filter((row) => row.name.trim() !== "" || row.amount.trim() !== "")
+      .map((row) => {
+        const amount = row.amount === "" ? 0 : Number(row.amount);
+        return {
+          id: row.key,
+          name: row.name.trim() || "割引名なし",
+          amount,
+          note: row.note.trim() || null,
+          label: composeDiscountText({ name: row.name.trim() || "割引名なし", amount, note: row.note }),
+        };
+      }),
     location,
     rainPolicy: value.rainPolicy,
     capacity: value.capacity,

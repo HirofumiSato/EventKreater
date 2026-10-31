@@ -485,6 +485,7 @@ model Event {
   invitations  EventInvitation[]
   schedules    EventSchedule[]
   pricePlans   EventPricePlan[]
+  discounts    EventDiscount[]
   revenueSetting EventRevenueSetting?
   revenueShares  EventRevenueShare[]
   @@index([status, isDeleted, sortDate])
@@ -527,6 +528,26 @@ model EventPricePlan {
   @@unique([eventId, audience, name])
   @@index([eventId, sortOrder])
   @@map("event_price_plans")
+}
+
+/// 参加者が申込時に選べる割引。条件名と値引き額（円）の組を 0〜8 件持つ。
+/// すべての費用プランに適用し、対象プランの指定は持たない。
+model EventDiscount {
+  id        String  @id @default(uuid()) @db.Uuid
+  eventId   String  @map("event_id") @db.Uuid
+  name      String  @db.VarChar(50)
+  /// 値引き額（円）。参加者が選んだ合計をプラン金額から引く。
+  amount    Int     @db.Integer
+  /// 「2人以上のとき」などの補足。表示文はサーバーで合成する。
+  note      String? @db.VarChar(100)
+  sortOrder Int     @map("sort_order")
+
+  event        Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participants ParticipantDiscount[]
+
+  /// 参加者が選んだ写しは、定義を消しても残る（discountId は SetNull）。
+  @@index([eventId, sortOrder])
+  @@map("event_discounts")
 }
 
 // =============================================================
@@ -608,6 +629,27 @@ model Participant {
   @@index([eventId, status])
   @@index([userId, updatedAt])
   @@map("participants")
+}
+
+/// 参加者が申込時に選んだ割引。申込時点の名前・金額・補足を写す。
+/// 定義（EventDiscount）を編集・削除しても、申込済みの金額は動かさない。
+model ParticipantDiscount {
+  id            String  @id @default(uuid()) @db.Uuid
+  participantId String  @map("participant_id") @db.Uuid
+  /// 選んだ定義。定義が消えると NULL になり、写しだけが残る。
+  discountId    String? @map("discount_id") @db.Uuid
+  name          String  @db.VarChar(50)
+  amount        Int     @db.Integer
+  note          String? @db.VarChar(100)
+  sortOrder     Int     @map("sort_order")
+
+  participant Participant    @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  discount    EventDiscount? @relation(fields: [discountId], references: [id], onDelete: SetNull)
+
+  @@unique([participantId, discountId])
+  @@index([participantId])
+  @@index([discountId])
+  @@map("participant_discounts")
 }
 
 // 参加費の領収書。決済は行わず、幹事が金額を入力して発行する。1参加者につき1件。
@@ -1033,6 +1075,18 @@ CREATE TABLE event_price_plans (
 
 CREATE INDEX idx_event_price_plans_event ON event_price_plans(event_id, sort_order);
 
+-- 6d. 割引（条件名 + 値引き額。0〜8件。すべてのプランに適用）
+CREATE TABLE event_discounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    name VARCHAR(50) NOT NULL,
+    amount INT NOT NULL CHECK (amount > 0),
+    note VARCHAR(100) NULL,
+    sort_order INT NOT NULL
+);
+
+CREATE INDEX idx_event_discounts_event ON event_discounts(event_id, sort_order);
+
 -- 7. 幹事権限テーブル
 CREATE TABLE event_organizers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1098,6 +1152,21 @@ CREATE INDEX idx_participants_event_status ON participants(event_id, status);
 CREATE UNIQUE INDEX participants_event_id_user_id_key ON participants(event_id, user_id);
 
 CREATE INDEX participants_user_id_updated_at_idx ON participants(user_id, updated_at);
+
+-- 9b. 参加者が選んだ割引（申込時点の写し。定義が消えると discount_id は NULL）
+CREATE TABLE participant_discounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+    discount_id UUID NULL REFERENCES event_discounts(id) ON DELETE SET NULL,
+    name VARCHAR(50) NOT NULL,
+    amount INT NOT NULL CHECK (amount > 0),
+    note VARCHAR(100) NULL,
+    sort_order INT NOT NULL,
+    CONSTRAINT uq_participant_discount UNIQUE (participant_id, discount_id)
+);
+
+CREATE INDEX idx_participant_discounts_participant ON participant_discounts(participant_id);
+CREATE INDEX idx_participant_discounts_discount ON participant_discounts(discount_id);
 
 -- 8b. 参加費の領収書（1参加者につき1件。決済は持たない）
 CREATE TABLE receipts (

@@ -6,12 +6,15 @@ import { toErrorResponse } from "@/lib/http";
 import { SubmitRsvpSchema } from "@/lib/schemas";
 import {
   assertRsvpOpen,
+  keepDiscountSnapshot,
   keepPriceSnapshot,
   lockEventForCapacity,
   resolveAttendanceChoice,
+  resolveDiscountChoice,
   resolveStatusForCapacity,
 } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
+import { serializeParticipantDiscounts } from "@/lib/serializers";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { chooseRsvpTarget, findMyParticipant } from "@/modules/participants/lib/rsvp";
@@ -50,6 +53,7 @@ function serializeRsvp(
     pricePlanId: string | null;
   },
   position: number | null,
+  discounts: { discountId: string | null; name: string; amount: number; note: string | null; sortOrder: number }[] = [],
 ) {
   return {
     id: participant.id,
@@ -59,6 +63,7 @@ function serializeRsvp(
     comment: participant.comment,
     scheduleId: participant.scheduleId,
     pricePlanId: participant.pricePlanId,
+    discounts: serializeParticipantDiscounts(discounts),
     waitlistPosition: position,
   };
 }
@@ -88,6 +93,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           const status = await resolveStatusForCapacity(tx, event.id, input.status, target.id);
           const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
           const snapshot = keepPriceSnapshot(target, choice);
+          // 参加者が選んだ割引の写し。欠席・参加要望に変えたら空にして消す。
+          const chosen = await resolveDiscountChoice(tx, event.id, status, input.discountIds);
+          const currentDiscounts = await tx.participantDiscount.findMany({
+            where: { participantId: target.id },
+            select: { discountId: true, name: true, amount: true, note: true },
+          });
+          const discountSnapshot = keepDiscountSnapshot(currentDiscounts, chosen);
           const updated = await tx.participant.update({
             where: { id: target.id },
             data: {
@@ -100,10 +112,22 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
               // 要望は最初に出した時刻を保つ。出席・欠席に戻すと順番を失う。
               waitlistedAt: status === "WAITLISTED" ? (target.waitlistedAt ?? new Date()) : null,
               ...snapshot,
+              // 申込時点の名前・金額・補足を写す。定義を後から編集・削除しても金額は動かない。
+              discounts: {
+                deleteMany: {},
+                create: discountSnapshot.map((row, sortOrder) => ({
+                  discountId: row.discountId,
+                  name: row.name,
+                  amount: row.amount,
+                  note: row.note,
+                  sortOrder,
+                })),
+              },
               ipHash,
               // 未ログインで答えた行も、ログイン中の会員に紐づける。
               ...(userId && !target.userId ? { userId } : {}),
             },
+            include: { discounts: { orderBy: { sortOrder: "asc" } } },
           });
           if (stale) await tx.participant.delete({ where: { id: stale.id } });
           // クッキーが残した行を指しているときだけ、そのまま使い続ける。
@@ -119,6 +143,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
         const status = await resolveStatusForCapacity(tx, event.id, input.status);
         const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
+        const chosen = await resolveDiscountChoice(tx, event.id, status, input.discountIds);
         const rawToken = generateSecureToken(32);
         const created = await tx.participant.create({
           data: {
@@ -136,7 +161,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             priceAudience: choice.priceAudience,
             ipHash,
             waitlistedAt: status === "WAITLISTED" ? new Date() : null,
+            discounts: {
+              create: chosen.map((row, sortOrder) => ({
+                discountId: row.discountId,
+                name: row.name,
+                amount: row.amount,
+                note: row.note,
+                sortOrder,
+              })),
+            },
           },
+          include: { discounts: { orderBy: { sortOrder: "asc" } } },
         });
         return { participant: created, rawToken, created: true, previousStatus: null };
       });
@@ -174,7 +209,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const response = NextResponse.json(
       {
         success: true,
-        myRsvp: serializeRsvp(result.participant, waitlistPosition(waitlistRows, result.participant.id)),
+        myRsvp: serializeRsvp(
+          result.participant,
+          waitlistPosition(waitlistRows, result.participant.id),
+          result.participant.discounts,
+        ),
         attendingCount,
         waitlistCount: waitlistRows.length,
       },

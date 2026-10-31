@@ -294,7 +294,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         <ReceiptIssueModal
           participantName={issuing.name}
           suggestedDescription={issuing.pricePlanLabel ?? "イベント参加費"}
-          suggestedAmount={issuing.pricePlanAmount}
+          suggestedAmount={issuing.payableAmount}
           reissue={Boolean(issuing.receipt)}
           busy={issuingBusy}
           onClose={() => setIssuing(null)}

@@ -39,6 +39,7 @@ export function SampleEventView({ event }: { event: SampleEvent }) {
               eventId={`sample-${event.slug}`}
               schedules={event.schedules}
               pricePlans={event.pricePlans}
+              discounts={event.discounts}
               initialRsvp={null}
               capacity={event.capacity}
               attendingCount={event.attendingCount}

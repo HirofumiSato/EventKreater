@@ -8,6 +8,7 @@ import { eventStep, type EventStep } from "@/modules/events/lib/steps";
 import {
   BasicSection,
   CapacitySection,
+  DiscountSection,
   LocationSection,
   PricePlansSection,
   StatusSection,
@@ -83,6 +84,7 @@ export function EventForm({
             disabled={locked}
             pricingModeLocked={pricingModeLocked}
           />
+          <DiscountSection value={value} onChange={onChange} disabled={locked} />
         </EventStepFrame>
         <EventStepFrame number={3} step={eventStep("location")}>
           <LocationSection value={value} onChange={onChange} disabled={locked} />

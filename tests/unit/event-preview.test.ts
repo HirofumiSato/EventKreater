@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_EVENT_FORM,
+  createDiscountDraft,
   createPricePlanDraft,
   createScheduleDraft,
   toEventRequest,
@@ -74,6 +75,28 @@ describe("eventFormToPreview", () => {
 
   it("チラシが無ければ null", () => {
     expect(eventFormToPreview(form()).flyerAsset).toBeNull();
+  });
+
+  it("入力途中の割引をプレビューへ写し、空行は落とす", () => {
+    const preview = eventFormToPreview(
+      form({
+        discounts: [
+          createDiscountDraft({ key: "d1", name: "友達と参加", amount: "500", note: "2人以上のとき" }),
+          createDiscountDraft({ key: "d2", name: "", amount: "", note: "" }),
+        ],
+      }),
+    );
+    expect(preview.discounts).toHaveLength(1);
+    expect(preview.discounts[0]).toMatchObject({
+      id: "d1",
+      name: "友達と参加",
+      amount: 500,
+      label: "友達と参加 500円引き（2人以上のとき）",
+    });
+  });
+
+  it("割引が 0 件ならプレビューも空配列", () => {
+    expect(eventFormToPreview(form()).discounts).toEqual([]);
   });
 });
 

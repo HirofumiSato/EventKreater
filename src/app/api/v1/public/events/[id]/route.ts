@@ -6,7 +6,7 @@ import { toErrorResponse } from "@/lib/http";
 import { rsvpCookieName } from "@/modules/auth/lib/cookies";
 import { collectGuestTokenHashes, resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { findMyParticipant } from "@/modules/participants/lib/rsvp";
-import { serializeEvent, serializePublicOrganizerList } from "@/lib/serializers";
+import { serializeEvent, serializeParticipantDiscounts, serializePublicOrganizerList } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { isFull as isFullOf, remainingSeats, waitlistPosition } from "@/modules/events/lib/rsvp-status";
 
@@ -68,6 +68,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       comment: string | null;
       scheduleId: string | null;
       pricePlanId: string | null;
+      discounts: ReturnType<typeof serializeParticipantDiscounts>;
       waitlistPosition: number | null;
     } | null = null;
     let myReceipt: {
@@ -123,6 +124,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             comment: true,
             scheduleId: true,
             pricePlanId: true,
+            discounts: { orderBy: { sortOrder: "asc" } },
             receipt: true,
           },
         })
@@ -136,6 +138,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         comment: participant.comment,
         scheduleId: participant.scheduleId,
         pricePlanId: participant.pricePlanId,
+        discounts: serializeParticipantDiscounts(participant.discounts),
         waitlistPosition: waitlistPosition(waitlistRows, participant.id),
       };
       if (participant.receipt) {
@@ -157,6 +160,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       sortDate: serialized.sortDate,
       schedules: serialized.schedules,
       pricePlans: serialized.pricePlans,
+      discounts: serialized.discounts,
       location: serialized.location,
       rainPolicy: serialized.rainPolicy,
       capacity: serialized.capacity,

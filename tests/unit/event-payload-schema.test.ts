@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { CreateEventSchema } from "@/lib/schemas";
-import { createPricePlanDraft, EMPTY_EVENT_FORM, toEventRequest } from "@/modules/events/types";
+import {
+  createDiscountDraft,
+  createPricePlanDraft,
+  EMPTY_EVENT_FORM,
+  MAX_EVENT_OPTIONS,
+  toEventRequest,
+} from "@/modules/events/types";
 
 /**
  * 画面のフォーム値をAPIへ送る形にしたとき、サーバー側のスキーマで必ず通ることを確かめる。
@@ -53,5 +59,89 @@ describe("toEventRequest と CreateEventSchema の往復", () => {
 
   it("公開・下書き以外の状態は受け付けない", () => {
     expect(CreateEventSchema.safeParse({ ...toEventRequest(form), status: "CLOSED" }).success).toBe(false);
+  });
+});
+
+describe("割引の送信形", () => {
+  const base = {
+    ...EMPTY_EVENT_FORM,
+    title: "割引テスト",
+    schedules: [
+      {
+        ...EMPTY_EVENT_FORM.schedules[0],
+        eventDate: "2026-11-20",
+        startTime: "19:00",
+        endTime: "21:00",
+      },
+    ],
+    pricePlans: [createPricePlanDraft({ name: "一般", amount: "3000" })],
+    venueName: "テスト会場",
+  };
+
+  it("割引 0 件は空配列で通り、省略したクライアントも 0 件になる", () => {
+    const payload = toEventRequest(base);
+    expect(payload.discounts).toEqual([]);
+    expect(CreateEventSchema.parse(payload).discounts).toEqual([]);
+    // 割引を足す前のクライアント（フィールドごと省略）も壊さない。
+    const { discounts: _discounts, ...withoutDiscounts } = payload;
+    expect(CreateEventSchema.parse(withoutDiscounts).discounts).toEqual([]);
+  });
+
+  it("複数件の割引をそのまま通す", () => {
+    const payload = toEventRequest({
+      ...base,
+      discounts: [
+        createDiscountDraft({ name: "友達と参加", amount: "500", note: "2人以上のとき" }),
+        createDiscountDraft({ name: "学生", amount: "300", note: "" }),
+      ],
+    });
+    const parsed = CreateEventSchema.parse(payload);
+    expect(parsed.discounts).toEqual([
+      { name: "友達と参加", amount: 500, note: "2人以上のとき" },
+      { name: "学生", amount: 300, note: null },
+    ]);
+  });
+
+  it("上限（8件）を超える割引は受け付けない", () => {
+    const payload = toEventRequest({
+      ...base,
+      discounts: Array.from({ length: MAX_EVENT_OPTIONS + 1 }, (_, index) =>
+        createDiscountDraft({ name: `割引${index}`, amount: "100" }),
+      ),
+    });
+    expect(CreateEventSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it("同じ名前の割引は重複で落ちる", () => {
+    const payload = toEventRequest({
+      ...base,
+      discounts: [
+        createDiscountDraft({ name: "友達と参加", amount: "500" }),
+        createDiscountDraft({ name: "友達と参加", amount: "300" }),
+      ],
+    });
+    const result = CreateEventSchema.safeParse(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.message === "同じ名前の割引は重複できません")).toBe(true);
+    }
+  });
+
+  it("名前も金額も補足も空の行は送らない", () => {
+    const payload = toEventRequest({
+      ...base,
+      discounts: [createDiscountDraft({ name: "", amount: "", note: "" })],
+    });
+    expect(payload.discounts).toEqual([]);
+    expect(CreateEventSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("名前だけ入れて金額が空の行は 0 円として送り、スキーマで落ちる", () => {
+    const payload = toEventRequest({
+      ...base,
+      discounts: [createDiscountDraft({ name: "友達と参加", amount: "" })],
+    });
+    expect(payload.discounts).toEqual([{ name: "友達と参加", amount: 0, note: null }]);
+    expect(CreateEventSchema.safeParse(payload).success).toBe(false);
   });
 });

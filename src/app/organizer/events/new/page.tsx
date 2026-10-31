@@ -25,6 +25,7 @@ import {
   toEventRequest,
   type EventFormValues,
   type EventPricePlanOption,
+  type EventDiscountOption,
   type EventScheduleOption,
   type FlyerAsset,
 } from "@/modules/events/types";
@@ -36,6 +37,7 @@ interface DraftDetailResponse {
     title: string;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
+    discounts: EventDiscountOption[];
     location: EventFormValues["location"];
     postalCode: string | null;
     prefecture: string | null;

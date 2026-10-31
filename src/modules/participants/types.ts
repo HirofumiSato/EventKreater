@@ -8,6 +8,10 @@ export interface ParticipationItem {
   comment: string | null;
   scheduleLabel: string | null;
   pricePlanLabel: string | null;
+  /** 申込時に選んだ割引の 1 行。無ければ null。 */
+  discountLabel: string | null;
+  /** 割引を引いた支払額。プラン未選択なら null。 */
+  payableAmount: number | null;
   statusLabel: string;
   receiptId: string | null;
   receiptIssuedAt: string | null;
