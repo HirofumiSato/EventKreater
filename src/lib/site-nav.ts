@@ -111,13 +111,21 @@ function participantConfig(viewer: Viewer): NavConfig {
 
 /**
  * 主催者画面。行き先はヘッダー直下の節（`OrganizerTabs`）がすべて持つので、
- * バーのナビには何も並べない。バーに残すのは「作る」と頭文字の札だけにして、
+ * バーのナビには何も並べない。バーに残すのはブランドと頭文字の札だけで、
  * 現在地は節の 1 か所だけが示す。
+ *
+ * 「作る」もバーには置かない。主催者が毎日見る画面の上端に常時あると、
+ * 「主催一覧」「カレンダー」「売上」と同じ重さで並び、いまどこにいるのかが
+ * 読みにくくなる。作る場所は画面の役割で決める。主催一覧（SCR-ORG-01）は
+ * 下帯、マイページ（SCR-PUB-03）と売上（SCR-ORG-11）・カレンダー（SCR-ORG-13）
+ * は本文が受ける。
+ *
+ * `action` は主催者以外（主催イベントを持たない会員）が主催者エリアを開いた
+ * ときだけ出る戻り道である。主催者には `Navbar` が出さない（`organizerView`）。
  */
 function organizerConfig(): NavConfig {
   return {
     links: [],
-    primary: SITE.nav.createEvent,
     action: SITE.nav.participantSwitch,
   };
 }
