@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "d8da07d5a0b41618521fd8968526fe624cdc95fe0daf07a3f9b457c42bc6ff40",
+  "uiHash": "b14ff571d0026e70499b945025e1e3f0967d4f4fab31b6ff953af645126a5ab9",
   "screens": [
     {
       "no": "01",
@@ -401,7 +401,7 @@
       "label": "8件プラン",
       "file": "mock-organizer.html",
       "path": "/organizer/events",
-      "hash": "06ddc3f78fd8affa1130a2b80fff5445387e5b07d5d45b5e2926e1aa65c77f00"
+      "hash": "a6c536fb9b814fb4230c867d88ea85260c40fe033ff434af0c42eaa6b09b6c06"
     },
     {
       "no": "16",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatRsvpDeadlineLabel, scheduleLabel } from "@/lib/serializers";
+import { scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { Badge } from "@/components/ui";
@@ -73,16 +73,10 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
           </Badge>
         </div>
 
-        {/* 料金プランと主催者名は一覧では持たない。金額は名簿と告知ページで確かめる。 */}
+        {/* 料金プラン・主催者名・申込の締切は一覧では持たない。日時と場所だけを 1 行に収め、
+            締切と金額は名簿と告知ページで確かめる。 */}
         <p className="event-card__meta">
           {scheduleLabel(event.schedules)} ／ {event.location}
-          {event.rsvpDeadline ? (
-            <>
-              {" "}
-              ／ 締切 {formatRsvpDeadlineLabel(event.rsvpDeadline)}
-              {event.status === "PUBLISHED" && !event.rsvpOpen ? "（過ぎています）" : ""}
-            </>
-          ) : null}
         </p>
 
         <div className="event-card__meter-label">
