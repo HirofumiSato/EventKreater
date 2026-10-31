@@ -103,17 +103,6 @@
   border-top-color: var(--quiet-line);
 }
 
-.deco.deco--tape-quiet .event-card__danger {
-  border-top-color: var(--quiet-line);
-}
-
-/* カードの中の折りたたみは 1 行の補助操作なので、押しても面を塗らない。
-   塗ると、開く前から選択されているように見える。 */
-.deco.deco--tape-quiet .event-card .fold__summary:hover {
-  background: transparent;
-  color: var(--color-text);
-}
-
 /* --------------------------------------------------------------------------
    ボタン。押すものだけが浮く。主ボタンも影は付けない。
    -------------------------------------------------------------------------- */

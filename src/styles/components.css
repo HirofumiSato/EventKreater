@@ -775,6 +775,14 @@
   padding: 0.5rem 0.75rem;
 }
 
+/* 文字を持たない操作（一覧の札の「URLをコピー」）。正方形のまま 44px を下回らせない。
+   読み上げ名は aria-label が持つので、中のアイコンには aria-hidden を付ける。 */
+.btn--icon {
+  flex: 0 0 auto;
+  width: var(--tap-target);
+  padding: 0;
+}
+
 .btn--lg {
   min-height: 3.25rem;
   padding: 0.625rem 1.25rem;
