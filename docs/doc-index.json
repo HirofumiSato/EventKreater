@@ -5545,7 +5545,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1959,
+      "lineCount": 1961,
       "headings": [
         {
           "level": 1,
@@ -6036,6 +6036,10 @@
         },
         {
           "path": "src/modules/revenue/lib/revenue.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/base.css",
           "exists": true
         },
         {
@@ -9421,7 +9425,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1124,
+      "lineCount": 1125,
       "headings": [
         {
           "level": 2,

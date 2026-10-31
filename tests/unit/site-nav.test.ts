@@ -6,6 +6,7 @@ import {
   userMenuConfig,
   viewerInitial,
   viewerRole,
+  viewerRoleCaption,
   viewerRoleLabel,
 } from "@/lib/site-nav";
 
@@ -49,12 +50,14 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
     expect(config.action).toBeUndefined();
   });
 
-  it("主催者画面はバーのナビを持たず、作成と参加者への切り替えだけを持つ", () => {
+  it("主催者画面のバーはナビも作成も持たず、頭文字の札だけになる", () => {
     const config = siteNavConfig("/organizer/events", organizer);
 
     // 行き先はヘッダー直下の節（OrganizerTabs）が持つ。バーには重ねない。
     expect(config.links).toEqual([]);
-    expect(config.primary).toEqual(SITE.nav.createEvent);
+    // 「作る」もバーには置かない。主催一覧の下帯と、マイページ・売上・カレンダーの本文が受ける。
+    expect(config.primary).toBeUndefined();
+    // 切り替えは主催者以外が主催者エリアを開いたときの戻り道。主催者には出さない。
     expect(config.action).toEqual(SITE.nav.participantSwitch);
   });
 
@@ -183,6 +186,13 @@ describe("ログイン状態の札", () => {
   it("主催イベントを持たない会員は参加者として示す", () => {
     expect(viewerRole("/participant", participant)).toBe("participant");
     expect(viewerRole("/account", participant)).toBe("participant");
+  });
+
+  it("見ている画面の名前は、役割の語に「の画面」を付ける", () => {
+    // ヘッダーの色だけに頼らず、ブランド名の下でどちらの画面かを読ませる。
+    expect(viewerRoleCaption("participant")).toBe("参加者の画面");
+    expect(viewerRoleCaption("organizer")).toBe("主催者の画面");
+    expect(viewerRoleCaption("admin")).toBe("管理者の画面");
   });
 
   it("頭文字は 1 文字に切り、空の名前でも崩れない", () => {

@@ -10,6 +10,7 @@ import {
   userMenuConfig,
   viewerInitial,
   viewerRole,
+  viewerRoleCaption,
   viewerRoleLabel,
 } from "@/lib/site-nav";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/useNotifications";
@@ -30,6 +31,11 @@ import { StripePortalButton } from "@/modules/billing/components/StripePortalBut
  *
  * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字」で
  * 埋まる。参加者画面と未ログインは、これにナビと開閉ボタンが加わる。
+ *
+ * いまどちらの画面にいるかは、バーの色と、ブランド名の下の 1 語で示す。
+ * 参加者画面と主催者画面は同じバーを使うので、並びが違うだけでは切り替えた
+ * ことに気づけない。色は `data-viewer-role` が持ち、字は `viewerRoleCaption`
+ * が持つ（色だけに頼らず、文字でも読ませる）。
  */
 export function Navbar() {
   const pathname = usePathname();
@@ -105,6 +111,7 @@ export function Navbar() {
   const { links, primary, action } = siteNavConfig(pathname, viewer);
   const role = viewer ? viewerRole(pathname, viewer) : null;
   const roleLabel = role ? viewerRoleLabel(role) : "";
+  const roleCaption = role ? viewerRoleCaption(role) : "";
   const initial = viewer ? viewerInitial(viewer.name) : "";
   // 主催者画面は節（org-subnav）が移動を担う。バーのナビは重ねない。
   const organizerView = role === "organizer";
@@ -148,11 +155,21 @@ export function Navbar() {
   };
 
   return (
-    <header className="site-header" ref={headerRef} data-menu-open={menuOpen ? "true" : "false"}>
+    <header
+      className="site-header"
+      ref={headerRef}
+      data-menu-open={menuOpen ? "true" : "false"}
+      data-viewer-role={role ?? undefined}
+    >
       <div className="site-header__inner">
-        <Link href={SITE.nav.home.href} className="site-brand">
-          {SITE.name}
-        </Link>
+        {/* ブランド名の下の 1 語が、いまどちらの画面かを文字でも示す。
+            ヘッダーの色（data-viewer-role）と同じ意味を、色に頼らず伝える。 */}
+        <div className="site-brand-block">
+          <Link href={SITE.nav.home.href} className="site-brand">
+            {SITE.name}
+          </Link>
+          {role ? <span className="site-brand__role">{roleCaption}</span> : null}
+        </div>
         {showNav ? (
           <nav id="site-nav" className="site-nav" aria-label="サイト">
             {menuAction ? (

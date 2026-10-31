@@ -15,6 +15,10 @@
  * ここが決める。主催者画面の節（`OrganizerTabs`）と重なる行き先は、節がある
  * あいだはメニューに出さない。
  *
+ * いまどちらの画面にいるかは、ヘッダーの地の色（`data-viewer-role`）と、
+ * ブランド名の下に出す 1 語（`viewerRoleCaption`）の 2 つで示す。並びが
+ * 変わっただけでは、参加者画面と主催者画面の違いに気づきにくいため。
+ *
  * 管理者（`platformRole === "ADMIN"`）は別の役割として、主催者・参加者の機能を
  * 並べずに管理コンソールだけを出す。主催者と参加者は同じ会員が画面で切り替える
  * ものなので、そこは今までどおり 1 本の切り替えリンクに留める。
@@ -74,6 +78,16 @@ export function viewerRoleLabel(role: ViewerRole): string {
 }
 
 /**
+ * ヘッダーのブランド名の下に出す、いま見ている画面の名前。
+ *
+ * 参加者画面と主催者画面は同じヘッダーを使う。色（`data-viewer-role`）だけで
+ * 分けると、色が見分けにくい人には伝わらない。同じ意味を文字でも置く。
+ */
+export function viewerRoleCaption(role: ViewerRole): string {
+  return `${SITE.role[role]}の画面`;
+}
+
+/**
  * 頭文字の札に出す 1 文字。名前が空でも崩れないよう「?」に落とす。
  * 絵文字などを 2 つに割らないよう、コードポイント単位で切る。
  */
@@ -97,13 +111,21 @@ function participantConfig(viewer: Viewer): NavConfig {
 
 /**
  * 主催者画面。行き先はヘッダー直下の節（`OrganizerTabs`）がすべて持つので、
- * バーのナビには何も並べない。バーに残すのは「作る」と頭文字の札だけにして、
+ * バーのナビには何も並べない。バーに残すのはブランドと頭文字の札だけで、
  * 現在地は節の 1 か所だけが示す。
+ *
+ * 「作る」もバーには置かない。主催者が毎日見る画面の上端に常時あると、
+ * 「主催一覧」「カレンダー」「売上」と同じ重さで並び、いまどこにいるのかが
+ * 読みにくくなる。作る場所は画面の役割で決める。主催一覧（SCR-ORG-01）は
+ * 下帯、マイページ（SCR-PUB-03）と売上（SCR-ORG-11）・カレンダー（SCR-ORG-13）
+ * は本文が受ける。
+ *
+ * `action` は主催者以外（主催イベントを持たない会員）が主催者エリアを開いた
+ * ときだけ出る戻り道である。主催者には `Navbar` が出さない（`organizerView`）。
  */
 function organizerConfig(): NavConfig {
   return {
     links: [],
-    primary: SITE.nav.createEvent,
     action: SITE.nav.participantSwitch,
   };
 }
