@@ -16,7 +16,7 @@ const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知
  * 改行の位置は幅で変えない（どの幅も 3 行）。2 行目が 13 文字で最も長く、
  * 折り返さない文字サイズを `components.css` が幅ごとに持つ。
  */
-const TAGLINE_LINES = ["イベントのチラシと", "告知&出欠ウェブページ、", "5分で簡単作成。"] as const;
+const TAGLINE_LINES = ["イベントのチラシと", "告知&申込ウェブページ、", "5分で簡単作成。"] as const;
 
 export const SITE = {
   name: "EventKreater",
