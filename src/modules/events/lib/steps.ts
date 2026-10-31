@@ -22,8 +22,8 @@ export interface EventStep {
 export const EVENT_STEPS: readonly EventStep[] = [
   {
     key: "basic",
-    title: "催しの名前と開催日時",
-    hint: "何をいつ開くか。チラシにも告知ページにも出ます。",
+    title: "イベント名と開催日時",
+    hint: "何をいつ開くか。チラシと告知ページに出ます。",
     mandatory: true,
   },
   {
@@ -35,20 +35,20 @@ export const EVENT_STEPS: readonly EventStep[] = [
   {
     key: "location",
     title: "開催場所",
-    hint: "会場名だけでも保存できます。雨天時の方針もここで決めます。",
+    hint: "会場名だけでも保存できます。",
     mandatory: true,
   },
   {
     key: "capacity",
     title: "定員と申し込み期限",
-    hint: "どちらも任意です。空欄なら制限なしで受け付けます。",
+    hint: "どちらも任意です。空欄なら制限なし。",
     mandatory: false,
   },
   {
     key: "flyer",
     // 見出しは省略せずに書く。ここで何を決めるステップかを、開く前に分かるようにする。
-    title: "イベントページテーマ選択&チラシ生成",
-    hint: "テーマは告知ページの見た目と、チラシの雰囲気に効きます。チラシは作らなくても公開できます。",
+    title: "テーマとチラシ",
+    hint: "テーマは告知ページとチラシの雰囲気を決めます。",
     mandatory: false,
   },
 ];
@@ -57,11 +57,21 @@ const MANDATORY_KEYS: readonly EventStepKey[] = EVENT_STEPS.filter((step) => ste
   (step) => step.key,
 );
 
+/**
+ * キーからステップ 1 件を引く。画面が見出しと補足を直書きすると、
+ * ここを直したときに片方だけが古くなる（編集画面と新規作成で文言がずれる）。
+ */
+export function eventStep(key: EventStepKey): EventStep {
+  const step = EVENT_STEPS.find((entry) => entry.key === key);
+  if (!step) throw new Error(`unknown event step: ${key}`);
+  return step;
+}
+
 function hasText(value: string): boolean {
   return value.trim().length > 0;
 }
 
-/** 催しの名前と、すべての開催日時の日付・開始・終了が埋まっているか。 */
+/** イベント名と、すべての開催日時の日付・開始・終了が埋まっているか。 */
 export function isBasicStepComplete(value: EventFormValues): boolean {
   if (!hasText(value.title)) return false;
   if (value.schedules.length === 0) return false;

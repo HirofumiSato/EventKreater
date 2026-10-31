@@ -1,4 +1,4 @@
-﻿# フロントエンド画面・コンポーネント実装設計書（`front_implementation_spec.md`）
+# フロントエンド画面・コンポーネント実装設計書（`front_implementation_spec.md`）
 
 ## チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）
 
@@ -44,6 +44,39 @@ flowchart TD
 - 段は `640` / `768` / `900` / `1024`（`min-width`）と `360` / `400` / `480` / `540`（`max-width`）だけ。`max-width` には `min-width` の 1px 手前（`639` / `767` / `899` / `1023`）も対として許す。
 - 表に無い値は `tests/unit/style-breakpoints.test.mjs` が止める。段を増やすときは同テストと `src/styles/index.css` の注記を同じ PR で直す。
 - モックは 390 / 1280 の 2 幅で撮る（[ui-review/mock-sync.md](ui-review/mock-sync.md)）。390px で崩れないことを、1280px で崩れないことの代わりにしない。
+- 押せる的は 44×44px 以上、ボタンの文字は 15px 以上。`--sm` は左右の余白だけを詰める指定で、高さと文字を下げない（`--tap-target` / `--font-action`。正は `src/styles/tokens.css`）。入力欄もスマホでは 16px にして、iOS の自動拡大を避ける。
+- 主操作（朱のボタン）は 1 画面に 1 つ。進む操作は画面の下（固定の帯か本文の最後）に置き、見出しの右は戻る・プレビューなどの補助だけにする。
+
+### 1.3. 操作の置き場所と文言
+
+画面の種類ごとに、操作を置く場所を決める。迷ったら「その画面で進める操作はどれか 1 つ」を先に決め、残りを補助として下げる。
+
+| 画面の種類 | 進む操作 | 見出しの右 | 行・カードの中 |
+| :--- | :--- | :--- | :--- |
+| 入力・確認（作成、編集、プレビュー、プロフィール） | 画面下の固定帯（保存・公開） | 戻る、プレビューだけ | 削除などの破壊的操作のみ |
+| 一覧・ダッシュボード | 下部帯か見出しの右のどちらか 1 つ | 絞り込み、並び順など道具 | 補助のみ。1 段に 2 つまで |
+| 詳細・名簿 | 本文の最後 | 補助のみ | 行の操作は補助のみ |
+
+- 案内の帯（`alert--compact`）は、スマホでは文の下にボタンを幅いっぱい置き、640px 以上で右端に戻す。
+- 節の見出し（`section__head`）は、スマホでは見出し→注記→操作の縦積み、640px 以上で操作を右に寄せる。
+- 行とカードの操作が 3 つ以上になるときは、折りたたみへ移すか 2×2 に折り返す。1 段に 3 つ以上並べない。
+- 隣り合う操作は 8px 以上空ける。本文の中のリンク（`text-link`）を操作の代わりに使わない。
+
+文言は、スマホで片手のまま読まれる前提で書く。
+
+| 対象 | 目安 |
+| :--- | :--- |
+| ボタン | 10 文字以内。動詞で終える（「既読にする」「保存する」）。行の中は名詞 1 語まで（「名簿」「編集」） |
+| 注記・補足（`help` / `screen-note`） | 30 文字以内 |
+| リード（`page-lead`） | 40 文字以内 |
+| 文 | 1 文 1 用件。読点は 2 つまで |
+
+- 同じ説明を 2 か所に書かない。帯と本文、行と注記で同じことを言わない。
+- 括弧の補足を増やさない。条件が 3 つ以上あるなら、その画面に要るかを見直す。
+- 実装の言葉（トークン、セッション、ポータル、課金プラン、自動遷移）を使わない。利用者が見るものの名前に言い換える。
+- 名詞は「イベント」「主催者」「共同主催者」に統一する。同じものを画面ごとに言い換えない。
+- 省略記号は `…`。処理中は「保存しています…」の形にそろえる。
+- 通知の本文のように、サーバーが作って画面に出す文言も同じ規則に従う（`src/modules/notifications/lib/rsvp-notification.ts`）。
 
 ---
 
@@ -53,11 +86,13 @@ flowchart TD
 
 | パス | 画面ID | 対象アクター | 認可・アクセス条件 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc.. 主催者様へ`）、見出しは `SITE.taglineLines`（「イベントのチラシと」「WEBページ、」「5分で簡単作成。」の 3 分割。スマホは 3 行、1024px 以上は 1・2 行目をつなげて 2 行）。LP として扱い、共通ヘッダーは出さない。墨地のヒーローを画面の上端から始め、メインの上端の余白も 0 にする（`siteChrome("/")` の `flushTop`）。ログインの入口は、ヒーローに「主催者ログイン」と「参加者ログイン」を並べ、フッターにも両方を置く。料金への導線はヒーローに置かない（フッターの「サービスと料金」が持つ）。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
+| `/` | SCR-PUB-00 | 全員 | 誰でも可 | ホーム。サービス名は `SITE.name`、eyebrow は対象を具体例で示す（`ご飯会、ライブ、一日店長、撮影会、合コン、マルシェ etc.. 主催者様へ`）、見出しは `SITE.taglineLines`（「イベントのチラシと」「告知&出欠ウェブページ、」「5分で簡単作成。」の 3 分割。どの幅も 3 行のまま、文字サイズだけを幅で上げる）。LP として扱い、共通ヘッダーは出さない。墨地のヒーローを画面の上端から始め、メインの上端の余白も 0 にする（`siteChrome("/")` の `flushTop`）。ログインの入口は、ヒーローに「主催者ログイン」と「参加者ログイン」を並べ、フッターにも両方を置く。主操作は「無料ではじめる」（`SITE.cta.createEventFree`）で、無料の条件（最初の2回）はボタンの直下に `.hero__note`（`SITE.cta.freeNote`「最初の2回は無料。」。米印は画面だけに出し、読み上げには含めない）で 1 行だけ添える。ボタンの列は「無料ではじめる」（`btn--primary`）と「サンプルを見る」（`SITE.nav.sample`、SCR-PUB-16、`btn--outline`）の 2 つを 1 段に並べ、サンプルは新しいタブで開く（`target="_blank"`）。その下に「主催者ログイン」・「参加者ログイン」の 2 本を 1 段で置く。料金への導線はヒーローに置かない（フッターの「サービスと料金」が持つ）。短い紹介と使い方、告知URLは主催者から受け取る案内。紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つ。イベントの一覧・検索は置かない。料金の比較は `/service` |
 | `/service` | SCR-PUB-06 | 見込み客 / 全員 | 誰でも可 | サービスと料金。無料2回、単発299円、月額で8件まで公開980円、公開し放題2980円（いずれも税込）。実施中のキャンペーンがあれば販売価格と定価を併記する。支払いは始めない |
 | `/terms` | SCR-PUB-10 | 全員 | 誰でも可 | 利用規約。料金、期間限定キャンペーン、0円単発の条件、0円の定額プランの自動更新、終了日の3日前・1日前の通知、解約と返金を定める |
+| `/sample` | SCR-PUB-16 | 見込み客 / 全員 | 誰でも可 | 告知ページの見本の一覧。DB を使わない静的ルートである。催しの型（外ごはん・マーケット・子ども連れ・アウトドア・ナイト）の5件を、チラシの実物と 1 文で並べる。共通ヘッダーは出さず（`siteChrome("/sample")`）、上端の余白も落とす。代わりに上端の帯（`SampleBand`）を固定し、札「サンプル」・説明「実際に作った告知ページです」（640px 以上）・主操作「無料ではじめる」を出す。末尾にも同じ主操作と、サンプルは架空である旨の注記を置く。`SITE.nav.sample` が `SITE.nav.createEvent` と同じく作成画面を指す。ホームのヒーローから開く |
+| `/sample/[slug]` | SCR-PUB-17 | 見込み客 / 全員 | 誰でも可（`generateStaticParams` の5件のみ。他は404） | 見本の告知ページ。SCR-PUB-01 と同じ `PosterHero`・`EventMetaCard`・`DynamicRsvpBox` で、チラシから出欠までを同じ順に並べる。出欠フォームは `preview` で描き、入力も送信もできない（フォームの上に「見本のため送信できません。」の 1 行）。イベントごとにテーマ（`themeId`）を変え、紙面の色と書体の違いも確かめられる。主催者・共同主催者は `userId: null` にして公開プロフィールへのリンクにしない。共通ヘッダーは出さず、上端の余白も落とす。帯は 1 段（高さ 53px）で、札「サンプル」・説明「実際に作った告知ページです」（640px 以上）・「← 一覧」（一覧へ戻る）・「無料ではじめる」を出す。帯は本文の列（`--width-page`）にそろえ、`vw` を使わない。`noindex`。値は `src/app/sample/samples.ts` が持ち、`scripts/seed-ui-demo.mjs` のデモ催しと揃えてある |
 | `/events/[id]` | SCR-PUB-01 | 参加者 / 全員 | 誰でも可（Cookie自動照会） | チラシFV埋め込み告知・未登録出欠登録画面。共通ヘッダーは出さない（`siteChrome("/events/…")`）。チラシを画面の上端から始める（`flushTop`）。満員なら「出席」を出さず「参加要望」に切り替え、送信後に待ち順を出す。イベントがテーマ（`themeId`）を持つときは、ページ全体をそのテーマで描く（未設定なら今の見た目のまま）。対象世代（`targetGeneration`）があれば、メタ情報に「対象」の行を出す。出欠フォームの直下に主催者勧誘カード（`OrganizerInviteCard`）を置く。幹事本人と主催イベント持ちの会員には出さない。画面下の追従バー（スマホのみ）の下段に、ホーム（`/`）へ送る帯「あなたもイベントを開きませんか」を置く。出す条件は勧誘カードと同じ（`showsOrganizerInvite`）。面は薄い山吹（`--pop-warm-tint`）で塗り、罫線と 12px の字だけで区切る。字は差し色（`--color-primary-text`）1 色で、hover でも変えない（スマホに hover が無く、端末で見え方が変わるため）。左右と下端は画面の端まで届かせ、上下の余白は持たない（帯は 1 行ぶんの 18px）。メタ情報の直下に LINE 共有ボタン（`LineShareButton`）を置き、告知URLを利用者自身のLINEから送れる。押すたびに注意書き（`LineShareDialog`）を出し、個人アカウントからの送信・停止されうること・本サービスが責任を負わないことを伝えてから開く。タッチ端末のみ表示する。ログインと作成の入口は本文とフッターが持つ |
-| `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。役割の札（主催者）とリード文は置かない（役割は共通ヘッダーと節が示す）。出欠集計・クォータ残数。冒頭の操作は置かず、「下書き一覧」（件数つき）と「イベント新規作成」を画面下に固定する帯（`.action-dock`）へ移す。390px では 2 つで 1 段にして作成を広く取り、640px 以上では右寄せにする。帯のぶん、本文とフッターの下に余白を残す。公開ページ・プロフィール・売上・契約は主催者の節と SCR-PUB-03 に任せる。要約は「公開中」「受付停止」の 2 つだけで、名前と件数を横に並べた低い札にする（合算の参加者数はカードの数字と重なるので出さない）。一覧の見出しは「一覧」だけにし、説明文は置かない。見出しの下に絞り込みを置く（状態「すべて / 公開中のみ / 受付停止のみ」、開催日の開始日と終了日、過去の催しを除く）。その隣に、開催日の昇順降順を切り替えるアイコンのボタンを置く（既定は新しい順。アイコンの向きでいまの並びを示し、読み上げは押した先の並びを述べる）。640px 未満では状態と開催日を「絞り込む」ボタン（効いている条件の数を添える）から開くモーダルに畳み、過去の催しを除くだけを外に残す。モーダルは選んだ時点では反映せず、「この条件で絞り込む」で確定して閉じ、背景を押すと元の条件のまま閉じる。640px 以上は畳まず、4 つと並び順のボタンを 1 行に並べる。絞り込みと並べ替えは画面側で行い（`src/modules/events/lib/event-filters.ts`）、10 件ずつページに割って件数の範囲と前後ページを `pager` に出す。同じ開催日の催しは作った新しい順のまま並べる。条件か並び順を変えたら 1 ページ目へ戻し、0 件になったら「条件を戻す」を出す。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。カードの操作は「参加者を見る」「公開ページ」「編集」「コピー作成」の 4 つで、「公開ページ」は新しいウィンドウで開く（一覧を離れずに共有先を確かめられる）。スマホでは文字を 1 段小さくし、ボタンの高さを 28px まで詰めて 4 つを 1 段に並べ、カードが 2 列になる 900px 以上だけ 2×2 にする（右寄せの縦罫線は折り返しで崩れるので使わない）。編集は一覧で最も使う操作なので、既定から朱で塗った `btn--accent` にする（ホバーでは濃くなるだけで、塗りの有無は変えない）。状態と役割の札は名簿の行と同じ `small` で出し、枠と丸みを持たせない（押せる `.btn` は枠・塗り・丸みを持つので、形で見分けられる）。共有URLと「公開を一時停止」「削除する」を「共有と設定」に畳んで操作の下に置く。一時停止は確認を挟まず `close` を送り、停止中のカードは「公開を再開」（`reopen`）に変える。削除だけ SCR-MOD-03 で確認する。ヘッダー直下のサブタブ（主催一覧 / カレンダー / 売上 / 下書き / プロフィール）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
+| `/organizer/events` | SCR-ORG-01 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | 主催イベント一覧。冒頭 `h1` は画面名。役割の札（主催者）とリード文は置かない（役割は共通ヘッダーと節が示す）。出欠集計・クォータ残数。冒頭の操作は置かず、「下書き一覧」（件数つき）と「イベント新規作成」を画面下に固定する帯（`.action-dock`）へ移す。390px では 2 つで 1 段にして作成を広く取り、640px 以上では右寄せにする。帯のぶん、本文とフッターの下に余白を残す。公開ページ・プロフィール・売上・契約は主催者の節と SCR-PUB-03 に任せる。要約の札は置かない（公開中の件数と上限はヘッダー直下の `QuotaStatusBanner` が「月額プランで公開中のイベント 7 / 8 件」の形で示す。合算の参加者数はカードの数字と重なるので出さない）。一覧の見出しは「一覧」だけにし、説明文は置かない。見出しの下に絞り込みを置く（状態「すべて / 公開中のみ / 受付停止のみ」、開催日の開始日と終了日、過去の催しを除く）。その隣に、開催日の昇順降順を切り替えるアイコンのボタンを置く（既定は新しい順。アイコンの向きでいまの並びを示し、読み上げは押した先の並びを述べる）。640px 未満では状態と開催日を「絞り込む」ボタン（効いている条件の数を添える）から開くモーダルに畳み、過去の催しを除くだけを外に残す。モーダルは選んだ時点では反映せず、「この条件で絞り込む」で確定して閉じ、背景を押すと元の条件のまま閉じる。640px 以上は畳まず、4 つと並び順のボタンを 1 行に並べる。絞り込みと並べ替えは画面側で行い（`src/modules/events/lib/event-filters.ts`）、10 件ずつページに割って件数の範囲と前後ページを `pager` に出す。同じ開催日の催しは作った新しい順のまま並べる。条件か並び順を変えたら 1 ページ目へ戻し、0 件になったら「条件を戻す」を出す。公開中と受付停止だけを出し、下書きは「下書き一覧」（SCR-ORG-15）へ分ける。カードの操作は「参加者を見る」「公開ページ」「編集」「コピー作成」の 4 つで、「公開ページ」は新しいウィンドウで開く（一覧を離れずに共有先を確かめられる）。スマホでは文字を 1 段小さくし、ボタンの高さを 28px まで詰めて 4 つを 1 段に並べ、カードが 2 列になる 900px 以上だけ 2×2 にする（右寄せの縦罫線は折り返しで崩れるので使わない）。編集は一覧で最も使う操作なので、既定から朱で塗った `btn--accent` にする（ホバーでは濃くなるだけで、塗りの有無は変えない）。状態と役割の札は名簿の行と同じ `small` で出し、枠と丸みを持たせない（押せる `.btn` は枠・塗り・丸みを持つので、形で見分けられる）。共有URLと「公開を一時停止」「削除する」を「共有と設定」に畳んで操作の下に置く。一時停止は確認を挟まず `close` を送り、停止中のカードは「公開を再開」（`reopen`）に変える。削除だけ SCR-MOD-03 で確認する。ヘッダー直下のサブタブ（主催一覧 / カレンダー / 売上 / 下書き / プロフィール）で SCR-ORG-13・SCR-ORG-11 と行き来する。ヘッダーのナビにはカレンダーと売上を足さない |
 | `/organizer/calendar` | SCR-ORG-13 | 主催幹事 / 共同幹事 | 会員JWT または ゲスト幹事Cookie | カレンダー。冒頭 `h1` は画面名。JST の今月を初期表示にし、日曜始まりの月グリッドと、その月の催し一覧を縦に並べる。一覧は日付の昇順で、日付ごとに見出しを置く。日付のセルを押すと一覧のその日へ寄せ、帯（催し名）を押したときは詳細のモーダルだけを開いて画面は動かさない。開催日が複数ある催しは、すべての日付に1件ずつ出す。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。予定からは下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。公開中の予定は、一覧から LINE 共有ボタンで告知URLを送れる（SCR-PUB-01 と同じ注意書きを出す）。外部カレンダー連携（`.ics`・購読URL）は持たない |
 | `/organizer/profile` | SCR-ORG-14 | 主催幹事（会員） | 会員JWT必須。催しが0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` | 公開プロフィール編集。公開/非公開、アイコン画像、ページの見た目（標準＋9テーマ）、肩書き（60文字）、自己紹介（400文字）、活動エリア、ジャンル（3つまで）、X・Instagram、実績の表示可否。操作（「保存する」「プレビュー」「公開中ページを開く」）は h1 とリードの下に置き、スマホでは画面下に固定する。保存前に SCR-PUB-14 と同じ見た目（テーマ込み）でプレビューする。本文は `PUT /api/v1/organizer/profile`、画像は `POST /api/v1/organizer/profile/avatar`。表示名は SCR-PUB-11 で変える |
 | `/organizer/revenue` | SCR-ORG-11 | 主催幹事 | 会員JWT必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 売上。冒頭 `h1` は画面名。見込み売上・領収書発行額・差額・平均単価を `RevenueSummaryLedger` の帳票風の行で出し、期間の絞り込み、イベント別の一覧を続ける。行から SCR-ORG-12 へ進む。ヘッダー直下のサブタブで SCR-ORG-01・SCR-ORG-13 と行き来する |
@@ -71,7 +106,8 @@ flowchart TD
 | `/organizer/events/[id]/receipts/[participantId]` | SCR-ORG-09 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 幹事向け領収書。印刷しない冒頭 `h1` は画面名。催し名と宛名はリード。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/organizer/events/[id]/participants` | SCR-ORG-06 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 参加者名簿。冒頭 `h1` は画面名。催し名はリード。出欠の集計（参加・参加要望・不参加）、CSV、参加者へのリマインドと文面コピー、参加者ページのプレビューと共有リンクのコピー、領収書発行。参加要望は待ち順に並べ、承認で出席日時と費用プランを選ぶ。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/invitations/[code]` | SCR-ORG-07 | 招待されたメンバー | 招待コード有効期限内 | 共同幹事受諾。冒頭 `h1` は画面名。催し名はリード |
-| `/mypage` | SCR-PUB-03 | 主催幹事（ログイン会員） | 会員JWT必須 | 主催者マイページ。主催イベントの要約（直近3件）と「すべて見る」→ `/organizer/events`、クォータ残数、筆頭幹事の契約管理、公開プロフィールの状態と編集・閲覧の導線を出す。集計の直後に「新着」（`id="notifications"`）を置き、参加表明と参加要望を新しい順に出す（`GET /api/v1/notifications?limit=10`）。行は名簿（SCR-ORG-06）へのリンクで、押すとその 1 件を既読にして移る。見出しの右に「すべて既読にする」（`PATCH /api/v1/notifications` `{ all: true }`）。未読は行の左に点、種別は「出席」「参加要望」のバッジ。0 件なら「まだ参加表明はありません」。主催者でない会員には節を出さず、問い合わせもしない。他の幹事のイベントへの参加履歴は出さない（`GET /api/v1/organizer/events`）。参加履歴は SCR-PUB-09 へ分離。節（`OrganizerTabs`）の先頭「ホーム」がこの画面で、開いているあいだは現在地になる。ログアウト（`POST /api/v1/auth/logout`） |
+| `/mypage` | SCR-PUB-03 | 主催幹事（ログイン会員） | 会員JWT必須 | 主催者マイページ。主催イベントの要約（直近3件）と「すべて見る」→ `/organizer/events`、クォータ残数、公開プロフィールの状態と編集・閲覧の導線を出す。契約（プラン・カード管理）はこの画面には置かず、共通ヘッダーの頭文字のメニューが受ける（「利用枠と契約」の節は持たない）。冒頭の札は「プラン公開」「チケット公開」の2つにし、月額プランから公開した件数（帯の `N / 8` と同じ数え方）と、単発チケット・無料枠から公開した件数に分ける。2 つは面の色と数字の色を分け（月額プランは差し色、チケットは無彩色）、格子も 5 列ではなく 2 列にする。参加の人数と受付停止の件数は出さない（参加は直近の催しの行と名簿、受付停止は主催一覧の絞り込みが受ける）。集計の直後に「新着」（`id="notifications"`）を置き、参加表明と参加要望を新しい順に 4 件まで出す（`GET /api/v1/notifications?limit=5`）。5 件以上あるときは一覧の下に「通知一覧を見る」を出し、全件は通知一覧（SCR-PUB-15、`/notifications`）が受ける。行は名簿（SCR-ORG-06）へのリンクで、押すとその 1 件を既読にして移る。未読の行には題の下に「既読にする」（`PATCH /api/v1/notifications` `{ ids: [id] }`）を置き、題のリンクと押し間違えないよう入れ子にしない。見出しの右に「すべて既読にする」（`{ all: true }`）。未読は行の左に点、種別は「出席」「参加要望」のバッジ。日時は秒を落として `formatDateTimeMinuteJa`（`2026/10/31 10:15`）で出す。見出しに説明文（`section__note`）は置かない。0 件なら「まだ参加表明はありません」。主催者でない会員には節を出さず、問い合わせもしない。他の幹事のイベントへの参加履歴は出さない（`GET /api/v1/organizer/events`）。参加履歴は SCR-PUB-09 へ分離。節（`OrganizerTabs`）の先頭「ホーム」がこの画面で、開いているあいだは現在地になる。ログアウト（`POST /api/v1/auth/logout`） |
+| `/notifications` | SCR-PUB-15 | 主催幹事（ログイン会員） | 会員JWT必須 | 通知一覧。主催者へのアプリ内通知（参加表明・参加要望）を新しい順に 50 件まで出す（`GET /api/v1/notifications?limit=50`）。マイページの「新着」は 4 件までなので、続きはこの画面が受ける。行の形・未読の点・種別のバッジ・秒を落とした日時はマイページと同じ部品（`NotificationRows`）を使い、この画面は並べる数だけを変える。未読の行には「既読にする」（`PATCH /api/v1/notifications` `{ ids: [id] }`）、見出しの右に「すべて既読にする」（`{ all: true }`）。50 件返ったときだけ「新しい 50 件まで表示しています。」を添える（ページ送りは持たない）。0 件なら「まだ参加表明はありません」。主催者の節（`OrganizerTabs`）と頭文字のメニューの「通知」はこの画面を指す。装飾は静かめ（`quiet`） |
 | `/participant/login` | SCR-PUB-07 | 参加者（履歴を残したい人） | 未ログイン、または電話未確認の会員。管理者も可（purpose `PARTICIPANT`） | 参加者の会員登録・ログイン。`/auth/register` と同じ部品を使い、文言と着地だけを参加者向けにする。`?step=phone` が電話番号確認、`?step=login-code` がログイン確認番号。着地は `/participant`（`next` があればそのパス）。有効なセッションがあればフォームを出さずに着地へ送る（第9節） |
 | `/participant` | SCR-PUB-08 | 参加者（ログイン会員） | 会員JWT必須 | 参加者ホーム。これからの参加、出席・欠席の件数、次のイベント、参加履歴への導線。主催者でもある会員には `/mypage` への切り替えを出す |
 | `/participant/calendar` | SCR-PUB-12 | 参加者（ログイン会員） | 会員JWT必須 | 参加カレンダー（`GET /api/v1/user/calendar`）。出欠を答えた催しを、選んだ日程の日付に置く（未選択ならイベントの代表日）。出席・欠席・参加要望を出し、欠席は控えめに、参加要望はアンバーで表示する。月は `?month=YYYY-MM` に持ち、前月・次月・今月で移動する。一覧・検索は持たない |
@@ -99,9 +135,11 @@ flowchart TD
 
 | 区分 | 画面ID | 画面名 | パス / 出現箇所 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| 公開 | SCR-PUB-00 | ホーム | `/` | 5分でチラシと告知WEBページを作れることの紹介と使い方。告知URLは主催者から受け取る旨の案内。一覧・検索は置かない |
+| 公開 | SCR-PUB-00 | ホーム | `/` | 5分でチラシと告知・出欠ウェブページを作れることの紹介と使い方。告知URLは主催者から受け取る旨の案内。一覧・検索は置かない |
 | 公開 | SCR-PUB-06 | サービス・プラン紹介 | `/service` | チラシと出欠の説明、料金3種、作成と主催者ログインへのボタン。Stripe は開かない。割引中は販売価格と定価を併記する |
 | 公開 | SCR-PUB-10 | 利用規約 | `/terms` | 料金、価格キャンペーン、0円単発、0円の定額プランの自動更新、3日前・1日前の通知、解約と返金 |
+| 公開 | SCR-PUB-16 | サンプルの一覧 | `/sample` | 告知ページの見本 5 件を、チラシと 1 文で並べる。上端の帯に「サンプル」と主操作。DB を使わない |
+| 公開 | SCR-PUB-17 | サンプルの告知ページ | `/sample/[slug]` | 告知ページと同じ部品・同じテーマで見本を出す。出欠は見た目だけで送れない。`noindex` |
 | 公開 | SCR-PUB-01 | イベント告知・出欠画面 | `/events/[id]` | チラシFV埋め込み告知と、未登録の3秒出欠。共通ヘッダーは出さない。直下に主催者勧誘カード |
 | 会員 | SCR-PUB-02 | 主催者の会員登録・ログイン | `/auth/register` | 幹事の入口。パスワード登録は確認メールのあと電話番号を確認する。ログインは確認番号（既定はSMS、予備はメール）。同じ確認済み電話番号なら既存会員へ結びつける。Google は確認済みメールだけ |
 | 会員 | SCR-PUB-07 | 参加者の会員登録・ログイン | `/participant/login` | 履歴を残す参加者の入口。部品は SCR-PUB-02 と同じで、文言と着地だけを参加者向けにする。管理者も参加者としては入れる |
@@ -112,7 +150,8 @@ flowchart TD
 | 誰でも／会員 | SCR-PUB-14 | 主催者のページ | `/organizers/[userId]` | アイコン付きプロフィール（自己紹介・ジャンル・X/Instagram・実績）の下に、カレンダーと一覧。主催者のテーマをページ全体に適用。共通ヘッダーは出さない。非公開なら名前とアイコンだけを出す。未ログインでは飾りのカレンダーに白塗りを重ね、参加者ログインへ送る。満員は参加要望受付中 |
 | 会員 | SCR-PUB-11 | アカウント設定 | `/account`（メール確認は `/account/email/verify`） | 表示名、メールアドレス、電話番号、パスワード、退会。変更の前に確認番号を出し、メールは新しいアドレスへのリンクで確定する。管理者は対象外 |
 | 主催 | SCR-ORG-01 | 主催イベント一覧 | `/organizer/events` | 出欠集計、クォータ残数、編集・複製・招待。下書きは出さず、件数だけを「下書き一覧」に添える。`?registered=1` で登録完了トーストを出す |
-| 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、新着（参加表明・参加要望。未読つき）、クォータ残数、ログアウト。筆頭幹事の契約管理ボタン（出欠の対価ではない。復帰先は主催一覧）。公開プロフィールの状態。参加履歴は出さない |
+| 主催 | SCR-PUB-03 | 主催者マイページ | `/mypage` | 主催イベントの要約（直近3件）と「すべて見る」、要約の札（プラン公開・チケット公開。色と文字色で分ける）、新着（参加表明・参加要望。4 件まで・未読つき・行ごとの「既読にする」・続きは通知一覧へ）、クォータ残数、ログアウト。公開プロフィールの状態。契約の入口（プラン・カード管理）は持たず、共通ヘッダーの頭文字のメニューが受ける。見出しの説明文は置かない。参加履歴は出さない |
+| 主催 | SCR-PUB-15 | 通知一覧 | `/notifications` | 参加表明と参加要望を新しい順に 50 件まで。行ごとの「既読にする」と「すべて既読にする」。マイページの新着（4 件）の続きを受ける |
 | 主催 | SCR-ORG-14 | 公開プロフィール編集 | `/organizer/profile` | 公開/非公開、アイコン画像、ページの見た目（9テーマ）、肩書き、自己紹介、エリア、ジャンル、X・Instagram、実績の表示可否。テーマ込みの保存前プレビュー。表示名はアカウント設定で変える |
 | 主催 | SCR-ORG-13 | カレンダー | `/organizer/calendar` | 月グリッドと、今月の催し一覧（日付の昇順）。日付を押すと一覧のその日へ寄せる。複数の開催日をすべて出す。前月・次月・今月で移動する |
 | 主催 | SCR-ORG-02 | 新規イベント作成 | `/organizer/events/new` | インプット7項目、申し込み期限、チラシ生成、Checkout 戻り検知。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。会員は「下書き保存」「プレビューを見る」の2つで保存してから SCR-ORG-16 へ進む。未ログインは同じ位置の「ログインして公開/下書き保存」1 つから入力を退避してログインへ送り、戻ったら復元して本人が続きを選ぶ。枠が無いときも `DRAFT` で退避し、`?draftId=` で復元する。`?ref=` を参照元として送る。定員のステップに「対象世代」（placeholder「20代から40代」）を置き、チラシのステップの先頭でイベントページのテーマを 9 つから選ぶ。テーマは告知ページの見た目と、チラシ画像生成の雰囲気へ渡る。スマホは `form-final` を画面下に固定し、「プレビューを見る」はモーダルで確認する |
@@ -177,6 +216,8 @@ graph TD
         PUB00["SCR-PUB-00: ホーム<br/>/"]:::public
         PUB06["SCR-PUB-06: サービス・プラン紹介<br/>/service"]:::public
         PUB10["SCR-PUB-10: 利用規約<br/>/terms"]:::public
+        PUB16["SCR-PUB-16: サンプルの一覧<br/>/sample"]:::public
+        PUB17["SCR-PUB-17: サンプルの告知ページ<br/>/sample/[slug]"]:::public
         PUB01["SCR-PUB-01: イベント告知・出欠画面<br/>/events/[id]"]:::public
         PUB04["SCR-PUB-04: 参加者向け領収書<br/>/events/[id]/receipt"]:::public
         PUB14["SCR-PUB-14: 主催者のページ<br/>/organizers/[userId]"]:::public
@@ -191,6 +232,7 @@ graph TD
         PUB02["SCR-PUB-02: 主催者の会員登録・ログイン<br/>/auth/register"]:::organizer
         PUB05["SCR-PUB-05: メール確認<br/>/auth/verify"]:::member
         PUB03["SCR-PUB-03: 主催者マイページ<br/>/mypage"]:::organizer
+        PUB15["SCR-PUB-15: 通知一覧<br/>/notifications"]:::organizer
         ORG01["SCR-ORG-01: 主催イベント一覧<br/>/organizer/events"]:::organizer
         ORG02["SCR-ORG-02: 新規イベント作成<br/>/organizer/events/new"]:::organizer
         ORG05["SCR-ORG-05: イベント編集<br/>/organizer/events/[id]/edit"]:::organizer
@@ -250,10 +292,15 @@ graph TD
 
     %% 公開画面・参加者
     PUB00 -->|サービスと料金| PUB06
-    PUB00 -->|無料でイベント告知ページを作る| ORG02
+    PUB00 -->|サンプルを見る| PUB16
+    PUB00 -->|無料ではじめる| ORG02
     PUB00 -->|主催者ログイン| PUB02
     PUB00 -->|参加者ログイン| PUB07
     PUB00 -->|利用規約| PUB10
+    PUB16 -->|見本の告知ページ| PUB17
+    PUB16 -->|無料ではじめる| ORG02
+    PUB17 -->|← 一覧| PUB16
+    PUB17 -->|無料ではじめる| ORG02
     PUB06 -->|イベント告知ページを作る| ORG02
     PUB06 -->|主催者ログイン| PUB02
     PUB06 -->|利用規約| PUB10
@@ -422,7 +469,9 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 サービス・プラン紹介（SCR-PUB-06）は `src/app/service/page.tsx` である。金額は `src/modules/billing/lib/plans.ts` の定数を表示する。ボタンは作成画面とホームへ進む。Checkout は呼ばない。見込み客の着地は、検索広告、比較記事、知人の紹介、およびホームと公開ナビとフッターの「サービスと料金」である。確認メール、Checkout の戻り、Portal の終了、領収書のリンクは、共通編第3.1節の流入経路を正とする。
 
-ホーム（SCR-PUB-00）の見出しは `SITE.taglineLines`「イベントのチラシと／WEBページ、／5分で簡単作成。」で、スマホは 3 行、1024px 以上は 1・2 行目をつなげて「イベントのチラシとWEBページ、」「5分で簡単作成。」の 2 行にする（`.hero__title-line` の `display` だけを幅で切り替え、DOM は変えない）。1 行に詰めた文は `SITE.tagline` が持つ。何を・どれだけの時間で作れるかを最初の文で言い切る。機能紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つで、第1項の見出しは「チラシと告知ページが、5分でできる」とする。売上と共同主催の招待は会員登録した幹事の機能なので、それぞれの紹介文にその旨を1文添える。カレンダーは未登録の幹事も使えるため、会員限定の注記は付けない。ホームの主操作は「無料でイベント告知ページを作る」の1つに絞り、売上とカレンダーへの直接のCTAは置かない。文言は `SITE.cta.createEventFree`、行き先は `SITE.nav.createEvent` を参照し、直書きしない。末尾の CTA 帯は「まずは1つ、無料で作ってみる。」として費用の不安を先に消す。カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）・主催一覧（SCR-ORG-01）・主催者マイページ（SCR-PUB-03）の行き来は、ヘッダー直下の `OrganizerTabs` だけで行う。下書き（SCR-ORG-15）は節に置かず、主催一覧の下帯とヘッダーのドロップダウンから開く。ヘッダーのナビ（`Navbar.tsx` と `SITE.nav`）にはカレンダーと売上を足さない（主催者画面のバーは「イベント告知ページを作る」と頭文字の札だけにするため）。
+ホーム（SCR-PUB-00）の見出しは `SITE.taglineLines`「イベントのチラシと／告知&出欠ウェブページ、／5分で簡単作成。」で、どの幅も 3 行のまま、文字サイズだけを幅で上げる（2 行目が 13 文字で最も長いので、折り返さない上限で止める。`components.css` の `.hero__title`）。行数も DOM も幅で変えない。1 行に詰めた文は `SITE.tagline` が持つ。何を・どれだけの時間で作れるかを最初の文で言い切る。機能紹介は告知・出欠・集計・売上・運営（主催者と共同主催）・日程（カレンダー）の6つで、第1項の見出しは「チラシと告知ページが、5分でできる」とする。売上と共同主催の招待は会員登録した幹事の機能なので、それぞれの紹介文にその旨を1文添える。カレンダーは未登録の幹事も使えるため、会員限定の注記は付けない。ホームの主操作は「無料ではじめる」（`SITE.cta.createEventFree`）の1つに絞り、売上とカレンダーへの直接のCTAは置かない。無料の条件（最初の2回）はボタンに詰めず、`.hero__actions` の直下に `.hero__note`（`SITE.cta.freeNote`「最初の2回は無料。」。米印は画面だけに出し、読み上げには含めない）で 1 行だけ添える。ボタンは動詞 1 つで言い切り、条件は押す前に注記で読ませる形にする（一般的な告知 LP と同じ組み方）。ボタンの行き先は `SITE.nav.createEvent`、文言は `SITE.cta` を参照し、直書きしない。補助の入口は 2 段に分ける。上段は「無料ではじめる」の隣に「サンプルを見る」（`SITE.nav.sample`、SCR-PUB-16）を副のボタン（`btn--outline`）として並べ、新しいタブで開く。下段はログインの 2 本（主催者・参加者）。ボタンは 52px、ログインのリンクは 44px の押せる高さを確保し、幅が足りないときだけ折り返す（`.hero__buttons` / `.hero__links`）。末尾の CTA 帯は「まずは1つ、無料で作ってみる。」として費用の不安を先に消す。カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）・主催一覧（SCR-ORG-01）・主催者マイページ（SCR-PUB-03）の行き来は、ヘッダー直下の `OrganizerTabs` だけで行う。下書き（SCR-ORG-15）は節に置かず、主催一覧の下帯とヘッダーのドロップダウンから開く。ヘッダーのナビ（`Navbar.tsx` と `SITE.nav`）にはカレンダーと売上を足さない（主催者画面のバーは「イベント告知ページを作る」と頭文字の札だけにするため）。
+
+サンプルの一覧（SCR-PUB-16）と告知ページ（SCR-PUB-17）は `src/app/sample/**` である。DB を読まず、`samples.ts` の固定データ 5 件だけを持つ。`generateStaticParams` で `/sample/autumn`・`/sample/market`・`/sample/halloween`・`/sample/bonfire`・`/sample/dj` をビルド時に書き出し、それ以外の slug は 404 にする。見本の告知ページは SCR-PUB-01 と同じ部品（`PosterHero`・`EventMetaCard`・`DynamicRsvpBox`）を使い、出欠は `preview` で描く。本物と取り違えないよう、上端の帯（`SampleBand`）とフォーム上の 1 行だけを足し、ほかの見た目は変えない。帯の「無料ではじめる」は作成画面（SCR-ORG-02）へ進む。共通ヘッダーは出さず、上端の余白も落とす（`siteChrome("/sample/…")` の `header: false` / `flushTop: true`）。
 
 ---
 
@@ -434,6 +483,13 @@ src/
 │   ├── page.tsx                              # SCR-PUB-00 (ホーム。SITE.name とサービス紹介。一覧は置かない)
 │   ├── service/page.tsx                      # SCR-PUB-06 (サービス・プラン紹介。支払いは始めない)
 │   ├── terms/page.tsx                        # SCR-PUB-10 (利用規約)
+│   ├── sample/
+│   │   ├── layout.tsx                        # SCR-PUB-16 / 17 の共通の枠。上端の帯を置く
+│   │   ├── page.tsx                          # SCR-PUB-16 (見本の一覧。DB を使わない)
+│   │   ├── samples.ts                        # 見本 5 件の固定データ（slug・チラシ・テーマ）
+│   │   ├── SampleBand.tsx                    # 見本であることと主操作を出す帯
+│   │   ├── SampleEventView.tsx               # SCR-PUB-01 と同じ部品で見本を描く
+│   │   └── [slug]/page.tsx                   # SCR-PUB-17 (見本の告知ページ。noindex)
 │   ├── events/page.tsx                       # 画面ではない。/ へリダイレクトする
 │   ├── events/[id]/
 │   │   ├── page.tsx                          # SCR-PUB-01 (公開告知・出欠。期限後は新規と変更を止める)
@@ -462,7 +518,8 @@ src/
 │   ├── participant/calendar/page.tsx         # SCR-PUB-12 (参加カレンダー。出欠を選んだ日程に並べる)
 │   ├── participant/history/page.tsx          # SCR-PUB-09 (参加履歴。出欠・時期の絞り込み)
 │   ├── participant/login/page.tsx            # SCR-PUB-07 (参加者の会員登録・ログイン)
-│   ├── mypage/page.tsx                       # SCR-PUB-03 (主催イベントの要約・クォータ・契約管理・公開プロフィールの状態)
+│   ├── mypage/page.tsx                       # SCR-PUB-03 (主催イベントの要約・クォータ・新着 4 件・公開プロフィールの状態。契約はヘッダーのメニュー)
+│   ├── notifications/page.tsx                # SCR-PUB-15 (通知一覧。参加表明と参加要望を 50 件まで)
 │   ├── account/page.tsx                      # SCR-PUB-11 (表示名・メール・電話・パスワード・退会)
 │   ├── account/email/verify/page.tsx         # SCR-PUB-11 (新しいメールアドレスの確認リンクの着地)
 │   ├── auth/register/page.tsx                # SCR-PUB-02 (ローカル登録・Googleサインイン・ログイン確認番号・電話番号確認・Hydration)
@@ -538,7 +595,7 @@ src/
 | 管理者 | ログイン済み、`platformRole === "ADMIN"`（ほかの条件より優先） | 管理コンソール | 名前、役割の札、ログアウト |
 
 * ログイン中は、誰として入っているかを頭文字 1 文字の札（`.site-user__button`）で示す。札は全幅で常に出し、押すとドロップダウン（`.site-user-menu`）が開く。中に名前、役割の札（参加者／主催者／管理者）、行き先、ログアウトを収める。押す的は 44px を下回らせない。バーに名前を出さないので、390px でも 768〜1023px でもヘッダーが 1 段のまま収まる（スマホが先。広い画面向けの差分だけを `min-width` で足す）。
-* 主催者の札には、未読の通知があれば**数の丸バッジ**（`.site-user__badge`）を頭文字の右上に重ねる。バッジは絶対配置で、ヘッダーの幅も高さも変えない（390px で横スクロールを出さない）。数字は 1〜9 はそのまま、10 以上は `9+`（`formatUnreadCount()`）。0 件のときは要素ごと出さない。色だけで伝えないよう、ボタンの `aria-label` に「未読 N 件」を入れる。ドロップダウンには「通知」（`/mypage#notifications`）を足し、同じ数を小さく添える。未読数は `GET /api/v1/notifications?limit=1` を 60 秒ごと・タブ復帰時・画面移動時・`notifications:changed` で取り直す。参加者の札には出さない（通知は主催者にしか作られない）。
+* 主催者の札には、未読の通知があれば**数の丸バッジ**（`.site-user__badge`）を頭文字の右上に重ねる。バッジは絶対配置で、ヘッダーの幅も高さも変えない（390px で横スクロールを出さない）。数字は 1〜9 はそのまま、10 以上は `9+`（`formatUnreadCount()`）。0 件のときは要素ごと出さない。色だけで伝えないよう、ボタンの `aria-label` に「未読 N 件」を入れる。ドロップダウンには「通知」（`/notifications`）を足し、同じ数を小さく添える。主催者として見ているあいだは、あわせて「プラン・カード管理」（`POST /api/v1/billing/portal` で Customer Portal を開く操作）を置く。マイページの「利用枠と契約」の節を畳んだため、契約の入口はここが受ける。未読数は `GET /api/v1/notifications?limit=1` を 60 秒ごと・タブ復帰時・画面移動時・`notifications:changed` で取り直す。参加者の札には出さない（通知は主催者にしか作られない）。
 * 主催者画面では、バーのナビと開閉ボタンを出さない。節の移動はヘッダー直下の `OrganizerTabs`（ホーム・主催一覧・カレンダー・売上・公開プロフ）が持ち、参加者画面への切り替えはドロップダウンの「参加者ログイン」が持つ。同じ行き先を 3 か所に並べない。先頭の「ホーム」は `/mypage`（SCR-PUB-03）で、節のどの画面からでも戻れる。下書き（SCR-ORG-15）は催しの一覧の一種なので節には置かず、ドロップダウンが受ける（件数は主催一覧の帯が持つ）。ドロップダウンの「主催者マイページ」は、節を出さない作業画面（作成・編集・プレビュー・領収書・招待）でだけ出し、節があるあいだは「ホーム」と重ねない。判定は `showOrganizerTabs()` を使う。
 * `OrganizerTabs` は 390px で 5 本が収まるよう、狭い画面を既定にして左右の余白を詰める（`min-width: 640px` で広い画面の余白に戻す）。「下書き」を節から外したのは、6 本にすると 390px で隠れるためである。
 * 主催者画面の本文は `h1` から始める。役割はヘッダーの札と `OrganizerTabs` が示すので、見出しの上に「主催者」の札（`PageHeader` の `eyebrow`）を置かない。一覧の見出し（`SectionHead`）にも並び順の説明（`note`）を足さない。
@@ -900,76 +957,58 @@ export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVeri
 
 ### 4.3. StripePortalButton.tsx（Stripe Customer Portal 遷移ボタン）
 
-筆頭幹事のサブスクリプション解約とカード変更に使う。主催者ダッシュボード（`/organizer/events`）とマイページ（`/mypage`）に置く。マイページのボタンも出欠の支払いではなく、同じ会員が持つ主催者契約を開く。復帰先は主催一覧である。
+筆頭幹事のサブスクリプション解約とカード変更に使う。置き場所は共通ヘッダーの頭文字のメニューだけで、マイページの「利用枠と契約」の節は持たない。開くのは同じ会員が持つ主催者契約であり、出欠の支払いではない。復帰先は主催一覧である。行き先ではなく操作なので `<button>` で出し、字と幅はメニューのリンク（`.site-user-menu__link`）にそろえる（`.site-user-menu__link--button`）。
 
 ```tsx
 "use client";
-import React, { useState } from "react";
-import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
-interface StripePortalButtonProps {
-  className?: string;
-  variant?: "outline" | "ghost" | "default";
-}
-export const StripePortalButton: React.FC<StripePortalButtonProps> = ({
-  className = "",
-  variant = "outline",
-}) => {
+
+import { useState } from "react";
+import { readProblem } from "@/lib/problem";
+
+export function StripePortalButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleOpenPortal = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/v1/billing/portal", {
-        method: "POST",
-      });
-      if (!res.ok) {
-        throw new Error("カスタマーポータルの取得に失敗しました");
-      }
-      const data = await res.json();
-      if (data.portalUrl) {
-        window.location.href = data.portalUrl;
-      }
-    } catch (error) {
-      console.error(error);
-      alert("カスタマーポータルを開けませんでした。ログイン状態をご確認ください。");
+      const res = await fetch("/api/v1/billing/portal", { method: "POST" });
+      if (!res.ok) throw new Error(await readProblem(res));
+      const data = (await res.json()) as { portalUrl?: string };
+      if (data.portalUrl) window.location.href = data.portalUrl;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "カスタマーポータルを開けませんでした。");
     } finally {
       setIsLoading(false);
     }
   };
-  const baseStyle =
-    "inline-flex items-center justify-center rounded-xl text-xs font-semibold transition active:scale-95 disabled:opacity-50";
-  const variants = {
-    default: "bg-slate-700 text-white hover:bg-slate-600 px-3.5 py-2",
-    outline: "border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-700 px-3.5 py-2",
-    ghost: "text-slate-400 hover:text-white px-2 py-1",
-  };
+
   return (
-    <button
-      onClick={handleOpenPortal}
-      disabled={isLoading}
-      className={`${baseStyle} ${variants[variant]} ${className}`}
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ポータルへ接続中...
-        </>
-      ) : (
-        <>
-          <CreditCard className="mr-1.5 h-3.5 w-3.5 text-indigo-400" />
-          プラン・カード管理
-          <ExternalLink className="ml-1 h-3 w-3 text-slate-500" />
-        </>
+    <>
+      <button
+        type="button"
+        className="site-user-menu__link site-user-menu__link--button"
+        onClick={() => void handleOpenPortal()}
+        disabled={isLoading}
+      >
+        {isLoading ? "接続中..." : "プラン・カード管理"}
+      </button>
+      {error && (
+        <p className="site-user-menu__note" role="alert">
+          {error}
+        </p>
       )}
-    </button>
+    </>
   );
-};
+}
 ```
 
 ---
 
 ### 4.4. QuotaStatusBanner.tsx（クォータ残数＆プラン状態表示バー）
 
-主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月額で8件まで公開 / 公開し放題）を出し、月額で8件まで公開プランでは「公開中のイベント 5 / 8 件（あと3件公開できます）」の形で、公開中の件数と上限、残りを出す。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題への変更と、公開の一時停止・削除を促す。公開し放題では「公開し放題に加入中です。公開中のイベント数に上限はありません。」だけを出す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
+主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月額で8件まで公開 / 公開し放題）を出し、月額で8件まで公開プランでは「月額プランで公開中のイベント 5 / 8 件」の形で、公開中の件数と上限を出す（残りは引いて読めるので書かない）。公開し放題では「公開し放題に加入中です。公開中のイベント 5 件（上限はありません）。」と、件数だけを出す。未加入では「公開中のイベント 3 件。無料トライアル残り 1回」の形で、公開中の件数を先に出す（0 件のときは出さない）。件数は開催日が今日以降で、自分が筆頭幹事のものだけを数える。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題への変更と、公開の一時停止・削除を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
 
 ```tsx
 "use client";
@@ -1008,11 +1047,12 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     const remaining = Math.max(0, quota.remainingPublished ?? 0);
     const head =
       remaining === 0
-        ? `公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
-        : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
+        ? `月額プランで公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
+        : `月額プランで公開中のイベント ${count} / ${limit} 件`;
     return `${head}${detail}`;
   }
-  return `公開し放題に加入中です。公開中のイベント数に上限はありません。${detail}`;
+  const count = quota.publishedEventCount ?? 0;
+  return `公開し放題に加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -1038,7 +1078,11 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
         ? subscribedMessage(quota, discountLabel)
-        : `無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
+        : `${
+            quota.publishedEventCount
+              ? `公開中のイベント ${quota.publishedEventCount} 件。`
+              : ""
+          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
 
@@ -1239,7 +1283,10 @@ export interface UserQuota {
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan: SubscriptionPlan;
-  /** 公開中のイベント数。月額で8件まで公開プランだけが数える。 */
+  /**
+   * 公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のもの。
+   * 月額で8件まで公開プランでは枠の判定と同じく定額から公開したものだけを数える。
+   */
   publishedEventCount: number;
   publishedEventLimit: number;
   /** あと何件公開できるか。公開し放題と未加入は null。 */
@@ -1270,7 +1317,7 @@ export interface PricingOption {
 | **FE-BILL-01** | **課金モーダル起動** | 2回無料枠消化済みの主催者が新規作成で「公開」をクリック | HTTP 402を検知し、`PricingModal` が画面遷移なしで即座にポップアップすること |
 | **FE-BILL-02** | **単発購入Checkout遷移** | `PricingModal` で「単発で購入する (299円)」をクリック | ローディング表示後、Stripe Hosted Checkout 画面へ正常にリダイレクトされること |
 | **FE-BILL-03** | **定額プランCheckout遷移** | `PricingModal` で「月額で8件まで公開プランを始める (980円/月)」または「定期購入で公開し放題 (2980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ、選んだ階層の Price で正常にリダイレクトされること。`metadata.plan` が `MONTHLY_8` / `UNLIMITED` であること |
-| **FE-BILL-03b** | **公開中の上限表示** | 月額で8件まで公開プランで公開中が8件のときに主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「公開中のイベントが8件に達しました」を出し、`PricingModal` は公開し放題を先頭に出すこと。402 の `error` が `PUBLISHED_EVENTS_FULL` であること |
+| **FE-BILL-03b** | **公開中の上限表示** | 月額で8件まで公開プランで公開中が8件のときに主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「月額プランで公開中のイベントが8件に達しました」を出し、`PricingModal` は公開し放題を先頭に出すこと。402 の `error` が `PUBLISHED_EVENTS_FULL` であること |
 | **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、枠加算を確認して作成が認可されること。応答の `draftId` が URL に残り、開いていた画面から動かないこと |
 | **FE-BILL-05** | **Customer Portal遷移** | 主催一覧、またはマイページで「プラン・カード管理」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
 | **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
@@ -1373,7 +1420,7 @@ Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ
 | :---- | :---- | :---- |
 | SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える。単発・月額で8件まで公開・公開し放題の3枚を出す |
 | SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` を保持し、`quotes`（`oneTime` / `subscription8` / `subscriptionUnlimited`）として渡す | 同じく販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
-| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「公開中のイベント 5 / 8 件（あと3件公開できます）」「公開し放題に加入中です。公開中のイベント数に上限はありません。」を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
+| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「月額プランで公開中のイベント 5 / 8 件」「公開し放題に加入中です。公開中のイベント 5 件（上限はありません）。」を出し、未加入は「公開中のイベント 3 件。無料トライアル残り 1回」（0 件なら件数を出さない）を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
 | SCR-ADM-05 `/console/pricing` | `GET /api/v1/admin/pricing-campaigns` | 一覧に成立件数、売上、割引総額を出す。フォームは入力中の割引率から販売価格を即時計算する |
 
 ### 10.2. `PricingModal` の props
@@ -1867,11 +1914,13 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 ### 14.5. 主催者側の導線
 
 * `GET /api/v1/organizer/events` は各イベントに `ownerUserId` を、レスポンスに `viewer: { userId, name }` を足す。`serializeOrganizerListItem` は筆頭幹事の `userId` を受け取る。
+* `GET /api/v1/organizer/events` は各イベントに `quotaSource`（`SUBSCRIPTION` / `PAID_CREDIT` / `FREE_TRIAL` / null）も返す。公開ページの応答には含めない。`/mypage`（SCR-PUB-03）の要約はこれで「プラン公開」（`SUBSCRIPTION`）と「チケット公開」（単発チケット・無料枠）を分け、参加と受付停止の件数は出さない。2 つの札は面の色と数字の色を分け（`--plan` は差し色 `--color-primary-soft` / `--color-primary-text`、`--ticket` は同じ暖色の薄い黄 `--color-ticket-bg` / `--color-ticket-text`）、枠線と影はどちらにも置かない。格子は `.roster-summary--pairs` で 2 列にする。数え方は帯と同じく、開催日が今日以降で自分が筆頭幹事のものだけ（`src/modules/events/lib/published-counts.ts`）。
 * `/organizer/events`（SCR-ORG-01）の操作は、一覧の上ではなく画面下に固定する帯（`.action-dock`）に置く。「下書き一覧」（件数つき）と「イベント新規作成」の 2 つだけにする。公開ページ・プロフィール・売上・契約の導線は主催者の節（`OrganizerTabs`）と SCR-PUB-03 が持つので、同じ行き先を重ねない。カードの「編集」「コピー作成」は見るだけの操作と混ぜず、右端に寄せて罫線で区切る。
 * `/organizer/events`（SCR-ORG-01）の一覧は、状態・過去・開催日で絞り、10 件ずつページに割る。催しは年を跨いで溜まり続けるので、全件を 1 画面に並べない。絞り込みとページ割りは画面側で持ち（`src/modules/events/lib/event-filters.ts`）、一覧 API は全件を返すままにする（マイページとカレンダーが全件前提）。
 * 押せるもの（`.btn`）と押せないもの（`.badge`）は形で分ける。管理画面（`deco--tape-quiet`）の札は、枠・丸み・影を持たない小さな色札とし、ボタンは枠・塗り・角丸を持つ。
 * `/mypage`（SCR-PUB-03）に公開状態（公開中／非公開）と「プロフィールを編集」「公開ページを開く」を出す。`GET /api/v1/organizer/profile` が 403 のとき（催しが0件）は節ごと出さない。
-* `/mypage` の集計の直後に「新着」（`<Section id="notifications">`）を置く。参加表明と参加要望を新しい順に並べ、未読の行の左に点を出す。行は名簿（SCR-ORG-06）へのリンクで、押すと `PATCH /api/v1/notifications` `{ ids: [...] }` でその 1 件を既読にしてから移る。見出しの右は「すべて既読にする」（`{ all: true }`）。既読にしたら `notifications:changed` を `window` へ流し、ヘッダーのバッジをその場で消す。日時は `formatDateTimeJa` を通す。0 件なら EmptyState「まだ参加表明はありません」。
+* `/mypage` の集計の直後に「新着」（`<Section id="notifications">`）を置く。参加表明と参加要望を新しい順に 4 件まで並べ（`GET /api/v1/notifications?limit=5`）、未読の行の左に点を出す。行は名簿（SCR-ORG-06）へのリンクで、押すと `PATCH /api/v1/notifications` `{ ids: [...] }` でその 1 件を既読にしてから移る。未読の行には題の下に「既読にする」を置く（題のリンクの入れ子にしない）。見出しの右は「すべて既読にする」（`{ all: true }`）。5 件以上あるときは「通知一覧を見る」で SCR-PUB-15 へ送る。既読にしたら `notifications:changed` を `window` へ流し、ヘッダーのバッジをその場で消す。日時は秒を落として `formatDateTimeMinuteJa` を通す。0 件なら EmptyState「まだ参加表明はありません」。
+* 主催者画面（`deco--tape-quiet`）の縦の余白は、`src/styles/tokens.css` の 3 段だけで組む。`--space-head`（見出しと中身）・`--space-block`（中身と操作）・`--space-row`（罫線で区切る行の上下）を `src/styles/deco/quiet.css` が `.section__head` / `.panel__actions` / `.kv__row` / `.rows__item` に当てる。画面ごとに `margin-top` を足さない（足すと、同じ見出しの下でも画面によって間が変わる）。導入（`deco--tape-shadow`）の余白は変えない。
 * `/mypage` の主催イベントは直近3件だけを出す。並びは主催一覧と同じで、上部に「すべて見る」を置き `/organizer/events` へ送る。残りは主催一覧で見せる。参加履歴（`/participant/history`）は出さない。
 * 告知ページの主催者名は、`userId` があるときだけ `/organizers/[userId]` へのリンクにする（`EventMetaCard`。名前だけをリンクにし、「さんの催しを見る」は添えない）。`serializePublicOrganizerList` は `userId` を返す。
 * 参加者ホームの参加カードに「主催者のページ」を出し、`event.ownerUserId` があるときだけ `/organizers/[userId]` へリンクする（`serializeParticipation` / `participationInclude`）。

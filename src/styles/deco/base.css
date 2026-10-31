@@ -177,6 +177,7 @@
    ボタンと入力。骨格は共通。
    -------------------------------------------------------------------------- */
 
+/* 角と余白だけを差し替える。高さ（`min-height`）と文字は `.btn` の値を使う。 */
 .deco .btn {
   border-radius: 999px;
   padding: 0.5625rem 1.125rem;
@@ -184,11 +185,14 @@
 }
 
 .deco .btn--sm {
-  padding: 0.375rem 0.875rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.875rem;
 }
 
 .deco .btn--lg {
+  min-height: 3.25rem;
   padding: 0.75rem 1.5rem;
+  font-size: 1rem;
 }
 
 .deco .input,
@@ -252,7 +256,6 @@
   .deco:not(.is-motion-off) .card,
   .deco:not(.is-motion-off) .event-step,
   .deco:not(.is-motion-off) .event-card,
-  .deco:not(.is-motion-off) .stat,
   .deco:not(.is-motion-off) .panel,
   .deco:not(.is-motion-off) .fold,
   .deco:not(.is-motion-off) .roster tbody tr {

@@ -89,7 +89,7 @@ function NewEventScreen() {
         setForm(pending.form);
         setFlyerPreview(pending.flyerPreview);
         setToastTone("success");
-        setToast("登録前に入力した内容を復元しました。下書き保存かプレビューを選んでください。");
+        setToast("入力した内容を復元しました。下書き保存かプレビューを選んでください。");
       }
       setRestoring(false);
       return;
@@ -212,7 +212,7 @@ function NewEventScreen() {
         return;
       }
       setToastTone("success");
-      setToast("下書きを保存しました。プレビューで見た目を確認してから公開できます。");
+      setToast("下書きを保存しました。プレビューで見た目を確かめてから公開できます。");
     } catch (cause) {
       setToastTone("error");
       setToast(cause instanceof Error ? cause.message : "下書きの保存に失敗しました");
@@ -237,7 +237,7 @@ function NewEventScreen() {
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
       {draftId && !restoring && (
         <Alert tone="success">
-          下書きを復元しました。内容を確認して、最後のステップからプレビューを開き、公開してください。
+          下書きを復元しました。最後のステップからプレビューを開いて公開してください。
         </Alert>
       )}
       <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
@@ -304,7 +304,7 @@ function NewEventScreen() {
         context="create"
         onGranted={() => {
           setToastTone("success");
-          setToast("0円チケットを1回分受け取りました。「プレビューを見る」から公開へ進んでください。");
+          setToast("0円チケットを受け取りました。「プレビューを見る」から公開できます。");
         }}
       />
       {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}

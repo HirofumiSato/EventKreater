@@ -23,7 +23,7 @@ interface EventMetaCardProps {
   >;
 }
 
-/* チラシの下に置く「紙」1 枚。催し名・主催・事実の順に読み、
+/* チラシの下に置く「紙」1 枚。イベント名・主催・事実の順に読み、
    数字（残席）は最後に置く。読む順が、申し込む順になっている。 */
 export function EventMetaCard({ event }: EventMetaCardProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;

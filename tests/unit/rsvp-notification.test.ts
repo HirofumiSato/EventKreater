@@ -79,7 +79,7 @@ describe("通知の文面", () => {
     const content = buildRsvpNotification({ ...base, status: "ATTENDING" });
     expect(content.kind).toBe("RSVP_ATTENDING");
     expect(content.title).toBe("参加表明がありました");
-    expect(content.body).toBe("佐藤 みのり さんが「秋の芋煮会」に出席します。");
+    expect(content.body).toBe("佐藤 みのりさんが「秋の芋煮会」に出席します。");
     expect(content.href).toBe("/organizer/events/event-1/participants");
   });
 
@@ -87,7 +87,7 @@ describe("通知の文面", () => {
     const content = buildRsvpNotification({ ...base, status: "WAITLISTED" });
     expect(content.kind).toBe("RSVP_WAITLISTED");
     expect(content.title).toBe("参加要望が届きました");
-    expect(content.body).toContain("佐藤 みのり さん");
+    expect(content.body).toContain("佐藤 みのりさん");
     expect(content.body).toContain("「秋の芋煮会」");
     expect(content.body).toContain("名簿から承認できます");
     expect(content.href).toBe("/organizer/events/event-1/participants");
@@ -100,7 +100,7 @@ describe("通知の文面", () => {
       participantName: "  ",
       status: "ATTENDING",
     });
-    expect(content.body).toBe("参加者 さんが「イベント」に出席します。");
+    expect(content.body).toBe("参加者さんが「イベント」に出席します。");
   });
 
   it("長い催し名でも本文は 300 文字、題は 100 文字に収まる", () => {

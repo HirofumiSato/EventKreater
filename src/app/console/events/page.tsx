@@ -92,7 +92,7 @@ export default function AdminEventsPage() {
     <AdminChrome>
       <div>
         <h1 className="page-title">イベント検索</h1>
-        <p className="page-lead">催し名、場所、幹事の名前またはメールアドレスで検索します。下書きと削除済みも含みます。</p>
+        <p className="page-lead">イベント名、場所、幹事の名前またはメールアドレスで検索します。下書きと削除済みも含みます。</p>
       </div>
       <form className="form" onSubmit={search}>
         <Field label="検索" htmlFor="admin-event-q">
@@ -100,7 +100,7 @@ export default function AdminEventsPage() {
             id="admin-event-q"
             value={q}
             onChange={(event) => setQ(event.target.value)}
-            placeholder="催し名、場所、幹事"
+            placeholder="イベント名、場所、幹事"
             className="input"
           />
         </Field>
@@ -131,7 +131,7 @@ export default function AdminEventsPage() {
           <table className="data">
             <thead>
               <tr>
-                <th>催し名</th>
+                <th>イベント名</th>
                 <th>場所</th>
                 <th>状態</th>
                 <th>開催日</th>

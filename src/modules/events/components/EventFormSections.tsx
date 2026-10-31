@@ -39,7 +39,7 @@ export interface EventSectionProps {
 
 const RAIN_POLICIES = Object.keys(RAIN_POLICY_LABELS) as RainPolicy[];
 
-/** 催しの名前・主催者名・開催日時。 */
+/** イベント名・主催者名・開催日時。 */
 export function BasicSection({
   value,
   onChange,
@@ -52,7 +52,7 @@ export function BasicSection({
 
   return (
     <>
-      <Field label="催しの名前" htmlFor="event-title">
+      <Field label="イベント名" htmlFor="event-title">
         <input
           id="event-title"
           required
@@ -76,7 +76,7 @@ export function BasicSection({
             className="input"
           />
           <p className="help">
-            公開ページの「主催」に出る名前です。未登録のまま作成しているため、アカウント名がありません。空欄なら「主催者」と表示されます。あとから会員登録すると、この名前はアカウントの表示名に切り替わります。
+            公開ページに出る名前です。空欄なら「主催者」と表示されます。
           </p>
         </Field>
       )}
@@ -155,7 +155,7 @@ export function BasicSection({
                 {(preview || overnight) && (
                   <p className="help repeat-row__note">
                     {preview}
-                    {overnight ? "（終了が開始より前なので翌日として扱います）" : ""}
+                    {overnight ? "（終了が開始より前なので翌日扱い）" : ""}
                   </p>
                 )}
               </div>
@@ -170,7 +170,7 @@ export function BasicSection({
             日時を追加
           </button>
           <p className="help">
-            開始と終了は両方必須です。1件以上、{MAX_EVENT_OPTIONS}件まで。参加者は出席するときに1つ選びます。
+            開始と終了は必須。{MAX_EVENT_OPTIONS}件まで。参加者は1つ選びます。
           </p>
         </div>
       </fieldset>
@@ -323,23 +323,23 @@ export function PricePlansSection({
           </label>
           {pricingModeLocked ? (
             <p className="help">
-              出席者がいるため、共通料金と男女別料金の切り替えはできません。金額・プラン名・補足は変更できます。
+              出席者がいるため切り替えできません。金額とプラン名は変えられます。
             </p>
           ) : pricingMode === "COMMON" ? (
             <p className="help">
-              チェックを入れると、各プランを男性用・女性用に分けて金額を設定できます。プラン名は組で共通になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
+              男性用・女性用に分けて金額を決められます。1プランが2件で、合計{MAX_EVENT_OPTIONS}件まで。
             </p>
           ) : (
             <p className="help">
-              男性用・女性用で1組です。プラン名は組で共通、金額と補足は行ごとに設定します。対象は固定で、追加も削除も組単位になります。1プランが2件として数えられ、合計{MAX_EVENT_OPTIONS}件までです。
+              プラン名は組で共通、金額は行ごとです。追加も削除も組単位。合計{MAX_EVENT_OPTIONS}件まで。
             </p>
           )}
           {hasLegacyCommonPlan && (
             <Alert tone="warning">
               対象が「共通」のまま残っている料金があります。対象は画面から変えられません。
               {pricingModeLocked
-                ? "出席者がいるため、いまは共通料金へ戻せません。その料金を選んでいる出席者を選び直してから、共通料金へ戻して入れ直してください。"
-                : "チェックを外して共通料金に戻し、もう一度入れると、男性用・女性用の組に揃えられます。"}
+                ? "出席者がいるため共通料金に戻せません。名簿でプランを選び直してから戻してください。"
+                : "チェックを外して戻し、入れ直すと組に揃えられます。"}
             </Alert>
           )}
           {pricingMode === "GENDER"
@@ -377,7 +377,7 @@ export function PricePlansSection({
                     </div>
                     {groupNamesDiffer(group) && (
                       <Alert tone="warning">
-                        この組の中でプラン名が違います。上のプラン名を入れ直すと、男性用・女性用の両方に反映されます。
+                        組の中でプラン名が違います。上の名前に直すと両方へ反映されます。
                       </Alert>
                     )}
                     {group.map((row) => (
@@ -421,7 +421,7 @@ export function PricePlansSection({
           <p className="help">
             金額は整数の円です。0円は「無料」と表示します。
             {pricingMode === "GENDER"
-              ? "1つのプランが男性用・女性用の1組です。参加者は自分の性別のプランを選びます。"
+              ? "参加者は自分の性別のプランを選びます。"
               : "参加者は全員この金額から選びます。"}
           </p>
         </div>
@@ -450,7 +450,7 @@ export function PricePlansSection({
               </button></>}
         >
           <p className="dialog__body">
-              男性用の料金を共通の料金に戻し、女性用の料金を削除します。女性用の料金を選んでいた参加者は、保存後に費用プランが未設定になります。名簿から選び直してください。
+              女性用の料金は削除されます。選んでいた参加者は名簿から選び直してください。
             </p>
         </Dialog>
       )}
@@ -572,11 +572,11 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
         {locationPreview && <p className="help">公開ページの表示: {locationPreview}</p>}
         {!hasStructuredAddress && !value.venueName && value.location ? (
           <Alert tone="warning">
-            このイベントは旧形式の場所「{value.location}」で登録されています。郵便番号から住所を入れると表示が新しくなります。空のまま保存すると旧形式のまま残ります。
+            旧形式の場所「{value.location}」で登録されています。郵便番号から住所を入れると新しくなります。
           </Alert>
         ) : (
           <p className="help">
-            郵便番号から入れると都道府県・市区町村・町域が自動で入ります。オンライン開催など場所が決まっていないときは、会場名だけでも保存できます。
+            郵便番号を入れると住所が入ります。会場名だけでも保存できます。
           </p>
         )}
       </fieldset>
@@ -675,7 +675,7 @@ export function CapacitySection({
             placeholder="120"
             className="input"
           />
-          <p className="help">51人以上の人数を入れてください。空欄のままでは次へ進めません。</p>
+          <p className="help">51人以上を入れてください。空欄では次へ進めません。</p>
         </Field>
       )}
       <Field label="対象世代（任意）" htmlFor="event-target-generation">
@@ -689,7 +689,7 @@ export function CapacitySection({
           className="input"
         />
         <p className="help">
-          公開ページに「対象」として出ます。チラシでは、人が出る催しの年代と熱量にだけ使います。空欄でも、題が人を含めば人物は出ます。
+          公開ページに「対象」として出ます。チラシの人物表現にも使います。
         </p>
       </Field>
       <Field label="申し込み期限" htmlFor="rsvp-deadline">
@@ -703,7 +703,7 @@ export function CapacitySection({
           className="input"
         />
         <p className="help">
-          空欄なら期限はありません。この日時（日本時間）になると、新しい申し込みと回答の変更を止めます。取消はできます。告知URLは開いたままです。
+          空欄なら期限なし。この日時から新規受付と回答の変更を止めます。
         </p>
       </Field>
     </>
@@ -734,12 +734,12 @@ export function ThemeSection({
           variant="compact"
         />
         <p className="help">
-          選ぶと告知ページの配色が変わります。チラシの画像生成にも、このテーマの雰囲気を渡します。
+          告知ページの配色が変わります。チラシの雰囲気にも反映します。
         </p>
       </fieldset>
       {onPreview && (
         <button type="button" className="btn btn--ghost btn--sm" disabled={disabled} onClick={onPreview}>
-          ここまでの内容をプレビュー
+          プレビュー
         </button>
       )}
     </>
@@ -766,13 +766,13 @@ export function StatusSection({ value, onChange, disabled = false }: EventSectio
             <option value="DRAFT">{STATUS_LABELS.DRAFT}</option>
             <option value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</option>
           </select>
-          <p className="help">下書きのままでは告知URLを開けません。公開すると出欠を受け付けます。</p>
+          <p className="help">下書きでは告知URLを開けません。公開すると出欠を受け付けます。</p>
         </>
       ) : (
         <>
           <p>{value.status ? STATUS_LABELS[value.status] : ""}</p>
           <p className="help">
-            公開状態はここでは変えられません。受付を止めるときは主催一覧の「削除・停止」から行います。
+            ここでは変えられません。止めるときは主催一覧の「停止」から。
           </p>
         </>
       )}

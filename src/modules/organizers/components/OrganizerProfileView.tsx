@@ -20,7 +20,7 @@ interface OrganizerProfileViewProps {
  *
  * サーバーコンポーネントからも、編集画面のプレビューからも同じ見た目で使う。
  * 非公開の会員は名前だけを出す（自己紹介・リンク・実績は出さない）。
- * 催し（カレンダーと一覧）は同じページの下に置き、ここでは人物 1 枚に絞る。
+ * イベント（カレンダーと一覧）は同じページの下に置き、ここでは人物 1 枚に絞る。
  */
 export function OrganizerProfileView({
   name,
@@ -75,7 +75,7 @@ export function OrganizerProfileView({
           )}
           {profile.stats && (
             <div className="kv__row">
-              <dt>催しの数</dt>
+              <dt>イベント数</dt>
               <dd>
                 これまで {profile.stats.eventCount}回 ／ {profile.stats.sinceYear}年から
               </dd>

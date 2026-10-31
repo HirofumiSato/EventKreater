@@ -3,6 +3,7 @@ import {
   currentMonthBounds,
   formatDateJa,
   formatDateTimeJa,
+  formatDateTimeMinuteJa,
   formatFullDateJa,
   formatMonthJa,
   isoDate,
@@ -58,6 +59,17 @@ describe("formatDateTimeJa", () => {
 
   it("Date も受け取る", () => {
     expect(formatDateTimeJa(new Date("2026-10-22T09:05:00"))).toBe("2026/10/22 9:05:00");
+  });
+});
+
+describe("formatDateTimeMinuteJa", () => {
+  it("一覧の行に添えるので秒を落とす", () => {
+    // 端末のタイムゾーンで出るため、UTC 表記で渡して時差に依らない形にする。
+    expect(formatDateTimeMinuteJa(new Date(2026, 9, 31, 10, 15, 56))).toBe("2026/10/31 10:15");
+  });
+
+  it("1 桁の時は 0 を付けない（formatDateTimeJa と同じ読み方）", () => {
+    expect(formatDateTimeMinuteJa(new Date(2026, 9, 22, 9, 5, 0))).toBe("2026/10/22 9:05");
   });
 });
 

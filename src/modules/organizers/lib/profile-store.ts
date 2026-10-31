@@ -143,7 +143,7 @@ function toStatSource(row: EventStatRow): ProfileStatSource {
 }
 
 /**
- * 公開プロフィールを読む。会員が無い・退会済み・催しが0件なら null（画面は 404）。
+ * 公開プロフィールを読む。会員が無い・退会済み・イベントが0件なら null（画面は 404）。
  * 非公開でも名前は返す（ホーム自体は開ける）。
  */
 export async function loadPublicOrganizerProfile(userId: string): Promise<LoadedOrganizerProfile | null> {
@@ -172,7 +172,7 @@ export async function loadPublicOrganizerProfile(userId: string): Promise<Loaded
   };
 }
 
-/** 自分の催しから実績を数える。編集画面のプレビューに使う。 */
+/** 自分のイベントから実績を数える。編集画面のプレビューに使う。 */
 export async function readOrganizerProfileStats(userId: string): Promise<OrganizerProfileStats | null> {
   const rows = await prisma.eventOrganizer.findMany({
     where: { userId },

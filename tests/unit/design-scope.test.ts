@@ -37,6 +37,7 @@ describe("装飾スコープの判定", () => {
 
   it("主催者の管理画面は静かめのスコープになる", () => {
     expect(designScope("/mypage")).toBe("quiet");
+    expect(designScope("/notifications")).toBe("quiet");
     expect(designScope("/organizer/events")).toBe("quiet");
     expect(designScope("/organizer/events/drafts")).toBe("quiet");
     expect(designScope("/organizer/events/ev1/edit")).toBe("quiet");

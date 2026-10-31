@@ -50,7 +50,7 @@ export function EventPreviewModal({
               disabled={continuing}
               onClick={onContinue}
             >
-              {continuing ? "保存中..." : "下書き保存してプレビューへ"}
+              {continuing ? "保存中…" : "下書き保存してプレビューへ"}
             </button>
           )}
           <button type="button" className="btn btn--ghost btn--block" onClick={onClose}>

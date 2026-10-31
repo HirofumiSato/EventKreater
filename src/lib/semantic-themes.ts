@@ -3,7 +3,7 @@
  *
  * 色・角・影の実体は `src/styles/themes.css` が正で、ここは ID・表示名・用途グループだけを持つ。
  * DB には ID（ASCII）を保存し、画面には日本語のラベルを出す。
- * テーマを増やすときは、この配列と CSS の `[data-semantic-theme="..."]` を同じ PR で足す。
+ * テーマを増やすときは、この配列と CSS の `[data-semantic-theme="…"]` を同じ PR で足す。
  *
  * 主催者プロフィールで使い、将来はイベントの公開ページでも同じ ID を使う。
  * そのため、この 1 箇所だけが ID の一覧を持つ（DB の列挙型にはしない）。
@@ -17,7 +17,7 @@ export const SEMANTIC_THEME_GROUPS: readonly {
   label: string;
   note: string;
 }[] = [
-  { id: "calm", label: "落ち着き", note: "読み物・占い・季節の催し" },
+  { id: "calm", label: "落ち着き", note: "読み物・占い・季節のイベント" },
   { id: "bright", label: "明るい", note: "相談・勉強会・昼の集まり" },
   { id: "vivid", label: "元気", note: "パーティー・子ども連れ・手づくり" },
   { id: "night", label: "夜", note: "ライブ・バー・写真を主役に" },
@@ -56,13 +56,13 @@ export const SEMANTIC_THEMES: readonly SemanticThemeDefinition[] = [
   {
     id: "washi",
     label: "和紙と藍",
-    note: "和紙の繊維に藍の差し色。季節の催し・占い・手紙のような告知。",
+    note: "和紙の繊維に藍の差し色。季節のイベント・占い・手紙のような告知。",
     group: "calm",
   },
   {
     id: "enterprise-clean",
     label: "クリーン",
-    note: "明るい地に細い枠。どんな催しにも合わせやすい標準的な見た目。",
+    note: "明るい地に細い枠。どんなイベントにも合わせやすい標準的な見た目。",
     group: "bright",
   },
   {
@@ -93,7 +93,7 @@ export const SEMANTIC_THEMES: readonly SemanticThemeDefinition[] = [
   {
     id: "neon",
     label: "ネオン",
-    note: "黒地にシアンの発光。クラブ・ライブ・夜の催し向け。",
+    note: "黒地にシアンの発光。クラブ・ライブ・夜のイベント向け。",
     group: "night",
   },
   {

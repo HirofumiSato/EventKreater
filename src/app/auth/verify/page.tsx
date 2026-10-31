@@ -71,7 +71,7 @@ function VerifyScreen() {
               disabled={!token || status === "pending"}
               onClick={() => void confirm()}
             >
-              {status === "pending" ? "確認しています..." : "確認を完了する"}
+              {status === "pending" ? "確認しています…" : "確認を完了する"}
             </button>
           )}
           <Link href={nextStep === "phone" ? `${basePath}?step=phone` : basePath} className="btn btn--ghost btn--block">

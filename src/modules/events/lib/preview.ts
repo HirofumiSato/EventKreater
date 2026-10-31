@@ -41,7 +41,7 @@ export function eventFormToPreview(
 ): EventFormPreview {
   const location = composeLocation(value) || "場所未定";
   return {
-    title: value.title.trim() || "（催しの名前は未入力）",
+    title: value.title.trim() || "（イベント名は未入力）",
     schedules: value.schedules.map((row) => ({
       id: row.key,
       eventDate: row.eventDate || "日付未定",

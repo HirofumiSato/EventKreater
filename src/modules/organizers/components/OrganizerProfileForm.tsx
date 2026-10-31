@@ -140,7 +140,7 @@ export function OrganizerProfileForm() {
         <p className="help">公開プロフィールは、主催イベントを持つ会員だけが使えます。</p>
         <div className="btn-row">
           <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
-            催しをつくる
+            イベントを作る
           </Link>
         </div>
       </section>
@@ -231,8 +231,8 @@ export function OrganizerProfileForm() {
             title="公開ページに出る内容"
             note={
               draft.isPublished
-                ? "いまは公開中です。参加者のページにこの内容が出ます。"
-                : "いまは非公開です。名前と催しへの導線だけが出ます。自己紹介・リンク・実績は出ません。"
+                ? "公開中です。参加者のページにこの内容が出ます。"
+                : "非公開です。名前とイベントへの導線だけが出ます。"
             }
           />
 
@@ -253,7 +253,7 @@ export function OrganizerProfileForm() {
               />
               プロフィールを参加者に公開する
             </label>
-            <p className="help">オフのままでも、ページと催しへの導線は開けます。</p>
+            <p className="help">オフのままでも、ページとイベントへの導線は開けます。</p>
           </fieldset>
 
           <fieldset className="field">
@@ -263,7 +263,7 @@ export function OrganizerProfileForm() {
               onChange={(themeId) => update("themeId", themeId)}
             />
             <p className="help">
-              選んだ見た目は公開中ページ全体（自己紹介と催しの一覧）に効きます。プレビューで確かめてから保存してください。
+              選んだ見た目は、公開ページ全体に効きます。プレビューで確かめてから保存してください。
             </p>
           </fieldset>
 
@@ -274,7 +274,7 @@ export function OrganizerProfileForm() {
               maxLength={60}
               value={draft.headline}
               onChange={(event) => update("headline", event.target.value)}
-              placeholder="渋谷で月いちの読書会をひらいています"
+              placeholder="渋谷で月いちの読書会を開いています"
             />
             <p className="help">{draft.headline.length}/60</p>
           </Field>
@@ -287,7 +287,7 @@ export function OrganizerProfileForm() {
               maxLength={400}
               value={draft.bio}
               onChange={(event) => update("bio", event.target.value)}
-              placeholder="どんな催しを、どんな人と、どんな気持ちで開いているか。"
+              placeholder="どんなイベントを、どんな人と開いているか。"
             />
             <p className="help">{draft.bio.length}/400</p>
           </Field>
@@ -346,7 +346,7 @@ export function OrganizerProfileForm() {
               onChange={(event) => update("instagramUrl", event.target.value)}
               placeholder="https://www.instagram.com/example"
             />
-            <p className="help">公開ページではアイコンで出ます。押すと新しいウィンドウで開きます。</p>
+            <p className="help">公開ページではアイコンで出ます。押すと別のタブで開きます。</p>
           </Field>
 
           <fieldset className="field">
@@ -362,7 +362,7 @@ export function OrganizerProfileForm() {
             <p className="help">
               {stats
                 ? `いまの実績: 主催 ${stats.eventCount}回・${stats.sinceYear}年から`
-                : "開催済みの催しが1件もないため、表示できる実績はまだありません。"}
+                : "開催したイベントがまだないため、実績は出せません。"}
             </p>
           </fieldset>
         </section>

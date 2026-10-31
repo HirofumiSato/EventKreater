@@ -427,7 +427,6 @@
 
 :where(.deco) .semantic-theme[data-semantic-theme] .card,
 :where(.deco) .semantic-theme[data-semantic-theme] .panel,
-:where(.deco) .semantic-theme[data-semantic-theme] .stat,
 :where(.deco) .semantic-theme[data-semantic-theme] .cal,
 :where(.deco) .semantic-theme[data-semantic-theme] .organizer-locked__panel,
 :where(.deco) .semantic-theme[data-semantic-theme] .alert {

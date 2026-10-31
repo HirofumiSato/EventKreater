@@ -25,6 +25,23 @@ export function formatDateTimeJa(value: Date | string): string {
   return new Date(value).toLocaleString("ja-JP");
 }
 
+/**
+ * 分までの日時。「2026/10/24 18:30」。
+ *
+ * 一覧の行に添える日時は秒まで要らない。秒が入ると同じ幅で 3 文字ぶん増え、
+ * 390px で題や状態の札を押し出す。`formatDateTimeJa` は名簿や期限が使うので、
+ * 秒を落とすのはこの関数だけにする。
+ */
+export function formatDateTimeMinuteJa(value: Date | string): string {
+  return new Date(value).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
 /** 保存形式の日付 → 見出し用。「2026-10-22」→「10月22日（木）」。壊れた値はそのまま返す。 */

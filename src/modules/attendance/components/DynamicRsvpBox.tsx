@@ -352,7 +352,7 @@ export function DynamicRsvpBox({
             className="btn btn--primary btn--block"
           >
             {isSubmitting
-              ? "送信中..."
+              ? "送信中…"
               : myRsvp
                 ? "回答を更新する"
                 : status === "WAITLISTED"

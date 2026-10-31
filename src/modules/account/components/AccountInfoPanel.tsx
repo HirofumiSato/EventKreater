@@ -124,7 +124,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
           {nameStatus && <Alert tone="success">{nameStatus}</Alert>}
           <div className="panel__actions">
             <button type="submit" className="btn btn--primary btn--sm" disabled={savingName || !name.trim()}>
-              {savingName ? "保存しています..." : "表示名を保存"}
+              {savingName ? "保存しています…" : "表示名を保存"}
             </button>
           </div>
         </form>
@@ -217,7 +217,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
               </Field>
               <div className="panel__actions">
                 <button type="submit" className="btn btn--primary btn--sm" disabled={emailBusy}>
-                  {emailBusy ? "送信しています..." : "確認リンクを送る"}
+                  {emailBusy ? "送信しています…" : "確認リンクを送る"}
                 </button>
                 <button type="button" className="btn btn--ghost btn--sm" onClick={resetEmail}>
                   やめる

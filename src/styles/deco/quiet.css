@@ -40,7 +40,6 @@
 
 .deco.deco--tape-quiet .feature-row,
 .deco.deco--tape-quiet .card,
-.deco.deco--tape-quiet .stat,
 .deco.deco--tape-quiet .panel,
 .deco.deco--tape-quiet .table-card,
 .deco.deco--tape-quiet .event-step,
@@ -59,16 +58,6 @@
    数字。色を塗らず、墨で置く。差は見出しの言葉で付ける。
    -------------------------------------------------------------------------- */
 
-.deco.deco--tape-quiet .stat {
-  padding: 0.375rem 0.75rem;
-}
-
-.deco.deco--tape-quiet .stat__label {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-}
-
 .deco.deco--tape-quiet .stat__value {
   margin-top: 0;
   color: var(--color-text);
@@ -78,19 +67,6 @@
   line-height: 1.2;
   border-bottom: 0;
 }
-
-.deco.deco--tape-quiet .stat__unit {
-  margin-left: 0.125rem;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-
-
-
-
-
 
 .deco.deco--tape-quiet .organizer-tabs__link.is-current {
   border-bottom-color: var(--color-text);
@@ -308,10 +284,58 @@
   color: var(--color-text);
 }
 
+/* マイページの 2 つの札の色分けは、静かめでも残す。月額プランだけ差し色にし、
+   上限の外のチケットは同じ暖色の薄い黄にする。面の色だけで示すので、枠線と影は
+   どちらにも置かない（片方だけに線が残ると、線の有無が意味ありげに見える）。 */
+.deco.deco--tape-quiet .roster-summary__item--plan,
+.deco.deco--tape-quiet .roster-summary__item--ticket {
+  border: 0;
+  box-shadow: none;
+}
+
+.deco.deco--tape-quiet .roster-summary__item--plan {
+  background: var(--color-primary-soft);
+}
+
+.deco.deco--tape-quiet .roster-summary__item--ticket {
+  background: var(--color-ticket-bg);
+}
+
+.deco.deco--tape-quiet .roster-summary__item--plan .roster-summary__value {
+  color: var(--color-primary-text);
+}
+
+.deco.deco--tape-quiet .roster-summary__item--ticket .roster-summary__value {
+  color: var(--color-ticket-text);
+}
+
 .deco.deco--tape-quiet .org-subnav a:hover {
   background: var(--quiet-hover);
 }
 
 .deco.deco--tape-quiet .ledger__value {
   color: var(--color-text);
+}
+
+/* --------------------------------------------------------------------------
+   縦の余白。主催者の管理画面は「見出し→中身」「中身→操作」「行の上下」の
+   3 段だけで組む。画面ごとに margin を足さない（足すと、同じ見出しの下でも
+   画面によって間が変わる）。
+   -------------------------------------------------------------------------- */
+
+/* 見出しと、その下の中身。 */
+.deco.deco--tape-quiet .section__head {
+  margin-bottom: var(--space-head);
+}
+
+/* 中身と、その下に続く操作（`.panel__actions`）。見出しの直後に操作だけを置く
+   画面（マイページの「アカウント」）でも、上に同じ間が空く。 */
+.deco.deco--tape-quiet .panel__actions {
+  margin-top: var(--space-block);
+}
+
+/* 罫線で区切る行（定義リストと一覧）。行のあいだは線が持ち、上下だけ空ける。 */
+.deco.deco--tape-quiet .kv__row,
+.deco.deco--tape-quiet .rows__item {
+  padding-block: var(--space-row);
 }

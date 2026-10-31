@@ -20,7 +20,7 @@ import {
 
 export interface RsvpSubmittedInput {
   eventId: string;
-  /** 催し名。通知の文面へ焼き付ける。 */
+  /** イベント名。通知の文面へ焼き付ける。 */
   eventTitle: string;
   participantId: string;
   participantName: string;

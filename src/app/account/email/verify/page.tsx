@@ -81,7 +81,7 @@ function EmailVerifyInner() {
           />
           <Row
             title="トップへ戻る"
-            meta="主催者の催しと、参加した催しの入口があります。"
+            meta="主催者のイベントと、参加したイベントの入口があります。"
             aside={<><Link href="/" className="btn btn--ghost btn--sm">
               開く
             </Link></>}

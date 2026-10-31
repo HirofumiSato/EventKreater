@@ -239,13 +239,13 @@ export function EventStepForm({
     setError(null);
     const blocked = EVENT_STEPS.find((step) => step.mandatory && !isComplete(step.key));
     if (blocked) {
-      setError(`「${blocked.title}」の入力を終えてから保存してください。`);
+      setError(`「${blocked.title}」を入れてから保存してください。`);
       openStep(blocked.key);
       return false;
     }
     // 定員は任意だが、「51以上」を選んで空のまま保存すると無制限として保存されてしまう。
     if (!isCapacityStepComplete(value.capacity, capacitySelection)) {
-      setError("定員の人数を入れるか、「無制限」を選んでください。");
+      setError("人数を入れるか、制限なしを選んでください。");
       openStep("capacity");
       return false;
     }
@@ -464,7 +464,7 @@ export function EventStepForm({
               必須の入力はあと <strong>{requiredRemaining}</strong> つです。
             </>
           )}
-          {canSaveDraft ? null : " 登録・ログインのあと、公開と下書き保存を選べます。入力内容は引き継がれます。"}
+          {canSaveDraft ? null : " 登録のあと、公開か下書きを選べます。入力は引き継がれます。"}
         </p>
         <div className="form-final__actions">
           {canSaveDraft ? (
@@ -475,10 +475,10 @@ export function EventStepForm({
                 disabled={locked}
                 onClick={saveDraft}
               >
-                {savingDraft ? "保存中..." : "下書き保存"}
+                {savingDraft ? "保存しています…" : "下書き保存"}
               </button>
               <button type="button" className="btn btn--primary" disabled={locked} onClick={preview}>
-                {submitting ? "移動中..." : "プレビューを見る"}
+                {submitting ? "移動しています…" : "プレビューを見る"}
               </button>
             </>
           ) : (
@@ -491,7 +491,7 @@ export function EventStepForm({
               disabled={locked || actionsDisabled}
               onClick={requireAuth}
             >
-              ログインして公開/下書き保存
+              ログインして続ける
             </button>
           )}
         </div>

@@ -185,6 +185,24 @@ export function buildScreens(demo) {
       ],
     },
     {
+      no: "06a",
+      group: "public",
+      slug: "sample",
+      name: "サンプル（一覧）",
+      path: "/sample",
+      auth: null,
+      note: "作った告知ページの見本を 5 種。上端の帯が「サンプル」と無料のはじめるを示す。",
+    },
+    {
+      no: "06b",
+      group: "public",
+      slug: "sample-event",
+      name: "サンプル（告知ページ）",
+      path: "/sample/dj",
+      auth: null,
+      note: "告知ページと同じ部品。出欠は見た目だけで送れない。テーマはネオン。",
+    },
+    {
       no: "07",
       group: "auth",
       slug: "register",
@@ -278,6 +296,17 @@ export function buildScreens(demo) {
       path: "/organizer/events",
       auth: "organizer",
       note: "公開中と受付停止だけ。下書きは件数だけを添えて分ける。",
+      // 帯の 3 通り。8 件プランは件数と上限、公開し放題は件数だけ、未加入は残り回数と並べる。
+      states: [
+        { key: "default", label: "8件プラン", path: "/organizer/events", auth: "organizer" },
+        {
+          key: "unlimited",
+          label: "公開し放題",
+          path: "/organizer/events",
+          auth: "organizerUnlimited",
+        },
+        { key: "free", label: "未加入", path: "/organizer/events", auth: "organizerFree" },
+      ],
     },
     {
       no: "17",
@@ -388,7 +417,16 @@ export function buildScreens(demo) {
       name: "主催者マイページ",
       path: "/mypage",
       auth: "organizer",
-      note: "直近 3件、利用枠と契約、プロフィールの状態、ログアウト。",
+      note: "プラン公開・チケット公開の札、新着 4 件、直近 3 件、プロフィールの状態、ログアウト。",
+    },
+    {
+      no: "29",
+      group: "organizer",
+      slug: "notifications",
+      name: "通知一覧",
+      path: "/notifications",
+      auth: "organizer",
+      note: "参加表明と参加要望の全件。未読の「既読にする」と「すべて既読にする」。",
     },
   ];
 }
@@ -559,6 +597,8 @@ const DYNAMIC_SEGMENTS = {
   "user-organizer": "[userId]",
   "participant-receipt": "[participantId]",
   "code-invite": "[code]",
+  // 見本の詳細（`/sample/dj` など）。slug は `src/app/sample/samples.ts` が持つ。
+  dj: "[slug]",
 };
 
 /** 目録（画面名・パス・状態）を、テストからも引けるようにする。 */

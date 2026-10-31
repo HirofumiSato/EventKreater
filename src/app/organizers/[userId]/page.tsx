@@ -9,11 +9,11 @@ import { profileBioExcerpt } from "@/modules/organizers/lib/profile";
 import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-store";
 
 /**
- * 主催者の公開ページ（SCR-PUB-14）。プロフィールと催しを1画面に置く。
+ * 主催者の公開ページ（SCR-PUB-14）。プロフィールとイベントを1画面に置く。
  *
  * 参加者が告知ページの主催者名から開くページ。検索結果には出さない。
  * プロフィールは誰でも読めるが、カレンダーと一覧は参加者のログインが要る。
- * 会員が無い・退会済み・催しが0件のときだけ 404。
+ * 会員が無い・退会済み・イベントが0件のときだけ 404。
  */
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
   const title = `${loaded.name}さんのプロフィール`;
   const description =
-    profileBioExcerpt(loaded.profile.bio, 110) ?? `${loaded.name}さんが主催する催しの日程と会場を確認できます。`;
+    profileBioExcerpt(loaded.profile.bio, 110) ?? `${loaded.name}さんが主催するイベントの日程と会場を確認できます。`;
   return {
     title,
     description,
@@ -61,7 +61,7 @@ export default async function OrganizerProfilePage({ params }: PageProps) {
       <SemanticThemeScope themeId={loaded.profile.themeId} page>
         <div className="stack">
           <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
-          {/* 催しは useSearchParams を読むため、Suspense で包む。 */}
+          {/* イベントは useSearchParams を読むため、Suspense で包む。 */}
           <Suspense
             fallback={
               <Loading>

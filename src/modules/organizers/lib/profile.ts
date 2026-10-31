@@ -110,10 +110,10 @@ export interface ProfileStatSource {
 }
 
 /**
- * 開催済みの催しから「主催 N回・YYYY年から」を出す。
+ * 開催済みのイベントから「主催 N回・YYYY年から」を出す。
  *
- * 下書き・削除済み・今日以降だけの催しは数えない。
- * 共同主催として入っている催しも、その人が主催に加わった催しとして数える。
+ * 下書き・削除済み・今日以降だけのイベントは数えない。
+ * 共同主催として入っているイベントも、その人が主催に加わったイベントとして数える。
  */
 export function profileStats(
   events: readonly ProfileStatSource[],

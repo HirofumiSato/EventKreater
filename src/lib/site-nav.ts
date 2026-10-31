@@ -49,7 +49,7 @@ export interface NavConfig {
 }
 
 /** 主催者向けの画面。ここでは参加者の機能を並べず、切り替えリンク 1 本に留める。 */
-const ORGANIZER_AREA_PREFIXES = ["/mypage", "/organizer", "/invitations"] as const;
+const ORGANIZER_AREA_PREFIXES = ["/mypage", "/organizer", "/invitations", "/notifications"] as const;
 
 /** 前方一致はパスの区切りまで見る。`/organizerlike` を `/organizer` と誤認しないため。 */
 export function inOrganizerArea(pathname: string): boolean {
@@ -148,7 +148,7 @@ export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfi
  * 主催者画面では節（`OrganizerTabs`）が行き先を持つので、同じ行き先を重ねない。
  * ただし節を出さない作業画面（作成・編集・プレビュー・領収書・招待）では
  * マイページへの入口が消えるため、そのときだけ「主催者マイページ」をここに残す。
- * 下書き（SCR-ORG-15）は催しの一覧の一種で、節からは外してここが受ける。
+ * 下書き（SCR-ORG-15）はイベントの一覧の一種で、節からは外してここが受ける。
  */
 export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
   // 管理者は管理コンソールしか持たない。会員向けの行き先を出さない。

@@ -38,7 +38,7 @@ export function LockConflictModal({ isOpen, holderName, onTakeover, onDismiss, t
             disabled={takingOver}
             className="btn btn--danger btn--block"
           >
-            {takingOver ? "引き継いでいます..." : "編集権を引き継ぐ"}
+            {takingOver ? "引き継いでいます…" : "編集権を引き継ぐ"}
           </button>
           <button type="button" onClick={onDismiss} disabled={takingOver} className="btn btn--ghost btn--block">
             引き続き閲覧のみ
@@ -46,8 +46,8 @@ export function LockConflictModal({ isOpen, holderName, onTakeover, onDismiss, t
         </>
       }
     >
-      <p className="dialog__body">{holderName} が編集中です。画面は閲覧専用です。</p>
-      <p className="dialog__note">引き継ぐと、相手の未保存の編集内容は反映されません。</p>
+      <p className="dialog__body">{holderName}さんが編集中です。いまは閲覧のみです。</p>
+      <p className="dialog__note">引き継ぐと、相手の未保存の編集は反映されません。</p>
     </Dialog>
   );
 }

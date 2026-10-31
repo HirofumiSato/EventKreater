@@ -233,7 +233,7 @@ export default function ParticipantHistoryPage() {
       )}
 
       <p className="screen-note">
-        主催している催しは、この一覧には出しません。主催者マイページで見られます。
+        主催しているイベントは、この一覧には出しません。主催者マイページで見られます。
       </p>
     </div>
   );

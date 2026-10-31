@@ -79,7 +79,7 @@ export function toOrganizerCellItem({ event, schedule }: CalendarEntry): Calenda
 }
 
 /**
- * 同じ日の予定を時刻順に並べる。時刻が無い催しは末尾に置く。
+ * 同じ日の予定を時刻順に並べる。時刻が無いイベントは末尾に置く。
  * 同時刻は作成順にして、読み込むたびに並びが変わらないようにする。
  */
 export function sortDayEntries(entries: CalendarEntry[]): CalendarEntry[] {

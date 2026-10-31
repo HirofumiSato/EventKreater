@@ -481,7 +481,7 @@ model StripeWebhookEvent {
 
 - **URL:** `GET /api/v1/billing/quota`
 - **認可:** 認証済み主催者（JWT セッション）
-- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、公開し放題と未加入は `0`。
+- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、どのプランでも返す（未加入・公開し放題は単発や無料枠から公開したものも数える）。
 - **レスポンス (200 OK):**
 
 ```json

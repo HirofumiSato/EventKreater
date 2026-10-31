@@ -86,7 +86,7 @@ export function ReceiptIssueModal({
         </Field>
         <div className="dialog__actions">
           <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
-            {busy ? "発行しています..." : reissue ? "再発行して表示" : "発行して表示"}
+            {busy ? "発行しています…" : reissue ? "再発行して表示" : "発行して表示"}
           </button>
           <button type="button" className="btn btn--ghost btn--block" disabled={busy} onClick={onClose}>
             閉じる

@@ -185,7 +185,7 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
           {error && <Alert tone="error">{error}</Alert>}
           <div className="btn-row">
             <button type="submit" className="btn btn--primary btn--sm" disabled={busy}>
-              {busy ? "送信しています..." : "新しい番号へSMSを送る"}
+              {busy ? "送信しています…" : "新しい番号へSMSを送る"}
             </button>
             <button type="button" className="btn btn--ghost btn--sm" onClick={reset}>
               やめる
@@ -213,7 +213,7 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
           {error && <Alert tone="error">{error}</Alert>}
           <div className="btn-row">
             <button type="submit" className="btn btn--primary btn--sm" disabled={busy}>
-              {busy ? "確認しています..." : "この番号に変更する"}
+              {busy ? "確認しています…" : "この番号に変更する"}
             </button>
             <button type="button" className="btn btn--ghost btn--sm" onClick={reset}>
               やめる

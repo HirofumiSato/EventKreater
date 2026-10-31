@@ -55,7 +55,7 @@ const COPY: Record<
       "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠と領収書を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
     submit: { register: "登録して履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
-    otherLabel: "催しを開く幹事なら、",
+    otherLabel: "イベントを開く幹事なら、",
   },
 };
 
@@ -306,7 +306,7 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
             </button>
           )}
           <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-            {submitting ? "処理中..." : mode === "register" ? copy.submit.register : copy.submit.login}
+            {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
           </button>
         </form>
         <div className="panel__actions">
@@ -471,7 +471,7 @@ function PhoneScreen({
           {notice && <Alert tone="success">{notice}</Alert>}
           {error && <Alert tone="error">{error}</Alert>}
           <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-            {submitting ? "処理中..." : sent ? "確認して続ける" : "確認コードを送る"}
+            {submitting ? "処理中…" : sent ? "確認して続ける" : "確認コードを送る"}
           </button>
         </form>
         {sent && (

@@ -48,6 +48,7 @@ function makeEvent(overrides: Partial<OrganizerEvent> = {}): OrganizerEvent {
     createdAt: "2026-10-01T00:00:00.000Z",
     flyerAssetId: null,
     role: "OWNER",
+    quotaSource: "SUBSCRIPTION",
     ownerName: "主催者",
     ownerUserId: null,
     stats: { attendingCount: 0, declinedCount: 0, waitlistedCount: 0, totalResponses: 0 },

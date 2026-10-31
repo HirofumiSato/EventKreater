@@ -171,6 +171,28 @@ export async function countPublishedSubscriptionEvents(
   });
 }
 
+/**
+ * 画面に出す「公開中のイベント」の件数。
+ *
+ * 枠の判定（`countPublishedSubscriptionEvents`）と違い、どの枠から公開したものも数える。
+ * 公開し放題と未加入の帯にも件数を出すため。数える範囲は同じで、公開済み・未削除・
+ * 開催日が今日以降・自分の筆頭幹事のものだけ。
+ */
+export async function countPublishedEvents(
+  db: Prisma.TransactionClient | typeof prisma,
+  userId: string,
+  now = new Date(),
+): Promise<number> {
+  return db.event.count({
+    where: {
+      status: "PUBLISHED",
+      isDeleted: false,
+      schedules: { some: { eventDate: { gte: jstToday(now) } } },
+      organizers: { some: { userId, role: "OWNER" } },
+    },
+  });
+}
+
 export function quotaExceeded(
   detail?: string,
   options?: QuotaPricingOption[],
@@ -188,7 +210,7 @@ export function quotaExceeded(
     type: "probs/quota-exceeded",
     detail:
       detail ??
-      `無料トライアル枠（${FREE_EVENT_LIMIT}回）が上限に達しています。単発チケット（${yen(single)}）、月額で8件まで公開プラン（${yen(monthly8)}）、公開し放題（${yen(unlimited)}）のいずれかをご利用ください。`,
+      `無料の${FREE_EVENT_LIMIT}回を使い切りました。単発 ${yen(single)} ／ 月額8件 ${yen(monthly8)} ／ 放題 ${yen(unlimited)} から選べます。`,
     error: "QUOTA_EXCEEDED",
     pricingOptions: pricing,
   });
@@ -197,7 +219,6 @@ export function quotaExceeded(
 /** 月額で8件まで公開プランの上限に達したときの 402。公開し放題への変更を促す。 */
 export function publishedEventsFull(options?: QuotaPricingOption[]): ProblemDetailException {
   const pricing = options ?? PRICING_OPTIONS;
-  const single = pricing.find((option) => option.type === "SINGLE")?.price ?? ONE_TIME_PRICE_JPY;
   const unlimited =
     pricing.find((option) => option.type === "SUBSCRIPTION_UNLIMITED")?.price ??
     SUBSCRIPTION_UNLIMITED_PRICE_JPY;
@@ -205,7 +226,7 @@ export function publishedEventsFull(options?: QuotaPricingOption[]): ProblemDeta
     status: 402,
     title: "Payment Required",
     type: "probs/quota-exceeded",
-    detail: `公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（${yen(unlimited)}）へ変更してください。単発チケット（${yen(single)}）で1件だけ足すこともできます。`,
+    detail: `公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったものを削除するか止めてください。放題（${yen(unlimited)}）へ変えることもできます。`,
     error: "PUBLISHED_EVENTS_FULL",
     pricingOptions: pricing,
   });
@@ -215,7 +236,7 @@ function phoneRequired(): ProblemDetailException {
   return new ProblemDetailException({
     status: 403,
     title: "Forbidden",
-    detail: "無料枠を使うには電話番号の確認が必要です。会員登録画面で電話番号を確認してください。",
+    detail: "無料枠を使うには電話番号の確認が必要です。会員登録で確認してください。",
     error: "PHONE_REQUIRED",
   });
 }

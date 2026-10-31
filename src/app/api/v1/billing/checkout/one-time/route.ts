@@ -22,7 +22,7 @@ function phoneRequired(): ProblemDetailException {
   return new ProblemDetailException({
     status: 403,
     title: "Forbidden",
-    detail: "0円のチケットを受け取るには電話番号の確認が必要です。会員登録画面で電話番号を確認してください。",
+    detail: "0円のチケットを受け取るには電話番号の確認が必要です。会員登録で確認してください。",
     error: "PHONE_REQUIRED",
   });
 }

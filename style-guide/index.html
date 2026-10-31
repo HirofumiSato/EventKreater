@@ -51,6 +51,7 @@
         <a href="#lists">一覧</a>
         <a href="#cards">カード</a>
         <a href="#dialogs">ダイアログ</a>
+        <a href="#copy">文言</a>
       </nav>
 
       <div class="sg-content">
@@ -72,6 +73,8 @@
               <ul class="sg-patterns">
                 <li><strong>並び</strong><span>縦一列。見出し、入力、出欠、朱のボタンの順。左右の余白は 1rem。</span></li>
                 <li><strong>進む操作</strong><span>ボタンは幅いっぱい。フォームの最後に置く。親指が届く位置を優先する。</span></li>
+                <li><strong>押せる的</strong><span>ボタンとリンクの的は 44×44px 以上、文字は 15px 以上。隣り合う操作は 8px 以上空ける。小さく見せたい補助の操作も、的は縮めない（横の余白だけを詰める）。</span></li>
+                <li><strong>操作の場所</strong><span>進む操作は画面の下（固定の帯か本文の最後）。見出しの右は戻る・プレビューなどの補助だけ。行とカードの操作は 1 段に 2 つまで。</span></li>
                 <li><strong>出欠</strong><span>出席、欠席、未定は横一列のまま。三つを見比べて選べるようにする。</span></li>
                 <li><strong>ヘッダー</strong><span>サービス名と「イベント告知ページを作る」。リンクはメニューに畳む。540px 以下では切り替えリンクもメニュー先頭へ移す。バーの高さは 64px 以内。</span></li>
                 <li><strong>表</strong><span>文字サイズはそのまま。名簿は名前・出欠・人数・支払いの 4 列だけを残し、横に送らせない。ほかの表は表の中だけ横にスクロールする。</span></li>
@@ -337,7 +340,7 @@
             <div class="sg-stage sg-type">
               <p><span class="sg-type__label">ページ見出し 1.875rem / 丸ゴシック</span><br><span class="page-title">イベントを作成</span></p>
               <p><span class="sg-type__label">導入の見出し 2.25rem / 丸ゴシック</span><br><span class="hero__title">登録なしで出欠。あとから会員になれる。</span></p>
-              <p><span class="sg-type__label">セクション見出し 1.5rem / 丸ゴシック</span><br><span class="section__title">主催者のほかの催し</span></p>
+              <p><span class="sg-type__label">セクション見出し 1.5rem / 丸ゴシック</span><br><span class="section__title">主催者のほかのイベント</span></p>
               <p><span class="sg-type__label">カード見出し 1rem / 本文 0.875rem</span><br><span class="card__title">名前と出欠だけ</span><br><span class="card__body">メールもパスワードも不要です。</span></p>
             </div>
           </figure>
@@ -461,10 +464,10 @@
               <section class="hero hero--stage">
                 <div class="hero__grid">
                   <div class="hero__copy">
-                    <p class="hero__eyebrow">ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc.. <span class="hero__eyebrow-tail">主催者様へ</span></p>
-                    <h3 class="hero__title"><span class="hero__title-line">イベントのチラシと</span><span class="hero__title-line">WEBページ、</span><span class="hero__title-line">5分で簡単作成。</span></h3>
+                    <p class="hero__eyebrow">ご飯会、ライブ、一日店長、撮影会、合コン、マルシェ etc.. <span class="hero__eyebrow-tail">主催者様へ</span></p>
+                    <h3 class="hero__title"><span class="hero__title-line">イベントのチラシと</span><span class="hero__title-line">告知&amp;出欠ウェブページ、</span><span class="hero__title-line">5分で簡単作成。</span></h3>
                     <p class="hero__lead">
-                      催し名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。
+                      イベント名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。
                     </p>
                     <div class="hero__actions">
                       <a class="btn btn--primary btn--lg" href="#buttons">無料でイベント告知ページを作る</a>
@@ -489,7 +492,7 @@
                 <li class="feature-row">
                   <span class="feature-row__index" aria-hidden="true">01</span>
                   <h3 class="feature-row__title">チラシと告知ページが、5分でできる</h3>
-                  <p class="feature-row__body">催し名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。</p>
+                  <p class="feature-row__body">イベント名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。</p>
                 </li>
                 <li class="feature-row">
                   <span class="feature-row__index" aria-hidden="true">02</span>
@@ -499,8 +502,8 @@
               </ul>
               <ol class="step-list" style="margin-top: 2rem">
                 <li class="step-row">
-                  <h3 class="step-row__title">催しの情報を入れる</h3>
-                  <p class="step-row__body">催し名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。</p>
+                  <h3 class="step-row__title">イベントの情報を入れる</h3>
+                  <p class="step-row__body">イベント名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。</p>
                 </li>
                 <li class="step-row">
                   <h3 class="step-row__title">URLをLINEで送る</h3>
@@ -602,7 +605,7 @@
             <div class="sg-stage">
               <section class="section">
                 <div class="section__head">
-                  <h2 class="section__title">主催者のほかの催し</h2>
+                  <h2 class="section__title">主催者のほかのイベント</h2>
                   <p class="section__note">同じ主催者が開くものです。</p>
                 </div>
               </section>
@@ -652,7 +655,7 @@
                     <button type="button" class="event-step__toggle" aria-expanded="false">
                       <span class="event-step__number" aria-hidden="true">1</span>
                       <span class="event-step__labels">
-                        <span class="event-step__title">催しの名前と開催日時 <span class="req">*</span></span>
+                        <span class="event-step__title">イベント名と開催日時 <span class="req">*</span></span>
                         <span class="event-step__summary">秋の芋煮会 / 11月8日（日）11:00-15:00</span>
                       </span>
                       <span class="event-step__state">入力済み</span>
@@ -714,6 +717,22 @@
         <section class="sg-section" id="buttons" aria-labelledby="buttons-title">
           <h2 id="buttons-title">ボタン</h2>
           <p class="sg-lead">主操作は朱で、角は丸、硬い影で浮かせます。取り消しと補助は白地に墨の枠、削除や編集権の引き継ぎは暗い赤です。文字だけの操作には影を付けません。</p>
+
+          <p class="sg-lead"><strong>大きさはスマホが基準です。</strong>どの段も高さは 44px を下回らせず、文字は 15px を下回らせません。<code>--sm</code> は左右の余白だけを詰める指定で、高さと文字は変えません。隣り合うボタンは 8px 以上空けます。</p>
+          <div class="sg-diff-wrap">
+            <table class="sg-diff">
+              <thead>
+                <tr><th>指定</th><th>高さ</th><th>文字</th><th>使う場所</th></tr>
+              </thead>
+              <tbody>
+                <tr><th><code>.btn</code></th><td>44px 以上</td><td>15px</td><td>既定。フォームの送信、ダイアログの確認</td></tr>
+                <tr><th><code>.btn--sm</code></th><td>44px 以上</td><td>15px</td><td>行・カード・見出しの補助操作。左右の余白だけ 12px</td></tr>
+                <tr><th><code>.btn--lg</code></th><td>52px 以上</td><td>16px</td><td>導入の主操作。1 画面に 1 つ</td></tr>
+                <tr><th><code>.btn--block</code></th><td>44px 以上</td><td>15px</td><td>スマホの固定帯とダイアログ。幅いっぱい</td></tr>
+                <tr><th><code>.text-link</code></th><td>44px 以上</td><td>15px</td><td>本文の中のリンクだけ。操作には使わない</td></tr>
+              </tbody>
+            </table>
+          </div>
 
           <figure class="sg-specimen">
             <figcaption class="sg-caption"><code>.btn</code> <code>.btn--primary</code> <code>.btn--dark</code> <code>.btn--outline</code> <code>.btn--ghost</code> <code>.btn--danger</code> <code>.btn--warning</code></figcaption>
@@ -1142,7 +1161,7 @@
             <div class="sg-stage">
               <section class="org-invite" aria-labelledby="sg-org-invite-title">
                 <p class="org-invite__tag">無料ではじめられます</p>
-                <h3 class="org-invite__title" id="sg-org-invite-title">あなたも、催しを開いてみませんか。</h3>
+                <h3 class="org-invite__title" id="sg-org-invite-title">あなたも、イベントを開いてみませんか。</h3>
                 <p class="org-invite__note">このページと同じチラシと告知ページを、5 分で作れます。最初の 2 回は無料です。</p>
                 <a class="btn btn--outline" href="#inputs">自分も開いてみる</a>
               </section>
@@ -1197,6 +1216,55 @@
                       <label class="btn btn--block" for="demo-modal">閉じる</label>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </section>
+
+        <section class="sg-section" id="copy" aria-labelledby="copy-title">
+          <h2 id="copy-title">文言</h2>
+          <p class="sg-lead">主催者の画面は、スマホで片手のまま読まれます。1 つの文には 1 つの用件だけを置き、短く、直感的に意味が伝わる言葉にします。説明を足すより、言い切る文に置き換えます。</p>
+
+          <ul class="sg-patterns">
+            <li><strong>長さ</strong><span>ボタンは 10 文字以内、注記は 30 文字以内、リードは 40 文字以内を目安にする。1 文に読点は 2 つまで。</span></li>
+            <li><strong>1 文 1 用件</strong><span>「A できて、B もできて、C はできません」とつながない。文を分けるか、要らない用件を落とす。</span></li>
+            <li><strong>重複を書かない</strong><span>同じ説明を 2 か所に書かない。一覧の行と注記、帯と本文で同じことを言わない。画面に出ているものは文で繰り返さない。</span></li>
+            <li><strong>括弧を増やさない</strong><span>補足は括弧ではなく、次の短い文にする。条件が 3 つ以上あるなら、その画面で本当に要るかを見直す。</span></li>
+            <li><strong>実装の言葉を使わない</strong><span>トークン、セッション、ポータル、課金プラン、自動遷移などの言い換えはしない。「幹事用の端末」「プランとカードの管理」のように、利用者が見るものの名前で書く。</span></li>
+            <li><strong>名詞をそろえる</strong><span>催しは「イベント」、開く人は「主催者」、共同で運営する人は「共同主催者」に統一する。同じものを画面ごとに言い換えない。</span></li>
+            <li><strong>記号</strong><span>省略は <code>…</code>。処理中は「保存しています…」のように、動詞＋ています＋… でそろえる。</span></li>
+            <li><strong>操作の名前</strong><span>ボタンは動詞で終える（「既読にする」「保存する」）。行の中では名詞 1 語まで詰めてよい（「名簿」「編集」）。</span></li>
+          </ul>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">長い文を、そのまま短くする</figcaption>
+            <div class="sg-stage">
+              <div class="sg-diff-wrap">
+                <table class="sg-diff">
+                  <thead>
+                    <tr><th>直す前</th><th>直したあと</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>山田 花子 さんが「冬の焚き火会」の参加を希望しています。定員に達しているため、名簿から承認できます。</td><td>山田 花子さんが「冬の焚き火会」に参加を希望。定員のため名簿から承認できます。</td></tr>
+                    <tr><td>参加表明と参加要望を新しい順に並べています。</td><td>新しい順に表示。</td></tr>
+                    <tr><td>まだ参加表明はありません。参加者が答えると、ここに出ます。</td><td>まだありません。参加者が答えると、ここに出ます。</td></tr>
+                    <tr><td>月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。</td><td>公開中のイベントが8件に達しました。終了したイベントを削除・停止するか、公開し放題（2,980円）へ変更してください。</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="sg-specimen">
+            <figcaption class="sg-caption">短くした行の見本（390px）</figcaption>
+            <div class="sg-stage">
+              <div class="sg-copy-sample">
+                <p class="sg-copy-sample__title">新着</p>
+                <p class="sg-copy-sample__body">山田 花子さんが「冬の焚き火会」に参加を希望。定員のため名簿から承認できます。</p>
+                <div class="sg-row">
+                  <button class="btn btn--ghost btn--sm" type="button">既読</button>
+                  <button class="btn btn--outline btn--sm" type="button">名簿</button>
                 </div>
               </div>
             </div>

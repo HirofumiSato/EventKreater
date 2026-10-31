@@ -351,6 +351,32 @@ svg {
   font-weight: 700;
 }
 
+/* 行き先ではなく操作（Customer Portal を開く）。見た目は行き先のリンクにそろえ、
+   字と幅だけ `button` の既定から戻す。 */
+.site-user-menu__link--button {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-user-menu__link--button:disabled {
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+}
+
+/* ポータルを開けなかった理由。メニューの中で折り返す。 */
+.site-user-menu__note {
+  padding: 0.25rem 0.5rem 0.5rem;
+  color: var(--color-warning-deep);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 /* ログアウトだけは行き先ではなく操作なので、罫線で分ける。 */
 .site-user-menu__logout {
   display: flex;
@@ -466,16 +492,23 @@ svg {
     padding-inline: 0.5rem;
   }
 
-  /* 「無料でイベント告知ページを作る」は 16px のままだと 320px で 2 行に割れる。
-     字を落とさず、左右の余白だけで 1 行に戻す。`.hero--stage .btn--primary` より
+  /* 主操作（「無料ではじめる」）は 16px でも 320px 級では左右の余白ぶんが足りない。
+     字を落とさず、左右の余白だけで 1 行に収める。`.hero--stage .btn--primary` より
      詳細度を上げないと、後方の宣言に負ける。 */
   .hero--stage .hero__actions .btn--lg {
     padding-inline: 1rem;
   }
+
+  /* 補助のリンク 3 本は 1 段に収まらない。2 本 + 1 本へ折り返し、
+     行の間だけを詰める（押せる高さは 44px のまま）。 */
+  .hero__links {
+    gap: 0 0.625rem;
+  }
 }
 
-/* 360px 級。ラベルが 12 文字になり、16px のブランドと 14px のボタンでは収まらない。
-   文字を 1 段だけ落とし、タップ領域 2.5rem は保つ。 */
+/* 360px 級。ラベルが 12 文字になり、16px のブランドと 15px のボタンでも収まらない
+   幅があるので、左右の余白だけを詰める。文字は 15px を下回らせない（押す前に
+   ラベルが読めることと、押せる的の大きさを優先する）。 */
 @media (max-width: 360px) {
   .site-header__inner {
     padding-inline: 0.375rem;
@@ -486,7 +519,6 @@ svg {
   }
 
   .site-header__actions .btn--sm {
-    font-size: 0.8125rem;
     padding-inline: 0.4375rem;
   }
 }

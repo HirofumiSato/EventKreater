@@ -51,6 +51,8 @@
         <option value="mock-organizer-public-theme-sage.html">06 主催者のページ（余白）</option>
         <option value="mock-organizer-public-theme-candy.html">06 主催者のページ（キャンディ）</option>
         <option value="mock-organizer-public-theme-dusk.html">06 主催者のページ（夕暮れ）</option>
+        <option value="mock-sample.html">06a サンプル（一覧）</option>
+        <option value="mock-sample-event.html">06b サンプル（告知ページ）</option>
       </optgroup>
       <optgroup label="認証・設定">
         <option value="mock-register.html">07 主催者のログイン・登録</option>
@@ -67,7 +69,9 @@
         <option value="mock-participant-history-empty.html">15 参加履歴（履歴なし）</option>
       </optgroup>
       <optgroup label="主催者">
-        <option value="mock-organizer.html">16 主催一覧</option>
+        <option value="mock-organizer.html">16 主催一覧（8件プラン）</option>
+        <option value="mock-organizer-unlimited.html">16 主催一覧（公開し放題）</option>
+        <option value="mock-organizer-free.html">16 主催一覧（未加入）</option>
         <option value="mock-organizer-calendar.html">17 主催カレンダー</option>
         <option value="mock-revenue.html">18 売上</option>
         <option value="mock-revenue-detail.html">19 売上の内訳</option>
@@ -80,6 +84,7 @@
         <option value="mock-register-required.html">26 公開直後の案内</option>
         <option value="mock-organizer-profile.html">27 公開プロフィールの編集</option>
         <option value="mock-mypage.html">28 主催者マイページ</option>
+        <option value="mock-notifications.html">29 通知一覧</option>
       </optgroup>
         </select>
       </label>
@@ -131,7 +136,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "未ログイン",
-        "path": "/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "public"
       },
       {
@@ -139,7 +144,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "ログイン済み",
-        "path": "/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "public"
       },
       {
@@ -147,7 +152,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "満員",
-        "path": "/events/8fffbddd-d4e7-4573-8d9d-ec88f96b9fb3",
+        "path": "/events/4455bae8-11b4-45b7-900a-c748c6acc8d5",
         "group": "public"
       },
       {
@@ -155,7 +160,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "受付停止",
-        "path": "/events/0530f392-980c-4a61-aa11-3def5fc61775",
+        "path": "/events/53f8a989-3176-4bbb-aecc-a614d263d9d4",
         "group": "public"
       },
       {
@@ -163,7 +168,7 @@
         "no": "05",
         "name": "参加費の領収書",
         "label": "",
-        "path": "/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc/receipt",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/receipt",
         "group": "public"
       },
       {
@@ -263,6 +268,22 @@
         "group": "public"
       },
       {
+        "file": "mock-sample.html",
+        "no": "06a",
+        "name": "サンプル（一覧）",
+        "label": "",
+        "path": "/sample",
+        "group": "public"
+      },
+      {
+        "file": "mock-sample-event.html",
+        "no": "06b",
+        "name": "サンプル（告知ページ）",
+        "label": "",
+        "path": "/sample/dj",
+        "group": "public"
+      },
+      {
         "file": "mock-register.html",
         "no": "07",
         "name": "主催者のログイン・登録",
@@ -346,7 +367,23 @@
         "file": "mock-organizer.html",
         "no": "16",
         "name": "主催一覧",
-        "label": "",
+        "label": "8件プラン",
+        "path": "/organizer/events",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-organizer-unlimited.html",
+        "no": "16",
+        "name": "主催一覧",
+        "label": "公開し放題",
+        "path": "/organizer/events",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-organizer-free.html",
+        "no": "16",
+        "name": "主催一覧",
+        "label": "未加入",
         "path": "/organizer/events",
         "group": "organizer"
       },
@@ -371,7 +408,7 @@
         "no": "19",
         "name": "売上の内訳",
         "label": "",
-        "path": "/organizer/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc/revenue",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/revenue",
         "group": "organizer"
       },
       {
@@ -387,7 +424,7 @@
         "no": "21",
         "name": "イベントの編集",
         "label": "",
-        "path": "/organizer/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc/edit",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/edit",
         "group": "organizer"
       },
       {
@@ -403,7 +440,7 @@
         "no": "23",
         "name": "下書きのプレビュー",
         "label": "",
-        "path": "/organizer/events/c1f71516-f996-4478-a01c-131afbd35390/preview",
+        "path": "/organizer/events/08054155-1e02-4d51-b17a-3a50ae6eb4e1/preview",
         "group": "organizer"
       },
       {
@@ -411,7 +448,7 @@
         "no": "24",
         "name": "参加者名簿",
         "label": "",
-        "path": "/organizer/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc/participants",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/participants",
         "group": "organizer"
       },
       {
@@ -419,7 +456,7 @@
         "no": "25",
         "name": "幹事向け領収書",
         "label": "",
-        "path": "/organizer/events/8e791b6e-dace-4921-9b7c-b84e0d0ca8cc/receipts/6c0dd146-ac98-4985-bb13-7788a9361299",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/receipts/922eb0d2-961f-41e5-bd23-aa6d9fd9ce57",
         "group": "organizer"
       },
       {
@@ -427,7 +464,7 @@
         "no": "26",
         "name": "公開直後の案内",
         "label": "",
-        "path": "/organizer/register-required?event=8e791b6e-dace-4921-9b7c-b84e0d0ca8cc",
+        "path": "/organizer/register-required?event=6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "organizer"
       },
       {
@@ -444,6 +481,14 @@
         "name": "主催者マイページ",
         "label": "",
         "path": "/mypage",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-notifications.html",
+        "no": "29",
+        "name": "通知一覧",
+        "label": "",
+        "path": "/notifications",
         "group": "organizer"
       }
     ];
@@ -468,6 +513,8 @@
       "mock-organizer-public-theme-sage.html": "mock-organizer-public-theme-sage.html?embed=1",
       "mock-organizer-public-theme-candy.html": "mock-organizer-public-theme-candy.html?embed=1",
       "mock-organizer-public-theme-dusk.html": "mock-organizer-public-theme-dusk.html?embed=1",
+      "mock-sample.html": "mock-sample.html?embed=1",
+      "mock-sample-event.html": "mock-sample-event.html?embed=1",
       "mock-register.html": "mock-register.html?embed=1",
       "mock-verify.html": "mock-verify.html?embed=1",
       "mock-participant-login.html": "mock-participant-login.html?embed=1",
@@ -479,6 +526,8 @@
       "mock-participant-history.html": "mock-participant-history.html?embed=1",
       "mock-participant-history-empty.html": "mock-participant-history-empty.html?embed=1",
       "mock-organizer.html": "mock-organizer.html?embed=1",
+      "mock-organizer-unlimited.html": "mock-organizer-unlimited.html?embed=1",
+      "mock-organizer-free.html": "mock-organizer-free.html?embed=1",
       "mock-organizer-calendar.html": "mock-organizer-calendar.html?embed=1",
       "mock-revenue.html": "mock-revenue.html?embed=1",
       "mock-revenue-detail.html": "mock-revenue-detail.html?embed=1",
@@ -490,7 +539,8 @@
       "mock-receipt.html": "mock-receipt.html?embed=1",
       "mock-register-required.html": "mock-register-required.html?embed=1",
       "mock-organizer-profile.html": "mock-organizer-profile.html?embed=1",
-      "mock-mypage.html": "mock-mypage.html?embed=1"
+      "mock-mypage.html": "mock-mypage.html?embed=1",
+      "mock-notifications.html": "mock-notifications.html?embed=1"
     };
     const HEIGHTS = {"390":844,"1280":900};
     const params = new URLSearchParams(location.search);

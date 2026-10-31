@@ -11,18 +11,18 @@ import { Section, SectionHead } from "@/components/ui";
 
 const HERO_EYEBROW = (
   <>
-    ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc..{" "}
+    ご飯会、ライブ、一日店長、撮影会、合コン、マルシェ etc..{" "}
     <span className="hero__eyebrow-tail">主催者様へ</span>
   </>
 );
 const HERO_LEAD =
-  "催し名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。";
+  "イベント名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。";
 
 /** 幹事に起きること。機能名ではなく、手間がどう減るかで書く。 */
 const capabilities = [
   [
     "チラシと告知ページが、5分でできる",
-    "催し名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。",
+    "イベント名・日時・場所・費用を入れると、縦長のチラシと告知ページをまとめて作ります。チラシは告知ページの先頭に載り、そのまま共有できます。",
   ],
   [
     "参加者は、名前と出欠だけ",
@@ -37,20 +37,20 @@ const capabilities = [
     "費用プランと出欠から、見込みの売上を自動で計算します。何人集まれば赤字にならないかを、集金の前に確かめられます。会員登録した幹事から使えます。",
   ],
   [
-    "幹事が何人いても、誰の催しか分かる",
+    "幹事が何人いても、誰のイベントか分かる",
     "主催者と共同主催者を分けて、告知ページに名前を出します。招待できるのは会員の幹事で、利用枠を消費するのはイベントを公開した主催者だけです。",
   ],
   [
     "今月の予定が、1画面で分かる",
-    "自分の催しをカレンダーに並べます。開催日が複数ある催しも、すべての日付で出ます。日付を選ぶと、その日の出欠確認へ進めます。",
+    "自分のイベントをカレンダーに並べます。開催日が複数あるイベントも、すべての日付で出ます。日付を選ぶと、その日の出欠確認へ進めます。",
   ],
 ];
 
 const steps = [
   [
     "1",
-    "催しの情報を入れる",
-    "催し名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。",
+    "イベントの情報を入れる",
+    "イベント名・日時・場所・費用を入れるだけ。チラシと告知ページはその場で生成され、5分ほどで公開できます。",
   ],
   [
     "2",
@@ -73,9 +73,8 @@ export default function HomePage() {
           <div className="hero__copy">
             <p className="hero__eyebrow">{HERO_EYEBROW}</p>
             {/*
-              改行の位置は文言の一部。スマホは 3 行、PC は「イベントのチラシとWEBページ、」と
-              「5分で簡単作成。」の 2 行にする。切り替えは CSS（.hero__title-line）が持ち、
-              幅で DOM を変えない。
+              改行の位置は文言の一部。どの幅も 3 行のままで、文字サイズだけを
+              幅に合わせて上げる（CSS の .hero__title が持つ）。幅で DOM を変えない。
             */}
             <h1 className="hero__title">
               {SITE.taglineLines.map((line) => (
@@ -86,16 +85,37 @@ export default function HomePage() {
             </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">
-              <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
-                {SITE.cta.createEventFree}
-              </Link>
+              <div className="hero__buttons">
+                <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
+                  {SITE.cta.createEventFree}
+                </Link>
+                {/*
+                  作る前に、自分の催しならどう見えるかを確かめる入口。主操作の隣に
+                  副のボタンとして並べる。見本は別のタブで開き、作りかけの入力を失わない。
+                */}
+                <Link
+                  href={SITE.nav.sample.href}
+                  className="btn btn--outline btn--lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {SITE.nav.sample.label}
+                </Link>
+              </div>
+              {/* 無料の条件はボタンに詰めず、押す直前に 1 行だけ添える。 */}
+              <p className="hero__note">
+                <span aria-hidden="true">※</span>
+                {SITE.cta.freeNote}
+              </p>
               {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
-              <Link href={SITE.nav.organizerLogin.href} className="text-link">
-                {SITE.nav.organizerLogin.label}
-              </Link>
-              <Link href={SITE.nav.participantLogin.href} className="text-link">
-                {SITE.nav.participantLogin.label}
-              </Link>
+              <p className="hero__links">
+                <Link href={SITE.nav.organizerLogin.href} className="text-link">
+                  {SITE.nav.organizerLogin.label}
+                </Link>
+                <Link href={SITE.nav.participantLogin.href} className="text-link">
+                  {SITE.nav.participantLogin.label}
+                </Link>
+              </p>
             </div>
           </div>
           <figure className="hero__poster">

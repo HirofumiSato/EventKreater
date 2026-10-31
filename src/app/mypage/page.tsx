@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
-import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
@@ -15,8 +14,10 @@ import { loginUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import type { OrganizerEvent } from "@/modules/events/types";
+import { todayInTokyo } from "@/modules/events/lib/event-filters";
+import { countPublishedBySource } from "@/modules/events/lib/published-counts";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
-import { Alert, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
+import { Alert, EmptyState, Loading, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 /** ホームに出す主催イベントの件数。全件は主催一覧（SCR-ORG-01）が持つ。 */
 const SUMMARY_LIMIT = 3;
@@ -56,12 +57,12 @@ export default function MyPage() {
       const profileBody = (await profileRes.json()) as ProfileResponse;
       const eventsRes = await fetch("/api/v1/organizer/events");
       const eventsBody = eventsRes.ok ? ((await eventsRes.json()) as { events: OrganizerEvent[] }) : { events: [] };
-      // 主催者だけが公開プロフィールを持つ。まだ催しが無い会員は 403 なので、その場合は節を出さない。
+      // 主催者だけが公開プロフィールを持つ。まだイベントが無い会員は 403 なので、その場合は節を出さない。
       const ownRes = profileBody.isOrganizer ? await fetch("/api/v1/organizer/profile") : null;
       const ownBody = ownRes?.ok ? ((await ownRes.json()) as OrganizerProfileDraftResponse) : null;
       // 新着は主催者だけが持つ。参加者の端末では問い合わせない。
       const notificationsBody = profileBody.isOrganizer
-        ? await fetch("/api/v1/notifications?limit=10").then(async (res) =>
+        ? await fetch("/api/v1/notifications?limit=5").then(async (res) =>
             res.ok ? ((await res.json()) as NotificationsResponse) : null,
           )
         : null;
@@ -143,38 +144,31 @@ export default function MyPage() {
     );
   }
 
-  const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
-  const closedCount = events.filter((event) => event.status === "CLOSED").length;
-  const attendingTotal = events.reduce((sum, event) => sum + event.stats.attendingCount, 0);
+  // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
+  // 月額プラン（上限に数える）とチケット（単発・無料枠。上限の外）に分ける。
+  // 参加の人数は出さない。直近のイベントの行と名簿が持ち、ここに置くと二重になる。
+  const publishedCounts = countPublishedBySource(events, todayInTokyo());
 
   return (
     <div className="stack">
       <PageHeader
         title="主催者マイページ"
-        lead={<>{profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
-        </>}
+        lead={<>{profile.user.name} さん。イベントは {events.length}件です。</>}
       />
 
-      <div className="roster-summary">
-        <div className="roster-summary__item">
-          <span className="roster-summary__label">公開中</span>
+      <div className="roster-summary roster-summary--pairs">
+        <div className="roster-summary__item roster-summary__item--plan">
+          <span className="roster-summary__label">プラン公開</span>
           <span className="roster-summary__value">
-            {publishedCount}
+            {publishedCounts.plan}
             <span>件</span>
           </span>
         </div>
-        <div className="roster-summary__item">
-          <span className="roster-summary__label">受付停止</span>
+        <div className="roster-summary__item roster-summary__item--ticket">
+          <span className="roster-summary__label">チケット公開</span>
           <span className="roster-summary__value">
-            {closedCount}
+            {publishedCounts.ticket}
             <span>件</span>
-          </span>
-        </div>
-        <div className="roster-summary__item roster-summary__item--money">
-          <span className="roster-summary__label">参加</span>
-          <span className="roster-summary__value">
-            {attendingTotal}
-            <span>人</span>
           </span>
         </div>
       </div>
@@ -185,20 +179,22 @@ export default function MyPage() {
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
-      {/* 新着は数字のすぐ下に置く。契約や催しより先に、誰かが答えたことが目に入る。 */}
+      {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。
+          マイページは 4 件までにし、続きは通知一覧（/notifications）が受ける。 */}
       {profile.isOrganizer && (
         <NotificationList
           notifications={notifications}
           unreadCount={unreadCount}
           marking={marking}
           onMarkAll={() => void markRead()}
+          onMarkOne={(notification) => void markRead([notification.id])}
           onOpen={openNotification}
+          moreHref={SITE.nav.notifications.href}
         />
       )}
 
       <Section>
-        <SectionHead title="直近の催し" note={<>{SUMMARY_LIMIT}件まで。すべては主催一覧で見られます。
-          </>} />
+        <SectionHead title="直近のイベント" note={<>{SUMMARY_LIMIT}件まで。続きは主催一覧で。</>} />
         {events.length === 0 && (
           <EmptyState>
             まだ主催イベントはありません。{" "}
@@ -244,21 +240,9 @@ export default function MyPage() {
         </div>
       </Section>
 
-      <Section>
-        <SectionHead title="利用枠と契約" note="筆頭幹事だけが契約を変えられます。" />
-        <Panel as="div">
-          <div className="panel__actions">
-            <StripePortalButton />
-            <Link href="/service#pricing" className="btn btn--ghost btn--sm">
-              料金を見る
-            </Link>
-          </div>
-        </Panel>
-      </Section>
-
       {ownProfile && (
         <Section>
-          <SectionHead title="公開プロフィール" note="参加者が、主催者の人柄を見られる場所です。" />
+          <SectionHead title="公開プロフィール" />
           <dl className="kv">
             <div className="kv__row">
               <dt>状態</dt>

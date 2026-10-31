@@ -157,7 +157,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
           <div className="preview-toolbar__actions">
             {canPublish && (
               <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
-                {publishing ? "公開中..." : "公開する"}
+                {publishing ? "公開中…" : "公開する"}
               </button>
             )}
             {event.status === "PUBLISHED" && event.flyerAsset && (

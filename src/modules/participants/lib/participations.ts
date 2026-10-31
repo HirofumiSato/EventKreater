@@ -92,7 +92,7 @@ export function serializeParticipation(row: {
       location: event.location,
       status: event.status,
       flyerThumbnailUrl: event.flyerAsset?.imageUrl ?? null,
-      /** 主催者の公開ページ。ゲスト幹事の催しは null。 */
+      /** 主催者の公開ページ。ゲスト幹事のイベントは null。 */
       ownerUserId,
     },
   };

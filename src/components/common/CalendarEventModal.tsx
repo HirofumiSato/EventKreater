@@ -16,7 +16,7 @@ const FOCUSABLE = 'a[href], button:not([disabled])';
 
 /**
  * セルの短冊をタップしたときのモーダル。
- * セルでは切れている催し名を全文で出し、催しページへ進めるようにする。
+ * セルでは切れているイベント名を全文で出し、イベントページへ進めるようにする。
  */
 export function CalendarEventModal({ item, date, onClose }: CalendarEventModalProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);

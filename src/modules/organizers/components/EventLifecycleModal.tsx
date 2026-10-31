@@ -34,8 +34,8 @@ export function EventLifecycleModal({ title, status, busy, onClose, onDelete }: 
     >
       <p className="dialog__body">
         {isDraft
-          ? `${title}。下書きを削除します。入力した内容は元に戻せません。利用枠は消費していません。`
-          : `${title}。削除すると、一覧と告知URLから外れます。出欠の記録は残りますが、元に戻せません。出欠だけを止めたいときは「公開を一時停止」を使ってください。`}
+          ? `${title}。下書きを削除します。元に戻せません。利用枠は減りません。`
+          : `${title}。一覧と告知URLから外れます。出欠の記録は残りますが、元に戻せません。止めるだけなら「停止」を使います。`}
       </p>
     </Dialog>
   );

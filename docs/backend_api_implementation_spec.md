@@ -95,8 +95,8 @@ flowchart TD
 | `/api/v1/user/phone/confirm` | POST | SCR-PUB-11 | 会員必須 | 新しい電話番号の確認コードを照合する。他の端末のログインを切る |
 | `/api/v1/user` | DELETE | SCR-PUB-11 | 会員必須 | 退会（論理削除）。筆頭幹事のイベントを閉じ、サブスクを即時解約し、確認済みの電話番号だけを残す |
 | `/api/v1/user/participations` | GET | SCR-PUB-09 | 会員必須 | 参加履歴の一覧。`status`（ATTENDING/DECLINED）、`scope`（all/upcoming/past）、`page`、`limit` |
-| `/api/v1/notifications` | GET | SCR-PUB-03 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
-| `/api/v1/notifications` | PATCH | SCR-PUB-03 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.19） |
+| `/api/v1/notifications` | GET | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
+| `/api/v1/notifications` | PATCH | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.19） |
 | `/api/v1/admin/session` | GET | SCR-ADM-04 | 管理者必須 | 管理者セッションの確認。ログイン済みならホームへ進む判定にも使う |
 | `/api/v1/admin/session` | POST | SCR-ADM-00 | 不要 | 管理者ログイン。`ADMIN` かつパスワード一致かつ確認済み電話があるとき、確認番号チャレンジを始める。着地は SCR-ADM-04 |
 | `/api/v1/admin/session` | DELETE | SCR-ADM-04 | 不要 | 管理者セッション Cookie の削除 |
@@ -644,7 +644,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 
 消費した種別は `quotaSourceOf(type)` で `Event.quota_source` に写す。公開の各入口（新規公開・下書きの公開・再開）は、この値を `quota_charged_at` と一緒に書く。複製は下書きを作るだけなので消費しない。
 
-402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
+402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
 
 ```json
 {
@@ -1363,7 +1363,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ### 5.19. GET / PATCH `/api/v1/notifications`（主催者へのアプリ内通知）
 
-対象画面は SCR-PUB-03（主催者マイページの新着）と、共通ヘッダーの頭文字の札に出す未読数のバッジ。認可は `requireUserId(req)`（未ログインは 401）。**自分の行しか読めない・既読にできない。**
+対象画面は SCR-PUB-03（主催者マイページの新着。4 件まで）、SCR-PUB-15（通知一覧。50 件まで）と、共通ヘッダーの頭文字の札に出す未読数のバッジ。認可は `requireUserId(req)`（未ログインは 401）。**自分の行しか読めない・既読にできない。**
 
 参加者が出席または参加要望を送ると、その催しの会員主催者（`OWNER` / `CO_HOST`）へ `notifications` の行が作られる。ゲスト主催者（`user_id IS NULL`）と、自分自身の出欠は宛先にしない。作るのは `src/modules/notifications/lib/notify.ts` の `notifyRsvpSubmitted()` で、出欠のトランザクションがコミットした後に呼ぶ。**通知の作成に失敗しても出欠の送信は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
 
@@ -1438,7 +1438,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`publishedEventCount` / `remainingPublished` は、加入中の月額で8件まで公開プランでだけ数える。それ以外は `0` と `null` を返す（公開し放題は件数を数えない）。
+`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは枠の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
 
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
@@ -1448,6 +1448,7 @@ import { prisma } from '@/lib/prisma';
 import {
   FREE_EVENT_LIMIT,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countPublishedEvents,
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from '@/modules/billing/lib/quota';
@@ -1469,11 +1470,12 @@ export async function GET(req: NextRequest) {
     select: { phoneVerifiedAt: true },
   });
   const phoneVerified = Boolean(user?.phoneVerifiedAt);
-  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+  // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
+  // 残りの計算と食い違わないよう、枠の判定と同じ数え方（定額から公開したものだけ）にする。
   const countedPlan = isSubActive && quota.subscriptionPlan === 'MONTHLY_8';
   const publishedCount = countedPlan
     ? await countPublishedSubscriptionEvents(prisma, userId, now)
-    : 0;
+    : await countPublishedEvents(prisma, userId, now);
   const remainingPublished = countedPlan
     ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
     : null;

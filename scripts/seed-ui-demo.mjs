@@ -11,7 +11,7 @@ import path from "node:path";
  *
  *   npm run db:seed:ui
  *
- * 何度実行してもデモ用の 3 アカウントと、その催しだけを作り直す。
+ * 何度実行してもデモ用のアカウントと、その催しだけを作り直す。
  * 他の会員・催しには触らない。撮影用の識別子は storage/ui-demo.json に書き出す。
  *
  * 画面を見るためのデータなので、業務上の意味（按分・領収書・利用枠）は
@@ -38,6 +38,24 @@ const CO_HOST = {
   password: "UiDemo-Cohost-2026!",
   name: "高橋 直樹",
   phone: "+8190000000103",
+};
+
+/**
+ * 帯（`QuotaStatusBanner`）の見え方を確かめるための会員。
+ * 催しの持ち主を分けて、月額で8件まで公開・公開し放題・未加入の 3 通りを並べる。
+ */
+const ORGANIZER_UNLIMITED = {
+  email: "ui.organizer-unlimited@example.com",
+  password: "UiDemo-Unlimited-2026!",
+  name: "森 あかり",
+  phone: "+8190000000105",
+};
+
+const ORGANIZER_FREE = {
+  email: "ui.organizer-free@example.com",
+  password: "UiDemo-Free-2026!",
+  name: "青木 拓海",
+  phone: "+8190000000106",
 };
 
 /**
@@ -282,15 +300,19 @@ async function ensureDemoAvatar(userId) {
 }
 
 try {
-  const [organizer, participant, coHost, verifyUser] = await Promise.all([
-    upsertUser(ORGANIZER),
-    upsertUser(PARTICIPANT),
-    upsertUser(CO_HOST),
-    upsertVerifyUser(),
-  ]);
+  const [organizer, participant, coHost, verifyUser, organizerUnlimited, organizerFree] =
+    await Promise.all([
+      upsertUser(ORGANIZER),
+      upsertUser(PARTICIPANT),
+      upsertUser(CO_HOST),
+      upsertVerifyUser(),
+      upsertUser(ORGANIZER_UNLIMITED),
+      upsertUser(ORGANIZER_FREE),
+    ]);
 
   // スクリーンショット用の加入状態。月額で8件まで公開プランの途中にして、
-  // 「公開中のイベント 3 / 8 件」のバナーを撮る。数えるのは開催日が今日以降の3件。
+  // 「月額プランで公開中のイベント N / 8 件」のバナーを撮る。
+  // 数えるのは開催日が今日以降で、定額プランから公開したものだけ。
   await prisma.userUsageQuota.upsert({
     where: { userId: organizer.id },
     create: {
@@ -317,6 +339,49 @@ try {
       update: {},
     });
   }
+
+  // 公開し放題の帯は「公開中のイベント N 件（上限はありません）」を出す。件数のために催しを 3 件持たせる。
+  await prisma.userUsageQuota.upsert({
+    where: { userId: organizerUnlimited.id },
+    create: {
+      userId: organizerUnlimited.id,
+      freeEventCount: 0,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "UNLIMITED",
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+    },
+    update: {
+      freeEventCount: 0,
+      paidCredits: 0,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "UNLIMITED",
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+    },
+  });
+
+  // 未加入の帯は「公開中のイベント 1 件。無料トライアル残り 1回」を出す。
+  // 無料枠で 1 件だけ公開した状態にして、残りの数と件数が並ぶ様子を見る。
+  await prisma.userUsageQuota.upsert({
+    where: { userId: organizerFree.id },
+    create: {
+      userId: organizerFree.id,
+      freeEventCount: 1,
+      paidCredits: 0,
+      subscriptionStatus: "NONE",
+      subscriptionPlan: "NONE",
+    },
+    update: {
+      freeEventCount: 1,
+      paidCredits: 0,
+      subscriptionStatus: "NONE",
+      subscriptionPlan: "NONE",
+      currentPeriodEnd: null,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+    },
+  });
 
   // 公開プロフィール。タグは 3 つまで。公開ページに出すのは X と Instagram。
   // テーマは羊皮紙（読み物として見せる）。アイコンと合わせて、モックで適用後の見た目を確認できるようにする。
@@ -347,8 +412,14 @@ try {
   });
 
   // 前回のデモ催しを消す（出欠・領収書・招待はカスケードで消える）。
+  const demoUserIds = [
+    organizer.id,
+    coHost.id,
+    organizerUnlimited.id,
+    organizerFree.id,
+  ];
   const removed = await prisma.event.deleteMany({
-    where: { organizers: { some: { userId: { in: [organizer.id, coHost.id] } } } },
+    where: { organizers: { some: { userId: { in: demoUserIds } } } },
   });
 
   const today = todayInTokyo();
@@ -405,11 +476,13 @@ try {
         rsvpDeadline: input.rsvpDeadline ?? null,
         flyerAssetId: input.flyerAssetId ?? null,
         quotaChargedAt: input.status === "DRAFT" ? null : new Date(),
-        // デモの催しは定額プランから公開した扱いにする。公開中の件数はこの値で数える。
-        quotaSource: input.status === "DRAFT" ? null : "SUBSCRIPTION",
+        // デモの催しは定額プランから公開した扱いにする。マイページの「プラン公開」と
+        // 帯の「N / 8 件」はこの値で数える。未加入の帯を見る会員だけは、無料枠から
+        // 公開した扱いにする（FREE_TRIAL。マイページでは「チケット公開」に数える）。
+        quotaSource: input.status === "DRAFT" ? null : (input.quotaSource ?? "SUBSCRIPTION"),
         organizers: {
           create: [
-            { userId: organizer.id, role: "OWNER" },
+            { userId: input.ownerId ?? organizer.id, role: "OWNER" },
             ...(input.withCoHost ? [{ userId: coHost.id, role: "CO_HOST" }] : []),
           ],
         },
@@ -809,6 +882,63 @@ try {
   });
 
   /**
+   * 0円の単発チケット（無料チケット）で公開した 1 件。
+   *
+   * 月額プランの 8 件には数えないので、マイページの要約は「プラン公開 7件 /
+   * チケット公開 1件」になる。帯の「7 / 8 件」が動かないことも同時に見られる。
+   * チケットは公開のときに使い切っているので、`paidCredits` は 0 のままにする。
+   */
+  const reading = await createEvent({
+    quotaSource: "PAID_CREDIT",
+    title: "朝の読書会",
+    sortDate: addDays(today, 7),
+    location: "ブックカフェ 栞（東京都世田谷区北沢）",
+    postalCode: "1550031",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "北沢",
+    addressLine: "1-8-2",
+    building: "1F",
+    venueName: "ブックカフェ 栞",
+    rainPolicy: "INDOOR",
+    capacity: 12,
+    status: "PUBLISHED",
+    targetGeneration: "20代〜40代",
+    themeId: "sage",
+    rsvpDeadline: tokyoDateTime(addDays(today, 6), "23:59"),
+    schedules: [schedule(addDays(today, 7), "09:00", "11:00", 0)],
+    plans: [{ name: "参加費", audience: "ANY", amount: 800, note: "飲み物付" }],
+    participants: [
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "読みかけの本を持って行きます。",
+        appliedDaysBefore: 5,
+      },
+      {
+        name: "岡本 涼太",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "途中からでも大丈夫ですか？",
+        appliedDaysBefore: 2,
+      },
+      {
+        name: "田中 ちひろ",
+        gender: "FEMALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "早起きがかなわず。次回こそ。",
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  /**
    * 12 月の 2 件。夜の催しの見本として、屋内・21 時開始・当日精算の形を入れる。
    * クリスマスは 12 月 20 日、DJ はそこから 2 週間ほど前の金曜に置く。
    */
@@ -941,6 +1071,47 @@ try {
     ],
   });
 
+  /**
+   * 帯の見え方を撮るための催し。
+   *
+   * 公開し放題の会員は 3 件、未加入の会員は無料枠から 1 件だけ持たせる。
+   * 公開中の件数は「開催日が今日以降」で数えるので、いずれも未来の日付にする。
+   */
+  const unlimitedEvents = [];
+  const unlimitedRows = [
+    { title: "森のピクニック", days: 5, place: "砧公園 芝生広場（東京都世田谷区）" },
+    { title: "朝のヨガ広場", days: 12, place: "二子玉川 河川敷（東京都世田谷区）" },
+    { title: "手づくりパン教室", days: 25, place: "三軒茶屋の公民館 調理室（東京都世田谷区）" },
+  ];
+  for (const row of unlimitedRows) {
+    const date = addDays(today, row.days);
+    unlimitedEvents.push(
+      await createEvent({
+        ownerId: organizerUnlimited.id,
+        title: row.title,
+        sortDate: date,
+        location: row.place,
+        capacity: 20,
+        status: "PUBLISHED",
+        schedules: [schedule(date, "10:00", "12:00", 0)],
+        plans: [{ name: "一般", audience: "ANY", amount: 1500, note: null }],
+      }),
+    );
+  }
+
+  const freeEvent = await createEvent({
+    ownerId: organizerFree.id,
+    quotaSource: "FREE_TRIAL",
+    title: "はじめての写真散歩",
+    sortDate: addDays(today, 10),
+    location: "砧公園（東京都世田谷区）",
+    venueName: "砧公園",
+    capacity: 12,
+    status: "PUBLISHED",
+    schedules: [schedule(addDays(today, 10), "14:00", "16:00", 0)],
+    plans: [{ name: "参加費", audience: "ANY", amount: 500, note: null }],
+  });
+
   // 共同幹事の招待（1 件だけ有効なコードを持つ）。前回の行は消してから作り直す。
   await prisma.eventInvitation.deleteMany({
     where: { inviteCodeHash: sha256(INVITE_CODE) },
@@ -1002,12 +1173,17 @@ try {
   });
 
   // マイページの「新着」と、ヘッダーの札の未読数バッジを撮るための通知。
-  // 未読の出席 1 件と、既読の参加要望 1 件を置く（札のバッジは「1」になる）。
+  // 未読は出席 1 件だけ（札のバッジは「1」になる）。それ以外は既読にし、
+  // マイページの上限（4 件）を超える 6 件を置いて「通知一覧を見る」も撮れるようにする。
   await prisma.notification.deleteMany({ where: { userId: organizer.id } });
   const attendingRow =
     main.participants.find((row) => row.name === PARTICIPANT.name) ?? main.participants[0];
   const waitlistedRow =
     full.participants.find((row) => row.status === "WAITLISTED") ?? full.participants[0];
+  const takoyakiAttending =
+    takoyaki.participants.find((row) => row.status === "ATTENDING") ?? takoyaki.participants[0];
+  const bonfireAttending =
+    bonfire.participants.find((row) => row.status === "ATTENDING") ?? bonfire.participants[0];
   await prisma.notification.createMany({
     data: [
       {
@@ -1032,6 +1208,52 @@ try {
         readAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
       },
+      {
+        userId: organizer.id,
+        eventId: bonfire.event.id,
+        participantId: bonfireAttending.id,
+        kind: "RSVP_ATTENDING",
+        title: "参加表明がありました",
+        body: `${bonfireAttending.name} さんが「${bonfire.event.title}」に出席します。`,
+        dedupeKey: sha256(`ui-demo-notification-attending-${bonfire.event.id}`),
+        readAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 27 * 60 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: gohan.event.id,
+        participantId: null,
+        kind: "RSVP_WAITLISTED",
+        title: "参加要望が届きました",
+        body: `${PARTICIPANT.name} さんが「${gohan.event.title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        dedupeKey: sha256(`ui-demo-notification-waitlisted-${gohan.event.id}`),
+        readAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 - 60 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: takoyaki.event.id,
+        participantId: takoyakiAttending.id,
+        kind: "RSVP_ATTENDING",
+        title: "参加表明がありました",
+        body: `${takoyakiAttending.name} さんが「${takoyaki.event.title}」に出席します。`,
+        dedupeKey: sha256(`ui-demo-notification-attending-${takoyaki.event.id}`),
+        readAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 30 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: main.event.id,
+        participantId: null,
+        kind: "RSVP_WAITLISTED",
+        title: "参加要望が届きました",
+        body: `${
+          main.participants.find((row) => row.status === "WAITLISTED")?.name ?? attendingRow.name
+        } さんが「${main.event.title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        dedupeKey: sha256(`ui-demo-notification-waitlisted-${main.event.id}`),
+        readAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 - 45 * 60 * 1000),
+      },
     ],
   });
 
@@ -1042,6 +1264,9 @@ try {
     coHost: await issueSessionToken(coHost),
     // メールアドレス変更の確認画面だけに使う。
     verifyUser: await issueSessionToken(verifyUser),
+    // 帯の 3 通り（8件プラン・公開し放題・未加入）を撮るため。
+    organizerUnlimited: await issueSessionToken(organizerUnlimited),
+    organizerFree: await issueSessionToken(organizerFree),
   };
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3012";
@@ -1053,6 +1278,11 @@ try {
       participant: { email: PARTICIPANT.email, password: PARTICIPANT.password },
       coHost: { email: CO_HOST.email, password: CO_HOST.password },
       verifyUser: { email: VERIFY_USER.email, password: VERIFY_USER.password },
+      organizerUnlimited: {
+        email: ORGANIZER_UNLIMITED.email,
+        password: ORGANIZER_UNLIMITED.password,
+      },
+      organizerFree: { email: ORGANIZER_FREE.email, password: ORGANIZER_FREE.password },
     },
     tokens,
     events: {
@@ -1066,6 +1296,7 @@ try {
       halloween: halloween.event.id,
       bonfire: bonfire.event.id,
       gohan: gohan.event.id,
+      reading: reading.event.id,
       christmas: christmas.event.id,
       djNight: djNight.event.id,
     },
@@ -1092,6 +1323,8 @@ try {
   console.log(`  参加者: ${PARTICIPANT.email} / ${PARTICIPANT.password}`);
   console.log(`  共同幹事: ${CO_HOST.email} / ${CO_HOST.password}`);
   console.log(`  確認用: ${VERIFY_USER.email} / ${VERIFY_USER.password}`);
+  console.log(`  公開し放題: ${ORGANIZER_UNLIMITED.email} / ${ORGANIZER_UNLIMITED.password}`);
+  console.log(`  未加入: ${ORGANIZER_FREE.email} / ${ORGANIZER_FREE.password}`);
   console.log(`  前回のデモ催し削除: ${removed.count} 件`);
   console.log("  催し:");
   console.log(`    秋の芋煮会（公開中・チラシ・定員40）: ${main.event.id}`);
@@ -1104,6 +1337,7 @@ try {
   console.log(`    ハロウィン おやこマルシェ（過去日・キャンディ）: ${halloween.event.id}`);
   console.log(`    川辺の焚き火ナイト（明日・夕暮れ）: ${bonfire.event.id}`);
   console.log(`    秋のゆるごはん会（公開中・羊皮紙）: ${gohan.event.id}`);
+  console.log(`    朝の読書会（0円チケットで公開・チケット公開1件）: ${reading.event.id}`);
   console.log(`    クリスマス ダンスパフォーマンス（12月・羊皮紙）: ${christmas.event.id}`);
   console.log(`    DJナイト Vol.7（12月・ネオン）: ${djNight.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);

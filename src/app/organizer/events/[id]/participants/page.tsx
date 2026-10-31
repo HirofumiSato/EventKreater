@@ -44,7 +44,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
       // 未登録の幹事は名簿を開けない。会員登録の案内へ送る。
       if (isRegisterRequired(body)) {
         sendToRegisterRequired(params.id);
-        throw new Error("出欠の確認には会員登録が必要です。案内ページへ移動しています。");
+        throw new Error("名簿は会員登録が必要です。案内ページへ移動します。");
       }
       throw new Error(body.detail || "読み込みに失敗しました");
     }
@@ -227,7 +227,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
             disabled={sending}
             onClick={() => void sendReminder()}
           >
-            {sending ? "送っています..." : "参加者へリマインド"}
+            {sending ? "送っています…" : "参加者へリマインド"}
           </button>
           <button
             type="button"
@@ -235,7 +235,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
             disabled={copyingText}
             onClick={() => void copyReminderText()}
           >
-            {copyingText ? "準備中..." : "文面をコピー"}
+            {copyingText ? "準備しています…" : "文面をコピー"}
           </button>
           <Link
             href={`/events/${params.id}`}
@@ -243,7 +243,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
             rel="noreferrer"
             className="btn btn--outline btn--sm"
           >
-            参加者ページをプレビュー
+            ページを見る
           </Link>
           <button
             type="button"
@@ -260,7 +260,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
           </Link>
         </div>
         <p className="screen-note">
-          リマインドは、アカウントのある参加者に送られます。アカウントのない人には、文面をコピーして個別に連絡してください。
+          リマインドはアカウントのある参加者だけ。ほかは文面をコピーして送ってください。
         </p>
       </Panel>
 
@@ -270,7 +270,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
       {data.revenue.unassignedPlanCount > 0 && (
         <Alert tone="warning">
-          出席しているのに費用プランが未選択の参加者が {data.revenue.unassignedPlanCount} 人います。表の「費用プラン」を選ぶと売上に入ります。
+          費用プラン未選択の参加者が {data.revenue.unassignedPlanCount} 人います。名簿で選ぶと売上に入ります。
         </Alert>
       )}
       <ParticipantListTable
