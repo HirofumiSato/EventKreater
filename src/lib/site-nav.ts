@@ -78,13 +78,14 @@ export function viewerRoleLabel(role: ViewerRole): string {
 }
 
 /**
- * ヘッダーのブランド名の下に出す、いま見ている画面の名前。
+ * ヘッダーのブランド名の下に出す、いま使っているアカウントの種類。
  *
  * 参加者画面と主催者画面は同じヘッダーを使う。色（`data-viewer-role`）だけで
  * 分けると、色が見分けにくい人には伝わらない。同じ意味を文字でも置く。
+ * 「〜の画面」は、いま何の画面かではなく、どの立場で入っているかを言う札にする。
  */
 export function viewerRoleCaption(role: ViewerRole): string {
-  return `${SITE.role[role]}の画面`;
+  return `${SITE.role[role]}アカウント`;
 }
 
 /**

@@ -1386,6 +1386,25 @@ body:has(.profile-actions) .site-footer {
    行の骨格は `.rows` / `.rows__item` に任せ、ここでは未読の点と添え書きだけを足す。
    ========================================================================== */
 
+/* 見出しと「すべて既読にする」は 1 段に並べ、ボタンは右へ寄せる。
+   `SectionHead` の既定は 640px 未満で縦積みなので、この節だけ横に戻す。
+   見出しが長くなっても折り返さないよう、幅は見出し側に残す。 */
+.notifications .section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.notifications .section__head > .section__title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.notifications .section__head > .btn {
+  flex: 0 0 auto;
+}
+
 /* 題名の前に未読の点。点は文字の中心ではなく行の真ん中に置く。 */
 .notif__title {
   display: flex;

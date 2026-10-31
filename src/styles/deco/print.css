@@ -52,4 +52,9 @@
   .deco .receipt-sheet {
     break-inside: avoid;
   }
+
+  /* 貼り紙のテープは紙に要らない。ボタンの中身だけを刷る。 */
+  .deco .btn--peek::after {
+    display: none !important;
+  }
 }

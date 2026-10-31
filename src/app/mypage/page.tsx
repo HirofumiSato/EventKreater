@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -85,11 +86,6 @@ export default function MyPage() {
       active = false;
     };
   }, []);
-
-  const logout = async () => {
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    window.location.href = "/";
-  };
 
   /** 既読の送信。応答の未読数をそのまま反映し、ヘッダーのバッジにも知らせる。 */
   const markRead = async (ids?: string[]) => {
@@ -216,7 +212,7 @@ export default function MyPage() {
                     href={`/organizer/events/${event.id}/participants`}
                     className="btn btn--ghost btn--sm"
                   >
-                    名簿
+                    出欠
                   </Link>
                   <Link
                     href={`/organizer/events/${event.id}/edit`}
@@ -230,7 +226,7 @@ export default function MyPage() {
             ))}
           </Rows>
         )}
-        <div className="panel__actions">
+        <div className="panel__actions panel__actions--row">
           <Link href="/organizer/events" className="btn btn--outline btn--sm">
             すべて見る
           </Link>
@@ -257,32 +253,20 @@ export default function MyPage() {
             <Link href="/organizer/profile" className="btn btn--primary btn--sm">
               編集する
             </Link>
+            {/* 公開ページは別の窓で開く。貼り紙に留めたテープの飾り（`btn--peek`）と
+                「別の窓」の印を添え、編集（主ボタン）と役割の違いを見せる。 */}
             <a
               href={ownProfile.homePath}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn--outline btn--sm"
+              className="btn btn--outline btn--sm btn--peek"
             >
               公開ページを見る
+              <ExternalLink className="icon" aria-hidden="true" />
             </a>
           </div>
         </Section>
       )}
-
-      <Section>
-        <SectionHead title="アカウント" note={<>{profile.user.email}</>} />
-        <div className="panel__actions">
-          <Link href="/account" className="btn btn--outline btn--sm">
-            アカウント設定
-          </Link>
-          <Link href={SITE.nav.participantSwitch.href} className="btn btn--outline btn--sm">
-            {SITE.nav.participantSwitch.label}
-          </Link>
-          <button type="button" onClick={() => void logout()} className="btn btn--ghost btn--sm">
-            ログアウト
-          </button>
-        </div>
-      </Section>
 
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}
