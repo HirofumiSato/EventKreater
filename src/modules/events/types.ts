@@ -7,6 +7,8 @@ export type EventStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
 export type EventVisibility = "PUBLIC" | "UNLISTED";
 export type RsvpStatus = "ATTENDING" | "DECLINED" | "WAITLISTED";
 export type OrganizerRole = "OWNER" | "CO_HOST";
+/** どの利用枠から公開したか。未公開・移行前の催しは null。 */
+export type QuotaSource = "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION";
 /** 費用プランの対象。ANY は男女共通。 */
 export type PriceAudience = "ANY" | "MALE" | "FEMALE";
 export type Gender = "MALE" | "FEMALE";
@@ -314,6 +316,11 @@ export interface OrganizerEvent {
   createdAt: string;
   flyerAssetId: string | null;
   role: OrganizerRole;
+  /**
+   * どの利用枠から公開したか。マイページの要約を「プラン公開」と「チケット公開」に
+   * 分けるために返す。未公開・移行前の催しは null。
+   */
+  quotaSource: QuotaSource | null;
   /** このイベントの筆頭幹事の表示名。一覧カードで「主催: 名前」に出す。 */
   ownerName: string;
   /** 筆頭幹事の会員ID。ゲスト幹事なら null で、公開ページを持たない。 */

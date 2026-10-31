@@ -227,7 +227,7 @@ export function publishedEventsFull(options?: QuotaPricingOption[]): ProblemDeta
     status: 402,
     title: "Payment Required",
     type: "probs/quota-exceeded",
-    detail: `公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（${yen(unlimited)}）へ変更してください。単発チケット（${yen(single)}）で1件だけ足すこともできます。`,
+    detail: `月額プランで公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（${yen(unlimited)}）へ変更してください。単発チケット（${yen(single)}）で1件だけ足すこともできます。`,
     error: "PUBLISHED_EVENTS_FULL",
     pricingOptions: pricing,
   });

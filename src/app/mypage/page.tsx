@@ -15,6 +15,8 @@ import { loginUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import type { OrganizerEvent } from "@/modules/events/types";
+import { todayInTokyo } from "@/modules/events/lib/event-filters";
+import { countPublishedBySource } from "@/modules/events/lib/published-counts";
 import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
 import { Alert, EmptyState, Loading, PageHeader, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
@@ -143,30 +145,31 @@ export default function MyPage() {
     );
   }
 
-  const publishedCount = events.filter((event) => event.status === "PUBLISHED").length;
-  const closedCount = events.filter((event) => event.status === "CLOSED").length;
+  // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
+  // 月額プラン（上限に数える）とチケット（単発・無料枠。上限の外）に分ける。
+  const publishedCounts = countPublishedBySource(events, todayInTokyo());
   const attendingTotal = events.reduce((sum, event) => sum + event.stats.attendingCount, 0);
 
   return (
     <div className="stack">
       <PageHeader
         title="主催者マイページ"
-        lead={<>{profile.user.name} さん。催しは {events.length}件、公開中 {publishedCount}件です。
+        lead={<>{profile.user.name} さん。催しは {events.length}件です。
         </>}
       />
 
       <div className="roster-summary">
         <div className="roster-summary__item">
-          <span className="roster-summary__label">公開中</span>
+          <span className="roster-summary__label">プラン公開</span>
           <span className="roster-summary__value">
-            {publishedCount}
+            {publishedCounts.plan}
             <span>件</span>
           </span>
         </div>
         <div className="roster-summary__item">
-          <span className="roster-summary__label">受付停止</span>
+          <span className="roster-summary__label">チケット公開</span>
           <span className="roster-summary__value">
-            {closedCount}
+            {publishedCounts.ticket}
             <span>件</span>
           </span>
         </div>

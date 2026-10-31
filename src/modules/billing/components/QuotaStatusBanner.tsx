@@ -34,8 +34,8 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     const remaining = Math.max(0, quota.remainingPublished ?? 0);
     const head =
       remaining === 0
-        ? `公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
-        : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
+        ? `月額プランで公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
+        : `月額プランで公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
     return `${head}${detail}`;
   }
   const count = quota.publishedEventCount ?? 0;

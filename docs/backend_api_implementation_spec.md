@@ -644,7 +644,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 
 消費した種別は `quotaSourceOf(type)` で `Event.quota_source` に写す。公開の各入口（新規公開・下書きの公開・再開）は、この値を `quota_charged_at` と一緒に書く。複製は下書きを作るだけなので消費しない。
 
-402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
+402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
 
 ```json
 {

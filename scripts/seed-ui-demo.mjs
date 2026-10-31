@@ -311,7 +311,8 @@ try {
     ]);
 
   // スクリーンショット用の加入状態。月額で8件まで公開プランの途中にして、
-  // 「公開中のイベント 3 / 8 件」のバナーを撮る。数えるのは開催日が今日以降の3件。
+  // 「月額プランで公開中のイベント N / 8 件」のバナーを撮る。
+  // 数えるのは開催日が今日以降で、定額プランから公開したものだけ。
   await prisma.userUsageQuota.upsert({
     where: { userId: organizer.id },
     create: {
@@ -475,8 +476,9 @@ try {
         rsvpDeadline: input.rsvpDeadline ?? null,
         flyerAssetId: input.flyerAssetId ?? null,
         quotaChargedAt: input.status === "DRAFT" ? null : new Date(),
-        // デモの催しは定額プランから公開した扱いにする。公開中の件数はこの値で数える。
-        // 未加入の帯を見る会員だけは、無料枠から公開した扱いにする（FREE_TRIAL）。
+        // デモの催しは定額プランから公開した扱いにする。マイページの「プラン公開」と
+        // 帯の「N / 8 件」はこの値で数える。未加入の帯を見る会員だけは、無料枠から
+        // 公開した扱いにする（FREE_TRIAL。マイページでは「チケット公開」に数える）。
         quotaSource: input.status === "DRAFT" ? null : (input.quotaSource ?? "SUBSCRIPTION"),
         organizers: {
           create: [

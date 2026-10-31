@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "e7ecd1cc8e6a3b789ab3e9df9de31a8728ea07adfdd01054d12631a5b44d6875",
+  "uiHash": "8d72f8c8840338f946626d067bd153d61066cfbe03bbf9f45694c5cead4ef3fa",
   "screens": [
     {
       "no": "01",
@@ -377,7 +377,7 @@
       "label": "8件プラン",
       "file": "mock-organizer.html",
       "path": "/organizer/events",
-      "hash": "c99dd8d09e7352ca32769c6a706ac5179c3304376954f2d7868577d949e2b8cb"
+      "hash": "b9f4853d28d37ba21b1e4b430ba25eb964ece8da4a3fa45d83f76b220125374c"
     },
     {
       "no": "16",
@@ -449,7 +449,7 @@
       "label": "",
       "file": "mock-create.html",
       "path": "/organizer/events/new",
-      "hash": "dc8e9da3abb4240731a2dd6b88a5425aa1c3d4b73c787f23397b15a5049a1e24"
+      "hash": "63f67624fc5364b1d940519a450cf33f77baa30aadc6343f0d6d07095771da81"
     },
     {
       "no": "21",
@@ -485,7 +485,7 @@
       "label": "",
       "file": "mock-preview.html",
       "path": "/organizer/events/c9cab286-b3b0-4e95-8117-2783c2e92bf1/preview",
-      "hash": "13be14649988eccc644fb1b6b6ab55d5cc130ec67aef80f405f290c4784fb656"
+      "hash": "b3bbe5d038249deb47dc45747ad99f4f0c8bb06ce1393b14bb27be92ffb60023"
     },
     {
       "no": "24",
@@ -545,7 +545,7 @@
       "label": "",
       "file": "mock-mypage.html",
       "path": "/mypage",
-      "hash": "beb36ba6a7fc2024b3f5f2a679d13d8e84d6e41f5740d9bb65e756e489333ab9"
+      "hash": "a5c17afcc7309f0d7246830d5fe1edc1bb4cb33e29fd69ef8eeec0cd4bd51f05"
     }
   ]
 }

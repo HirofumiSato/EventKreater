@@ -4,6 +4,7 @@ import type {
   Gender,
   OrganizerRole,
   PriceAudience,
+  QuotaSource,
   RainPolicy,
   RsvpStatus,
 } from "@prisma/client";
@@ -252,6 +253,8 @@ export interface EventRecordShape {
   themeId?: string | null;
   status: EventStatus;
   visibility: EventVisibility;
+  /** どの利用枠から公開したか。主催者向けの一覧だけが返す。 */
+  quotaSource?: QuotaSource | null;
   rsvpDeadline: Date | null;
   createdAt: Date;
   flyerAssetId: string | null;
@@ -452,6 +455,8 @@ export function serializeOrganizerListItem(
   return {
     ...serializeEvent(event),
     role,
+    // 公開ページの応答には出さない。マイページの要約が枠ごとの件数を出すためだけに持つ。
+    quotaSource: event.quotaSource ?? null,
     ownerName,
     ownerUserId,
     stats,

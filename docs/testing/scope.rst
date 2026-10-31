@@ -147,7 +147,7 @@
 
 .. count-start
 
-70 ファイル、``it`` は 929 件です。内訳は ``tests/unit/`` が 56 ファイル 837 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+71 ファイル、``it`` は 933 件です。内訳は ``tests/unit/`` が 57 ファイル 841 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -291,6 +291,10 @@
      - 15
      - 主催一覧の絞り込み（状態・過去・開催日）、10 件ずつのページ割り、日本時間の今日
      - SCR-ORG-01
+   * - ``tests/unit/published-counts.test.ts``
+     - 4
+     - マイページの公開中の件数を、月額プランとチケット（単発・無料枠）に分ける。帯と同じく公開中・今日以降・自分の筆頭幹事だけを数え、枠の記録が無い催しはチケット側に置く
+     - SCR-PUB-03
    * - ``tests/unit/flyer-download.test.ts``
      - 11
      - ダウンロードの URL と ``Content-Disposition``、拡張子の対応、ファイル名の整形と長さの上限
@@ -442,7 +446,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 837、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 837 件を実行して 92 件を skip します。
+件数の内訳は ``tests/unit/`` が 841、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 841 件を実行して 92 件を skip します。
 
 .. breakdown-end
 
