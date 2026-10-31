@@ -969,7 +969,7 @@ export const StripePortalButton: React.FC<StripePortalButtonProps> = ({
 
 ### 4.4. QuotaStatusBanner.tsx（クォータ残数＆プラン状態表示バー）
 
-主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月額で8件まで公開 / 公開し放題）を出し、月額で8件まで公開プランでは「公開中のイベント 5 / 8 件（あと3件公開できます）」の形で、公開中の件数と上限、残りを出す。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題への変更と、公開の一時停止・削除を促す。公開し放題では「公開し放題に加入中です。公開中のイベント数に上限はありません。」だけを出す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
+主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（月額で8件まで公開 / 公開し放題）を出し、月額で8件まで公開プランでは「公開中のイベント 5 / 8 件（あと3件公開できます）」の形で、公開中の件数と上限、残りを出す。公開し放題では「公開し放題に加入中です。公開中のイベント 5 件（上限はありません）。」と、件数だけを出す。未加入では「公開中のイベント 3 件。無料トライアル残り 1回」の形で、公開中の件数を先に出す（0 件のときは出さない）。件数は開催日が今日以降で、自分が筆頭幹事のものだけを数える。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題への変更と、公開の一時停止・削除を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り回数と受取ボタンを出す。
 
 ```tsx
 "use client";
@@ -1012,7 +1012,8 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
         : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
     return `${head}${detail}`;
   }
-  return `公開し放題に加入中です。公開中のイベント数に上限はありません。${detail}`;
+  const count = quota.publishedEventCount ?? 0;
+  return `公開し放題に加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -1038,7 +1039,11 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
         ? subscribedMessage(quota, discountLabel)
-        : `無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
+        : `${
+            quota.publishedEventCount
+              ? `公開中のイベント ${quota.publishedEventCount} 件。`
+              : ""
+          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
 
@@ -1239,7 +1244,10 @@ export interface UserQuota {
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan: SubscriptionPlan;
-  /** 公開中のイベント数。月額で8件まで公開プランだけが数える。 */
+  /**
+   * 公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のもの。
+   * 月額で8件まで公開プランでは枠の判定と同じく定額から公開したものだけを数える。
+   */
   publishedEventCount: number;
   publishedEventLimit: number;
   /** あと何件公開できるか。公開し放題と未加入は null。 */
@@ -1373,7 +1381,7 @@ Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ
 | :---- | :---- | :---- |
 | SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 販売価格を大きく、割引中は定価を打ち消し線で併記。期限とキャンペーン名を添える。単発・月額で8件まで公開・公開し放題の3枚を出す |
 | SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` を保持し、`quotes`（`oneTime` / `subscription8` / `subscriptionUnlimited`）として渡す | 同じく販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
-| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「公開中のイベント 5 / 8 件（あと3件公開できます）」「公開し放題に加入中です。公開中のイベント数に上限はありません。」を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
+| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「公開中のイベント 5 / 8 件（あと3件公開できます）」「公開し放題に加入中です。公開中のイベント 5 件（上限はありません）。」を出し、未加入は「公開中のイベント 3 件。無料トライアル残り 1回」（0 件なら件数を出さない）を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す |
 | SCR-ADM-05 `/console/pricing` | `GET /api/v1/admin/pricing-campaigns` | 一覧に成立件数、売上、割引総額を出す。フォームは入力中の割引率から販売価格を即時計算する |
 
 ### 10.2. `PricingModal` の props

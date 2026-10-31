@@ -1438,7 +1438,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`publishedEventCount` / `remainingPublished` は、加入中の月額で8件まで公開プランでだけ数える。それ以外は `0` と `null` を返す（公開し放題は件数を数えない）。
+`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは枠の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
 
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
@@ -1448,6 +1448,7 @@ import { prisma } from '@/lib/prisma';
 import {
   FREE_EVENT_LIMIT,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countPublishedEvents,
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from '@/modules/billing/lib/quota';
@@ -1469,11 +1470,12 @@ export async function GET(req: NextRequest) {
     select: { phoneVerifiedAt: true },
   });
   const phoneVerified = Boolean(user?.phoneVerifiedAt);
-  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+  // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
+  // 残りの計算と食い違わないよう、枠の判定と同じ数え方（定額から公開したものだけ）にする。
   const countedPlan = isSubActive && quota.subscriptionPlan === 'MONTHLY_8';
   const publishedCount = countedPlan
     ? await countPublishedSubscriptionEvents(prisma, userId, now)
-    : 0;
+    : await countPublishedEvents(prisma, userId, now);
   const remainingPublished = countedPlan
     ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
     : null;

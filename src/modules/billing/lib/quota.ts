@@ -171,6 +171,28 @@ export async function countPublishedSubscriptionEvents(
   });
 }
 
+/**
+ * 画面に出す「公開中のイベント」の件数。
+ *
+ * 枠の判定（`countPublishedSubscriptionEvents`）と違い、どの枠から公開したものも数える。
+ * 公開し放題と未加入の帯にも件数を出すため。数える範囲は同じで、公開済み・未削除・
+ * 開催日が今日以降・自分の筆頭幹事のものだけ。
+ */
+export async function countPublishedEvents(
+  db: Prisma.TransactionClient | typeof prisma,
+  userId: string,
+  now = new Date(),
+): Promise<number> {
+  return db.event.count({
+    where: {
+      status: "PUBLISHED",
+      isDeleted: false,
+      schedules: { some: { eventDate: { gte: jstToday(now) } } },
+      organizers: { some: { userId, role: "OWNER" } },
+    },
+  });
+}
+
 export function quotaExceeded(
   detail?: string,
   options?: QuotaPricingOption[],

@@ -59,7 +59,11 @@ export interface UserQuota {
   paidCredits: number;
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan?: UserSubscriptionPlan;
-  /** 月額で8件まで公開プランで、いま公開中のイベント数。公開し放題と未加入は 0。 */
+  /**
+   * いま公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のものだけ。
+   * 月額で8件まで公開プランでは枠の判定と同じく定額から公開したものだけを数え、
+   * それ以外（公開し放題・未加入）は単発や無料枠から公開したものも数える。
+   */
   publishedEventCount?: number;
   /** 月額で8件まで公開プランの上限（8）。 */
   publishedEventLimit?: number;

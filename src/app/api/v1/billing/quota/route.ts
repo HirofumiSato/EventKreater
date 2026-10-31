@@ -6,6 +6,7 @@ import { toErrorResponse } from "@/lib/http";
 import {
   FREE_EVENT_LIMIT,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countPublishedEvents,
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from "@/modules/billing/lib/quota";
@@ -39,11 +40,12 @@ export async function GET(req: NextRequest) {
     const isSubActive = isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now);
     const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
     const phoneVerified = Boolean(user?.phoneVerifiedAt);
-    // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+    // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
+    // 残りの計算と食い違わないよう、枠の判定と同じ数え方（定額から公開したものだけ）にする。
     const countedPlan = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
     const publishedCount = countedPlan
       ? await countPublishedSubscriptionEvents(prisma, userId, now)
-      : 0;
+      : await countPublishedEvents(prisma, userId, now);
     const remainingPublished = countedPlan
       ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
       : null;

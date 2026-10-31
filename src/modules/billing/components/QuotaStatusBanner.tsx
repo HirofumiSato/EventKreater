@@ -38,7 +38,8 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
         : `公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
     return `${head}${detail}`;
   }
-  return `公開し放題に加入中です。公開中のイベント数に上限はありません。${detail}`;
+  const count = quota.publishedEventCount ?? 0;
+  return `公開し放題に加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -64,7 +65,11 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
         ? subscribedMessage(quota, discountLabel)
-        : `無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
+        : `${
+            quota.publishedEventCount
+              ? `公開中のイベント ${quota.publishedEventCount} 件。`
+              : ""
+          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
             freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
           }`;
 
