@@ -1709,6 +1709,35 @@ fieldset.field {
   line-height: 1.35;
 }
 
+/* 見出しは 3 行のまま。最後の行だけ、右に吹き出しを並べる。 */
+.hero--stage .hero__title-line {
+  display: block;
+}
+
+.hero--stage .hero__title-row {
+  display: flex;
+  align-items: baseline;
+  column-gap: 0.625rem;
+}
+
+.hero--stage .hero__title-row .hero__title-line {
+  flex: none;
+}
+
+.hero--stage .hero__callout {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 5.5rem;
+  max-width: 12rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .hero--stage .hero__lead {
   max-width: 34rem;
   margin-top: 1.25rem;
@@ -2686,6 +2715,25 @@ h3,
   background: var(--color-primary);
   color: #fff;
   box-shadow: 5px 5px 0 var(--pop-warm);
+}
+
+/* 見出しの最後の行に添える吹き出し。左辺の三角は見出しを受ける向き。 */
+.hero--stage .hero__callout {
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
+}
+
+.hero--stage .hero__callout::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -0.4375rem;
+  border-top: 0.3125rem solid transparent;
+  border-bottom: 0.3125rem solid transparent;
+  border-right: 0.4375rem solid var(--pop-warm);
+  transform: translateY(-50%);
 }
 
 .hero__poster-placeholder {
