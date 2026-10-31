@@ -741,7 +741,7 @@
     "送信する",
     "申し込む",
     "取り消す",
-    "LINEで送る",
+    "LINEで共有",
   ]);
 
   const NAVIGATES = new Map([

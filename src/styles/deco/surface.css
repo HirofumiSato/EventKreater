@@ -1388,14 +1388,31 @@
   margin-left: 0.375rem;
 }
 
-/* イベントの札。行ではなく面で見せる。 */
+/* イベントの札。行ではなく面で見せる。
+   チラシは左の細い列に置き、本文をその右へ流す。スマホでも同じ組み方にして、
+   縦に積んだときに催し名が 1 画面ぶん下がらないようにする。 */
 .event-card {
   display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: start;
   gap: 1rem;
   padding: 1.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
   background: var(--color-surface);
+}
+
+/* チラシが無いときは、本文を 4.5rem の列に落とさない。 */
+.event-card--no-thumb {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 操作と折りたたみは本文に混ぜず、札の幅いっぱいに置く。
+   チラシの列に落とすと、ボタンが 4.5rem の幅に潰れる。 */
+.event-card > .event-card__actions,
+.event-card > .card__actions,
+.event-card > .event-card__fold {
+  grid-column: 1 / -1;
 }
 
 /* 主催一覧の並び。チラシの列（4.5rem）と本文を並べても詰まらない幅で、2 枚ずつ置く。
@@ -1413,21 +1430,11 @@
 }
 
 @media (min-width: 640px) {
-  .event-card {
-    grid-template-columns: 4.5rem minmax(0, 1fr);
-    align-items: start;
-  }
-
   /* 操作が 3〜4 個ある画面では、右の細い列に積むと本文が潰れる。
      操作は本文の下へ回し、幅は本文に使う。 */
   .event-card > .event-card__actions,
   .event-card > .card__actions {
     grid-column: 2;
-  }
-
-  /* チラシが無いときは、本文を 4.5rem の列に落とさない。 */
-  .event-card--no-thumb {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .event-card--no-thumb > .event-card__actions,
@@ -1443,6 +1450,20 @@
   object-fit: cover;
   border-radius: var(--radius-lg);
   background: var(--color-slate-100);
+}
+
+/* チラシは押すと告知ページが別のウィンドウで開く。絵のまま押せることが分かるよう、
+   指を置いたときだけ少し反応させる（焦点の輪は `base.css` の `:focus-visible`）。 */
+.event-card__thumb-link {
+  display: block;
+  width: 4.5rem;
+  border-radius: var(--radius-lg);
+  line-height: 0;
+  transition: opacity 0.15s ease;
+}
+
+.event-card__thumb-link:hover {
+  opacity: 0.85;
 }
 
 .event-card__head {

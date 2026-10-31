@@ -76,11 +76,11 @@ html.has-mockbar body {
 /* 製品が画面下に固定の帯（`.action-dock`）を持つ画面では、付箋をその上へ逃がす。
    製品の帯は本物の位置（画面の最下部）のまま撮り、モックの付箋だけをよける。 */
 html.has-mockbar:not(.is-embed):has(.action-dock) body {
-  padding-bottom: 7rem;
+  padding-bottom: 6.25rem;
 }
 
 html.has-mockbar:not(.is-embed):has(.action-dock) .mockbar {
-  bottom: 4.25rem;
+  bottom: 3.5rem;
 }
 
 /* 公開プロフィールの操作も、スマホでは画面下に固定される（`.profile-actions`）。

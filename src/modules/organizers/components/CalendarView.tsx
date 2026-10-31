@@ -190,7 +190,7 @@ export function CalendarView() {
                           {event.role === "CO_HOST" && " · 共同主催"}</>}
                       aside={<><div className="event-card__actions">
                         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--ghost btn--sm">
-                          名簿
+                          出欠
                         </Link>
                         {/* 下書きと受付停止は公開ページを配る意味が無いので出さない。 */}
                         {event.status === "PUBLISHED" && (

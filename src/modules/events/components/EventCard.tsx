@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatRsvpDeadlineLabel, scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
+import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { Badge } from "@/components/ui";
 
 interface EventCardProps {
@@ -37,11 +38,27 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
     window.setTimeout(() => setCopied(false), 2000);
   };
 
+  // チラシは告知ページへの入口も兼ねる。下書きには公開ページが無いので、絵のまま置く。
+  const thumb = event.flyerThumbnailUrl ? (
+    <img className="event-card__thumb" src={event.flyerThumbnailUrl} alt="" width={1080} height={1920} />
+  ) : null;
+
   return (
     <article className={`event-card${event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}>
-      {event.flyerThumbnailUrl ? (
-        <img className="event-card__thumb" src={event.flyerThumbnailUrl} alt="" width={1080} height={1920} />
-      ) : null}
+      {thumb !== null &&
+        (event.status === "DRAFT" ? (
+          thumb
+        ) : (
+          <Link
+            className="event-card__thumb-link"
+            href={publicPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${event.title}の公開ページを新しいウィンドウで開く`}
+          >
+            {thumb}
+          </Link>
+        ))}
 
       <div>
         {/* 札はイベント名の頭に並ぶので、名簿の行と同じ小さめの大きさで出す。
@@ -91,19 +108,24 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
           編集は一覧でいちばん使うので、塗りと文字色を変えて主の操作として置く。 */}
       <div className="event-card__actions">
         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
-          名簿
+          出欠
         </Link>
+        {/* 下書きは配る先が無い。告知ページのある催しだけ、その場で LINE へ渡せるようにする。 */}
         {event.status !== "DRAFT" && (
-          <Link href={publicPath} target="_blank" rel="noopener noreferrer" className="btn btn--ghost btn--sm">
-            公開ページ
-          </Link>
+          <LineShareButton
+            title={event.title}
+            schedules={event.schedules}
+            location={event.location}
+            path={publicPath}
+            className="btn btn--outline btn--sm"
+          />
         )}
         <div className="event-card__actions-edit">
           <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--accent btn--sm">
             編集
           </Link>
           <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
-            複製
+            コピー作成
           </button>
         </div>
       </div>
