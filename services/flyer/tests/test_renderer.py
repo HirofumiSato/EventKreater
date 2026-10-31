@@ -17,15 +17,18 @@ from src.adapters.renderer.layout_calculator import (
     HIGH_FREQUENCY_EDGE_VARIANCE,
     average_rgb,
     blend_rgb,
+    cell_samples,
     choose_backdrop,
     contrast_ratio,
     edge_variance,
     fit_to_scale,
+    hex_to_rgb,
     line_width,
     measure_text_block,
     relative_luminance,
     requires_contrast_protection,
     veil_alpha,
+    worst_case_contrast,
 )
 from src.adapters.renderer.layouts import stack_for
 from src.adapters.renderer.pillow_renderer import PillowFlyerRenderer
@@ -486,6 +489,58 @@ def test_a_dark_photo_gets_a_white_title() -> None:
     assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
 
 
+def _sky_with_a_dark_subject() -> bytes:
+    """桃クリームの空の帯に、暗い人物（髪と服）が入り込んだ写真。"""
+    image = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT), (246, 238, 226))
+    ImageDraw.Draw(image).rectangle((0, 360, CANVAS_WIDTH, 700), fill=(30, 26, 24))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_a_bright_sky_with_a_dark_subject_keeps_the_title_readable() -> None:
+    """空と人物が混ざった帯でも、いちばん不利なセルで 4.5:1 を満たす。
+
+    平均色で測ると、明るい空と暗い服が混ざって「読める」と報告してしまう。
+    題の帯を格子に割り、最悪のセルで色とベールを決める。
+    """
+    renderer = PillowFlyerRenderer()
+    request = make_request(
+        "ハロウィン おやこマルシェ",
+        semantic_theme=SemanticTheme.CANDY,
+    )
+    data = renderer.render_flyer(_sky_with_a_dark_subject(), request, make_context())
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+    # 地を寄せないと読めない帯なので、ベールが立っている。
+    assert metadata.backdrop_applied is True
+
+    # 描画した画像の題の帯を、実際に格子で測り直す。
+    font_path = renderer.font_path_for(request.template_id)
+    stack = stack_for(TextLayout.CLASSIC)
+    plan = poster.plan_for_request(
+        request,
+        title=fit_to_scale(
+            request.title,
+            font_path,
+            _scratch_draw(),
+            max_width=design.CONTENT_WIDTH,
+            max_height=stack.title_height,
+            allow_hanging=design.variant_for(request.template_id).align == "left",
+        ),
+        stack=stack,
+        accent=make_context().suggested_accent_color,
+    )
+    title = plan.slot("title")
+    assert title is not None
+    rendered = Image.open(BytesIO(data)).convert("RGB")
+    samples = cell_samples(rendered, title.area)
+    assert worst_case_contrast(hex_to_rgb(metadata.title_color), samples) >= (
+        design.WCAG_AA_CONTRAST
+    )
+
+
 def test_a_bright_photo_keeps_the_ink_title() -> None:
     renderer = PillowFlyerRenderer()
     renderer.render_flyer(
@@ -562,3 +617,119 @@ def test_resolve_title_color_follows_the_ground() -> None:
         255,
         255,
     )
+
+
+def test_a_dark_theme_veils_a_bright_photo_darker_not_lighter() -> None:
+    """紙が暗いテーマ（ネオン）でも、明るい題のベールは暗く敷く。
+
+    `surface_for(paper, "ink")` は紙が暗いと明るい面を返す。明るい題の上に
+    明るいベールを敷くと 4.5:1 に届かず、ベールは敷かれない。題が写真の明るい
+    ビームに重なったとき、白い字が白い地に溶ける。
+    """
+    image = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT), (214, 176, 120))
+    ImageDraw.Draw(image).rectangle((0, 300, CANVAS_WIDTH, 620), fill=(250, 240, 220))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(
+        buffer.getvalue(),
+        make_request("DJナイト Vol.7", semantic_theme=SemanticTheme.NEON),
+        make_context(),
+    )
+    metadata = renderer.last_metadata
+    assert metadata is not None
+    # 明るい写真なので、明るい題を選び、暗いベールで地を沈める。
+    assert relative_luminance(*hex_to_rgb(metadata.title_color)) > 0.5
+    assert metadata.overlay_alpha is not None and metadata.overlay_alpha > 0
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+
+
+def test_ensure_contrast_moves_to_the_side_that_can_reach_the_ratio() -> None:
+    """白では届かない地では、白ではなく黒へ寄せる。
+
+    地の相対輝度が 0.18〜0.5 のあいだ（写真の空や木の幹）では、白文字は
+    4.5:1 に届かない。それでも「地が暗めだから白」と決め打つと、差し色の日付と
+    補助文字の時刻が白一色へ潰れる。墨へ寄せれば短い歩数で届く。
+    """
+    accent = hex_to_rgb("#8B2635")
+    ground = (150, 140, 128)
+    ground_luminance = relative_luminance(*ground)
+    # 前提: この地では白が届かない。
+    assert contrast_ratio(relative_luminance(255, 255, 255), ground_luminance) < (
+        design.WCAG_AA_CONTRAST
+    )
+
+    fixed = design.ensure_contrast(accent, ground)
+
+    assert fixed != (255, 255, 255)
+    # 差し色の色相（赤が最も強い）を残す。
+    assert fixed[0] > fixed[1] and fixed[0] > fixed[2]
+    assert contrast_ratio(relative_luminance(*fixed), ground_luminance) >= (
+        design.WCAG_AA_CONTRAST
+    )
+
+
+def _record_slot_colours(
+    monkeypatch: pytest.MonkeyPatch,
+    background: bytes,
+    request: FlyerGenerationRequest,
+) -> tuple[dict[str, tuple[int, int, int]], object]:
+    """描画したスロットごとの最終的な文字色と、描画の記録を集める。"""
+    recorded: dict[str, tuple[int, int, int]] = {}
+    original = poster._draw_slot
+
+    def spy(draw, slot, font, color=None):  # type: ignore[no-untyped-def]
+        recorded[slot.role] = color if color is not None else slot.color
+        return original(draw, slot, font, color)
+
+    monkeypatch.setattr(poster, "_draw_slot", spy)
+    renderer = PillowFlyerRenderer()
+    renderer.render_flyer(background, request, make_context())
+    return recorded, renderer.last_metadata
+
+
+def test_the_headline_group_shares_one_colour(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """日付・時刻・題は同じ帯に載る。1 色にそろえ、階層は大きさで示す。
+
+    ここを役割ごとの色（日付は差し色、時刻は補助色、題は墨）に分けると、写真の上で
+    同じ帯に載っているのに 3 つが別々の色へ寄る。暗い写真では日付だけ鮮やかな
+    水色、時刻は灰色、題は白、のようにばらけて統一感がなくなる。
+    """
+    ground = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT), (214, 205, 188))
+    ImageDraw.Draw(ground).rectangle((90, 300, 360, 460), fill=(150, 140, 128))
+    buffer = BytesIO()
+    ground.save(buffer, format="PNG")
+
+    request = make_request("秋のゆるごはん会", semantic_theme=SemanticTheme.PARCHMENT)
+    recorded, metadata = _record_slot_colours(monkeypatch, buffer.getvalue(), request)
+
+    assert recorded["eyebrow"] == recorded["meta"] == recorded["title"]
+    # 明るい紙の上なので、墨の側を選ぶ（白固定にしない）。
+    assert relative_luminance(*recorded["title"]) < 0.25
+    assert metadata is not None
+    assert metadata.contrast_ratio >= design.WCAG_AA_CONTRAST
+
+
+def test_a_dark_photo_keeps_the_headline_group_light(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """暗い写真では、日付・時刻・題の 3 つとも明るい側へそろえる。
+
+    帯の一部にだけ明るいビームが入っていても、3 つは 1 色なので同じ濃さへ寄る。
+    ここが役割ごとに別判定だと、日付だけ白、時刻だけ灰色、題だけ別の白になる。
+    """
+    ground = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT), (24, 20, 34))
+    # 題の帯の左下にだけ、明るいビームを置く。日付と時刻の行には掛けない。
+    ImageDraw.Draw(ground).rectangle((120, 270, 420, 340), fill=(236, 226, 208))
+    buffer = BytesIO()
+    ground.save(buffer, format="PNG")
+
+    request = make_request("DJナイト Vol.7", semantic_theme=SemanticTheme.NEON)
+    recorded, metadata = _record_slot_colours(monkeypatch, buffer.getvalue(), request)
+
+    assert recorded["eyebrow"] == recorded["meta"] == recorded["title"]
+    # 暗い写真なので、明るい側（テーマの墨が明るいネオンではその色）を選ぶ。
+    assert relative_luminance(*recorded["title"]) > 0.5

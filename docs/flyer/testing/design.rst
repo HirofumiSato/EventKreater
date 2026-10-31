@@ -80,6 +80,8 @@
      - 暗い写真では自動で白い題名になり、4.5 以上
    * - ``test_a_bright_photo_keeps_the_ink_title``
      - 明るい写真では墨のまま。色を選び直さない
+   * - ``test_a_bright_sky_with_a_dark_subject_keeps_the_title_readable``
+     - 明るい空と暗い被写体が混ざる写真でも、見出しの群の全セルが 4.5 以上
    * - ``test_a_chosen_white_title_darkens_the_ground_instead_of_the_type``
      - 白を選ぶと文字は白のまま、地の側が暗くなる
    * - ``test_a_chosen_colour_that_cannot_be_read_is_moved_to_the_ink_side``
@@ -113,8 +115,10 @@
      - すべての y が 8 の倍数
    * - ``test_text_stays_inside_the_safe_area``
      - 文字は上下 128 px の安全域の内側
-   * - ``test_the_accent_is_used_for_exactly_one_text_slot``
-     - 差し色の文字は eyebrow の 1 スロットだけ
+   * - ``test_the_accent_is_kept_for_the_rule_not_the_text``
+     - 差し色は見出し下の罫線だけ。文字には使わない
+   * - ``test_the_headline_slots_share_one_colour``
+     - 日付・時刻・題の 3 つは同じ色（階層は大きさと字間）
    * - ``test_the_three_tiles_share_one_grid``
      - 3 種で本文の格子と左右の余白が同一
    * - ``test_the_title_is_the_largest_text_on_the_page``
@@ -163,8 +167,10 @@
 紙の地
 ------
 
-ファイルは ``tests/test_paper_ground.py`` です。ステップ 1 の 3 枚が 1 枚の紙を
-共有することと、写真らしさを作らないことを検証します。
+ファイルは ``tests/test_paper_ground.py`` です。AI を使わないときの代替背景が
+テーマの紙になることと、写真らしさを作らないことを検証します。3 種の紙面が
+1 枚の地を共有する性質は、決定性ではなく候補 API 側の
+``test_type_step_renders_three_papers_on_the_same_background`` で確かめます。
 
 .. list-table::
    :header-rows: 1
@@ -176,8 +182,6 @@
      - 1080×1528 の PNG
    * - ``test_same_theme_paints_the_same_bytes``
      - 同じテーマなら同一バイト列
-   * - ``test_step_one_shares_one_paper_across_the_three_tiles``
-     - 3 種が同じ紙を使う
    * - ``test_tones_go_dark_as_the_index_grows``
      - 濃さの番号が増えるほど暗い
    * - ``test_paper_has_no_photo_texture``
@@ -185,11 +189,11 @@
    * - ``test_themes_keep_their_own_papers``
      - テーマごとに紙の色が変わる
 
-タイトル色の選択肢
-------------------
+候補のウィザード
+----------------
 
-ファイルは ``tests/test_title_colors.py`` です。4 通りは並び順を固定し、墨と差し色が
-紙に対して 4.5:1 を満たすことを確かめます。
+ファイルは ``tests/test_candidate_api.py`` です。2 ステップ（背景 → 紙面の性格）を
+API の往復で確かめます。画像生成も LLM もテスト内の偽物です。
 
 .. list-table::
    :header-rows: 1
@@ -197,12 +201,47 @@
 
    * - テスト
      - 期待
-   * - ``test_four_choices_start_with_automatic``
-     - ``auto`` / ``ink`` / ``white`` / ``accent`` の順で、先頭の色は ``None``
-   * - ``test_ink_and_accent_stay_readable_on_the_paper``
-     - 3 種 × テーマの全組み合わせで 4.5 以上
-   * - ``test_unknown_ids_fall_back_to_automatic``
-     - 未知の ID は自動へ落とす
+   * - ``test_background_step_returns_one_tile``
+     - ステップ 1 は ``kind`` が ``background`` の 1 枚
+   * - ``test_type_step_renders_three_papers_on_the_same_background``
+     - 親の背景バイト列を使い回し、3 種だけを描く
+   * - ``test_type_step_is_one_axis_with_shared_ground_and_accent``
+     - 3 枚で紙・差し色・格子が同一で、変わるのは書体と寄せ
+   * - ``test_type_step_recommends_only_the_themed_paper``
+     - ``recommended`` はテーマに合う 1 枚だけ
+   * - ``test_type_candidates_inherit_source``
+     - AI の背景から作った紙面は ``source`` も ``ai``
+   * - ``test_type_candidates_belong_to_their_owner``
+     - 他所の端末の候補は 404
+   * - ``test_wizard_chain_produces_a_selectable_candidate``
+     - 背景 → 紙面 → 確定まで通り、確定は再描画しない
+   * - ``test_placeholder_backgrounds_report_source_and_remaining``
+     - ``source`` と ``ai_remaining`` が返る
+   * - ``test_ai_backgrounds_stop_after_three_per_hour``
+     - 上限で代替背景へ落ち、``ai_fallback`` が立つ
+   * - ``test_unknown_candidate_returns_404``
+     - 未知の候補 ID は ``CANDIDATE_EXPIRED``
+
+ファイルは ``tests/test_upload_api.py`` です。持ち込んだ写真も同じ 2 ステップを通ります。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - テスト
+     - 期待
+   * - ``test_upload_becomes_background_candidate``
+     - A4 縦へ正規化され、``source`` は ``upload``
+   * - ``test_uploaded_background_flows_through_types_and_save``
+     - アップロードから紙面 3 種・確定まで通る
+   * - ``test_unsupported_format_is_rejected``
+     - 対応外の形式は 422
+   * - ``test_broken_image_is_rejected``
+     - 壊れた画像は 422
+   * - ``test_too_large_image_is_rejected``
+     - 上限を超える画像は 422
+   * - ``test_upload_candidate_is_limited_to_its_owner``
+     - 他所の端末の候補は 404
 
 タイトルの意味改行
 ------------------

@@ -83,16 +83,26 @@ def test_text_stays_inside_the_safe_area(template_id: TemplateId) -> None:
 
 
 @pytest.mark.parametrize("template_id", list(TemplateId))
-def test_the_accent_is_used_for_exactly_one_text_slot(template_id: TemplateId) -> None:
-    """差し色は小さなラベルと罫線だけ。大きな文字には使わない。"""
+def test_the_accent_is_kept_for_the_rule_not_the_text(template_id: TemplateId) -> None:
+    """差し色は見出し下の罫線だけ。文字には使わない（見出しは 1 色にそろえる）。"""
     plan = _plan(template_id)
     accent = plan.colors.accent
-    used = [slot.role for slot in plan.slots if slot.color == accent]
-    if plan.colors.on_surface_accent == accent:
-        used = []
-    assert len(used) <= 1, used
-    sizes = [slot.size for slot in plan.slots if slot.color == accent]
-    assert all(size <= design.EYEBROW_SIZE for size in sizes), sizes
+    text_uses = [slot.role for slot in plan.slots if slot.color == accent]
+    assert text_uses == [], text_uses
+    headline = [rule for rule in plan.rules if rule.role == "headline"]
+    assert len(headline) == 1
+    assert headline[0].color == accent
+
+
+@pytest.mark.parametrize("template_id", list(TemplateId))
+def test_the_headline_slots_share_one_colour(template_id: TemplateId) -> None:
+    """日付・時刻・題の 3 つは同じ色。階層は大きさと字間だけが示す。"""
+    plan = _plan(template_id)
+    eyebrow = plan.slot("eyebrow")
+    meta = plan.slot("meta")
+    title = plan.slot("title")
+    assert eyebrow is not None and meta is not None and title is not None
+    assert eyebrow.color == meta.color == title.color
 
 
 def test_the_three_tiles_share_one_grid() -> None:

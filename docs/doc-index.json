@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2653,
+      "lineCount": 2650,
       "headings": [
         {
           "level": 2,
@@ -3703,7 +3703,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 224,
+      "lineCount": 202,
       "headings": [
         {
           "level": 1,
@@ -3719,23 +3719,11 @@
         },
         {
           "level": 3,
-          "text": "ステップ 1: 紙面の性格"
+          "text": "ステップ 1: 背景"
         },
         {
           "level": 3,
-          "text": "ステップ 2: 背景"
-        },
-        {
-          "level": 3,
-          "text": "ステップ 3: 文字配置"
-        },
-        {
-          "level": 3,
-          "text": "ステップ 4: 配色"
-        },
-        {
-          "level": 3,
-          "text": "ステップ 5: タイトル色"
+          "text": "ステップ 2: 紙面の性格"
         },
         {
           "level": 3,
@@ -4308,7 +4296,7 @@
         },
         {
           "level": 3,
-          "text": "ステップ 2 の背景候補も AI で作る"
+          "text": "ステップ 1 の背景候補も AI で作る"
         },
         {
           "level": 2,
@@ -4365,7 +4353,7 @@
       "title": "生成パイプライン",
       "summary": "src.usecases.generate_flyer_usecase.GenerateFlyerUseCase.execute が次の順で処理します。",
       "preImplementation": false,
-      "lineCount": 30,
+      "lineCount": 32,
       "headings": [
         {
           "level": 1,
@@ -4573,7 +4561,7 @@
       "title": "文字合成",
       "summary": "基準キャンバスは 1080×1528 px（A4 縦 210:297）です。背景が別サイズでも、中央を基準に覆うように拡大してからこのサイズへ切り出します。出力は品質 90 の JPEG です。",
       "preImplementation": false,
-      "lineCount": 102,
+      "lineCount": 110,
       "headings": [
         {
           "level": 1,
@@ -4613,7 +4601,7 @@
       "title": "チラシ生成コンテクストの契約",
       "summary": "画面の入力が、どの項目としてチラシ生成サービスへ渡り、どこで使われるかを 1 枚に固定する。背景画像を作る LLM と、文字を焼き込む決定論レンダラーは別のものなので、「プロンプトに効く項目」と「描画だけで使う項目」を混ぜないことが要点になる。",
       "preImplementation": false,
-      "lineCount": 88,
+      "lineCount": 150,
       "headings": [
         {
           "level": 1,
@@ -4626,6 +4614,10 @@
         {
           "level": 2,
           "text": "対応表"
+        },
+        {
+          "level": 2,
+          "text": "被写体の優先順位"
         },
         {
           "level": 2,
@@ -4664,6 +4656,14 @@
         },
         {
           "path": "services/flyer/src/domain/prompt_payload.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/visual_hints.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/visual_hints.py",
           "exists": true
         },
         {
@@ -4706,7 +4706,7 @@
       "title": "システム詳細設計書",
       "summary": "本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。",
       "preImplementation": false,
-      "lineCount": 422,
+      "lineCount": 431,
       "headings": [
         {
           "level": 1,
@@ -4786,7 +4786,7 @@
         },
         {
           "level": 3,
-          "text": "5.6. タイトル色の引き継ぎ"
+          "text": "5.6. 題名色の決定"
         },
         {
           "level": 2,
@@ -4831,7 +4831,7 @@
       "title": "実装仕様書",
       "summary": "本システムは、非決定的なビジュアル生成（AI層）と決定論的な情報描画（プログラム層）を完全に疎結合化し、以下の直列パイプラインで処理を実行する。",
       "preImplementation": false,
-      "lineCount": 401,
+      "lineCount": 454,
       "headings": [
         {
           "level": 1,
@@ -4883,7 +4883,19 @@
         },
         {
           "level": 1,
+          "text": "Scene slots"
+        },
+        {
+          "level": 1,
+          "text": "Subject priority (highest first)"
+        },
+        {
+          "level": 1,
           "text": "How to read the event data"
+        },
+        {
+          "level": 1,
+          "text": "People"
         },
         {
           "level": 1,
@@ -4962,6 +4974,10 @@
         },
         {
           "path": "services/flyer/src/domain/title_composition.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/visual_hints.py",
           "exists": true
         },
         {
@@ -5102,7 +5118,7 @@
       "title": "システム要件定義書",
       "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
-      "lineCount": 316,
+      "lineCount": 319,
       "headings": [
         {
           "level": 1,
@@ -5361,7 +5377,7 @@
       "title": "テスト設計",
       "summary": "ケースは、仕様の境界と失敗の分岐から切ります。実装ファイルは tests/ です。入力の共通データは tests/support.py に置きます。",
       "preImplementation": false,
-      "lineCount": 310,
+      "lineCount": 349,
       "headings": [
         {
           "level": 1,
@@ -5389,7 +5405,7 @@
         },
         {
           "level": 2,
-          "text": "タイトル色の選択肢"
+          "text": "候補のウィザード"
         },
         {
           "level": 2,
@@ -5427,6 +5443,10 @@
           "exists": true
         },
         {
+          "path": "services/flyer/tests/test_candidate_api.py",
+          "exists": true
+        },
+        {
           "path": "services/flyer/tests/test_domain.py",
           "exists": true
         },
@@ -5443,11 +5463,11 @@
           "exists": true
         },
         {
-          "path": "services/flyer/tests/test_title_colors.py",
+          "path": "services/flyer/tests/test_title_composition.py",
           "exists": true
         },
         {
-          "path": "services/flyer/tests/test_title_composition.py",
+          "path": "services/flyer/tests/test_upload_api.py",
           "exists": true
         }
       ],
@@ -11068,7 +11088,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 439,
+      "lineCount": 457,
       "headings": [
         {
           "level": 1,
@@ -11270,7 +11290,15 @@
           "exists": true
         },
         {
+          "path": "public/samples/flyer-christmas.jpg",
+          "exists": true
+        },
+        {
           "path": "public/samples/flyer-craft-market.jpg",
+          "exists": true
+        },
+        {
+          "path": "public/samples/flyer-dj.jpg",
           "exists": true
         },
         {
