@@ -26,11 +26,13 @@ import { StripePortalButton } from "@/modules/billing/components/StripePortalBut
  * 並びが変わる。ログイン中はスマホのバーに頭文字の札を出し、誰として入っているかは
  * 札を押して開くメニュー（名前・役割・行き先・ログアウト）で示す。
  *
- * 主催者画面はヘッダー直下の節（`OrganizerTabs`）が移動を担うので、バーのナビと
- * 開閉ボタンは置かない。同じ行き先を 2 か所に出すと、どちらが現在地か読めなくなる。
+ * 参加者画面も主催者画面も、ヘッダー直下の節（`ParticipantTabs` / `OrganizerTabs`）が
+ * 移動を担うので、バーのナビと開閉ボタンは置かない。同じ行き先を 2 か所に出すと、
+ * どちらが現在地か読めなくなる。メニューは頭文字の札が開き、バーに置くのは
+ * ブランド・役割の札・頭文字の札だけになる。
  *
- * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字」で
- * 埋まる。参加者画面と未ログインは、これにナビと開閉ボタンが加わる。
+ * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・役割・頭文字」で埋まる。
+ * 未ログインだけは、これにナビと開閉ボタンが加わる。
  *
  * いまどちらの画面にいるかは、バーの色と、頭文字の札の左に添える 1 語で示す。
  * 参加者画面と主催者画面は同じバーを使うので、並びが違うだけでは切り替えた
@@ -113,9 +115,9 @@ export function Navbar() {
   const roleLabel = role ? viewerRoleLabel(role) : "";
   const roleCaption = role ? viewerRoleCaption(role) : "";
   const initial = viewer ? viewerInitial(viewer.name) : "";
-  // 主催者画面は節（org-subnav）が移動を担う。バーのナビは重ねない。
+  // 主催者画面は節（`Subnav`）が移動を担う。バーのナビは重ねない。
   const organizerView = role === "organizer";
-  // 並べる行き先が無い画面（主催者画面・アカウント設定）では、ナビと開閉ボタンを出さない。
+  // 並べる行き先が無い画面（参加者画面・主催者画面・アカウント設定）では、ナビと開閉ボタンを出さない。
   const showNav = links.length > 0;
   // 主要な入口と切り替えリンクが並ぶときだけ、切り替えを狭い幅でメニューへ退避させる。
   const compactAction = Boolean(primary && action) && showNav && !organizerView;
@@ -123,7 +125,9 @@ export function Navbar() {
 
   /**
    * 頭文字の札を押して開くメニューの中身。並びは `site-nav.ts` の `userMenuConfig` が決める。
-   * 主催者画面では、バーから外した「参加者として見る」と、節に重ならない「下書き」をここが受ける。
+   * 参加者画面では、バーから外した「主催者マイページ」（主催イベントを持たない会員には
+   * 「主催者として使う」）をここが受ける。主催者画面では「参加者として見る」と、節に
+   * 重ならない「下書き」をここが受ける。
    */
   const userMenuLinks = viewer ? userMenuConfig(pathname, viewer) : [];
 

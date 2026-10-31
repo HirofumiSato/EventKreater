@@ -76,9 +76,13 @@
   white-space: nowrap;
 }
 
-/* 2 行目「告知&出欠ウェブページ、」が 13 文字で最も長い（約 11.8em）。
+/* 2 行目「告知&申込ウェブページ、」が 13 文字で最も長い（約 11.8em）。
    360px の端末でも 1 行に収まる 1.5rem から始め、幅が広がるほど上げる。
-   3 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。 */
+   3 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。
+
+   最後の行の右には吹き出し（`.hero__callout`）を添える。見出しの 3 行は
+   崩さずに横へ並べるため、最後の行だけを行（`.hero__title-row`）にする。
+   狭い端末では吹き出しの側が細くなり、中の文だけが折れる。 */
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
@@ -92,6 +96,37 @@
    ヒーローの見出しとして小さすぎるため、行は分けたまま大きさだけを上げる。 */
 .hero--stage .hero__title-line {
   display: block;
+}
+
+/* 最後の行と吹き出しを 1 段に並べる。折り返すと吹き出しが次の行の左端へ落ち、
+   「見出しの右」に見えなくなるので、行の中では折り返さない。
+   見出しの側は縮めず、余った幅だけを吹き出しに渡す。 */
+.hero--stage .hero__title-row {
+  display: flex;
+  align-items: baseline;
+  column-gap: 0.625rem;
+}
+
+.hero--stage .hero__title-row .hero__title-line {
+  flex: none;
+}
+
+/* 見出しの最後の行に添える吹き出し（11 文字）。主役ではないので字は小さく、
+   見出しの 3 行は崩さない。幅が足りない端末では吹き出しの側が細くなり、
+   中の文だけが 2 行に折れる（見出しの文字サイズは変えない）。
+   塗りと傾きは deco 層（`deco/base.css`）が持つ。 */
+.hero--stage .hero__callout {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 5.5rem;
+  max-width: 10rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .hero--stage .hero__lead {
@@ -208,6 +243,14 @@
   .hero--stage .hero__title {
     font-size: 2rem;
   }
+
+  /* 見出しと同じ割合で、吹き出しも少しだけ大きくする。
+     11 文字が 1 行に収まる幅を渡し、折り返して見えないようにする。 */
+  .hero--stage .hero__callout {
+    max-width: 12rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem;
+  }
 }
 
 @media (min-width: 900px) {
@@ -247,6 +290,10 @@
   .hero--stage .hero__title {
     max-width: 40rem;
     font-size: 2.5rem;
+  }
+
+  .hero--stage .hero__callout {
+    font-size: 0.875rem;
   }
 
   .hero--stage .hero__lead {

@@ -1298,16 +1298,17 @@
    色と影は用途（影だけ／静かめ）が持ち、ここでは並びと余白だけを決める。
    ========================================================================== */
 
-/* 主催者の節。ヘッダーの真下に置く帯。スマホでは横に送る。
-   折り返すと現在地が読みにくいので、中身はヘッダー内側の幅に合わせ、帯自体は全幅に引く。 */
-.org-subnav {
+/* 画面の節（`Subnav`）。ヘッダーの真下に置く帯で、主催者と参加者が同じものを使う。
+   スマホでは横に送る。折り返すと現在地が読みにくいので、中身はヘッダー内側の幅に合わせ、
+   帯自体は全幅に引く。 */
+.subnav {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
-.org-subnav__inner {
+.subnav__inner {
   display: flex;
-  /* 390px の幅で「ホーム」を足しても 5 本が収まるよう、狭い画面を既定にして詰める。 */
+  /* 390px の幅で主催者の 5 本が収まるよう、狭い画面を既定にして詰める。 */
   gap: 0.125rem;
   overflow-x: auto;
   width: min(100%, var(--width-page));
@@ -1318,17 +1319,17 @@
 }
 
 @media (min-width: 640px) {
-  .org-subnav__inner {
+  .subnav__inner {
     gap: 0.25rem;
     padding-inline: 1rem;
   }
 }
 
-.org-subnav__inner::-webkit-scrollbar {
+.subnav__inner::-webkit-scrollbar {
   display: none;
 }
 
-.org-subnav a {
+.subnav a {
   flex: 0 0 auto;
   padding: 0.625rem 0.625rem;
   border-bottom: 2px solid transparent;
@@ -1338,11 +1339,11 @@
   white-space: nowrap;
 }
 
-.org-subnav a:hover {
+.subnav a:hover {
   color: var(--color-text);
 }
 
-.org-subnav a.is-current {
+.subnav a.is-current {
   border-bottom-color: var(--color-text);
   color: var(--color-text);
   font-weight: 700;

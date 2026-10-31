@@ -7,13 +7,16 @@
  *
  * 状態は 4 通り。
  * - 未ログイン            … サービス紹介とログインの入口
- * - 参加者                … 参加者ホーム・カレンダー・履歴・アカウント
- * - 主催者（参加者画面）  … 参加者の機能＋主催者マイページ
- * - 主催者（主催者画面）  … 主催一覧・作成・マイページ＋参加者として見る
+ * - 参加者                … ヘッダー直下の節（`ParticipantTabs`）が参加者の画面を持つ
+ * - 主催者（参加者画面）  … 参加者と同じ。主催者としての入口は頭文字のメニューが持つ
+ * - 主催者（主催者画面）  … 節（`OrganizerTabs`）が主催者の画面を持つ
+ *
+ * 参加者画面と主催者画面は、どちらもバーのナビを持たず、ヘッダー直下の節が
+ * 移動を担う。バーに残るのはブランド・役割の札・頭文字の札だけになる。
  *
  * バーの並びに加えて、頭文字の札を押して開くメニュー（`userMenuConfig`）も
- * ここが決める。主催者画面の節（`OrganizerTabs`）と重なる行き先は、節がある
- * あいだはメニューに出さない。
+ * ここが決める。節（`OrganizerTabs` / `ParticipantTabs`）と重なる行き先は、
+ * 節があるあいだはメニューに出さない。
  *
  * いまどちらの画面にいるかは、ヘッダーの地の色（`data-viewer-role`）と、
  * ブランド名の下に出す 1 語（`viewerRoleCaption`）の 2 つで示す。並びが
@@ -97,16 +100,10 @@ export function viewerInitial(name: string): string {
   return first ?? "?";
 }
 
-function participantConfig(viewer: Viewer): NavConfig {
+function participantConfig(): NavConfig {
   return {
-    links: [
-      SITE.nav.participantHome,
-      SITE.nav.participantCalendar,
-      SITE.nav.participantHistory,
-      ...(viewer.isOrganizer ? [SITE.nav.mypage] : []),
-    ],
-    // 主催者としても使える人には切り替えを出さない。行き来は主催者画面側の 1 本だけ。
-    action: viewer.isOrganizer ? undefined : SITE.nav.organizerSwitch,
+    // 行き先はヘッダー直下の節（`ParticipantTabs`）がすべて持つ。バーのナビには何も並べない。
+    links: [],
   };
 }
 
@@ -162,11 +159,16 @@ export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfi
   if (!viewer) return anonymousConfig();
   if (viewer.platformRole === "ADMIN") return adminConfig();
   if (pathname === SITE.nav.account.href) return accountConfig();
-  return inOrganizerArea(pathname) ? organizerConfig() : participantConfig(viewer);
+  return inOrganizerArea(pathname) ? organizerConfig() : participantConfig();
 }
 
 /**
  * 頭文字の札を押して開くメニューの中身。バーの並びと同じく、ここ 1 か所で決める。
+ *
+ * 参加者画面では節（`ParticipantTabs`）が参加者の画面を持つので、同じ行き先を重ねない。
+ * 代わりに、主催者としても使える会員の入口（「主催者マイページ」。主催イベントを持たない
+ * 会員には「主催者として使う」）をここが受ける。バーに置くと、390px ではブランド・
+ * 役割の札・頭文字の札と並んで 1 段に収まらない。
  *
  * 主催者画面では節（`OrganizerTabs`）が行き先を持つので、同じ行き先を重ねない。
  * ただし節を出さない作業画面（作成・編集・プレビュー・領収書・招待）では
@@ -183,8 +185,13 @@ export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
     links.push(SITE.nav.notifications);
     links.push(SITE.nav.organizerDrafts);
   } else if (viewer.isOrganizer) {
+    // 主催者でもある会員の入口。参加者画面から主催者マイページへ戻る道はここだけになる。
+    links.push(SITE.nav.mypage);
     // 通知は主催者にしか作られない。参加者の端末には出さない。
     links.push(SITE.nav.notifications);
+  } else {
+    // 主催イベントを持たない会員にも、主催者として使えることを 1 本だけ示す。
+    links.push(SITE.nav.organizerSwitch);
   }
   links.push(SITE.nav.account);
   return links;

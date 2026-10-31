@@ -116,3 +116,20 @@ export function showOrganizerTabs(pathname: string): boolean {
     (pathname.endsWith("/participants") || pathname.endsWith("/revenue"))
   );
 }
+
+/**
+ * 参加者の節（`ParticipantTabs`）を出すか。パスだけから決める純関数。
+ *
+ * 参加者の画面（参加者ホーム・カレンダー・参加履歴）だけに出す。参加者ログイン
+ * （`/participant/login`）は入口の画面なので、節を出さず本文に集中させる。
+ */
+export function showParticipantTabs(pathname: string): boolean {
+  switch (pathname) {
+    case "/participant":
+    case "/participant/calendar":
+    case "/participant/history":
+      return true;
+    default:
+      return false;
+  }
+}

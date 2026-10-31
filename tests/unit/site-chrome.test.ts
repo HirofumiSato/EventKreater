@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { showOrganizerTabs, siteChrome } from "@/lib/site-chrome";
+import { showOrganizerTabs, showParticipantTabs, siteChrome } from "@/lib/site-chrome";
 
 describe("公開クロムの出し分け", () => {
   it("ホームは LP として扱い、ヘッダーを出さず上端の余白も落とす", () => {
@@ -118,5 +118,26 @@ describe("主催者の節（OrganizerTabs）の出し分け", () => {
     expect(showOrganizerTabs("/service")).toBe(false);
     expect(showOrganizerTabs("/")).toBe(false);
     expect(showOrganizerTabs("")).toBe(false);
+  });
+});
+
+describe("参加者の節（ParticipantTabs）の出し分け", () => {
+  it("参加者の画面では出す", () => {
+    expect(showParticipantTabs("/participant")).toBe(true);
+    expect(showParticipantTabs("/participant/calendar")).toBe(true);
+    expect(showParticipantTabs("/participant/history")).toBe(true);
+  });
+
+  it("参加者ログインの入口では出さない", () => {
+    expect(showParticipantTabs("/participant/login")).toBe(false);
+  });
+
+  it("参加者エリア以外では出さない", () => {
+    expect(showParticipantTabs("/participantlike")).toBe(false);
+    expect(showParticipantTabs("/participant/calendar/extra")).toBe(false);
+    expect(showParticipantTabs("/organizer/events")).toBe(false);
+    expect(showParticipantTabs("/account")).toBe(false);
+    expect(showParticipantTabs("/")).toBe(false);
+    expect(showParticipantTabs("")).toBe(false);
   });
 });

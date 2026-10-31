@@ -17,6 +17,11 @@ const HERO_EYEBROW = (
 );
 const HERO_LEAD =
   "イベント名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。";
+/**
+ * 見出しの最後の行の右に添える吹き出し。見出しが主、これは添え書き。
+ * 30 文字以内に収め、実装の言葉（カレンダー機能名など）は使わない。
+ */
+const HERO_CALLOUT = "カレンダー共有もできる";
 
 /** 幹事に起きること。機能名ではなく、手間がどう減るかで書く。 */
 const capabilities = [
@@ -75,13 +80,22 @@ export default function HomePage() {
             {/*
               改行の位置は文言の一部。どの幅も 3 行のままで、文字サイズだけを
               幅に合わせて上げる（CSS の .hero__title が持つ）。幅で DOM を変えない。
+              吹き出しは最後の行の右に置く。最後の行だけが短いので、
+              狭い端末でも見出しを折り返さずに横へ並べられる。
             */}
             <h1 className="hero__title">
-              {SITE.taglineLines.map((line) => (
-                <span key={line} className="hero__title-line">
-                  {line}
-                </span>
-              ))}
+              {SITE.taglineLines.map((line, index) =>
+                index === SITE.taglineLines.length - 1 ? (
+                  <span key={line} className="hero__title-row">
+                    <span className="hero__title-line">{line}</span>
+                    <span className="hero__callout">{HERO_CALLOUT}</span>
+                  </span>
+                ) : (
+                  <span key={line} className="hero__title-line">
+                    {line}
+                  </span>
+                ),
+              )}
             </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">

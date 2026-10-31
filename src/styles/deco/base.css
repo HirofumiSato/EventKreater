@@ -139,6 +139,28 @@
   }
 }
 
+/* 見出しの最後の行に添える吹き出し。紙に貼った付箋として、山吹で塗る。
+   左辺の三角は「直前の見出しを受ける」向き。塗りを変えるときは、
+   三角の色も同じ値にそろえる（片方だけ残ると吹き出しに見えない）。 */
+.deco .hero--stage .hero__callout {
+  border-radius: 6px;
+  background: var(--pop-warm);
+  color: #1a1916;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
+}
+
+.deco .hero--stage .hero__callout::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -0.4375rem;
+  border-top: 0.3125rem solid transparent;
+  border-bottom: 0.3125rem solid transparent;
+  border-right: 0.4375rem solid var(--pop-warm);
+  transform: translateY(-50%);
+}
+
 .deco .hero__poster {
   position: relative;
 }

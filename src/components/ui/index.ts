@@ -15,4 +15,5 @@ export { Panel, PanelHead } from "./Panel";
 export { Row, Rows } from "./Rows";
 export { Section, SectionHead } from "./Section";
 export { SemanticThemeScope } from "./SemanticThemeScope";
+export { Subnav, type SubnavItem } from "./Subnav";
 export { ThemePicker } from "./ThemePicker";
