@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 105（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 364
+- 文書から参照されているコードパス: 366
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -245,6 +245,7 @@
 | `src/modules/events/lib/pending-form.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/postal-code-search.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/pricing-mode.ts` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
+| `src/modules/events/lib/published-counts.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
@@ -361,6 +362,7 @@
 | `tests/unit/postal-code-search.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/problem.test.ts` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/unit/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/published-counts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referrer.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/resend-cooldown.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |

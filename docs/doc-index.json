@@ -5545,7 +5545,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1918,
+      "lineCount": 1919,
       "headings": [
         {
           "level": 2,
@@ -5972,6 +5972,10 @@
         },
         {
           "path": "src/modules/events/lib/postal-code-search.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/published-counts.ts",
           "exists": true
         },
         {
@@ -10455,7 +10459,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 558,
+      "lineCount": 562,
       "headings": [
         {
           "level": 1,
@@ -10718,6 +10722,10 @@
         },
         {
           "path": "tests/unit/public-organizer-page.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/published-counts.test.ts",
           "exists": true
         },
         {
