@@ -10507,7 +10507,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 574,
+      "lineCount": 582,
       "headings": [
         {
           "level": 1,
@@ -10566,6 +10566,10 @@
         },
         {
           "path": "tests/integration/draft-save-preview-publish.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/event-discounts.test.ts",
           "exists": true
         },
         {
@@ -10670,6 +10674,10 @@
         },
         {
           "path": "tests/unit/event-details.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-discounts.test.ts",
           "exists": true
         },
         {
