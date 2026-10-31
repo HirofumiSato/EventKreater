@@ -7,18 +7,22 @@ import { nextRsvpChoices } from "@/modules/events/lib/rsvp-status";
 import {
   GENDER_LABELS,
   PRICE_AUDIENCE_LABELS,
+  type EventDiscountOption,
   type EventPricePlanOption,
   type EventScheduleOption,
   type Gender,
   type MyRsvp,
   type RsvpStatus,
 } from "@/modules/events/types";
-import { Alert } from "@/components/ui";
+import { yen } from "@/lib/format";
+import { Alert, Dialog } from "@/components/ui";
 
 interface DynamicRsvpBoxProps {
   eventId: string;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
+  /** 参加者が申込時に選べる割引。0 件ならモーダルを出さず、そのまま送る。 */
+  discounts: EventDiscountOption[];
   initialRsvp: MyRsvp | null;
   capacity: number | null;
   attendingCount: number;
@@ -44,6 +48,7 @@ export function DynamicRsvpBox({
   eventId,
   schedules,
   pricePlans,
+  discounts,
   initialRsvp,
   capacity,
   attendingCount,
@@ -81,6 +86,16 @@ export function DynamicRsvpBox({
     schedules.some((row) => row.id === initialRsvp?.scheduleId) ? (initialRsvp?.scheduleId ?? "") : (schedules[0]?.id ?? ""),
   );
   const [pricePlanId, setPricePlanId] = useState(initialRsvp?.pricePlanId ?? "");
+  /**
+   * 申込時に選んだ割引の ID。回答済みなら、その写しの discountId を初期値にする
+   * （定義が消えている古い回答は null なので外れる）。
+   */
+  const [discountIds, setDiscountIds] = useState<string[]>(
+    (initialRsvp?.discounts ?? []).flatMap((row) => (row.discountId ? [row.discountId] : [])),
+  );
+  /** モーダルで選んでいる途中の値。確定するまで送信には使わない。 */
+  const [checkedDiscounts, setCheckedDiscounts] = useState<string[]>([]);
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -92,6 +107,9 @@ export function DynamicRsvpBox({
       schedules.some((row) => row.id === initialRsvp?.scheduleId) ? (initialRsvp?.scheduleId ?? "") : (schedules[0]?.id ?? ""),
     );
     setPricePlanId(initialRsvp?.pricePlanId ?? "");
+    setDiscountIds(
+      (initialRsvp?.discounts ?? []).flatMap((row) => (row.discountId ? [row.discountId] : [])),
+    );
   }, [initialRsvp, schedules]);
 
   // 満員と空きありが入れ替わったとき、選んでいる「出席」を参加要望（またはその逆）へ合わせる。
@@ -111,10 +129,25 @@ export function DynamicRsvpBox({
     : (availablePlans[0]?.id ?? "");
 
   const hasOnlyCommonPlans = pricePlans.every((row) => row.audience === "ANY");
+  const selectedPlan = availablePlans.find((row) => row.id === selectedPlanId) ?? null;
+  const hasDiscounts = discounts.length > 0;
 
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (preview) return;
+  /** モーダルで選んでいる割引の合計と、料金から引いた支払額。0 円で止める。 */
+  const checkedRows = discounts.filter((row) => checkedDiscounts.includes(row.id));
+  const checkedDiscountTotal = checkedRows.reduce((total, row) => total + Math.max(0, row.amount), 0);
+  const checkedPayable =
+    selectedPlan === null ? null : Math.max(0, selectedPlan.amount - checkedDiscountTotal);
+
+  /** 回答済みの表示。料金は選んだプランの金額から引き、0 円で止める。 */
+  const answeredPlan = pricePlans.find((row) => row.id === myRsvp?.pricePlanId) ?? null;
+  const answeredDiscountTotal = (myRsvp?.discounts ?? []).reduce(
+    (total, row) => total + Math.max(0, row.amount),
+    0,
+  );
+  const answeredPayable =
+    answeredPlan === null ? null : Math.max(0, answeredPlan.amount - answeredDiscountTotal);
+
+  const save = async (ids: string[]) => {
     const result = await submit({
       name: name.trim(),
       status,
@@ -122,10 +155,31 @@ export function DynamicRsvpBox({
       comment: comment.trim(),
       scheduleId,
       pricePlanId: selectedPlanId,
+      discountIds: ids,
     });
     if (typeof result.attendingCount === "number") onCountChange(result.attendingCount);
     if (typeof result.waitlistCount === "number") onWaitlistCountChange?.(result.waitlistCount);
+    setDiscountIds(ids);
     setSaved(true);
+  };
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (preview) return;
+    // 割引があるときは、送る前にモーダルで選ばせる。「割引なし」もそのまま選べる。
+    if (hasDiscounts && status === "ATTENDING") {
+      setCheckedDiscounts(discountIds);
+      setDiscountOpen(true);
+      return;
+    }
+    await save(discountIds);
+  };
+
+  /** モーダルの「この内容で申し込む」。選んだ割引を確定してから送る。 */
+  const onConfirmDiscounts = async () => {
+    const ids = checkedDiscounts;
+    setDiscountOpen(false);
+    await save(ids);
   };
 
   const onCancel = async () => {
@@ -139,6 +193,7 @@ export function DynamicRsvpBox({
     setGender("");
     setScheduleId(schedules[0]?.id ?? "");
     setPricePlanId("");
+    setDiscountIds([]);
     setSaved(false);
   };
 
@@ -180,6 +235,29 @@ export function DynamicRsvpBox({
           {myRsvp.waitlistPosition !== null && ` 現在 ${myRsvp.waitlistPosition} 番目です。`}
           {choices.mode === "open" && " 空きが出ました。出席に変更できます。"}
         </Alert>
+      )}
+      {/* 申込済みの割引。定義を編集・削除しても、ここは申込時点の写しを出す。 */}
+      {myRsvp?.status === "ATTENDING" && myRsvp.discounts.length > 0 && (
+        <div className="discount-applied">
+          <p className="label">適用中の割引</p>
+          <ul className="discount-applied__list">
+            {myRsvp.discounts.map((row, index) => (
+              <li key={`${row.name}-${index}`} className="discount-applied__item">
+                <span>{row.label}</span>
+              </li>
+            ))}
+          </ul>
+          {answeredPayable !== null && (
+            <p className="discount-applied__total">
+              支払額 <strong>{yen(answeredPayable)}</strong>
+              {answeredDiscountTotal > 0 && (
+                <span className="discount-applied__note">
+                  （{yen(answeredPlan?.amount ?? 0)} − 割引 {yen(answeredDiscountTotal)}）
+                </span>
+              )}
+            </p>
+          )}
+        </div>
       )}
       <form onSubmit={onSubmit} className="form form--spaced">
         {/* 誰として答えるか。ログイン中だけ、フォームの先頭に 1 行。 */}
@@ -367,6 +445,73 @@ export function DynamicRsvpBox({
         )}
         {closed && !preview && <Alert tone="warning">{closedMessage}</Alert>}
       </form>
+      {/* 割引があるときだけ、送信の直前に選ばせる。チェックを外せば「割引なし」で申し込める。 */}
+      {discountOpen && (
+        <Dialog
+          title="割引を選ぶ"
+          titleId="discount-picker-title"
+          onClose={() => setDiscountOpen(false)}
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                disabled={isSubmitting}
+                onClick={() => void onConfirmDiscounts()}
+              >
+                {isSubmitting ? "送信中…" : "この内容で申し込む"}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                disabled={isSubmitting}
+                onClick={() => setDiscountOpen(false)}
+              >
+                やめる
+              </button>
+            </>
+          }
+        >
+          <p className="dialog__body">
+            使う割引にチェックを入れてください。当てはまるものがなければ、そのままで大丈夫です。
+          </p>
+          <div className="discount-picker">
+            {discounts.map((row) => (
+              <label key={row.id} className="check discount-picker__row">
+                <input
+                  type="checkbox"
+                  checked={checkedDiscounts.includes(row.id)}
+                  disabled={isSubmitting}
+                  onChange={(event) =>
+                    setCheckedDiscounts((current) =>
+                      event.target.checked
+                        ? [...current, row.id]
+                        : current.filter((id) => id !== row.id),
+                    )
+                  }
+                />
+                <span>
+                  {row.label}
+                </span>
+              </label>
+            ))}
+          </div>
+          <dl className="discount-picker__summary">
+            <div className="discount-picker__line">
+              <dt>料金</dt>
+              <dd>{selectedPlan ? selectedPlan.price : "未選択"}</dd>
+            </div>
+            <div className="discount-picker__line">
+              <dt>割引</dt>
+              <dd>{checkedDiscountTotal > 0 ? `−${yen(checkedDiscountTotal)}` : "なし"}</dd>
+            </div>
+            <div className="discount-picker__line discount-picker__line--total">
+              <dt>支払額</dt>
+              <dd>{checkedPayable === null ? "未選択" : yen(checkedPayable)}</dd>
+            </div>
+          </dl>
+        </Dialog>
+      )}
     </section>
   );
 }

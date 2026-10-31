@@ -747,6 +747,12 @@
   display: block;
 }
 
+/* 割引の行に添える「申し込むときに選べます。」。値引きの列より一段弱くする。 */
+.event-facts__note {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
 .event-body {
   display: grid;
   gap: 1rem;
@@ -1672,6 +1678,30 @@
 }
 
 .roster__name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 名簿の費用プランの下に積む、申込時点の割引と支払額。
+   列の幅は支払額の 1 行で決まるため、割引の条件名が 1 文字ずつ折れないよう下限を置く。 */
+.roster__discounts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.15rem;
+  min-width: 9rem;
+}
+
+.roster__discount {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.roster__payable {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-strong);
+  font-size: 0.8125rem;
   font-weight: 500;
   white-space: nowrap;
 }

@@ -11,6 +11,7 @@ interface EventMetaCardProps {
     | "title"
     | "schedules"
     | "pricePlans"
+    | "discounts"
     | "location"
     | "rainPolicy"
     | "capacity"
@@ -120,6 +121,22 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             ))}
           </dd>
         </div>
+        {/* 割引は任意。0 件なら行ごと出さず、告知ページの見た目を変えない。 */}
+        {event.discounts.length > 0 && (
+          <div className="event-facts__row">
+            <dt>割引</dt>
+            <dd>
+              {event.discounts.map((row) => (
+                <span key={row.id} className="event-facts__line">
+                  {row.label}
+                </span>
+              ))}
+              <span className="event-facts__line event-facts__note">
+                申し込むときに選べます。
+              </span>
+            </dd>
+          </div>
+        )}
         <div className="event-facts__row">
           <dt>参加</dt>
           <dd>

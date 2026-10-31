@@ -1,11 +1,12 @@
 import type {
+  EventDiscountOption,
   EventPricePlanOption,
   EventScheduleOption,
   PriceAudience,
   PublicEventOrganizers,
   RainPolicy,
 } from "@/modules/events/types";
-import { composeEventTime, composePriceText } from "@/lib/serializers";
+import { composeDiscountText, composeEventTime, composePriceText } from "@/lib/serializers";
 import type { SemanticThemeId } from "@/lib/semantic-themes";
 
 /**
@@ -40,6 +41,8 @@ export interface SampleEvent {
   waitlistCount: number;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
+  /** 参加者が申込時に選べる割引。0 件なら告知ページに行を出さない。 */
+  discounts: EventDiscountOption[];
   organizers: PublicEventOrganizers;
 }
 
@@ -68,6 +71,15 @@ function plan(
   return { id, name, audience, amount, note, price: composePriceText({ amount, note }) };
 }
 
+function discount(
+  id: string,
+  name: string,
+  amount: number,
+  note: string | null = null,
+): EventDiscountOption {
+  return { id, name, amount, note, label: composeDiscountText({ name, amount, note }) };
+}
+
 /** 見本の主催者。`userId` を null にして、公開プロフィールへのリンクにしない。 */
 const HOST = { name: "佐藤 みのり", userId: null } as const;
 
@@ -92,6 +104,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
       plan("autumn-student", "学生", 1000),
       plan("autumn-child", "子ども", 0, "小学生まで"),
     ],
+    discounts: [discount("autumn-friend", "友達と参加", 500, "2人以上のとき")],
     organizers: {
       owner: HOST,
       coHosts: [{ name: "高橋 直樹", userId: null }],
@@ -113,6 +126,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     waitlistCount: 0,
     schedules: [schedule("market-1", "2026-11-14", "10:00", "16:00")],
     pricePlans: [plan("market-entry", "入場", 0, "どなたでも")],
+    discounts: [],
     organizers: { owner: HOST, coHosts: [] },
   },
   {
@@ -134,6 +148,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
       plan("halloween-snack", "おやつ付き", 500, "子どもは無料"),
       plan("halloween-child", "子ども", 0, "未就学児"),
     ],
+    discounts: [],
     organizers: { owner: HOST, coHosts: [] },
   },
   {
@@ -152,6 +167,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     waitlistCount: 0,
     schedules: [schedule("bonfire-1", "2026-11-21", "18:00", "21:00")],
     pricePlans: [plan("bonfire-general", "一般", 2500, "薪と汁物付")],
+    discounts: [],
     organizers: { owner: HOST, coHosts: [] },
   },
   {
@@ -170,6 +186,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     waitlistCount: 0,
     schedules: [schedule("dj-1", "2026-11-28", "21:00", "02:00")],
     pricePlans: [plan("dj-general", "一般", 2500, "1ドリンク付")],
+    discounts: [],
     organizers: { owner: HOST, coHosts: [] },
   },
 ];

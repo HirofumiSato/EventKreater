@@ -5,6 +5,7 @@ import { toErrorResponse } from "@/lib/http";
 import {
   formatEventDate,
   isRsvpAccepting,
+  serializeDiscounts,
   serializeFlyer,
   serializePricePlans,
   serializeSchedules,
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             flyerAsset: true,
             schedules: { orderBy: { sortOrder: "asc" } },
             pricePlans: { orderBy: { sortOrder: "asc" } },
+            discounts: { orderBy: { sortOrder: "asc" } },
             participants: {
               where: { status: { in: ["ATTENDING", "WAITLISTED"] } },
               select: { status: true },
@@ -94,6 +96,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         sortDate: formatEventDate(event.sortDate),
         schedules: serializeSchedules(event.schedules),
         pricePlans: serializePricePlans(event.pricePlans),
+        discounts: serializeDiscounts(event.discounts),
         location: event.location,
         capacity: event.capacity,
         attendingCount,

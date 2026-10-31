@@ -1,5 +1,6 @@
 import type { Prisma, PriceAudience, RsvpStatus } from "@prisma/client";
 import {
+  composeDiscountText,
   formatEventDate,
   formatEventDateLabel,
   pricePlanChoiceLabel,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { rsvpStatusLabel } from "@/modules/events/lib/rsvp-status";
+import { payableAmount } from "@/modules/revenue/lib/revenue";
 import type { ParticipantCalendarEntry } from "@/modules/participants/types";
 
 export type ParticipationScope = "all" | "upcoming" | "past";
@@ -62,6 +64,8 @@ export function serializeParticipation(row: {
   updatedAt: Date;
   schedule: { eventDate: Date; eventTime: string } | null;
   pricePlan: { name: string; audience: PriceAudience; amount: number; note: string | null } | null;
+  /** 申込時に選んだ割引の写し。無ければ空配列。 */
+  discounts?: { name: string; amount: number; note: string | null; sortOrder: number }[];
   receipt: { id: string; issuedAt: Date } | null;
   event: Parameters<typeof serializeEvent>[0] & {
     organizers?: { role: string; userId: string | null }[];
@@ -79,6 +83,14 @@ export function serializeParticipation(row: {
       ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
       : null,
     pricePlanLabel: row.pricePlan ? pricePlanChoiceLabel(row.pricePlan) : null,
+    discountLabel:
+      (row.discounts ?? []).length > 0
+        ? (row.discounts ?? []).map((discount) => composeDiscountText(discount)).join(" / ")
+        : null,
+    payableAmount: payableAmount({
+      priceAmount: row.pricePlan?.amount ?? null,
+      discounts: row.discounts ?? [],
+    }),
     statusLabel: rsvpStatusLabel(row.status),
     receiptId: row.receipt?.id ?? null,
     receiptIssuedAt: row.receipt?.issuedAt.toISOString() ?? null,
@@ -101,6 +113,7 @@ export function serializeParticipation(row: {
 export const participationInclude = {
   schedule: true,
   pricePlan: true,
+  discounts: { orderBy: { sortOrder: "asc" } },
   receipt: { select: { id: true, issuedAt: true } },
   event: {
     include: {

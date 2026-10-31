@@ -42,6 +42,22 @@ export function composePriceText(plan: { amount: number; note?: string | null })
   return note ? `${base}（${note}）` : base;
 }
 
+/**
+ * 割引の表示文を合成する。例: 友達と参加 500円引き（2人以上のとき）
+ * 0 円の割引は意味が無いので、そのまま「0円引き」と出さずに空文字を返す。
+ */
+export function composeDiscountText(discount: {
+  name: string;
+  amount: number;
+  note?: string | null;
+}): string {
+  const name = discount.name.trim();
+  if (discount.amount <= 0) return name;
+  const base = `${name} ${yen(discount.amount)}引き`.trim();
+  const note = discount.note?.trim();
+  return note ? `${base}（${note}）` : base;
+}
+
 /** 開始・終了から表示用の文字列を作る。終了が開始より前なら翌日扱い。 */
 export function composeEventTime(
   startTime?: string | null,
@@ -233,6 +249,23 @@ export interface PricePlanRecord {
   sortOrder: number;
 }
 
+export interface DiscountRecord {
+  id: string;
+  name: string;
+  amount: number;
+  note: string | null;
+  sortOrder: number;
+}
+
+/** 参加者が選んだ割引の写し。定義が消えたら discountId は null。 */
+export interface ParticipantDiscountRecord {
+  discountId?: string | null;
+  name: string;
+  amount: number;
+  note: string | null;
+  sortOrder?: number;
+}
+
 export interface EventRecordShape {
   id: string;
   title: string;
@@ -261,6 +294,8 @@ export interface EventRecordShape {
   flyerAsset?: FlyerShape | null;
   schedules: ScheduleRecord[];
   pricePlans: PricePlanRecord[];
+  /** 参加者が申込時に選べる割引。0 件のイベントは空配列。 */
+  discounts?: DiscountRecord[];
 }
 
 export function serializeSchedules(rows: ScheduleRecord[]) {
@@ -286,6 +321,43 @@ export function serializePricePlans(rows: PricePlanRecord[]) {
       note: row.note,
       price: composePriceText(row),
     }));
+}
+
+/** 参加者が選べる割引。並びは入力順。0 件なら空配列。 */
+export function serializeDiscounts(rows: DiscountRecord[]) {
+  return [...rows]
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      amount: row.amount,
+      note: row.note,
+      label: composeDiscountText(row),
+    }));
+}
+
+/** 参加者が申込時に選んだ割引。定義が消えていてもスナップショットだけを返す。 */
+export function serializeParticipantDiscounts(rows: ParticipantDiscountRecord[] = []) {
+  return [...rows]
+    .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0))
+    .map((row) => ({
+      discountId: row.discountId ?? null,
+      name: row.name,
+      amount: row.amount,
+      note: row.note,
+      label: composeDiscountText(row),
+    }));
+}
+
+/** 割引の合計額。0 円未満にはしない。 */
+export function discountTotal(rows: { amount: number }[]): number {
+  return rows.reduce((total, row) => total + Math.max(0, row.amount), 0);
+}
+
+/** 割引を引いた支払額。0 円未満にはしない。プラン未選択（null）は null のまま。 */
+export function payableAmount(priceAmount: number | null, discounts: { amount: number }[]): number | null {
+  if (priceAmount === null) return null;
+  return Math.max(0, priceAmount - discountTotal(discounts));
 }
 
 export function scheduleLabel(rows: { eventDate: string; eventTime: string }[]): string {
@@ -389,12 +461,14 @@ export function flyerLocationLabel(event: {
 export function serializeEvent(event: EventRecordShape) {
   const schedules = serializeSchedules(event.schedules);
   const pricePlans = serializePricePlans(event.pricePlans);
+  const discounts = serializeDiscounts(event.discounts ?? []);
   return {
     id: event.id,
     title: event.title,
     sortDate: formatEventDate(event.sortDate),
     schedules,
     pricePlans,
+    discounts,
     location: event.location,
     postalCode: event.postalCode ?? null,
     prefecture: event.prefecture ?? null,

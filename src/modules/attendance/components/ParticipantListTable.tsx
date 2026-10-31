@@ -11,7 +11,7 @@ import {
   type RsvpStatus,
 } from "@/modules/events/types";
 import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
-import { formatDateTimeJa } from "@/lib/format";
+import { formatDateTimeJa, yen } from "@/lib/format";
 import { Badge } from "@/components/ui";
 
 interface ParticipantListTableProps {
@@ -39,7 +39,7 @@ function csvCell(value: string): string {
 }
 
 function downloadCsv(rows: ParticipantRow[]) {
-  const header = ["名前", "性別", "出欠", "日時", "費用プラン", "コメント", "回答日時"];
+  const header = ["名前", "性別", "出欠", "日時", "費用プラン", "割引", "支払額", "コメント", "回答日時"];
   const lines = rows.map((row) =>
     [
       csvCell(row.name),
@@ -47,6 +47,8 @@ function downloadCsv(rows: ParticipantRow[]) {
       row.status === "ATTENDING" ? "出席" : row.status === "WAITLISTED" ? "参加要望" : "欠席",
       csvCell(row.scheduleLabel ?? ""),
       csvCell(row.pricePlanLabel ?? ""),
+      csvCell(row.discounts.map((discount) => discount.label).join(" / ")),
+      row.payableAmount === null ? "" : String(row.payableAmount),
       csvCell(row.comment ?? ""),
       csvCell(formatDateTimeJa(row.createdAt)),
     ].join(","),
@@ -265,7 +267,21 @@ export function ParticipantListTable({
                         ))}
                       </select>
                     ) : (
-                      row.pricePlanLabel || "—"
+                      <>
+                        {row.pricePlanLabel || "—"}
+                        {row.status === "ATTENDING" && row.discounts.length > 0 && (
+                          <span className="roster__discounts">
+                            {row.discounts.map((discount, index) => (
+                              <span key={`${discount.name}-${index}`} className="roster__discount">
+                                {discount.label}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                        {row.status === "ATTENDING" && row.discountAmount > 0 && row.payableAmount !== null && (
+                          <span className="roster__payable">支払額 {yen(row.payableAmount)}</span>
+                        )}
+                      </>
                     )}
                   </td>
                   <td className="roster__meta">

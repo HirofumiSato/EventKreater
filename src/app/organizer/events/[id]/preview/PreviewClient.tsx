@@ -15,6 +15,7 @@ import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { flyerPdfDownloadHref } from "@/modules/flyers/lib/pdf-link";
 import type {
+  EventDiscountOption,
   EventOrganizerList,
   EventPricePlanOption,
   EventScheduleOption,
@@ -31,6 +32,7 @@ interface PreviewResponse {
     title: string;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
+    discounts: EventDiscountOption[];
     location: string;
     rainPolicy: RainPolicy;
     capacity: number | null;
@@ -217,6 +219,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
             title: event.title,
             schedules: event.schedules,
             pricePlans: event.pricePlans,
+            discounts: event.discounts,
             location: event.location,
             rainPolicy: event.rainPolicy,
             capacity: event.capacity,
@@ -235,6 +238,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
               eventId={event.id}
               schedules={event.schedules}
               pricePlans={event.pricePlans}
+              discounts={event.discounts}
               initialRsvp={null}
               capacity={event.capacity}
               attendingCount={stats.attendingCount}

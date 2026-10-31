@@ -148,7 +148,7 @@ describe("groupByPlan", () => {
   it("無料プランも行として残す", () => {
     const rows = groupByPlan([attending(0, { pricePlanName: "無料", priceAudience: "ANY" })]);
     expect(rows).toEqual([
-      { name: "無料", audience: "ANY", amount: 0, attendingCount: 1, subtotal: 0 },
+      { name: "無料", audience: "ANY", amount: 0, attendingCount: 1, discountSubtotal: 0, subtotal: 0 },
     ]);
   });
 });
@@ -173,12 +173,16 @@ describe("groupBySchedule", () => {  it("開催回ごとに人数と小計を出
 
   it("日時が消えた出席者は null の行にまとめる", () => {
     const rows = groupBySchedule([attending(3000, { scheduleId: null })]);
-    expect(rows).toEqual([{ scheduleId: null, attendingCount: 1, subtotal: 3000 }]);
+    expect(rows).toEqual([
+      { scheduleId: null, attendingCount: 1, discountSubtotal: 0, subtotal: 3000 },
+    ]);
   });
 
   it("プラン未選択でも人数には数える", () => {
     const rows = groupBySchedule([attending(null, { scheduleId: "a" })]);
-    expect(rows).toEqual([{ scheduleId: "a", attendingCount: 1, subtotal: 0 }]);
+    expect(rows).toEqual([
+      { scheduleId: "a", attendingCount: 1, discountSubtotal: 0, subtotal: 0 },
+    ]);
   });
 });
 
@@ -304,5 +308,65 @@ describe("keepPriceSnapshot", () => {
         { pricePlanId: "plan-1", priceAmount: 5000, pricePlanName: "一般", priceAudience: "ANY" },
       ),
     ).toEqual({ priceAmount: 5000, pricePlanName: "一般", priceAudience: "ANY" });
+  });
+});
+
+describe("割引後の売上", () => {
+  it("見込み売上は割引を引いた支払額で数える", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { discounts: [{ amount: 500 }] }),
+      attending(2500),
+    ]);
+    expect(summary.expectedRevenue).toBe(5000);
+    expect(summary.averagePerAttendee).toBe(2500);
+  });
+
+  it("支払額は 0 円で止め、無料より下がらない", () => {
+    const summary = summarizeRevenue([
+      attending(300, { discounts: [{ amount: 500 }] }),
+    ]);
+    expect(summary.expectedRevenue).toBe(0);
+  });
+
+  it("プラン別は割引の小計を分けて出し、支払額を小計にする", () => {
+    const rows = groupByPlan([
+      attending(3000, { discounts: [{ amount: 500 }] }),
+      attending(3000),
+    ]);
+    // 割引の有無で別の行にする（同じプランでも支払額が違うため）。
+    expect(rows).toHaveLength(2);
+    const discounted = rows.find((row) => row.discountSubtotal === 500);
+    expect(discounted).toMatchObject({
+      amount: 3000,
+      attendingCount: 1,
+      discountSubtotal: 500,
+      subtotal: 2500,
+    });
+  });
+
+  it("同じ割引の組み合わせは 1 行にまとめる", () => {
+    const rows = groupByPlan([
+      attending(3000, { discounts: [{ amount: 500 }] }),
+      attending(3000, { discounts: [{ amount: 500 }] }),
+    ]);
+    expect(rows).toEqual([
+      {
+        name: "一般",
+        audience: "ANY",
+        amount: 3000,
+        attendingCount: 2,
+        discountSubtotal: 1000,
+        subtotal: 5000,
+      },
+    ]);
+  });
+
+  it("開催回別も割引を引いた小計にする", () => {
+    const rows = groupBySchedule([
+      attending(3000, { scheduleId: "a", discounts: [{ amount: 500 }] }),
+    ]);
+    expect(rows).toEqual([
+      { scheduleId: "a", attendingCount: 1, discountSubtotal: 500, subtotal: 2500 },
+    ]);
   });
 });

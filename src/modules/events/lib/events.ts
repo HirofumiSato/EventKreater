@@ -21,6 +21,7 @@ export { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 export const eventOptionsInclude = {
   schedules: { orderBy: { sortOrder: "asc" as const } },
   pricePlans: { orderBy: { sortOrder: "asc" as const } },
+  discounts: { orderBy: { sortOrder: "asc" as const } },
 } satisfies Prisma.EventInclude;
 
 type OptionInput = {
@@ -29,6 +30,13 @@ type OptionInput = {
     id?: string;
     name: string;
     audience: "ANY" | "MALE" | "FEMALE";
+    amount: number;
+    note: string | null;
+  }[];
+  /** 参加者が申込時に選べる割引。0 件でもよい。 */
+  discounts?: {
+    id?: string;
+    name: string;
     amount: number;
     note: string | null;
   }[];
@@ -132,25 +140,43 @@ function optionCreateData(input: OptionInput) {
         sortOrder,
       })),
     },
+    discounts: {
+      create: (input.discounts ?? []).map((row, sortOrder) => ({
+        name: row.name,
+        amount: row.amount,
+        note: row.note,
+        sortOrder,
+      })),
+    },
   };
 }
 
 export async function syncEventOptions(tx: Prisma.TransactionClient, eventId: string, input: OptionInput) {
-  const [schedules, pricePlans] = await Promise.all([
+  const [schedules, pricePlans, discounts] = await Promise.all([
     tx.eventSchedule.findMany({ where: { eventId }, select: { id: true } }),
     tx.eventPricePlan.findMany({ where: { eventId }, select: { id: true } }),
+    tx.eventDiscount.findMany({ where: { eventId }, select: { id: true } }),
   ]);
   const scheduleIds = new Set(schedules.map((row) => row.id));
   const planIds = new Set(pricePlans.map((row) => row.id));
+  const discountIds = new Set(discounts.map((row) => row.id));
   const keepSchedules = new Set(input.schedules.flatMap((row) => (row.id && scheduleIds.has(row.id) ? [row.id] : [])));
   const keepPlans = new Set(input.pricePlans.flatMap((row) => (row.id && planIds.has(row.id) ? [row.id] : [])));
+  const keepDiscounts = new Set(
+    (input.discounts ?? []).flatMap((row) => (row.id && discountIds.has(row.id) ? [row.id] : [])),
+  );
   const removeSchedules = schedules.filter((row) => !keepSchedules.has(row.id)).map((row) => row.id);
   const removePlans = pricePlans.filter((row) => !keepPlans.has(row.id)).map((row) => row.id);
+  const removeDiscounts = discounts.filter((row) => !keepDiscounts.has(row.id)).map((row) => row.id);
   if (removeSchedules.length > 0) {
     await tx.eventSchedule.deleteMany({ where: { id: { in: removeSchedules } } });
   }
   if (removePlans.length > 0) {
     await tx.eventPricePlan.deleteMany({ where: { id: { in: removePlans } } });
+  }
+  if (removeDiscounts.length > 0) {
+    // 参加者が選んだ写しは残る（ParticipantDiscount.discountId は SetNull）。
+    await tx.eventDiscount.deleteMany({ where: { id: { in: removeDiscounts } } });
   }
   for (const [sortOrder, row] of input.schedules.entries()) {
     const data = {
@@ -178,6 +204,19 @@ export async function syncEventOptions(tx: Prisma.TransactionClient, eventId: st
       await tx.eventPricePlan.update({ where: { id: row.id }, data });
     } else {
       await tx.eventPricePlan.create({ data: { eventId, ...data } });
+    }
+  }
+  for (const [sortOrder, row] of (input.discounts ?? []).entries()) {
+    const data = {
+      name: row.name,
+      amount: row.amount,
+      note: row.note,
+      sortOrder,
+    };
+    if (row.id && discountIds.has(row.id)) {
+      await tx.eventDiscount.update({ where: { id: row.id }, data });
+    } else {
+      await tx.eventDiscount.create({ data: { eventId, ...data } });
     }
   }
   await tx.event.update({
@@ -272,6 +311,71 @@ export function keepPriceSnapshot(current: PriceSnapshot, choice: PriceSnapshot)
     pricePlanName: choice.pricePlanName,
     priceAudience: choice.priceAudience,
   };
+}
+
+type DiscountSnapshot = {
+  discountId: string | null;
+  name: string;
+  amount: number;
+  note: string | null;
+};
+
+/** 申込時に選んだ割引の写し 1 行。保存時に ParticipantDiscount へ入れる形。 */
+export type DiscountChoice = DiscountSnapshot;
+
+/**
+ * 出欠を入れ直したときに、参加者が選んだ割引を解決する。
+ * 出席のときだけ、イベントに属する割引を選んだ順（画面の並び）で返す。
+ * 重複した ID は畳む。イベントに属さない ID が混ざっていれば 400。
+ * 出席でないとき（欠席・参加要望）は空配列を返す。
+ */
+export async function resolveDiscountChoice(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+  status: "ATTENDING" | "DECLINED" | "WAITLISTED",
+  discountIds: string[] | undefined,
+): Promise<DiscountChoice[]> {
+  if (status !== "ATTENDING" || !discountIds || discountIds.length === 0) return [];
+  const unique = [...new Set(discountIds)];
+  const rows = await tx.eventDiscount.findMany({
+    where: { eventId, id: { in: unique } },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, name: true, amount: true, note: true },
+  });
+  if (rows.length !== unique.length) {
+    throw new ProblemDetailException({
+      status: 400,
+      title: "Validation Error",
+      detail: "選んだ割引がこのイベントにありません。",
+      error: "DISCOUNT_NOT_FOUND",
+    });
+  }
+  // 画面の並び（sortOrder）ではなく、参加者が選んだ順を尊重したいところだが、
+  // 送信順は UI の都合で揺れるため、定義の並びにそろえて安定させる。
+  return rows.map((row) => ({
+    discountId: row.id,
+    name: row.name,
+    amount: row.amount,
+    note: row.note,
+  }));
+}
+
+/**
+ * 割引の写しを入れ替えるときの決め方。
+ * 同じ割引を選び直しているだけなら、申込時点の金額を保つ（定義の編集で金額を動かさない）。
+ * 選び直した（増減した）ときは、いまの定義の金額を写す。
+ */
+export function keepDiscountSnapshot(
+  current: DiscountSnapshot[],
+  choice: DiscountChoice[],
+): DiscountSnapshot[] {
+  const currentById = new Map(
+    current.flatMap((row) => (row.discountId ? [[row.discountId, row] as const] : [])),
+  );
+  return choice.map((row) => {
+    const kept = row.discountId ? currentById.get(row.discountId) : undefined;
+    return kept ? { ...kept } : { ...row };
+  });
 }
 
 export function deadlineOrThrow(value: string | null): Date | null {

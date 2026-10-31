@@ -42,6 +42,7 @@ function HistoryRow({ row }: { row: ParticipationItem }) {
       title={<><Link href={`/events/${row.event.id}`}>{row.event.title}</Link></>}
       meta={<>{row.scheduleLabel ?? row.event.sortDate}
           {row.pricePlanLabel ? ` ／ ${row.pricePlanLabel}` : ""}
+          {row.discountLabel ? ` ／ ${row.discountLabel}` : ""}
           {` ／ ${row.event.location}`}</>}
       aside={<>{row.receiptId ? (
         <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">

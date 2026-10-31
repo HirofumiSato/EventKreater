@@ -7,13 +7,14 @@ import {
   formatEventDate,
   formatEventDateLabel,
   participantPriceDisplay,
+  serializeParticipantDiscounts,
   serializePricePlans,
   serializeSchedules,
   summarizeStatuses,
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
-import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
+import { discountTotal, payableAmount, summarizeRevenue } from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,14 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       where: { id: params.id, isDeleted: false },
       include: {
         ...eventOptionsInclude,
-        participants: { include: { schedule: true, pricePlan: true, receipt: true } },
+        participants: {
+          include: {
+            schedule: true,
+            pricePlan: true,
+            receipt: true,
+            discounts: { orderBy: { sortOrder: "asc" } },
+          },
+        },
       },
     });
     if (!event) {
@@ -73,6 +81,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             : null,
           pricePlanLabel: price.label,
           pricePlanAmount: price.amount,
+          discounts: serializeParticipantDiscounts(row.discounts),
+          discountAmount: discountTotal(row.discounts),
+          payableAmount: payableAmount({ priceAmount: price.amount, discounts: row.discounts }),
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
           waitlistedAt: row.waitlistedAt ? row.waitlistedAt.toISOString() : null,

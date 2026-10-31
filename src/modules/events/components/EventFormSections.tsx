@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
-import type { EventFormValues, PricePlanDraft, RainPolicy } from "@/modules/events/types";
+import { composeDiscountText, composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
+import type { DiscountDraft, EventFormValues, PricePlanDraft, RainPolicy } from "@/modules/events/types";
 import {
+  createDiscountDraft,
   createPricePlanDraft,
   createScheduleDraft,
   groupNamesDiffer,
@@ -455,6 +456,126 @@ export function PricePlansSection({
         </Dialog>
       )}
     </>
+  );
+}
+
+/**
+ * 割引。参加者が申込時にモーダルで選ぶ条件名と値引き額の組。
+ * 任意なので 0 件が既定で、0 件なら告知ページに行を出さない。
+ * すべての費用プランに適用する（対象プランの指定は持たない）。
+ */
+export function DiscountSection({ value, onChange, disabled = false }: EventSectionProps) {
+  const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
+    onChange({ ...value, [key]: next });
+  };
+
+  const updateDiscount = (rowKey: string, patch: Partial<DiscountDraft>) => {
+    set(
+      "discounts",
+      value.discounts.map((row) => (row.key === rowKey ? { ...row, ...patch } : row)),
+    );
+  };
+
+  const addDiscount = () => {
+    if (value.discounts.length >= MAX_EVENT_OPTIONS) return;
+    set("discounts", [...value.discounts, createDiscountDraft()]);
+  };
+
+  const removeDiscount = (rowKey: string) => {
+    set(
+      "discounts",
+      value.discounts.filter((row) => row.key !== rowKey),
+    );
+  };
+
+  return (
+    <fieldset className="field" disabled={disabled}>
+      <legend className="label">割引（任意）</legend>
+      <div className="repeat-block">
+        <p className="help">
+          参加者が申込時に選べる割引です。すべての費用プランから引きます。{MAX_EVENT_OPTIONS}件まで。
+        </p>
+        {value.discounts.length === 0 ? (
+          <p className="help">割引がなければ、このままで大丈夫です。</p>
+        ) : (
+          value.discounts.map((row) => (
+            <div key={row.key} className="repeat-row repeat-row--discount">
+              <div className="field">
+                <label className="label" htmlFor={`discount-name-${row.key}`}>
+                  割引名
+                </label>
+                <input
+                  id={`discount-name-${row.key}`}
+                  required
+                  maxLength={50}
+                  value={row.name}
+                  onChange={(event) => updateDiscount(row.key, { name: event.target.value })}
+                  placeholder="友達と参加"
+                  className="input"
+                />
+              </div>
+              <div className="field">
+                <label className="label" htmlFor={`discount-amount-${row.key}`}>
+                  値引き額（円）
+                </label>
+                <input
+                  id={`discount-amount-${row.key}`}
+                  required
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={9999999}
+                  step={1}
+                  value={row.amount}
+                  onChange={(event) => updateDiscount(row.key, { amount: event.target.value })}
+                  placeholder="500"
+                  className="input"
+                />
+              </div>
+              <div className="field">
+                <label className="label" htmlFor={`discount-note-${row.key}`}>
+                  補足（任意）
+                </label>
+                <input
+                  id={`discount-note-${row.key}`}
+                  maxLength={100}
+                  value={row.note}
+                  onChange={(event) => updateDiscount(row.key, { note: event.target.value })}
+                  placeholder="2人以上のとき"
+                  className="input"
+                />
+              </div>
+              <p className="help repeat-row__note">
+                {row.name.trim() === "" || row.amount === ""
+                  ? "割引名と値引き額を入れてください"
+                  : composeDiscountText({ name: row.name, amount: Number(row.amount), note: row.note })}
+              </p>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                aria-label="この割引を削除"
+                onClick={() => removeDiscount(row.key)}
+              >
+                削除
+              </button>
+            </div>
+          ))
+        )}
+        <div className="btn-row">
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            disabled={value.discounts.length >= MAX_EVENT_OPTIONS}
+            onClick={addDiscount}
+          >
+            割引を追加
+          </button>
+        </div>
+        <p className="help">
+          値引き額は1円以上、整数の円です。支払額は0円より下がりません。
+        </p>
+      </div>
+    </fieldset>
   );
 }
 

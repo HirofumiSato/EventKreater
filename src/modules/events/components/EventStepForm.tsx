@@ -20,6 +20,7 @@ import {
 import {
   BasicSection,
   CapacitySection,
+  DiscountSection,
   LocationSection,
   PricePlansSection,
   ThemeSection,
@@ -400,7 +401,10 @@ export function EventStepForm({
                     />
                   )}
                   {step.key === "pricing" && (
-                    <PricePlansSection value={value} onChange={onChange} disabled={locked} />
+                    <>
+                      <PricePlansSection value={value} onChange={onChange} disabled={locked} />
+                      <DiscountSection value={value} onChange={onChange} disabled={locked} />
+                    </>
                   )}
                   {step.key === "location" && (
                     <LocationSection value={value} onChange={onChange} disabled={locked} />

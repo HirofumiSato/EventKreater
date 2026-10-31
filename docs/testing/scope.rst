@@ -147,7 +147,7 @@
 
 .. count-start
 
-74 ファイル、``it`` は 963 件です。内訳は ``tests/unit/`` が 60 ファイル 871 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+76 ファイル、``it`` は 996 件です。内訳は ``tests/unit/`` が 61 ファイル 900 件、``tests/integration/`` が 15 ファイル 96 件です。結合の 96 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -196,7 +196,7 @@
      - 日時の移行（チルダ・全角数字・1 桁のゼロ埋め・翌日またぎ）、料金の「無料」と補足、会場名と住所の結合、チラシ用の 30 文字以内の料金ラベル、男女別の組の判定・組単位のプラン名の反映と食い違いの検出・共通からの展開・組単位の上限・共通へ戻すときの同名の整理
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-payload-schema.test.ts``
-     - 5
+     - 11
      - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-steps.test.ts``
@@ -207,12 +207,16 @@
     - 8
     - 定員の選択肢が1〜50の1刻みであること。51以上は数値入力に寄せること。無制限・人数選択・51以上の切り替えで保存値が保たれること。数値入力が正の整数だけを受けること
     - SCR-ORG-02
-  * - ``tests/unit/event-preview.test.ts``
-    - 15
-    - 対象世代の空白を落として空欄を null にし、テーマ ID をそのまま送ること。入力途中のフォームを告知ページの形へ寄せ、未入力の欄を「未入力」と出すこと。チラシの有無をプレビューの画像に反映すること。チラシ生成のペイロードに ``themeId`` を載せ、サービスへ ``semantic_theme`` として渡すこと。タイトル色は未指定なら ``title_color: null`` で送り、``#RRGGBB`` 以外を弾くこと。想定する世代が 50 文字なら受け、51 文字は弾くこと
-    - SCR-ORG-02 / SCR-ORG-16 / SCR-PUB-01
+   * - ``tests/unit/event-preview.test.ts``
+     - 17
+     - 対象世代の空白を落として空欄を null にし、テーマ ID をそのまま送ること。入力途中のフォームを告知ページの形へ寄せ、未入力の欄を「未入力」と出すこと。チラシの有無をプレビューの画像に反映すること。チラシ生成のペイロードに ``themeId`` を載せ、サービスへ ``semantic_theme`` として渡すこと。タイトル色は未指定なら ``title_color: null`` で送り、``#RRGGBB`` 以外を弾くこと。想定する世代が 50 文字なら受け、51 文字は弾くこと
+     - SCR-ORG-02 / SCR-ORG-16 / SCR-PUB-01
+   * - ``tests/unit/event-discounts.test.ts``
+     - 16
+     - 割引の表示文（補足の括弧・0 円は名前だけ）、並び順と表示用ラベル、定義が消えた参加者の写し、複数の割引の合計と 0 円止め、プラン未選択は null、同じ割引を選び直すと申込時点の金額を保つこと、保存済みの割引を入力行へ戻すこと、空の入力行
+     - SCR-ORG-02 / SCR-ORG-05 / SCR-PUB-01
    * - ``tests/unit/revenue.test.ts``
-     - 28
+     - 33
      - 見込み売上・領収書発行額・差額・平均単価の計算、不参加とプラン未選択の除外、無料プラン、0 除算、男女別の内訳、開催回別、名簿に出す申込時点の金額、同じプランの再保存で金額を保つこと
      - SCR-ORG-06 / SCR-ORG-11 / SCR-ORG-12
    * - ``tests/unit/pending-form.test.ts``
@@ -239,6 +243,10 @@
      - 6
      - プラン金額を編集しても申込済みの見込み売上が変わらない。領収書発行額との差額。不参加は売上に含めない
      - SCR-ORG-06 / SCR-ORG-12
+   * - ``tests/integration/event-discounts.test.ts``
+     - 4
+     - 割引の保存と並び順、定義を消しても参加者の写しが残ること、他イベントの割引 ID は 400、重複 ID を畳むこと、出席でないときは写しを作らないこと
+     - SCR-ORG-02 / SCR-ORG-05 / SCR-PUB-01 / SCR-ORG-06
    * - ``tests/unit/auth-rate-limits.test.ts``
      - 18
      - 上限の既定値と環境変数の上書き、全ルールの対象名、バケット接頭辞の互換、上限の案内文、429 のヘッダ
@@ -458,7 +466,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 871、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 871 件を実行して 92 件を skip します。
+件数の内訳は ``tests/unit/`` が 900、``tests/integration/`` が 96 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 900 件を実行して 96 件を skip します。
 
 .. breakdown-end
 

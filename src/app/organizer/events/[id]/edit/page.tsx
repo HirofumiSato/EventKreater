@@ -22,6 +22,7 @@ import {
   draftsFromOptions,
   EMPTY_EVENT_FORM,
   toEventRequest,
+  type EventDiscountOption,
   type EventFormValues,
   type EventPricePlanOption,
   type EventScheduleOption,
@@ -36,6 +37,7 @@ interface DetailResponse {
     title: string;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
+    discounts: EventDiscountOption[];
     location: EventFormValues["location"];
     postalCode: string | null;
     prefecture: string | null;

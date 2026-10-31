@@ -66,8 +66,11 @@ export function readPendingForm(
     if (!parsed || typeof parsed !== "object") return null;
     if (!parsed.form || typeof parsed.form !== "object") return null;
     if (typeof parsed.savedAt !== "string") return null;
+    // 割引を足す前に退避した内容には `discounts` が無い。無いまま復元すると
+    // 送信時に undefined を触るので、ここで空配列に正規化する。
+    const form = parsed.form as EventFormValues;
     return {
-      form: parsed.form as EventFormValues,
+      form: { ...form, discounts: Array.isArray(form.discounts) ? form.discounts : [] },
       flyerPreview: typeof parsed.flyerPreview === "string" ? parsed.flyerPreview : null,
       savedAt: parsed.savedAt,
     };

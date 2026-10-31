@@ -119,7 +119,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
       )}
 
       <Section>
-        <SectionHead title="プラン別" note="申込時点の金額で数えています。" />
+        <SectionHead title="プラン別" note="申込時点の金額から割引を引いて数えています。" />
         {byPlan.length === 0 ? (
           <EmptyState>
             <span className="empty__title">プランを選んだ出席者がまだいません。</span>
@@ -131,7 +131,8 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
               <Row
                 title={<>{row.name}</>}
                 meta={<>{PRICE_AUDIENCE_LABELS[row.audience]} ／ {row.attendingCount} 人 ／ 1 人{" "}
-                    {yen(row.amount)}</>}
+                    {yen(row.amount)}
+                    {row.discountSubtotal > 0 && ` ／ 割引 −${yen(row.discountSubtotal)}`}</>}
                 aside={<><span className="rows__value">{yen(row.subtotal)}</span></>}
                 key={`${row.audience}:${row.name}:${row.amount}`}
               />
@@ -152,7 +153,8 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
             {bySchedule.map((row) => (
               <Row
                 title={<>{row.label}</>}
-                meta={<>出席 {row.attendingCount} 人</>}
+                meta={<>出席 {row.attendingCount} 人
+                  {row.discountSubtotal > 0 && ` ／ 割引 −${yen(row.discountSubtotal)}`}</>}
                 aside={<><span className="rows__value">{yen(row.subtotal)}</span></>}
                 key={row.scheduleId ?? "unknown"}
               />

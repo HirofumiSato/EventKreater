@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2652,
+      "lineCount": 2691,
       "headings": [
         {
           "level": 2,
@@ -2863,7 +2863,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1629,
+      "lineCount": 1698,
       "headings": [
         {
           "level": 2,
@@ -5545,7 +5545,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1962,
+      "lineCount": 1969,
       "headings": [
         {
           "level": 1,
@@ -10507,7 +10507,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 574,
+      "lineCount": 582,
       "headings": [
         {
           "level": 1,
@@ -10566,6 +10566,10 @@
         },
         {
           "path": "tests/integration/draft-save-preview-publish.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/event-discounts.test.ts",
           "exists": true
         },
         {
@@ -10670,6 +10674,10 @@
         },
         {
           "path": "tests/unit/event-details.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-discounts.test.ts",
           "exists": true
         },
         {

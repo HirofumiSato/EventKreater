@@ -12,9 +12,10 @@
 //   4. 音声入力 … 録音 → 文字化 → 入力欄へ反映、を疑似タイマーで
 //   5. 共通 … URL のコピー、コピー作成・プレビュー・ログアウトの遷移、API 依存のトースト
 //   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
+//   7. 申込の割引 … 告知ページの「割引を選ぶ」モーダルと支払額の計算
 //
-// 値や文言を作り直すのは、音声入力のサンプルと、押したときにしか出ない
-// 絞り込みモーダルの中身だけ。他の表示は製品の DOM のまま動かす。
+// 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
+// 絞り込みモーダルの中身、申込の割引モーダルの中身だけ。他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
 (function () {
@@ -751,7 +752,9 @@
   ]);
 
   /** この JS が動かしている操作。押してもトーストを出さない。 */
-  const WIRED = ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab, .list-filters";
+  const WIRED =
+    ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab, .list-filters, " +
+    '.rsvp__foot [type="submit"]';
 
   function normalized(text) {
     return (text || "").replace(/\s+/g, "").trim();
@@ -1069,6 +1072,146 @@
     });
   }
 
+  // ---- 7. 申込の割引 -----------------------------------------------------
+
+  /**
+   * 告知ページの「割引を選ぶ」。製品は送信の直前に React で組み立てるので、
+   * 撮った HTML には残らない。ここで `Dialog` と同じ骨格を組み直す。
+   *
+   * 条件は `EventMetaCard` の「割引」の行から、料金は選んだ費用プランから読む。
+   * 回答済み（`.discount-applied`）の画面では、いま適用している割引を最初から選んでおく。
+   * 送信そのものは API が要るので行わない。
+   */
+  function wireDiscountPicker() {
+    const form = document.querySelector("#rsvp form");
+    if (!form) return;
+    const facts = Array.from(document.querySelectorAll(".event-facts__row")).find(
+      (row) => (row.querySelector("dt")?.textContent || "").trim() === "割引",
+    );
+    if (!facts) return;
+
+    const discounts = Array.from(facts.querySelectorAll(".event-facts__line"))
+      .filter((line) => !line.classList.contains("event-facts__note"))
+      .map((line) => {
+        const label = (line.textContent || "").trim();
+        const found = /([\d,]+)\s*円引き/.exec(label);
+        return { label, amount: found ? Number(found[1].replace(/,/g, "")) : 0 };
+      })
+      .filter((row) => row.label !== "");
+    if (discounts.length === 0) return;
+
+    const applied = new Set(
+      Array.from(document.querySelectorAll(".discount-applied__item")).map((item) =>
+        (item.textContent || "").trim(),
+      ),
+    );
+
+    const yen = (value) => value.toLocaleString("ja-JP") + "円";
+
+    /** 選んでいる費用プランの金額。無料は 0、読めなければ null。 */
+    const planPrice = () => {
+      const checked = form.querySelector('input[name="price-plan"]:checked');
+      if (!checked) return null;
+      const label = (checked.closest("label")?.textContent || "").trim();
+      if (label.includes("無料")) return 0;
+      const found = /([\d,]+)\s*円/.exec(label);
+      return found ? Number(found[1].replace(/,/g, "")) : null;
+    };
+
+    let modal = null;
+
+    const onKey = (event) => {
+      if (event.key === "Escape") close();
+    };
+
+    function close() {
+      if (!modal) return;
+      modal.remove();
+      document.body.classList.remove("is-modal-open");
+      document.removeEventListener("keydown", onKey);
+    }
+
+    function build() {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="割引を閉じる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-discount-title">' +
+        '<button type="button" class="dialog__close" aria-label="割引を閉じる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-discount-title" class="dialog__title">割引を選ぶ</h3>' +
+        '<p class="dialog__body">使う割引にチェックを入れてください。' +
+        "当てはまるものがなければ、そのままで大丈夫です。</p>" +
+        '<div class="discount-picker"></div>' +
+        '<dl class="discount-picker__summary">' +
+        '<div class="discount-picker__line"><dt>料金</dt><dd data-mock-plan></dd></div>' +
+        '<div class="discount-picker__line"><dt>割引</dt><dd data-mock-discount></dd></div>' +
+        '<div class="discount-picker__line discount-picker__line--total">' +
+        "<dt>支払額</dt><dd data-mock-total></dd></div>" +
+        "</dl>" +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-submit>' +
+        "この内容で申し込む</button>" +
+        '<button type="button" class="btn btn--ghost btn--block" data-mock-cancel>やめる</button>' +
+        "</div></div>";
+
+      const picker = host.querySelector(".discount-picker");
+      const inputs = discounts.map((row) => {
+        const field = document.createElement("label");
+        field.className = "check discount-picker__row";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = applied.has(row.label);
+        input.addEventListener("change", sync);
+        const text = document.createElement("span");
+        text.textContent = row.label;
+        field.append(input, text);
+        picker.append(field);
+        return input;
+      });
+
+      const planCell = host.querySelector("[data-mock-plan]");
+      const discountCell = host.querySelector("[data-mock-discount]");
+      const totalCell = host.querySelector("[data-mock-total]");
+
+      /** 料金 − 割引 = 支払額。製品と同じく 0 円で止める。 */
+      function sync() {
+        const price = planPrice();
+        const total = inputs.reduce(
+          (sum, input, index) => (input.checked ? sum + discounts[index].amount : sum),
+          0,
+        );
+        planCell.textContent = price === null ? "未選択" : yen(price);
+        discountCell.textContent = total > 0 ? "−" + yen(total) : "なし";
+        totalCell.textContent = price === null ? "未選択" : yen(Math.max(0, price - total));
+      }
+      sync();
+
+      host.querySelector("[data-mock-cancel]").addEventListener("click", close);
+      host.querySelector(".dialog__close").addEventListener("click", close);
+      host.querySelector(".modal__backdrop").addEventListener("click", close);
+      host.querySelector("[data-mock-submit]").addEventListener("click", () => {
+        close();
+        toast("モックでは送信しません（API が要ります）。");
+      });
+      return host;
+    }
+
+    const open = (event) => {
+      event.preventDefault();
+      if (!modal || !modal.isConnected) modal = build();
+      document.body.append(modal);
+      document.body.classList.add("is-modal-open");
+      document.addEventListener("keydown", onKey);
+      const first = modal.querySelector(".discount-picker input");
+      if (first) first.focus();
+    };
+
+    // 送信ボタンも Enter も、form の submit で受ける（API は呼ばない）。
+    form.addEventListener("submit", open);
+  }
+
   // ---- 起動 -------------------------------------------------------------
 
   function start() {
@@ -1077,6 +1220,7 @@
     wireSteps();
     wireVoice();
     wireListFilters();
+    wireDiscountPicker();
     wireActions();
   }
 

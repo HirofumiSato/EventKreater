@@ -48,6 +48,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             pricePlanName: true,
             priceAudience: true,
             scheduleId: true,
+            discounts: { select: { amount: true } },
           },
         },
         receipts: { select: { amount: true } },
@@ -69,6 +70,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           ? `${formatEventDateLabel(formatEventDate(schedule.eventDate))} ${schedule.eventTime}`
           : "日時なし",
         attendingCount: row.attendingCount,
+        discountSubtotal: row.discountSubtotal,
         subtotal: row.subtotal,
       };
     });

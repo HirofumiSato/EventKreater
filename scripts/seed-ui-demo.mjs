@@ -488,10 +488,18 @@ try {
         },
         schedules: { create: input.schedules },
         pricePlans: { create: input.plans.map((plan, index) => ({ ...plan, sortOrder: index })) },
+        // 参加者が申込時に選べる割引。0 件なら告知ページに行を出さない。
+        discounts: {
+          create: (input.discounts ?? []).map((discount, index) => ({
+            ...discount,
+            sortOrder: index,
+          })),
+        },
       },
       include: {
         schedules: { orderBy: { sortOrder: "asc" } },
         pricePlans: { orderBy: { sortOrder: "asc" } },
+        discounts: { orderBy: { sortOrder: "asc" } },
       },
     });
 
@@ -500,6 +508,20 @@ try {
       const plan = row.planIndex === undefined ? null : event.pricePlans[row.planIndex];
       const chosenSchedule =
         row.scheduleIndex === undefined ? null : event.schedules[row.scheduleIndex];
+      // 申込時に選んだ割引。定義の並びから写し（スナップショット）を作る。
+      const chosenDiscounts = (row.discountIndexes ?? []).flatMap((discountIndex) => {
+        const discount = event.discounts[discountIndex];
+        return discount
+          ? [
+              {
+                discountId: discount.id,
+                name: discount.name,
+                amount: discount.amount,
+                note: discount.note,
+              },
+            ]
+          : [];
+      });
       const isParticipantUser = row.asParticipantUser === true;
       // 開催日を過ぎた催しでも不自然にならないよう、申し込んだ日時を開催日から逆算できる。
       // 指定が無いときは「直近 10 時間のあいだに申し込んだ」並びにする。
@@ -528,6 +550,16 @@ try {
           priceAudience: plan ? plan.audience : null,
           waitlistedAt:
             row.status === "WAITLISTED" ? new Date(Date.now() - (index + 1) * 3600 * 1000) : null,
+          // 出席のときだけ割引を持たせる。欠席・参加要望では残さない。
+          discounts:
+            row.status === "ATTENDING" && chosenDiscounts.length > 0
+              ? {
+                  create: chosenDiscounts.map((discount, order) => ({
+                    ...discount,
+                    sortOrder: order,
+                  })),
+                }
+              : undefined,
           createdAt: appliedAt,
         },
       });
@@ -566,6 +598,8 @@ try {
       { name: "学生", audience: "ANY", amount: 1000, note: null },
       { name: "子ども", audience: "ANY", amount: 0, note: "小学生まで" },
     ],
+    // 告知ページ・名簿・売上のモックで割引がどう出るかを確かめるための実例。
+    discounts: [{ name: "友達と参加", amount: 500, note: "2人以上のとき" }],
     participants: [
       {
         name: PARTICIPANT.name,
@@ -575,9 +609,12 @@ try {
         planIndex: 0,
         scheduleIndex: 0,
         comment: "子ども用に椅子を1脚お願いします",
-        receipt: { amount: 1500, description: "秋の芋煮会 参加費" },
+        // 回答済みの画面（告知ページの「適用中の割引」）でも割引が見えるようにする。
+        // 領収書は割引後の支払額で発行したことにする。
+        discountIndexes: [0],
+        receipt: { amount: 1000, description: "秋の芋煮会 参加費" },
       },
-      { name: "鈴木 大輔", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0 },
+      { name: "鈴木 大輔", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, discountIndexes: [0] },
       { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
       { name: "渡辺 健", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, comment: "遅れて 12時ごろ行きます" },
       { name: "中村 あゆみ", gender: "FEMALE", status: "ATTENDING", planIndex: 2, scheduleIndex: 0 },

@@ -1238,6 +1238,12 @@ fieldset.field {
     minmax(7rem, 0.9fr) minmax(6rem, 0.6fr) minmax(7rem, 1fr) auto;
 }
 
+/* 割引は「割引名・値引き額・補足」。任意なので 0 件のときは行を出さない。 */
+.repeat-row--discount {
+  grid-template-columns:
+    minmax(7rem, 0.9fr) minmax(6rem, 0.5fr) minmax(7rem, 1fr) auto;
+}
+
 .repeat-row--address {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
@@ -1284,6 +1290,7 @@ fieldset.field {
   .repeat-row,
   .repeat-row--plan,
   .repeat-row--plan-common,
+  .repeat-row--discount,
   .repeat-row--schedule,
   .repeat-row--address,
   .price-group__head {

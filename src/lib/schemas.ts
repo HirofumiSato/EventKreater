@@ -57,10 +57,28 @@ const pricePlanInputSchema = z.object({
     .transform((value) => (value ? value : null)),
 });
 
+/** 割引 1 件。すべての費用プランに適用する。参加者が申込時に選ぶ。 */
+const discountInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1, "割引の名前を入力してください").max(50),
+  amount: z
+    .number({ invalid_type_error: "値引き額は数字で入力してください" })
+    .int("値引き額は整数の円で入力してください")
+    .min(1, "値引き額は1円以上にしてください")
+    .max(9_999_999, "値引き額は9,999,999円以下にしてください"),
+  note: z
+    .string()
+    .trim()
+    .max(100, "補足は100文字以内にしてください")
+    .nullish()
+    .transform((value) => (value ? value : null)),
+});
+
 function refineEventOptions(
   value: {
     schedules: { eventDate: string; startTime: string; endTime: string }[];
     pricePlans: { name: string; audience: string }[];
+    discounts?: { name: string }[];
   },
   ctx: z.RefinementCtx,
 ) {
@@ -89,6 +107,21 @@ function refineEventOptions(
       break;
     }
     names.add(key);
+  }
+  // 割引名は 1 イベントの中で重複させない。参加者が選ぶときの見分けが付かなくなる。
+  const discountNames = new Set<string>();
+  for (const row of value.discounts ?? []) {
+    const name = row.name.trim();
+    if (name === "") continue;
+    if (discountNames.has(name)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["discounts"],
+        message: "同じ名前の割引は重複できません",
+      });
+      break;
+    }
+    discountNames.add(name);
   }
 }
 
@@ -215,6 +248,8 @@ const eventBodySchema = z.object({
   title: z.string().trim().min(1, "イベント名を入力してください").max(100),
   schedules: z.array(scheduleInputSchema).min(1, "開催日時を1件以上入力してください").max(MAX_EVENT_OPTIONS),
   pricePlans: z.array(pricePlanInputSchema).min(1, "費用プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),
+  /** 参加者が申込時に選べる割引。任意で、省略した既存クライアントは 0 件として扱う。 */
+  discounts: z.array(discountInputSchema).max(MAX_EVENT_OPTIONS).default([]),
   /** 旧・自由入力の開催場所。構造化住所が無いときだけ使う。 */
   location: z.string().trim().max(255, "開催場所は255文字以内です").optional(),
   postalCode: postalCodeSchema,
@@ -339,6 +374,11 @@ export const OrganizerParticipantSchema = z
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
     pricePlanId: z.string().uuid().optional(),
+    /**
+     * 幹事が名簿から割引を選び直すときだけ送る。省略したら今の割引をそのまま残す
+     * （名前だけの修正で、参加者が選んだ割引を消さない）。
+     */
+    discountIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).optional(),
   })
   .superRefine(refineAttendanceChoice);
 
@@ -361,6 +401,8 @@ export const SubmitRsvpSchema = z
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
     pricePlanId: z.string().uuid().optional(),
+    /** 申込時に選んだ割引。出席のときだけ使う。省略したクライアントは 0 件として扱う。 */
+    discountIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).default([]),
   })
   .superRefine(refineAttendanceChoice);
 

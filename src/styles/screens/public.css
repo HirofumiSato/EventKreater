@@ -382,3 +382,92 @@ a.card,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ==========================================================================
+   割引。申込モーダル（DynamicRsvpBox）と、回答済みの「適用中の割引」。
+   スマホは 1 列。狭い画面でも横スクロールを出さない。
+   ========================================================================== */
+
+/* 回答済みの表示。申込時点の写しを出すので、あとで定義を消しても残る。 */
+.discount-applied {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.discount-applied__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discount-applied__item {
+  color: var(--color-text);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.discount-applied__total {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: 0.9375rem;
+}
+
+.discount-applied__note {
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+/* 申込モーダルのチェックボックス。1 件 1 行で、押せる的は 44px 以上にする。 */
+.discount-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.discount-picker__row {
+  min-height: var(--tap-target);
+  padding-block: 0.5rem;
+}
+
+/* 料金・割引・支払額の 3 行。金額は右にそろえる。 */
+.discount-picker__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.discount-picker__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.discount-picker__line dd {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-weight: 500;
+}
+
+.discount-picker__line--total {
+  font-size: 1rem;
+}
+
+.discount-picker__line--total dd {
+  color: var(--color-primary-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+}

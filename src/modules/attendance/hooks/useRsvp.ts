@@ -11,6 +11,8 @@ export interface RsvpDraft {
   comment: string;
   scheduleId?: string;
   pricePlanId?: string;
+  /** 申込時に選んだ割引。出席のときだけ送る。 */
+  discountIds?: string[];
 }
 
 interface SubmitResponse {
@@ -36,6 +38,7 @@ export function useRsvp(eventId: string, initial: MyRsvp | null) {
         comment: draft.comment || null,
         scheduleId: draft.status === "ATTENDING" ? draft.scheduleId ?? null : null,
         pricePlanId: draft.status === "ATTENDING" ? draft.pricePlanId ?? null : null,
+        discounts: previous?.discounts ?? [],
         waitlistPosition: previous?.waitlistPosition ?? null,
       };
       setMyRsvp(optimistic);
@@ -53,6 +56,8 @@ export function useRsvp(eventId: string, initial: MyRsvp | null) {
             ...(draft.status === "ATTENDING"
               ? { scheduleId: draft.scheduleId, pricePlanId: draft.pricePlanId }
               : {}),
+            // 出席のときだけ割引を送る。欠席・参加要望ではサーバーが無視する。
+            ...(draft.status === "ATTENDING" ? { discountIds: draft.discountIds ?? [] } : {}),
           }),
         });
         if (!res.ok) {

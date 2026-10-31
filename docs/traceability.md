@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 105（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 379
+- 文書から参照されているコードパス: 381
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
 
@@ -319,6 +319,7 @@
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-publish.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-save-preview-publish.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/event-discounts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/helpers.ts` | [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/hydrate.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/integration/login-challenge.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -347,6 +348,7 @@
 | `tests/unit/draft-save.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-discounts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-filters.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |

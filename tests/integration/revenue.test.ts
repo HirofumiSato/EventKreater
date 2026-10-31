@@ -62,7 +62,14 @@ describeDb("売上の集計（結合）", () => {
     const rows = await prisma.participant.findMany({ where: { eventId: event.id } });
     expect(summarizeRevenue(rows).expectedRevenue).toBe(3000);
     expect(groupByPlan(rows)).toEqual([
-      { name: "一般", audience: "ANY", amount: 3000, attendingCount: 1, subtotal: 3000 },
+      {
+        name: "一般",
+        audience: "ANY",
+        amount: 3000,
+        attendingCount: 1,
+        discountSubtotal: 0,
+        subtotal: 3000,
+      },
     ]);
   });
 
