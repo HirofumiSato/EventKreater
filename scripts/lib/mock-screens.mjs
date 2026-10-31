@@ -278,6 +278,17 @@ export function buildScreens(demo) {
       path: "/organizer/events",
       auth: "organizer",
       note: "公開中と受付停止だけ。下書きは件数だけを添えて分ける。",
+      // 帯の 3 通り。8 件プランは件数と上限、公開し放題は件数だけ、未加入は残り回数と並べる。
+      states: [
+        { key: "default", label: "8件プラン", path: "/organizer/events", auth: "organizer" },
+        {
+          key: "unlimited",
+          label: "公開し放題",
+          path: "/organizer/events",
+          auth: "organizerUnlimited",
+        },
+        { key: "free", label: "未加入", path: "/organizer/events", auth: "organizerFree" },
+      ],
     },
     {
       no: "17",

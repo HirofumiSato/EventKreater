@@ -11,7 +11,7 @@ import path from "node:path";
  *
  *   npm run db:seed:ui
  *
- * 何度実行してもデモ用の 3 アカウントと、その催しだけを作り直す。
+ * 何度実行してもデモ用のアカウントと、その催しだけを作り直す。
  * 他の会員・催しには触らない。撮影用の識別子は storage/ui-demo.json に書き出す。
  *
  * 画面を見るためのデータなので、業務上の意味（按分・領収書・利用枠）は
@@ -38,6 +38,24 @@ const CO_HOST = {
   password: "UiDemo-Cohost-2026!",
   name: "高橋 直樹",
   phone: "+8190000000103",
+};
+
+/**
+ * 帯（`QuotaStatusBanner`）の見え方を確かめるための会員。
+ * 催しの持ち主を分けて、月額で8件まで公開・公開し放題・未加入の 3 通りを並べる。
+ */
+const ORGANIZER_UNLIMITED = {
+  email: "ui.organizer-unlimited@example.com",
+  password: "UiDemo-Unlimited-2026!",
+  name: "森 あかり",
+  phone: "+8190000000105",
+};
+
+const ORGANIZER_FREE = {
+  email: "ui.organizer-free@example.com",
+  password: "UiDemo-Free-2026!",
+  name: "青木 拓海",
+  phone: "+8190000000106",
 };
 
 /**
@@ -282,12 +300,15 @@ async function ensureDemoAvatar(userId) {
 }
 
 try {
-  const [organizer, participant, coHost, verifyUser] = await Promise.all([
-    upsertUser(ORGANIZER),
-    upsertUser(PARTICIPANT),
-    upsertUser(CO_HOST),
-    upsertVerifyUser(),
-  ]);
+  const [organizer, participant, coHost, verifyUser, organizerUnlimited, organizerFree] =
+    await Promise.all([
+      upsertUser(ORGANIZER),
+      upsertUser(PARTICIPANT),
+      upsertUser(CO_HOST),
+      upsertVerifyUser(),
+      upsertUser(ORGANIZER_UNLIMITED),
+      upsertUser(ORGANIZER_FREE),
+    ]);
 
   // スクリーンショット用の加入状態。月額で8件まで公開プランの途中にして、
   // 「公開中のイベント 3 / 8 件」のバナーを撮る。数えるのは開催日が今日以降の3件。
@@ -318,6 +339,49 @@ try {
     });
   }
 
+  // 公開し放題の帯は「公開中のイベント N 件（上限はありません）」を出す。件数のために催しを 3 件持たせる。
+  await prisma.userUsageQuota.upsert({
+    where: { userId: organizerUnlimited.id },
+    create: {
+      userId: organizerUnlimited.id,
+      freeEventCount: 0,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "UNLIMITED",
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+    },
+    update: {
+      freeEventCount: 0,
+      paidCredits: 0,
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "UNLIMITED",
+      currentPeriodEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+    },
+  });
+
+  // 未加入の帯は「公開中のイベント 1 件。無料トライアル残り 1回」を出す。
+  // 無料枠で 1 件だけ公開した状態にして、残りの数と件数が並ぶ様子を見る。
+  await prisma.userUsageQuota.upsert({
+    where: { userId: organizerFree.id },
+    create: {
+      userId: organizerFree.id,
+      freeEventCount: 1,
+      paidCredits: 0,
+      subscriptionStatus: "NONE",
+      subscriptionPlan: "NONE",
+    },
+    update: {
+      freeEventCount: 1,
+      paidCredits: 0,
+      subscriptionStatus: "NONE",
+      subscriptionPlan: "NONE",
+      currentPeriodEnd: null,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+    },
+  });
+
   // 公開プロフィール。タグは 3 つまで。公開ページに出すのは X と Instagram。
   // テーマは羊皮紙（読み物として見せる）。アイコンと合わせて、モックで適用後の見た目を確認できるようにする。
   const avatarImageId = await ensureDemoAvatar(organizer.id);
@@ -347,8 +411,14 @@ try {
   });
 
   // 前回のデモ催しを消す（出欠・領収書・招待はカスケードで消える）。
+  const demoUserIds = [
+    organizer.id,
+    coHost.id,
+    organizerUnlimited.id,
+    organizerFree.id,
+  ];
   const removed = await prisma.event.deleteMany({
-    where: { organizers: { some: { userId: { in: [organizer.id, coHost.id] } } } },
+    where: { organizers: { some: { userId: { in: demoUserIds } } } },
   });
 
   const today = todayInTokyo();
@@ -406,10 +476,11 @@ try {
         flyerAssetId: input.flyerAssetId ?? null,
         quotaChargedAt: input.status === "DRAFT" ? null : new Date(),
         // デモの催しは定額プランから公開した扱いにする。公開中の件数はこの値で数える。
-        quotaSource: input.status === "DRAFT" ? null : "SUBSCRIPTION",
+        // 未加入の帯を見る会員だけは、無料枠から公開した扱いにする（FREE_TRIAL）。
+        quotaSource: input.status === "DRAFT" ? null : (input.quotaSource ?? "SUBSCRIPTION"),
         organizers: {
           create: [
-            { userId: organizer.id, role: "OWNER" },
+            { userId: input.ownerId ?? organizer.id, role: "OWNER" },
             ...(input.withCoHost ? [{ userId: coHost.id, role: "CO_HOST" }] : []),
           ],
         },
@@ -941,6 +1012,47 @@ try {
     ],
   });
 
+  /**
+   * 帯の見え方を撮るための催し。
+   *
+   * 公開し放題の会員は 3 件、未加入の会員は無料枠から 1 件だけ持たせる。
+   * 公開中の件数は「開催日が今日以降」で数えるので、いずれも未来の日付にする。
+   */
+  const unlimitedEvents = [];
+  const unlimitedRows = [
+    { title: "森のピクニック", days: 5, place: "砧公園 芝生広場（東京都世田谷区）" },
+    { title: "朝のヨガ広場", days: 12, place: "二子玉川 河川敷（東京都世田谷区）" },
+    { title: "手づくりパン教室", days: 25, place: "三軒茶屋の公民館 調理室（東京都世田谷区）" },
+  ];
+  for (const row of unlimitedRows) {
+    const date = addDays(today, row.days);
+    unlimitedEvents.push(
+      await createEvent({
+        ownerId: organizerUnlimited.id,
+        title: row.title,
+        sortDate: date,
+        location: row.place,
+        capacity: 20,
+        status: "PUBLISHED",
+        schedules: [schedule(date, "10:00", "12:00", 0)],
+        plans: [{ name: "一般", audience: "ANY", amount: 1500, note: null }],
+      }),
+    );
+  }
+
+  const freeEvent = await createEvent({
+    ownerId: organizerFree.id,
+    quotaSource: "FREE_TRIAL",
+    title: "はじめての写真散歩",
+    sortDate: addDays(today, 10),
+    location: "砧公園（東京都世田谷区）",
+    venueName: "砧公園",
+    capacity: 12,
+    status: "PUBLISHED",
+    schedules: [schedule(addDays(today, 10), "14:00", "16:00", 0)],
+    plans: [{ name: "参加費", audience: "ANY", amount: 500, note: null }],
+  });
+
   // 共同幹事の招待（1 件だけ有効なコードを持つ）。前回の行は消してから作り直す。
   await prisma.eventInvitation.deleteMany({
     where: { inviteCodeHash: sha256(INVITE_CODE) },
@@ -1042,6 +1154,9 @@ try {
     coHost: await issueSessionToken(coHost),
     // メールアドレス変更の確認画面だけに使う。
     verifyUser: await issueSessionToken(verifyUser),
+    // 帯の 3 通り（8件プラン・公開し放題・未加入）を撮るため。
+    organizerUnlimited: await issueSessionToken(organizerUnlimited),
+    organizerFree: await issueSessionToken(organizerFree),
   };
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3012";
@@ -1053,6 +1168,11 @@ try {
       participant: { email: PARTICIPANT.email, password: PARTICIPANT.password },
       coHost: { email: CO_HOST.email, password: CO_HOST.password },
       verifyUser: { email: VERIFY_USER.email, password: VERIFY_USER.password },
+      organizerUnlimited: {
+        email: ORGANIZER_UNLIMITED.email,
+        password: ORGANIZER_UNLIMITED.password,
+      },
+      organizerFree: { email: ORGANIZER_FREE.email, password: ORGANIZER_FREE.password },
     },
     tokens,
     events: {
@@ -1092,6 +1212,8 @@ try {
   console.log(`  参加者: ${PARTICIPANT.email} / ${PARTICIPANT.password}`);
   console.log(`  共同幹事: ${CO_HOST.email} / ${CO_HOST.password}`);
   console.log(`  確認用: ${VERIFY_USER.email} / ${VERIFY_USER.password}`);
+  console.log(`  公開し放題: ${ORGANIZER_UNLIMITED.email} / ${ORGANIZER_UNLIMITED.password}`);
+  console.log(`  未加入: ${ORGANIZER_FREE.email} / ${ORGANIZER_FREE.password}`);
   console.log(`  前回のデモ催し削除: ${removed.count} 件`);
   console.log("  催し:");
   console.log(`    秋の芋煮会（公開中・チラシ・定員40）: ${main.event.id}`);
