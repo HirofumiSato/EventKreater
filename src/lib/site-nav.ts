@@ -15,6 +15,10 @@
  * ここが決める。主催者画面の節（`OrganizerTabs`）と重なる行き先は、節がある
  * あいだはメニューに出さない。
  *
+ * いまどちらの画面にいるかは、ヘッダーの地の色（`data-viewer-role`）と、
+ * ブランド名の下に出す 1 語（`viewerRoleCaption`）の 2 つで示す。並びが
+ * 変わっただけでは、参加者画面と主催者画面の違いに気づきにくいため。
+ *
  * 管理者（`platformRole === "ADMIN"`）は別の役割として、主催者・参加者の機能を
  * 並べずに管理コンソールだけを出す。主催者と参加者は同じ会員が画面で切り替える
  * ものなので、そこは今までどおり 1 本の切り替えリンクに留める。
@@ -71,6 +75,16 @@ export function viewerRole(pathname: string, viewer: Viewer): ViewerRole {
 /** 札に出す 1 語。文言は `SITE` が持つ。 */
 export function viewerRoleLabel(role: ViewerRole): string {
   return SITE.role[role];
+}
+
+/**
+ * ヘッダーのブランド名の下に出す、いま見ている画面の名前。
+ *
+ * 参加者画面と主催者画面は同じヘッダーを使う。色（`data-viewer-role`）だけで
+ * 分けると、色が見分けにくい人には伝わらない。同じ意味を文字でも置く。
+ */
+export function viewerRoleCaption(role: ViewerRole): string {
+  return `${SITE.role[role]}の画面`;
 }
 
 /**

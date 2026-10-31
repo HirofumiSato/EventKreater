@@ -6,6 +6,7 @@ import {
   userMenuConfig,
   viewerInitial,
   viewerRole,
+  viewerRoleCaption,
   viewerRoleLabel,
 } from "@/lib/site-nav";
 
@@ -183,6 +184,13 @@ describe("ログイン状態の札", () => {
   it("主催イベントを持たない会員は参加者として示す", () => {
     expect(viewerRole("/participant", participant)).toBe("participant");
     expect(viewerRole("/account", participant)).toBe("participant");
+  });
+
+  it("見ている画面の名前は、役割の語に「の画面」を付ける", () => {
+    // ヘッダーの色だけに頼らず、ブランド名の下でどちらの画面かを読ませる。
+    expect(viewerRoleCaption("participant")).toBe("参加者の画面");
+    expect(viewerRoleCaption("organizer")).toBe("主催者の画面");
+    expect(viewerRoleCaption("admin")).toBe("管理者の画面");
   });
 
   it("頭文字は 1 文字に切り、空の名前でも崩れない", () => {
