@@ -147,8 +147,8 @@ export default function MyPage() {
 
   // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
   // 月額プラン（上限に数える）とチケット（単発・無料枠。上限の外）に分ける。
+  // 参加の人数は出さない。直近の催しの行と名簿が持ち、ここに置くと二重になる。
   const publishedCounts = countPublishedBySource(events, todayInTokyo());
-  const attendingTotal = events.reduce((sum, event) => sum + event.stats.attendingCount, 0);
 
   return (
     <div className="stack">
@@ -158,26 +158,19 @@ export default function MyPage() {
         </>}
       />
 
-      <div className="roster-summary">
-        <div className="roster-summary__item">
+      <div className="roster-summary roster-summary--pairs">
+        <div className="roster-summary__item roster-summary__item--plan">
           <span className="roster-summary__label">プラン公開</span>
           <span className="roster-summary__value">
             {publishedCounts.plan}
             <span>件</span>
           </span>
         </div>
-        <div className="roster-summary__item">
+        <div className="roster-summary__item roster-summary__item--ticket">
           <span className="roster-summary__label">チケット公開</span>
           <span className="roster-summary__value">
             {publishedCounts.ticket}
             <span>件</span>
-          </span>
-        </div>
-        <div className="roster-summary__item roster-summary__item--money">
-          <span className="roster-summary__label">参加</span>
-          <span className="roster-summary__value">
-            {attendingTotal}
-            <span>人</span>
           </span>
         </div>
       </div>
