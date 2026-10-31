@@ -882,6 +882,63 @@ try {
   });
 
   /**
+   * 0円の単発チケット（無料チケット）で公開した 1 件。
+   *
+   * 月額プランの 8 件には数えないので、マイページの要約は「プラン公開 7件 /
+   * チケット公開 1件」になる。帯の「7 / 8 件」が動かないことも同時に見られる。
+   * チケットは公開のときに使い切っているので、`paidCredits` は 0 のままにする。
+   */
+  const reading = await createEvent({
+    quotaSource: "PAID_CREDIT",
+    title: "朝の読書会",
+    sortDate: addDays(today, 7),
+    location: "ブックカフェ 栞（東京都世田谷区北沢）",
+    postalCode: "1550031",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "北沢",
+    addressLine: "1-8-2",
+    building: "1F",
+    venueName: "ブックカフェ 栞",
+    rainPolicy: "INDOOR",
+    capacity: 12,
+    status: "PUBLISHED",
+    targetGeneration: "20代〜40代",
+    themeId: "sage",
+    rsvpDeadline: tokyoDateTime(addDays(today, 6), "23:59"),
+    schedules: [schedule(addDays(today, 7), "09:00", "11:00", 0)],
+    plans: [{ name: "参加費", audience: "ANY", amount: 800, note: "飲み物付" }],
+    participants: [
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "読みかけの本を持って行きます。",
+        appliedDaysBefore: 5,
+      },
+      {
+        name: "岡本 涼太",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "途中からでも大丈夫ですか？",
+        appliedDaysBefore: 2,
+      },
+      {
+        name: "田中 ちひろ",
+        gender: "FEMALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "早起きがかなわず。次回こそ。",
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  /**
    * 12 月の 2 件。夜の催しの見本として、屋内・21 時開始・当日精算の形を入れる。
    * クリスマスは 12 月 20 日、DJ はそこから 2 週間ほど前の金曜に置く。
    */
@@ -1188,6 +1245,7 @@ try {
       halloween: halloween.event.id,
       bonfire: bonfire.event.id,
       gohan: gohan.event.id,
+      reading: reading.event.id,
       christmas: christmas.event.id,
       djNight: djNight.event.id,
     },
@@ -1228,6 +1286,7 @@ try {
   console.log(`    ハロウィン おやこマルシェ（過去日・キャンディ）: ${halloween.event.id}`);
   console.log(`    川辺の焚き火ナイト（明日・夕暮れ）: ${bonfire.event.id}`);
   console.log(`    秋のゆるごはん会（公開中・羊皮紙）: ${gohan.event.id}`);
+  console.log(`    朝の読書会（0円チケットで公開・チケット公開1件）: ${reading.event.id}`);
   console.log(`    クリスマス ダンスパフォーマンス（12月・羊皮紙）: ${christmas.event.id}`);
   console.log(`    DJナイト Vol.7（12月・ネオン）: ${djNight.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);
