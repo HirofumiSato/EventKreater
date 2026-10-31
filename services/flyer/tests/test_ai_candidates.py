@@ -101,6 +101,9 @@ def test_ai_source_marks_candidate_as_ai() -> None:
     # 文字を載せる余白の指示と、A4 への切り抜きで上下が落ちる前提が入る。
     assert "uncluttered" in generator.calls[0]["prompt"]
     assert "central 85% of the frame" in generator.calls[0]["prompt"]
+    # 題の型は、LLM の文章より先頭に置く。
+    assert generator.calls[0]["prompt"].startswith("Must clearly depict")
+    assert "live music being performed" in generator.calls[0]["prompt"]
     # 除外語は画像生成アダプターが連結するので、ここでは渡すだけ。
     assert generator.calls[0]["negative_prompt"] == make_context().negative_prompt_en
     assert generator.calls[0]["aspect_ratio"] == "9:16"
@@ -140,16 +143,6 @@ def test_ai_source_never_returns_zero_candidates() -> None:
 
     assert len(options) == 1
     assert options[0].source == "placeholder"
-
-
-def test_ai_source_preview_is_free() -> None:
-    generator = _FakeGenerator()
-    source = _source(generator)
-
-    payload = asyncio.run(source.preview_background(None))
-
-    assert payload.startswith(b"\x89PNG")
-    assert generator.calls == []
 
 
 def test_llm_cost_matches_the_budget_calculation() -> None:

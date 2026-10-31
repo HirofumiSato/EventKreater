@@ -16,6 +16,23 @@ class TemplateId(str, Enum):
     STYLE_2_WARM_EARTH = "style_2_warm_earth"
     STYLE_3_VIBRANT_POP = "style_3_vibrant_pop"
 
+    @property
+    def paper_character(self) -> str:
+        """紙面の性格の表示名。
+
+        ID は保存済みチラシとの互換のため変えない。`style_2_warm_earth` のような
+        ID をそのまま LLM へ渡すと「温かい土の風景」と読まれ、題の被写体より
+        強く効くことがある。LLM には ID ではなくこの語を渡す。
+        """
+        return _PAPER_CHARACTERS[self]
+
+
+_PAPER_CHARACTERS: dict[TemplateId, str] = {
+    TemplateId.STYLE_1_BAR_STYLISH: "静けさ",
+    TemplateId.STYLE_2_WARM_EARTH: "やわらかさ",
+    TemplateId.STYLE_3_VIBRANT_POP: "にぎやかさ",
+}
+
 
 class RainPolicy(str, Enum):
     """雨天時の対応。"""
@@ -64,44 +81,55 @@ class SemanticTheme(str, Enum):
 
     @property
     def design_direction(self) -> str:
-        """画像生成へ渡す英語の方向付け。"""
-        return _THEME_DIRECTIONS[self]
+        """画像生成へ渡す英語の方向付け。
+
+        配色・光・質感だけを言い、被写体は変えさせない。テーマは告知ページの
+        見た目を揃えるためのもので、題（ハロウィン、マルシェ等）より優先しない。
+        """
+        return (
+            f"{_THEME_DIRECTIONS[self]}; "
+            "palette, props and lighting only, never the event subject or the sky"
+        )
 
 
+#: テーマ → 英語の方向付け。
+#:
+#: 「ground」や「paper」を画面全体の地として書かない。書くと画像モデルが空や地面を
+#: テーマ色で塗り、題の帯が明るい一色になって文字が沈む。色は小物・衣装・光に載せる。
 _THEME_DIRECTIONS: dict[SemanticTheme, str] = {
     SemanticTheme.MODERN_SLATE: (
-        "dark slate ground, white high-contrast type, cinematic low-key photography, "
-        "quiet and composed atmosphere"
+        "slate and indigo accents, white high-contrast lighting, cinematic low-key "
+        "photography, quiet and composed atmosphere"
     ),
     SemanticTheme.ENTERPRISE_CLEAN: (
-        "bright neutral ground, thin restrained borders, clean daylight photography, "
+        "bright neutral accents, thin restrained borders, clean daylight photography, "
         "calm and trustworthy tone"
     ),
     SemanticTheme.PARCHMENT: (
-        "warm off-white paper texture, serif editorial mood, soft natural light, "
+        "warm off-white paper texture on props, serif editorial mood, soft natural light, "
         "vintage print feel"
     ),
     SemanticTheme.NEO_BRUTALISM: (
-        "heavy black outlines, hard offset shadows, bold saturated flat color, "
-        "handmade poster energy"
+        "heavy black outlines on props, hard offset shadows, bold saturated flat colour, "
+        "handmade print energy"
     ),
     SemanticTheme.NEON: (
-        "black ground, cyan neon glow, night club energy, wet reflections, high contrast"
+        "cyan neon glow and black accents, night club energy, wet reflections, high contrast"
     ),
     SemanticTheme.WASHI: (
-        "washi paper fiber ground, indigo accent, serif mincho headings with wide tracking, "
-        "quiet seasonal mood, soft indirect light"
+        "washi paper fibre texture on props, indigo accent, quiet seasonal mood, "
+        "soft indirect light"
     ),
     SemanticTheme.SAGE: (
-        "pale sage ground, shadowless flat surfaces, generous white space, "
-        "short measure and calm breathing, soft daylight"
+        "pale sage accents, shadowless flat surfaces, generous breathing space, "
+        "calm short measure, soft daylight"
     ),
     SemanticTheme.CANDY: (
-        "peach cream ground, round soft shapes, rose pink accent, playful bright light, "
+        "rose pink accents, round soft shapes, playful bright light, "
         "friendly and sweet atmosphere"
     ),
     SemanticTheme.DUSK: (
-        "deep warm brown ground, orange sunset rim light, dusk outdoor gathering, "
+        "orange sunset rim light, deep warm shadows, dusk outdoor gathering, "
         "glowing warm highlights, relaxed evening mood"
     ),
 }
@@ -204,7 +232,7 @@ class LLMGenerationContext(BaseModel):
     negative_prompt_en: str = Field(
         ...,
         min_length=1,
-        description="除外要素（text, letters, words, logos, human faces close-up 等）",
+        description="除外要素（text, letters, words, logos, watermark 等。題に必要な人物は除外しない）",
     )
     suggested_accent_color: str = Field(
         ...,
@@ -351,11 +379,11 @@ class CandidateMeta(BaseModel):
     palette_id: str = Field(..., min_length=1)
     accent_color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
     overlay_alpha: float = Field(..., ge=0.0, le=1.0)
-    #: タイトル色ステップで選ばれた ID（auto / ink / white / accent）。
+    #: タイトル色ステップ（廃止）で選ばれた ID の残骸。古い候補のメタを読むためだけに残す。
     title_color_id: str | None = Field(
         default=None,
         max_length=32,
-        description="タイトル色の選択肢 ID。古い候補では None。",
+        description="廃止したタイトル色ステップの選択肢 ID。古い候補では None。",
     )
     parent_id: str | None = None
     label: str = Field(..., min_length=1)

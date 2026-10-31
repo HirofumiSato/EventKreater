@@ -19,23 +19,17 @@ import type {
 import { Alert } from "@/components/ui";
 
 const STEP_TITLES: Record<FlyerWizardStep, string> = {
-  1: "紙面の性格",
-  2: "背景",
-  3: "文字の配置",
-  4: "配色",
-  5: "タイトル色",
+  1: "背景",
+  2: "紙面の性格",
 };
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
-  1: "文字の組み方と余白の取り方が変わります。紙も差し色も 3 枚で同じです。",
-  2: "背景を選んでください。1枚ずつ作り、気に入らなければ作り直せます。",
-  3: "文字をどこにまとめるかを選んでください。背景はそのまま残ります。",
-  4: "色を選んでください。日付と罫線の色が変わります。",
-  5: "題名の色を選んでください。自動は写真の明るさに合わせます。選んだ内容でチラシを保存します。",
+  1: "背景を選んでください。題と場所から、何が起きる催しか、どの場かを残して絵柄を決めます。題の語は落としません。人が出るときは後ろ姿や横顔で、顔は描きません。対象世代は居る人の年代の手がかりで、空でも題が人を含めば出ます。1枚ずつ作り、気に入らなければ作り直せます。",
+  2: "同じ写真の上で、書体と余白の取り方を比べます。紙も差し色も 3 枚で同じです。選んだ内容でチラシを保存します。",
 };
 
 /**
- * ステップ 2 で一度に出す背景の枚数。
+ * ステップ 1 で一度に出す背景の枚数。
  * AI 生成は 1 枚でも課金が起きるため、1 枚ずつ出して作り直させる。
  */
 const BACKGROUND_COUNT = 1;
@@ -43,17 +37,11 @@ const BACKGROUND_COUNT = 1;
 const EMPTY_STEPS: Record<FlyerWizardStep, FlyerCandidate[]> = {
   1: [],
   2: [],
-  3: [],
-  4: [],
-  5: [],
 };
 
 const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
   1: null,
   2: null,
-  3: null,
-  4: null,
-  5: null,
 };
 
 interface FlyerCandidateModalProps {
@@ -126,38 +114,20 @@ export function FlyerCandidateModal({
         let url = "";
         let body: Record<string, unknown> = {};
         if (target === 1) {
-          url = "/api/v1/flyers/candidates/types";
-          body = {
-            ...base,
-            draftKey,
-            eventId,
-            templateId: FLYER_TEMPLATE_IDS[0],
-            layoutId: "classic",
-          };
-        } else if (target === 2) {
-          const type = current[1];
-          if (!type) return;
           url = "/api/v1/flyers/candidates";
           body = {
             ...base,
             draftKey,
             eventId,
-            templateId: type.templateId,
+            // この段の書体は仮。次の段で同じ背景の上に 3 種を焼き直す。
+            templateId: FLYER_TEMPLATE_IDS[0],
             layoutId: "classic",
             count: BACKGROUND_COUNT,
           };
-        } else if (target === 3) {
-          const background = current[2];
-          if (!background) return;
-          url = `/api/v1/flyers/candidates/${background.candidateId}/layouts`;
-        } else if (target === 4) {
-          const layout = current[3];
-          if (!layout) return;
-          url = `/api/v1/flyers/candidates/${layout.candidateId}/palettes`;
         } else {
-          const palette = current[4];
-          if (!palette) return;
-          url = `/api/v1/flyers/candidates/${palette.candidateId}/title-colors`;
+          const background = current[1];
+          if (!background) return;
+          url = `/api/v1/flyers/candidates/${background.candidateId}/types`;
         }
         const response = await fetch(url, {
           method: "POST",
@@ -177,7 +147,7 @@ export function FlyerCandidateModal({
         }
         setCandidates((prev) => ({ ...prev, [target]: next }));
         setSelected((prev) => ({ ...prev, [target]: next[0] }));
-        setAiFallback(target === 2 && data.aiFallback === true);
+        setAiFallback(target === 1 && data.aiFallback === true);
         setStep(target);
         if (data.quota) {
           setQuota(data.quota);
@@ -213,6 +183,7 @@ export function FlyerCandidateModal({
     form.append("rainPolicy", base.rainPolicy);
     if (base.capacity != null) form.append("capacity", String(base.capacity));
     if (base.themeId) form.append("themeId", base.themeId);
+    if (base.targetGeneration) form.append("targetGeneration", base.targetGeneration);
     form.append("templateId", selected[1]?.templateId ?? FLYER_TEMPLATE_IDS[0]);
     form.append("layoutId", "classic");
 
@@ -233,14 +204,9 @@ export function FlyerCandidateModal({
         quota?: FlyerQuota;
       };
       setUploaded(data.candidate);
-      setSelected((prev) => ({
-        ...prev,
-        2: data.candidate,
-        3: null,
-        4: null,
-      }));
-      setCandidates((prev) => ({ ...prev, 3: [], 4: [] }));
-      setStep(2);
+      setSelected((prev) => ({ ...prev, 1: data.candidate, 2: null }));
+      setCandidates((prev) => ({ ...prev, 2: [] }));
+      setStep(1);
       setError(null);
       if (data.quota) {
         setQuota(data.quota);
@@ -277,14 +243,9 @@ export function FlyerCandidateModal({
   }, [open, saving, onClose]);
 
   const choose = (target: FlyerWizardStep, candidate: FlyerCandidate) => {
-    // 紙面の性格を変えると、前の性格で作ったアップロード背景は使えない。
-    if (target === 1) {
-      setUploaded(null);
-      setUploadError(null);
-    }
     setSelected((prev) => {
       const next = { ...prev, [target]: candidate };
-      for (let later = target + 1; later <= 5; later += 1) {
+      for (let later = target + 1; later <= 2; later += 1) {
         next[later as FlyerWizardStep] = null;
       }
       return next;
@@ -292,7 +253,7 @@ export function FlyerCandidateModal({
     // 後続ステップは親が変われば作り直す。残しておくと別の背景の候補が混ざる。
     setCandidates((prev) => {
       const next = { ...prev };
-      for (let later = target + 1; later <= 5; later += 1) {
+      for (let later = target + 1; later <= 2; later += 1) {
         next[later as FlyerWizardStep] = [];
       }
       return next;
@@ -305,7 +266,7 @@ export function FlyerCandidateModal({
       setError("候補を 1 つ選んでください。");
       return;
     }
-    if (step === 5) {
+    if (step === 2) {
       void confirm();
       return;
     }
@@ -325,7 +286,7 @@ export function FlyerCandidateModal({
   };
 
   const confirm = async () => {
-    const chosen = selected[5];
+    const chosen = selected[2];
     if (!chosen || saving) return;
     setSaving(true);
     setError(null);
@@ -372,10 +333,10 @@ export function FlyerCandidateModal({
   const busy = loading || saving || uploading;
   const visible = useMemo(() => candidates[step], [candidates, step]);
   const uploadSelected = Boolean(
-    uploaded && selected[2]?.candidateId === uploaded.candidateId,
+    uploaded && selected[1]?.candidateId === uploaded.candidateId,
   );
   // 背景の供給元と、AI であと何枚作れるか。作り直しボタンの表示に使う。
-  const backgroundCandidate = candidates[2][0] ?? null;
+  const backgroundCandidate = candidates[1][0] ?? null;
   const backgroundFromAi = backgroundCandidate?.source === "ai";
   const aiRemaining = backgroundCandidate?.aiRemaining ?? null;
   const aiExhausted = aiRemaining === 0;
@@ -410,7 +371,7 @@ export function FlyerCandidateModal({
             )}
           </div>
           <ol className="wizard__steps">
-            {([1, 2, 3, 4, 5] as FlyerWizardStep[]).map((value) => (
+            {([1, 2] as FlyerWizardStep[]).map((value) => (
               <li
                 key={value}
                 className={[
@@ -431,7 +392,7 @@ export function FlyerCandidateModal({
         <div className="wizard__body">
           <p className="wizard__hint">{STEP_HINTS[step]}</p>
 
-          {step === 2 && (
+          {step === 1 && (
             <section
               className={`candidate-upload${uploadSelected ? " candidate-upload--selected" : ""}`}
               aria-label="自分の写真を背景にする"
@@ -458,7 +419,7 @@ export function FlyerCandidateModal({
                       type="button"
                       className="btn btn--ghost btn--sm"
                       disabled={busy}
-                      onClick={() => choose(2, uploaded)}
+                      onClick={() => choose(1, uploaded)}
                     >
                       この写真を選ぶ
                     </button>
@@ -496,7 +457,7 @@ export function FlyerCandidateModal({
 
           {loading ? (
             <div className="candidate-grid" aria-busy="true" aria-label="候補を準備しています">
-              {Array.from({ length: step === 1 ? 3 : step === 2 ? BACKGROUND_COUNT : 4 }).map(
+              {Array.from({ length: step === 2 ? 3 : BACKGROUND_COUNT }).map(
                 (_, index) => (
                   <div key={index} className="candidate-skeleton" />
                 ),
@@ -541,7 +502,7 @@ export function FlyerCandidateModal({
             </div>
           )}
 
-          {step === 2 && aiFallback && !uploadSelected && (
+          {step === 1 && aiFallback && !uploadSelected && (
             <Alert tone="warning">
               {aiExhausted
                 ? "AIの作成回数の上限です。テーマの下地で表示しています。"
@@ -549,13 +510,13 @@ export function FlyerCandidateModal({
             </Alert>
           )}
 
-          {step === 2 && !loading && (
+          {step === 1 && !loading && (
             <div className="candidate-retry">
               <button
                 type="button"
                 className="btn btn--ghost btn--sm"
                 disabled={busy || aiExhausted}
-                onClick={() => void load(2, selected)}
+                onClick={() => void load(1, selected)}
               >
                 別の背景を作る
               </button>
@@ -618,7 +579,7 @@ export function FlyerCandidateModal({
               ? "保存しています..."
               : loading
                 ? "準備しています..."
-                : step === 5
+                : step === 2
                   ? "このデザインで保存"
                   : "次へ"}
           </button>

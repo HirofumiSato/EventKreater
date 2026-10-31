@@ -41,15 +41,15 @@ async def health() -> dict[str, str]:
 
 
 @router.post(
-    "/api/v1/flyers/candidates/types",
+    "/api/v1/flyers/candidates/{candidate_id}/types",
     response_model=CandidateList,
 )
 async def candidate_types(
-    body: FlyerGenerationRequest,
+    candidate_id: str,
     request: Request,
 ) -> CandidateList:
-    """ステップ 1。3 テンプレートの完成イメージを返す。"""
-    return await _candidates(request).suggest_types(body, _owner(request))
+    """ステップ 2。選んだ背景の上で、3 種の紙面の性格を焼き直す。"""
+    return _candidates(request).suggest_types(candidate_id, _owner(request))
 
 
 @router.post("/api/v1/flyers/candidates", response_model=CandidateList)
@@ -57,7 +57,7 @@ async def candidate_backgrounds(
     body: CandidateProposalCommand,
     request: Request,
 ) -> CandidateList:
-    """ステップ 2。選んだタイプの背景タイルを返す。"""
+    """ステップ 1。背景タイルを返す。"""
     return await _candidates(request).suggest_backgrounds(
         body,
         body.count,
@@ -87,42 +87,6 @@ async def upload_background(
         data,
         _owner(request),
     )
-
-
-@router.post(
-    "/api/v1/flyers/candidates/{candidate_id}/layouts",
-    response_model=CandidateList,
-)
-async def candidate_layouts(
-    candidate_id: str,
-    request: Request,
-) -> CandidateList:
-    """ステップ 3。同じ背景で 4 通りの文字配置を返す。"""
-    return _candidates(request).suggest_layouts(candidate_id, _owner(request))
-
-
-@router.post(
-    "/api/v1/flyers/candidates/{candidate_id}/palettes",
-    response_model=CandidateList,
-)
-async def candidate_palettes(
-    candidate_id: str,
-    request: Request,
-) -> CandidateList:
-    """ステップ 4。選んだ配置のまま 4 通りの配色を返す。"""
-    return _candidates(request).suggest_palettes(candidate_id, _owner(request))
-
-
-@router.post(
-    "/api/v1/flyers/candidates/{candidate_id}/title-colors",
-    response_model=CandidateList,
-)
-async def candidate_title_colors(
-    candidate_id: str,
-    request: Request,
-) -> CandidateList:
-    """ステップ 5。選んだ配色のまま 4 通りのタイトル色を返す。"""
-    return _candidates(request).suggest_title_colors(candidate_id, _owner(request))
 
 
 @router.get("/api/v1/flyers/candidates/{candidate_id}")

@@ -22,7 +22,11 @@ from src.adapters.prompt_engine.openai_prompt_engine import (
     SYSTEM_PROMPT,
     OpenAIPromptEngine,
 )
-from src.domain.layout_prompts import CROP_SAFE_AREA_HINT
+from src.domain.layout_prompts import (
+    CALM_TITLE_BAND_HINT,
+    CROP_SAFE_AREA_HINT,
+    NEGATIVE_SPACE_HINT,
+)
 from src.domain.models import (
     FlyerGenerationRequest,
     LLMGenerationContext,
@@ -122,9 +126,28 @@ def test_payload_keeps_generation_fields_and_drops_operational_ones() -> None:
     assert payload["generation_purpose"] == GENERATION_PURPOSE
     assert payload["target_generation"] == "20代から40代の音楽好き"
     assert payload["design_direction"] == SemanticTheme.NEON.design_direction
-    assert payload["layout_id"] == TextLayout.CLASSIC.value
+    # 配置は画面が選ばない。構図は composition_hint だけで決める。
+    assert "layout_id" not in payload
+    # 題の型は、題そのものより先に英語の制約として載る。
+    assert payload["activity_families"] == ["music_performance"]
+    assert payload["setting_family"] == "bar_or_club"
+    assert payload["people_policy"] == "atmosphere"
+    assert payload["lighting_family"] == "night_performance"
+    # 紙面の ID ではなく性格の表示名を渡し、風景の指定と読ませない。
+    assert payload["paper_character"] == "静けさ"
     # 何枚作るかは絵柄に影響しないので渡さない。
     assert "count" not in payload
+
+
+def test_payload_carries_energy_family_only_when_people_are_present() -> None:
+    # 人が居る催しだけ、盛り上がりの型を LLM へ渡す。
+    lively = build_prompt_payload(make_request(title="DJナイト Vol.7"))
+    quiet = build_prompt_payload(
+        make_request(title="秋の芋煮会", location="川辺 世田谷区")
+    )
+
+    assert lively["energy_family"] == "crowd_peak"
+    assert "energy_family" not in quiet
 
 
 def test_payload_drops_empty_fields() -> None:
@@ -155,14 +178,16 @@ def test_user_message_uses_whitelist_and_carries_intent() -> None:
     payload = json.loads(transport.messages[1]["content"])
     assert payload["generation_purpose"] == GENERATION_PURPOSE
     assert payload["title"] == "タコパの夜"
+    assert payload["activity_families"] == ["food"]
+    assert payload["people_policy"] == "absent"
+    # 構図は標準（題は上、明細は下）の 1 通り。紙面の性格では変えない。
     assert payload["composition_hint"] == (
-        "The top and bottom bands must stay uncluttered for text; "
-        "the middle band is free for the subject.\n" + CROP_SAFE_AREA_HINT
+        f"{NEGATIVE_SPACE_HINT}\n{CALM_TITLE_BAND_HINT}\n{CROP_SAFE_AREA_HINT}"
     )
     assert "count" not in payload
 
 
-def test_direct_generation_prompt_carries_layout_and_crop_hints() -> None:
+def test_direct_generation_prompt_carries_composition_and_crop_hints() -> None:
     images = _RecordingImages()
     usecase = GenerateFlyerUseCase(
         prompt_engine=_StubPromptEngine(),
@@ -175,9 +200,32 @@ def test_direct_generation_prompt_carries_layout_and_crop_hints() -> None:
 
     prompt = images.calls[0]["prompt"]
     # 候補を経ない `/api/v1/flyers/generate` でも、画像直前で指示が付く。
-    assert "lower two thirds must stay uncluttered" in prompt
+    assert prompt.startswith("Must clearly depict")
+    assert "live music being performed" in prompt
+    assert NEGATIVE_SPACE_HINT in prompt
+    assert CALM_TITLE_BAND_HINT in prompt
     assert "central 85% of the frame" in prompt
     assert CROP_SAFE_AREA_HINT in prompt
+
+
+def test_direct_generation_prompt_carries_lively_scene() -> None:
+    images = _RecordingImages()
+    usecase = GenerateFlyerUseCase(
+        prompt_engine=_StubPromptEngine(),
+        image_generator=images,
+        renderer=_PassthroughRenderer(),
+        storage=_MemoryStorage(),
+        fallback_images=_RecordingImages(),
+    )
+    asyncio.run(
+        usecase.execute(make_request(title="誕生日会", location="公民館 世田谷区"))
+    )
+
+    prompt = images.calls[0]["prompt"]
+    # LLM が活気に触れずに返してきても、画像の直前に盛り上がりの型が付く。
+    assert prompt.startswith("Must clearly depict")
+    assert "cake" in prompt
+    assert "applause" in prompt
 
 
 def test_target_generation_accepts_fifty_characters() -> None:

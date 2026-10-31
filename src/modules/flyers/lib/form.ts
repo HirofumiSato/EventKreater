@@ -6,7 +6,7 @@ import {
 import type { SemanticThemeId } from "@/lib/semantic-themes";
 import type { EventFormValues } from "@/modules/events/types";
 
-/** チラシ生成サービスへ渡す 7 項目。ウィザードの全ステップで同じ値を使う。 */
+/** チラシ生成サービスへ渡す 9 項目（題・日時・費用・場所・雨天・定員・テーマ・対象世代）。ウィザードの全ステップで同じ値を使う。 */
 export interface FlyerFormPayload {
   title: string;
   eventDate: string;

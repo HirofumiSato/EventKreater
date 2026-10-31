@@ -128,7 +128,7 @@ _THEME_LOOKS: dict[SemanticTheme, ThemeLook] = {
         ink="#17150F",
         ink_sub="#56504A",
         recommended=TemplateId.STYLE_3_VIBRANT_POP,
-        label="ネオ・ブルータリズム",
+        label="太枠",
     ),
     SemanticTheme.NEON: ThemeLook(
         ground="dark",

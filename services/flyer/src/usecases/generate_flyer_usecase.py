@@ -58,8 +58,9 @@ class GenerateFlyerUseCase:
         _select_template(self._fallback_images, request.template_id)
         status = FlyerStatus.SUCCESS
         # LLM が余白や切り抜きに触れずに返してきても構図を保つため、画像生成の直前に
-        # 決定的な指示を足す。候補経由（DalleCandidateSource）と同じ関数を使う。
-        image_prompt = prompt_with_layout_hint(context, request.layout_id)
+        # 決定的な指示を足す。題の必須被写体もここで先頭に入る。候補経由
+        # （DalleCandidateSource）と同じ関数を使う。
+        image_prompt = prompt_with_layout_hint(context, request)
         try:
             # 画像生成 API に A4 相当のサイズは無い。縦長（9:16）で生成し、
             # レンダラーが A4 縦（1080×1528）へ cover で切り抜く。

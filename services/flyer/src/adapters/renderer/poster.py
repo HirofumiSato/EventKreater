@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from datetime import date as Date
@@ -23,12 +24,15 @@ from src.adapters.renderer.layout_calculator import (
     TitleFit,
     average_rgb,
     blend_rgb,
-    contrast_ratio,
+    cell_samples,
+    choose_title_color,
     fit_to_scale,
     line_width,
     load_font,
-    relative_luminance,
     veil_alpha,
+    veil_alpha_for_samples,
+    worst_case_contrast,
+    worst_case_rgb,
 )
 from src.adapters.renderer.layouts import StackAnchor, StackSpec
 from src.domain.models import FlyerGenerationRequest, TemplateId
@@ -210,9 +214,16 @@ def _top_group(
 
     日付と時刻は同じ群に置く。片方を上端、片方を下端へ離すと、いつ開く催しなのかを
     目が 2 往復して読むことになる。時刻は日付より大きく、タイトルより小さい。
+
+    3 つの色は 1 つにそろえる。日付だけ差し色、時刻だけ補助色にすると、写真の上で
+    同じ帯に載っているのに別々の色へ寄り、題と地の関係が読めなくなる。階層は
+    大きさと字間だけで示し、色は見出しの群で共通にする。実際の色は描画時に
+    地から決める（`draw_poster`）ので、ここでは「自動」の仮の墨を置く。
     """
     align: SlotAlign = variant.align
-    ink, ink_sub, accent = _paper_colors(colors)
+    ink, _, accent = _paper_colors(colors)
+    #: 見出しの群の仮の色。自動なら墨、指定色があればそれ。
+    headline = title_color if title_color is not None else ink
     leading = design.line_height(title_size, design.HEADING_LINE_RATIO)
     left, width = design.SIDE_MARGIN, design.CONTENT_WIDTH
     slots: list[PosterSlot] = []
@@ -226,7 +237,7 @@ def _top_group(
                 text=display_date(date),
                 size=design.EYEBROW_SIZE,
                 box=(left, y, width, eyebrow),
-                color=accent,
+                color=headline,
                 align=align,
                 leading=eyebrow,
                 letter_spacing=design.LABEL_TRACKING,
@@ -242,7 +253,7 @@ def _top_group(
                 text=time,
                 size=design.META_SIZE,
                 box=(left, y, width, meta),
-                color=ink_sub,
+                color=headline,
                 align=align,
                 leading=meta,
             )
@@ -257,7 +268,7 @@ def _top_group(
             size=title_size,
             box=(left, y, width, height),
             # 「自動」は墨を仮に置き、描画時に地の色から決め直す。
-            color=title_color if title_color is not None else ink,
+            color=headline,
             align=align,
             leading=leading,
         )
@@ -412,7 +423,8 @@ def build_poster_plan(
 ) -> PosterPlan:
     """スロットの文字・大きさ・位置・色を決める。画像もフォントも触らない。
 
-    差し色を使うのは eyebrow と見出し下の罫線だけ。大きな文字には使わない。
+    差し色を使うのは見出し下の罫線だけ。見出しの群（日付・時刻・題）は 1 色にそろえ、
+    階層は大きさと字間だけで示す。
     `title_color` が None のときは墨を仮に置き、実際の地の色を見て描画時に決める。
     """
     top_slots, top_rules, top_h = _top_group(
@@ -640,33 +652,52 @@ def resolve_title_color(
 ) -> RGB:
     """タイトルの文字色を、実際に載る地の色から決める。
 
-    `preferred` が None（自動）のときは、墨が 4.5:1 を満たせば墨、満たさなければ
-    白を選ぶ。どちらも満たない中間の地では墨のまま返し、呼び出し側が紙のベールで
-    地を持ち上げる。選ばれた色は動かさない。読みにくければベールの向きで地の方を
+    `preferred` が None（自動）のときは、墨と白のうち地に対してコントラストが
+    高い方を選ぶ。どちらも 4.5:1 に届かない地では、呼び出し側が紙のベールで地を
+    持ち上げる。選ばれた色は動かさない。読みにくければベールの向きで地の方を
     寄せる（白い紙に白を選んだら、文字ではなく地が暗くなる）。
+
+    この関数は 1 色だけを見る。実際の描画は帯を格子に割った
+    `choose_title_color` を使う（平均では明暗の混ざった帯を誤判定するため）。
     """
     if preferred is not None:
         return preferred
-    if design.contrast_ratio(
-        design.relative_luminance(*ink),
-        design.relative_luminance(*background),
-    ) >= design.MIN_CONTRAST:
-        return ink
-    white: RGB = (255, 255, 255)
-    if design.contrast_ratio(
-        design.relative_luminance(*white),
-        design.relative_luminance(*background),
-    ) >= design.MIN_CONTRAST:
-        return white
-    return ink
+    return choose_title_color(ink, (background,))
 
 
 def _title_veil_color(plan: PosterPlan, title_color: RGB) -> RGB:
-    """見出しの群に敷く色。文字が地より明るければ墨、暗ければ紙。"""
+    """見出しの群に敷く色。文字が地より明るければ暗く、暗ければ紙の明るさ。
+
+    文字が明るいときは、紙の明暗に関わらず**黒へ寄せた紙**を敷く。
+    `surface_for(paper, "ink")` は紙が暗いテーマ（ネオン・夜のスレート）で
+    明るい面を返すため、明るい題の上に明るいベールを敷くことになり、
+    ベールが届かず（`veil_alpha_for_samples` が None）文字が地に溶ける。
+    """
     paper = plan.colors.paper
     if design.relative_luminance(*title_color) > design.relative_luminance(*paper):
-        return design.surface_for(paper, "ink")
+        return design.blend_rgb(paper, (0, 0, 0), 0.93)
     return paper
+
+
+def _veil_cost(plan: PosterPlan, color: RGB, samples: Sequence[RGB]) -> float:
+    """その文字色を読めるようにするのに必要なベールの濃さ。救えなければ無限。"""
+    if worst_case_contrast(color, samples) >= design.MIN_CONTRAST:
+        return 0.0
+    alpha = veil_alpha_for_samples(samples, _title_veil_color(plan, color), color)
+    return math.inf if alpha is None else alpha
+
+
+def _choose_title_color(plan: PosterPlan, ink: RGB, samples: Sequence[RGB]) -> RGB:
+    """墨か白のうち、地を隠す量が少ない方を選ぶ。
+
+    コントラストの最大ではなくベールの濃さで比べる。明るい空の帯に暗い人物が
+    入った写真では、白を選ぶと空を墨で塗り潰すことになり、墨を選べば人物の
+    あたりへ紙を薄く敷くだけで済む。写真を残せる側を採る。
+    """
+    white: RGB = (255, 255, 255)
+    if _veil_cost(plan, white, samples) < _veil_cost(plan, ink, samples):
+        return white
+    return ink
 
 
 def draw_poster(
@@ -731,33 +762,45 @@ def draw_poster(
     behind: tuple[int, int, int, int] | None = None
     adjusted = False
     if title_group is not None:
-        title_color = resolve_title_color(
-            plan.title_color,
-            ink,
-            average_rgb(working, title_group),
+        # 帯を格子に割り、いちばん不利なセルで色とベールを決める。平均 1 点だと、
+        # 明るい空と暗い被写体が混ざった帯で「白で足りる」と誤判定し、明るい画素の
+        # 上に白い題が残る。
+        samples = cell_samples(working, title_group)
+        title_color = (
+            plan.title_color
+            if plan.title_color is not None
+            else _choose_title_color(plan, ink, samples)
         )
         paint = _title_veil_color(plan, title_color)
-        alpha = veil_alpha(average_rgb(working, title_group), paint, title_color)
+        alpha = veil_alpha_for_samples(samples, paint, title_color)
         if alpha is not None:
             working = _paint_rect(working, title_group, paint, alpha)
             strongest = max(strongest or 0.0, alpha)
         behind = title_group
-        # ベール後の地に対して、見出しの群の文字を読める濃さへ寄せる。
-        ground = average_rgb(working, behind)
+        # 日付・時刻・題は 1 色にそろえる。同じ帯に載る 3 つを別々の色へ寄せると、
+        # 差し色・補助色・墨が混在し、題と地の関係が読めなくなる（暗い写真の上で
+        # 日付だけ鮮やかな水色になる、など）。階層は大きさと字間で示す。
+        #
+        # 濃さを寄せるのは、指定色が地に近いときだけ。自動で選んだ墨か白は、
+        # すでに帯のベール代で比べた結果なので動かさない。帯に明るいビームと暗い
+        # 地が同居して 1 色では届かないとき、最悪セル 1 点に合わせて反転させると、
+        # 大多数の画素で読めないまま色だけが転ぶ（暗い写真の白い題が黒くなる）。
+        if plan.title_color is not None:
+            title_color = design.ensure_contrast(
+                title_color,
+                worst_case_rgb(working, behind, title_color),
+            )
         for slot in plan.slots:
             if _inside(slot.area, behind):
-                final[slot.role] = design.ensure_contrast(slot.color, ground)
-        title_color = design.ensure_contrast(title_color, ground)
+                final[slot.role] = title_color
         final["title"] = title_color
         adjusted = plan.title_color is not None and title_color != plan.title_color
 
     title_contrast = 1.0
     if title is not None:
-        x, y, width, height = title.box
-        mean = average_rgb(working, (x, y, x + width, y + height))
-        title_contrast = contrast_ratio(
-            relative_luminance(*title_color),
-            relative_luminance(*mean),
+        title_contrast = worst_case_contrast(
+            title_color,
+            cell_samples(working, title.area),
         )
 
     draw = ImageDraw.Draw(working)
@@ -786,16 +829,15 @@ def draw_poster(
 
 
 def measure_contrast(plan: PosterPlan, canvas: Image.Image) -> float:
-    """紙面の文字色と、実際に載った地のコントラスト。"""
+    """紙面の文字色と、実際に載った地のコントラスト。
+
+    平均ではなく、題の帯を格子に割った最小値。平均で測ると、明るい空と暗い服が
+    混ざった帯を「読める」と報告してしまう。
+    """
     title = plan.slot("title")
     if title is None:
         return 1.0
-    x, y, width, height = title.box
-    mean = average_rgb(canvas, (x, y, x + width, y + height))
-    return contrast_ratio(
-        relative_luminance(*title.color),
-        relative_luminance(*mean),
-    )
+    return worst_case_contrast(title.color, cell_samples(canvas, title.area))
 
 
 __all__ = [

@@ -10,9 +10,7 @@ from __future__ import annotations
 from src.domain.models import TemplateId
 
 TEMPLATE_LABELS: dict[TemplateId, str] = {
-    TemplateId.STYLE_1_BAR_STYLISH: "静けさ",
-    TemplateId.STYLE_2_WARM_EARTH: "やわらかさ",
-    TemplateId.STYLE_3_VIBRANT_POP: "にぎやかさ",
+    template_id: template_id.paper_character for template_id in TemplateId
 }
 
 TEMPLATE_DESCRIPTIONS: dict[TemplateId, str] = {

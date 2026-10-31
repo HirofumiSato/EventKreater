@@ -18,7 +18,7 @@ export const SEMANTIC_THEME_GROUPS: readonly {
   note: string;
 }[] = [
   { id: "calm", label: "落ち着き", note: "読み物・占い・季節の催し" },
-  { id: "bright", label: "明るい", note: "相談・勉強会・マルシェ" },
+  { id: "bright", label: "明るい", note: "相談・勉強会・昼の集まり" },
   { id: "vivid", label: "元気", note: "パーティー・子ども連れ・手づくり" },
   { id: "night", label: "夜", note: "ライブ・バー・写真を主役に" },
 ] as const;
@@ -73,7 +73,8 @@ export const SEMANTIC_THEMES: readonly SemanticThemeDefinition[] = [
   },
   {
     id: "neo-brutalism",
-    label: "ネオ・ブルータリズム",
+    // ID は CSS / DB 互換のため変えない。主催者に伝わる言葉だけを「太枠」にする。
+    label: "太枠",
     note: "墨の枠と紙を重ねた影。手づくりのチラシらしい、落ち着いた勢い。",
     group: "vivid",
   },

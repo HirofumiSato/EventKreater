@@ -1,4 +1,8 @@
-"""ウィザード候補の結合テスト。外部 API は使わない。"""
+"""ウィザード候補の結合テスト。外部 API は使わない。
+
+画面の手順は 2 つだけ。背景を選び、同じ背景の上で紙面の性格を選ぶ。配置・配色・
+題名色は選ばせない（描画側が決める）。
+"""
 
 from __future__ import annotations
 
@@ -44,9 +48,41 @@ def _image(client: TestClient, url: str) -> Image.Image:
     return Image.open(BytesIO(response.content))
 
 
-def test_type_step_returns_three_rendered_templates(tmp_path: Path) -> None:
+def _background(client: TestClient, **overrides: object) -> dict[str, object]:
+    backgrounds = client.post(
+        "/api/v1/flyers/candidates",
+        json=_body(count=1, **overrides),
+    ).json()["candidates"]
+    assert len(backgrounds) == 1
+    return backgrounds[0]
+
+
+def _types(client: TestClient, parent_id: object) -> list[dict[str, object]]:
+    return client.post(
+        f"/api/v1/flyers/candidates/{parent_id}/types",
+        json={},
+    ).json()["candidates"]
+
+
+def test_background_step_returns_one_tile(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
-        response = client.post("/api/v1/flyers/candidates/types", json=_body())
+        backgrounds = client.post(
+            "/api/v1/flyers/candidates",
+            json=_body(count=1),
+        ).json()["candidates"]
+        assert len(backgrounds) == 1
+        assert backgrounds[0]["kind"] == "background"
+        image = _image(client, backgrounds[0]["image_url"])
+        assert image.size == (1080, 1528)
+
+
+def test_type_step_renders_three_papers_on_the_same_background(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        background = _background(client)
+        response = client.post(
+            f"/api/v1/flyers/candidates/{background['candidate_id']}/types",
+            json={},
+        )
         assert response.status_code == 200
         candidates = response.json()["candidates"]
         assert len(candidates) == 3
@@ -56,48 +92,22 @@ def test_type_step_returns_three_rendered_templates(tmp_path: Path) -> None:
             "style_3_vibrant_pop",
         }
         assert all(item["kind"] == "type" for item in candidates)
+        # 選んだ背景の上に焼き直す。配置は標準で固定。
+        assert all(item["layout_id"] == "classic" for item in candidates)
+        stored = client.app.state.candidate_store  # type: ignore[attr-defined]
+        parent = stored.load_background(background["candidate_id"])
         for item in candidates:
+            assert stored.load_background(item["candidate_id"]) == parent
             image = _image(client, item["image_url"])
             assert image.size == (1080, 1528)
 
 
-def test_wizard_chain_produces_selectable_candidate(tmp_path: Path) -> None:
+def test_wizard_chain_produces_a_selectable_candidate(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
-        backgrounds = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(count=3),
-        ).json()["candidates"]
-        assert len(backgrounds) == 3
-        assert all(item["kind"] == "background" for item in backgrounds)
-        background = backgrounds[1]
-
-        layouts = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/layouts",
-            json={},
-        ).json()["candidates"]
-        assert len(layouts) == 4
-        assert {item["layout_id"] for item in layouts} == {
-            "classic",
-            "top_stack",
-            "center_stack",
-            "bottom_stack",
-        }
-        top_stack = next(item for item in layouts if item["layout_id"] == "top_stack")
-
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{top_stack['candidate_id']}/palettes",
-            json={},
-        ).json()["candidates"]
-        assert len(palettes) == 4
-        assert {item["palette_id"] for item in palettes} == {
-            "gold",
-            "mono",
-            "neon",
-            "earth",
-        }
-        chosen = palettes[0]
-        assert chosen["template_id"] == background["template_id"]
-        assert chosen["layout_id"] == "top_stack"
+        background = _background(client)
+        types = _types(client, background["candidate_id"])
+        chosen = types[1]
+        assert chosen["template_id"] == "style_2_warm_earth"
 
         before = client.get(chosen["image_url"]).content
 
@@ -180,45 +190,22 @@ def test_ai_backgrounds_stop_after_three_per_hour(tmp_path: Path) -> None:
         assert fallbacks == [False, False, False, True]
 
 
-def test_layout_candidates_inherit_source(tmp_path: Path) -> None:
+def test_type_candidates_inherit_source(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
-        background = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(count=1),
-        ).json()["candidates"][0]
-        layouts = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/layouts",
-            json={},
-        ).json()["candidates"]
-        # 配置・配色の候補も供給元を引き継ぐ。
-        assert {item["source"] for item in layouts} == {"placeholder"}
-
-
-def test_layout_candidates_share_the_same_background(tmp_path: Path) -> None:
-    with TestClient(create_app(_settings(tmp_path))) as client:
-        background = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(count=1),
-        ).json()["candidates"][0]
-        layouts = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/layouts",
-            json={},
-        ).json()["candidates"]
-        stored = client.app.state.candidate_store  # type: ignore[attr-defined]
-        sources = {
-            stored.load_background(item["candidate_id"]) for item in layouts
-        }
-        assert len(sources) == 1
+        background = _background(client)
+        types = _types(client, background["candidate_id"])
+        # 紙面の性格も供給元を引き継ぐ。
+        assert {item["source"] for item in types} == {"placeholder"}
 
 
 def test_unknown_candidate_returns_404(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
         missing = client.post(
-            f"/api/v1/flyers/candidates/{uuid4()}/layouts",
+            f"/api/v1/flyers/candidates/{uuid4()}/types",
             json={},
         )
         broken = client.post(
-            "/api/v1/flyers/candidates/not-a-uuid/layouts",
+            "/api/v1/flyers/candidates/not-a-uuid/types",
             json={},
         )
     assert missing.status_code == 404
@@ -240,10 +227,8 @@ def test_generate_rejects_expired_candidate(tmp_path: Path) -> None:
 def test_type_step_is_one_axis_with_shared_ground_and_accent(tmp_path: Path) -> None:
     """3 枚は地も差し色も同じ。違うのは書体と寄せだけで、そこを比べさせる。"""
     with TestClient(create_app(_settings(tmp_path))) as client:
-        candidates = client.post(
-            "/api/v1/flyers/candidates/types",
-            json=_body(semantic_theme="parchment"),
-        ).json()["candidates"]
+        background = _background(client, semantic_theme="parchment")
+        candidates = _types(client, background["candidate_id"])
         assert [item["label"] for item in candidates] == ["静けさ", "やわらかさ", "にぎやかさ"]
         assert len({item["palette_id"] for item in candidates}) == 1
         assert len({item["accent_color"] for item in candidates}) == 1
@@ -256,14 +241,11 @@ def test_type_step_is_one_axis_with_shared_ground_and_accent(tmp_path: Path) -> 
 
 def test_type_step_recommends_only_the_themed_paper(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
-        parchment = client.post(
-            "/api/v1/flyers/candidates/types",
-            json=_body(semantic_theme="parchment"),
-        ).json()["candidates"]
-        plain = client.post(
-            "/api/v1/flyers/candidates/types",
-            json=_body(),
-        ).json()["candidates"]
+        parchment = _types(
+            client,
+            _background(client, semantic_theme="parchment")["candidate_id"],
+        )
+        plain = _types(client, _background(client)["candidate_id"])
     assert [item["recommended"] for item in parchment] == [True, False, False]
     assert all(item["recommended"] is False for item in plain)
 
@@ -272,123 +254,20 @@ def test_type_descriptions_do_not_name_venues_or_colours(tmp_path: Path) -> None
     """色はテーマが決める。会場名や色名を混ぜると、選ぶ軸がぶれる。"""
     forbidden = ("バー", "フェス", "サロン", "暗い", "明るい", "鮮やか", "ゴールド")
     with TestClient(create_app(_settings(tmp_path))) as client:
-        candidates = client.post(
-            "/api/v1/flyers/candidates/types",
-            json=_body(),
-        ).json()["candidates"]
+        candidates = _types(client, _background(client)["candidate_id"])
     for item in candidates:
         text = f"{item['label']}{item['description']}"
         assert not any(word in text for word in forbidden), text
 
 
-def test_palette_step_starts_with_the_colour_already_chosen(tmp_path: Path) -> None:
-    """ステップ 3 で見た色が、ステップ 4 の先頭に来る。確定時に色が飛ばない。"""
-    with TestClient(create_app(_settings(tmp_path))) as client:
-        background = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(template_id="style_2_warm_earth", count=1),
-        ).json()["candidates"][0]
-        # テーマ無しでは従来の 4 色を並べ替えて返す。
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
-            json={},
-        ).json()["candidates"]
-        assert palettes[0]["palette_id"] == background["palette_id"] == "earth"
-        assert {item["palette_id"] for item in palettes} == {
-            "gold",
-            "mono",
-            "neon",
-            "earth",
-        }
-
-        themed = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(semantic_theme="neon", count=1),
-        ).json()["candidates"][0]
-        themed_palettes = client.post(
-            f"/api/v1/flyers/candidates/{themed['candidate_id']}/palettes",
-            json={},
-        ).json()["candidates"]
-    assert [item["palette_id"] for item in themed_palettes] == [
-        "theme",
-        "theme-soft",
-        "theme-deep",
-        "theme-quiet",
-    ]
-    assert themed_palettes[0]["accent_color"] == themed["accent_color"]
-
-
-def test_title_colour_step_offers_auto_ink_white_and_accent(tmp_path: Path) -> None:
-    """ステップ 5。先頭は自動で、墨・白・差し色の 4 枚を返す。"""
-    with TestClient(create_app(_settings(tmp_path))) as client:
-        background = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(count=1),
-        ).json()["candidates"][0]
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
-            json={},
-        ).json()["candidates"]
-        colours = client.post(
-            f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors",
-            json={},
-        ).json()["candidates"]
-
-        assert len(colours) == 4
-        assert {item["kind"] for item in colours} == {"title_color"}
-        assert [item["label"] for item in colours] == ["自動", "墨", "白", "差し色"]
-        assert colours[0]["title_color"] is None
-        assert colours[2]["title_color"] == "#FFFFFF"
-        # 差し色は紙に対して 4.5:1 へ寄せた値。パレットの生の値ではない。
-        accent = colours[3]["title_color"]
-        assert accent is not None and accent.startswith("#")
-        assert accent not in {colours[1]["title_color"], "#FFFFFF"}
-        for item in colours:
-            image = _image(client, item["image_url"])
-            assert image.size == (1080, 1528)
-
-        store = client.app.state.candidate_store  # type: ignore[attr-defined]
-        assert store.load_meta(colours[1]["candidate_id"]).title_color_id == "ink"
-
-
-def test_a_chosen_title_colour_is_saved_as_previewed(tmp_path: Path) -> None:
-    """選んだ 1 枚がそのまま完成品になる。確定時に描き直さない。"""
-    with TestClient(create_app(_settings(tmp_path))) as client:
-        background = client.post(
-            "/api/v1/flyers/candidates",
-            json=_body(count=1),
-        ).json()["candidates"][0]
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
-            json={},
-        ).json()["candidates"]
-        chosen = client.post(
-            f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors",
-            json={},
-        ).json()["candidates"][2]
-
-        preview = client.get(chosen["image_url"]).content
-        saved = client.post(
-            "/api/v1/flyers/generate",
-            json=_body(candidate_id=chosen["candidate_id"]),
-        )
-        assert saved.status_code == 200
-        assert client.get(saved.json()["image_url"]).content == preview
-
-
-def test_title_colour_candidates_belong_to_their_owner(tmp_path: Path) -> None:
+def test_type_candidates_belong_to_their_owner(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
         background = client.post(
             "/api/v1/flyers/candidates",
             json=_body(count=1),
             headers={"X-Flyer-Owner": "owner-a"},
         ).json()["candidates"][0]
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{background['candidate_id']}/palettes",
-            json={},
-            headers={"X-Flyer-Owner": "owner-a"},
-        ).json()["candidates"]
-        url = f"/api/v1/flyers/candidates/{palettes[0]['candidate_id']}/title-colors"
+        url = f"/api/v1/flyers/candidates/{background['candidate_id']}/types"
         assert (
             client.post(url, json={}, headers={"X-Flyer-Owner": "owner-a"}).status_code
             == 200

@@ -233,21 +233,50 @@ class PosterColors:
     on_surface_accent: RGB
 
 
+def _reaching(
+    color: RGB,
+    target: RGB,
+    background: RGB,
+    minimum: float,
+) -> tuple[RGB, int] | None:
+    """`color` を `target` へ寄せて、最低コントラストに届く最初の色と歩数。
+
+    20 段のうち届かなければ None。
+    """
+    for step in range(1, 21):
+        adjusted = _towards(color, target, step / 20.0)
+        if contrast_ratio(_luminance(adjusted), _luminance(background)) >= minimum:
+            return adjusted, step
+    return None
+
+
 def ensure_contrast(color: RGB, background: RGB, minimum: float = MIN_CONTRAST) -> RGB:
     """背景に対して最低コントラストを満たすまで、黒か白へ寄せる。
 
     ネオ・ブルータリズムの黄（#FFD84D）や夜のスレートの藍（#4F46E5）は、そのまま
     では明るい紙に載せられない。色相を捨てずに濃さだけを動かす。
+
+    どちらへ寄せるかは、地の明暗ではなく**届くかどうか**で決める。地が中間の明るさ
+    （相対輝度 0.18〜0.5）のとき、白では 4.5:1 に届かない。それでも「地が暗めだから
+    白」と決め打つと、差し色と補助文字が白へ潰れ、写真の上だけ文字色が別物になる。
+    黒へ寄せれば短い歩数で届くので、色相を残したまま読める濃さになる。
     """
     if contrast_ratio(_luminance(color), _luminance(background)) >= minimum:
         return color
-    target: RGB = (0, 0, 0) if _luminance(background) > 0.5 else (255, 255, 255)
-    adjusted = color
-    for step in range(1, 21):
-        adjusted = _towards(color, target, step / 20.0)
-        if contrast_ratio(_luminance(adjusted), _luminance(background)) >= minimum:
-            return adjusted
-    return target
+    black_target: RGB = (0, 0, 0)
+    white_target: RGB = (255, 255, 255)
+    black = _reaching(color, black_target, background, minimum)
+    white = _reaching(color, white_target, background, minimum)
+    if black is None and white is None:
+        # どちらへ寄せても届かない地。明暗の反対側を返し、呼び出し側のベールに任せる。
+        target = black_target if _luminance(background) > 0.5 else white_target
+        return target
+    if white is None:
+        return black[0] if black is not None else white_target
+    if black is None:
+        return white[0]
+    # 動かす量が少ない側を採る。余計に色を捨てない。
+    return black[0] if black[1] <= white[1] else white[0]
 
 
 def safe_accent(accent: RGB, paper: RGB) -> RGB:

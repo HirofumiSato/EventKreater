@@ -689,7 +689,7 @@ export function CapacitySection({
           className="input"
         />
         <p className="help">
-          公開ページに「対象」として出ます。空欄なら表示しません。
+          公開ページに「対象」として出ます。チラシでは、人が出る催しの年代と熱量にだけ使います。空欄でも、題が人を含めば人物は出ます。
         </p>
       </Field>
       <Field label="申し込み期限" htmlFor="rsvp-deadline">

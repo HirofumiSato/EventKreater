@@ -67,9 +67,28 @@ describe("proposeBackgroundCandidates", () => {
 });
 
 describe("proposeTypeCandidates", () => {
-  it("背景のステップ以外は候補の配列だけを返す", async () => {
-    stubFetch({ candidates: [{ ...CANDIDATE, kind: "type" }], ai_fallback: true });
+  it("選んだ背景の ID へ紙面の性格を問い合わせ、候補の配列だけを返す", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            candidates: [{ ...CANDIDATE, kind: "type" }],
+            ai_fallback: true,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
 
-    expect(await proposeTypeCandidates(INPUT)).toHaveLength(1);
+    const candidates = await proposeTypeCandidates(CANDIDATE.candidate_id);
+
+    expect(candidates).toHaveLength(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toContain(`/api/v1/flyers/candidates/${CANDIDATE.candidate_id}/types`);
+    // 背景を選び直させない。本文は空で、親の ID だけで決まる。
+    expect(init.body).toBe("{}");
   });
 });

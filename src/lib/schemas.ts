@@ -170,7 +170,10 @@ export const UploadFlyerBackgroundSchema = GenerateFlyerSchema.extend({
   eventId: z.string().uuid("イベントIDが不正です").nullish(),
 });
 
-/** ウィザードの確定。選んだ候補と、記録用の配置・配色を受け取る。 */
+/**
+ * ウィザードの確定。選んだ候補と、記録用の配置・配色を受け取る。
+ * 画面は配置を選ばないので `layoutId` は常に `classic`、`paletteId` は候補の値。
+ */
 export const SelectFlyerCandidateSchema = GenerateFlyerSchema.extend({
   draftKey: z.string().uuid("下書きIDが不正です"),
   eventId: z.string().uuid("イベントIDが不正です").nullish(),

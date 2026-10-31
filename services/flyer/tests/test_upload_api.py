@@ -100,43 +100,34 @@ def test_upload_candidate_is_limited_to_its_owner(tmp_path: Path) -> None:
         assert client.get(url, headers={"X-Flyer-Owner": OTHER}).status_code == 404
         assert client.get(url).status_code == 404
 
-        layouts_url = f"/api/v1/flyers/candidates/{candidate['candidate_id']}/layouts"
+        types_url = f"/api/v1/flyers/candidates/{candidate['candidate_id']}/types"
         assert (
-            client.post(layouts_url, json={}, headers={"X-Flyer-Owner": OTHER}).status_code
+            client.post(types_url, json={}, headers={"X-Flyer-Owner": OTHER}).status_code
             == 404
         )
         allowed = client.post(
-            layouts_url,
+            types_url,
             json={},
             headers={"X-Flyer-Owner": OWNER},
         )
         assert allowed.status_code == 200
-        assert len(allowed.json()["candidates"]) == 4
+        assert len(allowed.json()["candidates"]) == 3
 
 
-def test_uploaded_background_flows_through_layouts_palettes_and_save(
-    tmp_path: Path,
-) -> None:
-    """配置・配色を選び直しても、保存結果が最後のプレビューと一致する。"""
+def test_uploaded_background_flows_through_types_and_save(tmp_path: Path) -> None:
+    """写真の上で紙面を選び直しても、保存結果が最後のプレビューと一致する。"""
     with TestClient(create_app(_settings(tmp_path))) as client:
         owner = {"X-Flyer-Owner": OWNER}
         uploaded = _upload(client, _jpeg()).json()
 
-        layouts = client.post(
-            f"/api/v1/flyers/candidates/{uploaded['candidate_id']}/layouts",
+        types = client.post(
+            f"/api/v1/flyers/candidates/{uploaded['candidate_id']}/types",
             json={},
             headers=owner,
         ).json()["candidates"]
-        assert len(layouts) == 4
+        assert len(types) == 3
 
-        palettes = client.post(
-            f"/api/v1/flyers/candidates/{layouts[0]['candidate_id']}/palettes",
-            json={},
-            headers=owner,
-        ).json()["candidates"]
-        assert len(palettes) == 4
-
-        chosen = palettes[0]
+        chosen = types[0]
         preview = client.get(chosen["image_url"], headers=owner).content
         saved = client.post(
             "/api/v1/flyers/generate",
