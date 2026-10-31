@@ -23,31 +23,25 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
     expect(config.action).toEqual(SITE.nav.organizerLogin);
   });
 
-  it("参加者は参加者の機能だけを並べ、主催者として使う切り替えを 1 本だけ持つ", () => {
+  it("参加者画面のバーはナビも作成も持たず、頭文字の札だけになる", () => {
     const config = siteNavConfig("/participant", participant);
 
-    expect(config.links).toEqual([
-      SITE.nav.participantHome,
-      SITE.nav.participantCalendar,
-      SITE.nav.participantHistory,
-    ]);
+    // 行き先はヘッダー直下の節（ParticipantTabs）が持つ。バーには重ねない。
+    expect(config.links).toEqual([]);
     // 作成の入口は参加者画面に出さない。
     expect(config.primary).toBeUndefined();
-    expect(config.action).toEqual(SITE.nav.organizerSwitch);
+    // 「主催者として使う」もバーには置かず、頭文字のメニューが受ける。
+    expect(config.action).toBeUndefined();
   });
 
-  it("主催者でも参加者画面では参加者の並びにし、主催者マイページだけを足す", () => {
-    const config = siteNavConfig("/participant/calendar", organizer);
+  it("主催者でも参加者画面では参加者と同じバーになり、主催者マイページはメニューが受ける", () => {
+    for (const pathname of ["/participant", "/participant/calendar", "/participant/history"]) {
+      const config = siteNavConfig(pathname, organizer);
 
-    expect(config.links).toEqual([
-      SITE.nav.participantHome,
-      SITE.nav.participantCalendar,
-      SITE.nav.participantHistory,
-      SITE.nav.mypage,
-    ]);
-    expect(config.primary).toBeUndefined();
-    // 主催者画面への行き来は向こう側の 1 本に任せる。
-    expect(config.action).toBeUndefined();
+      expect(config.links).toEqual([]);
+      expect(config.primary).toBeUndefined();
+      expect(config.action).toBeUndefined();
+    }
   });
 
   it("主催者画面のバーはナビも作成も持たず、頭文字の札だけになる", () => {
@@ -112,12 +106,16 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
  * 頭文字の札を押して開くメニュー。節（`OrganizerTabs`）と同じ行き先を重ねない。
  */
 describe("頭文字のメニューの並び", () => {
-  it("参加者はアカウントだけを持ち、通知と下書きは出さない", () => {
-    expect(userMenuConfig("/participant", participant)).toEqual([SITE.nav.account]);
+  it("参加者はアカウントと、主催者として使う切り替えだけを持つ", () => {
+    expect(userMenuConfig("/participant", participant)).toEqual([
+      SITE.nav.organizerSwitch,
+      SITE.nav.account,
+    ]);
   });
 
-  it("主催者でも参加者画面では通知だけを足す", () => {
+  it("主催者でも参加者画面では、主催者マイページと通知を足す", () => {
     expect(userMenuConfig("/participant", organizer)).toEqual([
+      SITE.nav.mypage,
       SITE.nav.notifications,
       SITE.nav.account,
     ]);
