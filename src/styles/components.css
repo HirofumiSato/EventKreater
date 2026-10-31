@@ -1851,14 +1851,21 @@ fieldset.field {
 }
 
 /*
- * LINE URL スキームはデスクトップ版 LINE（macOS・Windows）で動かない。
- * 押しても何も起きないボタンを出さないため、タッチ端末だけに表示する。
+ * LINE の共有 URL はデスクトップ版 LINE（macOS・Windows）で開けない。
+ * 押しても行き先の無いボタンを出さないため、触れる端末と、スマホ幅の画面だけに出す。
+ * 幅でも出すのは、モックと PC の狭い窓でも同じ操作を確かめられるようにするため。
  */
 .line-share {
   display: none;
 }
 
 @media (hover: none) and (pointer: coarse) {
+  .line-share {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 639px) {
   .line-share {
     display: inline-flex;
   }

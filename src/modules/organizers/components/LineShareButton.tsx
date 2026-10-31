@@ -41,7 +41,7 @@ export function LineShareButton({
         className={["line-share", className ?? "btn btn--outline"].join(" ")}
         onClick={openNotice}
       >
-        LINEで送る
+        LINEで共有
       </button>
       {href !== null && <LineShareDialog href={href} onClose={() => setHref(null)} />}
     </>

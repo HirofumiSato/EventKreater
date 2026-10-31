@@ -147,7 +147,7 @@
 
 .. count-start
 
-74 ファイル、``it`` は 959 件です。内訳は ``tests/unit/`` が 60 ファイル 867 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+74 ファイル、``it`` は 960 件です。内訳は ``tests/unit/`` が 60 ファイル 868 件、``tests/integration/`` が 14 ファイル 92 件です。結合の 92 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -400,7 +400,7 @@
      - 画面の幅の段（``min-width`` が 640 / 768 / 900 / 1024、``max-width`` が 360 / 400 / 480 / 540 と 1px 手前の対）と、幅の指定が px 付きの ``min-width`` / ``max-width`` だけで書かれていることを確かめる
      - 全画面の共通レイアウト
    * - ``tests/unit/button-rules.test.mjs``
-     - 12
+     - 13
      - 押せる的とボタンの文字の大きさ（``--tap-target`` の 44px・``--font-action`` の 15px）、``.btn--sm`` が左右の余白だけを詰めて高さと文字を変えないこと、``.btn--lg`` の 52px・16px、装飾のある画面が高さを打ち消さないこと、入力欄の 16px と広い画面の 14px、ダイアログと暦の小さな操作、イベント札（スマホ 2 列・640px で 4 列・900px で 2 列）と名簿の行（スマホ 2 列）の並び
      - 全画面の共通レイアウト
    * - ``tests/unit/site-chrome.test.ts``
@@ -458,7 +458,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 867、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 867 件を実行して 92 件を skip します。
+件数の内訳は ``tests/unit/`` が 868、``tests/integration/`` が 92 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 868 件を実行して 92 件を skip します。
 
 .. breakdown-end
 
