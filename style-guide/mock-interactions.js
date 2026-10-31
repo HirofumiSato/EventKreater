@@ -792,6 +792,21 @@
 
         const label = normalized(target.textContent);
 
+        // 文字を持たない操作（一覧の札の URL コピー）は、読み上げ名で見分ける。
+        // 入力欄が無いので、同じ札のチラシが指す告知ページをコピーする。
+        const spoken = normalized(target.getAttribute("aria-label") || "");
+        if (label === "" && spoken.includes("コピー")) {
+          const card = target.closest(".event-card");
+          const publicLink = card ? card.querySelector(".event-card__thumb-link") : null;
+          if (publicLink) {
+            copyText(new URL(publicLink.getAttribute("href"), location.href).href);
+            toast("URL をコピーしました。");
+          } else {
+            toast("コピーする URL がありません。", "error");
+          }
+          return;
+        }
+
         if (label === "URLをコピー") {
           const row = target.closest(".input-row") || target.parentElement;
           const input = row ? row.querySelector("input, textarea") : null;

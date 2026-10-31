@@ -189,6 +189,11 @@
   padding-inline: 0.875rem;
 }
 
+/* 文字を持たないボタンは、角と余白を足さず正方形のまま置く。 */
+.deco .btn--icon {
+  padding: 0;
+}
+
 .deco .btn--lg {
   min-height: 3.25rem;
   padding: 0.75rem 1.5rem;
