@@ -111,7 +111,7 @@ export default function ParticipantHomePage() {
 
       {nextItem && (
         <Section style={{ marginTop: 0 }}>
-          <SectionHead title="次の催し" note="いちばん近いものです。" />
+          <SectionHead title="次のイベント" note="いちばん近いものです。" />
           <article
             className={`event-card${nextItem.event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}
             style={{ marginTop: "0.875rem" }}
@@ -179,7 +179,7 @@ export default function ParticipantHomePage() {
         <Section>
           <SectionHead title="これからの参加" note="日付の近い順です。回答はあとから変えられます。" />
           <EmptyState>
-            <span className="empty__title">これから参加する催しはありません。</span>
+            <span className="empty__title">これから参加するイベントはありません。</span>
             <span className="empty__body">主催者から届いた告知URLを開くと、出欠を答えられます。</span>
           </EmptyState>
         </Section>
@@ -236,10 +236,10 @@ export default function ParticipantHomePage() {
       </div>
 
       <Section>
-        <SectionHead title="主催する側でも使う" note="同じアカウントで、催しを開けます。" />
+        <SectionHead title="主催する側でも使う" note="同じアカウントで、イベントを開けます。" />
         <Panel as="div">
           <p className="panel__title">主催者マイページ</p>
-          <p className="panel__note">作った催し、出欠の集計、売上をまとめて見られます。</p>
+          <p className="panel__note">作ったイベント、出欠の集計、売上をまとめて見られます。</p>
           <div className="panel__actions">
             <Link href="/mypage" className="btn btn--primary btn--sm">
               主催者として使う

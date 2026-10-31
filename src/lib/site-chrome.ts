@@ -4,10 +4,10 @@
  * - `/console`     … 管理コンソール。公開ヘッダーもフッターも出さない。
  * - `/`            … ホーム LP。初見の幹事にヒーローだけを見せるため、ヘッダーを出さず、
  *                    上端の余白も落とす。ログインの導線はヒーローとフッターが持つ。
- * - `/events/`     … 告知ページと領収書。共有された催しに集中させるため、共通ヘッダーは
+ * - `/events/`     … 告知ページと領収書。共有されたイベントに集中させるため、共通ヘッダーは
  *                    出さない。フッターは残す。告知ページだけ上端の余白も落とし、チラシを
  *                    画面の上端から始める。`/organizer/events/` は主催者エリアなので対象外。
- * - `/organizers/` … 主催者の公開ページ。プロフィールと催しに集中させるため、
+ * - `/organizers/` … 主催者の公開ページ。プロフィールとイベントに集中させるため、
  *                    共通ヘッダーは出さない。フッターは残す。
  * - `/organizer/events/:id/preview` … 下書きプレビュー。ヘッダー直下に編集バーを置くため、
  *                    上端の余白を落とす。ヘッダーとフッターは出す。
@@ -80,14 +80,15 @@ export function siteChrome(pathname: string): SiteChromeState {
 /**
  * 主催者の節（`OrganizerTabs`）を出すか。パスだけから決める純関数。
  *
- * 主催者管理の入口画面（主催一覧・カレンダー・売上・下書き・プロフィール・マイページ）と、
- * イベント単位の名簿・売上だけに出す。作成・編集・プレビュー・領収書・登録案内といった
+ * 主催者管理の入口画面（主催一覧・カレンダー・売上・下書き・プロフィール・マイページ・
+ * 通知一覧）と、イベント単位の名簿・売上だけに出す。作成・編集・プレビュー・領収書・登録案内といった
  * 作業画面では本文に集中させるため出さない。判定を `SiteChrome` の中に置くと分岐が散るので、
  * `siteChrome` と同じくここ 1 か所に集める。
  */
 export function showOrganizerTabs(pathname: string): boolean {
   switch (pathname) {
     case "/mypage":
+    case "/notifications":
     case "/organizer/events":
     case "/organizer/events/drafts":
     case "/organizer/revenue":

@@ -62,7 +62,7 @@ export function validateFlyerForm(value: EventFormValues): string | null {
     return "先に費用プランの金額を入れてください。";
   }
   if (!value.title.trim()) {
-    return "先に催しの名前を入れてください。";
+    return "先にイベント名を入れてください。";
   }
   return null;
 }

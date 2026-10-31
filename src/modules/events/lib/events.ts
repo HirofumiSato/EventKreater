@@ -463,7 +463,7 @@ export async function publishDraftEvent(
  *
  * 公開と同時に保存される `publishDraftEvent` と違い、状態は変えない。
  * 行ロックを取ってから状態を確かめるので、公開と同時に走っても
- * 公開済みの催しを下書きの内容で上書きしない。
+ * 公開済みのイベントを下書きの内容で上書きしない。
  */
 export async function saveEventDraft(
   eventId: string,

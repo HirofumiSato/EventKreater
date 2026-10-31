@@ -212,7 +212,7 @@ const postalCodeSchema = z
   );
 
 const eventBodySchema = z.object({
-  title: z.string().trim().min(1, "催しの名前を入力してください").max(100),
+  title: z.string().trim().min(1, "イベント名を入力してください").max(100),
   schedules: z.array(scheduleInputSchema).min(1, "開催日時を1件以上入力してください").max(MAX_EVENT_OPTIONS),
   pricePlans: z.array(pricePlanInputSchema).min(1, "費用プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),
   /** 旧・自由入力の開催場所。構造化住所が無いときだけ使う。 */

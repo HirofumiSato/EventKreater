@@ -23,10 +23,10 @@ interface RouteContext {
 }
 
 /**
- * 主催者の催し（`/organizers/[userId]/events` の元データ）。
+ * 主催者のイベント（`/organizers/[userId]/events` の元データ）。
  *
  * 中身はログイン済みの参加者にだけ返す。未ログインでもURLは開けるが、
- * 画面はぼかした骨組みを出し、このAPIは催しを1件も返さない。
+ * 画面はぼかした骨組みを出し、このAPIはイベントを1件も返さない。
  */
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       });
     }
 
-    // 筆頭幹事と共同主催の両方の催しを集める。
+    // 筆頭幹事と共同主催の両方のイベントを集める。
     const rows = await prisma.eventOrganizer.findMany({
       where: { userId: organizer.id },
       select: {

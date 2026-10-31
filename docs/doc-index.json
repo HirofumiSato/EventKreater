@@ -5542,11 +5542,15 @@
       "path": "docs/front_implementation_spec.md",
       "sphinxDoc": "front_implementation_spec",
       "format": "markdown",
-      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）",
+      "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1919,
+      "lineCount": 1939,
       "headings": [
+        {
+          "level": 1,
+          "text": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）"
+        },
         {
           "level": 2,
           "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）"
@@ -5562,6 +5566,10 @@
         {
           "level": 3,
           "text": "1.2. レスポンシブの基準（スマホが先）"
+        },
+        {
+          "level": 3,
+          "text": "1.3. 操作の置き場所と文言"
         },
         {
           "level": 2,
@@ -5991,6 +5999,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/notifications/lib/rsvp-notification.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/organizers/components/OrganizerPageView.tsx",
           "exists": true
         },
@@ -6015,11 +6027,19 @@
           "exists": true
         },
         {
+          "path": "src/styles/deco/quiet.css",
+          "exists": true
+        },
+        {
           "path": "src/styles/index.css",
           "exists": true
         },
         {
           "path": "src/styles/themes.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/tokens.css",
           "exists": true
         },
         {
@@ -8595,7 +8615,7 @@
       "title": "参加表明を主催者へアプリ内で知らせる",
       "summary": "参加者が出欠を送っても、幹事は名簿を開くまで気づけない。幹事は複数の催しを持ち、名簿を開くのは直前になりがちなので、参加表明や参加要望が出たその場で気づける入口が要る。",
       "preImplementation": false,
-      "lineCount": 188,
+      "lineCount": 190,
       "headings": [
         {
           "level": 1,
@@ -8681,6 +8701,10 @@
           "exists": true
         },
         {
+          "path": "src/app/notifications/page.tsx",
+          "exists": true
+        },
+        {
           "path": "src/components/common/Navbar.tsx",
           "exists": true
         },
@@ -8694,6 +8718,10 @@
         },
         {
           "path": "src/modules/notifications/components/NotificationList.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/notifications/components/NotificationRows.tsx",
           "exists": true
         },
         {
@@ -9381,7 +9409,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1114,
+      "lineCount": 1118,
       "headings": [
         {
           "level": 2,
@@ -10459,7 +10487,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 562,
+      "lineCount": 566,
       "headings": [
         {
           "level": 1,
@@ -10586,6 +10614,10 @@
         },
         {
           "path": "tests/unit/auth-rate-limits.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/button-rules.test.mjs",
           "exists": true
         },
         {

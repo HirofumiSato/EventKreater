@@ -1,5 +1,5 @@
 /**
- * 公開中の催しを、どの利用枠から公開したかで分ける。
+ * 公開中のイベントを、どの利用枠から公開したかで分ける。
  *
  * マイページの要約（`/mypage`）が「プラン公開」「チケット公開」を出すために使う。
  * 数え方は帯（`QuotaStatusBanner`）とサーバーの枠判定（`countPublishedSubscriptionEvents`）に
@@ -19,7 +19,7 @@ export interface PublishedCounts {
 
 export interface PublishedCountRow {
   status: EventStatus;
-  /** 見ている会員の、その催しでの役割。共同主催は数えない。 */
+  /** 見ている会員の、そのイベントでの役割。共同主催は数えない。 */
   role: OrganizerRole;
   quotaSource: QuotaSource | null;
   schedules: readonly { eventDate: string }[];

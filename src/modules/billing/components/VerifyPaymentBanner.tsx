@@ -59,12 +59,12 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
   if (status === "VERIFYING") {
     return (
       <Loading>
-        Stripeでの決済完了を確認しています。
+        決済を確認しています…
       </Loading>
     );
   }
   if (status === "SUCCESS") {
-    return <Alert tone="success">お支払いが確認できました。作成枠が付与されました。</Alert>;
+    return <Alert tone="success">お支払いを確認しました。作成枠を追加しました。</Alert>;
   }
   return <Alert tone="error">{errorMessage || "決済の確認が完了できませんでした。"}</Alert>;
 }

@@ -2,7 +2,7 @@
  * 主催者へのアプリ内通知の型。API の応答と画面が共有する。
  *
  * 文面（`title` / `body`）はサーバーが作成時点で確定して返す。画面側で
- * 状態から文言を組み立て直さないのは、あとで参加者の名前や催し名が変わっても
+ * 状態から文言を組み立て直さないのは、あとで参加者の名前やイベント名が変わっても
  * 過去の通知の意味が変わらないようにするため。
  */
 
@@ -14,7 +14,7 @@ export interface RsvpNotification {
   kind: RsvpNotificationKind;
   /** 「参加表明がありました」「参加要望が届きました」。 */
   title: string;
-  /** 誰が・どの催しに・どう応えたか。 */
+  /** 誰が・どのイベントに・どう応えたか。 */
   body: string;
   eventId: string;
   participantId: string | null;

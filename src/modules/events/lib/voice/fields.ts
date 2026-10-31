@@ -40,11 +40,11 @@ function rowDomId(value: EventFormValues, prefix: string, key: string | undefine
 export const VOICE_FIELDS: readonly VoiceField[] = [
   {
     key: "title",
-    label: "催しの名前",
+    label: "イベント名",
     step: "basic",
     domId: () => "event-title",
     isEmpty: (value) => !hasText(value.title),
-    prompt: "催しの名前は？",
+    prompt: "イベント名は？",
     example: "忘年会",
     hint: "イベント名。例: 忘年会、勉強会、音楽ライブ",
     parse: (text) => parseVoiceTitle(text),

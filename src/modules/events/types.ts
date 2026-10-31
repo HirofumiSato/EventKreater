@@ -7,7 +7,7 @@ export type EventStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
 export type EventVisibility = "PUBLIC" | "UNLISTED";
 export type RsvpStatus = "ATTENDING" | "DECLINED" | "WAITLISTED";
 export type OrganizerRole = "OWNER" | "CO_HOST";
-/** どの利用枠から公開したか。未公開・移行前の催しは null。 */
+/** どの利用枠から公開したか。未公開・移行前のイベントは null。 */
 export type QuotaSource = "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION";
 /** 費用プランの対象。ANY は男女共通。 */
 export type PriceAudience = "ANY" | "MALE" | "FEMALE";
@@ -268,7 +268,7 @@ export interface MyRsvp {
 }
 
 /**
- * 主催者の公開ページ（`/organizers/[userId]`）に出す催し。
+ * 主催者の公開ページ（`/organizers/[userId]`）に出すイベント。
  * 告知ページの全項目は要らないので、カードとカレンダーに使う分だけを持つ。
  */
 export interface PublicOrganizerEvent {
@@ -318,7 +318,7 @@ export interface OrganizerEvent {
   role: OrganizerRole;
   /**
    * どの利用枠から公開したか。マイページの要約を「プラン公開」と「チケット公開」に
-   * 分けるために返す。未公開・移行前の催しは null。
+   * 分けるために返す。未公開・移行前のイベントは null。
    */
   quotaSource: QuotaSource | null;
   /** このイベントの筆頭幹事の表示名。一覧カードで「主催: 名前」に出す。 */

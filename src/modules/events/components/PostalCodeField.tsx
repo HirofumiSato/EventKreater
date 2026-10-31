@@ -144,7 +144,7 @@ export function PostalCodeField({
           disabled={disabled || loading}
           onClick={() => void search(query)}
         >
-          {loading ? "検索中..." : "住所を検索"}
+          {loading ? "検索中…" : "住所を検索"}
         </button>
       </div>
       <p className="help">

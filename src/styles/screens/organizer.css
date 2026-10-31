@@ -1123,10 +1123,11 @@ body:has(.action-dock) .site-footer {
   padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
 }
 
-/* 390px では 2 つで 1 段。作成は主の操作なので広く取る。 */
+/* 390px では 2 つで 1 段。作成は主の操作なので広く取る。
+   高さは押せる的と同じく 44px を下回らせない。 */
 .action-dock .btn {
   flex: 1 1 0;
-  min-height: 2.5rem;
+  min-height: var(--tap-target);
 }
 
 .action-dock .btn--primary {
@@ -1225,7 +1226,9 @@ body:has(.action-dock) .site-footer {
   }
 }
 
-/* 一覧の下余白。見出しと絞り込みの下に、カードと空状態を続ける。 */
+/* 絞り込みの下に、カードと空状態を続ける。見出しの直後に来るときは
+   `deco--tape-quiet` の `--space-head` ととなり合うが、余白は大きいほうが勝つ
+   （隣り合う margin は重なる）ので二重にはならない。 */
 .section > .event-card-grid,
 .section > .empty {
   margin-top: 0.75rem;
@@ -1295,7 +1298,7 @@ body:has(.profile-actions) .site-footer {
 .profile-actions .btn {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 2.5rem;
+  min-height: var(--tap-target);
 }
 
 .profile-actions .btn--primary {
@@ -1413,7 +1416,53 @@ body:has(.profile-actions) .site-footer {
 
 .notif__time {
   color: var(--color-text-subtle);
-  font-size: 0.75rem;
+  /* 秒を落としたぶん、日時は 2px 下げる。題と札より後ろに置く。 */
+  font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* 未読の行の「既読」。題のリンクと押し間違えないよう、題の下に別の行で置く。
+   ボタンの高さは `.btn` が持つ 44px。ここでは間隔だけを空ける。 */
+.notif__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* 題のリンクも指で押す。行の中では文字が小さいので、的だけ 44px に広げる。
+   行は上下 1rem 空くので、行の高さは増えない。 */
+.notif__title a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+}
+
+/* ==========================================================================
+   名簿の行の操作（SCR-ORG-11）。
+   スマホでは 2 列に並べる。1 行に 4 つ並べると 390px で 1 つ 60px を切り、
+   「領収書を発行」が折れて何のボタンか読めなくなる。
+   640px からは中身の幅に戻し、折り返して並べる。
+   ========================================================================== */
+
+.roster .btn-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.roster .btn-row .btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .roster .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .roster .btn-row .btn {
+    width: auto;
+  }
 }

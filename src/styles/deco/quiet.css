@@ -316,3 +316,26 @@
 .deco.deco--tape-quiet .ledger__value {
   color: var(--color-text);
 }
+
+/* --------------------------------------------------------------------------
+   縦の余白。主催者の管理画面は「見出し→中身」「中身→操作」「行の上下」の
+   3 段だけで組む。画面ごとに margin を足さない（足すと、同じ見出しの下でも
+   画面によって間が変わる）。
+   -------------------------------------------------------------------------- */
+
+/* 見出しと、その下の中身。 */
+.deco.deco--tape-quiet .section__head {
+  margin-bottom: var(--space-head);
+}
+
+/* 中身と、その下に続く操作（`.panel__actions`）。見出しの直後に操作だけを置く
+   画面（マイページの「アカウント」）でも、上に同じ間が空く。 */
+.deco.deco--tape-quiet .panel__actions {
+  margin-top: var(--space-block);
+}
+
+/* 罫線で区切る行（定義リストと一覧）。行のあいだは線が持ち、上下だけ空ける。 */
+.deco.deco--tape-quiet .kv__row,
+.deco.deco--tape-quiet .rows__item {
+  padding-block: var(--space-row);
+}

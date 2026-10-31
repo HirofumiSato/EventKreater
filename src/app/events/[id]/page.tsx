@@ -5,7 +5,7 @@ import PublicEventPage from "./EventPageClient";
 
 /**
  * 告知URLは主催者が共有した人だけに届く前提なので、検索エンジンには載せない。
- * SNS のプレビュー用に、催し名・開催日・場所・チラシ画像を OGP として出す。
+ * SNS のプレビュー用に、イベント名・開催日・場所・チラシ画像を OGP として出す。
  * 画面本体は出欠の再訪照会を持つクライアントコンポーネントに分ける。
  */
 export const dynamic = "force-dynamic";

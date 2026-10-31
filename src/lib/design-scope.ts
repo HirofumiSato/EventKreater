@@ -26,6 +26,8 @@ export function designScope(pathname: string): DesignScope {
   if (matches(pathname, "/console")) return "none";
   if (matches(pathname, "/organizer/events/new")) return "pop";
   if (matches(pathname, "/mypage")) return "quiet";
+  // 通知一覧（SCR-PUB-15）はマイページの続き。主催者の管理画面として扱う。
+  if (matches(pathname, "/notifications")) return "quiet";
   if (matches(pathname, "/organizer")) return "quiet";
   return "pop";
 }

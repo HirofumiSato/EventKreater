@@ -158,7 +158,7 @@ export function PasswordPanel({ profile, onChange }: Props) {
 
         <div className="btn-row">
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            {busy ? "変更しています..." : "パスワードを変更"}
+            {busy ? "変更しています…" : "パスワードを変更"}
           </button>
         </div>
       </form>

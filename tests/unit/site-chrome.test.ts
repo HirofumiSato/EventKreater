@@ -83,6 +83,7 @@ describe("公開クロムの出し分け", () => {
 describe("主催者の節（OrganizerTabs）の出し分け", () => {
   it("主催者管理の入口画面では出す", () => {
     expect(showOrganizerTabs("/mypage")).toBe(true);
+    expect(showOrganizerTabs("/notifications")).toBe(true);
     expect(showOrganizerTabs("/organizer/events")).toBe(true);
     expect(showOrganizerTabs("/organizer/events/drafts")).toBe(true);
     expect(showOrganizerTabs("/organizer/revenue")).toBe(true);

@@ -55,7 +55,7 @@ describe("ステップの並び", () => {
   });
 });
 
-describe("ステップ1（催しの名前と開催日時）", () => {
+describe("ステップ1（イベント名と開催日時）", () => {
   it("空のフォームでは未完了", () => {
     expect(isBasicStepComplete(EMPTY_EVENT_FORM)).toBe(false);
   });

@@ -13,7 +13,7 @@ interface RouteContext {
 }
 
 /**
- * 保存済みチラシの画像。`?download=1` を付けると、催し名を使った
+ * 保存済みチラシの画像。`?download=1` を付けると、イベント名を使った
  * ファイル名で添付保存になる。形式は保存バイト列の先頭から判定する。
  */
 export async function GET(req: NextRequest, { params }: RouteContext) {

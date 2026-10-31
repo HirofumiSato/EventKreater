@@ -51,7 +51,7 @@ function OrganizerEventsScreen() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // 絞り込みとページ割りは画面側で持つ。一覧 API は全件を返し（マイページと
-  // カレンダーが全件前提）、催しは年を跨いで溜まり続けるため。
+  // カレンダーが全件前提）、イベントは年を跨いで溜まり続けるため。
   const [statusFilter, setStatusFilter] = useState<OrganizerStatusFilter>("ALL");
   const [excludePast, setExcludePast] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
@@ -78,7 +78,7 @@ function OrganizerEventsScreen() {
   const visible = paginate(filtered, currentPage);
 
   // 条件か並び順を変えたら 1 ページ目へ戻す。3 ページ目を見たまま絞ると、
-  // 並べ替えで別の催しが着地して、見ていた催しを見失う。
+  // 並べ替えで別のイベントが着地して、見ていたイベントを見失う。
   useEffect(() => {
     setPage(1);
   }, [statusFilter, excludePast, dateFrom, dateTo, sortOrder]);
@@ -86,7 +86,7 @@ function OrganizerEventsScreen() {
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events");
     if (res.status === 401) {
-      setError("ログインするか、幹事トークン付きの端末で開いてください。");
+      setError("ログインするか、幹事用の端末で開いてください。");
       setEvents([]);
       return;
     }
@@ -108,7 +108,7 @@ function OrganizerEventsScreen() {
   // 会員登録から戻ってきたときの完了トースト。URL からは印を消して、再読み込みで繰り返さない。
   useEffect(() => {
     if (searchParams.get("registered") !== "1") return;
-    setToast("会員登録が完了しました。公開したイベントは一覧から管理できます。");
+    setToast("会員登録が完了しました。イベントは一覧から管理できます。");
     router.replace("/organizer/events");
   }, [searchParams, router]);
 
@@ -152,8 +152,8 @@ function OrganizerEventsScreen() {
         action === "delete"
           ? "イベントを削除しました"
           : action === "close"
-            ? "公開を一時停止しました。告知ページは残っています。"
-            : "公開を再開しました。また出欠を受け付けます。",
+            ? "一時停止しました。告知ページは残ります。"
+            : "公開を再開しました。",
       );
       setDeletingId(null);
       await load();
@@ -183,12 +183,12 @@ function OrganizerEventsScreen() {
     setFilterOpen(false);
   };
 
-  // ボタンに添える件数。外に出している「過去の催しを除く」は数えない。
+  // ボタンに添える件数。外に出している「過去のイベントを除く」は数えない。
   const filterCount = activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, from: dateFrom, to: dateTo });
 
   // 並べ替えはアイコンだけなので、押すと何が起きるかを読み上げとツールチップで補う。
   // いまの並び（昇順か降順か）はアイコンの向きで示す。
-  const sortLabel = sortOrder === "asc" ? "開催日の新しい順に並べ替える" : "開催日の古い順に並べ替える";
+  const sortLabel = sortOrder === "asc" ? "新しい順に並べ替え" : "古い順に並べ替え";
 
   return (
     <div className="stack has-action-dock">
@@ -222,7 +222,7 @@ function OrganizerEventsScreen() {
       <Section className="section--tight">
         <SectionHead title="一覧" />
 
-        {/* 溜まった催しから目当てを探すための 3 つ。状態・過去・開催日で絞る。
+        {/* 溜まったイベントから目当てを探すための 3 つ。状態・過去・開催日で絞る。
             640px 未満では状態と開催日をモーダルへ畳み、一覧の場所を空ける。
             過去の除外だけは外に残し、並び順（開催日の昇順降順）も 1 押しで切り替える。 */}
         <div className="list-filters">
@@ -291,7 +291,7 @@ function OrganizerEventsScreen() {
               checked={excludePast}
               onChange={(event) => setExcludePast(event.currentTarget.checked)}
             />
-            <span>過去の催しを除く</span>
+            <span>過去のイベントを除く</span>
           </label>
         </div>
 
@@ -299,7 +299,7 @@ function OrganizerEventsScreen() {
           <EmptyState as="div">
             <p className="empty__title">
               {draftCount > 0
-                ? `公開中・受付停止の催しはありません。下書きが${draftCount}件あります。`
+                ? `公開中・受付停止のイベントはありません（下書き ${draftCount}件）。`
                 : "まだ主催イベントがありません。"}
             </p>
             {draftCount > 0 && (
@@ -315,10 +315,10 @@ function OrganizerEventsScreen() {
 
         {!loading && !error && events.length > 0 && filtered.length === 0 && (
           <EmptyState as="div">
-            <p className="empty__title">条件に合う催しはありません。</p>
+            <p className="empty__title">条件に合うイベントはありません。</p>
             <p className="empty__body">
-              状態や開催日の範囲を広げると見つかります。{" "}
-              <button type="button" className="text-link" onClick={resetFilter}>
+              条件を広げると見つかります。{" "}
+              <button type="button" className="btn btn--ghost btn--sm" onClick={resetFilter}>
                 条件を戻す
               </button>
             </p>
@@ -440,7 +440,7 @@ function OrganizerEventsScreen() {
                 }}
               />
             </Field>
-            <p className="help">開催日が範囲に入る催しだけを出します。「過去の催しを除く」は一覧の上で切り替えます。</p>
+            <p className="help">開催日が範囲内のイベントだけを表示します。</p>
           </div>
         </Dialog>
       )}
@@ -453,7 +453,7 @@ function OrganizerEventsScreen() {
             下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
           </Link>
           <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
-            イベント新規作成
+            新規作成
           </Link>
         </div>
       </div>
@@ -467,7 +467,7 @@ function OrganizerEventsScreen() {
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
         currentPlan={quotaState.quota?.subscriptionPlan}
         context="list"
-        onGranted={() => setToast("0円チケットを1回分受け取りました。もう一度「コピー作成」を押してください。")}
+        onGranted={() => setToast("0円チケットを受け取りました。もう一度「コピー作成」を押してください。")}
       />
       {deletingId && (
         <EventLifecycleModal

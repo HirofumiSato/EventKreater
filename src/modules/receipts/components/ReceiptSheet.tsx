@@ -32,7 +32,7 @@ export function ReceiptSheet({ receipt }: ReceiptSheetProps) {
           <span>{receipt.description}</span>
         </div>
         <div className="receipt-sheet__line">
-          <span>催し名</span>
+          <span>イベント名</span>
           <span>{receipt.eventTitle}</span>
         </div>
         <div className="receipt-sheet__line">

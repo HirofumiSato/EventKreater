@@ -399,7 +399,16 @@ export function buildScreens(demo) {
       name: "主催者マイページ",
       path: "/mypage",
       auth: "organizer",
-      note: "直近 3件、利用枠と契約、プロフィールの状態、ログアウト。",
+      note: "プラン公開・チケット公開の札、新着 4 件、直近 3 件、プロフィールの状態、ログアウト。",
+    },
+    {
+      no: "29",
+      group: "organizer",
+      slug: "notifications",
+      name: "通知一覧",
+      path: "/notifications",
+      auth: "organizer",
+      note: "参加表明と参加要望の全件。未読の「既読にする」と「すべて既読にする」。",
     },
   ];
 }

@@ -25,7 +25,7 @@ export interface MonthCell {
 
 /**
  * 月グリッドのセルに出す予定。
- * セルは狭いので、専用の短い形にして催し名だけを渡す。
+ * セルは狭いので、専用の短い形にしてイベント名だけを渡す。
  */
 export interface CalendarCellItem {
   key: string;
@@ -34,7 +34,7 @@ export interface CalendarCellItem {
   tone: "default" | "muted" | "waitlist";
   /** タップしたときのモーダルに出す補足（時刻・出欠・場所）。 */
   detail?: string;
-  /** 催しページの URL。無ければモーダルにリンクを出さない。 */
+  /** イベントページの URL。無ければモーダルにリンクを出さない。 */
   href?: string;
 }
 

@@ -340,7 +340,7 @@ export function ParticipantListTable({
       </div>
       <div className="table-card__foot">
         <p className="help">
-          名簿は回答順です。「変更」から出欠・日時・費用プランを直せます。費用プランを選ぶと売上に入ります。
+          回答順に並びます。「変更」で出欠・費用プランを直せます。
         </p>
       </div>
     </div>

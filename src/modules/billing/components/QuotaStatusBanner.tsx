@@ -26,16 +26,17 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
   // 日付入りの割引は、いつまで何円で使えるかが要るので残す。通常の自動更新は
   // 一覧の見出しでは繰り返さない（解約の条件は契約の画面が持つ）。
   const detail = discountLabel
-    ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
+    ? `${discountLabel}。終了後は月額${price}を自動で請求します（3日前と1日前にメールでお知らせ）。`
     : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
     const count = quota.publishedEventCount ?? 0;
     const limit = quota.publishedEventLimit ?? SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
     const remaining = Math.max(0, quota.remainingPublished ?? 0);
+    // 残りは書かない。`N / 8` を読めば引けるうえ、件数が動くたびに文が伸び縮みする。
     const head =
       remaining === 0
-        ? `月額プランで公開中のイベントが${limit}件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。`
-        : `月額プランで公開中のイベント ${count} / ${limit} 件（あと${remaining}件公開できます）。`;
+        ? `公開中のイベントが${limit}件に達しました。終わったものを削除するか止めてください。放題（2,980円）へ変えることもできます。`
+        : `月額プランで公開中のイベント ${count} / ${limit} 件`;
     return `${head}${detail}`;
   }
   const count = quota.publishedEventCount ?? 0;
@@ -69,8 +70,8 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             quota.publishedEventCount
               ? `公開中のイベント ${quota.publishedEventCount} 件。`
               : ""
-          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発クレジット ${quota.paidCredits}回）` : ""}${
-            freeTicketAvailable ? ` ・ 0円チケットがあと${quota.freeGrantRemaining}回受け取れます` : ""
+          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発 ${quota.paidCredits}回）` : ""}${
+            freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}回` : ""
           }`;
 
   // 公開し放題は 402 が起きないので、プランを勧めるボタンを出さない。

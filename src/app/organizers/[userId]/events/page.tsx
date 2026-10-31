@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 /**
- * 旧・主催者の催しページ。プロフィールと1画面に統合したので、
+ * 旧・主催者のイベントページ。プロフィールと1画面に統合したので、
  * 統合ページ（`/organizers/[userId]`）へ恒久的に送る。月だけを引き継ぐ。
  */
 export default function OrganizerEventsPage({ params, searchParams }: PageProps) {

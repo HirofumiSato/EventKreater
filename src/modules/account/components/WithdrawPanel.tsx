@@ -69,7 +69,7 @@ export function WithdrawPanel({ profile }: Props) {
 
   return (
     <Section>
-      <SectionHead title="退会" note="作った催しは、退会後も閲覧ページに残ります。" />
+      <SectionHead title="退会" note="作ったイベントは、退会後も閲覧ページに残ります。" />
       <p className="screen-note">
         退会するとログインできなくなります。あなたが筆頭幹事のイベントは閉じられ、公開中のページも見られなくなります。
         共同主催として参加しているイベントは、あなたの幹事権限だけが外れます。
@@ -149,7 +149,7 @@ export function WithdrawPanel({ profile }: Props) {
               className="btn btn--danger"
               disabled={busy || phrase !== "退会"}
             >
-              {busy ? "手続きしています..." : "退会する"}
+              {busy ? "手続きしています…" : "退会する"}
             </button>
             <button
               type="button"

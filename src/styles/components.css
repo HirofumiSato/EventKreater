@@ -256,7 +256,12 @@
   margin-top: 0;
 }
 
+/* 見出し・注記・右に置く操作の 3 つで 1 段。スマホでは縦に積み、
+   640px 以上で見出しの右へ操作を寄せる（`SectionHead` が順に並べる）。 */
 .section__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
   padding-bottom: 0.875rem;
   border-bottom: 2px solid var(--color-text);
 }
@@ -268,9 +273,41 @@
 }
 
 .section__note {
-  margin-top: 0.375rem;
   color: var(--color-text-subtle);
   font-size: 0.875rem;
+}
+
+/* 見出しの右に置く操作（`SectionHead` の children）。縦積みでは左端に置く。 */
+.section__head > .btn,
+.section__head > .btn-row,
+.section__head > .panel__actions {
+  justify-self: start;
+}
+
+@media (min-width: 640px) {
+  .section__head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.25rem 1rem;
+  }
+
+  .section__head > .section__title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .section__head > .section__note {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  /* 操作は見出しと注記の 2 行ぶんの右に置き、上下の中央にそろえる。 */
+  .section__head > :not(.section__title):not(.section__note) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: end;
+  }
 }
 
 .feature-list,
@@ -530,10 +567,25 @@
   color: var(--color-warning-deep);
 }
 
+/* 画面の下に置く操作の列。スマホでは主操作を幅いっぱいにして、親指で押す 1 つを
+   決めやすくする。補助はその下に折り返す。640px 以上は中身の幅に戻す。 */
 .panel__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.panel__actions > .btn--primary,
+.panel__actions > .btn--danger {
+  flex: 1 1 100%;
+}
+
+@media (min-width: 640px) {
+  .panel__actions > .btn--primary,
+  .panel__actions > .btn--danger {
+    flex: 0 0 auto;
+  }
 }
 
 .summary {
@@ -557,22 +609,27 @@
   font-size: 0.875rem;
 }
 
-/* ボタン */
+/* ボタン。大きさはスマホ基準で、押せる的は 44px を下回らせない。
+   `--sm` は左右の余白だけを詰める指定なので、高さと文字は既定と変わらない。
+   390px で 4 つを 1 段に収めたい一覧の札は、文字ではなく並びを変えて収める
+   （`deco/surface.css` のイベント札）。 */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
+  min-height: var(--tap-target);
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-text);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.875rem;
+  font-size: var(--font-action);
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.4;
   text-decoration: none;
+  touch-action: manipulation;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
@@ -658,13 +715,16 @@
 
 
 
+/* 小さく見せる指定は、左右の余白だけを詰める。高さと文字は `.btn` のまま。 */
 .btn--sm {
-  padding: 0.375rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .btn--lg {
+  min-height: 3.25rem;
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-xl);
+  font-size: 1rem;
 }
 
 .btn--block {
@@ -682,7 +742,7 @@
 
 .text-link {
   color: var(--color-primary-text);
-  font-size: 0.875rem;
+  font-size: var(--font-action);
   font-weight: 400;
   text-decoration: none;
 }
@@ -961,7 +1021,7 @@ fieldset.field {
   }
 
   .form-final__actions .btn {
-    min-height: 2.5rem;
+    min-height: var(--tap-target);
   }
 
   /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。
@@ -1008,12 +1068,13 @@ fieldset.field {
     minmax(9rem, 1fr) minmax(6rem, 0.6fr) minmax(6rem, 0.6fr) auto;
 }
 
-/* 削除は 2 文字だけ。列が詰まっても折り返さず、入力欄と同じ高さに揃えて
-   文字だけを一段小さくする。高さを揃えないと、行の下端で浮いて見える。 */
+/* 削除は 2 文字だけ。列が詰まっても折り返さず、入力欄と同じ高さに揃える。
+   高さは他の操作と同じ 44px。文字も `.btn` と同じ 15px にする
+   （小さくすると、押す前に何のボタンか読めない）。 */
 .repeat-row--schedule > .btn {
-  height: 2.6875rem;
+  height: var(--tap-target);
   padding-block: 0;
-  font-size: 0.75rem;
+  font-size: var(--font-action);
   white-space: nowrap;
   /* 1 列に積む幅では、削除が行いっぱいに広がって主ボタンに見える。 */
   justify-self: start;
@@ -1021,7 +1082,7 @@ fieldset.field {
 
 /* 24 時間表示の選択肢を持つ欄。入力欄と同じ高さに揃える。 */
 .repeat-row--schedule select.input {
-  height: 2.6875rem;
+  height: var(--tap-target);
   padding-block: 0;
 }
 
@@ -1119,12 +1180,24 @@ fieldset.field {
 .textarea,
 .select {
   width: 100%;
+  /* スマホで欄を押したとき、iOS が画面を拡大しない大きさにする。
+     狭い画面ほど文字を小さくして収める、はしない。 */
+  min-height: var(--tap-target);
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.875rem;
+  font-size: 1rem;
+}
+
+/* 広い画面では、欄の文字を本文より 1 段小さくして一覧の場所を空ける。 */
+@media (min-width: 640px) {
+  .input,
+  .textarea,
+  .select {
+    font-size: 0.875rem;
+  }
 }
 
 .input--compact {
@@ -1325,20 +1398,43 @@ fieldset.field {
 }
 
 /* 1 行で足りる案内（加入中のプランなど）。縦を詰めて、一覧の場所を奪わない。
-   右端には行動のボタンを置けるよう、中身は横並びにする。 */
+   スマホでは文と操作を縦に積み、操作を幅いっぱいにする。横に並べると、
+   文が 2 行に折れてボタンだけが右に残り、押す場所が分かりにくい。
+   640px 以上で 1 行に戻し、操作を右端に置く。 */
 .alert--compact {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-  padding: 0.375rem 0.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
   line-height: 1.5;
 }
 
 .alert--compact > p {
   margin: 0;
-  flex: 1 1 auto;
+}
+
+.alert--compact > .btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .alert--compact {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .alert--compact > p {
+    flex: 1 1 auto;
+  }
+
+  .alert--compact > .btn {
+    width: auto;
+  }
 }
 
 .alert--error {
@@ -1574,7 +1670,7 @@ fieldset.field {
 }
 
 /* 右上の閉じる印。閉じる道が操作の列にしか無いと、選ばずにやめたい人が詰まる。
-   押せる面は 2.25rem。指の的として 44px に近づけ、題の 1 行目とは重ねない。 */
+   押せる面は 44px（他の操作と同じ的の大きさ）。題の 1 行目とは重ねない。 */
 .dialog__close {
   position: absolute;
   top: 0.375rem;
@@ -1582,8 +1678,8 @@ fieldset.field {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: var(--tap-target);
+  height: var(--tap-target);
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -1602,9 +1698,10 @@ fieldset.field {
   outline-offset: 2px;
 }
 
-/* 題は中央揃えのまま。印があるときだけ、右端で重ならないよう左右を空ける。 */
+/* 題は中央揃えのまま。印があるときだけ、右端で重ならないよう左右を空ける。
+   閉じる印が 44px になったぶん、右の空きも広げる。 */
 .dialog:has(.dialog__close) .dialog__title {
-  padding-inline: 1.5rem;
+  padding-inline: 1.75rem;
 }
 
 /* ステップの途中で開くプレビュー。告知ページの部品をそのまま縮めて入れる。

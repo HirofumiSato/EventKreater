@@ -82,6 +82,7 @@
         <option value="mock-register-required.html">26 公開直後の案内</option>
         <option value="mock-organizer-profile.html">27 公開プロフィールの編集</option>
         <option value="mock-mypage.html">28 主催者マイページ</option>
+        <option value="mock-notifications.html">29 通知一覧</option>
       </optgroup>
         </select>
       </label>
@@ -133,7 +134,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "未ログイン",
-        "path": "/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "public"
       },
       {
@@ -141,7 +142,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "ログイン済み",
-        "path": "/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "public"
       },
       {
@@ -149,7 +150,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "満員",
-        "path": "/events/d2091193-63f8-4caf-9afa-0c641c0c01f2",
+        "path": "/events/4455bae8-11b4-45b7-900a-c748c6acc8d5",
         "group": "public"
       },
       {
@@ -157,7 +158,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "受付停止",
-        "path": "/events/e24c4a61-34fd-4d84-9639-6015976e885a",
+        "path": "/events/53f8a989-3176-4bbb-aecc-a614d263d9d4",
         "group": "public"
       },
       {
@@ -165,7 +166,7 @@
         "no": "05",
         "name": "参加費の領収書",
         "label": "",
-        "path": "/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c/receipt",
+        "path": "/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/receipt",
         "group": "public"
       },
       {
@@ -389,7 +390,7 @@
         "no": "19",
         "name": "売上の内訳",
         "label": "",
-        "path": "/organizer/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c/revenue",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/revenue",
         "group": "organizer"
       },
       {
@@ -405,7 +406,7 @@
         "no": "21",
         "name": "イベントの編集",
         "label": "",
-        "path": "/organizer/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c/edit",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/edit",
         "group": "organizer"
       },
       {
@@ -421,7 +422,7 @@
         "no": "23",
         "name": "下書きのプレビュー",
         "label": "",
-        "path": "/organizer/events/c399564f-8b78-4a61-be93-102269b451fa/preview",
+        "path": "/organizer/events/08054155-1e02-4d51-b17a-3a50ae6eb4e1/preview",
         "group": "organizer"
       },
       {
@@ -429,7 +430,7 @@
         "no": "24",
         "name": "参加者名簿",
         "label": "",
-        "path": "/organizer/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c/participants",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/participants",
         "group": "organizer"
       },
       {
@@ -437,7 +438,7 @@
         "no": "25",
         "name": "幹事向け領収書",
         "label": "",
-        "path": "/organizer/events/b51e94b4-e04f-44e3-8e76-dfae2b6ab02c/receipts/7b34f589-3d8e-4501-916d-0a37fb8cb2f1",
+        "path": "/organizer/events/6e4cb00b-d98e-47c2-b447-d378a91f5614/receipts/922eb0d2-961f-41e5-bd23-aa6d9fd9ce57",
         "group": "organizer"
       },
       {
@@ -445,7 +446,7 @@
         "no": "26",
         "name": "公開直後の案内",
         "label": "",
-        "path": "/organizer/register-required?event=b51e94b4-e04f-44e3-8e76-dfae2b6ab02c",
+        "path": "/organizer/register-required?event=6e4cb00b-d98e-47c2-b447-d378a91f5614",
         "group": "organizer"
       },
       {
@@ -462,6 +463,14 @@
         "name": "主催者マイページ",
         "label": "",
         "path": "/mypage",
+        "group": "organizer"
+      },
+      {
+        "file": "mock-notifications.html",
+        "no": "29",
+        "name": "通知一覧",
+        "label": "",
+        "path": "/notifications",
         "group": "organizer"
       }
     ];
@@ -510,7 +519,8 @@
       "mock-receipt.html": "mock-receipt.html?embed=1",
       "mock-register-required.html": "mock-register-required.html?embed=1",
       "mock-organizer-profile.html": "mock-organizer-profile.html?embed=1",
-      "mock-mypage.html": "mock-mypage.html?embed=1"
+      "mock-mypage.html": "mock-mypage.html?embed=1",
+      "mock-notifications.html": "mock-notifications.html?embed=1"
     };
     const HEIGHTS = {"390":844,"1280":900};
     const params = new URLSearchParams(location.search);

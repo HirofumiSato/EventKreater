@@ -246,7 +246,7 @@ export function RevenueAllocationSection({
 
             <div className="panel__actions">
               <button type="button" className="btn btn--primary btn--sm" disabled={pending} onClick={() => void save()}>
-                {pending ? "保存しています..." : "保存する"}
+                {pending ? "保存しています…" : "保存する"}
               </button>
               <button
                 type="button"

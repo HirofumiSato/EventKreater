@@ -21,7 +21,7 @@ export interface ParticipationItem {
     location: string;
     status: EventStatus;
     flyerThumbnailUrl: string | null;
-    /** 主催者の公開ページに使う会員ID。ゲスト幹事の催しは null。 */
+    /** 主催者の公開ページに使う会員ID。ゲスト幹事のイベントは null。 */
     ownerUserId: string | null;
   };
 }

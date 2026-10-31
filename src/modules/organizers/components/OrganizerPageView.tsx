@@ -42,12 +42,12 @@ interface OrganizerPageViewProps {
 }
 
 /**
- * 主催者の公開ページの催し部分（SCR-PUB-14）。
+ * 主催者の公開ページのイベント部分（SCR-PUB-14）。
  *
  * プロフィールの下に、カレンダーと一覧を縦に並べる。タブは持たない。
- * 未ログインではAPIが 403 を返すので、本物の催しは描かない。
+ * 未ログインではAPIが 403 を返すので、本物のイベントは描かない。
  * 代わりに飾りのカレンダーを置き、白塗りを重ねて案内する。
- * サーバー側でも催しを返さないため、DOM を見ても内容は分からない。
+ * サーバー側でもイベントを返さないため、DOM を見ても内容は分からない。
  *
  * 月だけを URL のクエリ（`month`）と連動させる。
  */
@@ -139,13 +139,13 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   }
 
   if (events.length === 0) {
-    return <EmptyState>これから開催される催しはありません。</EmptyState>;
+    return <EmptyState>これから開催されるイベントはありません。</EmptyState>;
   }
 
   return (
     <div className="stack">
       <Section>
-        <SectionHead title="カレンダー" note="催しの開催日を月ごとに確かめられます。" />
+        <SectionHead title="カレンダー" note="イベントの開催日を月ごとに確かめられます。" />
 
         <div className="cal">
           <div className="cal__head">
@@ -187,17 +187,17 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
         </div>
 
         {monthEntryCount === 0 && (
-          <EmptyState>この月に開催される催しはありません。</EmptyState>
+          <EmptyState>この月に開催されるイベントはありません。</EmptyState>
         )}
 
         <SectionHead
           title={<>{formatDayHeading(selectedDate)}</>}
           note={<>{dayEntries.length > 0
-              ? `この日の催しは ${dayEntries.length}件です。`
-              : "この日に開催される催しはありません。"}</>}
+              ? `この日のイベントは ${dayEntries.length}件です。`
+              : "この日に開催されるイベントはありません。"}</>}
         />
         {dayEntries.length === 0 ? (
-          <EmptyState>日付を押すと、その日の催しが出ます。</EmptyState>
+          <EmptyState>日付を押すと、その日のイベントが出ます。</EmptyState>
         ) : (
           <Rows>
             {dayEntries.map((entry) => (
@@ -214,7 +214,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
       </Section>
 
       <Section>
-        <SectionHead title="一覧" note={<>{events.length}件。満員の催しは参加要望を受け付けます。
+        <SectionHead title="一覧" note={<>{events.length}件。満員のイベントは参加要望を受け付けます。
           </>} />
         <Rows>
           {events.map((event) => (
@@ -227,7 +227,7 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
 }
 
 /**
- * 未ログインの案内。本物の催しはAPIが返さないので、ここには飾りのカレンダーだけを置く。
+ * 未ログインの案内。本物のイベントはAPIが返さないので、ここには飾りのカレンダーだけを置く。
  * 中身が読めないよう `aria-hidden` にして、案内だけを読み上げさせる。
  */
 function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: boolean }) {
@@ -241,9 +241,9 @@ function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: bool
       </div>
       <div className="organizer-locked__notice">
         <div className="organizer-locked__panel">
-          <p className="panel__title">催しの予定は参加者登録・ログイン後に閲覧できます</p>
+          <p className="panel__title">イベントの予定は参加者登録・ログイン後に閲覧できます</p>
           <p className="help">
-            主催者が開く催しをカレンダーと一覧で見るには、参加者として登録するかログインしてください。
+            主催者が開くイベントをカレンダーと一覧で見るには、参加者として登録するかログインしてください。
           </p>
           <div className="btn-row">
             <Link href={loginHref} className="btn btn--primary">
@@ -259,7 +259,7 @@ function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: bool
   );
 }
 
-/** ログイン後のカレンダーと同じ骨格。短冊は飾りで、催し名は出さない。 */
+/** ログイン後のカレンダーと同じ骨格。短冊は飾りで、イベント名は出さない。 */
 function LockedCalendarGhost({ month, today }: { month: string; today: string }) {
   const cells = buildMonthGrid(month);
   const { days } = monthRange(month);

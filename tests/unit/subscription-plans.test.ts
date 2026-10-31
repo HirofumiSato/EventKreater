@@ -72,7 +72,7 @@ describe("定額プランの価格", () => {
     );
     expect(eight?.name).toBe("月額で8件まで公開プラン");
     expect(eight?.body).toContain("公開中のイベント");
-    expect(eight?.body).toContain("開催が終わったものと一時停止したものは数えません");
+    expect(eight?.body).toContain("終わったものは数えません");
   });
 });
 

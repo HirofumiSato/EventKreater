@@ -1173,12 +1173,17 @@ try {
   });
 
   // マイページの「新着」と、ヘッダーの札の未読数バッジを撮るための通知。
-  // 未読の出席 1 件と、既読の参加要望 1 件を置く（札のバッジは「1」になる）。
+  // 未読は出席 1 件だけ（札のバッジは「1」になる）。それ以外は既読にし、
+  // マイページの上限（4 件）を超える 6 件を置いて「通知一覧を見る」も撮れるようにする。
   await prisma.notification.deleteMany({ where: { userId: organizer.id } });
   const attendingRow =
     main.participants.find((row) => row.name === PARTICIPANT.name) ?? main.participants[0];
   const waitlistedRow =
     full.participants.find((row) => row.status === "WAITLISTED") ?? full.participants[0];
+  const takoyakiAttending =
+    takoyaki.participants.find((row) => row.status === "ATTENDING") ?? takoyaki.participants[0];
+  const bonfireAttending =
+    bonfire.participants.find((row) => row.status === "ATTENDING") ?? bonfire.participants[0];
   await prisma.notification.createMany({
     data: [
       {
@@ -1202,6 +1207,52 @@ try {
         dedupeKey: sha256(`ui-demo-notification-waitlisted-${full.event.id}`),
         readAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: bonfire.event.id,
+        participantId: bonfireAttending.id,
+        kind: "RSVP_ATTENDING",
+        title: "参加表明がありました",
+        body: `${bonfireAttending.name} さんが「${bonfire.event.title}」に出席します。`,
+        dedupeKey: sha256(`ui-demo-notification-attending-${bonfire.event.id}`),
+        readAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 27 * 60 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: gohan.event.id,
+        participantId: null,
+        kind: "RSVP_WAITLISTED",
+        title: "参加要望が届きました",
+        body: `${PARTICIPANT.name} さんが「${gohan.event.title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        dedupeKey: sha256(`ui-demo-notification-waitlisted-${gohan.event.id}`),
+        readAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 - 60 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: takoyaki.event.id,
+        participantId: takoyakiAttending.id,
+        kind: "RSVP_ATTENDING",
+        title: "参加表明がありました",
+        body: `${takoyakiAttending.name} さんが「${takoyaki.event.title}」に出席します。`,
+        dedupeKey: sha256(`ui-demo-notification-attending-${takoyaki.event.id}`),
+        readAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 30 * 60 * 1000),
+      },
+      {
+        userId: organizer.id,
+        eventId: main.event.id,
+        participantId: null,
+        kind: "RSVP_WAITLISTED",
+        title: "参加要望が届きました",
+        body: `${
+          main.participants.find((row) => row.status === "WAITLISTED")?.name ?? attendingRow.name
+        } さんが「${main.event.title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        dedupeKey: sha256(`ui-demo-notification-waitlisted-${main.event.id}`),
+        readAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 - 45 * 60 * 1000),
       },
     ],
   });

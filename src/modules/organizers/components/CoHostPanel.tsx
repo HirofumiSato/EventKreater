@@ -54,7 +54,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
       if (!res.ok) {
         const body = await readProblemBody(res);
         if (isRegisterRequired(body)) {
-          throw new Error("共同主催者の招待には会員登録が必要です。案内ページから登録してください。");
+          throw new Error("招待には会員登録が必要です。案内ページから登録してください。");
         }
         throw new Error(body.detail || "招待URLを作成できませんでした");
       }
@@ -90,7 +90,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
 
   return (
     <Panel>
-      <PanelHead title="共同幹事" note="招待リンクから、もう 1人を幹事に加えられます。解除はその場で確認します。" />
+      <PanelHead title="共同幹事" note="招待リンクで、幹事を1人増やせます。解除はその場で確認します。" />
       {error && <Alert tone="error">{error}</Alert>}
       {loading ? (
         <Loading>
@@ -146,7 +146,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
               />
             ))}
             {coHosts.length === 0 && (
-              <Row title="共同幹事はまだいません" meta="招待リンクを発行すると、もう 1人を加えられます。" />
+              <Row title="共同幹事はまだいません" meta="リンクで幹事を1人増やせます。" />
             )}
           </Rows>
 
@@ -158,19 +158,19 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
                 onClick={() => void createInvite()}
                 className="btn btn--outline btn--sm"
               >
-                {pending ? "作成しています..." : "招待リンクを発行"}
+                {pending ? "作成しています…" : "招待リンクを発行"}
               </button>
             </div>
           ) : data?.registerRequired ? (
             <div className="stack">
               <p className="help">
-                共同主催者の招待・削除には会員登録が必要です。登録すると、いまのイベントはあなたのアカウントに引き継がれます。
+                招待には会員登録が必要です。登録すると、このイベントはあなたのアカウントに引き継がれます。
               </p>
               <Link
                 href={`/organizer/register-required?eventId=${encodeURIComponent(eventId)}`}
                 className="btn btn--outline btn--sm"
               >
-                会員登録して幹事を管理する
+                登録して幹事を管理
               </Link>
             </div>
           ) : (
@@ -183,7 +183,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
               <p className="quote">{shareUrl}</p>
               {expiresAt && <p className="help">有効期限 {formatDateTimeJa(expiresAt)}</p>}
               <p className="help">
-                URLを知っている会員が受諾すると、共同主催者に加わります。7日間有効で、一度受諾すると無効になります。
+                URLを知っている会員が受諾すると、共同主催者になります。7日間有効で、1回だけ使えます。
               </p>
               <div className="panel__actions">
                 <button

@@ -46,7 +46,7 @@ export function CalendarView() {
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events", { cache: "no-store" });
     if (res.status === 401) {
-      setError("ログインするか、幹事トークン付きの端末で開いてください。");
+      setError("ログインするか、幹事用の端末で開いてください。");
       setEvents([]);
       return;
     }
@@ -121,7 +121,7 @@ export function CalendarView() {
         <EmptyState as="div">
           <p className="empty__title">この月に予定はありません。</p>
           <p className="empty__body">
-            別の月へ移るか、新しい催しを作ってください。{" "}
+            別の月へ移るか、新しいイベントを作ってください。{" "}
             <Link href={SITE.nav.createEvent.href} className="text-link">
               新規作成
             </Link>
@@ -166,8 +166,8 @@ export function CalendarView() {
       {!error && monthDays.length > 0 && (
         <Section>
           <SectionHead
-            title={<>{formatMonthTitle(month)}の催し</>}
-            note={`この月の催しは ${monthEntryCount}件です。`}
+            title={<>{formatMonthTitle(month)}のイベント</>}
+            note={`この月のイベントは ${monthEntryCount}件です。`}
           />
           <div className="cal-month">
             {monthDays.map((day) => (

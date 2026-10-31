@@ -89,7 +89,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
     "subscription-8",
     "月額で8件まで公開プラン",
     "月",
-    `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。開催が終わったものと一時停止したものは数えません。`,
+    `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。終わったものは数えません。`,
     SUBSCRIPTION_8_PRICE_JPY,
     [
       `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで`,
@@ -101,7 +101,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
     "subscription-unlimited",
     "公開し放題",
     "月",
-    "公開中のイベント数を数えません。教室や常設の催しなど、同時に多く掲載する人向けです。",
+    "公開中のイベント数を数えません。常設のイベントなど、同時に多く掲載する人向けです。",
     SUBSCRIPTION_UNLIMITED_PRICE_JPY,
     ["公開中のイベント数が無制限", "月額2,980円（税込）", "解約はいつでも。次の更新で止まる"],
     true,

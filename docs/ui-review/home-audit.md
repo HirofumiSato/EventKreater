@@ -329,7 +329,7 @@ P0 は情報の並べ替えに留まり、画面の印象は変わらなかっ�
 
 | 対象 | 変更 |
 | :--- | :--- |
-| `src/styles/tokens.css` | `--radius-*` を 0 に統一。`--color-ink-soft`、`--space-section` を追加 |
+| `src/styles/tokens.css` | `--radius-*` を 0 に統一。`--color-ink-soft`、`--space-section` を追加。縦の余白の段 `--space-head`（見出しと中身）・`--space-block`（中身と操作）・`--space-row`（罫線で区切る行の上下）を追加し、`deco--tape-quiet` が当てる |
 | `src/styles/base.css` | `body` に `overflow-x: clip` |
 | `src/styles/components.css` | `.hero--stage`（全幅の墨地・2カラム）、`.feature-row`、`.step-row`、`.cta-band`、`.btn--inverse` を追加。墨地と朱の帯ではフォーカスリングを白に（朱のリングは墨地で 2.89:1 しかない） |
 | `src/app/page.tsx` | ヒーローを `.hero__grid`（コピー＋チラシ）に変更。`card-grid` を `feature-list` / `step-list` に置換。末尾を `cta-band` に変更 |

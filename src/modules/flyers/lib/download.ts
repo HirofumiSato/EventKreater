@@ -9,12 +9,12 @@ export function flyerDownloadHref(id: string): string {
 /** ファイル名に使えない文字。Windows と macOS の両方で困らない範囲に絞る。 */
 const INVALID_FILENAME = /[\\/:*?"<>|\u0000-\u001f]/g;
 
-/** 長すぎる催し名でファイル名が壊れないよう、この文字数で切る。 */
+/** 長すぎるイベント名でファイル名が壊れないよう、この文字数で切る。 */
 const MAX_TITLE_LENGTH = 60;
 
 /**
  * ファイル名の共通部分。`チラシ-忘年会2026` の形で、拡張子は付けない。
- * 催し名が無い・禁止文字だけのときは ID で作る。
+ * イベント名が無い・禁止文字だけのときは ID で作る。
  */
 export function flyerFileBase(title: string | null | undefined, id: string): string {
   const cleaned = Array.from((title ?? "").replace(INVALID_FILENAME, " "))

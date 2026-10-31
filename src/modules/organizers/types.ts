@@ -46,7 +46,7 @@ export interface OrganizerProfileLink {
   url: string;
 }
 
-/** 開催済みの催しから出する実績。人数と参加者名は含めない。 */
+/** 開催済みのイベントから出する実績。人数と参加者名は含めない。 */
 export interface OrganizerProfileStats {
   eventCount: number;
   sinceYear: number;

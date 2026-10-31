@@ -44,8 +44,8 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
       ) : null}
 
       <div>
-        {/* 札は催し名の頭に並ぶので、名簿の行と同じ小さめの大きさで出す。
-            大きいままだと、名前が長い催しで札が 2 行目を奪う。 */}
+        {/* 札はイベント名の頭に並ぶので、名簿の行と同じ小さめの大きさで出す。
+            大きいままだと、名前が長いイベントで札が 2 行目を奪う。 */}
         <div className="event-card__head">
           <h3 className="event-card__title">{event.title}</h3>
           <Badge tone={statusTone(event.status)} small>
@@ -91,7 +91,7 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
           編集は一覧でいちばん使うので、塗りと文字色を変えて主の操作として置く。 */}
       <div className="event-card__actions">
         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
-          参加者を見る
+          名簿
         </Link>
         {event.status !== "DRAFT" && (
           <Link href={publicPath} target="_blank" rel="noopener noreferrer" className="btn btn--ghost btn--sm">
@@ -103,12 +103,12 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
             編集
           </Link>
           <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
-            コピー作成
+            複製
           </button>
         </div>
       </div>
 
-      {/* 普段は使わない共有と停止だけを畳む。操作の下に置き、押す前に催しの情報と
+      {/* 普段は使わない共有と停止だけを畳む。操作の下に置き、押す前にイベントの情報と
           主要な操作が読めるようにする（共有への入口を先に出すと、編集の行き先が埋もれる）。 */}
       {event.status !== "DRAFT" && (
         <details className="fold event-card__fold">
@@ -135,21 +135,21 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
               <div className="event-card__danger">
                 <p className="help">
                   {event.status === "CLOSED"
-                    ? "いま出欠を受け付けていません。公開を再開すると、また回答を受け付けます。"
-                    : "一時停止すると、告知ページは残したまま出欠だけを止めます。削除すると元に戻せません。"}
+                    ? "受付を停止中です。再開すると回答を受け付けます。"
+                    : "停止しても告知ページは残ります。削除は元に戻せません。"}
                 </p>
                 <div className="event-card__danger-actions">
                   {event.status === "CLOSED" ? (
                     <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onResume}>
-                      公開を再開
+                      再開
                     </button>
                   ) : (
                     <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onStop}>
-                      公開を一時停止
+                      停止
                     </button>
                   )}
                   <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
-                    削除する
+                    削除
                   </button>
                 </div>
               </div>

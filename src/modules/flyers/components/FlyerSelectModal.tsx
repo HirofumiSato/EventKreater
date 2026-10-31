@@ -13,7 +13,7 @@ interface FlyerSelectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (flyer: SelectableFlyer) => void;
-  /** アップロードしたチラシの表示名に使う催し名。 */
+  /** アップロードしたチラシの表示名に使うイベント名。 */
   title?: string;
 }
 

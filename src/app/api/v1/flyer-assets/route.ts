@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** 催し名は DB の varchar(100) に合わせる。絵文字を割らないようコードポイントで切る。 */
+/** イベント名は DB の varchar(100) に合わせる。絵文字を割らないようコードポイントで切る。 */
 function flyerTitle(value: FormDataEntryValue | null): string {
   if (typeof value !== "string") return "";
   return Array.from(value.trim()).slice(0, 100).join("");

@@ -31,7 +31,7 @@ flowchart LR
   Judge -->|"いいえ"| Nothing["何もしない"]
   Judge -->|"はい"| Rows["Notification を<br/>主催者の人数ぶん作成"]
   Rows --> Get["GET /api/v1/notifications"]
-  Get --> Mypage["/mypage#notifications"]
+  Get --> Mypage["/notifications"]
   Get --> Navbar["札の未読数バッジ"]
   Mypage --> Patch["PATCH /api/v1/notifications"]
 ```
@@ -141,9 +141,11 @@ model Notification {
 ## 5. 画面
 
 - `src/modules/notifications/hooks/useNotifications.ts` — 未読数を 60 秒ごと・`visibilitychange`・パス移動・`notifications:changed` で取り直す。主催者でない会員は呼ばない。
-- `src/modules/notifications/components/NotificationList.tsx` — 既存の `Section` / `SectionHead` / `Rows` / `Row` / `Badge` を使う。未読は行の左に点、状態は「出席」「参加要望」のバッジ。行は名簿へのリンクで、押したら `PATCH { ids }` してから遷移する。見出しの右に「すべて既読にする」。
-- `src/app/mypage/page.tsx` — 集計の直後に `<Section id="notifications">` を置く。取得は既存の `load()` に 1 本足す。
-- `src/components/common/Navbar.tsx` — 主催者のとき、頭文字の札の右上に未読数の丸バッジ（`.site-user__badge`）を絶対配置で重ねる。`0` のときは要素ごと出さない。メニューに `SITE.nav.notifications`（`/mypage#notifications`）を足し、件数を小さく添える。
+- `src/modules/notifications/components/NotificationList.tsx` — マイページの「新着」。`Section` / `SectionHead` と、行を描く `NotificationRows` を使う。4 件までに出し、超える分は「通知一覧を見る」で `src/app/notifications/page.tsx` へ送る。見出しの右に「すべて既読にする」。見出しの説明文は置かない。
+- `src/modules/notifications/components/NotificationRows.tsx` — 行そのもの。マイページと通知一覧で共有する。未読は行の左に点、状態は「出席」「参加要望」のバッジ、日時は秒を落とす（`formatDateTimeMinuteJa`）。行は名簿へのリンクで、押したら `PATCH { ids }` してから遷移する。未読の行には題の下に「既読にする」（`PATCH { ids: [id] }`）を置く。
+- `src/app/notifications/page.tsx` — 通知一覧（SCR-PUB-15）。50 件まで出し、同じ `NotificationRows` を並べる。
+- `src/app/mypage/page.tsx` — 集計の直後に `<Section id="notifications">` を置く。取得は既存の `load()` に 1 本足す（`?limit=5`）。
+- `src/components/common/Navbar.tsx` — 主催者のとき、頭文字の札の右上に未読数の丸バッジ（`.site-user__badge`）を絶対配置で重ねる。`0` のときは要素ごと出さない。メニューに `SITE.nav.notifications`（`/notifications`）を足し、件数を小さく添える。
 - スタイルは `src/styles/base.css` の `.site-user` 周辺と、`src/styles/screens/organizer.css` の `.notif__*` だけ。幅の段は増やさない。
 
 ## 6. テスト
@@ -153,7 +155,7 @@ model Notification {
 
 ## 受け入れ条件
 
-- [x] 参加者が出席を送ると、主催者の頭文字の札に未読数のバッジが出て、`/mypage#notifications` に「参加表明がありました」が出る
+- [x] 参加者が出席を送ると、主催者の頭文字の札に未読数のバッジが出て、`/notifications` に「参加表明がありました」が出る
 - [x] 未読が 10 件以上なら札のバッジが `9+` になり、ヘッダーの高さと幅が変わらない（390px で横スクロールしない）
 - [x] 札のボタンの読み上げに「未読 N 件」が入る
 - [x] 満員で参加要望が発生したときも、同じく通知が出る

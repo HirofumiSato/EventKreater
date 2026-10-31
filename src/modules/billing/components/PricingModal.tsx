@@ -35,9 +35,9 @@ interface PricingModalProps {
 }
 
 const CANCEL_LABEL: Record<NonNullable<PricingModalProps["context"]>, string> = {
-  create: "キャンセルして作成に戻る",
-  edit: "キャンセルして編集に戻る",
-  preview: "キャンセルしてプレビューに戻る",
+  create: "作成に戻る",
+  edit: "編集に戻る",
+  preview: "プレビューに戻る",
   list: "閉じる",
   mypage: "閉じる",
 };
@@ -150,13 +150,13 @@ export function PricingModal({
 
   return (
     <Dialog
-      title="課金プラン選択"
+      title="プランを選ぶ"
       onClose={onClose}
       actions={<><button type="button" onClick={onClose} disabled={loadingPlan !== null} className="btn btn--ghost btn--block">
             {CANCEL_LABEL[context]}
           </button></>}
     >
-      <p className="dialog__body">継続して告知ページを作るには、次のいずれかを選びます。</p>
+      <p className="dialog__body">続けるには、どれかを選んでください。</p>
         <div className="stack" style={{ marginTop: "1.25rem" }}>
           <article className="card">
             <h4 className="card__title">単発チケット</h4>
@@ -172,9 +172,9 @@ export function PricingModal({
               className="btn btn--block"
             >
               {loadingPlan === "SINGLE"
-                ? "処理中..."
+                ? "処理しています…"
                 : freeExhausted
-                  ? "このキャンペーンは受け取り済みです"
+                  ? "受け取り済みです"
                   : isFree
                     ? "無料で受け取る"
                     : "単発で購入する"}
@@ -185,7 +185,7 @@ export function PricingModal({
             <h4 className="card__title">月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
             <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
             <p className="card__body">
-              公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。開催が終わったものと一時停止したものは数えません。
+              公開中は{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで。終了したものと停止中は数えません。
               {subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -199,10 +199,10 @@ export function PricingModal({
               {currentPlan === "MONTHLY_8"
                 ? "現在のプラン"
                 : loadingPlan === "MONTHLY_8"
-                  ? "Stripeへ接続中..."
+                  ? "接続しています…"
                   : subscription8?.chargedPrice === 0
                     ? "0円で定期購入を始める"
-                    : `月額で${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランを始める`}
+                    : "このプランを始める"}
             </button>
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
@@ -210,7 +210,7 @@ export function PricingModal({
             <h4 className="card__title">公開し放題</h4>
             <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
             <p className="card__body">
-              公開中のイベント数を数えません。教室や常設の催しなど、同時に多く掲載する人向けです。
+              公開中の件数を数えません。教室や常設のイベント向けです。
               {subscriptionUnlimited?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
@@ -224,7 +224,7 @@ export function PricingModal({
               {currentPlan === "UNLIMITED"
                 ? "現在のプラン"
                 : loadingPlan === "UNLIMITED"
-                  ? "Stripeへ接続中..."
+                  ? "接続しています…"
                   : subscriptionUnlimited?.chargedPrice === 0
                     ? "0円で定期購入を始める"
                     : "定期購入で公開し放題"}
@@ -233,7 +233,7 @@ export function PricingModal({
         </div>
         {error && <Alert tone="error" style={{ marginTop: "1rem" }}>{error}</Alert>}
         <p className="help" style={{ marginTop: "1rem" }}>
-          0円の月額は無料期間の終了後に自動で有料へ切り替わります。終了の3日前と1日前にメールでお知らせします。詳しくは
+          無料期間が終わると自動で有料になります。3日前と1日前にメールでお知らせします。詳しくは
           <Link href="/terms" className="text-link">
             利用規約
           </Link>

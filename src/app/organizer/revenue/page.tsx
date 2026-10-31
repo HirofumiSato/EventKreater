@@ -146,7 +146,7 @@ export default function OrganizerRevenuePage() {
 
       {loading && (
         <Loading>
-          売上を集計しています
+          売上を集計しています…
         </Loading>
       )}
 
@@ -176,7 +176,7 @@ export default function OrganizerRevenuePage() {
               title={<>{data.period.from || data.period.to
                   ? `${data.period.from ?? "指定なし"} 〜 ${data.period.to ?? "指定なし"}`
                   : "全期間"}</>}
-              note="見込みと、領収書を出した額の差がそのまま残りです。"
+              note="見込みと領収書の差が、そのまま残りです。"
             />
             <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
           </Panel>
@@ -186,7 +186,7 @@ export default function OrganizerRevenuePage() {
               <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
               <Panel as="div">
                 <p className="panel__note panel__note--warning">
-                  出席しているのに費用プランが未選択の参加者が {totals.unassignedPlanCount} 人います。この人たちは売上に含めていません。名簿でプランを選ぶと集計に入ります。
+                  費用プラン未選択の参加者が {totals.unassignedPlanCount} 人います。売上には含みません。名簿で選ぶと集計に入ります。
                 </p>
                 <ul className="alert__list">
                   {unassignedEvents.map((event) => (
@@ -202,11 +202,11 @@ export default function OrganizerRevenuePage() {
           )}
 
           <Section>
-            <SectionHead title="催し別" note="開催日の新しい順です。行を押すと内訳が出ます。" />
+            <SectionHead title="イベント別" note="開催日の新しい順です。行を押すと内訳が出ます。" />
             {data.events.length === 0 ? (
               <EmptyState>
                 <span className="empty__title">この期間に主催イベントはありません。</span>
-                <span className="empty__body">期間を広げるか、新しい催しを作ってください。</span>
+                <span className="empty__body">期間を広げるか、新しいイベントを作ってください。</span>
               </EmptyState>
             ) : (
               <Rows>

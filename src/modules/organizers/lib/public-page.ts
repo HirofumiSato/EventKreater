@@ -46,7 +46,7 @@ export function isPubliclyListed(event: ListingCandidate, today: string): boolea
   return nextScheduleDate(event, today) !== null;
 }
 
-/** 掲載対象だけを、次に開催される日が近い順に並べる。同日は催し名の五十音順。 */
+/** 掲載対象だけを、次に開催される日が近い順に並べる。同日はイベント名の五十音順。 */
 export function sortOrganizerEvents<T extends ListingCandidate & { id: string; title: string }>(
   events: T[],
   today: string,
@@ -69,8 +69,8 @@ export interface OrganizerDayEntry<T, S> {
 }
 
 /**
- * 開催日ごとに催しをまとめる。催しに複数の候補日があれば、それぞれの日へ置く。
- * 同じ日の並びは時刻順、同時刻は催し名の五十音順。
+ * 開催日ごとにイベントをまとめる。イベントに複数の候補日があれば、それぞれの日へ置く。
+ * 同じ日の並びは時刻順、同時刻はイベント名の五十音順。
  */
 export function groupOrganizerEventsByDate<
   T extends WithSchedules<S> & { id: string; title: string },
@@ -140,7 +140,7 @@ export function clampMonth(month: string | null | undefined, minMonth: string): 
   return month < minMonth ? minMonth : month;
 }
 
-/** 主催者の公開ページの URL。プロフィールと催しを同じ画面に置く。 */
+/** 主催者の公開ページの URL。プロフィールとイベントを同じ画面に置く。 */
 export function organizerProfilePath(userId: string): string {
   return `/organizers/${userId}`;
 }

@@ -59,7 +59,7 @@ describe("eventFormToPreview", () => {
 
   it("未入力の欄は「未入力」と出し、空欄のままにしない", () => {
     const preview = eventFormToPreview({ ...EMPTY_EVENT_FORM });
-    expect(preview.title).toBe("（催しの名前は未入力）");
+    expect(preview.title).toBe("（イベント名は未入力）");
     expect(preview.schedules[0]?.eventTime).toBe("時刻未入力");
     expect(preview.pricePlans[0]?.price).toBe("金額未入力");
     expect(preview.location).toBe("場所未定");

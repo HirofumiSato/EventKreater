@@ -9,14 +9,14 @@ import { SITE } from "@/lib/site";
  * ヘッダーの行き先（FE-PUB-03）は変えず、主催者としての画面のあいだだけを行き来させる。
  * ヘッダーに同じ行き先を重ねないため、ここは「節」の切り替えとして置く。
  * 先頭の「ホーム」は `/mypage`（SCR-PUB-03）で、節のどの画面からでも戻れる。
- * 下書き（SCR-ORG-15）は催しの一覧の一種なので、ここには置かず頭文字のメニューが持つ。
+ * 下書き（SCR-ORG-15）はイベントの一覧の一種なので、ここには置かず頭文字のメニューが持つ。
  */
 const TABS = [
   SITE.nav.organizerHome,
   { href: "/organizer/events", label: "主催一覧" },
   { href: "/organizer/calendar", label: "カレンダー" },
   { href: "/organizer/revenue", label: "売上" },
-  { href: "/organizer/profile", label: "公開プロフ" },
+  { href: "/organizer/profile", label: "プロフィール" },
 ] as const;
 
 export function OrganizerTabs() {

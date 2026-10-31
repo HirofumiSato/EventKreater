@@ -183,12 +183,12 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       </div>
       {lock.hasLock && (
         <div className="notice">
-          いま編集中のあいだ、ほかの人は保存できません。保存すると、この制限は解除されます。
+          編集中は、ほかの人は保存できません。保存すると解除されます。
         </div>
       )}
       {lock.status === "conflict" && !lock.conflictVisible && (
         <Alert tone="warning" as="div" className="alert--compact">
-          <p>{lock.conflict?.holderName} が編集中のため、いまは閲覧のみです。保存するには編集権を引き継ぎます。</p>
+          <p>{lock.conflict?.holderName}さんが編集中です。保存するには編集権を引き継いでください。</p>
           <button type="button" className="btn btn--sm btn--outline" onClick={lock.reopenConflict}>
             編集権を引き継ぐ
           </button>
@@ -204,7 +204,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       )}
       {lock.status === "acquiring" && (
         <Loading>
-          編集を開始しています
+          編集を開始しています…
         </Loading>
       )}
       {lock.error && <Alert tone="error">{lock.error}</Alert>}
@@ -269,7 +269,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         context="edit"
         onGranted={() => {
           void quotaState.refreshQuota();
-          setToast("0円チケットを1回分受け取りました。「保存して一覧へ戻る」をもう一度押してください。");
+          setToast("0円チケットを受け取りました。もう一度保存してください。");
         }}
       />
       {toast && <Toast message={toast} tone={toast === "保存しました" ? "success" : "error"} onClose={() => setToast(null)} />}

@@ -108,7 +108,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
         <div className="panel__actions">
           {preview.loggedIn ? (
             <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
-              {pending ? "参加処理中..." : "共同主催者として参加する"}
+              {pending ? "参加処理中…" : "共同主催者として参加する"}
             </button>
           ) : (
             <>

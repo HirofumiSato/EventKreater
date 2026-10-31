@@ -9,7 +9,7 @@ import type { RsvpNotificationKind } from "@/modules/notifications/types";
  * ここ 1 か所で決め、`notify.ts` が DB へ書く。テストはこのファイルだけで判定を固定できる。
  *
  * 通知するのは「席が増える変化」だけにする。出席の取り消しや欠席への変更まで
- * 知らせると、幹事の未読が催しの人数分だけ膨らんで、本当に見たい 1 件が埋もれる。
+ * 知らせると、幹事の未読がイベントの人数分だけ膨らんで、本当に見たい 1 件が埋もれる。
  */
 
 export type { RsvpNotificationKind };
@@ -63,7 +63,7 @@ export function participantsPath(eventId: string): string {
 }
 
 /**
- * 通知の文面。催し名・参加者名は作成時点のものを焼き付け、後から変わっても過去の通知は動かさない。
+ * 通知の文面。イベント名・参加者名は作成時点のものを焼き付け、後から変わっても過去の通知は動かさない。
  * `status` は通知する 2 状態だけを受ける（欠席は通知しないため）。
  */
 export function buildRsvpNotification(input: {
@@ -80,7 +80,7 @@ export function buildRsvpNotification(input: {
       kind: "RSVP_WAITLISTED",
       title: trimTo("参加要望が届きました", NOTIFICATION_TITLE_MAX),
       body: trimTo(
-        `${name} さんが「${title}」の参加を希望しています。定員に達しているため、名簿から承認できます。`,
+        `${name}さんが「${title}」に参加を希望。定員のため名簿から承認できます。`,
         NOTIFICATION_BODY_MAX,
       ),
       href: participantsPath(input.eventId),
@@ -90,7 +90,7 @@ export function buildRsvpNotification(input: {
   return {
     kind: "RSVP_ATTENDING",
     title: trimTo("参加表明がありました", NOTIFICATION_TITLE_MAX),
-    body: trimTo(`${name} さんが「${title}」に出席します。`, NOTIFICATION_BODY_MAX),
+    body: trimTo(`${name}さんが「${title}」に出席します。`, NOTIFICATION_BODY_MAX),
     href: participantsPath(input.eventId),
   };
 }

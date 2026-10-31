@@ -66,7 +66,7 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
   });
 
   it("主催者画面は /mypage と /invitations も同じ並びにする", () => {
-    for (const pathname of ["/mypage", "/invitations", "/invitations/abc"]) {
+    for (const pathname of ["/mypage", "/notifications", "/invitations", "/invitations/abc"]) {
       expect(siteNavConfig(pathname, organizer)).toEqual(siteNavConfig("/organizer/events", organizer));
     }
   });
@@ -123,6 +123,7 @@ describe("頭文字のメニューの並び", () => {
   it("節がある主催者画面では、マイページを重ねず下書きを受ける", () => {
     for (const pathname of [
       "/mypage",
+      "/notifications",
       "/organizer/events",
       "/organizer/calendar",
       "/organizer/revenue",

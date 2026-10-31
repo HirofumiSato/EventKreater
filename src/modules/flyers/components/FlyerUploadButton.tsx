@@ -6,7 +6,7 @@ import { MAX_IMAGE_BYTES, UPLOAD_ACCEPT } from "@/modules/flyers/lib/upload";
 import type { SelectableFlyer } from "@/modules/flyers/types";
 
 interface FlyerUploadButtonProps {
-  /** チラシ選択モーダルでの表示名に使う催し名。未入力でも空文字で送る。 */
+  /** チラシ選択モーダルでの表示名に使うイベント名。未入力でも空文字で送る。 */
   title: string;
   disabled?: boolean;
   onUploaded: (flyer: SelectableFlyer) => void;
@@ -63,7 +63,7 @@ export function FlyerUploadButton({
         disabled={disabled || uploading}
         onClick={() => inputRef.current?.click()}
       >
-        {uploading ? "読み込んでいます..." : "画像をアップロードして使う"}
+        {uploading ? "読み込んでいます…" : "画像をアップロードして使う"}
       </button>
       <input
         ref={inputRef}

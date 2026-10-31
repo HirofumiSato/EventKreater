@@ -14,7 +14,7 @@ import { Alert, Badge, EmptyState, Loading, PageHeader } from "@/components/ui";
  * 下書き一覧。
  *
  * 主催一覧（SCR-ORG-01）には公開済みと受付停止だけを出し、下書きはここへ分ける。
- * 出欠の統計が常に 0 のカードが並ぶと、公開中の催しの状況が読み取りにくくなるため。
+ * 出欠の統計が常に 0 のカードが並ぶと、公開中のイベントの状況が読み取りにくくなるため。
  */
 export default function OrganizerDraftsPage() {
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
@@ -62,7 +62,7 @@ export default function OrganizerDraftsPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="下書き一覧" lead="公開するまで、利用枠は減りません。プレビューで見た目を確かめてから公開できます。" />
+      <PageHeader title="下書き一覧" lead="公開するまで利用枠は減りません。プレビューで確かめてから公開できます。" />
 
       {loading && (
         <Loading>
@@ -125,8 +125,7 @@ export default function OrganizerDraftsPage() {
       </div>
 
       <p className="screen-note">
-        下書きは、自分（と共同幹事）にだけ見えます。URL を知っていても、公開していない催しは開けません。
-        削除すると元に戻せません。
+        下書きは自分（と共同主催）にだけ見えます。URL を知っていても、公開前のイベントは開けません。削除は元に戻せません。
       </p>
 
       <div className="panel__actions">

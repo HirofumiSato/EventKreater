@@ -11,8 +11,8 @@ function startTimeKey(entry: ParticipantCalendarEntry): string {
 }
 
 /**
- * 同じ日の予定を時刻順に並べる。時刻の無い催しは末尾に置く。
- * 同時刻は催し名の五十音順にして、読み込むたびに並びが変わらないようにする。
+ * 同じ日の予定を時刻順に並べる。時刻の無いイベントは末尾に置く。
+ * 同時刻はイベント名の五十音順にして、読み込むたびに並びが変わらないようにする。
  */
 export function sortParticipantDayEntries(
   entries: ParticipantCalendarEntry[],
@@ -33,7 +33,7 @@ export function sortParticipantDayEntries(
 
 /**
  * セルに出す短冊と、タップしたときのモーダルの中身。
- * 出席は通常の色、欠席は控えめ、参加要望はアンバーにし、どれも催しページへ進めるようにする。
+ * 出席は通常の色、欠席は控えめ、参加要望はアンバーにし、どれもイベントページへ進めるようにする。
  */
 export function toParticipantCellItem(entry: ParticipantCalendarEntry): CalendarCellItem {
   return {

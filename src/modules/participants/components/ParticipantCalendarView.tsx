@@ -83,7 +83,7 @@ export function ParticipantCalendarView() {
       <PageHeader
         eyebrow="参加者"
         title="参加カレンダー"
-        lead="出欠を答えた催しを、開催日ごとに並べます。"
+        lead="出欠を答えたイベントを、開催日ごとに並べます。"
         actions={<><Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
           </Link>
@@ -149,13 +149,13 @@ export function ParticipantCalendarView() {
           <SectionHead
             title={<>{formatDayHeading(selectedDate)}</>}
             note={<>{dayEntries.length > 0
-                ? `この日の催しは ${dayEntries.length}件です。`
-                : "この日に出欠した催しはありません。"}</>}
+                ? `この日のイベントは ${dayEntries.length}件です。`
+                : "この日に出欠したイベントはありません。"}</>}
           />
           {dayEntries.length === 0 ? (
             <EmptyState>
               <span className="empty__title">この日は空いています。</span>
-              <span className="empty__body">日付を押すと、その日に出欠した催しが出ます。</span>
+              <span className="empty__body">日付を押すと、その日に出欠したイベントが出ます。</span>
             </EmptyState>
           ) : (
             <Rows>

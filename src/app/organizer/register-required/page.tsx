@@ -60,7 +60,7 @@ function RegisterRequiredScreen() {
           return;
         }
 
-        // 幹事でない（別端末・第三者）。催し名だけは公開ページから取れるので、案内文に使う。
+        // 幹事でない（別端末・第三者）。イベント名だけは公開ページから取れるので、案内文に使う。
         const publicRes = await fetch(`/api/v1/public/events/${eventId}`, { cache: "no-store" });
         if (!active) return;
         if (publicRes.ok) {
@@ -113,7 +113,7 @@ function RegisterRequiredScreen() {
   if (!rawEventId) {
     return (
       <div className="page--form stack">
-        <PageHeader eyebrow="公開" title="公開しました" lead="このページは公開直後の幹事向けです。続けて出欠を確認するには、会員登録をしてください。" />
+        <PageHeader eyebrow="公開" title="公開しました" lead="公開直後の幹事向けのページです。出欠を見るには会員登録が必要です。" />
         <Link href="/organizer/events" className="btn btn--primary btn--block">
           主催イベント一覧へ
         </Link>
@@ -126,7 +126,7 @@ function RegisterRequiredScreen() {
       <div className="page--form stack">
         <h1 className="page-title">イベントが見つかりません</h1>
         <p className="page-lead">
-          このイベントは削除されたか、URL が正しくありません。共有された URL をもう一度確かめてください。
+          削除されたか、URL が違います。共有された URL をもう一度確かめてください。
         </p>
         <Link href="/" className="btn btn--outline btn--block">
           トップへ
@@ -150,8 +150,8 @@ function RegisterRequiredScreen() {
           eyebrow="公開"
           title="このページは公開直後の幹事向けです"
           lead={<>{state.title
-              ? `「${state.title}」は公開されています。参加者は共有 URL から出欠を回答できます。`
-              : "イベントは公開されています。参加者は共有 URL から出欠を回答できます。"}</>}
+              ? `「${state.title}」は公開中です。共有 URL から出欠を答えられます。`
+              : "イベントは公開中です。共有 URL から出欠を答えられます。"}</>}
         />
         <a href={shareUrl} className="btn btn--primary btn--block" target="_blank" rel="noreferrer">
           公開ページを開く
@@ -208,7 +208,7 @@ function RegisterRequiredScreen() {
         <Rows>
           <Row
             title="参加者名簿"
-            meta="出欠、人数、費用、支払いを 1枚で見られます。"
+            meta="出欠・人数・費用・支払いを1枚で。"
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
           <Row
@@ -223,33 +223,33 @@ function RegisterRequiredScreen() {
           />
           <Row
             title="共同幹事の招待"
-            meta="もう 1人を、同じ催しの幹事に加えられます。"
+            meta="同じイベントの幹事を1人増やせます。"
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
         </Rows>
 
         <div className="panel__actions">
           <Link href={registerUrl(nextPath)} className="btn btn--primary btn--block">
-            会員登録して出欠を確認する
+            登録して出欠を確認
           </Link>
         </div>
         <div className="panel__actions">
           <Link href={loginUrl(nextPath)} className="btn btn--outline btn--block">
-            すでに会員の方はログイン
+            会員の方はログイン
           </Link>
         </div>
 
         <p className="screen-note">
-          作った内容は、登録後そのまま引き継がれます。登録しなくても、公開した催しはこのまま動きます。
+          作った内容は登録後に引き継がれます。公開したイベントはそのまま動きます。
         </p>
       </Section>
 
       <p className="screen-note">
-        この画面は検索に出しません。第三者がこの URL を開いても、案内は出ません。主催一覧は
+        この画面は検索に出ません。第三者が開いても案内は出ません。主催一覧は
         <Link href={listPath} className="text-link">
           こちら
         </Link>
-        から開けます。編集は作成から24時間以内なら会員登録なしでもできます。
+        から。編集は作成から24時間以内なら登録なしでできます。
       </p>
     </div>
   );

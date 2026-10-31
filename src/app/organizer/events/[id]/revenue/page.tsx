@@ -80,7 +80,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
             href={`/organizer/events/${params.id}/participants`}
             className="btn btn--outline btn--sm"
           >
-            参加者名簿へ
+            名簿
           </Link>
           <Link href="/organizer/revenue" className="btn btn--ghost btn--sm">
             売上一覧へ
@@ -96,7 +96,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
           <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
           <Panel as="div">
             <p className="panel__note panel__note--warning">
-              出席しているのに費用プランが未選択の参加者が {summary.unassignedPlanCount} 人います。この人たちは売上に含めていません。
+              費用プラン未選択の参加者が {summary.unassignedPlanCount} 人います。売上には含みません。
             </p>
             <p className="alert__actions">
               <Link href={`/organizer/events/${params.id}/participants`} className="text-link">
@@ -141,7 +141,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
       </Section>
 
       <Section>
-        <SectionHead title="開催回別" note="1回だけの催しは、1行になります。" />
+        <SectionHead title="開催回別" note="1回だけのイベントは、1行になります。" />
         {bySchedule.length === 0 ? (
           <EmptyState>
             <span className="empty__title">出席者がまだいません。</span>

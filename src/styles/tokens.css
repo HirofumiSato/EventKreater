@@ -64,6 +64,13 @@
   --color-ink-soft: #d8d4cc;
   /* セクション間。一律の gap ではなく、塊ごとに呼吸を作る。 */
   --space-section: 3.5rem;
+  /* 見出しと中身、中身と操作、罫線で区切る行の上下。主催者の管理画面は
+     この 3 段だけで縦の余白を組む（`deco--tape-quiet` が当てる）。 */
+  --space-head: 0.875rem;
+  --space-block: 1rem;
+  /* 行は上下で 1rem ずつ空ける。罫線 1px だけを頼りにすると、行が続いたときに
+     ひとつの塊に見える（新着の通知がとくにそうなりやすい）。 */
+  --space-row: 1rem;
   --width-page: 64rem;
   --width-content: 42rem;
   --width-form: 28rem;
@@ -77,4 +84,9 @@
      並ぶので、同じ暖色の薄い黄にする。無彩色へ落とすと意味が読み取れない。 */
   --color-ticket-bg: #fbf2d5;
   --color-ticket-text: #6b4a12;
+  /* 押せる的とボタンの文字。画面は幅 390px のスマホを基準に組むので、
+     狭い端末でもこの 2 つは下げない。`.btn` の高さと文字はここだけを見る。
+     `--sm` は左右の余白だけを詰める指定で、この値は変えない。 */
+  --tap-target: 2.75rem;
+  --font-action: 0.9375rem;
 }

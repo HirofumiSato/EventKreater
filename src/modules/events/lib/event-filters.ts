@@ -3,7 +3,7 @@
  *
  * 一覧 API（`GET /api/v1/organizer/events`）は全件を返す。マイページとカレンダーが
  * 全件前提で作られているため、絞り込みとページ割りは画面側で持つ。
- * 催しは年を跨いで溜まり続けるので、状態・過去・開催日で絞り、開催日の昇順降順で
+ * イベントは年を跨いで溜まり続けるので、状態・過去・開催日で絞り、開催日の昇順降順で
  * 並べ替え、1 ページ 10 件ずつ出す。
  *
  * 判定は文字列（`sortDate` は `YYYY-MM-DD`）の比較だけで済ませる。
@@ -22,7 +22,7 @@ export const ORGANIZER_PAGE_SIZE = 10;
 
 export interface OrganizerListFilter {
   status: OrganizerStatusFilter;
-  /** 開催日が今日より前の催しを落とす。 */
+  /** 開催日が今日より前のイベントを落とす。 */
   excludePast: boolean;
   /** 開催日の下限（`YYYY-MM-DD`）。空なら絞らない。 */
   from: string;
@@ -41,7 +41,7 @@ export const DEFAULT_ORGANIZER_FILTER: OrganizerListFilter = {
 /**
  * 開いた直後の並び順。新しい開催日から出す。
  *
- * 既定の絞り込みは過去も含むため、古い順にすると何年も前の催しが先頭に来る。
+ * 既定の絞り込みは過去も含むため、古い順にすると何年も前のイベントが先頭に来る。
  * API が返す「作った新しい順」とも向きが揃う。
  */
 export const DEFAULT_ORGANIZER_SORT: OrganizerSortOrder = "desc";
@@ -79,7 +79,7 @@ export function activeFilterCount(filter: OrganizerListFilter): number {
 /**
  * 状態・過去・開催日の範囲で絞る。並び順は API のまま（作った新しい順）で変えない。
  * 開催日で並べ替えるのは `sortOrganizerEvents` の役目で、絞り込みとは分けて呼ぶ。
- * 今日の催しは「過去」にしない（当日はまだ開催前なので落とさない）。
+ * 今日のイベントは「過去」にしない（当日はまだ開催前なので落とさない）。
  */
 export function filterOrganizerEvents<T extends { status: EventStatus; sortDate: string }>(
   rows: readonly T[],
@@ -98,7 +98,7 @@ export function filterOrganizerEvents<T extends { status: EventStatus; sortDate:
 /**
  * 開催日（`sortDate`）で並べ替える。新しい順（`desc`）と古い順（`asc`）を切り替える。
  *
- * 同じ開催日の催しは、渡された並び（API の作った新しい順）のままにする。
+ * 同じ開催日のイベントは、渡された並び（API の作った新しい順）のままにする。
  * `Array.prototype.sort` は安定なので、比較で 0 を返せば元の順が残る。
  * 日付は `YYYY-MM-DD` の文字列のまま比べる（`Date` に戻すと時差で 1 日ずれる余地が生まれる）。
  */
