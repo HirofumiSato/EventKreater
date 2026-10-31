@@ -284,18 +284,21 @@
   color: var(--color-text);
 }
 
-/* マイページの 2 つの札の色分けは、静かめでも残す。枠に数える月額プランだけ
-   差し色にし、上限の外のチケットは無彩色に落とす。 */
-.deco.deco--tape-quiet .roster-summary__item--plan {
-  border-color: var(--color-primary-soft);
-  background: var(--color-primary-soft);
+/* マイページの 2 つの札の色分けは、静かめでも残す。月額プランだけ差し色にし、
+   上限の外のチケットは同じ暖色の薄い黄にする。面の色だけで示すので、枠線と影は
+   どちらにも置かない（片方だけに線が残ると、線の有無が意味ありげに見える）。 */
+.deco.deco--tape-quiet .roster-summary__item--plan,
+.deco.deco--tape-quiet .roster-summary__item--ticket {
+  border: 0;
   box-shadow: none;
 }
 
+.deco.deco--tape-quiet .roster-summary__item--plan {
+  background: var(--color-primary-soft);
+}
+
 .deco.deco--tape-quiet .roster-summary__item--ticket {
-  border-color: var(--quiet-line);
-  background: var(--color-slate-100);
-  box-shadow: none;
+  background: var(--color-ticket-bg);
 }
 
 .deco.deco--tape-quiet .roster-summary__item--plan .roster-summary__value {
@@ -303,7 +306,7 @@
 }
 
 .deco.deco--tape-quiet .roster-summary__item--ticket .roster-summary__value {
-  color: var(--color-text-muted);
+  color: var(--color-ticket-text);
 }
 
 .deco.deco--tape-quiet .org-subnav a:hover {

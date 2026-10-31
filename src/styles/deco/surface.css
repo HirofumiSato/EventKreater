@@ -1610,9 +1610,10 @@
 }
 
 /* 公開中の件数は、数えている枠が違う。面の色と数字の色を分け、どちらを見ているかを
-   色で示す。枠に数える月額プランは差し色、上限の外のチケットは無彩色に落とす。 */
+   色で示す。枠に数える月額プランは差し色、上限の外のチケットは同じ暖色の薄い黄。
+   どちらも枠線は引かない（片方だけに線が残ると、線の有無が意味ありげに見える）。 */
 .roster-summary__item--plan {
-  border-color: var(--color-primary-soft);
+  border: 0;
   background: var(--color-primary-soft);
 }
 
@@ -1621,12 +1622,12 @@
 }
 
 .roster-summary__item--ticket {
-  border-color: var(--color-slate-100);
-  background: var(--color-slate-100);
+  border: 0;
+  background: var(--color-ticket-bg);
 }
 
 .roster-summary__item--ticket .roster-summary__value {
-  color: var(--color-text-muted);
+  color: var(--color-ticket-text);
 }
 
 .roster-summary__label {

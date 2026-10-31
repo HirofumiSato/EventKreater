@@ -73,4 +73,8 @@
      `.deco` が丸ゴシックを入れ、テーマ（themes.css）は `--st-font-heading` で
      さらに差し替える。部品はこの名前だけを見るので、書体の正はここ 1 箇所になる。 */
   --font-display: var(--font);
+  /* 利用枠の札（マイページの「チケット公開」）。月額プランの差し色（--color-primary-soft）と
+     並ぶので、同じ暖色の薄い黄にする。無彩色へ落とすと意味が読み取れない。 */
+  --color-ticket-bg: #fbf2d5;
+  --color-ticket-text: #6b4a12;
 }

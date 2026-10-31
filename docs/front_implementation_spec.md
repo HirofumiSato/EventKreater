@@ -1875,7 +1875,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 ### 14.5. 主催者側の導線
 
 * `GET /api/v1/organizer/events` は各イベントに `ownerUserId` を、レスポンスに `viewer: { userId, name }` を足す。`serializeOrganizerListItem` は筆頭幹事の `userId` を受け取る。
-* `GET /api/v1/organizer/events` は各イベントに `quotaSource`（`SUBSCRIPTION` / `PAID_CREDIT` / `FREE_TRIAL` / null）も返す。公開ページの応答には含めない。`/mypage`（SCR-PUB-03）の要約はこれで「プラン公開」（`SUBSCRIPTION`）と「チケット公開」（単発チケット・無料枠）を分け、参加と受付停止の件数は出さない。2 つの札は面の色と数字の色を分け（`--plan` は差し色 `--color-primary-soft` / `--color-primary-text`、`--ticket` は無彩色 `--color-slate-100` / `--color-text-muted`）、格子は `.roster-summary--pairs` で 2 列にする。数え方は帯と同じく、開催日が今日以降で自分が筆頭幹事のものだけ（`src/modules/events/lib/published-counts.ts`）。
+* `GET /api/v1/organizer/events` は各イベントに `quotaSource`（`SUBSCRIPTION` / `PAID_CREDIT` / `FREE_TRIAL` / null）も返す。公開ページの応答には含めない。`/mypage`（SCR-PUB-03）の要約はこれで「プラン公開」（`SUBSCRIPTION`）と「チケット公開」（単発チケット・無料枠）を分け、参加と受付停止の件数は出さない。2 つの札は面の色と数字の色を分け（`--plan` は差し色 `--color-primary-soft` / `--color-primary-text`、`--ticket` は同じ暖色の薄い黄 `--color-ticket-bg` / `--color-ticket-text`）、枠線と影はどちらにも置かない。格子は `.roster-summary--pairs` で 2 列にする。数え方は帯と同じく、開催日が今日以降で自分が筆頭幹事のものだけ（`src/modules/events/lib/published-counts.ts`）。
 * `/organizer/events`（SCR-ORG-01）の操作は、一覧の上ではなく画面下に固定する帯（`.action-dock`）に置く。「下書き一覧」（件数つき）と「イベント新規作成」の 2 つだけにする。公開ページ・プロフィール・売上・契約の導線は主催者の節（`OrganizerTabs`）と SCR-PUB-03 が持つので、同じ行き先を重ねない。カードの「編集」「コピー作成」は見るだけの操作と混ぜず、右端に寄せて罫線で区切る。
 * `/organizer/events`（SCR-ORG-01）の一覧は、状態・過去・開催日で絞り、10 件ずつページに割る。催しは年を跨いで溜まり続けるので、全件を 1 画面に並べない。絞り込みとページ割りは画面側で持ち（`src/modules/events/lib/event-filters.ts`）、一覧 API は全件を返すままにする（マイページとカレンダーが全件前提）。
 * 押せるもの（`.btn`）と押せないもの（`.badge`）は形で分ける。管理画面（`deco--tape-quiet`）の札は、枠・丸み・影を持たない小さな色札とし、ボタンは枠・塗り・角丸を持つ。
