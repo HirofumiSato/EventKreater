@@ -301,7 +301,7 @@
      - SCR-ORG-05 / SCR-ORG-16
    * - ``tests/unit/flyer-candidates.test.ts``
      - 3
-     - 背景の候補応答。AI が代替背景へ落ちた印（``ai_fallback``）を読み、古い応答は代替なしとみなし、背景以外のステップは候補の配列だけを返す
+     - 背景の候補応答。AI が代替背景へ落ちた印（``ai_fallback``）を読み、古い応答は代替なしとみなし、紙面の性格は親の背景 ID だけを送って候補の配列だけを返す
      - SCR-ORG-08
    * - ``tests/unit/flyer-payload.test.ts``
      - 2

@@ -2,6 +2,7 @@
 
 import {
   SEMANTIC_THEME_GROUPS,
+  type SemanticThemeGroup,
   type SemanticThemeId,
   semanticTheme,
   themesInGroup,
@@ -18,6 +19,53 @@ interface ThemePickerProps {
 }
 
 const STANDARD_NOTE = "いまの EventKreater の見た目。迷ったらこれ。";
+
+interface PreviewCopy {
+  eyebrow: string;
+  title: string;
+  meta: string;
+  chips: readonly [string, string];
+}
+
+/**
+ * 見本の文面。テーマの用途グループごとに変える。
+ *
+ * どのテーマでも「夜のジャズ」だと、昼の勉強会を選んでも夜の見本が出て、
+ * 色だけを見比べることになる。題と時間帯を用途に合わせ、紙面の違いを
+ * 題材ごと捉えられるようにする。
+ */
+const PREVIEW_COPY: Record<SemanticThemeGroup | "standard", PreviewCopy> = {
+  standard: {
+    eyebrow: "VOL.12 — 小さな集まり",
+    title: "川辺でスープを煮る、小さな夕べ",
+    meta: "11月15日（日）19:00 / 参宮橋のバー",
+    chips: ["少人数", "初心者歓迎"],
+  },
+  calm: {
+    eyebrow: "VOL.3 — 星を読む会",
+    title: "冬の星座と、あなたの一年",
+    meta: "12月6日（土）14:00 / 下北沢のサロン",
+    chips: ["少人数", "要予約"],
+  },
+  bright: {
+    eyebrow: "VOL.8 — はじめての勉強会",
+    title: "React をいちから読む、土曜の午後",
+    meta: "11月22日（土）13:00 / 渋谷の会議室",
+    chips: ["初心者歓迎", "資料あり"],
+  },
+  vivid: {
+    eyebrow: "VOL.5 — たこ焼きパーティー",
+    title: "みんなで焼く、秋のタコパ",
+    meta: "11月8日（土）18:00 / 世田谷の集会所",
+    chips: ["子ども連れOK", "手ぶらで"],
+  },
+  night: {
+    eyebrow: "VOL.12 — 夜のライブ",
+    title: "小さな灯りで聴く、ジャズの夜",
+    meta: "11月15日（日）19:00 / 参宮橋のバー",
+    chips: ["1ドリンク付", "20席限定"],
+  },
+};
 
 /**
  * 公開ページのテーマ選択。
@@ -36,6 +84,7 @@ export function ThemePicker({
   variant = "full",
 }: ThemePickerProps) {
   const selected = semanticTheme(value);
+  const preview = PREVIEW_COPY[selected?.group ?? "standard"];
 
   return (
     <div className={`theme-picker${variant === "compact" ? " theme-picker--compact" : ""}`}>
@@ -96,12 +145,15 @@ export function ThemePicker({
           data-semantic-theme={value ?? undefined}
         >
           <div className="theme-preview__card">
-            <p className="theme-preview__eyebrow">VOL.12 — 夜のジャズ</p>
-            <p className="theme-preview__title">川辺でスープを煮る、小さな夕べ</p>
-            <p className="theme-preview__meta">11月15日（日）19:00 / 参宮橋のバー</p>
+            <p className="theme-preview__eyebrow">{preview.eyebrow}</p>
+            <p className="theme-preview__title">{preview.title}</p>
+            <p className="theme-preview__meta">{preview.meta}</p>
             <div className="theme-preview__chips">
-              <span className="theme-preview__chip">少人数</span>
-              <span className="theme-preview__chip">初心者歓迎</span>
+              {preview.chips.map((chip) => (
+                <span className="theme-preview__chip" key={chip}>
+                  {chip}
+                </span>
+              ))}
             </div>
             <div className="theme-preview__row">
               <span className="theme-preview__input">お名前</span>

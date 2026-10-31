@@ -26,4 +26,6 @@ LLM の失敗は捕捉して背景にすり替えません。:class:`src.domain.
 
 画像プロンプトには、文字・数字・ロゴを描かないことと、テンプレートごとの余白（コピー用の暗い面、柔らかい背景、文字を載せられる低周波の領域）を要求します。DALL-E 3 には独立したネガティブプロンプト欄がないため、除外語は本文の末尾へ連結します。
 
-画像生成の直前には、経路によらず :func:`src.domain.layout_prompts.prompt_with_layout_hint` を通します。余白指示（``negative_space_hint``）と切り抜き安全域（``CROP_SAFE_AREA_HINT``）を必ず足すため、LLM が構図に触れずに返してきても、被写体が上下端へ寄りません。候補を作るとき（``DalleCandidateSource``）と、候補を経ずに直接生成するとき（``GenerateFlyerUseCase.execute``）の両方が同じ関数を使います。
+画像生成の直前には、経路によらず :func:`src.domain.layout_prompts.prompt_with_layout_hint` を通します。題と場所から取り出した催しの型（``activity_families`` / ``motif_families`` / ``setting_family`` / ``people_policy`` / ``lighting_family`` / ``energy_family``）を英語の制約として先頭に置き、余白指示（``negative_space_hint``）と切り抜き安全域（``CROP_SAFE_AREA_HINT``）を必ず足すため、LLM が構図に触れずに返してきても、被写体が上下端へ寄らず、活動と会場も落ちません。``energy_family`` は人が居るときだけ決まる盛り上がりの頂点で、DJ なら満杯のフロアと挙がった手、ダンスなら今風のポップスで動くフロア、ボードゲームなら勝った瞬間の歓声、誕生日ならケーキと拍手として、活動を「静物」に畳ませません。候補を作るとき（``DalleCandidateSource``）と、候補を経ずに直接生成するとき（``GenerateFlyerUseCase.execute``）の両方が同じ関数を使います。
+
+優先順位は「活動とモチーフと活気 > 題の語 > 会場・対象世代・季節 > テーマの配色 > 紙面の余白」です。LLM へは型と ``title_nouns`` を先頭で渡し、``design_direction`` には配色と光だけを指定させます。型は小道具を固定しないため、具体的な見え方は題の語を読んだ LLM が決めます。対応表は :doc:`specs/context_contract` にあります。

@@ -229,20 +229,26 @@ async function postCandidateRequest(
   };
 }
 
-/** ステップ 1。3 種の紙面の性格の完成イメージ。 */
+/**
+ * ステップ 2。選んだ背景の上で、3 種の紙面の性格を焼き直す。
+ *
+ * 背景は親候補のバイト列を使い回す。テンプレート ID だけを変えるので、
+ * AI の生成回数も LLM の呼び出しも増えない。
+ */
 export async function proposeTypeCandidates(
-  input: GenerateFlyerInput,
+  candidateId: string,
   ownerTokenHash?: string,
 ): Promise<FlyerCandidate[]> {
+  assertFlyerAssetId(candidateId);
   const { candidates } = await postCandidateRequest(
-    "/api/v1/flyers/candidates/types",
-    toFlyerPayload(input),
+    `/api/v1/flyers/candidates/${candidateId}/types`,
+    {},
     ownerTokenHash,
   );
   return candidates;
 }
 
-/** ステップ 2。選んだ紙面の性格の背景タイル。 */
+/** ステップ 1。背景タイル。 */
 export async function proposeBackgroundCandidates(
   input: GenerateFlyerInput,
   count: number,
@@ -258,50 +264,8 @@ export async function proposeBackgroundCandidates(
   );
 }
 
-/** ステップ 3。同じ背景で 4 通りの文字配置。 */
-export async function proposeLayoutCandidates(
-  candidateId: string,
-  ownerTokenHash?: string,
-): Promise<FlyerCandidate[]> {
-  assertFlyerAssetId(candidateId);
-  const { candidates } = await postCandidateRequest(
-    `/api/v1/flyers/candidates/${candidateId}/layouts`,
-    {},
-    ownerTokenHash,
-  );
-  return candidates;
-}
-
-/** ステップ 4。選んだ配置のまま 4 通りの配色。 */
-export async function proposePaletteCandidates(
-  candidateId: string,
-  ownerTokenHash?: string,
-): Promise<FlyerCandidate[]> {
-  assertFlyerAssetId(candidateId);
-  const { candidates } = await postCandidateRequest(
-    `/api/v1/flyers/candidates/${candidateId}/palettes`,
-    {},
-    ownerTokenHash,
-  );
-  return candidates;
-}
-
-/** ステップ 5。選んだ配色のまま 4 通りのタイトル色。 */
-export async function proposeTitleColorCandidates(
-  candidateId: string,
-  ownerTokenHash?: string,
-): Promise<FlyerCandidate[]> {
-  assertFlyerAssetId(candidateId);
-  const { candidates } = await postCandidateRequest(
-    `/api/v1/flyers/candidates/${candidateId}/title-colors`,
-    {},
-    ownerTokenHash,
-  );
-  return candidates;
-}
-
 /**
- * ステップ 2。持ち込まれた写真を 1 枚の背景候補にする。
+ * ステップ 1。持ち込まれた写真を 1 枚の背景候補にする。
  * multipart で送り、flyer サービスが EXIF 除去と A4 縦の中央クロップを行う。
  */
 export async function uploadBackgroundCandidate(input: {

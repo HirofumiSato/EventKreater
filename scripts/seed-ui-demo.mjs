@@ -75,6 +75,16 @@ function addDays(date, days) {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
 
+/**
+ * 直近のクリスマス（12 月 20 日）。
+ * 12 月 21 日以降に実行したときは翌年へ送り、開催日が過去にならないようにする。
+ */
+function upcomingChristmas(today) {
+  const [year, month, day] = today.split("-").map(Number);
+  const passed = month === 12 && day > 20;
+  return `${passed ? year + 1 : year}-12-20`;
+}
+
 function toDate(date) {
   return new Date(`${date}T00:00:00.000Z`);
 }
@@ -362,6 +372,12 @@ try {
     "flyer-halloween.jpg",
   );
   const flyerBonfire = await createFlyer(organizer.id, "川辺の焚き火ナイト", "flyer-bonfire.jpg");
+  const flyerChristmas = await createFlyer(
+    organizer.id,
+    "クリスマス ダンスパフォーマンス",
+    "flyer-christmas.jpg",
+  );
+  const flyerDj = await createFlyer(organizer.id, "DJナイト Vol.7", "flyer-dj.jpg");
 
   /**
    * 催しを 1 件作り、日程・費用プラン・幹事・出欠をまとめて入れる。
@@ -792,6 +808,139 @@ try {
     ],
   });
 
+  /**
+   * 12 月の 2 件。夜の催しの見本として、屋内・21 時開始・当日精算の形を入れる。
+   * クリスマスは 12 月 20 日、DJ はそこから 2 週間ほど前の金曜に置く。
+   */
+  const christmasDate = upcomingChristmas(today);
+  const djDate = addDays(today, 34);
+
+  const christmas = await createEvent({
+    title: "クリスマス ダンスパフォーマンス",
+    sortDate: christmasDate,
+    location: "北沢タウンホール（東京都世田谷区代沢）",
+    postalCode: "1550032",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "代沢",
+    addressLine: "2-3-1",
+    venueName: "北沢タウンホール",
+    rainPolicy: "INDOOR",
+    capacity: 80,
+    status: "PUBLISHED",
+    flyerAssetId: flyerChristmas.id,
+    targetGeneration: "10代後半〜30代",
+    themeId: "parchment",
+    rsvpDeadline: tokyoDateTime(addDays(christmasDate, -5), "23:59"),
+    schedules: [schedule(christmasDate, "18:00", "20:30", 0)],
+    plans: [{ name: "前売", audience: "ANY", amount: 3000, note: "当日は3,500円" }],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "友だちと2人で行きます。",
+        appliedDaysBefore: 9,
+      },
+      {
+        name: "高木 蓮",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "前売で1枚お願いします。",
+        appliedDaysBefore: 7,
+      },
+      {
+        name: "中村 あゆみ",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "演出の写真を撮らせてください。",
+        appliedDaysBefore: 4,
+      },
+      {
+        name: "石井 直人",
+        gender: "MALE",
+        status: "WAITLISTED",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 2,
+      },
+      {
+        name: "岡本 涼太",
+        gender: "MALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "仕事が入ってしまいました。",
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  const djNight = await createEvent({
+    title: "DJナイト Vol.7",
+    sortDate: djDate,
+    location: "BAR LOOP 下北沢（東京都世田谷区北沢）",
+    postalCode: "1550032",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "北沢",
+    addressLine: "2-10-5",
+    building: "B1",
+    venueName: "BAR LOOP 下北沢",
+    rainPolicy: "INDOOR",
+    capacity: 60,
+    status: "PUBLISHED",
+    flyerAssetId: flyerDj.id,
+    targetGeneration: "20代〜30代",
+    themeId: "neon",
+    rsvpDeadline: tokyoDateTime(addDays(djDate, -1), "23:59"),
+    schedules: [schedule(djDate, "21:00", "02:00", 0)],
+    plans: [{ name: "一般", audience: "ANY", amount: 2500, note: "1ドリンク付" }],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "22 時ごろに伺います。",
+        appliedDaysBefore: 6,
+      },
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "1 ドリンクは何がありますか？",
+        appliedDaysBefore: 5,
+      },
+      {
+        name: "鈴木 大輔",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 3,
+      },
+      {
+        name: "山本 かおり",
+        gender: "FEMALE",
+        status: "WAITLISTED",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 2,
+      },
+    ],
+  });
+
   // 共同幹事の招待（1 件だけ有効なコードを持つ）。前回の行は消してから作り直す。
   await prisma.eventInvitation.deleteMany({
     where: { inviteCodeHash: sha256(INVITE_CODE) },
@@ -917,6 +1066,8 @@ try {
       halloween: halloween.event.id,
       bonfire: bonfire.event.id,
       gohan: gohan.event.id,
+      christmas: christmas.event.id,
+      djNight: djNight.event.id,
     },
     participantId: participant.id,
     organizerId: organizer.id,
@@ -953,6 +1104,8 @@ try {
   console.log(`    ハロウィン おやこマルシェ（過去日・キャンディ）: ${halloween.event.id}`);
   console.log(`    川辺の焚き火ナイト（明日・夕暮れ）: ${bonfire.event.id}`);
   console.log(`    秋のゆるごはん会（公開中・羊皮紙）: ${gohan.event.id}`);
+  console.log(`    クリスマス ダンスパフォーマンス（12月・羊皮紙）: ${christmas.event.id}`);
+  console.log(`    DJナイト Vol.7（12月・ネオン）: ${djNight.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);
   console.log(`  書き出し: storage/ui-demo.json`);
   if (!tokens.organizer) {

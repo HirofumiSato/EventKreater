@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from src.domain.models import FlyerGenerationRequest, LLMGenerationContext, TemplateId
+from src.domain.visual_hints import PeoplePolicy, PEOPLE_CONSTRAINTS, scene_brief
 from src.ports.prompt_engine_port import PromptEnginePort
 
 _ACCENTS: dict[TemplateId, str] = {
@@ -25,13 +26,21 @@ class MockPromptEngine(PromptEnginePort):
         self,
         request: FlyerGenerationRequest,
     ) -> LLMGenerationContext:
+        hints = scene_brief(request)
+        subject = "; ".join(hints.subjects) if hints.subjects else "the event's own subject"
+        people = ""
+        if hints.people is not None:
+            people = f", {PEOPLE_CONSTRAINTS[hints.people]}"
+            if hints.people is PeoplePolicy.ABSENT:
+                people = f". {PEOPLE_CONSTRAINTS[hints.people]}"
         return LLMGenerationContext(
             image_prompt_en=(
-                "Cinematic background with clear negative space reserved for a text overlay, "
-                f"mood aligned to {request.template_id.value}, no lettering, no logos"
+                f"Cinematic background showing {subject}{people}, with clear negative space "
+                "reserved for a text overlay, "
+                f"mood aligned to {request.template_id.paper_character}, no lettering, no logos"
             ),
             negative_prompt_en=(
-                "text, letters, words, logos, watermark, signature, human faces close-up"
+                "text, letters, words, logos, watermark, signature"
             ),
             suggested_accent_color=_ACCENTS[request.template_id],
             suggested_overlay_alpha=_ALPHAS[request.template_id],

@@ -142,7 +142,7 @@ export function buildScreens(demo) {
         },
         {
           key: "theme-neo-brutalism",
-          label: "ネオ・ブルータリズム",
+          label: "太枠",
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
           theme: "neo-brutalism",

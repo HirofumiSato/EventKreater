@@ -330,16 +330,64 @@ def veil_alpha(
     敷き切っても届かないとき（文字と敷く色が近いとき）は `None` を返す。
     覆い切れないベールを 1.0 で重ねると、地を塗り潰したうえで読めないままになる。
     """
-    text_luminance = relative_luminance(*text_rgb)
-    current = contrast_ratio(text_luminance, relative_luminance(*background_rgb))
-    if not requires_contrast_protection(current, minimum):
+    return veil_alpha_for_samples((background_rgb,), veil_rgb, text_rgb, minimum)
+
+
+def veil_alpha_for_samples(
+    samples: Sequence[tuple[int, int, int]],
+    veil_rgb: tuple[int, int, int],
+    text_rgb: tuple[int, int, int],
+    minimum: float = WCAG_AA_CONTRAST,
+) -> float | None:
+    """複数の地の色に対して、すべてが読める濃さのベールを返す。
+
+    平均 1 点で足りていても、文字の帯に明るい空と暗い服が混ざれば、字は暗い
+    画素の上に残る。**いちばん不利なセル**が基準を満たすまで敷く。
+    """
+    if not samples:
+        return None
+    if not requires_contrast_protection(worst_case_contrast(text_rgb, samples), minimum):
         return None
     for alpha in (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
-        blended = blend_rgb(background_rgb, veil_rgb, alpha)
-        ratio = contrast_ratio(text_luminance, relative_luminance(*blended))
-        if not requires_contrast_protection(ratio, minimum):
+        blended = tuple(blend_rgb(sample, veil_rgb, alpha) for sample in samples)
+        if not requires_contrast_protection(
+            worst_case_contrast(text_rgb, blended),
+            minimum,
+        ):
             return alpha
     return None
+
+
+def worst_case_contrast(
+    text_rgb: tuple[int, int, int],
+    samples: Sequence[tuple[int, int, int]],
+) -> float:
+    """文字色に対して、いちばんコントラストが低いセルの比。"""
+    if not samples:
+        return 1.0
+    text_luminance = relative_luminance(*text_rgb)
+    return min(
+        contrast_ratio(text_luminance, relative_luminance(*sample))
+        for sample in samples
+    )
+
+
+def choose_title_color(
+    ink: tuple[int, int, int],
+    samples: Sequence[tuple[int, int, int]],
+) -> tuple[int, int, int]:
+    """墨と白のうち、いちばん不利なセルでのコントラストが高い方を選ぶ。
+
+    平均色で選ぶと、明るい空と暗い服が混ざった帯で「白で足りる」と誤判定する。
+    どちらも 4.5:1 に届かない帯では、ベールで地を寄せる側（`veil_alpha_for_samples`）
+    が受け持つ。
+    """
+    if not samples:
+        return ink
+    white: tuple[int, int, int] = (255, 255, 255)
+    ink_contrast = worst_case_contrast(ink, samples)
+    white_contrast = worst_case_contrast(white, samples)
+    return ink if ink_contrast >= white_contrast else white
 
 
 def average_rgb(
@@ -352,6 +400,63 @@ def average_rgb(
         return (0, 0, 0)
     mean = ImageStat.Stat(crop).mean
     return (int(mean[0]), int(mean[1]), int(mean[2]))
+
+
+#: 文字の帯を測る格子。平均 1 点では明暗が混ざって誤判定するため、面を割って見る。
+TEXT_BAND_COLUMNS: int = 6
+TEXT_BAND_ROWS: int = 4
+
+
+def cell_samples(
+    image: Image.Image,
+    box: tuple[int, int, int, int],
+    columns: int = TEXT_BAND_COLUMNS,
+    rows: int = TEXT_BAND_ROWS,
+) -> tuple[tuple[int, int, int], ...]:
+    """矩形を格子に割り、各セルの平均 sRGB を返す。
+
+    矩形は `PosterSlot.area` と同じ (x1, y1, x2, y2)。端数は最後のセルへ寄せ、
+    帯の右端・下端を取りこぼさない。
+    """
+    x1, y1, x2, y2 = box
+    x1 = max(0, min(image.width, x1))
+    x2 = max(0, min(image.width, x2))
+    y1 = max(0, min(image.height, y1))
+    y2 = max(0, min(image.height, y2))
+    if x2 <= x1 or y2 <= y1 or columns <= 0 or rows <= 0:
+        return ()
+    step_x = max(1, (x2 - x1) // columns)
+    step_y = max(1, (y2 - y1) // rows)
+    samples: list[tuple[int, int, int]] = []
+    for row in range(rows):
+        cell_top = y1 + row * step_y
+        cell_bottom = y2 if row == rows - 1 else min(y2, cell_top + step_y)
+        for column in range(columns):
+            cell_left = x1 + column * step_x
+            cell_right = x2 if column == columns - 1 else min(x2, cell_left + step_x)
+            samples.append(average_rgb(image, (cell_left, cell_top, cell_right, cell_bottom)))
+    return tuple(samples)
+
+
+def worst_case_rgb(
+    image: Image.Image,
+    box: tuple[int, int, int, int],
+    text_rgb: tuple[int, int, int],
+    columns: int = TEXT_BAND_COLUMNS,
+    rows: int = TEXT_BAND_ROWS,
+) -> tuple[int, int, int]:
+    """文字色に対して、いちばんコントラストが低いセルの平均色。"""
+    samples = cell_samples(image, box, columns, rows)
+    if not samples:
+        return average_rgb(image, box)
+    text_luminance = relative_luminance(*text_rgb)
+    return min(
+        samples,
+        key=lambda sample: contrast_ratio(
+            text_luminance,
+            relative_luminance(*sample),
+        ),
+    )
 
 
 def edge_variance(image: Image.Image) -> float:
@@ -385,6 +490,8 @@ __all__ = [
     "SHORT_TITLE_TRACKING",
     "TITLE_MAX_HEIGHT",
     "TITLE_MAX_LINES",
+    "TEXT_BAND_COLUMNS",
+    "TEXT_BAND_ROWS",
     "TITLE_MAX_WIDTH",
     "TITLE_STEPS",
     "TitleFit",
@@ -392,7 +499,9 @@ __all__ = [
     "Zone",
     "average_rgb",
     "blend_rgb",
+    "cell_samples",
     "choose_backdrop",
+    "choose_title_color",
     "contrast_ratio",
     "edge_variance",
     "fit_to_scale",
@@ -406,4 +515,7 @@ __all__ = [
     "single_line_height",
     "title_line_origins",
     "veil_alpha",
+    "veil_alpha_for_samples",
+    "worst_case_contrast",
+    "worst_case_rgb",
 ]

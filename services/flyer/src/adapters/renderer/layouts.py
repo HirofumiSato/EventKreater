@@ -13,9 +13,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 from src.adapters.renderer.design import BOTTOM_SAFE, TITLE_MAX_HEIGHT, TOP_SAFE
-from src.domain.layout_prompts import (
-    LAYOUT_NEGATIVE_SPACE_HINTS as LAYOUT_NEGATIVE_SPACE_HINTS,
-)
 from src.domain.models import TextLayout
 
 #: 文字の積み方。split は見出しを上端、詳細を下端へ置く。
@@ -82,8 +79,8 @@ LAYOUT_DESCRIPTIONS: dict[TextLayout, str] = {
     TextLayout.BOTTOM_STACK: "文字を下へ。上半分が空くので上に被写体を置ける",
 }
 
-#: 画像生成プロンプトへ渡す「空けるべき領域」の指示。AI 背景を入れる段階で使う。
-#: 本体は `src/domain/layout_prompts.py`。ここから再輸出して既存の参照を保つ。
+#: 画像生成の構図は `src/domain/layout_prompts.py` が固定で持つ。画面は配置を
+#: 選ばないので、ここは描画の積み方だけを知る。
 
 
 def stack_for(layout: TextLayout) -> StackSpec:
@@ -109,7 +106,6 @@ def layout_of(value: object) -> TextLayout:
 __all__ = [
     "LAYOUT_DESCRIPTIONS",
     "LAYOUT_LABELS",
-    "LAYOUT_NEGATIVE_SPACE_HINTS",
     "StackAnchor",
     "StackSpec",
     "layout_of",

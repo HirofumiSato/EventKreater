@@ -105,34 +105,6 @@ def default_palette(
     return PALETTE_BY_ID[DEFAULT_PALETTE_BY_TEMPLATE[template_id]]
 
 
-def palette_for(
-    palette_id: str,
-    template_id: TemplateId,
-    theme: SemanticTheme | None = None,
-) -> Palette:
-    """ID から引く。未知の ID は既定へ落とす。"""
-    if palette_id == THEME_PALETTE_ID:
-        return theme_palette(theme)
-    return PALETTE_BY_ID.get(palette_id) or default_palette(template_id, theme)
-
-
-def palette_candidates(
-    template_id: TemplateId,
-    theme: SemanticTheme | None,
-    current_id: str | None = None,
-) -> tuple[Palette, ...]:
-    """ステップ 4 に並べる 4 通り。いま選ばれている色を必ず先頭にする。
-
-    テーマがあるときはテーマの 4 通り、無いときは従来の 4 色を並べ替えて返す。
-    先頭が現在の色でないと、確定した瞬間に色が飛ぶ。
-    """
-    if theme is not None:
-        return theme_palettes(theme)
-    current = PALETTE_BY_ID.get(current_id or "") or default_palette(template_id, theme)
-    rest = tuple(palette for palette in PALETTES if palette.palette_id != current.palette_id)
-    return (current, *rest)
-
-
 __all__ = [
     "DEFAULT_PALETTE_BY_TEMPLATE",
     "PALETTES",
@@ -140,8 +112,6 @@ __all__ = [
     "Palette",
     "THEME_PALETTE_ID",
     "default_palette",
-    "palette_candidates",
-    "palette_for",
     "theme_palette",
     "theme_palettes",
 ]

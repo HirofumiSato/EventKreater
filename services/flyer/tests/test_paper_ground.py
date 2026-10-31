@@ -43,12 +43,6 @@ def test_same_theme_paints_the_same_bytes(theme: SemanticTheme) -> None:
     assert render_paper(theme) == render_paper(theme)
 
 
-def test_step_one_shares_one_paper_across_the_three_tiles() -> None:
-    """3 枚は同じ紙。色の差ではなく書体と寄せの差を見せるため。"""
-    papers = {render_paper(SemanticTheme.NEON, 0) for _ in range(3)}
-    assert len(papers) == 1
-
-
 def test_tones_go_dark_as_the_index_grows() -> None:
     values = [
         _mean_luminance(_image(render_paper(SemanticTheme.PARCHMENT, tone)))
