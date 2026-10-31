@@ -62,7 +62,9 @@ export default function SampleIndexPage() {
       </div>
       <p className="screen-note">
         <span aria-hidden="true">※</span>
-        {SITE.cta.freeNote}サンプルの催しと主催者は架空です。
+        {SITE.cta.freeNote}
+        <br />
+        サンプルの催しと主催者は架空です。
       </p>
     </div>
   );

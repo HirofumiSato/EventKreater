@@ -136,11 +136,12 @@
 }
 
 /* 主操作の直下に置く条件の注記。ボタンと同じ幅の流れに置き、字は小さくする。
-   米印は画面だけに出す（読み上げでは「最初の2回は無料」と読む）。 */
+   ボタンとの間を 2px だけ空け、条件ではなく添え書きとして読ませる。
+   米印は画面だけに出す（読み上げでは「まずは2回まで無料で試せます」と読む）。 */
 .hero__note {
-  margin: 0;
+  margin: 2px 0 0;
   color: var(--color-ink-soft);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.6;
 }
 
@@ -636,6 +637,20 @@
   flex: 1 1 100%;
 }
 
+/* 2 つのリンクを並べるだけの場面（マイページの「すべて見る」と作成）。
+   主操作も幅いっぱいにせず、スマホでも 1 段に収める。入りきらない幅のときだけ折り返す。
+   幅いっぱいの主操作が要る画面（入力の送信など）は、この修飾を付けない。 */
+.panel__actions--row > .btn--primary,
+.panel__actions--row > .btn--danger {
+  flex: 0 1 auto;
+}
+
+/* 定義リストの下に置く操作。行の最後の罫線にボタンを接して置かない。
+   公開プロフィールの副ボタンは、この余白にテープの飾り（`.btn--peek`）を重ねる。 */
+.kv + .panel__actions {
+  margin-top: 0.875rem;
+}
+
 @media (min-width: 640px) {
   .panel__actions > .btn--primary,
   .panel__actions > .btn--danger {
@@ -773,6 +788,14 @@
 /* 小さく見せる指定は、左右の余白だけを詰める。高さと文字は `.btn` のまま。 */
 .btn--sm {
   padding: 0.5rem 0.75rem;
+}
+
+/* 文字を持たない操作（一覧の札の「URLをコピー」）。正方形のまま 44px を下回らせない。
+   読み上げ名は aria-label が持つので、中のアイコンには aria-hidden を付ける。 */
+.btn--icon {
+  flex: 0 0 auto;
+  width: var(--tap-target);
+  padding: 0;
 }
 
 .btn--lg {
@@ -1851,14 +1874,21 @@ fieldset.field {
 }
 
 /*
- * LINE URL スキームはデスクトップ版 LINE（macOS・Windows）で動かない。
- * 押しても何も起きないボタンを出さないため、タッチ端末だけに表示する。
+ * LINE の共有 URL はデスクトップ版 LINE（macOS・Windows）で開けない。
+ * 押しても行き先の無いボタンを出さないため、触れる端末と、スマホ幅の画面だけに出す。
+ * 幅でも出すのは、モックと PC の狭い窓でも同じ操作を確かめられるようにするため。
  */
 .line-share {
   display: none;
 }
 
 @media (hover: none) and (pointer: coarse) {
+  .line-share {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 639px) {
   .line-share {
     display: inline-flex;
   }

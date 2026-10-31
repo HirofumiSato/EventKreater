@@ -1093,15 +1093,16 @@
    主催一覧（SCR-ORG-01）。溜まった催しを探す道具と、主要な操作の置き場所。
    ========================================================================== */
 
-/* 画面下に固定する操作の帯。本文の最後に、帯の高さぶんの余白を残す。 */
+/* 画面下に固定する操作の帯。本文の最後に、帯の高さぶんの余白を残す。
+   帯は 53px（40 + 上下 6 + 罫線 1）なので、3.5rem で少しだけ余裕を持たせる。 */
 .has-action-dock {
-  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
 }
 
 /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空けて、
    帯がフッターの文字に重ならないようにする。 */
 body:has(.action-dock) .site-footer {
-  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
 }
 
 .action-dock {
@@ -1120,14 +1121,16 @@ body:has(.action-dock) .site-footer {
   gap: 0.5rem;
   width: min(100%, var(--width-page));
   margin: 0 auto;
-  padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+  padding: 0.375rem 1rem calc(0.375rem + env(safe-area-inset-bottom));
 }
 
 /* 390px では 2 つで 1 段。作成は主の操作なので広く取る。
-   高さは押せる的と同じく 44px を下回らせない。 */
+   帯は一覧の上にずっと乗るので、高さと文字だけ 1 段詰める（40px・14px）。
+   帯の外のボタンは 44px・15px のまま。 */
 .action-dock .btn {
   flex: 1 1 0;
-  min-height: var(--tap-target);
+  min-height: var(--tap-target-dock);
+  font-size: var(--font-action-dock);
 }
 
 .action-dock .btn--primary {
@@ -1382,6 +1385,25 @@ body:has(.profile-actions) .site-footer {
    主催者マイページの新着（参加表明・参加要望）。
    行の骨格は `.rows` / `.rows__item` に任せ、ここでは未読の点と添え書きだけを足す。
    ========================================================================== */
+
+/* 見出しと「すべて既読にする」は 1 段に並べ、ボタンは右へ寄せる。
+   `SectionHead` の既定は 640px 未満で縦積みなので、この節だけ横に戻す。
+   見出しが長くなっても折り返さないよう、幅は見出し側に残す。 */
+.notifications .section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.notifications .section__head > .section__title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.notifications .section__head > .btn {
+  flex: 0 0 auto;
+}
 
 /* 題名の前に未読の点。点は文字の中心ではなく行の真ん中に置く。 */
 .notif__title {

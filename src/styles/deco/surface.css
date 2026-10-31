@@ -1388,14 +1388,31 @@
   margin-left: 0.375rem;
 }
 
-/* イベントの札。行ではなく面で見せる。 */
+/* イベントの札。行ではなく面で見せる。
+   チラシは左の細い列に置き、本文をその右へ流す。スマホでも同じ組み方にして、
+   縦に積んだときに催し名が 1 画面ぶん下がらないようにする。 */
 .event-card {
   display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: start;
   gap: 1rem;
   padding: 1.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
   background: var(--color-surface);
+}
+
+/* チラシが無いときは、本文を 4.5rem の列に落とさない。 */
+.event-card--no-thumb {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 操作は本文に混ぜず、札の幅いっぱいに置く。
+   チラシの列に落とすと、ボタンが 4.5rem の幅に潰れる。 */
+.event-card > .event-card__actions,
+.event-card > .card__actions,
+.event-card > .event-card__tools {
+  grid-column: 1 / -1;
 }
 
 /* 主催一覧の並び。チラシの列（4.5rem）と本文を並べても詰まらない幅で、2 枚ずつ置く。
@@ -1413,21 +1430,11 @@
 }
 
 @media (min-width: 640px) {
-  .event-card {
-    grid-template-columns: 4.5rem minmax(0, 1fr);
-    align-items: start;
-  }
-
   /* 操作が 3〜4 個ある画面では、右の細い列に積むと本文が潰れる。
      操作は本文の下へ回し、幅は本文に使う。 */
   .event-card > .event-card__actions,
   .event-card > .card__actions {
     grid-column: 2;
-  }
-
-  /* チラシが無いときは、本文を 4.5rem の列に落とさない。 */
-  .event-card--no-thumb {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .event-card--no-thumb > .event-card__actions,
@@ -1443,6 +1450,20 @@
   object-fit: cover;
   border-radius: var(--radius-lg);
   background: var(--color-slate-100);
+}
+
+/* チラシは押すと告知ページが別のウィンドウで開く。絵のまま押せることが分かるよう、
+   指を置いたときだけ少し反応させる（焦点の輪は `base.css` の `:focus-visible`）。 */
+.event-card__thumb-link {
+  display: block;
+  width: 4.5rem;
+  border-radius: var(--radius-lg);
+  line-height: 0;
+  transition: opacity 0.15s ease;
+}
+
+.event-card__thumb-link:hover {
+  opacity: 0.85;
 }
 
 .event-card__head {
@@ -1519,16 +1540,15 @@
   }
 }
 
-/* 折りたたみは操作の下に置く。チラシがある幅では本文の列に揃え、
-   チラシが無い（1 列の）カードでは全幅に置く。 */
-@media (min-width: 640px) {
-  .event-card > .event-card__fold {
-    grid-column: 2;
-  }
-
-  .event-card--no-thumb > .event-card__fold {
-    grid-column: 1;
-  }
+/* 操作の下の 1 行。URL のコピー（アイコン 1 つ）と、停止・削除を並べる。
+   折りたたまずに出すので、面も罫線も重ねず、行の間隔だけ詰める。 */
+.event-card__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  /* 格子の間隔（1rem）のままだと操作の行から離れすぎるので、1 段詰める。 */
+  margin-top: -0.5rem;
 }
 
 /* 見る系と編集系のまとまりは DOM（親）が持っている。格子の中では箱を作らず、
@@ -1536,46 +1556,6 @@
    片側だけ線が残って崩れるので使わない。 */
 .event-card__actions-edit {
   display: contents;
-}
-
-/* カードの中の折りたたみ。面を重ねず、補助操作の 1 行として置く。
-   箱を重ねると、どこまでが催しの情報か読めなくなる。 */
-.deco .event-card .fold {
-  margin-top: 0.875rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.deco .event-card .fold__summary {
-  padding: 0.5rem 0;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-}
-
-.deco .event-card .fold[open] > .fold__summary {
-  border-bottom: 0;
-}
-
-.deco .event-card .fold__body {
-  padding: 0.75rem 0 0;
-}
-
-/* 取り消せない操作。共有の設定と同じ列に置かず、罫線で分ける。
-   一時停止（戻せる）と削除（戻せない）は、ボタンの色を変えて並べる。 */
-.event-card__danger {
-  display: grid;
-  gap: 0.5rem;
-  justify-items: start;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-line);
-}
-
-.event-card__danger-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 /* 名簿の要約。数は 1 か所にまとめ、表と二重に置かない。 */
@@ -1772,6 +1752,26 @@
 
 .progress-dots__dot.is-current {
   background: var(--color-primary);
+}
+
+/* 公開ページへ飛ぶ副ボタン（マイページ）。貼り紙の上端にテープを 1 枚留める。
+   主ボタン（編集する）と並ぶので、塗りではなく「貼ってある」形で見分けさせる。
+   押す的も文字も `.btn` のままで、飾りは `::after` の中だけに置く。 */
+.btn--peek {
+  position: relative;
+}
+
+.btn--peek::after {
+  content: "";
+  position: absolute;
+  top: -0.375rem;
+  left: 1.125rem;
+  width: 2.25rem;
+  height: 0.6875rem;
+  background: var(--pop-warm);
+  box-shadow: 0 1px 0 rgb(26 25 22 / 0.12);
+    pointer-events: none;
+    transform: rotate(-5deg);
 }
 
 /* ==========================================================================

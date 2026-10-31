@@ -32,7 +32,7 @@ import { StripePortalButton } from "@/modules/billing/components/StripePortalBut
  * スマホ（390px）がいちばん狭い前提で組む。バーは「ブランド・作成・頭文字」で
  * 埋まる。参加者画面と未ログインは、これにナビと開閉ボタンが加わる。
  *
- * いまどちらの画面にいるかは、バーの色と、ブランド名の下の 1 語で示す。
+ * いまどちらの画面にいるかは、バーの色と、頭文字の札の左に添える 1 語で示す。
  * 参加者画面と主催者画面は同じバーを使うので、並びが違うだけでは切り替えた
  * ことに気づけない。色は `data-viewer-role` が持ち、字は `viewerRoleCaption`
  * が持つ（色だけに頼らず、文字でも読ませる）。
@@ -162,13 +162,12 @@ export function Navbar() {
       data-viewer-role={role ?? undefined}
     >
       <div className="site-header__inner">
-        {/* ブランド名の下の 1 語が、いまどちらの画面かを文字でも示す。
-            ヘッダーの色（data-viewer-role）と同じ意味を、色に頼らず伝える。 */}
+        {/* ブランド名はサービス名だけを置く。いま誰として入っているかは、右端の
+            頭文字の札の左に添える役割の札（`.site-role`）が示す。色に頼らず、字でも読ませる。 */}
         <div className="site-brand-block">
           <Link href={SITE.nav.home.href} className="site-brand">
             {SITE.name}
           </Link>
-          {role ? <span className="site-brand__role">{roleCaption}</span> : null}
         </div>
         {showNav ? (
           <nav id="site-nav" className="site-nav" aria-label="サイト">
@@ -207,69 +206,78 @@ export function Navbar() {
             </Link>
           ) : null}
           {viewer ? (
-            <div className="site-user">
-              <button
-                type="button"
-                className="site-user__button"
-                aria-expanded={userMenuOpen}
-                aria-controls="site-user-menu"
-                aria-label={
-                  unreadCount > 0
-                    ? `${viewer.name}（${roleLabel}）のメニュー、未読 ${unreadCount} 件`
-                    : `${viewer.name}（${roleLabel}）のメニュー`
-                }
-                onClick={toggleUserMenu}
-              >
-                <span className="site-user__avatar" aria-hidden="true">
-                  {initial}
-                </span>
-              </button>
-              {unreadLabel ? (
-                // 未読の数。色だけで伝えないよう、件数はボタンの aria-label が持つ。
-                <span className="site-user__badge" aria-hidden="true">
-                  {unreadLabel}
-                </span>
-              ) : null}
-              <div className="site-user-menu" id="site-user-menu" data-open={userMenuOpen ? "true" : "false"}>
-                <p className="site-user-menu__head">
+            <>
+              {/* いま誰として入っているか。頭文字の札のすぐ左に置き、
+                  色（data-viewer-role）と同じ意味を字でも示す。 */}
+              <span className="site-role">{roleCaption}</span>
+              <div className="site-user">
+                <button
+                  type="button"
+                  className="site-user__button"
+                  aria-expanded={userMenuOpen}
+                  aria-controls="site-user-menu"
+                  aria-label={
+                    unreadCount > 0
+                      ? `${viewer.name}（${roleLabel}）のメニュー、未読 ${unreadCount} 件`
+                      : `${viewer.name}（${roleLabel}）のメニュー`
+                  }
+                  onClick={toggleUserMenu}
+                >
                   <span className="site-user__avatar" aria-hidden="true">
                     {initial}
                   </span>
-                  <span className="site-user-menu__name">{viewer.name}</span>
-                  <span className="site-user__role">{roleLabel}</span>
-                </p>
-                {userMenuLinks.length > 0 ? (
-                  <nav className="site-user-menu__links" aria-label="メニュー">
-                    {userMenuLinks.map((nav) => (
-                      <Link
-                        key={nav.href + nav.label}
-                        href={nav.href}
-                        className="site-user-menu__link"
-                        aria-current={pathname === nav.href ? "page" : undefined}
-                      >
-                        {nav.label}
-                        {nav.href === SITE.nav.notifications.href && unreadLabel ? (
-                          <span className="site-user-menu__count" aria-hidden="true">
-                            {unreadLabel}
-                          </span>
-                        ) : null}
-                      </Link>
-                    ))}
-                  </nav>
-                ) : null}
-                {/* 契約の入口。マイページの「利用枠と契約」の節を畳んだので、ここが受ける。
-                    主催者として見ているあいだだけ出す（参加者画面では契約を持たない）。 */}
-                {role === "organizer" ? <StripePortalButton /> : null}
-                <button
-                  type="button"
-                  className="site-user-menu__logout"
-                  onClick={() => void logout()}
-                  disabled={loggingOut}
-                >
-                  {SITE.action.logout}
                 </button>
+                {unreadLabel ? (
+                  // 未読の数。色だけで伝えないよう、件数はボタンの aria-label が持つ。
+                  <span className="site-user__badge" aria-hidden="true">
+                    {unreadLabel}
+                  </span>
+                ) : null}
+                <div
+                  className="site-user-menu"
+                  id="site-user-menu"
+                  data-open={userMenuOpen ? "true" : "false"}
+                >
+                  <p className="site-user-menu__head">
+                    <span className="site-user__avatar" aria-hidden="true">
+                      {initial}
+                    </span>
+                    <span className="site-user-menu__name">{viewer.name}</span>
+                    <span className="site-user__role">{roleLabel}</span>
+                  </p>
+                  {userMenuLinks.length > 0 ? (
+                    <nav className="site-user-menu__links" aria-label="メニュー">
+                      {userMenuLinks.map((nav) => (
+                        <Link
+                          key={nav.href + nav.label}
+                          href={nav.href}
+                          className="site-user-menu__link"
+                          aria-current={pathname === nav.href ? "page" : undefined}
+                        >
+                          {nav.label}
+                          {nav.href === SITE.nav.notifications.href && unreadLabel ? (
+                            <span className="site-user-menu__count" aria-hidden="true">
+                              {unreadLabel}
+                            </span>
+                          ) : null}
+                        </Link>
+                      ))}
+                    </nav>
+                  ) : null}
+                  {/* 契約の入口。マイページの「利用枠と契約」の節を畳んだので、ここが受ける。
+                      主催者として見ているあいだだけ出す（参加者画面では契約を持たない）。 */}
+                  {role === "organizer" ? <StripePortalButton /> : null}
+                  <button
+                    type="button"
+                    className="site-user-menu__logout"
+                    onClick={() => void logout()}
+                    disabled={loggingOut}
+                  >
+                    {SITE.action.logout}
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           ) : null}
           {showNav ? (
             <button

@@ -89,4 +89,9 @@
      `--sm` は左右の余白だけを詰める指定で、この値は変えない。 */
   --tap-target: 2.75rem;
   --font-action: 0.9375rem;
+  /* 画面下に固定する帯（主催一覧の「下書き一覧」「新規作成」）だけは、
+     一覧を隠さないよう 1 段詰める。40px を下回らせないのが条件で、
+     帯の外のボタンは `--tap-target` / `--font-action` のまま。 */
+  --tap-target-dock: 2.5rem;
+  --font-action-dock: 0.875rem;
 }

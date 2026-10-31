@@ -108,7 +108,7 @@ svg {
 /* いま誰として使っているかを、バーの色で示す。
    参加者画面と主催者画面は同じバーを使うので、並びが違うだけでは切り替えた
    ことに気づけない。地・下辺・札の 3 つを役割の色にそろえる。
-   色だけに頼らないよう、ブランド名の下に「主催者の画面」と文字でも置く（`Navbar`）。 */
+   色だけに頼らないよう、頭文字の札の左に「主催者アカウント」と文字でも置く（`Navbar`）。 */
 .site-header[data-viewer-role] {
   background: color-mix(in srgb, var(--role-color) 18%, var(--color-surface));
   /* 罫線は 1px ではなく 3px。色の面だけだと、画面の上端で薄れて見える。 */
@@ -154,13 +154,11 @@ svg {
   padding-block: 1rem;
 }
 
-/* ブランド名と、その下の「いま見ている画面」。2 行に積んでも頭文字の札（44px）に
-   収まるので、ブランドのぶんではバーの高さを変えない（390px で横にも広げない）。 */
+/* ブランド名。頭文字の札（44px）と同じ段に 1 行だけ置く。
+   2 行に積まないので、字の高さはバーの高さに影響しない。 */
 .site-brand-block {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.125rem;
+  align-items: center;
   min-width: 0;
 }
 
@@ -168,17 +166,17 @@ svg {
   color: var(--color-text);
   font-size: 1.125rem;
   font-weight: 500;
-  /* 2 行に積むので、行間は詰める。既定（1.5）だと札と合わせて 44px を超える。 */
   line-height: 1.3;
   text-decoration: none;
   /* 折り返すと高さが変わる。ブランド名は 1 行に固定する。 */
   white-space: nowrap;
 }
 
-/* 色だけで伝えないための 1 語。ヘッダーの地の色と同じ役割色で塗る。 */
-.site-brand__role {
+/* いま誰として入っているかを示す 1 語。頭文字の札のすぐ左に置き、
+   ヘッダーの地の色と同じ役割色で塗る（色だけに頼らず字でも読ませる）。 */
+.site-role {
   display: inline-flex;
-  align-self: flex-start;
+  flex: none;
   padding: 0.0625rem 0.4375rem;
   border-radius: 999px;
   background: var(--role-chip-bg, var(--color-slate-100));
