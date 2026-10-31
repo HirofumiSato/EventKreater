@@ -5545,7 +5545,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1939,
+      "lineCount": 1959,
       "headings": [
         {
           "level": 1,
@@ -5795,6 +5795,10 @@
           "exists": true
         },
         {
+          "path": "scripts/seed-ui-demo.mjs",
+          "exists": true
+        },
+        {
           "path": "src/app/account/email/verify/page.tsx",
           "exists": true
         },
@@ -5868,6 +5872,14 @@
         },
         {
           "path": "src/app/robots.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/samples.ts",
           "exists": true
         },
         {
@@ -9409,7 +9421,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1118,
+      "lineCount": 1124,
       "headings": [
         {
           "level": 2,
@@ -10487,7 +10499,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 566,
+      "lineCount": 574,
       "headings": [
         {
           "level": 1,
@@ -10781,6 +10793,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/sample-events.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/semantic-theme-css.test.ts",
           "exists": true
         },
@@ -10794,6 +10810,10 @@
         },
         {
           "path": "tests/unit/site-chrome.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-copy.test.ts",
           "exists": true
         },
         {
@@ -11128,7 +11148,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 457,
+      "lineCount": 525,
       "headings": [
         {
           "level": 1,
@@ -11305,6 +11325,26 @@
         {
           "level": 2,
           "text": "12. ヒーローの導線をログイン 2 本に整理（2026-10-28）"
+        },
+        {
+          "level": 2,
+          "text": "13. サンプルへの導線と、無料表記の整理（2026-10-31）"
+        },
+        {
+          "level": 3,
+          "text": "13.1. 並び"
+        },
+        {
+          "level": 3,
+          "text": "13.2. なぜ注記にしたか"
+        },
+        {
+          "level": 3,
+          "text": "13.3. サンプル（SCR-PUB-16 / SCR-PUB-17）"
+        },
+        {
+          "level": 3,
+          "text": "13.4. 却下した案"
         }
       ],
       "toctree": [],
@@ -11358,6 +11398,26 @@
           "exists": true
         },
         {
+          "path": "src/app/sample/[slug]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/SampleBand.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/SampleEventView.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/samples.ts",
+          "exists": true
+        },
+        {
           "path": "src/components/common/Navbar.tsx",
           "exists": true
         },
@@ -11390,11 +11450,19 @@
           "exists": true
         },
         {
+          "path": "src/styles/screens/public.css",
+          "exists": true
+        },
+        {
           "path": "src/styles/tokens.css",
           "exists": true
         },
         {
           "path": "tests/unit/site-chrome.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-copy.test.ts",
           "exists": true
         }
       ],
@@ -11406,15 +11474,11 @@
       "path": "docs/ui-review/mock-sync.md",
       "sphinxDoc": "ui-review/mock-sync",
       "format": "markdown",
-      "title": "製品からモックを生成する手順",
-      "summary": "モック（style-guide/mock-.html）は製品の DOM を写した生成物です。手で書きません。 製品が正で、モックはその写しです。比較（parity）はしません。",
+      "title": "1. 製品を直す（src/app//page.tsx、src/components/ui/、src/styles/ など）",
+      "summary": "npm run mock:sync",
       "preImplementation": false,
       "lineCount": 300,
       "headings": [
-        {
-          "level": 1,
-          "text": "製品からモックを生成する手順"
-        },
         {
           "level": 2,
           "text": "前提"

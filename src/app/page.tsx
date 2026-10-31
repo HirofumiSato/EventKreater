@@ -11,7 +11,7 @@ import { Section, SectionHead } from "@/components/ui";
 
 const HERO_EYEBROW = (
   <>
-    ご飯会、ゲーム会、ライブ、一日店長、撮影会、合コン、etc..{" "}
+    ご飯会、ライブ、一日店長、撮影会、合コン、マルシェ etc..{" "}
     <span className="hero__eyebrow-tail">主催者様へ</span>
   </>
 );
@@ -85,16 +85,37 @@ export default function HomePage() {
             </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">
-              <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
-                {SITE.cta.createEventFree}
-              </Link>
+              <div className="hero__buttons">
+                <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">
+                  {SITE.cta.createEventFree}
+                </Link>
+                {/*
+                  作る前に、自分の催しならどう見えるかを確かめる入口。主操作の隣に
+                  副のボタンとして並べる。見本は別のタブで開き、作りかけの入力を失わない。
+                */}
+                <Link
+                  href={SITE.nav.sample.href}
+                  className="btn btn--outline btn--lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {SITE.nav.sample.label}
+                </Link>
+              </div>
+              {/* 無料の条件はボタンに詰めず、押す直前に 1 行だけ添える。 */}
+              <p className="hero__note">
+                <span aria-hidden="true">※</span>
+                {SITE.cta.freeNote}
+              </p>
               {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
-              <Link href={SITE.nav.organizerLogin.href} className="text-link">
-                {SITE.nav.organizerLogin.label}
-              </Link>
-              <Link href={SITE.nav.participantLogin.href} className="text-link">
-                {SITE.nav.participantLogin.label}
-              </Link>
+              <p className="hero__links">
+                <Link href={SITE.nav.organizerLogin.href} className="text-link">
+                  {SITE.nav.organizerLogin.label}
+                </Link>
+                <Link href={SITE.nav.participantLogin.href} className="text-link">
+                  {SITE.nav.participantLogin.label}
+                </Link>
+              </p>
             </div>
           </div>
           <figure className="hero__poster">

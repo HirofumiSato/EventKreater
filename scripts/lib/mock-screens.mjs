@@ -185,6 +185,24 @@ export function buildScreens(demo) {
       ],
     },
     {
+      no: "06a",
+      group: "public",
+      slug: "sample",
+      name: "サンプル（一覧）",
+      path: "/sample",
+      auth: null,
+      note: "作った告知ページの見本を 5 種。上端の帯が「サンプル」と無料のはじめるを示す。",
+    },
+    {
+      no: "06b",
+      group: "public",
+      slug: "sample-event",
+      name: "サンプル（告知ページ）",
+      path: "/sample/dj",
+      auth: null,
+      note: "告知ページと同じ部品。出欠は見た目だけで送れない。テーマはネオン。",
+    },
+    {
       no: "07",
       group: "auth",
       slug: "register",
@@ -579,6 +597,8 @@ const DYNAMIC_SEGMENTS = {
   "user-organizer": "[userId]",
   "participant-receipt": "[participantId]",
   "code-invite": "[code]",
+  // 見本の詳細（`/sample/dj` など）。slug は `src/app/sample/samples.ts` が持つ。
+  dj: "[slug]",
 };
 
 /** 目録（画面名・パス・状態）を、テストからも引けるようにする。 */

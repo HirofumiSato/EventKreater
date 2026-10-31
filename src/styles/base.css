@@ -492,11 +492,17 @@ svg {
     padding-inline: 0.5rem;
   }
 
-  /* 「無料でイベント告知ページを作る」は 16px のままだと 320px で 2 行に割れる。
-     字を落とさず、左右の余白だけで 1 行に戻す。`.hero--stage .btn--primary` より
+  /* 主操作（「無料ではじめる」）は 16px でも 320px 級では左右の余白ぶんが足りない。
+     字を落とさず、左右の余白だけで 1 行に収める。`.hero--stage .btn--primary` より
      詳細度を上げないと、後方の宣言に負ける。 */
   .hero--stage .hero__actions .btn--lg {
     padding-inline: 1rem;
+  }
+
+  /* 補助のリンク 3 本は 1 段に収まらない。2 本 + 1 本へ折り返し、
+     行の間だけを詰める（押せる高さは 44px のまま）。 */
+  .hero__links {
+    gap: 0 0.625rem;
   }
 }
 

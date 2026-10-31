@@ -43,6 +43,12 @@ describe("公開クロムの出し分け", () => {
     });
   });
 
+  it("告知ページの見本は共通ヘッダーを出さず、帯を画面の上端から始める", () => {
+    expect(siteChrome("/sample")).toEqual({ header: false, footer: true, flushTop: true });
+    expect(siteChrome("/sample/dj")).toEqual({ header: false, footer: true, flushTop: true });
+    expect(siteChrome("/sample/dj/")).toEqual({ header: false, footer: true, flushTop: true });
+  });
+
   it("下書きプレビューはヘッダーを出したまま上端の余白を落とす", () => {
     expect(siteChrome("/organizer/events/abc/preview")).toEqual({
       header: true,
@@ -73,6 +79,7 @@ describe("公開クロムの出し分け", () => {
     expect(siteChrome("/consolelike")).toEqual({ header: true, footer: true, flushTop: false });
     expect(siteChrome("/organizerslike")).toEqual({ header: true, footer: true, flushTop: false });
     expect(siteChrome("/eventslike")).toEqual({ header: true, footer: true, flushTop: false });
+    expect(siteChrome("/samplelike")).toEqual({ header: true, footer: true, flushTop: false });
   });
 
   it("パスが空でも通常の画面として扱う", () => {

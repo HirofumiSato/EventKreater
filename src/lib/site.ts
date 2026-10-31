@@ -29,6 +29,11 @@ export const SITE = {
   nav: {
     home: { href: "/", label: "トップ" },
     service: { href: "/service", label: "サービスと料金" },
+    /**
+     * 作った告知ページの見本（SCR-PUB-16）。初見の幹事が「自分の催しならどう見えるか」を
+     * 作る前に確かめる入口である。DB を使わない静的な画面へ送る。
+     */
+    sample: { href: "/sample", label: "サンプルを見る" },
     createEvent: CREATE_EVENT,
     organizerList: { href: "/organizer/events", label: "主催一覧" },
     organizerLogin: { href: "/auth/register", label: "主催者ログイン" },
@@ -70,8 +75,18 @@ export const SITE = {
   },
   // 作成画面への誘導文。ラベル側を変えれば、ここも追随する。
   cta: {
-    /** ホームなどの主操作。ナビのラベルに「無料で」を足しただけ。 */
-    createEventFree: `無料で${CREATE_EVENT.label}`,
+    /**
+     * ホームなどの主操作。無料の条件は書かず、動詞 1 つで言い切る。
+     * 条件（最初の 2 回・カード登録なし）は直下の `freeNote` が受ける。
+     * 世の中の告知 LP と同じく、ボタンは短く、条件は注記で伝える形にする。
+     */
+    createEventFree: "無料ではじめる",
+    /**
+     * 主操作の直下に置く条件の注記。ボタンの中に条件を詰めると、
+     * 「何回まで無料か」を押す前に読ませることになり、主操作が重くなる。
+     * カードの要否は書かない。0 円で始められることだけを 1 行で伝える。
+     */
+    freeNote: "最初の2回は無料。",
     /** 主催イベントが 0 件のときの空状態。 */
     createEventFirst: `最初の${CREATE_EVENT.label}`,
   },

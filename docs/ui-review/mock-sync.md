@@ -1,4 +1,4 @@
-# 製品からモックを生成する手順
+﻿# 製品からモックを生成する手順
 
 モック（`style-guide/mock-*.html`）は**製品の DOM を写した生成物**です。手で書きません。
 製品が正で、モックはその写しです。比較（parity）はしません。
@@ -58,7 +58,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 | コマンド | 何をするか |
 | --- | --- |
-| `npm run mock:sync` | 全 46 画面（29 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
+| `npm run mock:sync` | 全 48 画面（31 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
 | `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。`--only=04-event-member` でも絞れる |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
 | `npm run mock:sync -- --refresh` | 控え（断片・CSS・PNG）を使わず、全画面を取り直す（下の「控え」を参照） |
@@ -79,7 +79,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- |
 | 左下の付箋（開くと「← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス」） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。既定は閉じていて、付箋を押すと上へ開く。製品には無い |
 | 操作の script（`mock-interactions.js`） | `withMockInteractions` が付箋の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、一覧の絞り込み、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
-| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 46 画面の入口。製品には無い |
+| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 48 画面の入口。製品には無い |
 | 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
 
 付箋の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
@@ -148,7 +148,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- | --- |
 | 断片 | `storage/mock-variants/<画面>.json` | 日付・ステップを押して集める往復（1 画面 1〜6 秒） | 合成前の HTML の指紋（`sourceHash`）が変わったとき。`--refresh` でも捨てる |
 | CSS | `storage/mock-assets.json`（`{ uiHash, stylesheets }`） | 同じ CSS を画面ごとに取り直す往復 | `uiHash` が変わったとき。`--refresh` でも捨てる |
-| 素材（同一実行内） | メモリの表 | 同じ画像を 46 画面ぶん取り直す往復 | 実行が終われば消える |
+| 素材（同一実行内） | メモリの表 | 同じ画像を 48 画面ぶん取り直す往復 | 実行が終われば消える |
 | PNG | `storage/mock-shots/*.png` | 変化の無い画面の 390 / 1280 撮影 | 生成した HTML が既存ファイルと違うとき、PNG が欠けているとき、`--refresh` |
 
 DB やデモデータが変われば画面上の DOM も変わるので、断片の控えは自然に外れます。画像だけが

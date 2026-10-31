@@ -383,8 +383,8 @@ describe("画面の目録", () => {
     const themeRows = screens.filter((row) => row.theme !== undefined);
     // テーマ未選択 1 枚 + 全テーマ 1 枚ずつ。
     expect(themeRows).toHaveLength(SEMANTIC_THEME_IDS.length + 1);
-    // テーマ以外の状態は 36 枚。画面そのものを足したときだけ、この数を直す。
-    expect(expectedFiles()).toHaveLength(36 + themeRows.length);
+    // テーマ以外の状態は 38 枚。画面そのものを足したときだけ、この数を直す。
+    expect(expectedFiles()).toHaveLength(38 + themeRows.length);
   });
 
   it("テーマの状態は、製品のすべてのテーマと未選択を 1 枚ずつ持つ", () => {

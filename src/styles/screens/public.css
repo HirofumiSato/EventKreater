@@ -204,3 +204,181 @@ a.card,
   outline: 2px solid var(--color-primary-ring);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   告知ページの見本（SCR-PUB-16 / SCR-PUB-17）。
+
+   見本は本物の告知ページと同じ部品で組む。ちがうのは上端の帯と、出欠が
+   送れないことだけ。帯は共通ヘッダーの代わりなので、画面の上端に貼り付けて
+   「サンプル」「無料ではじめる」を常に見せる。
+   ========================================================================== */
+
+.sample-band {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  /* `.page` の左右の余白（1rem）を打ち消して、本文の端から端まで帯を通す。
+     vw を使うとスクロールバーの幅だけはみ出し、左右の位置がずれる。 */
+  margin-inline: -1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* 帯は 1 段のまま。折り返すと帯が厚くなり、本文を押し下げる。
+   高さは中のボタン（44px）と上下の余白だけで決まる。 */
+.sample-band__inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 1rem;
+}
+
+/* 帯の札。押せないので `.btn` の形（高さ・塗り）は使わず、罫線と字だけで示す。 */
+.sample-band__tag {
+  flex: none;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.75;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* スマホでは札とボタンだけで足りる。説明は幅に余裕のある画面だけに出す。 */
+.sample-band__note {
+  display: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sample-band__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+/* 一覧へ戻るリンク。帯を厚くしないよう、`.btn` の枠は使わず字だけで示す。
+   押せる高さだけは 44px を確保する。 */
+.sample-band__back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.25em;
+  white-space: nowrap;
+}
+
+.sample-band__back:hover {
+  color: var(--color-text);
+  text-decoration-color: currentColor;
+}
+
+@media (min-width: 640px) {
+  .sample-band__note {
+    display: block;
+  }
+
+  .sample-band__inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* 見本の一覧。スマホは 1 列で、チラシを左に小さく置く。 */
+.sample-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sample-card {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: start;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.sample-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.sample-card:focus-visible {
+  outline: 2px solid var(--color-primary-ring);
+  outline-offset: 2px;
+}
+
+/* チラシは縦長のまま、上を揃えて切る。題字が読める位置を残す。 */
+.sample-card__flyer {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--radius-sm);
+  background: var(--color-hero);
+}
+
+.sample-card__body {
+  min-width: 0;
+}
+
+.sample-card__kind {
+  color: var(--color-primary-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sample-card__title {
+  margin-top: 0.125rem;
+  color: var(--color-text-strong);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sample-card__intro {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.sample-card__meta {
+  margin-top: 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .sample-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .sample-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

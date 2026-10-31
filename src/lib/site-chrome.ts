@@ -7,6 +7,9 @@
  * - `/events/`     … 告知ページと領収書。共有されたイベントに集中させるため、共通ヘッダーは
  *                    出さない。フッターは残す。告知ページだけ上端の余白も落とし、チラシを
  *                    画面の上端から始める。`/organizer/events/` は主催者エリアなので対象外。
+ * - `/sample`      … 告知ページの見本。本物の告知ページと同じ面に集中させるため、共通
+ *                    ヘッダーは出さない。代わりに上端の帯（`SampleBand`）がクロムになる。
+ *                    フッターは残し、上端の余白も落として帯を画面の上端から始める。
  * - `/organizers/` … 主催者の公開ページ。プロフィールとイベントに集中させるため、
  *                    共通ヘッダーは出さない。フッターは残す。
  * - `/organizer/events/:id/preview` … 下書きプレビュー。ヘッダー直下に編集バーを置くため、
@@ -54,6 +57,11 @@ function isEventPreview(pathname: string): boolean {
   return /^\/organizer\/events\/[^/]+\/preview\/?$/.test(pathname);
 }
 
+/** 告知ページの見本。`/samplelike` を `/sample` と誤認しないよう区切りまで見る。 */
+function inSample(pathname: string): boolean {
+  return pathname === "/sample" || pathname.startsWith("/sample/");
+}
+
 export function siteChrome(pathname: string): SiteChromeState {
   if (inConsole(pathname)) {
     return { header: false, footer: false, flushTop: false };
@@ -70,6 +78,9 @@ export function siteChrome(pathname: string): SiteChromeState {
       footer: true,
       flushTop: inEventAnnouncement(pathname),
     };
+  }
+  if (inSample(pathname)) {
+    return { header: false, footer: true, flushTop: true };
   }
   if (isEventPreview(pathname)) {
     return { header: true, footer: true, flushTop: true };
