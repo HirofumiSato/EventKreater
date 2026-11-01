@@ -54,7 +54,7 @@
      - テスト側
    * - ``document is not defined``
      - ``environment: "node"`` のまま画面のコードを触った
-     - テスト側。jsdom を入れるか、対象を純粋関数に寄せる
+     - テスト側。ファイルの先頭に ``// @vitest-environment jsdom`` を置くか、対象を純粋関数に寄せる
    * - 件数が増えない
      - ``include`` に合っていない（``.test.tsx``、``tests/`` の外）
      - ファイル名か置き場所
@@ -74,7 +74,7 @@
        E --> C
        A --> F{"エラーの種類"}
        F -->|TypeError か import 失敗| G["テスト側の配線を直す"]
-       F -->|document is not defined| H["jsdom を入れるか対象を変える"]
+       F -->|document is not defined| H["先頭に // @vitest-environment jsdom を置くか対象を変える"]
        F -->|件数が 0| I["ファイル名と置き場所を確認する"]
        C --> J["npm run check"]
        D --> J

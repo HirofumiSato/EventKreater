@@ -7,6 +7,8 @@ interface StickyRsvpBarProps {
   capacity: number | null;
   answered: boolean;
   closed: boolean;
+  /** 出欠の層を開く。入口はこの帯 1 つ（広い画面は面のボタンが受ける）。 */
+  onOpen: () => void;
   /** 主催者の公開ページ。会員の幹事のときだけ、左に並べる。 */
   organizerHref?: string | null;
   /** 下段に「あなたもイベントを開きませんか」の帯を出すか。条件は `showsOrganizerInvite` が持つ。 */
@@ -15,6 +17,9 @@ interface StickyRsvpBarProps {
 
 /**
  * 画面下に残す出欠の導線。長い告知ページでも、いつでも答えられるようにする。
+ *
+ * 押すと画面の中の位置へ飛ぶのではなく、その場で出欠の層を開く。
+ * 告知ページは読み物として完結させ、申込は紙の上に乗せる（`DynamicRsvpBox` の説明）。
  *
  * 参加人数は札（EventMetaCard）にも出るので、狭い画面では落とす（CSS 側）。
  * ボタンは 2 つまで。主催者のページと、出欠の回答。
@@ -26,6 +31,7 @@ export function StickyRsvpBar({
   capacity,
   answered,
   closed,
+  onOpen,
   organizerHref = null,
   showInvite = false,
 }: StickyRsvpBarProps) {
@@ -48,9 +54,9 @@ export function StickyRsvpBar({
           受付終了
         </button>
       ) : (
-        <a href="#rsvp" className="btn btn--primary btn--sm">
+        <button type="button" className="btn btn--primary btn--sm" onClick={onOpen}>
           {answered ? "回答を変更" : full ? "参加要望を出す" : "出欠を答える"}
-        </a>
+        </button>
       )}
       {showInvite && (
         <p className="sticky-rsvp__invite">

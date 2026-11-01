@@ -23,7 +23,7 @@
    * - ``route:``
      - Route Handler を直接呼ぶ試験。**まだありません**
    * - ``component:``
-     - 画面の試験。まだありません（jsdom 未導入）
+     - ``tests/components/`` の画面の試験。jsdom で描く
    * - ``E2E:``
      - ブラウザ行程。まだありません（Playwright 未導入）
    * - ``人手:``
@@ -147,7 +147,7 @@
 
 .. count-start
 
-76 ファイル、``it`` は 996 件です。内訳は ``tests/unit/`` が 61 ファイル 900 件、``tests/integration/`` が 15 ファイル 96 件です。結合の 96 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+79 ファイル、``it`` は 1040 件です。内訳は ``tests/unit/`` が 63 ファイル 928 件、``tests/integration/`` が 15 ファイル 96 件です。結合の 96 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -379,6 +379,14 @@
      - 34
      - 主催者ページの掲載条件、開催日の絞り込みと並び順、満員の色、公開 URL の組み立て
      - SCR-PUB-03
+   * - ``tests/unit/rsvp-form.test.ts``
+     - 20
+     - 出欠の層の欄の出し分け。ログイン中の名前の扱い、性別に合う費用プラン、選べる札とその選択（性別を変えたときの移り先）、出席する日時の初期値
+     - SCR-PUB-01
+   * - ``tests/unit/rsvp-modal-styles.test.mjs``
+     - 8
+     - 性別の札が 44px であること、日時が 3 件まで横並びであること、選べない札のグレーアウト、層の本文の右余白と ``scrollbar-gutter``、切り替えリンクの不在
+     - SCR-PUB-01
    * - ``tests/unit/rsvp-status.test.ts``
      - 13
      - 出欠の選択肢（出席・参加要望）と残席、席を確保済みの人の扱い、待ち順の決め方
@@ -431,6 +439,10 @@
      - 78
      - HTML の整形（script・Next の CSS リンク・コメントの除去、``lang`` と body のクラスの保持）、アセットの差し替え（``/_next/image``・``/samples``・``data:``）、内部リンクの対応付けと未知リンクの ``#``、``uiHash`` の一致と変化（改行が CRLF でも LF でも同じ）、同期要否（manifest 無し・ハッシュ不一致・一致・HTML 欠け）、目録の No の重複と ``page.tsx`` の実在、``--only`` の絞り込み、枠ページ（iframe・幅の切り替え・状態の表記・エスケープ・生成物の欠け）
      - 該当なし（検査）
+   * - ``tests/components/rsvp-modal.test.tsx``
+     - 16
+     - 出欠の層。選ぶ前から欄が出ること、欠席で消さずに押せなくすること、性別に合わない費用プランを残して無効にすること、男女別プランが 1 件でも欄が出ること、日時 3 件の横並び、ログイン中の名前欄と「アカウントを切り替える」の不在、送る名前
+     - SCR-PUB-01
    * - ``tests/integration/draft-publish.test.ts``
      - 4
      - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
@@ -466,7 +478,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 900、``tests/integration/`` が 96 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 900 件を実行して 96 件を skip します。
+件数の内訳は ``tests/unit/`` が 928、``tests/integration/`` が 96 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 928 件を実行して 96 件を skip します。
 
 .. breakdown-end
 
@@ -510,7 +522,7 @@
    * - 6
      - 勧誘カードの出し分け
      - ``tests/components/invite-card.test.tsx``
-     - 3 状態で出る・出ない。**jsdom と Testing Library の導入が先**
+     - 3 状態で出る・出ない
    * - 7
      - 登録案内の 3 状態（未登録・登録済み・第三者）
      - ``tests/components/register-required.test.tsx``
@@ -520,7 +532,7 @@
      - ``tests/e2e/``
      - ``npm run test:e2e``。**Playwright の導入が先**
 
-6 と 7 を書く前に、``vitest.config.ts`` の ``include`` に ``**/*.test.tsx`` を足す必要があります。足さないと、ファイルを置いても 1 件も集められません。
+6 と 7 は ``tests/components/rsvp-modal.test.tsx`` と同じ形で書けます。``jsdom`` と Testing Library は入り、``include`` は ``**/*.test.tsx`` も集めるので、足すのはファイルだけです。先頭の ``// @vitest-environment jsdom`` を忘れないでください。
 
 層と境界
 --------

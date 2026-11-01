@@ -1078,10 +1078,8 @@
   text-align: center;
 }
 
-.preview-rsvp {
-  pointer-events: none;
-}
-
+/* プレビューでも出欠の層は開ける（主催者が「どう出るか」を確かめる画面なので）。
+   送信と入力は `preview` の指定で止める。押せない覆いを重ねると、層まで開かなくなる。 */
 .preview-rsvp__note {
   margin-bottom: 0.75rem;
   color: var(--color-text-subtle);

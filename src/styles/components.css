@@ -903,6 +903,12 @@ fieldset.field {
   gap: 0.25rem;
 }
 
+/* いまは入力できない欄。消さずに残し、見出しと注記だけを落として読める順は保つ。 */
+.field--disabled > .label,
+.field--disabled > .help {
+  color: var(--color-text-subtle);
+}
+
 /* 新規イベント作成のステップ入力。開いているステップの入力欄だけを出す。 */
 .event-steps__list {
   display: flex;
@@ -1422,6 +1428,23 @@ fieldset.field {
   grid-template-columns: 1fr;
 }
 
+/* 費用プランの札。3 枠までは 1 行（390px で 3 枠 = 約 108px）。4 枠以上は 2 段目へ回る。
+   札が細くなりすぎないよう、1 枠 5.5rem を下回らせない。 */
+.choice-group--plans {
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+}
+
+/* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
+   層が無駄に伸びる。押せる的の下限（44px）まで詰める。 */
+.choice-group--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 出席する日時。3 件までは 1 行に並べ、4 件以上は 2 段目へ回す。 */
+.choice-group--schedule {
+  grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+}
+
 .choice {
   position: relative;
   display: flex;
@@ -1438,6 +1461,67 @@ fieldset.field {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
+}
+
+/* 費用プランは「品名」と「金額」の 2 段。横に長い 1 行のままだと 3 枠に入らない。 */
+.choice--plan {
+  gap: 0.125rem;
+  min-height: var(--tap-target);
+  padding: 0.5rem 0.375rem;
+  text-align: center;
+}
+
+.choice--plan .choice__name {
+  color: var(--color-text-strong);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.choice--plan .choice__price {
+  color: var(--color-text-strong);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 「1ドリンク付」のような補足。3 枠に収めるため、金額とは別の行に小さく置く。 */
+.choice--plan .choice__note {
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
+   層が無駄に伸びる。押せる的の下限（44px）まで詰める。 */
+.choice-group--compact .choice {
+  min-height: var(--tap-target);
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-action);
+}
+
+/* 出席する日時。日付と時刻の 2 段にして、狭い画面でも横に溢れさせない。 */
+.choice--schedule {
+  gap: 0.125rem;
+  min-height: var(--tap-target);
+  padding: 0.375rem 0.25rem;
+  text-align: center;
+}
+
+.choice--schedule .choice__date {
+  color: var(--color-text-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.choice--schedule .choice__time {
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .choice.choice--left {
@@ -1461,10 +1545,35 @@ fieldset.field {
   background: var(--color-bg);
 }
 
-.choice-group--stack .choice:has(input:checked) {
+/* 選んだ札は、地を変えて 1 つだけ目立たせる。性別・日時・費用のどれも同じ扱い。 */
+.choice:has(input:checked) {
   border-color: var(--color-text-strong);
   color: var(--color-text-strong);
   background: var(--color-bg);
+}
+
+/* 選べない札は消さずにグレーにする。欠席・参加要望のときと、性別に合わない
+   費用プランがここに入る。消すと「あとから欄が現れる」動きになり、身構えさせる。 */
+.choice:has(input:disabled) {
+  border-color: var(--color-border);
+  background: var(--color-slate-100);
+  color: var(--color-text-subtle);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.choice:has(input:disabled) .choice__name,
+.choice:has(input:disabled) .choice__price,
+.choice:has(input:disabled) .choice__date {
+  color: var(--color-text-subtle);
+}
+
+.choice input:disabled {
+  cursor: not-allowed;
+}
+
+.choice:hover:has(input:disabled) {
+  background: var(--color-slate-100);
 }
 
 
@@ -1776,6 +1885,72 @@ fieldset.field {
 
 .modal-root > .modal-toggle:checked ~ .modal {
   display: flex;
+}
+
+/* 製品の `Dialog` は開いている間だけ `modal--open` を付ける（React 側で出し入れする）。
+   `hidden` のときは、上の `display: flex` より後に書いたこちらが勝つ。 */
+.modal--open {
+  display: flex;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+/* 層に乗っている間は、後ろの紙を動かさない。`<html>` の 1 属性だけを切り替える。 */
+html[data-scroll-lock] {
+  overflow: hidden;
+}
+
+/* 画面の下から出る 1 枚。告知ページの出欠のように、紙の上に一時的に乗る面に使う。
+   本文だけを送り、題と操作（`.dialog__actions`）は常に見える位置に残す。 */
+.modal--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.modal--sheet .dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* 後ろの紙が少し覗く高さで止める。画面いっぱいにすると、層ではなく別のページに見える。 */
+  max-height: 88vh;
+  overflow: hidden;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+}
+
+/* 送るのは本文だけ。中で入力欄に触っている間、後ろの紙へ指が流れないようにする。
+   右端には余白を取り、札の枠・フォーカスリングがスクロールバーに切れないようにする
+   （`scrollbar-gutter` でバーの幅を先に確保する）。 */
+.modal--sheet .dialog > form {
+  min-height: 0;
+  margin-top: 0.75rem;
+  padding-inline-end: 0.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.modal--sheet .dialog__actions {
+  flex: 0 0 auto;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 640px) {
+  .modal--sheet {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .modal--sheet .dialog {
+    width: min(100%, var(--width-form));
+    max-height: min(88vh, 40rem);
+    padding-bottom: 1.5rem;
+    border-radius: var(--radius-2xl);
+  }
 }
 
 .modal__backdrop {
