@@ -9,7 +9,7 @@ import { Dialog, SemanticThemeScope } from "@/components/ui";
 
 interface EventPreviewModalProps {
   value: EventFormValues;
-  /** 作成中のチラシ。無ければ題字だけの面を出す。 */
+  /** 作成中のチラシ。無ければチラシの欄ごと出さない。 */
   flyerPreviewUrl: string | null;
   onClose: () => void;
   /**
