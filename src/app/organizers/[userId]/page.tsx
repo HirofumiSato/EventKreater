@@ -36,6 +36,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${loaded.name}さんのプロフィール`;
   const description =
     profileBioExcerpt(loaded.profile.bio, 110) ?? `${loaded.name}さんが主催するイベントの日程と会場を確認できます。`;
+  // ヘッダー（1920x640）があれば横長を優先する。無ければアイコン（256px 角）。
+  const ogImage = loaded.profile.headerUrl ?? loaded.profile.avatarUrl;
   return {
     title,
     description,
@@ -44,8 +46,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       type: "profile",
-      // アイコンは 256px 角。無ければ既定の OGP 画像に任せる。
-      ...(loaded.profile.avatarUrl ? { images: [loaded.profile.avatarUrl] } : {}),
+      // どちらも無ければ既定の OGP 画像に任せる。
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }

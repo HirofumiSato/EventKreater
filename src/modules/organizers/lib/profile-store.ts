@@ -55,6 +55,7 @@ function emptyContent(): OrganizerProfileContent {
     links: [],
     stats: null,
     avatarUrl: null,
+    headerUrl: null,
     themeId: null,
   };
 }
@@ -71,11 +72,20 @@ interface ProfileRowShape {
   lineUrl: string | null;
   showStats: boolean;
   avatarImageId: string | null;
+  headerImageId: string | null;
   themeId: string | null;
 }
 
 function avatarUrlOf(avatarImageId: string | null): string | null {
   return avatarImageId ? imageAssetImagePath(avatarImageId) : null;
+}
+
+/**
+ * ヘッダー画像の URL。アイコンと同じく ID から決まる。
+ * 出すかどうかは呼び出し側が決める（非公開なら null にする）。
+ */
+function headerUrlOf(headerImageId: string | null): string | null {
+  return headerImageId ? imageAssetImagePath(headerImageId) : null;
 }
 
 /** DB の行を公開ページの形にする。非公開なら中身を一切出さない。 */
@@ -84,6 +94,7 @@ export function profileContentFromRow(
   stats: OrganizerProfileStats | null,
 ): OrganizerProfileContent {
   // アイコンは本文ではなく、その人を示す印。非公開でも出す。
+  // ヘッダーは本文の一部なので、非公開なら出さない（`emptyContent()` の null のまま）。
   if (!row || !row.isPublished) {
     return { ...emptyContent(), avatarUrl: avatarUrlOf(row?.avatarImageId ?? null) };
   }
@@ -101,6 +112,7 @@ export function profileContentFromRow(
     }),
     stats: row.showStats ? stats : null,
     avatarUrl: avatarUrlOf(row.avatarImageId),
+    headerUrl: headerUrlOf(row.headerImageId),
     themeId: normalizeSemanticThemeId(row.themeId),
   };
 }
@@ -253,6 +265,50 @@ export async function clearOrganizerAvatar(userId: string): Promise<string | nul
   await prisma.organizerProfile.update({
     where: { userId },
     data: { avatarImageId: null },
+  });
+  return previous;
+}
+
+/** 設定中のヘッダー画像の ID。未設定・行なしは null。 */
+export async function readOrganizerHeaderId(userId: string): Promise<string | null> {
+  const row = await prisma.organizerProfile.findUnique({
+    where: { userId },
+    select: { headerImageId: true },
+  });
+  return row?.headerImageId ?? null;
+}
+
+/** 設定中のヘッダー画像の URL。未設定・行なしは null。 */
+export async function readOrganizerHeaderUrl(userId: string): Promise<string | null> {
+  return headerUrlOf(await readOrganizerHeaderId(userId));
+}
+
+/**
+ * ヘッダー画像の参照を差し替える。行が無ければ作る（未作成の会員でも設定できる）。
+ * 差し替え前の画像は呼び出し側が退役させる。ここでは参照だけを動かす。
+ */
+export async function setOrganizerHeader(
+  userId: string,
+  headerImageId: string | null,
+): Promise<void> {
+  await prisma.organizerProfile.upsert({
+    where: { userId },
+    create: { userId, headerImageId },
+    update: { headerImageId },
+  });
+}
+
+/** ヘッダー画像の参照を外す。外した画像の ID を返す（退役させるため）。 */
+export async function clearOrganizerHeader(userId: string): Promise<string | null> {
+  const row = await prisma.organizerProfile.findUnique({
+    where: { userId },
+    select: { headerImageId: true },
+  });
+  const previous = row?.headerImageId ?? null;
+  if (!previous) return null;
+  await prisma.organizerProfile.update({
+    where: { userId },
+    data: { headerImageId: null },
   });
   return previous;
 }

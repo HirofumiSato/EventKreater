@@ -84,6 +84,7 @@ export function profileContentFromDraft(
   draft: OrganizerProfileDraft,
   stats: OrganizerProfileStats | null,
   avatarUrl: string | null = null,
+  headerUrl: string | null = null,
 ): OrganizerProfileContent {
   return {
     isPublished: draft.isPublished,
@@ -94,6 +95,7 @@ export function profileContentFromDraft(
     links: profileLinks(draft),
     stats: draft.showStats ? stats : null,
     avatarUrl,
+    headerUrl,
     themeId: draft.themeId,
   };
 }

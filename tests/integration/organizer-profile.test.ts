@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { imageAssetImagePath } from "@/lib/image-assets";
 import { signLocalToken } from "@/modules/auth/lib/auth";
 import { GET as getPublicProfile } from "@/app/api/v1/public/organizers/[userId]/route";
 import { GET as getOwnProfile, PUT as putOwnProfile } from "@/app/api/v1/organizer/profile/route";
@@ -58,8 +59,14 @@ async function callPublic(userId: string) {
 describeDb("主催者の公開プロフィール（結合）", () => {
   const eventIds: string[] = [];
   const userIds: string[] = [];
+  const assetIds: string[] = [];
 
   afterEach(async () => {
+    if (assetIds.length > 0) {
+      // 画像は会員と独立して残る（user_id は ON DELETE SET NULL）。行も片付ける。
+      await prisma.imageAsset.deleteMany({ where: { id: { in: assetIds } } });
+      assetIds.length = 0;
+    }
     await cleanup({ eventIds, userIds });
     eventIds.length = 0;
     userIds.length = 0;
@@ -306,5 +313,39 @@ describeDb("主催者の公開プロフィール（結合）", () => {
     expect(body.homePath).toBe(`/organizers/${organizer.id}`);
     expect(body.profile).toMatchObject({ isPublished: false, tags: [], xUrl: "" });
     expect(body.stats).toEqual({ eventCount: 1, sinceYear: 2025 });
+  });
+
+  it("編集画面の GET と PUT の応答に、ヘッダーの URL が入る", async () => {
+    const organizer = await createUser("ヘッダーを設定する主催者");
+    userIds.push(organizer.id);
+    const event = await seedEvent({ userId: organizer.id, role: "OWNER" });
+    eventIds.push(event.id);
+    const token = await signLocalToken({ userId: organizer.id, email: organizer.email });
+
+    // 画像そのものは header/ の API が作る。ここでは参照だけを用意して応答の形を見る。
+    const asset = await prisma.imageAsset.create({
+      data: {
+        userId: organizer.id,
+        kind: "PROFILE_HEADER",
+        contentType: "image/webp",
+        width: 1920,
+        height: 640,
+        byteSize: 1024,
+      },
+    });
+    assetIds.push(asset.id);
+    await prisma.organizerProfile.create({
+      data: { userId: organizer.id, headerImageId: asset.id },
+    });
+
+    const expected = imageAssetImagePath(asset.id);
+
+    const got = await callOwn(token);
+    expect(got.status).toBe(200);
+    expect(got.body.headerUrl).toBe(expected);
+
+    const saved = await callOwn(token, "PUT", { isPublished: true, headline: "ヘッダーあり" });
+    expect(saved.status).toBe(200);
+    expect(saved.body.headerUrl).toBe(expected);
   });
 });

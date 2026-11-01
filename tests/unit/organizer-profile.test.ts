@@ -155,8 +155,22 @@ describe("profileContentFromDraft", () => {
     expect(content.avatarUrl).toBe("/api/v1/image-assets/abc/image");
   });
 
+  it("ヘッダー画像もそのまま載せる（プレビュー用）", () => {
+    const content = profileContentFromDraft(
+      draft(),
+      null,
+      null,
+      "/api/v1/image-assets/3c4d5e6f-7a8b-49c0-8d1e-2f3a4b5c6d7e/image",
+    );
+
+    expect(content.headerUrl).toBe(
+      "/api/v1/image-assets/3c4d5e6f-7a8b-49c0-8d1e-2f3a4b5c6d7e/image",
+    );
+  });
+
   it("アイコン未設定なら null", () => {
     expect(profileContentFromDraft(draft(), null).avatarUrl).toBeNull();
+    expect(profileContentFromDraft(draft(), null).headerUrl).toBeNull();
     expect(profileContentFromDraft(draft(), null).themeId).toBeNull();
   });
 });
@@ -288,6 +302,11 @@ describe("OrganizerProfileSchema", () => {
 });
 
 describe("profileContentFromRow", () => {
+  const AVATAR_ID = "1f2e3d4c-5b6a-4978-8899-aabbccddeeff";
+  const HEADER_ID = "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+  const AVATAR_URL = `/api/v1/image-assets/${AVATAR_ID}/image`;
+  const HEADER_URL = `/api/v1/image-assets/${HEADER_ID}/image`;
+
   function row(overrides: Record<string, unknown> = {}) {
     return {
       isPublished: true,
@@ -300,24 +319,28 @@ describe("profileContentFromRow", () => {
       websiteUrl: null,
       lineUrl: null,
       showStats: false,
-      avatarImageId: "1f2e3d4c-5b6a-4978-8899-aabbccddeeff",
+      avatarImageId: AVATAR_ID,
+      headerImageId: HEADER_ID,
       themeId: "neon",
       ...overrides,
     };
   }
 
-  it("公開中なら本文・テーマ・アイコンを出す", () => {
+  it("公開中なら本文・テーマ・アイコン・ヘッダーを出す", () => {
     const content = profileContentFromRow(row(), null);
 
     expect(content.isPublished).toBe(true);
     expect(content.headline).toBe("渋谷で読書会");
     expect(content.themeId).toBe("neon");
-    expect(content.avatarUrl).toBe(
-      "/api/v1/image-assets/1f2e3d4c-5b6a-4978-8899-aabbccddeeff/image",
-    );
+    expect(content.avatarUrl).toBe(AVATAR_URL);
+    expect(content.headerUrl).toBe(HEADER_URL);
   });
 
-  it("非公開なら本文とテーマを隠すが、アイコンは残す", () => {
+  it("ヘッダー未設定なら null", () => {
+    expect(profileContentFromRow(row({ headerImageId: null }), null).headerUrl).toBeNull();
+  });
+
+  it("非公開なら本文とテーマとヘッダーを隠すが、アイコンは残す", () => {
     const content = profileContentFromRow(row({ isPublished: false }), null);
 
     expect(content.isPublished).toBe(false);
@@ -326,9 +349,8 @@ describe("profileContentFromRow", () => {
     expect(content.tags).toEqual([]);
     expect(content.links).toEqual([]);
     expect(content.themeId).toBeNull();
-    expect(content.avatarUrl).toBe(
-      "/api/v1/image-assets/1f2e3d4c-5b6a-4978-8899-aabbccddeeff/image",
-    );
+    expect(content.headerUrl).toBeNull();
+    expect(content.avatarUrl).toBe(AVATAR_URL);
   });
 
   it("行が無ければすべて null", () => {
@@ -337,6 +359,7 @@ describe("profileContentFromRow", () => {
     expect(content.isPublished).toBe(false);
     expect(content.themeId).toBeNull();
     expect(content.avatarUrl).toBeNull();
+    expect(content.headerUrl).toBeNull();
   });
 
   it("DB に知らないテーマが入っていても、標準の見た目に落とす", () => {

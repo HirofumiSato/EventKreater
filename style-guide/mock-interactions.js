@@ -13,9 +13,11 @@
 //   5. 共通 … URL のコピー、コピー作成・プレビュー・ログアウトの遷移、API 依存のトースト
 //   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
 //   7. 出欠の層 … 告知ページの層を開き、割引の支払額を計算し、送信の返事を出す
+//   8. ヘッダーの切り抜き … 編集画面からトリミングのダイアログを開き、倍率だけ変える
 //
 // 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
-// 絞り込みモーダルの中身、申込の割引モーダルの中身だけ。他の表示は製品の DOM のまま動かす。
+// 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログだけ。
+// 他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
 (function () {
@@ -1220,6 +1222,121 @@
   }
 
 
+  // ---- 8. ヘッダー画像の切り抜き -----------------------------------------
+
+  /**
+   * 編集画面のヘッダー欄から、トリミングのダイアログを開く。
+   *
+   * **このダイアログだけ骨格を組み直す**のは、製品ではファイルを選んだあとにしか
+   * 出ないため、撮った HTML に残らないから（他の画面は製品の DOM をそのまま動かす）。
+   * クラス名と並びは製品の `ImageCropDialog` に合わせ、3:1 の枠・拡大スライダー・
+   * 決定/やめるを同じ見た目で置く。画像は欄の見本が持つデモ画像を写し、
+   * 決定では API を呼ばずに閉じて、製品と同じ文言のトーストを出すだけにする。
+   * 位置のドラッグは写さない（倍率だけ変えられれば、枠の見え方は確かめられる）。
+   */
+  function wireHeaderCrop() {
+    const field = document.querySelector(".header-field");
+    const openButton = field?.querySelector(".header-field__body .btn-row .btn--outline");
+    if (!field || !openButton) return;
+
+    // 見本の画像をそのまま使う。撮った HTML では `assets/` の実ファイルを指している。
+    const imageSrc = field.querySelector(".header-field__preview img")?.getAttribute("src") || "";
+
+    let modal = null;
+
+    const close = () => {
+      if (!modal) return;
+      modal.remove();
+      modal = null;
+      openButton.setAttribute("aria-expanded", "false");
+      document.documentElement.removeAttribute("data-scroll-lock");
+    };
+
+    const buildDialog = () => {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="切り抜きをやめる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-header-crop-title">' +
+        '<button type="button" class="dialog__close" aria-label="切り抜きをやめる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-header-crop-title" class="dialog__title">ヘッダー画像を切り抜く</h3>' +
+        '<div class="header-crop">' +
+        '<div class="header-crop__frame" role="group" aria-label="切り抜く位置">' +
+        (imageSrc
+          ? '<img class="header-crop__canvas" src="' +
+            imageSrc +
+            '" alt="" width="1920" height="640" decoding="async">'
+          : "") +
+        '<span class="header-crop__status">画像を読み込んでいます…</span>' +
+        "</div>" +
+        '<div class="header-crop__zoom">' +
+        '<label class="label" for="mock-header-crop-zoom">拡大</label>' +
+        '<input id="mock-header-crop-zoom" class="header-crop__range" type="range" min="1" max="3" step="0.1" value="1" aria-valuetext="1.0倍">' +
+        '<output class="header-crop__value" for="mock-header-crop-zoom">1.0倍</output>' +
+        "</div>" +
+        '<p class="dialog__body header-crop__help">ドラッグか矢印キーで位置を決めます。</p>' +
+        '<p class="dialog__note">幅800px未満になる範囲は選べません。</p>' +
+        "</div>" +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-crop-ok>この範囲で決定</button>' +
+        '<button type="button" class="btn btn--ghost btn--block" data-mock-crop-cancel>やめる</button>' +
+        "</div></div>";
+
+      const image = host.querySelector(".header-crop__canvas");
+      const status = host.querySelector(".header-crop__status");
+      if (image) {
+        // 読み込み終わるまでは、製品と同じ「読み込んでいます」を出す。
+        const hideStatus = () => status?.remove();
+        image.addEventListener("load", hideStatus);
+        image.addEventListener("error", () => {
+          if (status) status.textContent = "この画像は開けませんでした。";
+        });
+        if (image.complete) hideStatus();
+      } else if (status) {
+        status.textContent = "ヘッダー画像がまだありません。";
+      }
+
+      // 拡大だけを写す。製品は canvas を描き直すが、モックは 1 枚の画像を
+      // 枠の中心で拡大すれば同じ見え方になる（枠は overflow: hidden）。
+      const range = host.querySelector(".header-crop__range");
+      const value = host.querySelector(".header-crop__value");
+      range.addEventListener("input", () => {
+        const zoom = Number(range.value);
+        const text = zoom.toFixed(1) + "倍";
+        if (value) value.textContent = text;
+        range.setAttribute("aria-valuetext", text);
+        if (image) image.style.transform = "scale(" + zoom + ")";
+      });
+
+      host.querySelector("[data-mock-crop-ok]").addEventListener("click", () => {
+        // 製品はここで POST する。モックは送れないので、閉じて同じ文言を返す。
+        close();
+        toast("ヘッダー画像を変更しました。");
+      });
+      host.querySelector("[data-mock-crop-cancel]").addEventListener("click", close);
+      host.querySelector(".dialog__close").addEventListener("click", close);
+      host.querySelector(".modal__backdrop").addEventListener("click", close);
+
+      return host;
+    };
+
+    openButton.addEventListener("click", () => {
+      if (modal && modal.isConnected) return;
+      modal = buildDialog();
+      document.body.append(modal);
+      document.documentElement.setAttribute("data-scroll-lock", "true");
+      openButton.setAttribute("aria-expanded", "true");
+    });
+
+    // 製品の `Dialog` は Escape でも閉じる。開いている間だけ拾う。
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal) close();
+    });
+  }
+
+
   // ---- 起動 -------------------------------------------------------------
 
   function start() {
@@ -1229,6 +1346,7 @@
     wireVoice();
     wireListFilters();
     wireRsvpSheet();
+    wireHeaderCrop();
     wireActions();
   }
 
