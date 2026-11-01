@@ -346,7 +346,7 @@ function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent
           )}
           {event.capacity === null && <span className="badge badge--sm badge--neutral">定員なし</span>}
           <Link href={`/events/${event.id}`} className="text-link">
-            {event.isFull ? "参加要望を出す" : "出欠を答える"}
+            {event.isFull ? "参加要望を出す" : "申込 /出欠回答"}
           </Link>
         </div>
         {ratio !== null && (

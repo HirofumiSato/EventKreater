@@ -310,6 +310,16 @@ export function serializeSchedules(rows: ScheduleRecord[]) {
     }));
 }
 
+/** 参加者が選んだ日程のラベル。1 件ならそのまま、複数なら ` / ` で並べる。 */
+export function composeScheduleLabels(
+  rows: readonly { eventDate: Date; eventTime: string }[] | null | undefined,
+): string | null {
+  if (!rows || rows.length === 0) return null;
+  return rows
+    .map((row) => `${formatEventDateLabel(formatEventDate(row.eventDate))} ${row.eventTime}`.trim())
+    .join(" / ");
+}
+
 export function serializePricePlans(rows: PricePlanRecord[]) {
   return [...rows]
     .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -492,9 +502,11 @@ export function serializeEvent(event: EventRecordShape) {
 }
 
 export interface ParticipantStats {
+  /** 出席している人数（自分を含む参加人数の合計）。回答の件数ではない。 */
   attendingCount: number;
   declinedCount: number;
   waitlistedCount: number;
+  /** 回答の件数（人数ではない）。 */
   totalResponses: number;
 }
 
@@ -502,20 +514,29 @@ export function emptyStats(): ParticipantStats {
   return { attendingCount: 0, declinedCount: 0, waitlistedCount: 0, totalResponses: 0 };
 }
 
-export function summarizeStatuses(statuses: RsvpStatus[]): ParticipantStats {
+/**
+ * 出欠の状態を集計する。出席は `partySize`（自分を含む人数）を足し、
+ * 欠席と参加要望は 1 回答 1 件として数える。
+ */
+export function summarizeStatuses(
+  rows: readonly { status: RsvpStatus; partySize?: number }[],
+): ParticipantStats {
   let attendingCount = 0;
   let declinedCount = 0;
   let waitlistedCount = 0;
-  for (const status of statuses) {
-    if (status === "ATTENDING") attendingCount += 1;
-    if (status === "DECLINED") declinedCount += 1;
-    if (status === "WAITLISTED") waitlistedCount += 1;
+  for (const row of rows) {
+    if (row.status === "ATTENDING") {
+      const size = row.partySize ?? 1;
+      attendingCount += Number.isFinite(size) && size >= 1 ? Math.floor(size) : 1;
+    }
+    if (row.status === "DECLINED") declinedCount += 1;
+    if (row.status === "WAITLISTED") waitlistedCount += 1;
   }
   return {
     attendingCount,
     declinedCount,
     waitlistedCount,
-    totalResponses: attendingCount + declinedCount + waitlistedCount,
+    totalResponses: rows.length,
   };
 }
 

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampRsvpPartySize,
   isRsvpPlanSelectable,
   resolveSelectedPlanId,
   rsvpPlanChoices,
   rsvpScheduleChoices,
+  rsvpScheduleLabels,
   rsvpSubmitName,
   selectableRsvpPlans,
   showsRsvpNameField,
+  toggleRsvpScheduleId,
 } from "@/modules/attendance/lib/rsvp-form";
 import type {
   EventPricePlanOption,
@@ -152,24 +155,34 @@ describe("費用プランの札", () => {
 describe("出席する日時の札", () => {
   const schedules = [schedule("a", "2026-11-21"), schedule("b", "2026-11-22")];
 
-  it("選んだ日時を選んだままにする", () => {
+  it("選んだ日時を選んだままにする（複数可）", () => {
     const rows = rsvpScheduleChoices({
       schedules,
       enabled: true,
       locked: false,
-      selectedScheduleId: "b",
+      selectedScheduleIds: ["b"],
     });
     expect(rows.map((row) => row.checked)).toEqual([false, true]);
   });
 
-  it("値が無い・候補に無いときは先頭を選ぶ", () => {
+  it("2 件選んでいれば 2 件とも選んだままにする", () => {
     const rows = rsvpScheduleChoices({
       schedules,
       enabled: true,
       locked: false,
-      selectedScheduleId: "missing",
+      selectedScheduleIds: ["b", "a"],
     });
-    expect(rows.map((row) => row.checked)).toEqual([true, false]);
+    expect(rows.map((row) => row.checked)).toEqual([true, true]);
+  });
+
+  it("1 件も選んでいなければ、どれも選ばない", () => {
+    const rows = rsvpScheduleChoices({
+      schedules,
+      enabled: true,
+      locked: false,
+      selectedScheduleIds: [],
+    });
+    expect(rows.map((row) => row.checked)).toEqual([false, false]);
   });
 
   it("欠席・参加要望のときは、札を残して押せなくする", () => {
@@ -177,9 +190,40 @@ describe("出席する日時の札", () => {
       schedules,
       enabled: false,
       locked: false,
-      selectedScheduleId: "a",
+      selectedScheduleIds: ["a"],
     });
     expect(rows).toHaveLength(2);
     expect(rows.every((row) => row.disabled)).toBe(true);
+  });
+});
+
+describe("日時のトグルと人数", () => {
+  it("押していない日時を足し、押した順ではなく集合として持つ", () => {
+    expect(toggleRsvpScheduleId(["a"], "b")).toEqual(["a", "b"]);
+  });
+
+  it("押している日時をもう一度押すと外す", () => {
+    expect(toggleRsvpScheduleId(["a", "b"], "a")).toEqual(["b"]);
+  });
+
+  it("人数は 1〜20 の整数に丸める", () => {
+    expect(clampRsvpPartySize("1")).toBe(1);
+    expect(clampRsvpPartySize("3")).toBe(3);
+    expect(clampRsvpPartySize("0")).toBe(1);
+    expect(clampRsvpPartySize("-2")).toBe(1);
+    expect(clampRsvpPartySize("21")).toBe(20);
+    expect(clampRsvpPartySize("2.9")).toBe(2);
+  });
+
+  it("空・数字でない入力は 1 人に寄せる", () => {
+    expect(clampRsvpPartySize("")).toBe(1);
+    expect(clampRsvpPartySize("   ")).toBe(1);
+    expect(clampRsvpPartySize("abc")).toBe(1);
+  });
+
+  it("選んだ日時を、イベントの並び順の短いラベルで返す", () => {
+    const schedules = [schedule("a", "2026-11-21"), schedule("b", "2026-11-22")];
+    expect(rsvpScheduleLabels(schedules, ["b", "a"])).toEqual(["11/21", "11/22"]);
+    expect(rsvpScheduleLabels(schedules, [])).toEqual([]);
   });
 });

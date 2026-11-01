@@ -12,12 +12,13 @@ import {
   resolveAttendanceChoice,
   resolveDiscountChoice,
   resolveStatusForCapacity,
+  sumAttendingHeadcount,
 } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { serializeParticipantDiscounts } from "@/lib/serializers";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
-import { chooseRsvpTarget, findMyParticipant } from "@/modules/participants/lib/rsvp";
+import { chooseRsvpTarget, findMyParticipant, participantScheduleIds } from "@/modules/participants/lib/rsvp";
 import { notifyRsvpSubmitted } from "@/modules/notifications/lib/notify";
 
 export const runtime = "nodejs";
@@ -50,7 +51,9 @@ function serializeRsvp(
     gender: "MALE" | "FEMALE" | null;
     comment: string | null;
     scheduleId: string | null;
+    partySize: number;
     pricePlanId: string | null;
+    schedules?: { scheduleId: string; schedule?: { sortOrder: number } | null }[];
   },
   position: number | null,
   discounts: { discountId: string | null; name: string; amount: number; note: string | null; sortOrder: number }[] = [],
@@ -62,6 +65,8 @@ function serializeRsvp(
     gender: participant.gender,
     comment: participant.comment,
     scheduleId: participant.scheduleId,
+    scheduleIds: participantScheduleIds(participant.schedules, participant.scheduleId),
+    partySize: participant.partySize,
     pricePlanId: participant.pricePlanId,
     discounts: serializeParticipantDiscounts(discounts),
     waitlistPosition: position,
@@ -86,11 +91,18 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         // 数えてから作るまでの競合で定員を超えないよう、判定の前にイベント行をロックする。
         await lockEventForCapacity(tx, event.id);
         const found = await findMyParticipant(tx, { eventId: event.id, tokenHash, userId });
+        // 参加人数。出席のときだけ持つ。欠席・参加要望は席を取らないので 1 に戻す
+        // （要望は 1 人として並び、承認したときに名簿で人数を入れる）。
+        const partySize = input.status === "ATTENDING" ? (input.partySize ?? 1) : 1;
 
         if (found) {
           const { participant: target, stale } = await chooseRsvpTarget(tx, found, userId);
-          // 満員なら「出席」ではなく「参加要望」として受ける。
-          const status = await resolveStatusForCapacity(tx, event.id, input.status, target.id);
+          // 満員なら「出席」ではなく「参加要望」として受ける。人数ぶんの席で判定する。
+          const status = await resolveStatusForCapacity(tx, event.id, {
+            status: input.status,
+            partySize,
+            ignoreParticipantId: target.id,
+          });
           const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
           const snapshot = keepPriceSnapshot(target, choice);
           // 参加者が選んだ割引の写し。欠席・参加要望に変えたら空にして消す。
@@ -108,10 +120,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
               gender: input.gender ?? null,
               comment: input.comment ? input.comment : null,
               scheduleId: choice.scheduleId,
+              partySize,
               pricePlanId: choice.pricePlanId,
               // 要望は最初に出した時刻を保つ。出席・欠席に戻すと順番を失う。
               waitlistedAt: status === "WAITLISTED" ? (target.waitlistedAt ?? new Date()) : null,
               ...snapshot,
+              // 選んだ日程は毎回入れ替える。欠席・参加要望では空になる。
+              schedules: {
+                deleteMany: {},
+                create: choice.scheduleIds.map((scheduleId) => ({ scheduleId })),
+              },
               // 申込時点の名前・金額・補足を写す。定義を後から編集・削除しても金額は動かない。
               discounts: {
                 deleteMany: {},
@@ -127,7 +145,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
               // 未ログインで答えた行も、ログイン中の会員に紐づける。
               ...(userId && !target.userId ? { userId } : {}),
             },
-            include: { discounts: { orderBy: { sortOrder: "asc" } } },
+            include: {
+              discounts: { orderBy: { sortOrder: "asc" } },
+              schedules: { select: { scheduleId: true, schedule: { select: { sortOrder: true } } } },
+            },
           });
           if (stale) await tx.participant.delete({ where: { id: stale.id } });
           // クッキーが残した行を指しているときだけ、そのまま使い続ける。
@@ -141,7 +162,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           };
         }
 
-        const status = await resolveStatusForCapacity(tx, event.id, input.status);
+        const status = await resolveStatusForCapacity(tx, event.id, {
+          status: input.status,
+          partySize,
+        });
         const choice = await resolveAttendanceChoice(tx, event.id, { ...input, status });
         const chosen = await resolveDiscountChoice(tx, event.id, status, input.discountIds);
         const rawToken = generateSecureToken(32);
@@ -155,12 +179,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             gender: input.gender ?? null,
             comment: input.comment ? input.comment : null,
             scheduleId: choice.scheduleId,
+            partySize,
             pricePlanId: choice.pricePlanId,
             priceAmount: choice.priceAmount,
             pricePlanName: choice.pricePlanName,
             priceAudience: choice.priceAudience,
             ipHash,
             waitlistedAt: status === "WAITLISTED" ? new Date() : null,
+            // 選んだ日程は毎回入れ替える。欠席・参加要望では空になる。
+            schedules: {
+              create: choice.scheduleIds.map((scheduleId) => ({ scheduleId })),
+            },
             discounts: {
               create: chosen.map((row, sortOrder) => ({
                 discountId: row.discountId,
@@ -171,7 +200,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
               })),
             },
           },
-          include: { discounts: { orderBy: { sortOrder: "asc" } } },
+          include: {
+            discounts: { orderBy: { sortOrder: "asc" } },
+            schedules: { select: { scheduleId: true, schedule: { select: { sortOrder: true } } } },
+          },
         });
         return { participant: created, rawToken, created: true, previousStatus: null };
       });
@@ -193,15 +225,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         created: result.created,
         previousStatus: result.previousStatus,
         nextStatus: result.participant.status,
+        partySize: result.participant.partySize,
         changedAt: result.participant.updatedAt,
       });
     } catch (error) {
       console.error("参加表明の通知に失敗しました", error);
     }
 
-    const attendingCount = await prisma.participant.count({
-      where: { eventId: event.id, status: "ATTENDING" },
-    });
+    const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistRows = await prisma.participant.findMany({
       where: { eventId: event.id, status: "WAITLISTED" },
       select: { id: true, status: true, waitlistedAt: true, createdAt: true },
@@ -267,9 +298,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     await prisma.participant.delete({ where: { id: target.id } });
     if (stale) await prisma.participant.delete({ where: { id: stale.id } }).catch(() => undefined);
 
-    const attendingCount = await prisma.participant.count({
-      where: { eventId: event.id, status: "ATTENDING" },
-    });
+    const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistCount = await prisma.participant.count({
       where: { eventId: event.id, status: "WAITLISTED" },
     });

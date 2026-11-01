@@ -117,7 +117,12 @@ try {
       include: { schedules: { orderBy: { sortOrder: "asc" } } },
     });
 
-    const chosen = input.chooseScheduleIndex === null ? null : event.schedules[input.chooseScheduleIndex ?? 0];
+    const chosenIndexes =
+      input.chooseScheduleIndex === null
+        ? []
+        : input.chooseScheduleIndexes ?? [input.chooseScheduleIndex ?? 0];
+    const chosenSchedules = chosenIndexes.flatMap((index) => event.schedules[index] ?? []);
+    const chosen = chosenSchedules[0] ?? null;
     await prisma.participant.create({
       data: {
         eventId: event.id,
@@ -126,6 +131,12 @@ try {
         name: ACCOUNT.name,
         status: input.status,
         scheduleId: chosen?.id ?? null,
+        // 自分を含む人数。カレンダーと履歴の見本に、2 人の例を混ぜる。
+        partySize: input.status === "ATTENDING" ? (input.partySize ?? 1) : 1,
+        schedules:
+          chosenSchedules.length > 0
+            ? { create: chosenSchedules.map((schedule) => ({ scheduleId: schedule.id })) }
+            : undefined,
         comment: input.comment ?? null,
       },
     });
@@ -133,7 +144,9 @@ try {
     return {
       title: event.title,
       status: input.status,
-      shownOn: chosen ? chosen.eventDate.toISOString().slice(0, 10) : input.sortDate,
+      shownOn: chosenSchedules.length > 0
+        ? chosenSchedules.map((row) => row.eventDate.toISOString().slice(0, 10))
+        : [input.sortDate],
       candidates: event.schedules.map((row) => row.eventDate.toISOString().slice(0, 10)),
     };
   }
@@ -195,6 +208,22 @@ try {
     }),
   );
 
+  // 複数日を選ぶ: 2 日とも出席し、カレンダーには 2 件並ぶこと。
+  created.push(
+    await seedParticipation({
+      title: "合宿（2日とも参加）",
+      sortDate: addDays(today, 16),
+      location: "山の宿",
+      schedules: [
+        schedule(addDays(today, 16), "13:00", "20:00", 0),
+        schedule(addDays(today, 17), "08:00", "15:00", 1),
+      ],
+      chooseScheduleIndexes: [0, 1],
+      partySize: 2,
+      status: "ATTENDING",
+    }),
+  );
+
   // 日程を選ばずに回答: 代表日（sortDate）に置かれること。
   created.push(
     await seedParticipation({
@@ -237,7 +266,7 @@ try {
   console.log("出欠データ:");
   for (const row of created) {
     console.log(
-      `  ${row.title} / ${row.status} / 表示日 ${row.shownOn} / 候補日 ${row.candidates.join(", ")}`,
+      `  ${row.title} / ${row.status} / 表示日 ${row.shownOn.join("・")} / 候補日 ${row.candidates.join(", ")}`,
     );
   }
   console.log("パスワードのあと、確認番号が開発サーバーのログに [sms] で出ます。");

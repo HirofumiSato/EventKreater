@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
           include: {
             flyerAsset: true,
             ...eventOptionsInclude,
-            participants: { select: { status: true } },
+            participants: { select: { status: true, partySize: true } },
             organizers: {
               select: {
                 id: true,
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
         serializeOrganizerListItem(
           organizer.event,
           organizer.role,
-          summarizeStatuses(organizer.event.participants.map((row) => row.status)),
+          summarizeStatuses(organizer.event.participants),
           owner ? organizerLabel(owner) : "主催者",
           owner?.userId ?? null,
         ),

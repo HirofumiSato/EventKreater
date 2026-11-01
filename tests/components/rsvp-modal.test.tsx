@@ -220,8 +220,87 @@ describe("出席する日時", () => {
     const { container } = renderBox();
     fireEvent.click(container.querySelector('input[name="schedule"][value="s2"]')!);
     const checked = radios(container, "schedule").filter((input) => input.checked);
-    expect(checked).toHaveLength(1);
-    expect(checked[0].value).toBe("s2");
+    expect(checked).toHaveLength(2);
+    expect(checked.map((input) => input.value)).toEqual(["s1", "s2"]);
+  });
+
+  it("日時を複数選べる（2 日目と 3 日目だけにもできる）", () => {
+    const { container } = renderBox();
+    fireEvent.click(container.querySelector('input[name="schedule"][value="s1"]')!);
+    fireEvent.click(container.querySelector('input[name="schedule"][value="s3"]')!);
+    const checked = radios(container, "schedule").filter((input) => input.checked);
+    expect(checked.map((input) => input.value)).toEqual(["s3"]);
+  });
+
+  it("1 件も選ばなければ、案内を出して送信を止める", () => {
+    const { container } = renderBox();
+    fireEvent.click(container.querySelector('input[name="schedule"][value="s1"]')!);
+    expect(screen.getByText("参加する日を1つ以上選んでください。")).toBeTruthy();
+    const submit = container.querySelector('button[form="rsvp-form"]') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+});
+
+describe("出欠の文言", () => {
+  it("選択肢は「参加」「欠席」だけにし、小さい補足を出さない", () => {
+    renderBox();
+    expect(screen.getByText("参加")).toBeTruthy();
+    expect(screen.getByText("欠席")).toBeTruthy();
+    expect(screen.queryByText("あとから変更できます")).toBeNull();
+    expect(screen.queryByText("案内は届きません")).toBeNull();
+    expect(screen.queryByText("出席する")).toBeNull();
+  });
+
+  it("満員なら「参加を希望」にする", () => {
+    renderBox({ capacity: 1, attendingCount: 1 });
+    expect(screen.getByText("参加を希望")).toBeTruthy();
+  });
+
+  it("コメントは summary も見出しも「コメント」にし、任意の札を残す", () => {
+    const { container } = renderBox();
+    const summary = container.querySelector(".rsvp-extras__label")!;
+    expect(summary.textContent).toContain("コメント");
+    expect(summary.textContent).toContain("任意");
+    expect(container.querySelector('label[for="rsvp-comment"]')).toBeNull();
+    expect(screen.getByLabelText("コメント")).toBeTruthy();
+  });
+});
+
+describe("参加人数", () => {
+  it("既定は 1 人", () => {
+    const { container } = renderBox();
+    const input = container.querySelector<HTMLInputElement>("#rsvp-party-size")!;
+    expect(input.value).toBe("1");
+    expect(input.min).toBe("1");
+    expect(input.max).toBe("20");
+  });
+
+  it("欠席にすると押せなくする", () => {
+    const { container } = renderBox();
+    fireEvent.click(container.querySelector('input[name="rsvp"][value="DECLINED"]')!);
+    expect(container.querySelector<HTMLInputElement>("#rsvp-party-size")!.disabled).toBe(true);
+  });
+
+  it("3 人で送ると、日時と人数を body に載せる", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(JSON.stringify({ success: true, myRsvp: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container, form } = renderBox();
+    fireEvent.change(container.querySelector("#rsvp-party-size")!, { target: { value: "3" } });
+    fireEvent.click(container.querySelector('input[name="schedule"][value="s2"]')!);
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.partySize).toBe(3);
+    expect(body.scheduleIds).toEqual(["s1", "s2"]);
   });
 });
 

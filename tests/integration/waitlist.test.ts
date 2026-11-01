@@ -45,7 +45,7 @@ describeDb("参加要望（結合）", () => {
 
     const status = await prisma.$transaction(async (tx) => {
       await lockEventForCapacity(tx, event.id);
-      return resolveStatusForCapacity(tx, event.id, "ATTENDING");
+      return resolveStatusForCapacity(tx, event.id, { status: "ATTENDING" });
     });
     expect(status).toBe("ATTENDING");
   });
@@ -58,7 +58,7 @@ describeDb("参加要望（結合）", () => {
 
     const status = await prisma.$transaction(async (tx) => {
       await lockEventForCapacity(tx, event.id);
-      return resolveStatusForCapacity(tx, event.id, "ATTENDING");
+      return resolveStatusForCapacity(tx, event.id, { status: "ATTENDING" });
     });
     expect(status).toBe("WAITLISTED");
   });
@@ -71,7 +71,7 @@ describeDb("参加要望（結合）", () => {
 
     const status = await prisma.$transaction(async (tx) => {
       await lockEventForCapacity(tx, event.id);
-      return resolveStatusForCapacity(tx, event.id, "DECLINED");
+      return resolveStatusForCapacity(tx, event.id, { status: "DECLINED" });
     });
     expect(status).toBe("DECLINED");
   });
@@ -84,7 +84,7 @@ describeDb("参加要望（結合）", () => {
 
     const status = await prisma.$transaction(async (tx) => {
       await lockEventForCapacity(tx, event.id);
-      return resolveStatusForCapacity(tx, event.id, "ATTENDING");
+      return resolveStatusForCapacity(tx, event.id, { status: "ATTENDING" });
     });
     expect(status).toBe("ATTENDING");
   });
@@ -97,7 +97,7 @@ describeDb("参加要望（結合）", () => {
     const attempt = (name: string) =>
       prisma.$transaction(async (tx) => {
         await lockEventForCapacity(tx, event.id);
-        const status = await resolveStatusForCapacity(tx, event.id, "ATTENDING");
+        const status = await resolveStatusForCapacity(tx, event.id, { status: "ATTENDING" });
         await tx.participant.create({
           data: {
             eventId: event.id,

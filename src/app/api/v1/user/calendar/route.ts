@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/http";
 import { requireUserId } from "@/modules/auth/lib/guards";
 import {
   participationInclude,
-  serializeCalendarEntry,
+  serializeCalendarEntries,
 } from "@/modules/participants/lib/participations";
 
 export const runtime = "nodejs";
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       include: participationInclude,
       orderBy: [{ event: { sortDate: "asc" } }, { updatedAt: "desc" }],
     });
-    return NextResponse.json({ items: rows.map(serializeCalendarEntry) });
+    return NextResponse.json({ items: rows.flatMap(serializeCalendarEntries) });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/user/calendar");
   }

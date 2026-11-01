@@ -116,6 +116,17 @@ describe("通知の文面", () => {
   it("名簿への行き先は 1 か所で組み立てる", () => {
     expect(participantsPath("abc")).toBe("/organizer/events/abc/participants");
   });
+
+  it("2 人以上なら本文に人数を入れる", () => {
+    const content = buildRsvpNotification({ ...base, status: "ATTENDING", partySize: 3 });
+    expect(content.body).toBe("佐藤 みのりさんが「秋の芋煮会」に3人で出席します。");
+  });
+
+  it("1 人と省略は人数を書かない", () => {
+    expect(buildRsvpNotification({ ...base, status: "ATTENDING", partySize: 1 }).body).toBe(
+      "佐藤 みのりさんが「秋の芋煮会」に出席します。",
+    );
+  });
 });
 
 describe("二重作成を防ぐ指紋", () => {

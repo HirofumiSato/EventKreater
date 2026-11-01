@@ -38,6 +38,7 @@
         <option value="mock-event-member.html">04 イベント告知・出欠（ログイン済み）</option>
         <option value="mock-event-full.html">04 イベント告知・出欠（満員）</option>
         <option value="mock-event-closed.html">04 イベント告知・出欠（受付停止）</option>
+        <option value="mock-event-camp.html">04 イベント告知・出欠（複数日（3日間））</option>
         <option value="mock-event-receipt.html">05 参加費の領収書</option>
         <option value="mock-organizer-public.html">06 主催者のページ（未ログイン）</option>
         <option value="mock-organizer-public-member.html">06 主催者のページ（ログイン済み）</option>
@@ -136,7 +137,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "未ログイン",
-        "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06",
+        "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72",
         "group": "public"
       },
       {
@@ -144,7 +145,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "ログイン済み",
-        "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06",
+        "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72",
         "group": "public"
       },
       {
@@ -152,7 +153,7 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "満員",
-        "path": "/events/c7f4b25d-d1c3-4162-b6f3-4e0cc80e3d8d",
+        "path": "/events/c3cdbcc9-4b72-4cd9-a103-ea3694220927",
         "group": "public"
       },
       {
@@ -160,7 +161,15 @@
         "no": "04",
         "name": "イベント告知・出欠",
         "label": "受付停止",
-        "path": "/events/5ff034c8-7b2c-44c0-9503-56cd7df9eb64",
+        "path": "/events/49948393-6062-477e-9285-ad9d1eab40fc",
+        "group": "public"
+      },
+      {
+        "file": "mock-event-camp.html",
+        "no": "04",
+        "name": "イベント告知・出欠",
+        "label": "複数日（3日間）",
+        "path": "/events/d2949838-5257-4e53-8375-21233c7adda3",
         "group": "public"
       },
       {
@@ -168,7 +177,7 @@
         "no": "05",
         "name": "参加費の領収書",
         "label": "",
-        "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06/receipt",
+        "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72/receipt",
         "group": "public"
       },
       {
@@ -408,7 +417,7 @@
         "no": "19",
         "name": "売上の内訳",
         "label": "",
-        "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/revenue",
+        "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/revenue",
         "group": "organizer"
       },
       {
@@ -424,7 +433,7 @@
         "no": "21",
         "name": "イベントの編集",
         "label": "",
-        "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/edit",
+        "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/edit",
         "group": "organizer"
       },
       {
@@ -440,7 +449,7 @@
         "no": "23",
         "name": "下書きのプレビュー",
         "label": "",
-        "path": "/organizer/events/92eb2213-59d3-4fbb-91d8-c3e00187ec46/preview",
+        "path": "/organizer/events/3c8e558e-f761-43f5-8693-56d94811a380/preview",
         "group": "organizer"
       },
       {
@@ -448,7 +457,7 @@
         "no": "24",
         "name": "参加者名簿",
         "label": "",
-        "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/participants",
+        "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/participants",
         "group": "organizer"
       },
       {
@@ -456,7 +465,7 @@
         "no": "25",
         "name": "幹事向け領収書",
         "label": "",
-        "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/receipts/c05c4a83-32d4-4118-be3b-338e7f760bab",
+        "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/receipts/ffa23f17-46fc-4217-a260-c594609ee23d",
         "group": "organizer"
       },
       {
@@ -464,7 +473,7 @@
         "no": "26",
         "name": "公開直後の案内",
         "label": "",
-        "path": "/organizer/register-required?event=c66bc545-005a-4f29-b01b-14a09c65ff06",
+        "path": "/organizer/register-required?event=4f9a8775-864c-4342-a180-30499e50ea72",
         "group": "organizer"
       },
       {
@@ -500,6 +509,7 @@
       "mock-event-member.html": "mock-event-member.html?embed=1",
       "mock-event-full.html": "mock-event-full.html?embed=1",
       "mock-event-closed.html": "mock-event-closed.html?embed=1",
+      "mock-event-camp.html": "mock-event-camp.html?embed=1",
       "mock-event-receipt.html": "mock-event-receipt.html?embed=1",
       "mock-organizer-public.html": "mock-organizer-public.html?embed=1",
       "mock-organizer-public-member.html": "mock-organizer-public-member.html?embed=1",

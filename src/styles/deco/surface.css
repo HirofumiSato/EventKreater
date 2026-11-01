@@ -843,6 +843,14 @@
   line-height: 1.7;
 }
 
+/* 選んだ日時。状態の 1 行の下に、短いラベルだけを添える。 */
+.rsvp-summary__meta {
+  margin-top: 0.125rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
 .rsvp-summary__amount strong {
   color: var(--color-text);
   font-size: 1rem;
@@ -1019,13 +1027,6 @@
   cursor: pointer;
 }
 
-.rsvp__choice small {
-  display: block;
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  font-weight: 400;
-}
-
 /* 入力そのものは残し、札の全面を押せるようにする。 */
 .rsvp__choice input {
   position: absolute;
@@ -1039,10 +1040,6 @@
   border-color: var(--color-text);
   background: var(--color-text);
   color: #fff;
-}
-
-.rsvp__choice:has(input:checked) small {
-  color: #d8d4cc;
 }
 
 .rsvp__choice:hover {
@@ -1866,6 +1863,22 @@
   font-size: 0.8125rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* 名簿の編集で日時を選ぶチェックの束。3 件でも縦に積み、行の高さを抑える。 */
+.roster__schedule-edit {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.roster__schedule-edit .check {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* 人数の入力。列の幅を取らず、数字 2 桁までに収める。 */
+.roster__party-size {
+  width: 4.5rem;
 }
 
 .roster__meta {

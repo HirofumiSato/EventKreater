@@ -506,6 +506,8 @@ model EventSchedule {
   endTime   String?  @map("end_time") @db.VarChar(5)
   sortOrder Int      @map("sort_order")
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participants        Participant[]
+  participantSchedules ParticipantSchedule[]
   @@index([eventId, sortOrder])
   @@map("event_schedules")
 }
@@ -619,6 +621,13 @@ model Participant {
   gender        Gender?
   status        RsvpStatus
   comment       String?    @db.Text
+  /// 代表の開催日時。複数日を選んだときは、イベントの並び順で最初の日時。
+  /// 名簿・売上の「開催回別」・カレンダーはこの値を代表として見る（選択した全日は
+  /// `participant_schedules` が持つ）。
+  scheduleId    String?    @map("schedule_id") @db.Uuid
+  /// 自分を含む参加人数。定員は人数ぶん消費し、売上も人数ぶんで数える。
+  /// 出席のときだけ持ち、欠席・参加要望は 1（要望は席を取らず、承認時に入れる）。
+  partySize     Int        @default(1) @map("party_size") @db.Integer
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
@@ -650,6 +659,20 @@ model ParticipantDiscount {
   @@index([participantId])
   @@index([discountId])
   @@map("participant_discounts")
+}
+
+/// 出席する日時。複数選べる。`participants.schedule_id` はこの先頭（代表）を持つ。
+/// 欠席・参加要望のときは行を作らず、出席に戻したときに選び直す。
+model ParticipantSchedule {
+  participantId String @map("participant_id") @db.Uuid
+  scheduleId    String @map("schedule_id") @db.Uuid
+
+  participant Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  schedule    EventSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@id([participantId, scheduleId])
+  @@index([scheduleId])
+  @@map("participant_schedules")
 }
 
 // 参加費の領収書。決済は行わず、幹事が金額を入力して発行する。1参加者につき1件。
@@ -1136,6 +1159,9 @@ CREATE TABLE participants (
     status rsvp_status_enum NOT NULL,
     comment TEXT NULL,
     schedule_id UUID NULL REFERENCES event_schedules(id) ON DELETE SET NULL,
+    -- 自分を含む参加人数。定員は人数ぶん消費し、売上も人数ぶんで数える。
+    -- 出席のときだけ持ち、欠席・参加要望は 1（要望は席を取らず、承認時に入れる）。
+    party_size INTEGER NOT NULL DEFAULT 1 CHECK (party_size >= 1),
     price_plan_id UUID NULL REFERENCES event_price_plans(id) ON DELETE SET NULL,
     -- 出欠確定時点の費用プランの写し。プラン編集後も見込み売上を変えない。
     price_amount INTEGER NULL,
@@ -1167,6 +1193,15 @@ CREATE TABLE participant_discounts (
 
 CREATE INDEX idx_participant_discounts_participant ON participant_discounts(participant_id);
 CREATE INDEX idx_participant_discounts_discount ON participant_discounts(discount_id);
+
+-- 9c. 出席する日時（複数可）。participants.schedule_id はこの先頭（代表）を持つ。
+CREATE TABLE participant_schedules (
+    participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+    schedule_id UUID NOT NULL REFERENCES event_schedules(id) ON DELETE CASCADE,
+    PRIMARY KEY (participant_id, schedule_id)
+);
+
+CREATE INDEX idx_participant_schedules_schedule ON participant_schedules(schedule_id);
 
 -- 8b. 参加費の領収書（1参加者につき1件。決済は持たない）
 CREATE TABLE receipts (

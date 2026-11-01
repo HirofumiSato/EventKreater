@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2691,
+      "lineCount": 2701,
       "headings": [
         {
           "level": 2,
@@ -2863,7 +2863,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1698,
+      "lineCount": 1733,
       "headings": [
         {
           "level": 2,
@@ -10523,7 +10523,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 594,
+      "lineCount": 602,
       "headings": [
         {
           "level": 1,
@@ -10569,6 +10569,10 @@
           "exists": true
         },
         {
+          "path": "tests/components/participant-list-table.test.tsx",
+          "exists": true
+        },
+        {
           "path": "tests/components/rsvp-modal.test.tsx",
           "exists": true
         },
@@ -10610,6 +10614,10 @@
         },
         {
           "path": "tests/integration/organizers.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/participant-party-size.test.ts",
           "exists": true
         },
         {

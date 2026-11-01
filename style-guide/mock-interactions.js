@@ -1139,9 +1139,18 @@
       const radiosOf = (name) => Array.from(form.querySelectorAll(`input[name="${name}"]`));
       const attending = () => {
         const checked = form.querySelector('input[name="rsvp"]:checked');
-        return !checked || checked.value !== "DECLINED";
+        return !checked || checked.value === "ATTENDING";
       };
       const gender = () => form.querySelector('input[name="gender"]:checked')?.value || "";
+
+      // 出席なのに日時が 0 件なら、製品は送信を受け付けない（`disabled`）。
+      // 撮った時点では日時が選ばれているので、外したときだけ同じ規則を再現する。
+      const submitButton = sheet.querySelector('button[form="rsvp-form"]');
+      const syncSubmit = () => {
+        if (!submitButton) return;
+        const none = !radiosOf("schedule").some((input) => input.checked);
+        submitButton.disabled = attending() && none;
+      };
 
       const paint = () => {
         const canInput = attending();
@@ -1151,6 +1160,12 @@
         }
         for (const input of radiosOf("gender")) input.disabled = !canInput;
         for (const input of radiosOf("schedule")) input.disabled = !canInput;
+        // 人数も欠席のときは押せない。欄は消さず、見出しだけ落とす。
+        const partySize = form.querySelector("#rsvp-party-size");
+        if (partySize) {
+          partySize.disabled = !canInput;
+          partySize.closest("fieldset")?.classList.toggle("field--disabled", !canInput);
+        }
         for (const input of radiosOf("price-plan")) {
           const audience = input.getAttribute("data-audience") || "ANY";
           input.disabled = !canInput || (audience !== "ANY" && audience !== gender());
@@ -1165,12 +1180,15 @@
         for (const box of sheet.querySelectorAll(".discount-picker input")) box.disabled = !canInput;
         const extras = sheet.querySelector(".discount-picker")?.closest("details");
         if (extras) extras.classList.toggle("rsvp-extras--disabled", !canInput);
+        syncSubmit();
         syncSummary();
       };
 
       for (const radio of [...radiosOf("rsvp"), ...radiosOf("gender")]) {
         radio.addEventListener("change", paint);
       }
+      // 日時を外したとき・選び直したときも、送信できるかを見直す。
+      for (const box of radiosOf("schedule")) box.addEventListener("change", syncSubmit);
       paint();
     }
 
@@ -1208,10 +1226,19 @@
       return found ? Number(found[1].replace(/,/g, "")) : null;
     };
 
-    /** 料金 − 割引 = 支払額。製品と同じく 0 円で止める。 */
+    /** 自分を含む参加人数。読めなければ 1 人。 */
+    const partySize = () => {
+      const input = form.querySelector("#rsvp-party-size");
+      const value = Number((input?.value || "1").trim());
+      if (!Number.isFinite(value)) return 1;
+      return Math.min(20, Math.max(1, Math.floor(value)));
+    };
+
+    /** (料金 − 割引) × 人数 = 支払額。製品と同じく 0 円で止める。 */
     const sync = () => {
       const chip = planChip();
       const price = planAmount(chip);
+      const size = partySize();
       const total = Array.from(sheet.querySelectorAll(".discount-picker input")).reduce(
         (sum, input) => {
           if (!input.checked) return sum;
@@ -1220,9 +1247,14 @@
         },
         0,
       );
-      if (planCell) planCell.textContent = planText(chip);
-      if (discountCell) discountCell.textContent = total > 0 ? "−" + yen(total) : "なし";
-      if (totalCell) totalCell.textContent = price === null ? "未選択" : yen(Math.max(0, price - total));
+      if (planCell) planCell.textContent = chip ? planText(chip) + " × " + size + "人" : "未選択";
+      if (discountCell) {
+        discountCell.textContent = total > 0 ? "−" + yen(total * size) : "なし";
+      }
+      if (totalCell) {
+        totalCell.textContent =
+          price === null ? "未選択" : yen(Math.max(0, price - total) * size);
+      }
       // 見出しの件数の札も、選び直した数に合わせる（矢印と札は触らない）。
       const picker = sheet.querySelector(".discount-picker");
       const extrasLabel = picker?.closest("details")?.querySelector(".rsvp-extras__label");
@@ -1249,6 +1281,12 @@
     }
     for (const radio of sheet.querySelectorAll('input[name="price-plan"]')) {
       radio.addEventListener("change", sync);
+    }
+    // 人数を直したときも、支払額を計算し直す。
+    const partySizeInput = sheet.querySelector("#rsvp-party-size");
+    if (partySizeInput) {
+      partySizeInput.addEventListener("input", sync);
+      partySizeInput.addEventListener("change", sync);
     }
     // 出欠・性別を選び直したときは、押せる札が変わったあとの金額へ合わせる。
     syncSummary = sync;

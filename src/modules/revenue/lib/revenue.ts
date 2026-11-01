@@ -16,11 +16,20 @@ export interface RevenueParticipant {
   pricePlanName: string | null;
   priceAudience: PriceAudience | null;
   scheduleId: string | null;
+  /** 自分を含む参加人数。省略した呼び出し（テストなど）は 1 人として扱う。 */
+  partySize?: number;
   /**
    * 申込時に選んだ割引の写し。省略した呼び出し（テストなど）は割引なしとして扱う。
    * 合計額をプラン金額から引き、支払額は 0 円で止める。
    */
   discounts?: readonly { amount: number }[];
+}
+
+/** 人数。0 以下や小数は 1 人に寄せ、売上と定員が負にならないようにする。 */
+export function partySizeOf(row: { partySize?: number }): number {
+  const size = row.partySize ?? 1;
+  if (!Number.isFinite(size) || size < 1) return 1;
+  return Math.floor(size);
 }
 
 /** 割引の合計額。負の値は数えない（0 円未満の値引きは定義できない）。 */
@@ -30,15 +39,31 @@ export function discountTotal(rows: readonly { amount: number }[] | undefined): 
 }
 
 /**
- * 割引を引いた支払額。0 円未満にはしない。
- * プラン未選択（null）は null のまま返し、売上の分母に入れない。
+ * 1 人ぶんの支払額。割引は引くが、人数は掛けない。0 円未満にはしない。
+ * 領収書は 1 人ずつ切るので、発行画面の既定額はこの値を使う。
+ * 合計を人数で割るのではなく元の金額から引き直し、割り切れない端数を出さない。
  */
-export function payableAmount(row: {
+export function unitPayableAmount(row: {
   priceAmount: number | null;
   discounts?: readonly { amount: number }[];
 }): number | null {
   if (row.priceAmount === null) return null;
   return Math.max(0, row.priceAmount - discountTotal(row.discounts));
+}
+
+/**
+ * 割引を引いた支払額。0 円未満にはしない。
+ * 金額は 1 人ぶんなので、自分を含む人数を掛ける（3 人で 3,000 円なら 9,000 円）。
+ * プラン未選択（null）は null のまま返し、売上の分母に入れない。
+ */
+export function payableAmount(row: {
+  priceAmount: number | null;
+  discounts?: readonly { amount: number }[];
+  partySize?: number;
+}): number | null {
+  const perPerson = unitPayableAmount(row);
+  if (perPerson === null) return null;
+  return perPerson * partySizeOf(row);
 }
 
 export interface RevenueSummary {
@@ -81,12 +106,13 @@ export function summarizeRevenue(
       declinedCount += 1;
       continue;
     }
-    attendingCount += 1;
+    const size = partySizeOf(row);
+    attendingCount += size;
     if (row.priceAmount === null) {
-      unassignedPlanCount += 1;
+      unassignedPlanCount += size;
       continue;
     }
-    paidAttendingCount += 1;
+    paidAttendingCount += size;
     expectedRevenue += payableAmount(row) ?? 0;
   }
 
@@ -128,11 +154,12 @@ export function groupByPlan(participants: readonly RevenueParticipant[]): PlanRe
     if (row.status !== "ATTENDING" || row.priceAmount === null) continue;
     const name = row.pricePlanName ?? "プラン名なし";
     const audience = row.priceAudience ?? "ANY";
-    const discount = discountTotal(row.discounts);
-    const key = `${audience}\u0000${name}\u0000${row.priceAmount}\u0000${discount}`;
+    const size = partySizeOf(row);
+    const discount = discountTotal(row.discounts) * size;
+    const key = `${audience}\u0000${name}\u0000${row.priceAmount}\u0000${discountTotal(row.discounts)}`;
     const current = rows.get(key);
     if (current) {
-      current.attendingCount += 1;
+      current.attendingCount += size;
       current.discountSubtotal += discount;
       current.subtotal += payableAmount(row) ?? 0;
       continue;
@@ -141,7 +168,7 @@ export function groupByPlan(participants: readonly RevenueParticipant[]): PlanRe
       name,
       audience,
       amount: row.priceAmount,
-      attendingCount: 1,
+      attendingCount: size,
       discountSubtotal: discount,
       subtotal: payableAmount(row) ?? 0,
     });
@@ -169,17 +196,18 @@ export function groupBySchedule(participants: readonly RevenueParticipant[]): Sc
   for (const row of participants) {
     if (row.status !== "ATTENDING") continue;
     const key = row.scheduleId;
-    const discount = discountTotal(row.discounts);
+    const size = partySizeOf(row);
+    const discount = discountTotal(row.discounts) * size;
     const current = rows.get(key);
     if (current) {
-      current.attendingCount += 1;
+      current.attendingCount += size;
       current.discountSubtotal += discount;
       current.subtotal += payableAmount(row) ?? 0;
       continue;
     }
     rows.set(key, {
       scheduleId: key,
-      attendingCount: 1,
+      attendingCount: size,
       discountSubtotal: discount,
       subtotal: payableAmount(row) ?? 0,
     });

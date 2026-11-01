@@ -7,8 +7,8 @@
 
 - ルートファイル: 80
 - エンドポイント（メソッド × パス）: 98
-- 仕様書に記載: 92
-- 実装のみ（仕様書に記載なし）: 6
+- 仕様書に記載: 93
+- 実装のみ（仕様書に記載なし）: 5
 - 仕様書のみ（実装なし）: 0
 
 ## 一覧
@@ -98,7 +98,7 @@
 | GET | `/api/v1/public/organizers/[userId]/events` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/organizers/[userId]/events/route.ts` |
 | GET | `/api/v1/public/pricing` | なし | あり | `src/app/api/v1/public/pricing/route.ts` |
 | DELETE | `/api/v1/user` | 必須（requireUserId） | あり | `src/app/api/v1/user/route.ts` |
-| GET | `/api/v1/user/calendar` | 必須（requireUserId） | なし | `src/app/api/v1/user/calendar/route.ts` |
+| GET | `/api/v1/user/calendar` | 必須（requireUserId） | あり | `src/app/api/v1/user/calendar/route.ts` |
 | POST | `/api/v1/user/email` | 必須（requireUserId） | あり | `src/app/api/v1/user/email/route.ts` |
 | POST | `/api/v1/user/email/confirm` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/user/email/confirm/route.ts` |
 | POST | `/api/v1/user/hydrate` | 必須（requireUserId） | あり | `src/app/api/v1/user/hydrate/route.ts` |
@@ -121,7 +121,6 @@
 - `POST /api/v1/invitations/[code]` — `src/app/api/v1/invitations/[code]/route.ts`
 - `GET /api/v1/organizer/events/[id]/organizers` — `src/app/api/v1/organizer/events/[id]/organizers/route.ts`
 - `DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]` — `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts`
-- `GET /api/v1/user/calendar` — `src/app/api/v1/user/calendar/route.ts`
 
 仕様書側に追記するか、実装が不要なら削除します。`docs/README.md` の既知の乖離にも同じ内容を書きます。
 

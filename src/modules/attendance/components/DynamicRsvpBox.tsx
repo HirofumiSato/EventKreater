@@ -6,12 +6,17 @@ import { ChevronDown } from "lucide-react";
 import { useRsvp } from "@/modules/attendance/hooks/useRsvp";
 import { RsvpSummary } from "@/modules/attendance/components/RsvpSummary";
 import {
+  RSVP_PARTY_SIZE_MAX,
+  RSVP_PARTY_SIZE_MIN,
+  clampRsvpPartySize,
   resolveSelectedPlanId,
   rsvpPlanChoices,
   rsvpScheduleChoices,
+  rsvpScheduleLabels,
   rsvpSubmitName,
   selectableRsvpPlans,
   showsRsvpNameField,
+  toggleRsvpScheduleId,
 } from "@/modules/attendance/lib/rsvp-form";
 import { nextRsvpChoices } from "@/modules/events/lib/rsvp-status";
 import {
@@ -60,13 +65,31 @@ interface DynamicRsvpBoxProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /**
-   * 画面下の帯が入口を持つか。持つときは、面の「出欠を答える」を広い画面だけに出す。
+   * 画面下の帯が入口を持つか。持つときは、面の「申込 /出欠回答」を広い画面だけに出す。
    * 狭い画面で朱のボタンを 2 つ並べないため（帯は 768px 以上で消える）。
    */
   barEntry?: boolean;
 }
 
 const GENDERS: Gender[] = ["MALE", "FEMALE"];
+
+/**
+ * 日時の初期値。回答済みなら選んだ全日、未回答なら先頭の 1 件。
+ * イベントから消えた日時は落とす（下書きの編集中に日時を入れ替えた場合）。
+ */
+function initialRsvpScheduleIds(
+  schedules: EventScheduleOption[],
+  rsvp: MyRsvp | null,
+): string[] {
+  const saved = (rsvp?.scheduleIds?.length
+    ? rsvp.scheduleIds
+    : rsvp?.scheduleId
+      ? [rsvp.scheduleId]
+      : []
+  ).filter((id) => schedules.some((row) => row.id === id));
+  if (saved.length > 0) return saved;
+  return schedules.length > 0 ? [schedules[0].id] : [];
+}
 
 /**
  * 出欠。**面（紙）と層（モーダル）に分かれている。**
@@ -142,9 +165,11 @@ export function DynamicRsvpBox({
   );
   const [gender, setGender] = useState<Gender | "">(initialRsvp?.gender ?? "");
   const [comment, setComment] = useState(initialRsvp?.comment ?? "");
-  const [scheduleId, setScheduleId] = useState(
-    schedules.some((row) => row.id === initialRsvp?.scheduleId) ? (initialRsvp?.scheduleId ?? "") : (schedules[0]?.id ?? ""),
+  const [scheduleIds, setScheduleIds] = useState<string[]>(
+    initialRsvpScheduleIds(schedules, initialRsvp),
   );
+  /** 人数は入力をそのまま持ち、送るときと blur のときに丸める（途中で 0 に飛ばさない）。 */
+  const [partySizeText, setPartySizeText] = useState(String(initialRsvp?.partySize ?? 1));
   const [pricePlanId, setPricePlanId] = useState(initialRsvp?.pricePlanId ?? "");
   /**
    * 申込時に選んだ割引の ID。回答済みなら、その写しの discountId を初期値にする
@@ -159,9 +184,8 @@ export function DynamicRsvpBox({
     setStatus(initialRsvp?.status ?? "ATTENDING");
     setGender(initialRsvp?.gender ?? "");
     setComment(initialRsvp?.comment ?? "");
-    setScheduleId(
-      schedules.some((row) => row.id === initialRsvp?.scheduleId) ? (initialRsvp?.scheduleId ?? "") : (schedules[0]?.id ?? ""),
-    );
+    setScheduleIds(initialRsvpScheduleIds(schedules, initialRsvp));
+    setPartySizeText(String(initialRsvp?.partySize ?? 1));
     setPricePlanId(initialRsvp?.pricePlanId ?? "");
     setDiscountIds(
       (initialRsvp?.discounts ?? []).flatMap((row) => (row.discountId ? [row.discountId] : [])),
@@ -201,27 +225,36 @@ export function DynamicRsvpBox({
     schedules,
     enabled: attending,
     locked,
-    selectedScheduleId: scheduleId,
+    selectedScheduleIds: scheduleIds,
   });
+  /** 選んだ日時の短いラベル（11/21 など）。要約の 1 行に使う。 */
+  const selectedScheduleLabels = rsvpScheduleLabels(schedules, scheduleIds);
+  /** 自分を含む人数。入力を丸めた値で、支払額と送信値に使う。 */
+  const partySize = clampRsvpPartySize(partySizeText);
 
   const hasOnlyCommonPlans = pricePlans.every((row) => row.audience === "ANY");
   const selectedPlan = pricePlans.find((row) => row.id === selectedPlanId) ?? null;
   const hasDiscounts = discounts.length > 0;
 
-  /** 選んでいる割引の合計と、料金から引いた支払額。0 円で止める。 */
+  /** 選んでいる割引の合計と、料金から引いた支払額。0 円で止める。人数ぶんで数える。 */
   const checkedRows = discounts.filter((row) => discountIds.includes(row.id));
   const checkedDiscountTotal = checkedRows.reduce((total, row) => total + Math.max(0, row.amount), 0);
   const checkedPayable =
-    selectedPlan === null ? null : Math.max(0, selectedPlan.amount - checkedDiscountTotal);
+    selectedPlan === null
+      ? null
+      : Math.max(0, selectedPlan.amount - checkedDiscountTotal) * partySize;
 
-  /** 回答済みの表示。料金は選んだプランの金額から引き、0 円で止める。 */
+  /** 回答済みの表示。料金は選んだプランの金額から引き、0 円で止める。人数ぶんで数える。 */
   const answeredPlan = pricePlans.find((row) => row.id === myRsvp?.pricePlanId) ?? null;
   const answeredDiscountTotal = (myRsvp?.discounts ?? []).reduce(
     (total, row) => total + Math.max(0, row.amount),
     0,
   );
+  const answeredPartySize = myRsvp?.partySize ?? 1;
   const answeredPayable =
-    answeredPlan === null ? null : Math.max(0, answeredPlan.amount - answeredDiscountTotal);
+    answeredPlan === null
+      ? null
+      : Math.max(0, answeredPlan.amount - answeredDiscountTotal) * answeredPartySize;
 
   const close = () => setOpen(false);
 
@@ -232,7 +265,8 @@ export function DynamicRsvpBox({
         status,
         gender: gender || undefined,
         comment: comment.trim(),
-        scheduleId,
+        scheduleIds,
+        partySize,
         pricePlanId: selectedPlanId,
         discountIds,
       });
@@ -272,7 +306,8 @@ export function DynamicRsvpBox({
       setComment("");
       setStatus(attendValue);
       setGender("");
-      setScheduleId(schedules[0]?.id ?? "");
+      setScheduleIds(schedules.length > 0 ? [schedules[0].id] : []);
+      setPartySizeText("1");
       setPricePlanId("");
       setDiscountIds([]);
       setNotice(null);
@@ -309,6 +344,8 @@ export function DynamicRsvpBox({
         <RsvpSummary
           status={myRsvp.status}
           waitlistPosition={myRsvp.waitlistPosition}
+          partySize={answeredPartySize}
+          scheduleLabels={rsvpScheduleLabels(schedules, myRsvp.scheduleIds ?? [])}
           plan={answeredPlan}
           discounts={myRsvp.discounts}
           payable={answeredPayable}
@@ -335,7 +372,7 @@ export function DynamicRsvpBox({
             </button>
           ) : (
             <button type="button" className="btn btn--primary btn--block" onClick={() => setOpen(true)}>
-              {choices.attend ? "出欠を答える" : "参加要望を出す"}
+              {choices.attend ? "申込 /出欠回答" : "参加要望を出す"}
             </button>
           )}
         </section>
@@ -354,7 +391,9 @@ export function DynamicRsvpBox({
             <button
               type="submit"
               form="rsvp-form"
-              disabled={locked || (attending && selectablePlans.length === 0)}
+              disabled={
+                locked || (attending && (selectablePlans.length === 0 || scheduleIds.length === 0))
+              }
               className="btn btn--primary btn--block"
             >
               {submitLabel}
@@ -395,10 +434,7 @@ export function DynamicRsvpBox({
                   disabled={locked}
                   onChange={() => setStatus(attendValue)}
                 />
-                <span>
-                  {choices.attend ? "出席する" : "参加を希望する"}
-                  <small>{choices.attend ? "あとから変更できます" : "空きが出たら連絡します"}</small>
-                </span>
+                <span>{choices.attend ? "参加" : "参加を希望"}</span>
               </label>
               <label className="rsvp__choice">
                 <input
@@ -409,10 +445,7 @@ export function DynamicRsvpBox({
                   disabled={locked}
                   onChange={() => setStatus("DECLINED")}
                 />
-                <span>
-                  欠席する
-                  <small>案内は届きません</small>
-                </span>
+                <span>欠席</span>
               </label>
             </div>
             {!choices.attend && (
@@ -421,6 +454,28 @@ export function DynamicRsvpBox({
                 いまは参加要望（待ち順）として受け付けます。空きが出たら、幹事が順番に承認します。
               </p>
             )}
+          </fieldset>
+          {/* 人数は自分を含む合計。欠席に人数の意味はないので、欄は残してグレーにする。 */}
+          <fieldset className={attending ? "field" : "field field--disabled"}>
+            <label className="label" htmlFor="rsvp-party-size">
+              参加人数 <span className="req">*</span>
+            </label>
+            <input
+              id="rsvp-party-size"
+              type="number"
+              inputMode="numeric"
+              min={RSVP_PARTY_SIZE_MIN}
+              max={RSVP_PARTY_SIZE_MAX}
+              step={1}
+              required
+              value={partySizeText}
+              disabled={locked || !attending}
+              onChange={(event) => setPartySizeText(event.target.value)}
+              // 入力の途中で 0 や 21 に飛ばさず、離れたときに丸める。
+              onBlur={() => setPartySizeText(String(clampRsvpPartySize(partySizeText)))}
+              className="input"
+            />
+            <p className="help">自分を含む人数です。残席より多いと参加要望になります。</p>
           </fieldset>
           {/* 性別・日時・費用は、選択によって出し入れしない。欠席や参加要望のときも
               欄は残したままグレーアウトする（あとから欄が現れると身構えさせる）。
@@ -459,19 +514,23 @@ export function DynamicRsvpBox({
                 {scheduleChoices.map(({ schedule: row, disabled, checked }) => (
                   <label key={row.id} className="choice choice--schedule">
                     <input
-                      type="radio"
+                      type="checkbox"
                       name="schedule"
                       value={row.id}
-                      required
                       checked={checked}
                       disabled={disabled}
-                      onChange={() => setScheduleId(row.id)}
+                      onChange={() =>
+                        setScheduleIds((current) => toggleRsvpScheduleId(current, row.id))
+                      }
                     />
                     <span className="choice__date">{row.eventDate}</span>
                     <span className="choice__time">{row.eventTime}</span>
                   </label>
                 ))}
               </div>
+              {attending && scheduleIds.length === 0 && (
+                <p className="help">参加する日を1つ以上選んでください。</p>
+              )}
             </fieldset>
           )}
           {/* 費用プランは、性別が未選択でも全部の札を出す。絞ると、性別を選ぶまで
@@ -572,11 +631,19 @@ export function DynamicRsvpBox({
                 <dl className="discount-picker__summary">
                   <div className="discount-picker__line">
                     <dt>料金</dt>
-                    <dd>{selectedPlan ? selectedPlan.price : "未選択"}</dd>
+                    <dd>
+                      {selectedPlan
+                        ? `${selectedPlan.price} × ${partySize}人`
+                        : "未選択"}
+                    </dd>
                   </div>
                   <div className="discount-picker__line">
                     <dt>割引</dt>
-                    <dd>{checkedDiscountTotal > 0 ? `−${yen(checkedDiscountTotal)}` : "なし"}</dd>
+                    <dd>
+                      {checkedDiscountTotal > 0
+                        ? `−${yen(checkedDiscountTotal * partySize)}`
+                        : "なし"}
+                    </dd>
                   </div>
                   <div className="discount-picker__line discount-picker__line--total">
                     <dt>支払額</dt>
@@ -589,17 +656,15 @@ export function DynamicRsvpBox({
           <details className="rsvp-extras">
             <summary className="rsvp-extras__summary">
               <span className="rsvp-extras__label">
-                ひとこと添える
+                コメント
                 <span className="rsvp-extras__optional">任意</span>
               </span>
               <ChevronDown className="icon rsvp-extras__chevron" aria-hidden="true" />
             </summary>
             <div className="rsvp-extras__body">
-              <label className="label" htmlFor="rsvp-comment">
-                コメント
-              </label>
               <textarea
                 id="rsvp-comment"
+                aria-label="コメント"
                 maxLength={500}
                 value={comment}
                 disabled={locked}

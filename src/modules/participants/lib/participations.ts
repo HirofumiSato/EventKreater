@@ -1,8 +1,8 @@
 import type { Prisma, PriceAudience, RsvpStatus } from "@prisma/client";
 import {
   composeDiscountText,
+  composeScheduleLabels,
   formatEventDate,
-  formatEventDateLabel,
   pricePlanChoiceLabel,
   serializeEvent,
   serializePricePlans,
@@ -55,6 +55,23 @@ export function participationWhere(
 }
 
 /** 参加履歴の 1 行。参加者ホームと履歴画面で同じ形を使う。 */
+/** 出席する日時（複数可）。join 行が無い古い回答は代表日の 1 件に戻す。 */
+export function participationSchedules(row: {
+  schedule: { eventDate: Date; eventTime: string } | null;
+  schedules?: { schedule: { eventDate: Date; eventTime: string; sortOrder: number } }[];
+}): { eventDate: Date; eventTime: string }[] {
+  const chosen = [...(row.schedules ?? [])]
+    .sort((left, right) => left.schedule.sortOrder - right.schedule.sortOrder)
+    .map((link) => link.schedule);
+  if (chosen.length > 0) return chosen;
+  return row.schedule ? [row.schedule] : [];
+}
+
+/** 参加履歴のラベル。複数日を選んでいれば ` / ` で並べる。 */
+export function participationScheduleLabel(row: Parameters<typeof participationSchedules>[0]): string | null {
+  return composeScheduleLabels(participationSchedules(row));
+}
+
 export function serializeParticipation(row: {
   id: string;
   name: string;
@@ -63,6 +80,9 @@ export function serializeParticipation(row: {
   createdAt: Date;
   updatedAt: Date;
   schedule: { eventDate: Date; eventTime: string } | null;
+  schedules?: { schedule: { eventDate: Date; eventTime: string; sortOrder: number } }[];
+  /** 自分を含む参加人数。 */
+  partySize?: number;
   pricePlan: { name: string; audience: PriceAudience; amount: number; note: string | null } | null;
   /** 申込時に選んだ割引の写し。無ければ空配列。 */
   discounts?: { name: string; amount: number; note: string | null; sortOrder: number }[];
@@ -79,9 +99,7 @@ export function serializeParticipation(row: {
     name: row.name,
     status: row.status,
     comment: row.comment,
-    scheduleLabel: row.schedule
-      ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
-      : null,
+    scheduleLabel: participationScheduleLabel(row),
     pricePlanLabel: row.pricePlan ? pricePlanChoiceLabel(row.pricePlan) : null,
     discountLabel:
       (row.discounts ?? []).length > 0
@@ -90,6 +108,7 @@ export function serializeParticipation(row: {
     payableAmount: payableAmount({
       priceAmount: row.pricePlan?.amount ?? null,
       discounts: row.discounts ?? [],
+      partySize: row.partySize ?? 1,
     }),
     statusLabel: rsvpStatusLabel(row.status),
     receiptId: row.receipt?.id ?? null,
@@ -112,6 +131,12 @@ export function serializeParticipation(row: {
 
 export const participationInclude = {
   schedule: true,
+  schedules: {
+    select: {
+      scheduleId: true,
+      schedule: { select: { eventDate: true, eventTime: true, sortOrder: true } },
+    },
+  },
   pricePlan: true,
   discounts: { orderBy: { sortOrder: "asc" } },
   receipt: { select: { id: true, issuedAt: true } },
@@ -151,4 +176,30 @@ export function serializeCalendarEntry(
       flyerThumbnailUrl: base.event.flyerThumbnailUrl,
     },
   };
+}
+
+/**
+ * 参加者カレンダーの項目。日時を複数選んだ回答は、選んだ日ごとに 1 件返す。
+ * 日程を選んでいない回答（欠席など）は、イベントの代表日に 1 件だけ置く。
+ */
+export function serializeCalendarEntries(
+  row: Parameters<typeof serializeParticipation>[0],
+): ParticipantCalendarEntry[] {
+  const base = serializeParticipation(row);
+  const schedules = participationSchedules(row);
+  if (schedules.length === 0) return [serializeCalendarEntry(row)];
+  return schedules.map((schedule) => ({
+    participantId: base.id,
+    date: formatEventDate(schedule.eventDate),
+    eventTime: schedule.eventTime,
+    status: base.status,
+    statusLabel: base.statusLabel,
+    event: {
+      id: base.event.id,
+      title: base.event.title,
+      location: base.event.location,
+      status: base.event.status,
+      flyerThumbnailUrl: base.event.flyerThumbnailUrl,
+    },
+  }));
 }

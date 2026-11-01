@@ -8,7 +8,6 @@ import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { StickyRsvpBar } from "@/modules/attendance/components/StickyRsvpBar";
 import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInviteCard";
 import { showsOrganizerInvite } from "@/modules/events/lib/organizer-invite";
-import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
 import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
 import { Alert, Loading, SemanticThemeScope } from "@/components/ui";
@@ -66,13 +65,7 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
       />
       <EventMetaCard event={event} />
       <div className="event-body">
-        <LineShareButton
-          title={event.title}
-          schedules={event.schedules}
-          location={event.location}
-          path={`/events/${event.id}`}
-          className="btn btn--outline btn--block"
-        />
+        {/* 共有は主催一覧とカレンダーが持つ。告知ページには置かない。 */}
         <DynamicRsvpBox
           eventId={event.id}
           schedules={event.schedules}
@@ -107,17 +100,17 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
             </Link>
           </p>
         )}
-        <p className="page-lead event-page__foot">
-          {event.loggedIn ? (
-            <Link href="/participant/history" className="text-link">
-              自分の参加履歴を見る
+        {/* 履歴はログイン中の共通ヘッダーが受ける。未ログインのときだけ、戻り先を履歴にして 1 本置く。 */}
+        {!event.loggedIn && (
+          <p className="page-lead event-page__foot">
+            <Link
+              href={`/participant/login?next=${encodeURIComponent("/participant/history")}`}
+              className="text-link"
+            >
+              参加者ログインして参加履歴を見る
             </Link>
-          ) : (
-            <Link href={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`} className="text-link">
-              会員登録して履歴を保存
-            </Link>
-          )}
-        </p>
+          </p>
+        )}
       </div>
       <StickyRsvpBar
         attendingCount={event.attendingCount}

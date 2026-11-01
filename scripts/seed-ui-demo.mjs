@@ -506,8 +506,15 @@ try {
     const created = [];
     for (const [index, row] of (input.participants ?? []).entries()) {
       const plan = row.planIndex === undefined ? null : event.pricePlans[row.planIndex];
-      const chosenSchedule =
-        row.scheduleIndex === undefined ? null : event.schedules[row.scheduleIndex];
+      // 出席する日時。複数日は `scheduleIndexes`、1 日だけなら `scheduleIndex` でも書ける。
+      const scheduleIndexes =
+        row.scheduleIndexes ?? (row.scheduleIndex === undefined ? [] : [row.scheduleIndex]);
+      const chosenSchedules = scheduleIndexes.flatMap((scheduleIndex) => {
+        const schedule = event.schedules[scheduleIndex];
+        return schedule ? [schedule] : [];
+      });
+      // 代表の日時は、イベントの並び順で最初の日。`Participant.scheduleId` と同じ決め方。
+      const chosenSchedule = chosenSchedules[0] ?? null;
       // 申込時に選んだ割引。定義の並びから写し（スナップショット）を作る。
       const chosenDiscounts = (row.discountIndexes ?? []).flatMap((discountIndex) => {
         const discount = event.discounts[discountIndex];
@@ -544,6 +551,13 @@ try {
           status: row.status,
           comment: row.comment ?? null,
           scheduleId: chosenSchedule?.id ?? null,
+          // 自分を含む人数。出席のときだけ持つ（欠席・参加要望は 1 に戻す）。
+          partySize: row.status === "ATTENDING" ? (row.partySize ?? 1) : 1,
+          // 選んだ日時は複数日の表へ写す。名簿とカレンダーはこちらを見る。
+          schedules:
+            chosenSchedules.length > 0
+              ? { create: chosenSchedules.map((schedule) => ({ scheduleId: schedule.id })) }
+              : undefined,
           pricePlanId: plan?.id ?? null,
           priceAmount: plan ? plan.amount : null,
           pricePlanName: plan ? plan.name : null,
@@ -608,15 +622,17 @@ try {
         status: "ATTENDING",
         planIndex: 0,
         scheduleIndex: 0,
+        // 自分と子どもの 2 人。名簿と売上が人数ぶんで出ることを確かめる見本。
+        partySize: 2,
         comment: "子ども用に椅子を1脚お願いします",
         // 回答済みの画面（告知ページの「適用中の割引」）でも割引が見えるようにする。
         // 領収書は割引後の支払額で発行したことにする。
         discountIndexes: [0],
         receipt: { amount: 1000, description: "秋の芋煮会 参加費" },
       },
-      { name: "鈴木 大輔", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, discountIndexes: [0] },
+      { name: "鈴木 大輔", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, partySize: 3, discountIndexes: [0] },
       { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
-      { name: "渡辺 健", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, comment: "遅れて 12時ごろ行きます" },
+      { name: "渡辺 健", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, partySize: 2, comment: "遅れて 12時ごろ行きます" },
       { name: "中村 あゆみ", gender: "FEMALE", status: "ATTENDING", planIndex: 2, scheduleIndex: 0 },
       { name: "小林 亮", gender: "MALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
       { name: "加藤 みなみ", gender: "FEMALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0 },

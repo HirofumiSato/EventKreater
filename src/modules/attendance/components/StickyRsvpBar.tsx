@@ -55,7 +55,7 @@ export function StickyRsvpBar({
         </button>
       ) : (
         <button type="button" className="btn btn--primary btn--sm" onClick={onOpen}>
-          {answered ? "回答を変更" : full ? "参加要望を出す" : "出欠を答える"}
+          {answered ? "回答を変更" : full ? "参加要望を出す" : "申込 /出欠回答"}
         </button>
       )}
       {showInvite && (

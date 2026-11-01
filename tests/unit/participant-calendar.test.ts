@@ -10,7 +10,12 @@ import {
   sortParticipantDayEntries,
   toParticipantCellItem,
 } from "@/modules/participants/lib/calendar";
-import { participationCalendarDate } from "@/modules/participants/lib/participations";
+import {
+  participationCalendarDate,
+  participationScheduleLabel,
+  serializeCalendarEntries,
+  serializeParticipation,
+} from "@/modules/participants/lib/participations";
 import type { ParticipantCalendarEntry } from "@/modules/participants/types";
 import { groupSchedulesByDate, toOrganizerCellItem } from "@/modules/organizers/lib/calendar";
 import type { EventScheduleOption, OrganizerEvent } from "@/modules/events/types";
@@ -95,6 +100,72 @@ describe("participationCalendarDate", () => {
         event: { sortDate: new Date("2026-10-22T00:00:00.000Z") },
       }),
     ).toBe("2026-10-22");
+  });
+});
+
+describe("複数日の参加", () => {
+  const row = {
+    id: "participant-1",
+    name: "佐藤",
+    status: "ATTENDING" as const,
+    comment: null,
+    createdAt: new Date("2026-10-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-10-01T00:00:00.000Z"),
+    partySize: 2,
+    schedule: { eventDate: new Date("2026-10-24T00:00:00.000Z"), eventTime: "13:00〜21:00" },
+    schedules: [
+      {
+        schedule: {
+          eventDate: new Date("2026-10-26T00:00:00.000Z"),
+          eventTime: "07:00〜21:00",
+          sortOrder: 2,
+        },
+      },
+      {
+        schedule: {
+          eventDate: new Date("2026-10-24T00:00:00.000Z"),
+          eventTime: "13:00〜21:00",
+          sortOrder: 1,
+        },
+      },
+    ],
+    pricePlan: { name: "一般", audience: "ANY" as const, amount: 3000, note: null },
+    discounts: [],
+    receipt: null,
+    event: {
+      id: "event-1",
+      title: "芋煮会",
+      sortDate: new Date("2026-10-24T00:00:00.000Z"),
+      schedules: [],
+      pricePlans: [],
+      discounts: [],
+      location: "河原",
+      rainPolicy: "RAIN_OR_SHINE" as const,
+      capacity: null,
+      status: "PUBLISHED" as const,
+      visibility: "UNLISTED" as const,
+      rsvpDeadline: null,
+      rsvpOpen: true,
+      createdAt: new Date("2026-10-01T00:00:00.000Z"),
+      flyerAssetId: null,
+      flyerAsset: null,
+    },
+  };
+
+  it("選んだ全日を並び順でラベルにする", () => {
+    expect(participationScheduleLabel(row)).toBe(
+      "10月24日（土） 13:00〜21:00 / 10月26日（月） 07:00〜21:00",
+    );
+  });
+
+  it("カレンダーには選んだ日ごとに 1 件置く", () => {
+    const entries = serializeCalendarEntries(row);
+    expect(entries.map((entry) => entry.date)).toEqual(["2026-10-24", "2026-10-26"]);
+    expect(entries.every((entry) => entry.participantId === row.id)).toBe(true);
+  });
+
+  it("支払額は人数ぶんで数える", () => {
+    expect(serializeParticipation(row).payableAmount).toBe(6000);
   });
 });
 

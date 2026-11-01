@@ -15,6 +15,7 @@ import {
 import type { CreateEventInput, UpdateEventInput } from "@/lib/schemas";
 import { isEligibleReferrer } from "@/modules/events/lib/referrer";
 import { attributeFlyerLogsToEvent } from "@/modules/flyers/lib/quota";
+import { partySizeOf } from "@/modules/revenue/lib/revenue";
 
 export { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 
@@ -232,26 +233,35 @@ export async function resolveAttendanceChoice(
     status: "ATTENDING" | "DECLINED" | "WAITLISTED";
     gender?: "MALE" | "FEMALE";
     scheduleId?: string;
+    /** 複数日を選ぶときの日時。1 件だけなら省略して `scheduleId` で送れる。 */
+    scheduleIds?: string[];
     pricePlanId?: string;
   },
 ) {
   if (input.status !== "ATTENDING") {
     return {
       scheduleId: null,
+      scheduleIds: [] as string[],
       pricePlanId: null,
       priceAmount: null,
       pricePlanName: null,
       priceAudience: null,
     };
   }
-  const [schedule, pricePlan] = await Promise.all([
-    tx.eventSchedule.findFirst({ where: { id: input.scheduleId, eventId }, select: { id: true } }),
+  const requested = [...new Set(input.scheduleIds?.length ? input.scheduleIds : input.scheduleId ? [input.scheduleId] : [])];
+  const [schedules, pricePlan] = await Promise.all([
+    tx.eventSchedule.findMany({
+      where: { eventId, id: { in: requested } },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true },
+    }),
     tx.eventPricePlan.findFirst({
       where: { id: input.pricePlanId, eventId },
       select: { id: true, audience: true, amount: true, name: true },
     }),
   ]);
-  if (!schedule || !pricePlan) {
+  // 選んだ日が 1 件も残らない（別のイベントの ID が混ざった）ときは断る。
+  if (schedules.length === 0 || schedules.length !== requested.length || !pricePlan) {
     throw new ProblemDetailException({
       status: 400,
       title: "Validation Error",
@@ -276,7 +286,9 @@ export async function resolveAttendanceChoice(
     });
   }
   return {
-    scheduleId: schedule.id,
+    // 代表の日時。売上の「開催回別」とカレンダーはこの 1 件を見る。
+    scheduleId: schedules[0].id,
+    scheduleIds: schedules.map((row) => row.id),
     pricePlanId: pricePlan.id,
     // 出欠確定時点の値を写す。プラン金額や名前を後から編集しても、この人の売上は動かない。
     priceAmount: pricePlan.amount,
@@ -623,26 +635,46 @@ export async function lockEventForCapacity(
   await tx.$queryRaw`SELECT "id" FROM "events" WHERE "id" = ${eventId}::uuid FOR UPDATE`;
 }
 
-export async function assertCapacityAllows(
-  tx: Prisma.TransactionClient,
+/**
+ * 出席している人数（自分を含む人数の合計）。
+ * `participant.count` ではなく `party_size` の合計を使う。1 回答が複数人ぶんの
+ * 席を取ることがあるため、件数で数えると定員を超える。
+ */
+export async function sumAttendingHeadcount(
+  client: Prisma.TransactionClient | typeof prisma,
   eventId: string,
-  status: "ATTENDING" | "DECLINED" | "WAITLISTED",
   ignoreParticipantId?: string,
-): Promise<void> {
-  if (status !== "ATTENDING") return;
-  const event = await tx.event.findUnique({
-    where: { id: eventId },
-    select: { capacity: true },
-  });
-  if (!event?.capacity) return;
-  const attendingCount = await tx.participant.count({
+): Promise<number> {
+  const sum = await client.participant.aggregate({
     where: {
       eventId,
       status: "ATTENDING",
       ...(ignoreParticipantId ? { id: { not: ignoreParticipantId } } : {}),
     },
+    _sum: { partySize: true },
   });
-  if (attendingCount >= event.capacity) {
+  return sum._sum.partySize ?? 0;
+}
+
+export async function assertCapacityAllows(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+  input: {
+    status: "ATTENDING" | "DECLINED" | "WAITLISTED";
+    /** これから取る席の数。省略すると 1 人。 */
+    partySize?: number;
+    /** 直す行。その行が使っている席は数え直さない。 */
+    ignoreParticipantId?: string;
+  },
+): Promise<void> {
+  if (input.status !== "ATTENDING") return;
+  const event = await tx.event.findUnique({
+    where: { id: eventId },
+    select: { capacity: true },
+  });
+  if (!event?.capacity) return;
+  const headcount = await sumAttendingHeadcount(tx, eventId, input.ignoreParticipantId);
+  if (headcount + partySizeOf(input) > event.capacity) {
     throw new ProblemDetailException({
       status: 409,
       title: "Capacity Reached",
@@ -663,21 +695,20 @@ export async function assertCapacityAllows(
 export async function resolveStatusForCapacity(
   tx: Prisma.TransactionClient,
   eventId: string,
-  status: "ATTENDING" | "DECLINED" | "WAITLISTED",
-  ignoreParticipantId?: string,
+  input: {
+    status: "ATTENDING" | "DECLINED" | "WAITLISTED";
+    /** これから取る席の数。省略すると 1 人。 */
+    partySize?: number;
+    /** 直す行。その行が使っている席は数え直さない。 */
+    ignoreParticipantId?: string;
+  },
 ): Promise<"ATTENDING" | "DECLINED" | "WAITLISTED"> {
-  if (status !== "ATTENDING") return status;
+  if (input.status !== "ATTENDING") return input.status;
   const event = await tx.event.findUnique({
     where: { id: eventId },
     select: { capacity: true },
   });
-  if (!event?.capacity) return status;
-  const attendingCount = await tx.participant.count({
-    where: {
-      eventId,
-      status: "ATTENDING",
-      ...(ignoreParticipantId ? { id: { not: ignoreParticipantId } } : {}),
-    },
-  });
-  return attendingCount >= event.capacity ? "WAITLISTED" : status;
+  if (!event?.capacity) return input.status;
+  const headcount = await sumAttendingHeadcount(tx, eventId, input.ignoreParticipantId);
+  return headcount + partySizeOf(input) > event.capacity ? "WAITLISTED" : input.status;
 }

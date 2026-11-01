@@ -5,9 +5,9 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { rsvpCookieName } from "@/modules/auth/lib/cookies";
 import { collectGuestTokenHashes, resolveOptionalUserId } from "@/modules/auth/lib/guards";
-import { findMyParticipant } from "@/modules/participants/lib/rsvp";
+import { findMyParticipant, participantScheduleIds } from "@/modules/participants/lib/rsvp";
 import { serializeEvent, serializeParticipantDiscounts, serializePublicOrganizerList } from "@/lib/serializers";
-import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { eventOptionsInclude, sumAttendingHeadcount } from "@/modules/events/lib/events";
 import { isFull as isFullOf, remainingSeats, waitlistPosition } from "@/modules/events/lib/rsvp-status";
 
 export const runtime = "nodejs";
@@ -48,9 +48,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       });
     }
 
-    const attendingCount = await prisma.participant.count({
-      where: { eventId: event.id, status: "ATTENDING" },
-    });
+    const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistRows = await prisma.participant.findMany({
       where: { eventId: event.id, status: "WAITLISTED" },
       select: { id: true, status: true, waitlistedAt: true, createdAt: true },
@@ -67,6 +65,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       gender: "MALE" | "FEMALE" | null;
       comment: string | null;
       scheduleId: string | null;
+      scheduleIds: string[];
+      partySize: number;
       pricePlanId: string | null;
       discounts: ReturnType<typeof serializeParticipantDiscounts>;
       waitlistPosition: number | null;
@@ -123,8 +123,10 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             gender: true,
             comment: true,
             scheduleId: true,
+            partySize: true,
             pricePlanId: true,
             discounts: { orderBy: { sortOrder: "asc" } },
+            schedules: { select: { scheduleId: true, schedule: { select: { sortOrder: true } } } },
             receipt: true,
           },
         })
@@ -137,6 +139,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         gender: participant.gender,
         comment: participant.comment,
         scheduleId: participant.scheduleId,
+        scheduleIds: participantScheduleIds(participant.schedules, participant.scheduleId),
+        partySize: participant.partySize,
         pricePlanId: participant.pricePlanId,
         discounts: serializeParticipantDiscounts(participant.discounts),
         waitlistPosition: waitlistPosition(waitlistRows, participant.id),

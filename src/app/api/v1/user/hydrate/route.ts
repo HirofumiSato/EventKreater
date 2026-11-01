@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
 import { requireUserId } from "@/modules/auth/lib/guards";
@@ -13,8 +14,27 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.length > 0))];
 }
 
-export async function POST(req: NextRequest) {
-  try {
+/**
+ * 端末だけの参加行を畳む前に、選んだ日程を残す方へ写す。
+ * join 行は参加行の削除で一緒に消えるので、先に移しておく。
+ */
+async function mergeParticipantSchedules(
+  tx: Prisma.TransactionClient,
+  fromParticipantId: string,
+  toParticipantId: string,
+): Promise<void> {
+  const rows = await tx.participantSchedule.findMany({
+    where: { participantId: fromParticipantId },
+    select: { scheduleId: true },
+  });
+  if (rows.length === 0) return;
+  await tx.participantSchedule.createMany({
+    data: rows.map((row) => ({ participantId: toParticipantId, scheduleId: row.scheduleId })),
+    skipDuplicates: true,
+  });
+}
+
+export async function POST(req: NextRequest) {  try {
     const userId = await requireUserId(req);
     HydrateSchema.parse(await req.json().catch(() => ({})));
 
@@ -55,6 +75,7 @@ export async function POST(req: NextRequest) {
           }
           // 同じイベントに会員の行と端末だけの行がある。領収書を持つ方を残す。
           if (row.receipt && !already.receipt) {
+            await mergeParticipantSchedules(tx, already.id, row.id);
             await tx.participant.update({ where: { id: row.id }, data: { userId } });
             await tx.participant.delete({ where: { id: already.id } });
             migratedParticipants += 1;
@@ -69,11 +90,14 @@ export async function POST(req: NextRequest) {
                 status: row.status,
                 comment: row.comment,
                 scheduleId: row.scheduleId,
+                partySize: row.partySize,
                 pricePlanId: row.pricePlanId,
                 ipHash: row.ipHash,
               },
             });
           }
+          // 端末の行が持つ日程は、残す行へ写してから畳む。
+          await mergeParticipantSchedules(tx, row.id, already.id);
           await tx.participant.delete({ where: { id: row.id } });
           migratedParticipants += 1;
         }

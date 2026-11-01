@@ -81,6 +81,8 @@ export function buildScreens(demo) {
         },
         { key: "full", label: "満員", path: `/events/${demo.events.full}`, auth: null },
         { key: "closed", label: "受付停止", path: `/events/${demo.events.closed}`, auth: null },
+        // 3 日間の合宿。日時の札を複数選べることを、実際のフォームで確かめる。
+        { key: "camp", label: "複数日（3日間）", path: `/events/${demo.events.camp}`, auth: null },
       ],
     },
     {
@@ -567,6 +569,7 @@ const PLACEHOLDER_DEMO = {
     main: "event-main",
     full: "event-full",
     closed: "event-closed",
+    camp: "event-camp",
     draft: "event-draft",
   },
   organizerId: "user-organizer",
@@ -593,6 +596,7 @@ const DYNAMIC_SEGMENTS = {
   "event-main": "[id]",
   "event-full": "[id]",
   "event-closed": "[id]",
+  "event-camp": "[id]",
   "event-draft": "[id]",
   "user-organizer": "[userId]",
   "participant-receipt": "[participantId]",

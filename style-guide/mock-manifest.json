@@ -5,7 +5,7 @@
     390,
     1280
   ],
-  "uiHash": "26a488ac8140fa98d6eef406c6f6d2317af34747da12358dd599d43b354a1767",
+  "uiHash": "c7d69e32b007ea98969d1e59d19931ba51fce88bedd5ae4a40092a4322cfbf6e",
   "screens": [
     {
       "no": "01",
@@ -17,7 +17,7 @@
       "label": "",
       "file": "mock-home.html",
       "path": "/",
-      "hash": "57be67941e6993b4edfcfbe5c7570f822910e13cf21e2e166f48758af75fae3e"
+      "hash": "0a330a38fb861013fab77dd4310ee79b28e756750c0bb60a3dd75e7d3c5d0057"
     },
     {
       "no": "02",
@@ -29,7 +29,7 @@
       "label": "",
       "file": "mock-service.html",
       "path": "/service",
-      "hash": "802618513f2b9cb35069ea5fc1e1eb22711319e254ebab0a1287a23f4fd5042b"
+      "hash": "8be302c66b141dd3cb8d542fdbe23c9e0d16f9a70e99f939430912d0061142ac"
     },
     {
       "no": "03",
@@ -41,7 +41,7 @@
       "label": "",
       "file": "mock-terms.html",
       "path": "/terms",
-      "hash": "5b2824e811d97c9181208dd453fe512972cd596a92cbbbf465869badaca1f280"
+      "hash": "34bc9030026f7797fb42287fc9adb35ba2be312f673781ea183eedf3a1901c05"
     },
     {
       "no": "04",
@@ -52,8 +52,8 @@
       "state": "guest",
       "label": "未ログイン",
       "file": "mock-event.html",
-      "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06",
-      "hash": "002781b69a4cf47f36bc85305daf74760a5746fd038eab89b59d515b504ed84f"
+      "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72",
+      "hash": "f2301354c29d966c40633cb8aa1d4fe255ba23dc1b19fd6603145360d39880b3"
     },
     {
       "no": "04",
@@ -64,8 +64,8 @@
       "state": "member",
       "label": "ログイン済み",
       "file": "mock-event-member.html",
-      "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06",
-      "hash": "9169b07a2623fb123abb3cc04b6ee5acef83b93ae87a8ea0b3eb45b495b06677"
+      "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72",
+      "hash": "0a4b3fa1c368971a193a4cd3a23aa0626c5af5ff19e6fd84fab5682737602d4e"
     },
     {
       "no": "04",
@@ -76,8 +76,8 @@
       "state": "full",
       "label": "満員",
       "file": "mock-event-full.html",
-      "path": "/events/c7f4b25d-d1c3-4162-b6f3-4e0cc80e3d8d",
-      "hash": "4a7d516288275f24f4007366f0ca75309bb731a8dcedb014ca513913b45ea32c"
+      "path": "/events/c3cdbcc9-4b72-4cd9-a103-ea3694220927",
+      "hash": "62d114203d338c98b23b73eb435e47afbb711e386b6df4615af29358ce3eabc6"
     },
     {
       "no": "04",
@@ -88,8 +88,20 @@
       "state": "closed",
       "label": "受付停止",
       "file": "mock-event-closed.html",
-      "path": "/events/5ff034c8-7b2c-44c0-9503-56cd7df9eb64",
-      "hash": "bb8c887eeb7a7d2193336e932c3715a43700ceb8040929517bf40f9de96c010e"
+      "path": "/events/49948393-6062-477e-9285-ad9d1eab40fc",
+      "hash": "67e5648ce36f0ad5e37a2384d190527960a4ab41d133c4af403f5121af94c931"
+    },
+    {
+      "no": "04",
+      "group": "public",
+      "slug": "event",
+      "name": "イベント告知・出欠",
+      "note": "チラシを先頭に、その下で出欠。参加者が最初に見る画面。",
+      "state": "camp",
+      "label": "複数日（3日間）",
+      "file": "mock-event-camp.html",
+      "path": "/events/d2949838-5257-4e53-8375-21233c7adda3",
+      "hash": "959289c718547137931cacc03709b39b02656880d359db9784cb8a9de543b5f3"
     },
     {
       "no": "05",
@@ -100,8 +112,8 @@
       "state": "default",
       "label": "",
       "file": "mock-event-receipt.html",
-      "path": "/events/c66bc545-005a-4f29-b01b-14a09c65ff06/receipt",
-      "hash": "fde327999f62b44571bd7d62bfe88b69bb5224456287608abf8c38563b53698d"
+      "path": "/events/4f9a8775-864c-4342-a180-30499e50ea72/receipt",
+      "hash": "b178e85efb1264bb7726674f14467737a15c4aaca9613a45286393bff454d8d9"
     },
     {
       "no": "06",
@@ -113,7 +125,7 @@
       "label": "未ログイン",
       "file": "mock-organizer-public.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "4da815ce56f1ab004dd9ebb8f885d882c69d37d79f461f8053cc0f7d75fd2cb7"
+      "hash": "5b000fb775bf3642d96945821d1cb4bf4676474b399eb003e8f577f2a34cd74a"
     },
     {
       "no": "06",
@@ -125,7 +137,7 @@
       "label": "ログイン済み",
       "file": "mock-organizer-public-member.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "7f48388e44c242c9ccefadeae49c9cf88ea045963772a1304f31a3031defb32f"
+      "hash": "e4811a699185332086f7943659f1728aa046a4e48d0068aa03ab3f8dbd98582b"
     },
     {
       "no": "06",
@@ -137,7 +149,7 @@
       "label": "テーマ未選択",
       "file": "mock-organizer-public-theme-none.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "d6364c376d3cc3be0e5b1ccf89e19ccc809b13c73b0bc1096b776ca63b7750f6"
+      "hash": "a7498ab91557443b4412f24d8ca3c6c9949aedba7f2ff3c8e799f6bc11ed2214"
     },
     {
       "no": "06",
@@ -149,7 +161,7 @@
       "label": "夜のスレート",
       "file": "mock-organizer-public-theme-modern-slate.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "4d9ba2d8850fa89fd3218a11a2aa823df5078268bb522f8cd441c48f2c8b64e2"
+      "hash": "893531036e35fe6ff74494838d2cdd03a69dd71c5455ef1ca85d6fe600b67395"
     },
     {
       "no": "06",
@@ -161,7 +173,7 @@
       "label": "クリーン",
       "file": "mock-organizer-public-theme-enterprise-clean.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "7a243aaa05bcba8bb57783cc837aeab62b9f6c2b8ba0ef45e021715281c21918"
+      "hash": "5906275a1a86d0eb43f4e63dac0b2ec4ca53386662c7b29ec424170c450737d1"
     },
     {
       "no": "06",
@@ -173,7 +185,7 @@
       "label": "羊皮紙",
       "file": "mock-organizer-public-theme-parchment.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "e98159ef1da9ae745eaef69fe466900254a56854d02cf7f7b159a788b34f30e5"
+      "hash": "745b5abbbe14652b3951a6e3953f398dcab9c6bf098a580c4b5af47185819968"
     },
     {
       "no": "06",
@@ -185,7 +197,7 @@
       "label": "太枠",
       "file": "mock-organizer-public-theme-neo-brutalism.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "d4214c2019c56a46693b6ab74d0e97502236d7e1d93493c221e553c179c909ad"
+      "hash": "5f6b2f81921eb33269963a641dc850a5d088810abf92171e34ef6e9d5bf714c0"
     },
     {
       "no": "06",
@@ -197,7 +209,7 @@
       "label": "ネオン",
       "file": "mock-organizer-public-theme-neon.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "a236d731736dcf43855b084ed5c6b77b50709fe4ee19a3108fae4d2542b3ac2e"
+      "hash": "e29bbf0c42df31a93197a968e5ce464db3a2828626e2d298df9c348738f20fb9"
     },
     {
       "no": "06",
@@ -209,7 +221,7 @@
       "label": "和紙と藍",
       "file": "mock-organizer-public-theme-washi.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "580d23bdb411130b97c673128b9bc502efd066c238f4175383b0ab2ae5074622"
+      "hash": "cef88af011ef2ec1ccf17346152db069e2ffe2ded244e14173cc2dc163755a23"
     },
     {
       "no": "06",
@@ -221,7 +233,7 @@
       "label": "余白",
       "file": "mock-organizer-public-theme-sage.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "4e8562364a13f7ed1ef44d7101bf21f1b4569e3936da35f47e2936572087111e"
+      "hash": "19a089a8f9c6a9d9f9b0ac8fe4ce8b4297cff172fda61e17ea2c596e656b319d"
     },
     {
       "no": "06",
@@ -233,7 +245,7 @@
       "label": "キャンディ",
       "file": "mock-organizer-public-theme-candy.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "a0b0997586b72197877b058822cd8e0a208d5044b767c3e5b10a8ea935588fe0"
+      "hash": "58c78454c8b014c03e4fe98c5cdfb052669b2fbaa4ce032fab2cbfd0445eb2fb"
     },
     {
       "no": "06",
@@ -245,7 +257,7 @@
       "label": "夕暮れ",
       "file": "mock-organizer-public-theme-dusk.html",
       "path": "/organizers/ba52800f-f081-479c-ac2d-b671495b95fe",
-      "hash": "ddfe0a5adf3b45b8b6c990ddcd4b907caca64249347df98c4b630df6ddb15762"
+      "hash": "7f03d5ad7ab0da80b4ec4e3ac2bfa2d447b72c6bd0d64bba008f51dd0cd63eee"
     },
     {
       "no": "06a",
@@ -257,7 +269,7 @@
       "label": "",
       "file": "mock-sample.html",
       "path": "/sample",
-      "hash": "986ec3e774d4477bcab3c7c48e7c2be932c1e50e241e490ba10a059cecc7133d"
+      "hash": "02334cafb6f8d8608cbca13430d9ccfe2745a41fabcede97ad1809535b1e7392"
     },
     {
       "no": "06b",
@@ -269,7 +281,7 @@
       "label": "",
       "file": "mock-sample-event.html",
       "path": "/sample/dj",
-      "hash": "79d94daa6d7e7ad4225a6dbde9813ac0bf85b68d8acad403bd6fc1790aad5dc7"
+      "hash": "fa010c3a5ebd9ae0cd5d8bc62b034ab4bded078a21d4fb0d16d2a0fc9874eae1"
     },
     {
       "no": "07",
@@ -281,7 +293,7 @@
       "label": "",
       "file": "mock-register.html",
       "path": "/auth/register",
-      "hash": "e3f025ea520e31e6fe99f550e841eaeac7b175fbb06c5fbf7dafc2a6a1a94517"
+      "hash": "fa4bbda8e443e5fc72afa263f4bedddac17b5c737bcf5182404a031abbf2d628"
     },
     {
       "no": "08",
@@ -293,7 +305,7 @@
       "label": "",
       "file": "mock-verify.html",
       "path": "/auth/verify?token=ui-demo-email-verify-token",
-      "hash": "c1af3cdf117293d7ccee42676ff8ec414b3cbff231b9ca1b042c192c854e8c95"
+      "hash": "ffd0061833babbee22fb3c0bdaef32737a17fb08533fed37874087c2c1207b41"
     },
     {
       "no": "09",
@@ -305,7 +317,7 @@
       "label": "",
       "file": "mock-participant-login.html",
       "path": "/participant/login",
-      "hash": "61310a63c3de2ccb554e1c36133eb957439bf08a75ba891a39322e8752fd4110"
+      "hash": "6178ab9fe439d9cd8d7ba7a19afe452a8f23a5274d13a67da75053d70d077fe4"
     },
     {
       "no": "10",
@@ -317,7 +329,7 @@
       "label": "",
       "file": "mock-invitation.html",
       "path": "/invitations/ui-demo-cohost-invite-code",
-      "hash": "a03ea263549c6550cf00550df8180289301f1a1abe0fd35ef0829998dab8ea07"
+      "hash": "9fb4377bfe771582ed51dc1ca806a49bfb339c95702c64758c8ba6902125d629"
     },
     {
       "no": "11",
@@ -329,7 +341,7 @@
       "label": "",
       "file": "mock-account.html",
       "path": "/account",
-      "hash": "f336926c8b8d4c583890da252ead71516d9badce6b3e5c7b6eb3a1c38ab87aa3"
+      "hash": "b940abe5f6900cf4ced8fb2b4d3e92ff1f022a73aae50be15ee6f17c791eba89"
     },
     {
       "no": "12",
@@ -341,7 +353,7 @@
       "label": "",
       "file": "mock-account-verify.html",
       "path": "/account/email/verify?token=ui-demo-email-change-token-1280",
-      "hash": "e8d28e36181da780da9e3bc2344906c0d04aa7f62a854b6e92bf40e5e094062a"
+      "hash": "22aaa3669ab08f888376314fe59ad116f00fd7c8ee22ddb5ee5331f20397edb4"
     },
     {
       "no": "13",
@@ -353,7 +365,7 @@
       "label": "",
       "file": "mock-participant.html",
       "path": "/participant",
-      "hash": "12098aeb9d6ebf78bdbc1a05b31e577d2feb6b9efb6d31dd28a17b017cbe158e"
+      "hash": "0f241a3db668cbfa443980854ca91e8a8d891e529bdc870da38a252efeaa62ce"
     },
     {
       "no": "14",
@@ -365,7 +377,7 @@
       "label": "",
       "file": "mock-participant-calendar.html",
       "path": "/participant/calendar",
-      "hash": "b6204c6f3c64e60a2b2bca1dccdda114afdc9ea754f93e2a9ba67ed7eea4770b"
+      "hash": "56a548416c0c310d9bcde3a9cd13a296db215213de49452654f98b6a73a14299"
     },
     {
       "no": "15",
@@ -377,7 +389,7 @@
       "label": "履歴あり",
       "file": "mock-participant-history.html",
       "path": "/participant/history",
-      "hash": "be4db69cacff7c9f332a1304f243898fb63d898e961a05d87bb18ac09ae0d2c9"
+      "hash": "88b7a4e024f5a323215de730520f2081eca7e6342721f870ae609ff8a6622b2e"
     },
     {
       "no": "15",
@@ -389,7 +401,7 @@
       "label": "履歴なし",
       "file": "mock-participant-history-empty.html",
       "path": "/participant/history",
-      "hash": "04f7cf5fd7f34ea88e5926652f1906736dc69c7d91346a3be4895b57db0d0ac1"
+      "hash": "e413787f84e9431da225640dc662138661cabd67ee64c6ba0988687d065bbd95"
     },
     {
       "no": "16",
@@ -401,7 +413,7 @@
       "label": "8件プラン",
       "file": "mock-organizer.html",
       "path": "/organizer/events",
-      "hash": "d5fd64e28df94d6a292776fe3e2d3ba347939d8edaa054c8125d59877bb0140b"
+      "hash": "b8f34aebb4291775473840e92bd3008431d6610bae3f682ec2636143e6a2ca21"
     },
     {
       "no": "16",
@@ -413,7 +425,7 @@
       "label": "公開し放題",
       "file": "mock-organizer-unlimited.html",
       "path": "/organizer/events",
-      "hash": "2bd27114ff80d538786ed964edfe26f4080595c7d1bb640d2e3f7cbcad51d351"
+      "hash": "cf0dcf5164f72992f343be1bd2e9783c0460cdc194973f72be1103a588ee33bc"
     },
     {
       "no": "16",
@@ -425,7 +437,7 @@
       "label": "未加入",
       "file": "mock-organizer-free.html",
       "path": "/organizer/events",
-      "hash": "722afd94c91dc9e357eb8201a4fed7b49c009e828eb5a374d02947b2357db5ca"
+      "hash": "db75fd8e15eeec63856d158aa0745be785643c7b4b05e0c1e5cc5e68c87810f1"
     },
     {
       "no": "17",
@@ -437,7 +449,7 @@
       "label": "",
       "file": "mock-organizer-calendar.html",
       "path": "/organizer/calendar",
-      "hash": "d65cfe2aac6ce8bd854e309be7fdef9eeaac9db88b244c5fa917a0d64df0ec5c"
+      "hash": "22d8d9774843ce0997f2c159411f673f6220d11421c2f5ab68c510e4dd06f6a3"
     },
     {
       "no": "18",
@@ -449,7 +461,7 @@
       "label": "",
       "file": "mock-revenue.html",
       "path": "/organizer/revenue",
-      "hash": "1d4384073fcd568b39b6d4e6d607cdc6b83af011308e248dc3bb113edc6ba56d"
+      "hash": "2d35f5be5f68f3fa1bde0167b6d90912564fd369fa485a1200cd625b74178b2f"
     },
     {
       "no": "19",
@@ -460,8 +472,8 @@
       "state": "default",
       "label": "",
       "file": "mock-revenue-detail.html",
-      "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/revenue",
-      "hash": "467aac289ccbf1b478fce4b56d75457e648de2610ba13b256fc6b4b7d1f600d6"
+      "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/revenue",
+      "hash": "a8a920886281a9db4043b57ad00e9246f9d712c88af4d9e9527d7a6e64be4765"
     },
     {
       "no": "20",
@@ -473,7 +485,7 @@
       "label": "",
       "file": "mock-create.html",
       "path": "/organizer/events/new",
-      "hash": "6e91326eb55210e54ebbfce0b01f51af599d1bc5b7f093c7ba69c5671d5932e0"
+      "hash": "87fb30e877e4272215bffbb9b7c49ab32038c6e067078036a3351e300ec4bd8f"
     },
     {
       "no": "21",
@@ -484,8 +496,8 @@
       "state": "default",
       "label": "",
       "file": "mock-edit.html",
-      "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/edit",
-      "hash": "7978016a17d7d8ca42f873ce25a0c2e2f9121f655c12e7f2bf0fc8b807e36834"
+      "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/edit",
+      "hash": "6236a5f4ad488fafc59712101575bad7a3499931ce7db4686e8f518f9bafe258"
     },
     {
       "no": "22",
@@ -497,7 +509,7 @@
       "label": "",
       "file": "mock-drafts.html",
       "path": "/organizer/events/drafts",
-      "hash": "838c94e94cfc4a75ebac50e4bc0a7f2372c6b7f8301a6550c913d1cd1943669c"
+      "hash": "64ea8aff416830c8385cfb0b9143266ae83700abdbc8d6f51d0bfc4807393191"
     },
     {
       "no": "23",
@@ -508,8 +520,8 @@
       "state": "default",
       "label": "",
       "file": "mock-preview.html",
-      "path": "/organizer/events/92eb2213-59d3-4fbb-91d8-c3e00187ec46/preview",
-      "hash": "e6b78237078df51be081718d132fe21b73b4a22ebb94a62b37be757206e3fac0"
+      "path": "/organizer/events/3c8e558e-f761-43f5-8693-56d94811a380/preview",
+      "hash": "e1fc6edbacbe1e12687ee65d53d140405f0a8b3b27123d394ca2dff6fc59c0f3"
     },
     {
       "no": "24",
@@ -520,8 +532,8 @@
       "state": "default",
       "label": "",
       "file": "mock-roster.html",
-      "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/participants",
-      "hash": "dabb932a895f853872676a7d8fb95c8c2941479006fe5c2d35e96bd6da3312ad"
+      "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/participants",
+      "hash": "a0cfe11e42423234b3926fffdf5b06d45f8c5a7af0631aa37df133e8474f4e93"
     },
     {
       "no": "25",
@@ -532,8 +544,8 @@
       "state": "default",
       "label": "",
       "file": "mock-receipt.html",
-      "path": "/organizer/events/c66bc545-005a-4f29-b01b-14a09c65ff06/receipts/c05c4a83-32d4-4118-be3b-338e7f760bab",
-      "hash": "c19bb0b431db3215bf5bdf0fe228eff0241f5222bed8ccacdbc69e23669eee9e"
+      "path": "/organizer/events/4f9a8775-864c-4342-a180-30499e50ea72/receipts/ffa23f17-46fc-4217-a260-c594609ee23d",
+      "hash": "2d36ba38236e2ce824b08c0b48fe7580b204ac2aaf5e28f6562459f887ea2c5f"
     },
     {
       "no": "26",
@@ -544,8 +556,8 @@
       "state": "default",
       "label": "",
       "file": "mock-register-required.html",
-      "path": "/organizer/register-required?event=c66bc545-005a-4f29-b01b-14a09c65ff06",
-      "hash": "757d61731e1f4715fe8b104b1869d4e04ec98e7376cb178da7600abab04daa90"
+      "path": "/organizer/register-required?event=4f9a8775-864c-4342-a180-30499e50ea72",
+      "hash": "7542313fc4d651ddf6fb6c8cea1547d59e86c257cb84ea1c69333825eb58c563"
     },
     {
       "no": "27",
@@ -557,7 +569,7 @@
       "label": "",
       "file": "mock-organizer-profile.html",
       "path": "/organizer/profile",
-      "hash": "0602d21620553fd20867255d7cee559db596d6a2ecb941ece0be85a5e4fb9a7d"
+      "hash": "f2968c4ec7733b1842bb723ba87607f034ab4fc3a98bacbbf6acaf04413b5276"
     },
     {
       "no": "28",
@@ -569,7 +581,7 @@
       "label": "",
       "file": "mock-mypage.html",
       "path": "/mypage",
-      "hash": "97e8e6285525adad897127d2944e3b43b4491787af7a40f3f5b760d569439166"
+      "hash": "baf5869476e85099f5fde8b5ef3b4f46da77897e269ec5f1baed1f4009fd17bd"
     },
     {
       "no": "29",
@@ -581,7 +593,7 @@
       "label": "",
       "file": "mock-notifications.html",
       "path": "/notifications",
-      "hash": "3a64b1048f2f5c4ca89199aaf08e312cbe9916bdf263d9dae794608fc44f695c"
+      "hash": "c096708be89b980db5b5e1fa7f4f7be5687aaba63d0479bb6d03bde3fec7cec5"
     }
   ]
 }

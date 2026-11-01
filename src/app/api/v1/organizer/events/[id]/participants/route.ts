@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import {
+  composeScheduleLabels,
   formatEventDate,
   formatEventDateLabel,
   participantPriceDisplay,
@@ -14,7 +15,13 @@ import {
 } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
-import { discountTotal, payableAmount, summarizeRevenue } from "@/modules/revenue/lib/revenue";
+import { participantScheduleIds } from "@/modules/participants/lib/rsvp";
+import {
+  discountTotal,
+  payableAmount,
+  summarizeRevenue,
+  unitPayableAmount,
+} from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +43,12 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             pricePlan: true,
             receipt: true,
             discounts: { orderBy: { sortOrder: "asc" } },
+            schedules: {
+              select: {
+                scheduleId: true,
+                schedule: { select: { eventDate: true, eventTime: true, sortOrder: true } },
+              },
+            },
           },
         },
       },
@@ -60,7 +73,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         schedules: serializeSchedules(event.schedules),
         pricePlans: serializePricePlans(event.pricePlans),
       },
-      stats: summarizeStatuses(participants.map((row) => row.status)),
+      stats: summarizeStatuses(participants),
       // 名簿を開いたついでに売上サマリも出す。内訳は /revenue で見る。
       revenue: summarizeRevenue(
         participants,
@@ -68,6 +81,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       ),
       participants: participants.map((row) => {
         const price = participantPriceDisplay(row);
+        const scheduleIds = participantScheduleIds(row.schedules, row.scheduleId);
         return {
           id: row.id,
           name: row.name,
@@ -75,15 +89,30 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           gender: row.gender,
           comment: row.comment,
           scheduleId: row.scheduleId,
+          scheduleIds,
+          partySize: row.partySize,
           pricePlanId: row.pricePlanId,
-          scheduleLabel: row.schedule
-            ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
-            : null,
+          // 選んだ全日程を出す。古い回答は代表の 1 件に戻す。
+          scheduleLabel:
+            row.schedules.length > 0
+              ? composeScheduleLabels(row.schedules.map((link) => link.schedule))
+              : row.schedule
+                ? `${formatEventDateLabel(formatEventDate(row.schedule.eventDate))} ${row.schedule.eventTime}`
+                : null,
           pricePlanLabel: price.label,
           pricePlanAmount: price.amount,
           discounts: serializeParticipantDiscounts(row.discounts),
-          discountAmount: discountTotal(row.discounts),
-          payableAmount: payableAmount({ priceAmount: price.amount, discounts: row.discounts }),
+          discountAmount: discountTotal(row.discounts) * row.partySize,
+          payableAmount: payableAmount({
+            priceAmount: price.amount,
+            discounts: row.discounts,
+            partySize: row.partySize,
+          }),
+          // 領収書は 1 人ずつ切る。既定額は人数を掛けない 1 人ぶんにする。
+          unitPayableAmount: unitPayableAmount({
+            priceAmount: price.amount,
+            discounts: row.discounts,
+          }),
           createdAt: row.createdAt.toISOString(),
           updatedAt: row.updatedAt.toISOString(),
           waitlistedAt: row.waitlistedAt ? row.waitlistedAt.toISOString() : null,
