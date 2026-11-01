@@ -5,30 +5,40 @@ import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/site";
 
 /**
- * 見本の画面であることを示す帯（SCR-PUB-16 / SCR-PUB-17）。
+ * 見本の画面であることを示す帯（SCR-PUB-16 / SCR-PUB-17 / SCR-PUB-18）。
  *
  * 告知ページの見本は、本物の告知ページとそっくりに作る。そのぶん、開いた人が
  * 「参加できる」と受け取らないよう、画面の上端に帯を固定して 3 つのことを伝える。
- * 「サンプル」「実際に作った告知ページ」「無料ではじめる」。
+ * 「サンプル」「実際に作った…」「無料ではじめる」。
  *
  * 帯は共通ヘッダーの代わりでもある（`siteChrome("/sample/…")` はヘッダーを出さない）。
- * 詳細では「← 一覧」を足し、一覧へ戻れるようにする。帯は 1 段（高さ 53px）に保ち、
+ * 詳細では「← 一覧」を足し、一覧へ戻れるようにする。プロフィールの詳細からは、
+ * 一覧のプロフィールの節（`#sample-profiles`）へ戻す。帯は 1 段（高さ 53px）に保ち、
  * 折り返すと本文を押し下げるので、説明は幅のある画面だけに出す。
  */
 export function SampleBand() {
   const pathname = usePathname();
   // 一覧（/sample）では戻り先が無い。詳細だけに出す。
-  const inDetail = pathname !== "/sample";
+  const isIndex = pathname === SITE.nav.sample.href;
+  const inDetail = !isIndex;
+  // プロフィールの詳細は、一覧のプロフィールの節へ戻す。
+  const isProfile = pathname.startsWith(`${SITE.nav.sample.href}/profile/`);
+  const backHref = isProfile ? `${SITE.nav.sample.href}#sample-profiles` : SITE.nav.sample.href;
+  const note = isProfile
+    ? "実際に作ったプロフィールです"
+    : isIndex
+      ? "実際に作ったページの見本です"
+      : "実際に作った告知ページです";
 
   return (
     <div className="sample-band">
       <div className="sample-band__inner">
         <p className="sample-band__tag">サンプル</p>
-        <p className="sample-band__note">実際に作った告知ページです</p>
+        <p className="sample-band__note">{note}</p>
         <div className="sample-band__actions">
           {inDetail && (
             <Link
-              href={SITE.nav.sample.href}
+              href={backHref}
               className="sample-band__back"
               aria-label="サンプルの一覧へ戻る"
             >

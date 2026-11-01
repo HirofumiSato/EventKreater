@@ -1,10 +1,15 @@
 // 製品の画面を開いて、モック（style-guide/mock-*.html）を丸ごと差し替える。
 //
-//   npm run mock:sync                  # 全画面。本番ビルドを配って撮る（既定）
-//   npm run mock:sync -- --only=20,24  # No. で絞る（画面 1 枚 5 秒前後）
+//   npm run mock:sync                  # 全画面。本番ビルドを配って撮る（コミット前の正）
+//   npm run mock:sync -- --only=20,24  # No. で絞る。開発サーバーで撮る（画面 1 枚 5 秒前後）
+//   npm run mock:sync -- --only=20 --prod  # 絞った画面を本番ビルドで撮る
 //   npm run mock:sync -- --no-shots    # HTML だけ（PNG を撮らない）
 //   npm run mock:sync -- --refresh     # 控え（断片・CSS・PNG）を使わずに取り直す
-//   npm run mock:sync -- --dev         # 開発サーバーで撮る（保存がそのまま出る）
+//   npm run mock:sync -- --dev         # 開発サーバーで撮る（全体同期でも本番ビルドをしない）
+//   npm run mock:sync -- --concurrency=6   # 同時に開く数（既定は論理コアから 4〜6）
+//
+// dev と本番では CSS の link の形（分割か 1 本か）が違う。反復用の `--only` は dev で
+// 撮ってよいが、その結果はコミットしない。コミット前は `--only` なし（本番ビルド）で回す。
 //
 // 前提: `npm run db:seed:ui` でデモデータを作ってあること（storage/ui-demo.json）。
 //
@@ -19,6 +24,7 @@
 
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -71,6 +77,7 @@ import {
   settle,
 } from "./lib/capture-core.mjs";
 import { captureProblem, captureProblemMessage } from "./lib/mock-found.mjs";
+import { resolveConcurrency } from "./lib/concurrency.mjs";
 import { ensureHarness, prewarm, sleep } from "./lib/ui-harness.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -91,10 +98,12 @@ const only = valueOf("--only")
   .filter(Boolean);
 const noShots = args.includes("--no-shots");
 const refresh = args.includes("--refresh");
-const useDev = args.includes("--dev");
+// 反復中の部分同期は開発サーバーで撮る（本番ビルドの 1〜2 分を省く）。
+// 全体同期はコミット前の正なので、明示しない限り本番ビルドのまま。
+const forceProd = args.includes("--prod");
+const useDev = args.includes("--dev") || (!forceProd && Boolean(only));
 const concurrencyArg = valueOf("--concurrency");
-const concurrency =
-  concurrencyArg && Number.isFinite(Number(concurrencyArg)) ? Math.max(1, Number(concurrencyArg)) : 4;
+const concurrency = resolveConcurrency(concurrencyArg, os.availableParallelism());
 
 function valueOf(flag) {
   const found = args.find((arg) => arg.startsWith(`${flag}=`));
@@ -167,6 +176,17 @@ async function shotsExist(stem) {
 
 async function main() {
   const started = Date.now();
+
+  if (useDev) {
+    // dev と本番では CSS の link の形（分割か 1 本か）が違う。dev で撮った HTML は
+    // そのままコミットしない。全体同期は明示しない限り本番ビルドで撮る。
+    log(
+      only
+        ? "反復用に dev で撮っています。コミット前は `npm run mock:sync`（全体）を実行してください。"
+        : "dev で撮っています（この結果はコミットしないでください）。コミット前は `npm run mock:sync`（全体）を実行してください。",
+    );
+  }
+  log(`同時に開く数: ${concurrency}`);
 
   let demo;
   try {

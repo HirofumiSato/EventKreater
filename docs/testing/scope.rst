@@ -147,7 +147,7 @@
 
 .. count-start
 
-81 ファイル、``it`` は 1085 件です。内訳は ``tests/unit/`` が 63 ファイル 954 件、``tests/integration/`` が 16 ファイル 102 件です。結合の 102 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+83 ファイル、``it`` は 1101 件です。内訳は ``tests/unit/`` が 65 ファイル 970 件、``tests/integration/`` が 16 ファイル 102 件です。結合の 102 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -395,6 +395,10 @@
      - 6
      - 告知ページの見本 5 件の slug が一意であること、チラシが ``public/samples`` に実在すること、テーマが既知の ID であること、日程と費用プランを 1 件以上持ち人数が定員を超えないこと、主催者を公開プロフィールへのリンクにしないこと、``findSample`` が未知の slug で undefined を返すこと
      - SCR-PUB-16 / SCR-PUB-17
+   * - ``tests/unit/sample-profiles.test.ts``
+     - 6
+     - 主催者の見本 6 人の slug が一意で URL に使えること、名前・種別・肩書き（60）・自己紹介（400）・活動エリア（50）が製品の上限に収まること、テーマが既知の ID であること、ジャンルが固定リストから 3 つまでで重複しないこと、リンクが X / Instagram の https で許可ホストだけであること（``profileUrlProblem``）、実績の妥当性と ``findProfile`` が未知の slug で undefined を返すこと
+     - SCR-PUB-18
    * - ``tests/unit/semantic-theme.test.ts``
      - 11
      - セマンティックテーマの ID と表示名（9 件・重複なし・空でない）、用途グループと所属の一致、未知の値と NULL の正規化、スキーマが 9 テーマと NULL を受け未知の ID を 400 にすること
@@ -436,8 +440,12 @@
      - 金額（``3,000円`` / ``¥3,000``）、保存形式の日付と月の見出し、日付の表記（``2026/11/21（土）`` を作る ``formatDateWithWeekdayJa``）、日時の表記、壊れた値の据え置き、日本時間の今月の範囲（UTC の月末が翌月になる場合を含む）
      - 全画面の共通表示
    * - ``tests/unit/mock-sync.test.mjs``
-     - 78
+     - 84
      - HTML の整形（script・Next の CSS リンク・コメントの除去、``lang`` と body のクラスの保持）、アセットの差し替え（``/_next/image``・``/samples``・``data:``）、内部リンクの対応付けと未知リンクの ``#``、``uiHash`` の一致と変化（改行が CRLF でも LF でも同じ）、同期要否（manifest 無し・ハッシュ不一致・一致・HTML 欠け）、目録の No の重複と ``page.tsx`` の実在、``--only`` の絞り込み、枠ページ（iframe・幅の切り替え・状態の表記・エスケープ・生成物の欠け）
+     - 該当なし（検査）
+   * - ``tests/unit/write-if-changed.test.mjs``
+     - 4
+     - 生成物を中身が変わったときだけ書くこと。ファイルが無ければ書いて true を返す、同じ中身なら書かずに false を返して mtime も動かさない、違えば書き換えて true を返す、同期版も生成スクリプトから同じ規則で使える
      - 該当なし（検査）
    * - ``tests/components/rsvp-modal.test.tsx``
      - 24
@@ -486,7 +494,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 954、``tests/integration/`` が 102 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 954 件を実行して 102 件を skip します。
+件数の内訳は ``tests/unit/`` が 970、``tests/integration/`` が 102 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 970 件を実行して 102 件を skip します。
 
 .. breakdown-end
 

@@ -13,6 +13,11 @@ interface OrganizerProfileViewProps {
    * 編集画面のプレビュー。非公開でも中身を描き、公開したときの見え方を確かめられる。
    */
   preview?: boolean;
+  /**
+   * 末尾の製品向けの注記を出すか。見本（`/sample/profile/[slug]`）だけ false にする。
+   * 見本では「検索に出さない」等の説明が意味を持たないため。
+   */
+  showNote?: boolean;
 }
 
 /**
@@ -26,6 +31,7 @@ export function OrganizerProfileView({
   name,
   profile,
   preview = false,
+  showNote = true,
 }: OrganizerProfileViewProps) {
   const showContent = profile.isPublished || preview;
 
@@ -106,9 +112,11 @@ export function OrganizerProfileView({
         <EmptyState>この主催者は、まだプロフィールを公開していません。</EmptyState>
       )}
 
-      <p className="screen-note">
-        プロフィールを公開していない主催者は、名前だけを出します。この画面は検索には出しません。
-      </p>
+      {showNote && (
+        <p className="screen-note">
+          プロフィールを公開していない主催者は、名前だけを出します。この画面は検索には出しません。
+        </p>
+      )}
     </div>
   );
 }

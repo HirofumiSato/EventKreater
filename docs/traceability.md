@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 105（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 387
+- 文書から参照されているコードパス: 390
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -161,9 +161,10 @@
 | `src/app/participant/history/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/app/participant/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/app/robots.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/sample` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/app/sample/[slug]/page.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/app/sample` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/page.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/app/sample/profile/[slug]/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/app/sample/profiles.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/SampleBand.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/SampleEventView.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/samples.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -388,6 +389,7 @@
 | `tests/unit/rsvp-notification.test.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/rsvp-status.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/sample-events.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/sample-profiles.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/semantic-theme-css.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/semantic-theme-quality.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `tests/unit/semantic-theme.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -401,6 +403,7 @@
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-spotlight.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/write-if-changed.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 
 ## 文書が指すが実在しないパス
 

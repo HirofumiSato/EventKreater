@@ -5,10 +5,11 @@
 // llms.txt の慣習（https://llmstxt.org/）に合わせて、H1・要約・節ごとのリンクだけを置く。
 // 本文は docs/doc-index.json から引くので、文書を足したら gen-doc-index が先に走る。
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { DOCS_ROOT, GENERATED_DOCS, ROOT } from "./lib/docs-util.mjs";
+import { writeFileIfChangedSync } from "./lib/write-if-changed.mjs";
 
 const INDEX = path.join(DOCS_ROOT, "doc-index.json");
 const OUTPUT = path.join(ROOT, "llms.txt");
@@ -128,6 +129,6 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-writeFileSync(OUTPUT, `${lines.join("\n")}\n`, "utf8");
+const changed = writeFileIfChangedSync(OUTPUT, `${lines.join("\n")}\n`);
 console.log(`llms.txt: ${SECTIONS.reduce((total, section) => total + section.entries.length, 0)} リンク`);
-console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}`);
+console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}${changed ? "" : "（変更なし）"}`);

@@ -53,13 +53,15 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 ```powershell
 npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit + mock-sync（同期漏れ）
 npm run check:full   # 上に Vitest と docs のテスト件数照合を足す（CI と PR の前）
-npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=20 / --no-shots / --dev）
+npm run verify       # docs:gen のあと、check:full・Sphinx・docs:links を並列に回す（PR の直前）
+npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=20 / --no-shots / --dev / --prod）
 npm run mock:check   # モックが製品のソースと同期しているかだけを見る
 npm run mock:serve   # 生成したモックを 127.0.0.1:4321 で配信
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
 npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md / traceability.md / llms.txt）
-npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す
+npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す（Vitest を回す）
+npm run docs:counts:last # 直前の check:full の結果から書き戻す（Vitest を回さない）
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
 cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
@@ -97,15 +99,17 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
-npm run mock:sync    # 全 49 画面（31 画面 + 状態）を撮り直す（既定は本番ビルド。40〜50 秒＋ビルド）
-npm run mock:sync -- --only=20,24   # 直した画面だけ（1 画面 5 秒前後）
+npm run mock:sync -- --only=20,24   # 直した画面だけ。開発サーバーで撮る（本番ビルドをしない）
+npm run mock:sync    # 全 55 画面（32 画面 + 状態）。本番ビルドで撮る（コミット前の正）
+npm run mock:sync -- --only=20,24 --prod   # 絞った画面を、本番ビルドで撮る
 npm run mock:sync -- --refresh      # 控え（隠し DOM・CSS・PNG）を使わず取り直す
 npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）
-npm run check:full   # PR の直前に 1 回（Vitest 込み）
+npm run verify       # PR の直前に 1 回（check:full + Sphinx + docs:links）
 ```
 
 1. 製品を直す（`src/styles/**` → `src/components/ui/**` → 画面 TSX の順）
-2. `npm run mock:sync` でモックを差し替える。部分同期で済ませたときは、コミット前に全体を回す
+2. `npm run mock:sync -- --only=…` で直した画面だけ撮る（開発サーバーなので `next build` をしない）。
+   コミット前に `npm run mock:sync`（全体）を本番ビルドで回す
 3. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
 4. PNG（`storage/mock-shots/`）と控え（`storage/mock-variants/`・`storage/mock-assets.json`）はコミットしない
 
@@ -152,7 +156,7 @@ DB に無い、または画面が「見つかりません」になった場合�
 - 見た目の変更は `src/styles/**` の 1 箇所、ブロック構造の変更は `src/components/ui/**` の 1 箇所で済ませます。ページ側に同じクラスの組み立てを書き戻さないでください。
 - 金額と日付の文字列は `src/lib/format.ts` を通します。`toLocaleString` を画面に直書きしません（通貨が JPY でない管理画面など、意図がある場所はコメントを残します）。
 - `docs/doc-index.json`、`docs/api-routes.md`、`docs/traceability.md`、`llms.txt` は `npm run docs:gen` の生成物です。手で編集せず、原稿かコードを直してから再生成してください。
-- テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出します。テストを足したら件数も更新してください。
+- テストの件数は `docs/testing/scope.rst` の 1 か所だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出します。テストを足したら件数も更新してください（直前に `check:full` を回していれば、`npm run docs:counts:last` が Vitest を回さずに同じ書き戻しをします）。
 - ルートビルドで有効な Sphinx の設定は `docs/conf.py` だけです。`docs/{event-page,flyer,user-management}/conf.py` は単独ビルド用です。
 - `.env` は読みません。`.env.example` を見てください。
 - 生成物と巨大な依存は読みません: `docs/_build`, `.next`, `node_modules`, `.venv-docs`, `storage`, `logs`。

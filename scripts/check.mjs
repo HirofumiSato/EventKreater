@@ -23,16 +23,21 @@
 // Vitest には json レポータも付ける。docs に書いたテスト件数が実測と合っているかを、
 // 同じ 1 回の実行で確かめるため（scripts/gen-test-counts.mjs）。件数は生成物なので、
 // 原稿を直し忘れたらここで止まる。
+//
+// そのレポートは消さずに node_modules/.cache/check/vitest.json へ残す。件数を書き戻す
+// とき、同じテストをもう一度走らせなくて済むようにするため（npm run docs:counts:last）。
+// node_modules/.cache は .gitignore 済みで、消しても次の実行で作り直される。
 
 import { spawn } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { byFile, inspect, scopePath } from "./gen-test-counts.mjs";
+import { byFile, inspect, scopePath, vitestReportPath } from "./gen-test-counts.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const vitestReport = path.join(os.tmpdir(), `event-creater-check-${process.pid}.json`);
+// 実行後に残す。`npm run docs:counts:last` がこの 1 回の結果をそのまま読む。
+const vitestReport = vitestReportPath;
+fs.mkdirSync(path.dirname(vitestReport), { recursive: true });
 
 /** 依存パッケージの実行用 JS の入口を、cwd 非依存で解決する。 */
 function entry(specifier) {
@@ -60,7 +65,18 @@ const STATIC_TASKS = [
   {
     label: "lint",
     entry: eslintEntry(),
-    args: [".", "--ext", ".ts,.tsx,.mjs", "--cache", "--cache-location", LINT_CACHE],
+    // キャッシュの判定を mtime ではなく内容で行う。OneDrive 配下だと同期で mtime が
+    // 触られ、中身が同じでもキャッシュが外れる。`npm run lint` と同じ引数にそろえ、
+    // 同じキャッシュを共有する。
+    args: [
+      ".",
+      "--ext",
+      ".ts,.tsx,.mjs",
+      "--cache",
+      "--cache-strategy=content",
+      "--cache-location",
+      LINT_CACHE,
+    ],
   },
   { label: "typecheck", module: "typescript/bin/tsc", args: ["--noEmit"] },
   // リポジトリ内のスクリプトは import.meta.resolve を通さず、パスで直接起動する。
@@ -123,8 +139,6 @@ function checkDocCounts() {
     report = JSON.parse(fs.readFileSync(vitestReport, "utf8"));
   } catch {
     return { ok: true, note: "テストの結果を読めなかったので、件数の照合は省きます" };
-  } finally {
-    fs.rmSync(vitestReport, { force: true });
   }
 
   const inspected = inspect(fs.readFileSync(scopePath, "utf8"), byFile(report));
@@ -134,7 +148,8 @@ function checkDocCounts() {
 
   const lines = [
     "docs/testing/scope.rst の件数が実測と合っていません。",
-    "npm run docs:counts で書き戻してから、もう一度 npm run check:full を実行してください。",
+    "npm run docs:counts:last（いま走らせた結果を使う）か npm run docs:counts で書き戻してから、",
+    "もう一度 npm run check:full を実行してください。",
     ...inspected.stale.map((line) => `  ${line}`),
   ];
   return { ok: false, note, output: lines.join("\n") };

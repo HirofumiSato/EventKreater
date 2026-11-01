@@ -5541,7 +5541,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1972,
+      "lineCount": 1982,
       "headings": [
         {
           "level": 1,
@@ -5872,6 +5872,14 @@
         },
         {
           "path": "src/app/sample",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/profile/[slug]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/profiles.ts",
           "exists": true
         },
         {
@@ -9425,7 +9433,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1125,
+      "lineCount": 1127,
       "headings": [
         {
           "level": 2,
@@ -10118,7 +10126,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 233,
+      "lineCount": 235,
       "headings": [
         {
           "level": 1,
@@ -10491,7 +10499,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 602,
+      "lineCount": 610,
       "headings": [
         {
           "level": 1,
@@ -10817,6 +10825,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/sample-profiles.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/semantic-theme-css.test.ts",
           "exists": true
         },
@@ -10866,6 +10878,10 @@
         },
         {
           "path": "tests/unit/voice-spotlight.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/write-if-changed.test.mjs",
           "exists": true
         }
       ],
@@ -11168,7 +11184,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 525,
+      "lineCount": 535,
       "headings": [
         {
           "level": 1,
@@ -11360,7 +11376,7 @@
         },
         {
           "level": 3,
-          "text": "13.3. サンプル（SCR-PUB-16 / SCR-PUB-17）"
+          "text": "13.3. サンプル（SCR-PUB-16 / SCR-PUB-17 / SCR-PUB-18）"
         },
         {
           "level": 3,
@@ -11418,11 +11434,19 @@
           "exists": true
         },
         {
-          "path": "src/app/sample/[slug]/page.tsx",
+          "path": "src/app/sample",
           "exists": true
         },
         {
           "path": "src/app/sample/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/profile/[slug]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/sample/profiles.ts",
           "exists": true
         },
         {
@@ -11495,9 +11519,9 @@
       "sphinxDoc": "ui-review/mock-sync",
       "format": "markdown",
       "title": "1. 製品を直す（src/app//page.tsx、src/components/ui/、src/styles/ など）",
-      "summary": "npm run mock:sync",
+      "summary": "npm run mock:sync -- --only=20,24",
       "preImplementation": false,
-      "lineCount": 300,
+      "lineCount": 311,
       "headings": [
         {
           "level": 2,
@@ -11517,11 +11541,15 @@
         },
         {
           "level": 1,
-          "text": "2. モックを撮り直す（既定は本番ビルド。src が変わっていれば 1〜2 分かかる）"
+          "text": "2. 反復中は直した画面だけを撮る。開発サーバー（3012）で撮るので next build をしない"
         },
         {
           "level": 1,
-          "text": "3. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）"
+          "text": "3. コミットの前に全体を撮り直す。こちらは本番ビルド（.next-ui-prod）を配って撮る"
+        },
+        {
+          "level": 1,
+          "text": "4. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）"
         },
         {
           "level": 2,

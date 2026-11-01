@@ -5,7 +5,7 @@
 // パス基準の逆引き。仕様が指すファイルが実在するか、そのファイルを説明する文書はどれかを
 // 1 ページで確認できるようにする。URL 基準の API 被覆もここで見る。
 
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -22,6 +22,7 @@ import {
   toPosix,
   walkFiles,
 } from "./lib/docs-util.mjs";
+import { writeFileIfChangedSync } from "./lib/write-if-changed.mjs";
 
 const OUTPUT = path.join(DOCS_ROOT, "traceability.md");
 const APP_ROOT = path.join(ROOT, "src", "app");
@@ -177,8 +178,8 @@ if (undocumentedRoutes.length === 0) {
   );
 }
 
-writeFileSync(OUTPUT, `${lines.join("\n")}\n`, "utf8");
+const changed = writeFileIfChangedSync(OUTPUT, `${lines.join("\n")}\n`);
 console.log(
   `traceability: コード ${codeToDocs.size} パス、API ${routes.length} 本（未記載 ${undocumentedRoutes.length}）、実在しないパス ${missingByPath.size}（新規 ${newMissing.length}）`,
 );
-console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}`);
+console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}${changed ? "" : "（変更なし）"}`);

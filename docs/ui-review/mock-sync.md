@@ -44,12 +44,19 @@ npm run db:seed:ui
 ```powershell
 # 1. 製品を直す（src/app/**/page.tsx、src/components/ui/**、src/styles/** など）
 
-# 2. モックを撮り直す（既定は本番ビルド。src が変わっていれば 1〜2 分かかる）
+# 2. 反復中は直した画面だけを撮る。開発サーバー（3012）で撮るので next build をしない
+npm run mock:sync -- --only=20,24
+
+# 3. コミットの前に全体を撮り直す。こちらは本番ビルド（.next-ui-prod）を配って撮る
 npm run mock:sync
 
-# 3. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）
+# 4. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）
 npm run check
 ```
+
+部分同期（`--only`）は開発サーバーで撮るため、本番ビルドの 1〜2 分を待ちません。
+本番ビルドと CSS の当たり方がずれる画面があるので、コミットの前は必ず全体（本番）を回します。
+部分同期でも本番ビルドで撮りたいときは `--only` に `--prod` を足します。
 
 `style-guide/` 以下と `style-guide/assets/` を、`mock:sync` が書き換えたぶんだけコミットします。
 PNG（`storage/mock-shots/`）はコミットしません。
@@ -58,11 +65,13 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 | コマンド | 何をするか |
 | --- | --- |
-| `npm run mock:sync` | 全 49 画面（31 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
-| `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。`--only=04-event-member` でも絞れる |
+| `npm run mock:sync` | 全 55 画面（32 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
+| `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。開発サーバー（3012）で撮る。`--only=04-event-member` でも絞れる |
+| `npm run mock:sync -- --only=20,24 --prod` | 絞った画面を、本番ビルドで撮る（コミット前の差分確認用） |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
 | `npm run mock:sync -- --refresh` | 控え（断片・CSS・PNG）を使わず、全画面を取り直す（下の「控え」を参照） |
-| `npm run mock:sync -- --dev` | 開発サーバー（3012）で撮る。保存がそのまま出るが、CSS の当たり方が本番とずれることがある |
+| `npm run mock:sync -- --dev` | 全体同期でも開発サーバー（3012）で撮る。保存がそのまま出るが、CSS の当たり方が本番とずれることがある |
+| `npm run mock:sync -- --concurrency=6` | 同時に開く数。既定は論理コアから 4〜6 を決める（16 コアなら 6） |
 | `npm run mock:check` | 同期の判定だけ（`npm run check` の中でも走る） |
 | `npm run mock:serve` | 生成したモックを `http://127.0.0.1:4321/style-guide/mock-index.html` で配る |
 
@@ -79,7 +88,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- |
 | 左下の付箋（開くと「← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス」） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。既定は閉じていて、付箋を押すと上へ開く。製品には無い |
 | 操作の script（`mock-interactions.js`） | `withMockInteractions` が付箋の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、一覧の絞り込み、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
-| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 49 画面の入口。製品には無い |
+| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 55 画面の入口。製品には無い |
 | 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
 
 付箋の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
@@ -148,7 +157,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- | --- |
 | 断片 | `storage/mock-variants/<画面>.json` | 日付・ステップを押して集める往復（1 画面 1〜6 秒） | 合成前の HTML の指紋（`sourceHash`）が変わったとき。`--refresh` でも捨てる |
 | CSS | `storage/mock-assets.json`（`{ uiHash, stylesheets }`） | 同じ CSS を画面ごとに取り直す往復 | `uiHash` が変わったとき。`--refresh` でも捨てる |
-| 素材（同一実行内） | メモリの表 | 同じ画像を 49 画面ぶん取り直す往復 | 実行が終われば消える |
+| 素材（同一実行内） | メモリの表 | 同じ画像を 55 画面ぶん取り直す往復 | 実行が終われば消える |
 | PNG | `storage/mock-shots/*.png` | 変化の無い画面の 390 / 1280 撮影 | 生成した HTML が既存ファイルと違うとき、PNG が欠けているとき、`--refresh` |
 
 DB やデモデータが変われば画面上の DOM も変わるので、断片の控えは自然に外れます。画像だけが
@@ -288,6 +297,8 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 | CSS が当たらない（`--dev`） | 本番ビルドで撮り直す（`--dev` は開発サーバーの都合で CSS が `<link>` にならないことがある） |
 | カレンダーの日付や音声入力が動かない | `mock-interactions.js` が読まれているか（`npm run check` が止める）。それでも動かなければ `npm run mock:sync -- --refresh` |
 | 反映が古い（画像だけ差し替えた等） | `npm run mock:sync -- --refresh`（控えを使わずに取り直す） |
+| 部分同期の HTML が全体と違う（CSS の link が 1 本になる） | 仕様。`--only` は開発サーバーで撮るため、CSS が 1 本にまとまる。次の全体同期（本番）で戻る。**dev で撮った結果はコミットしない** |
+| 開発サーバーが 500 を返して `NG` と出る（`Invalid hook call` など） | 並列で開いた再コンパイル中の一時的な失敗。`manifest` は書かれていないので、同じ `--only` を撮り直す |
 | 枠ページが「画面」だけになる | `mock-frame.html` が古い。`npm run mock:sync` で作り直す |
 
 ## 画面を足すとき

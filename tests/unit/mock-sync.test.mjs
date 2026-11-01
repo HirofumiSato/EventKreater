@@ -17,6 +17,7 @@ import {
   TOOL_FILES,
 } from "../../scripts/check-mock-sync.mjs";
 import { frameHtml, frameSrc, frameUrl } from "../../scripts/lib/mock-frame.mjs";
+import { resolveConcurrency } from "../../scripts/lib/concurrency.mjs";
 import { indexHtml, scopeOfHtml } from "../../scripts/lib/mock-index.mjs";
 import {
   applyAssetMap,
@@ -383,8 +384,8 @@ describe("画面の目録", () => {
     const themeRows = screens.filter((row) => row.theme !== undefined);
     // テーマ未選択 1 枚 + 全テーマ 1 枚ずつ。
     expect(themeRows).toHaveLength(SEMANTIC_THEME_IDS.length + 1);
-    // テーマ以外の状態は 39 枚。画面そのものを足したときだけ、この数を直す。
-    expect(expectedFiles()).toHaveLength(39 + themeRows.length);
+    // テーマ以外の状態は 45 枚。画面そのものを足したときだけ、この数を直す。
+    expect(expectedFiles()).toHaveLength(45 + themeRows.length);
   });
 
   it("テーマの状態は、製品のすべてのテーマと未選択を 1 枚ずつ持つ", () => {
@@ -872,5 +873,40 @@ describe("断片の控え", () => {
     expect(shouldReuseShots({ changed: true, shotsExist: true })).toBe(false);
     expect(shouldReuseShots({ changed: false, shotsExist: false })).toBe(false);
     expect(shouldReuseShots({ changed: false, shotsExist: true, refresh: true })).toBe(false);
+  });
+});
+
+describe("同時に開く数", () => {
+  it("未指定なら論理コア 16 でも 6 を上限にする（15 や 8 にしない）", () => {
+    expect(resolveConcurrency(null, 16)).toBe(6);
+    expect(resolveConcurrency(null, 32)).toBe(6);
+  });
+
+  it("論理コアが少なくても、待ちの多い撮影は 4 で回す", () => {
+    expect(resolveConcurrency(undefined, 1)).toBe(4);
+    expect(resolveConcurrency(null, 2)).toBe(4);
+    expect(resolveConcurrency(null, 4)).toBe(4);
+  });
+
+  it("並列度が読めなければ下限の 4 にする", () => {
+    expect(resolveConcurrency(null, Number.NaN)).toBe(4);
+    expect(resolveConcurrency(null, 0)).toBe(4);
+  });
+
+  it("明示指定は並列度より優先し、1 も採る", () => {
+    expect(resolveConcurrency("3", 16)).toBe(3);
+    expect(resolveConcurrency("1", 16)).toBe(1);
+    expect(resolveConcurrency("12", 16)).toBe(12);
+  });
+
+  it("小数の明示指定は切り捨てる", () => {
+    expect(resolveConcurrency("2.9", 16)).toBe(2);
+  });
+
+  it("不正な指定は未指定と同じに扱う", () => {
+    expect(resolveConcurrency("abc", 16)).toBe(6);
+    expect(resolveConcurrency("0", 16)).toBe(6);
+    expect(resolveConcurrency("", 16)).toBe(6);
+    expect(resolveConcurrency("-2", 16)).toBe(6);
   });
 });

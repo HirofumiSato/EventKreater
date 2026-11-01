@@ -490,22 +490,32 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 - 「0円チケット」「無料チケット」は運営側の言葉です。公開画面では **「まずは2回まで無料で試せます」** に統一し、
   チケットの語は出しません（`SITE.cta.freeNote` に含めないことをテストで固定）。
 
-### 13.3. サンプル（SCR-PUB-16 / SCR-PUB-17）
+### 13.3. サンプル（SCR-PUB-16 / SCR-PUB-17 / SCR-PUB-18）
 
-見本は DB を使わない静的ルートです。`src/app/sample/samples.ts` の 5 件を
-`generateStaticParams` で書き出し、`/sample/<slug>` を開きます。
+見本は DB を使わない静的ルートです。`src/app/sample/samples.ts` の催し 5 件と
+`src/app/sample/profiles.ts` の主催者 6 人を `generateStaticParams` で書き出し、
+`/sample/<slug>` と `/sample/profile/<slug>` を開きます。
 
 | 項目 | 内容 | 正 |
 | --- | --- | --- |
-| 一覧 | 5 件（外ごはん・マーケット・子ども連れ・アウトドア・ナイト）。チラシは `public/samples/*.jpg` の実物 | `src/app/sample/page.tsx` |
+| 一覧 | 催し 5 件（外ごはん・マーケット・子ども連れ・アウトドア・ナイト）。チラシは `public/samples/*.jpg` の実物。題は「サンプルのページ」、その下に「主催者のプロフィール」の節（`#sample-profiles`）を置く | `src/app/sample/page.tsx` |
+| 主催者のカード | 頭文字（5.5rem の丸）・種別・名前・肩書き・活動エリア・実績。リンクは `/sample/profile/<slug>` | `src/app/sample/page.tsx` / `.sample-card__avatar` |
+| プロフィール | 6 人（佐藤 みのり・高橋 直樹・川辺 ユウ・森 あかり・井上 健・山本 千夏）。`OrganizerProfileView` をそのまま使い、催しの一覧は載せない | `src/app/sample/profile/[slug]/page.tsx` / `src/app/sample/profiles.ts` |
 | 詳細 | `PosterHero`・`EventMetaCard`・`DynamicRsvpBox`（`preview`）。テーマは 5 種で変える | `src/app/sample/SampleEventView.tsx` |
-| 帯 | 上端に固定した 1 段（高さ 53px）。札「サンプル」、説明（640px 以上、1 行で省略）、「← 一覧」（詳細だけ）、「無料ではじめる」 | `src/app/sample/SampleBand.tsx` / `src/styles/screens/public.css` |
+| 帯 | 上端に固定した 1 段（高さ 53px）。札「サンプル」、説明（640px 以上、1 行で省略。一覧は「実際に作ったページの見本です」、告知は「実際に作った告知ページです」、プロフィールは「実際に作ったプロフィールです」）、「← 一覧」（詳細だけ。プロフィールは `/sample#sample-profiles`）、「無料ではじめる」 | `src/app/sample/SampleBand.tsx` / `src/styles/screens/public.css` |
 | クロム | 共通ヘッダーなし・フッターあり・上端の余白なし | `src/lib/site-chrome.ts` |
-| 検索 | 詳細は `noindex, nofollow` | `src/app/sample/[slug]/page.tsx` |
+| 検索 | 詳細は `noindex, nofollow`（告知・プロフィールとも） | `src/app/sample/**/page.tsx` |
 
 出欠フォームは `preview` で描くため、入力も送信もできません。本物と取り違えないよう、
 フォームの上に「見本のため送信できません。」の 1 行を置き、それ以外の見た目は変えていません。
 見本の主催者と共同主催者は `userId: null` にして、公開プロフィールへのリンクにしません。
+
+プロフィールの見本は、本物の公開プロフィール（SCR-PUB-14）と同じ `OrganizerProfileView` に
+同じ形のデータを渡すだけで描きます。だから主催者がプロフィールを公開したときの見え方を、
+登録の前に確かめられます。本物との違いは 3 つだけです。催しのカレンダーと一覧を載せないこと、
+末尾の製品向け注記を `showNote={false}` で消し、代わりに「見本のため、主催者は架空です。
+催しの一覧は省いています。」を置くこと、一覧の節へ戻るリンクを本文の最後に置くことです。
+本文には主操作を重ねません（帯が「無料ではじめる」を持っています）。
 
 ### 13.4. 却下した案
 

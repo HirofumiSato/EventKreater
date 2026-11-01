@@ -339,6 +339,22 @@ a.card,
   background: var(--color-hero);
 }
 
+/* プロフィールの見本は、チラシの欄と同じ 5.5rem の丸に頭文字を置く。
+   `--pop-warm` と `--tape-ink` はテーマの中だけで定義されるため、一覧（テーマ無し）では
+   既定の朱の淡色と濃い文字へ落とす。 */
+.sample-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: var(--pop-warm, var(--color-primary-soft));
+  color: var(--tape-ink, var(--color-primary-text));
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
 .sample-card__body {
   min-width: 0;
 }

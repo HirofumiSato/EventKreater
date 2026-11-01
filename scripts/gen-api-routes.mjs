@@ -5,10 +5,10 @@
 // ディレクトリ構造がそのまま URL になる Next.js App Router の規則を使い、
 // 実装されたメソッドと、docs/backend_api_implementation_spec.md の表を突き合わせる。
 
-import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { DOCS_ROOT, fromRoot, readDoc, ROOT, walkFiles } from "./lib/docs-util.mjs";
+import { writeFileIfChangedSync } from "./lib/write-if-changed.mjs";
 
 const APP_ROOT = path.join(ROOT, "src", "app");
 const API_ROOT = path.join(APP_ROOT, "api");
@@ -170,8 +170,8 @@ if (specOnly.length === 0) {
   }
 }
 
-writeFileSync(OUTPUT, `${lines.join("\n")}\n`, "utf8");
+const changed = writeFileIfChangedSync(OUTPUT, `${lines.join("\n")}\n`);
 console.log(
   `api-routes: ${routes.length} エンドポイント（仕様書 ${routes.filter((route) => route.inSpec).length} / 実装のみ ${routes.filter((route) => !route.inSpec).length} / 仕様書のみ ${specOnly.length}）`,
 );
-console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}`);
+console.log(`  -> ${path.relative(process.cwd(), OUTPUT)}${changed ? "" : "（変更なし）"}`);

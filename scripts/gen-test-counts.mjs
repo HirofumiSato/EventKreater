@@ -1,7 +1,8 @@
 // テストの件数を docs に書き戻す。
 //
-//   npm run docs:counts            Vitest を走らせて書き戻す
-//   npm run docs:counts -- --check 書き戻さず、ずれていたら終了コード 1
+//   npm run docs:counts              Vitest を走らせて書き戻す
+//   npm run docs:counts -- --check   書き戻さず、ずれていたら終了コード 1
+//   npm run docs:counts:last         check:full が残した結果を読んで書き戻す（Vitest を走らせない）
 //   node scripts/gen-test-counts.mjs --from=<report.json>  既存の結果を使う
 //
 // 件数を手で書くと、テストを足すたびに各ページの数字がずれる。実際にずれていた。
@@ -16,17 +17,24 @@
 // * ``count-start`` / ``count-end`` に挟まれた段落
 // * 表の、ファイル名の次の行にある件数
 //
-// ``scripts/check.mjs`` は、自分が走らせた Vitest の結果を ``--from`` で渡して
-// ``--check`` する。テストをもう一度走らせずに、ずれをその場で止められる。
+// ``scripts/check.mjs`` は、自分が走らせた Vitest の結果をそのまま読んで ``inspect`` する。
+// テストをもう一度走らせずに、ずれをその場で止められる。
+//
+// その結果は ``node_modules/.cache/check/vitest.json`` に残る。``--last`` はそこを読む。
+// ``npm run check:full`` の直後に件数を書き戻すとき、同じ全件をもう一度走らせない。
 
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeFileIfChangedSync } from "./lib/write-if-changed.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const scopePath = path.join(root, "docs", "testing", "scope.rst");
+
+/** check:full が残すレポート。置き場所は scripts/check.mjs と共有する。 */
+export const vitestReportPath = path.join(root, "node_modules", ".cache", "check", "vitest.json");
 
 export function runVitest() {
   const reportPath = path.join(os.tmpdir(), `event-creater-vitest-${process.pid}.json`);
@@ -162,7 +170,13 @@ const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath
 if (isCli) {
   const args = process.argv.slice(2);
   const check = args.includes("--check");
+  const last = args.includes("--last");
   const from = args.find((arg) => arg.startsWith("--from="))?.slice("--from=".length);
+
+  if (from && last) {
+    console.error("--from= と --last は同時に指定できません。");
+    process.exit(1);
+  }
 
   let report;
   let failed = false;
@@ -172,6 +186,24 @@ if (isCli) {
       console.error(`Vitest の結果を読めません: ${from}`);
       process.exit(1);
     }
+  } else if (last) {
+    // check:full を回していない（またはキャッシュを消した）ときは、黙って全件を
+    // 走らせ直さない。何をすればよいかだけを出して止まる。
+    if (!fs.existsSync(vitestReportPath)) {
+      console.error(`Vitest の結果がありません: ${path.relative(root, vitestReportPath)}`);
+      console.error("先に `npm run check:full` を実行してください。");
+      process.exit(1);
+    }
+    report = readReport(vitestReportPath);
+    if (!report) {
+      console.error(`Vitest の結果を読めません: ${path.relative(root, vitestReportPath)}`);
+      console.error("先に `npm run check:full` を実行してください。");
+      process.exit(1);
+    }
+    const age = Date.now() - fs.statSync(vitestReportPath).mtimeMs;
+    console.log(
+      `  使う結果: ${path.relative(root, vitestReportPath)}（${Math.round(age / 60000)} 分前）`,
+    );
   } else {
     ({ report, failed } = await runVitest());
   }
@@ -198,8 +230,10 @@ if (isCli) {
     }
     console.log("  docs/testing/scope.rst と一致しています");
   } else {
-    fs.writeFileSync(scopePath, inspected.text, "utf8");
-    console.log("  -> docs/testing/scope.rst");
+    // 内容が同じなら書かない。OneDrive の同期と Sphinx の増分ビルドを、無駄な
+    // mtime の更新で起こさないため。
+    const written = writeFileIfChangedSync(scopePath, inspected.text);
+    console.log(`  -> docs/testing/scope.rst${written ? "" : "（変化なし）"}`);
     if (inspected.stale.length > 0) {
       console.log(`  表の件数を直しました ${inspected.stale.length} 件:`);
       for (const line of inspected.stale) console.log(`    ${line}`);

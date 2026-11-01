@@ -5,8 +5,10 @@
 // AI と開発者が「どの文書があり、何を説明し、どのコードを指すか」を
 // 1 ファイルで引けるようにする。Sphinx の toctree もここに写す。
 
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
+
+import { writeFileIfChangedSync } from "./lib/write-if-changed.mjs";
 
 import {
   cleanInline,
@@ -157,8 +159,8 @@ const payload = {
   docs,
 };
 
-writeFileSync(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+const changed = writeFileIfChangedSync(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`);
 console.log(
   `doc-index: ${payload.stats.docs} 文書（Markdown ${payload.stats.markdown} / RST ${payload.stats.rst}、実装前 ${payload.stats.preImplementation}、toctree 未掲載 ${payload.stats.orphan}）`,
 );
-console.log(`  -> ${toPosix(path.relative(process.cwd(), OUTPUT))}`);
+console.log(`  -> ${toPosix(path.relative(process.cwd(), OUTPUT))}${changed ? "" : "（変更なし）"}`);

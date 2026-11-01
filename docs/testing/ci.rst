@@ -63,6 +63,8 @@ CI への接続
 
 ``check`` は手元と同じコマンドです。CI のためだけの別エントリは作りません。
 
+手元で ``check`` と ``docs`` の 2 ジョブぶんを 1 回で確かめたいときは ``npm run verify`` を呼びます。``docs:gen`` の 4 本を直列に回したあと、``check:full``・Sphinx（``npm run docs``）・``docs:links`` を並列に走らせ、工程ごとの秒数と、失敗した工程の出力だけを出します。CI はジョブを分けたままです（落ちた場所を GitHub の画面で分けるため）。
+
 変更に応じた絞り込み
 --------------------
 
@@ -148,7 +150,7 @@ apt での取得は 8 秒前後かかり、ミラーが遅い日はここで数�
 * ``npm ci`` は ``package-lock.json`` と ``package.json`` がずれていると落ちます。依存を足したら、lock も同じコミットに入れます。
 * ``next lint`` は初回に ``.eslintrc.json`` を探します。設定ファイルを消したり移動したりすると、CI だけ落ちます。いまの ``npm run lint`` は ``next lint`` ではなく eslint を直接呼びます（``--cache`` 付き）。
 * 索引は ``docs:gen`` の生成物です。原稿を足して再生成を忘れると、``docs`` ジョブの ``git diff --exit-code`` が落ちます。手元で ``npm run docs:gen`` を実行し、差分ごとコミットします。
-* テストの件数は ``docs/testing/scope.rst`` だけが持ちます。``npm run check:full`` の最後に ``docs-count`` が照合し、ずれていれば終了コード 1 にします。テストを足したら ``npm run docs:counts`` で書き戻します。``docs`` ジョブではなく ``check`` に置いたのは、Vitest の結果をそのまま使えて、テストをもう一度走らせずに済むためです。
+* テストの件数は ``docs/testing/scope.rst`` だけが持ちます。``npm run check:full`` の最後に ``docs-count`` が照合し、ずれていれば終了コード 1 にします。テストを足したら ``npm run docs:counts`` で書き戻します。Vitest をもう一度回さずに済む ``npm run docs:counts:last`` は、直前の ``check:full`` が残した ``node_modules/.cache/check/vitest.json`` を読みます（無いときは ``check:full`` を先に回すよう促して終わります）。``docs`` ジョブではなく ``check`` に置いたのは、Vitest の結果をそのまま使えて、テストをもう一度走らせずに済むためです。
 * ``docs`` ジョブは Sphinx もビルドします。``docs/_build/`` は ``.gitignore`` にあるので、HTML は成果物として残しません。
 * ``docs`` ジョブは依存を入れません。生成スクリプトは ``node:fs`` と ``node:path`` しか import しないため、``npm ci`` を省けます。新しいライブラリを生成スクリプトから使うときは、この前提が崩れるので ``npm ci`` を戻します。
 * ``node_modules`` のキャッシュが壊れたと疑ったら、GitHub の Actions の Caches から鍵ごと消して再実行します。鍵は ``package-lock.json`` と ``prisma/schema.prisma`` のハッシュなので、依存かスキーマを変えれば自動的に外れます。

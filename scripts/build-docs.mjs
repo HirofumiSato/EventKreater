@@ -37,11 +37,19 @@ if (!existsSync(venvPython)) {
   process.exit(1);
 }
 
+// `-j auto` は CPU 数に合わせてページの読み書きを並列にする。Windows の Sphinx 8 系でも動く。
+// 落ちる環境では `-j 1` に落とす。`-q` は進捗の行だけを消し、WARNING は stderr に残る。
+const startedAt = process.hrtime.bigint();
 run(venvPython, [
   "-m",
   "sphinx",
   "-b",
   "html",
+  "-j",
+  "auto",
+  "-q",
   path.join(root, "docs"),
   path.join(root, "docs", "_build", "html"),
 ]);
+const seconds = Number(process.hrtime.bigint() - startedAt) / 1e9;
+console.log(`docs: ${seconds.toFixed(1)}s`);

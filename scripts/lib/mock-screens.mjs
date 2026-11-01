@@ -205,6 +205,21 @@ export function buildScreens(demo) {
       note: "告知ページと同じ部品。出欠は見た目だけで送れない。テーマはネオン。",
     },
     {
+      no: "06c",
+      group: "public",
+      slug: "sample-profile",
+      name: "サンプル（主催者のプロフィール）",
+      note: "公開プロフィールと同じ部品。6 人をテーマ違いで並べ、催しの一覧は載せない。",
+      states: [
+        { key: "day", label: "個人（昼）", path: "/sample/profile/day" },
+        { key: "night", label: "個人（夜）", path: "/sample/profile/night" },
+        { key: "band", label: "バンドマン", path: "/sample/profile/band" },
+        { key: "dancer", label: "ダンサー", path: "/sample/profile/dancer" },
+        { key: "bar", label: "バー", path: "/sample/profile/bar" },
+        { key: "restaurant", label: "飲食店", path: "/sample/profile/restaurant" },
+      ],
+    },
+    {
       no: "07",
       group: "auth",
       slug: "register",
@@ -603,6 +618,14 @@ const DYNAMIC_SEGMENTS = {
   "code-invite": "[code]",
   // 見本の詳細（`/sample/dj` など）。slug は `src/app/sample/samples.ts` が持つ。
   dj: "[slug]",
+  // 見本の主催者プロフィール（`/sample/profile/day` など）。
+  // slug は `src/app/sample/profiles.ts` が持つ。
+  day: "[slug]",
+  night: "[slug]",
+  band: "[slug]",
+  dancer: "[slug]",
+  bar: "[slug]",
+  restaurant: "[slug]",
 };
 
 /** 目録（画面名・パス・状態）を、テストからも引けるようにする。 */
