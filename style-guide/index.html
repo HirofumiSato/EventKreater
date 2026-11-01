@@ -73,7 +73,7 @@
               <ul class="sg-patterns">
                 <li><strong>並び</strong><span>縦一列。見出し、入力、出欠、朱のボタンの順。左右の余白は 1rem。</span></li>
                 <li><strong>進む操作</strong><span>ボタンは幅いっぱい。フォームの最後に置く。親指が届く位置を優先する。</span></li>
-                <li><strong>押せる的</strong><span>ボタンとリンクの的は 44×44px 以上、文字は 15px 以上。隣り合う操作は 8px 以上空ける。小さく見せたい補助の操作も、的は縮めない（横の余白だけを詰める）。</span></li>
+                <li><strong>押せる的</strong><span>ボタンとリンクの的は 40×40px 以上、文字は 15px 以上。隣り合う操作は 8px 以上空ける。小さく見せたい補助の操作も、的は縮めない（横の余白だけを詰める）。</span></li>
                 <li><strong>操作の場所</strong><span>進む操作は画面の下（固定の帯か本文の最後）。見出しの右は戻る・プレビューなどの補助だけ。行とカードの操作は 1 段に 2 つまで。</span></li>
                 <li><strong>出欠</strong><span>出席、欠席、未定は横一列のまま。三つを見比べて選べるようにする。</span></li>
                 <li><strong>ヘッダー</strong><span>サービス名と「イベント告知ページを作る」。リンクはメニューに畳む。540px 以下では切り替えリンクもメニュー先頭へ移す。バーの高さは 64px 以内。</span></li>
@@ -718,18 +718,18 @@
           <h2 id="buttons-title">ボタン</h2>
           <p class="sg-lead">主操作は朱で、角は丸、硬い影で浮かせます。取り消しと補助は白地に墨の枠、削除や編集権の引き継ぎは暗い赤です。文字だけの操作には影を付けません。</p>
 
-          <p class="sg-lead"><strong>大きさはスマホが基準です。</strong>どの段も高さは 44px を下回らせず、文字は 15px を下回らせません。<code>--sm</code> は左右の余白だけを詰める指定で、高さと文字は変えません。隣り合うボタンは 8px 以上空けます。</p>
+          <p class="sg-lead"><strong>大きさはスマホが基準です。</strong>どの段も高さは 40px を下回らせず、文字は 15px を下回らせません。<code>--sm</code> は左右の余白だけを詰める指定で、高さと文字は変えません。隣り合うボタンは 8px 以上空けます。</p>
           <div class="sg-diff-wrap">
             <table class="sg-diff">
               <thead>
                 <tr><th>指定</th><th>高さ</th><th>文字</th><th>使う場所</th></tr>
               </thead>
               <tbody>
-                <tr><th><code>.btn</code></th><td>44px 以上</td><td>15px</td><td>既定。フォームの送信、ダイアログの確認</td></tr>
-                <tr><th><code>.btn--sm</code></th><td>44px 以上</td><td>15px</td><td>行・カード・見出しの補助操作。左右の余白だけ 12px</td></tr>
+                <tr><th><code>.btn</code></th><td>40px 以上</td><td>15px</td><td>既定。フォームの送信、ダイアログの確認</td></tr>
+                <tr><th><code>.btn--sm</code></th><td>40px 以上</td><td>15px</td><td>行・カード・見出しの補助操作。左右の余白だけ 12px</td></tr>
                 <tr><th><code>.btn--lg</code></th><td>52px 以上</td><td>16px</td><td>導入の主操作。1 画面に 1 つ</td></tr>
-                <tr><th><code>.btn--block</code></th><td>44px 以上</td><td>15px</td><td>スマホの固定帯とダイアログ。幅いっぱい</td></tr>
-                <tr><th><code>.text-link</code></th><td>44px 以上</td><td>15px</td><td>本文の中のリンクだけ。操作には使わない</td></tr>
+                <tr><th><code>.btn--block</code></th><td>40px 以上</td><td>15px</td><td>スマホの固定帯とダイアログ。幅いっぱい</td></tr>
+                <tr><th><code>.text-link</code></th><td>40px 以上</td><td>15px</td><td>本文の中のリンクだけ。操作には使わない</td></tr>
               </tbody>
             </table>
           </div>

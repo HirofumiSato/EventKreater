@@ -154,7 +154,7 @@ svg {
   padding-block: 1rem;
 }
 
-/* ブランド名。頭文字の札（44px）と同じ段に 1 行だけ置く。
+/* ブランド名。頭文字の札（`--tap-target`）と同じ段に 1 行だけ置く。
    2 行に積まないので、字の高さはバーの高さに影響しない。 */
 .site-brand-block {
   display: flex;
@@ -285,12 +285,12 @@ svg {
   align-items: center;
 }
 
-/* 札は 1.75rem のままだと指の的が 28px になる。押せる範囲だけ 44px に広げる。 */
+/* 札は 1.75rem のままだと指の的が 28px になる。押せる範囲だけ `--tap-target` に広げる。 */
 .site-user__button {
   display: inline-grid;
   place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: var(--tap-target);
+  height: var(--tap-target);
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -384,7 +384,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 2.75rem;
+  min-height: var(--tap-target);
   padding-inline: 0.5rem;
   border-radius: var(--radius-lg);
   color: var(--color-text-muted);
@@ -448,7 +448,7 @@ svg {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--tap-target);
   margin-top: 0.125rem;
   padding-inline: 0.5rem;
   border: 0;
@@ -533,7 +533,7 @@ svg {
   }
 
   .site-nav__link {
-    /* タップ領域を 44px 以上にする。 */
+    /* タップ領域を 40px 以上にする。 */
     padding-block: 0.75rem;
     border-top: 1px solid var(--color-line);
   }
@@ -566,7 +566,7 @@ svg {
   }
 
   /* 補助のリンク 3 本は 1 段に収まらない。2 本 + 1 本へ折り返し、
-     行の間だけを詰める（押せる高さは 44px のまま）。 */
+     行の間だけを詰める（押せる高さは 40px のまま）。 */
   .hero__links {
     gap: 0 0.625rem;
   }

@@ -54,15 +54,10 @@ export const PLANNED = new Set([
   "tests/e2e/",
 ]);
 
-// 仕様書が指すが、その名前では実装されなかったもの。docs/README.md の既知の乖離に載せている。
-// 直したらここからも消す。
-export const KNOWN_MISSING = new Set([
-  "src/lib/guards.ts", // 認可ガードは各ルートと src/lib/http.ts にある
-  "src/lib/response.ts", // 応答生成は src/lib/serializers.ts と src/lib/problem.ts
-  "src/lib/quota.ts", // 利用枠は src/modules/billing/lib/quota.ts
-  "src/lib/db.ts", // prisma クライアントは src/lib/prisma.ts
-  "src/types/event.ts", // 型は src/modules/<機能>/types.ts
-]);
+// 仕様書が指すが、その名前では実装されなかったもの。ここに登録したパスは検査を通す。
+// 2026-11-01 に 5 件（guards / response / quota / db / types）をすべて実在するパスへ
+// 直したので、いまは空である。新しく増えたらここへ足す前に、まず仕様書か実装を直す。
+export const KNOWN_MISSING = new Set();
 
 export function toPosix(value) {
   return value.split(path.sep).join("/");

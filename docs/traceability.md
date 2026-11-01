@@ -8,7 +8,7 @@
 - 対象文書: 105（実装前の設計 15 件は除外）
 - 文書から参照されているコードパス: 387
 - API ルート: 80（どの文書にも URL が無いもの 0）
-- 文書が指すが実在しないパス: 5（既知 5 / 新規 0）
+- 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
 ## コード → 文書
 
@@ -235,7 +235,7 @@
 | `src/modules/billing/lib/notices.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/lib/plans.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/billing/lib/pricing.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
-| `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
+| `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/modules/billing/lib/stripe.ts` | [docs/stripe.rst](stripe.rst) |
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
@@ -404,15 +404,7 @@
 
 ## 文書が指すが実在しないパス
 
-| パス | 種別 | 参照する文書 |
-| --- | --- | --- |
-| `src/lib/db.ts` | 既知 | [docs/README.md](README.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) |
-| `src/lib/guards.ts` | 既知 | [docs/README.md](README.md) / [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
-| `src/lib/quota.ts` | 既知 | [docs/README.md](README.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) |
-| `src/lib/response.ts` | 既知 | [docs/README.md](README.md) |
-| `src/types/event.ts` | 既知 | [docs/README.md](README.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
-
-既知のものは `scripts/lib/docs-util.mjs` の `KNOWN_MISSING` に登録されています。新規は仕様書か実装のどちらかを直します。
+なし。
 
 ## どの文書にも URL が出てこない API ルート
 

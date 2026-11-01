@@ -1,12 +1,12 @@
 // ボタンの押せる的と文字の大きさを固定する。
 //
-// 参加者はスマホで開くので、押せる的は 44px を下回らせず、ボタンの文字は 15px を
+// 参加者はスマホで開くので、押せる的は 40px を下回らせず、ボタンの文字は 15px を
 // 下回らせない（AGENTS.md「画面の組み方」、docs/front_implementation_spec.md §1.2）。
 // `.btn--sm` は左右の余白だけを詰める指定で、高さと文字は既定のままにする。
 // ここが崩れると、狭い画面で 4 つを 1 段に収めるために文字を 12px まで落とす
 // 書き方が戻ってきます。並びは段（`grid-template-columns`）を変えて収めます。
-// 例外は画面下に固定する帯（`.action-dock`）だけで、40px・14px まで詰めます
-// （一覧の上にずっと乗るため）。それでも 40px は下回らせません。
+// 例外は画面下に固定する帯（`.action-dock`）だけで、高さは 40px のまま、
+// 文字だけ 14px に詰めます（一覧の上にずっと乗るため）。40px は下回らせません。
 //
 // 値を変えるときは src/styles/tokens.css と、この期待値を同じ PR で直します。
 
@@ -83,17 +83,17 @@ const surface = read("src/styles/deco/surface.css");
 const organizer = read("src/styles/screens/organizer.css");
 
 describe("ボタンの押せる的と文字", () => {
-  it("44px と 15px をトークンで持つ", () => {
-    expect(tokens).toContain("--tap-target: 2.75rem;");
+  it("40px と 15px をトークンで持つ", () => {
+    expect(tokens).toContain("--tap-target: 2.5rem;");
     expect(tokens).toContain("--font-action: 0.9375rem;");
   });
 
-  it("画面下の帯だけ 40px・14px まで詰める", () => {
+  it("画面下の帯も 40px、文字だけ 14px に詰める", () => {
     expect(tokens).toContain("--tap-target-dock: 2.5rem;");
     expect(tokens).toContain("--font-action-dock: 0.875rem;");
   });
 
-  it(".btn は 44px 以上・15px・指の操作向けに固定する", () => {
+  it(".btn は 40px 以上・15px・指の操作向けに固定する", () => {
     const btn = declarations(block(components, ".btn"));
     expect(btn["min-height"]).toBe("var(--tap-target)");
     expect(btn["font-size"]).toBe("var(--font-action)");
@@ -138,20 +138,20 @@ describe("入力欄と小さな操作", () => {
     expect(wide["font-size"]).toBe("0.875rem");
   });
 
-  it("ダイアログの閉じる印は 44×44", () => {
+  it("ダイアログの閉じる印は 40×40", () => {
     const close = declarations(block(components, ".dialog__close"));
     expect(close.width).toBe("var(--tap-target)");
     expect(close.height).toBe("var(--tap-target)");
   });
 
-  it("暦の移動ボタンは 44×44・15px", () => {
+  it("暦の移動ボタンは 40×40・15px", () => {
     const nav = declarations(block(surface, ".cal__nav button"));
     expect(nav["min-width"]).toBe("var(--tap-target)");
     expect(nav["min-height"]).toBe("var(--tap-target)");
     expect(nav["font-size"]).toBe("var(--font-action)");
   });
 
-  it("通知と名簿の行内操作も 44px を下回らない", () => {
+  it("通知と名簿の行内操作も 40px を下回らない", () => {
     expect(declarations(block(organizer, ".notif__title a"))["min-height"]).toBe("var(--tap-target)");
     expect(declarations(block(organizer, ".notif__actions")).gap).toBe("0.5rem");
   });
@@ -184,7 +184,7 @@ describe("操作の並び", () => {
     expect(wide.display).toBe("flex");
   });
 
-  it("画面下の帯は 40px、プロフィールの保存は 44px を下回らない", () => {
+  it("画面下の帯は 40px、プロフィールの保存も 40px を下回らない", () => {
     const dock = declarations(block(organizer, ".action-dock .btn"));
     expect(dock["min-height"]).toBe("var(--tap-target-dock)");
     expect(dock["font-size"]).toBe("var(--font-action-dock)");

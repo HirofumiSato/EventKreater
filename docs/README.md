@@ -23,10 +23,9 @@
 | --- | --- | --- |
 | API | 6 | 仕様書に無い実装。`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
 | DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
-| パス | 5 | `src/lib/guards.ts`、`src/lib/response.ts`、`src/lib/quota.ts`、`src/lib/db.ts`、`src/types/event.ts`。いずれも仕様書が指す名前で実装されていない |
 | 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
 
-テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。パスの乖離は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` に登録してあり、検査は通ります。
+テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。文書が指すパスの実在は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` で管理し、`npm run check:full` も見ます。空のまま保ち、増えたら仕様書か実装のどちらかを直してください。
 
 ## 生成された索引
 

@@ -17,6 +17,7 @@ import {
   shiftMonth,
   todayInTokyo,
 } from "@/lib/calendar";
+import { formatDateWithWeekdayJa } from "@/lib/format";
 import { priceLabel } from "@/lib/serializers";
 import { readProblem } from "@/lib/problem";
 import { SITE } from "@/lib/site";
@@ -326,7 +327,7 @@ function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent
   return (
     <Row
       title={<><Link href={`/events/${event.id}`}>{event.title}</Link></>}
-      meta={<>{dates.map((row) => `${row.eventDate} ${row.eventTime}`).join(" ／ ")}
+      meta={<>{dates.map((row) => `${formatDateWithWeekdayJa(row.eventDate)} ${row.eventTime}`).join(" ／ ")}
           <br />
           {event.location} ／ {priceLabel(event.pricePlans)}
           <br />

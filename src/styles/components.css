@@ -155,7 +155,7 @@
 }
 
 /* 主操作の下に並べるテキストリンク。狭い幅では折り返す。
-   行の高さは押せる的（44px）を確保し、字の位置は中央に置く。 */
+   行の高さは押せる的（40px）を確保し、字の位置は中央に置く。 */
 .hero__links {
   display: flex;
   flex-wrap: wrap;
@@ -726,7 +726,7 @@
   font-size: 0.875rem;
 }
 
-/* ボタン。大きさはスマホ基準で、押せる的は 44px を下回らせない。
+/* ボタン。大きさはスマホ基準で、押せる的は 40px を下回らせない。
    `--sm` は左右の余白だけを詰める指定なので、高さと文字は既定と変わらない。
    390px で 4 つを 1 段に収めたい一覧の札は、文字ではなく並びを変えて収める
    （`deco/surface.css` のイベント札）。 */
@@ -837,7 +837,7 @@
   padding: 0.5rem 0.75rem;
 }
 
-/* 文字を持たない操作（一覧の札の「URLをコピー」）。正方形のまま 44px を下回らせない。
+/* 文字を持たない操作（一覧の札の「URLをコピー」）。正方形のまま 40px を下回らせない。
    読み上げ名は aria-label が持つので、中のアイコンには aria-hidden を付ける。 */
 .btn--icon {
   flex: 0 0 auto;
@@ -1200,7 +1200,7 @@ fieldset.field {
 }
 
 /* 削除は 2 文字だけ。列が詰まっても折り返さず、入力欄と同じ高さに揃える。
-   高さは他の操作と同じ 44px。文字も `.btn` と同じ 15px にする
+   高さは他の操作と同じ 40px。文字も `.btn` と同じ 15px にする
    （小さくすると、押す前に何のボタンか読めない）。 */
 .repeat-row--schedule > .btn {
   height: var(--tap-target);
@@ -1435,7 +1435,7 @@ fieldset.field {
 }
 
 /* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
-   層が無駄に伸びる。押せる的の下限（44px）まで詰める。 */
+   層が無駄に伸びる。押せる的の下限（40px）まで詰める。 */
 .choice-group--compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1494,7 +1494,7 @@ fieldset.field {
 }
 
 /* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
-   層が無駄に伸びる。押せる的の下限（44px）まで詰める。 */
+   層が無駄に伸びる。押せる的の下限（40px）まで詰める。 */
 .choice-group--compact .choice {
   min-height: var(--tap-target);
   padding: 0.5rem 0.75rem;
@@ -1541,15 +1541,45 @@ fieldset.field {
   cursor: pointer;
 }
 
-.choice:hover {
+/* 触れたときの地は、まだ選んでいない札にだけ敷く。選んだ札の薄い朱地を墨に落とさない。 */
+.choice:hover:not(:has(input:checked)) {
   background: var(--color-bg);
 }
 
-/* 選んだ札は、地を変えて 1 つだけ目立たせる。性別・日時・費用のどれも同じ扱い。 */
-.choice:has(input:checked) {
-  border-color: var(--color-text-strong);
-  color: var(--color-text-strong);
-  background: var(--color-bg);
+/* 選んだ札は、朱の枠と薄い朱地で示す。性別・日時・費用のどれも同じ扱い。
+   地を墨で塗り返さないので、文字は差し色のまま読める。
+   色だけに頼らないよう、右上にチェックの丸を 1 つ添える。 */
+.choice:has(input:checked:not(:disabled)) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+/* 右上の朱の丸と白のチェック。選んだことが、色を見分けづらい目にも伝わる。 */
+.choice:has(input:checked:not(:disabled))::after {
+  content: "✓";
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 品名・金額・日付も差し色へ寄せる。札の地を薄い朱にしたので、墨のままだと浮く。 */
+.choice:has(input:checked:not(:disabled)) .choice__name,
+.choice:has(input:checked:not(:disabled)) .choice__price,
+.choice:has(input:checked:not(:disabled)) .choice__date {
+  color: var(--color-primary-text);
 }
 
 /* 選べない札は消さずにグレーにする。欠席・参加要望のときと、性別に合わない
@@ -1977,7 +2007,7 @@ html[data-scroll-lock] {
 }
 
 /* 右上の閉じる印。閉じる道が操作の列にしか無いと、選ばずにやめたい人が詰まる。
-   押せる面は 44px（他の操作と同じ的の大きさ）。題の 1 行目とは重ねない。 */
+   押せる面は 40px（他の操作と同じ的の大きさ）。題の 1 行目とは重ねない。 */
 .dialog__close {
   position: absolute;
   top: 0.375rem;
@@ -2006,7 +2036,7 @@ html[data-scroll-lock] {
 }
 
 /* 題は中央揃えのまま。印があるときだけ、右端で重ならないよう左右を空ける。
-   閉じる印が 44px になったぶん、右の空きも広げる。 */
+   閉じる印が 40px になったぶん、右の空きも広げる。 */
 .dialog:has(.dialog__close) .dialog__title {
   padding-inline: 1.75rem;
 }

@@ -225,7 +225,7 @@ a.card,
 }
 
 /* 帯は 1 段のまま。折り返すと帯が厚くなり、本文を押し下げる。
-   高さは中のボタン（44px）と上下の余白だけで決まる。 */
+   高さは中のボタン（40px）と上下の余白だけで決まる。 */
 .sample-band__inner {
   display: flex;
   flex-wrap: nowrap;
@@ -270,7 +270,7 @@ a.card,
 }
 
 /* 一覧へ戻るリンク。帯を厚くしないよう、`.btn` の枠は使わず字だけで示す。
-   押せる高さだけは 44px を確保する。 */
+   押せる高さだけは 40px を確保する。 */
 .sample-band__back {
   display: inline-flex;
   align-items: center;
@@ -423,7 +423,7 @@ a.card,
   font-size: 0.8125rem;
 }
 
-/* 申込モーダルのチェックボックス。1 件 1 行で、押せる的は 44px 以上にする。 */
+/* 申込モーダルのチェックボックス。1 件 1 行で、押せる的は 40px 以上にする。 */
 .discount-picker {
   display: flex;
   flex-direction: column;
@@ -436,38 +436,3 @@ a.card,
   padding-block: 0.5rem;
 }
 
-/* 料金・割引・支払額の 3 行。金額は右にそろえる。 */
-.discount-picker__summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.75rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.discount-picker__line {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
-}
-
-.discount-picker__line dd {
-  margin: 0;
-  color: var(--color-text-strong);
-  font-weight: 500;
-}
-
-.discount-picker__line--total {
-  font-size: 1rem;
-}
-
-.discount-picker__line--total dd {
-  color: var(--color-primary-text);
-  font-size: 1.125rem;
-  font-weight: 700;
-}

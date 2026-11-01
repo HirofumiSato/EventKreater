@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatDateWithWeekdayJa } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { PageHeader } from "@/components/ui";
 import { SAMPLE_EVENTS } from "./samples";
@@ -45,7 +46,7 @@ export default function SampleIndexPage() {
                   <p className="sample-card__intro">{event.intro}</p>
                   {first && (
                     <p className="sample-card__meta">
-                      {first.eventDate} {first.eventTime}
+                      {formatDateWithWeekdayJa(first.eventDate)} {first.eventTime}
                     </p>
                   )}
                   <p className="sample-card__meta">{event.venueName}</p>

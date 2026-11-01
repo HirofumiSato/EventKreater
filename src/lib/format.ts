@@ -56,6 +56,23 @@ export function formatDateJa(date: string): string {
 }
 
 /**
+ * 保存形式の日付 → 年月日と曜日。「2026-11-21」→「2026/11/21（土）」。
+ *
+ * 告知ページや一覧の「開催日」はこの形で出す。保存形式の `-` をそのまま出すと、
+ * 紙の上の日付として読みにくい。壊れた値はそのまま返す。
+ */
+export function formatDateWithWeekdayJa(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return date;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  // 月日は 2 桁のまま出す。`11/8` と `11/08` が混ざると、縦に並べたとき桁が揃わない。
+  return `${match[1]}/${match[2]}/${match[3]}（${weekday}）`;
+}
+
+/**
  * 保存形式の日付 → 年を含む表記。「2026-11-14」→「2026年11月14日（土）」。
  *
  * チラシのように紙面へ焼く場所で使う。`formatDateJa` は年を落とすため、

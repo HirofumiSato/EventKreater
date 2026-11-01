@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   currentMonthBounds,
   formatDateJa,
+  formatDateWithWeekdayJa,
   formatDateTimeJa,
   formatDateTimeMinuteJa,
   formatFullDateJa,
@@ -49,6 +50,18 @@ describe("formatFullDateJa", () => {
 
   it("壊れた値はそのまま返す", () => {
     expect(formatFullDateJa("2026/11/14")).toBe("2026/11/14");
+  });
+});
+
+describe("formatDateWithWeekdayJa", () => {
+  it("年月日を / で区切り、末尾に曜日を付ける", () => {
+    expect(formatDateWithWeekdayJa("2026-11-21")).toBe("2026/11/21（土）");
+    expect(formatDateWithWeekdayJa("2026-11-08")).toBe("2026/11/08（日）");
+  });
+
+  it("保存形式でない値はそのまま返す", () => {
+    expect(formatDateWithWeekdayJa("2026/11/21")).toBe("2026/11/21");
+    expect(formatDateWithWeekdayJa("日付未定")).toBe("日付未定");
   });
 });
 

@@ -16,7 +16,7 @@ import {
   RSVP_PARTY_SIZE_MIN,
   clampRsvpPartySize,
 } from "@/modules/attendance/lib/rsvp-form";
-import { formatDateTimeJa, yen } from "@/lib/format";
+import { formatDateWithWeekdayJa, formatDateTimeJa, yen } from "@/lib/format";
 import { Badge } from "@/components/ui";
 
 interface ParticipantListTableProps {
@@ -305,7 +305,7 @@ export function ParticipantListTable({
                               }
                             />
                             <span>
-                              {schedule.eventDate} {schedule.eventTime}
+                              {formatDateWithWeekdayJa(schedule.eventDate)} {schedule.eventTime}
                             </span>
                           </label>
                         ))}

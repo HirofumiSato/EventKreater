@@ -789,8 +789,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: var(--tap-target);
+  height: var(--tap-target);
   padding: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
@@ -1124,7 +1124,7 @@ body:has(.action-dock) .site-footer {
 
 /* 390px では 2 つで 1 段。作成は主の操作なので広く取る。
    帯は一覧の上にずっと乗るので、高さと文字だけ 1 段詰める（40px・14px）。
-   帯の外のボタンは 44px・15px のまま。 */
+   帯の外のボタンは 40px・15px のまま。 */
 .action-dock .btn {
   flex: 1 1 0;
   min-height: var(--tap-target-dock);
@@ -1443,14 +1443,14 @@ body:has(.profile-actions) .site-footer {
 }
 
 /* 未読の行の「既読」。題のリンクと押し間違えないよう、題の下に別の行で置く。
-   ボタンの高さは `.btn` が持つ 44px。ここでは間隔だけを空ける。 */
+   ボタンの高さは `.btn` が持つ 40px。ここでは間隔だけを空ける。 */
 .notif__actions {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-/* 題のリンクも指で押す。行の中では文字が小さいので、的だけ 44px に広げる。
+/* 題のリンクも指で押す。行の中では文字が小さいので、的だけ 40px に広げる。
    行は上下 1rem 空くので、行の高さは増えない。 */
 .notif__title a {
   display: inline-flex;

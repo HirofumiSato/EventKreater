@@ -2096,7 +2096,7 @@
         },
         {
           "level": 3,
-          "text": "4.2. 認証・認可ガード (src/lib/guards.ts)"
+          "text": "4.2. 認証・認可ガード (src/modules/auth/lib/guards.ts)"
         },
         {
           "level": 3,
@@ -2448,10 +2448,6 @@
         {
           "path": "src/lib/crypto.ts",
           "exists": true
-        },
-        {
-          "path": "src/lib/guards.ts",
-          "exists": false
         },
         {
           "path": "src/lib/image-upload.ts",
@@ -5621,7 +5617,7 @@
         },
         {
           "level": 2,
-          "text": "6. TypeScript 型定義 (src/types/event.ts 抜粋)"
+          "text": "6. TypeScript 型定義 (src/modules/events/types.ts 抜粋)"
         },
         {
           "level": 2,
@@ -6065,10 +6061,6 @@
         {
           "path": "src/styles/tokens.css",
           "exists": true
-        },
-        {
-          "path": "src/types/event.ts",
-          "exists": false
         },
         {
           "path": "tests/integration",
@@ -9414,16 +9406,12 @@
       "toctree": [],
       "codePaths": [
         {
-          "path": "src/lib/db.ts",
-          "exists": false
-        },
-        {
           "path": "src/lib/prisma.ts",
           "exists": true
         },
         {
-          "path": "src/lib/quota.ts",
-          "exists": false
+          "path": "src/modules/billing/lib/quota.ts",
+          "exists": true
         }
       ],
       "includedBy": [
@@ -9879,7 +9867,7 @@
       "title": "ドキュメントの派生・検証マップ",
       "summary": "正はコードです。このディレクトリの文書はコードの検証面であり、差分を見つけたら同じ PR で文書も直します。",
       "preImplementation": false,
-      "lineCount": 86,
+      "lineCount": 85,
       "headings": [
         {
           "level": 1,
@@ -9957,28 +9945,8 @@
           "exists": true
         },
         {
-          "path": "src/lib/db.ts",
-          "exists": false
-        },
-        {
-          "path": "src/lib/guards.ts",
-          "exists": false
-        },
-        {
-          "path": "src/lib/quota.ts",
-          "exists": false
-        },
-        {
-          "path": "src/lib/response.ts",
-          "exists": false
-        },
-        {
           "path": "src/styles",
           "exists": true
-        },
-        {
-          "path": "src/types/event.ts",
-          "exists": false
         }
       ],
       "includedBy": [

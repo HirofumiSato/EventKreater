@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { formatDateWithWeekdayJa } from "@/lib/format";
 import { formatEventDate } from "@/lib/serializers";
 import PublicEventPage from "./EventPageClient";
 
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const description = `${formatEventDate(event.sortDate)} ${event.location}`;
+  const description = `${formatDateWithWeekdayJa(formatEventDate(event.sortDate))} ${event.location}`;
   const image =
     event.flyerAsset && !event.flyerAsset.isDeleted ? event.flyerAsset.imageUrl : null;
 

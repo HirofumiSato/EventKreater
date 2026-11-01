@@ -29,7 +29,7 @@ import {
   type MyRsvp,
   type RsvpStatus,
 } from "@/modules/events/types";
-import { yen } from "@/lib/format";
+import { formatDateWithWeekdayJa, yen } from "@/lib/format";
 import { Toast } from "@/components/common/Toast";
 import { Alert, Dialog } from "@/components/ui";
 
@@ -229,20 +229,11 @@ export function DynamicRsvpBox({
   });
   /** 選んだ日時の短いラベル（11/21 など）。要約の 1 行に使う。 */
   const selectedScheduleLabels = rsvpScheduleLabels(schedules, scheduleIds);
-  /** 自分を含む人数。入力を丸めた値で、支払額と送信値に使う。 */
+  /** 自分を含む人数。入力を丸めた値で、送信値に使う。 */
   const partySize = clampRsvpPartySize(partySizeText);
 
   const hasOnlyCommonPlans = pricePlans.every((row) => row.audience === "ANY");
-  const selectedPlan = pricePlans.find((row) => row.id === selectedPlanId) ?? null;
   const hasDiscounts = discounts.length > 0;
-
-  /** 選んでいる割引の合計と、料金から引いた支払額。0 円で止める。人数ぶんで数える。 */
-  const checkedRows = discounts.filter((row) => discountIds.includes(row.id));
-  const checkedDiscountTotal = checkedRows.reduce((total, row) => total + Math.max(0, row.amount), 0);
-  const checkedPayable =
-    selectedPlan === null
-      ? null
-      : Math.max(0, selectedPlan.amount - checkedDiscountTotal) * partySize;
 
   /** 回答済みの表示。料金は選んだプランの金額から引き、0 円で止める。人数ぶんで数える。 */
   const answeredPlan = pricePlans.find((row) => row.id === myRsvp?.pricePlanId) ?? null;
@@ -523,7 +514,7 @@ export function DynamicRsvpBox({
                         setScheduleIds((current) => toggleRsvpScheduleId(current, row.id))
                       }
                     />
-                    <span className="choice__date">{row.eventDate}</span>
+                    <span className="choice__date">{formatDateWithWeekdayJa(row.eventDate)}</span>
                     <span className="choice__time">{row.eventTime}</span>
                   </label>
                 ))}
@@ -552,7 +543,7 @@ export function DynamicRsvpBox({
                       onChange={() => setPricePlanId(row.id)}
                     />
                     <span className="choice__name">
-                      {row.audience === "ANY" ? "" : `${PRICE_AUDIENCE_LABELS[row.audience]} `}
+                      {row.audience === "ANY" ? "" : `${PRICE_AUDIENCE_LABELS[row.audience]}：`}
                       {row.name}
                     </span>
                     <span className="choice__price">
@@ -628,28 +619,6 @@ export function DynamicRsvpBox({
                     </label>
                   ))}
                 </div>
-                <dl className="discount-picker__summary">
-                  <div className="discount-picker__line">
-                    <dt>料金</dt>
-                    <dd>
-                      {selectedPlan
-                        ? `${selectedPlan.price} × ${partySize}人`
-                        : "未選択"}
-                    </dd>
-                  </div>
-                  <div className="discount-picker__line">
-                    <dt>割引</dt>
-                    <dd>
-                      {checkedDiscountTotal > 0
-                        ? `−${yen(checkedDiscountTotal * partySize)}`
-                        : "なし"}
-                    </dd>
-                  </div>
-                  <div className="discount-picker__line discount-picker__line--total">
-                    <dt>支払額</dt>
-                    <dd>{checkedPayable === null ? "未選択" : yen(checkedPayable)}</dd>
-                  </div>
-                </dl>
               </div>
             </details>
           )}

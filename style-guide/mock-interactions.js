@@ -1079,14 +1079,14 @@
    * `hidden` を外して開く。撮った HTML にも同じ形で残るので、中身は組み直さず、
    * 隠す印を外すだけで開ける（押したときにしか出ない画面を作り直さずに済む）。
    *
-   * 動かすのは 3 つだけ。開閉、割引を選び直したときの支払額、送信の返事。
-   * 支払額は React が計算するので、写した HTML のままでは数字が動かない。
+   * 動かすのは 3 つだけ。開閉、割引を選び直したときの見出しの件数札、送信の返事。
+   * 料金の計算は製品の要約（RsvpSummary）と名簿が持つので、モックでは持たない
+   * （`discount-picker__summary` は製品から削除済み）。
    */
   function wireRsvpSheet() {
     const sheet = document.querySelector(".modal--sheet");
     if (!sheet) return;
     const form = sheet.querySelector("form");
-    const yen = (value) => value.toLocaleString("ja-JP") + "円";
 
     const setOpen = (open) => {
       if (open) {
@@ -1133,7 +1133,6 @@
     // 製品（`src/modules/attendance/lib/rsvp-form.ts`）は React が同じ規則で描く。
     // 撮った HTML は「出席・性別未選択」の状態なので、押したときにだけ同じ計算を
     // やり直す。欄は消さず、`field--disabled` と `disabled` を付け替えるだけ。
-    let syncSummary = () => {};
     if (form) {
       const fieldOf = (name) => form.querySelector(`input[name="${name}"]`)?.closest("fieldset") ?? null;
       const radiosOf = (name) => Array.from(form.querySelectorAll(`input[name="${name}"]`));
@@ -1181,7 +1180,6 @@
         const extras = sheet.querySelector(".discount-picker")?.closest("details");
         if (extras) extras.classList.toggle("rsvp-extras--disabled", !canInput);
         syncSubmit();
-        syncSummary();
       };
 
       for (const radio of [...radiosOf("rsvp"), ...radiosOf("gender")]) {
@@ -1192,104 +1190,33 @@
       paint();
     }
 
-    // 割引を選び直したときの支払額。料金は選んでいる費用プランから読む。
-    const summary = sheet.querySelector(".discount-picker__summary");
-    if (!summary || !form) return;
-    const cell = (label) =>
-      Array.from(summary.querySelectorAll(".discount-picker__line"))
-        .find((line) => (line.querySelector("dt")?.textContent || "").trim() === label)
-        ?.querySelector("dd") ?? null;
-    const planCell = cell("料金");
-    const discountCell = cell("割引");
-    const totalCell = cell("支払額");
-
-    /** 選んでいる費用プランの札。金額と補足は別の要素に分かれている。 */
-    const planChip = () => {
-      const checked = form.querySelector('input[name="price-plan"]:checked');
-      if (!checked) return null;
-      const chip = checked.closest("label");
-      return {
-        price: (chip.querySelector(".choice__price")?.textContent || "").trim(),
-        note: (chip.querySelector(".choice__note")?.textContent || "").trim(),
-      };
-    };
-    /** 料金の欄に出す文字。「1,500円（1ドリンク付）」「無料（小学生まで）」。 */
-    const planText = (chip) => {
-      if (!chip) return "未選択";
-      return chip.note ? chip.price + "（" + chip.note + "）" : chip.price;
-    };
-    /** 支払額の計算に使う金額。0 円（無料）は 0、読めなければ null。 */
-    const planAmount = (chip) => {
-      if (!chip) return null;
-      if (chip.price.includes("無料")) return 0;
-      const found = /([\d,]+)\s*円/.exec(chip.price);
-      return found ? Number(found[1].replace(/,/g, "")) : null;
-    };
-
-    /** 自分を含む参加人数。読めなければ 1 人。 */
-    const partySize = () => {
-      const input = form.querySelector("#rsvp-party-size");
-      const value = Number((input?.value || "1").trim());
-      if (!Number.isFinite(value)) return 1;
-      return Math.min(20, Math.max(1, Math.floor(value)));
-    };
-
-    /** (料金 − 割引) × 人数 = 支払額。製品と同じく 0 円で止める。 */
-    const sync = () => {
-      const chip = planChip();
-      const price = planAmount(chip);
-      const size = partySize();
-      const total = Array.from(sheet.querySelectorAll(".discount-picker input")).reduce(
-        (sum, input) => {
-          if (!input.checked) return sum;
-          const found = /([\d,]+)\s*円引き/.exec((input.closest("label")?.textContent || "").trim());
-          return sum + (found ? Number(found[1].replace(/,/g, "")) : 0);
-        },
-        0,
-      );
-      if (planCell) planCell.textContent = chip ? planText(chip) + " × " + size + "人" : "未選択";
-      if (discountCell) {
-        discountCell.textContent = total > 0 ? "−" + yen(total * size) : "なし";
-      }
-      if (totalCell) {
-        totalCell.textContent =
-          price === null ? "未選択" : yen(Math.max(0, price - total) * size);
-      }
-      // 見出しの件数の札も、選び直した数に合わせる（矢印と札は触らない）。
+    // 割引を選び直したときの、見出しの件数札だけを合わせる。
+    //
+    // モックは押したときの見た目を再現する。料金の計算は製品の要約（RsvpSummary）と
+    // 名簿が持つので、ここでは扱わない。矢印と見出しの文字は触らず、札だけを作り直す。
+    const syncExtrasCount = () => {
       const picker = sheet.querySelector(".discount-picker");
       const extrasLabel = picker?.closest("details")?.querySelector(".rsvp-extras__label");
-      if (extrasLabel) {
-        const count = Array.from(picker.querySelectorAll("input")).filter((input) => input.checked)
-          .length;
-        let badge = extrasLabel.querySelector(".rsvp-extras__count");
-        if (count === 0) {
-          badge?.remove();
-        } else {
-          if (!badge) {
-            badge = document.createElement("span");
-            badge.className = "rsvp-extras__count";
-            extrasLabel.append(badge);
-          }
-          badge.textContent = count + "件";
+      if (!extrasLabel) return;
+      const count = Array.from(picker.querySelectorAll("input")).filter((input) => input.checked)
+        .length;
+      let badge = extrasLabel.querySelector(".rsvp-extras__count");
+      if (count === 0) {
+        badge?.remove();
+      } else {
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "rsvp-extras__count";
+          extrasLabel.append(badge);
         }
+        badge.textContent = count + "件";
       }
     };
 
-    // 撮った時点の数字は製品のまま。選び直したときだけ計算し直す。
+    // 撮った時点の数字は製品のまま。選び直したときだけ札を数え直す。
     for (const box of sheet.querySelectorAll(".discount-picker input")) {
-      box.addEventListener("change", sync);
+      box.addEventListener("change", syncExtrasCount);
     }
-    for (const radio of sheet.querySelectorAll('input[name="price-plan"]')) {
-      radio.addEventListener("change", sync);
-    }
-    // 人数を直したときも、支払額を計算し直す。
-    const partySizeInput = sheet.querySelector("#rsvp-party-size");
-    if (partySizeInput) {
-      partySizeInput.addEventListener("input", sync);
-      partySizeInput.addEventListener("change", sync);
-    }
-    // 出欠・性別を選び直したときは、押せる札が変わったあとの金額へ合わせる。
-    syncSummary = sync;
   }
 
 

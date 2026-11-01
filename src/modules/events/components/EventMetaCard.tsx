@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { MapPin } from "lucide-react";
+import { formatDateWithWeekdayJa } from "@/lib/format";
 import { formatRsvpDeadlineLabel } from "@/lib/serializers";
 import { PRICE_AUDIENCE_LABELS, RAIN_POLICY_LABELS, type PublicEvent } from "@/modules/events/types";
 import { Badge } from "@/components/ui";
@@ -95,7 +97,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           <dd>
             {event.schedules.map((row) => (
               <span key={row.id} className="event-facts__line">
-                {row.eventDate} {row.eventTime}
+                {formatDateWithWeekdayJa(row.eventDate)} {row.eventTime}
               </span>
             ))}
           </dd>
@@ -105,7 +107,8 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           <dd>
             {event.location}
             <br />
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-link">
+            <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-link event-facts__map">
+              <MapPin className="icon event-facts__icon" aria-hidden="true" />
               Googleマップで開く
             </a>
           </dd>
@@ -115,7 +118,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           <dd>
             {event.pricePlans.map((row) => (
               <span key={row.id} className="event-facts__line">
-                {row.audience !== "ANY" && `${PRICE_AUDIENCE_LABELS[row.audience]} `}
+                {row.audience !== "ANY" && `${PRICE_AUDIENCE_LABELS[row.audience]}：`}
                 {row.name} {row.price}
               </span>
             ))}
@@ -131,9 +134,6 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
                   {row.label}
                 </span>
               ))}
-              <span className="event-facts__line event-facts__note">
-                申し込むときに選べます。
-              </span>
             </dd>
           </div>
         )}

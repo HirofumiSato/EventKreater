@@ -1,10 +1,11 @@
 // 出欠の層の見た目の契約。
 //
-// 直した見た目は 4 つで、どれも 1 行の指定が消えると元に戻る。
-//   1. 性別の札は 44px まで詰める（72px だと層が伸びる）
+// 直した見た目は 5 つで、どれも 1 行の指定が消えると元に戻る。
+//   1. 性別の札は 40px まで詰める（72px だと層が伸びる）
 //   2. 日時は 3 件まで横に並べる
 //   3. 選べない札は消さずにグレーにする
 //   4. 層の本文の右に余白を取り、スクロールバーで枠が見切れないようにする
+//   5. 選んだ札は黒塗りではなく、朱の枠と右上のチェックで示す
 //
 // 画面を開かずに読むのは、390px の撮影（`npm run mock:sync`）を待たずに
 // 崩れの原因になった 1 行を固定するため。段の決まりは style-breakpoints.test.mjs が見る。
@@ -45,7 +46,7 @@ describe("性別の札", () => {
     );
   });
 
-  it("押せる的の下限（44px）まで詰める", () => {
+  it("押せる的の下限（40px）まで詰める", () => {
     const body = declarations(COMPONENTS, ".choice-group--compact .choice");
     expect(body).toContain("min-height: var(--tap-target)");
     // 札の文字は 15px を下回らせない（AGENTS.md「画面の組み方」）。
@@ -59,7 +60,7 @@ describe("出席する日時の札", () => {
     expect(body).toContain("repeat(auto-fit, minmax(5rem, 1fr))");
   });
 
-  it("日付と時刻の 2 段でも、押せる的は 44px を下回らない", () => {
+  it("日付と時刻の 2 段でも、押せる的は 40px を下回らない", () => {
     expect(declarations(COMPONENTS, ".choice--schedule")).toContain(
       "min-height: var(--tap-target)",
     );
@@ -77,6 +78,34 @@ describe("選べない札", () => {
   it("欄の見出しと注記も落とす（入力そのものは残す）", () => {
     const body = declarations(COMPONENTS, ".field--disabled > .label");
     expect(body).toContain("color: var(--color-text-subtle)");
+  });
+});
+
+describe("選んだ札", () => {
+  it("出欠の札は黒塗りではなく、朱の枠と薄い朱地で示す", () => {
+    const body = declarations(SURFACE, ".rsvp__choice:has(input:checked:not(:disabled))");
+    expect(body).toContain("border-color: var(--color-primary)");
+    expect(body).toContain("background: var(--color-primary-soft)");
+    expect(body).not.toContain("background: var(--color-text)");
+  });
+
+  it("出欠の札は右上の朱丸に白いチェックを付ける", () => {
+    const body = declarations(SURFACE, ".rsvp__choice:has(input:checked:not(:disabled))::after");
+    expect(body).toContain("content:");
+    expect(body).toContain("background: var(--color-primary)");
+  });
+
+  it("性別・日時・費用プランの札も黒塗りではなく、朱の枠と薄い朱地で示す", () => {
+    const body = declarations(COMPONENTS, ".choice:has(input:checked:not(:disabled))");
+    expect(body).toContain("border-color: var(--color-primary)");
+    expect(body).toContain("background: var(--color-primary-soft)");
+    expect(body).not.toContain("background: var(--color-text)");
+  });
+
+  it("性別・日時・費用プランの札も右上の朱丸に白いチェックを付ける", () => {
+    const body = declarations(COMPONENTS, ".choice:has(input:checked:not(:disabled))::after");
+    expect(body).toContain("content:");
+    expect(body).toContain("background: var(--color-primary)");
   });
 });
 

@@ -422,7 +422,7 @@ export function generateSecureToken(length: number = 32): string {
 }
 ```
 
-### 4.2. 認証・認可ガード (`src/lib/guards.ts`)
+### 4.2. 認証・認可ガード (`src/modules/auth/lib/guards.ts`)
 
 ```ts
 import { NextRequest } from 'next/server';

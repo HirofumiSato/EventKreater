@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { formatDateTimeJa } from "@/lib/format";
+import { formatDateWithWeekdayJa, formatDateTimeJa } from "@/lib/format";
 import { readProblem } from "@/lib/problem";
 import { RAIN_POLICY_LABELS, type RainPolicy } from "@/modules/events/types";
 import { Alert, Loading, PageHeader } from "@/components/ui";
@@ -89,7 +89,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
         <dl className="kv">
           <div className="kv__row">
             <dt>開催</dt>
-            <dd>{preview.event.schedules.map((row) => `${row.eventDate} ${row.eventTime}`).join("、")}</dd>
+            <dd>{preview.event.schedules.map((row) => `${formatDateWithWeekdayJa(row.eventDate)} ${row.eventTime}`).join("、")}</dd>
           </div>
           <div className="kv__row">
             <dt>場所</dt>
