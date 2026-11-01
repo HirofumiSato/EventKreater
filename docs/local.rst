@@ -63,7 +63,7 @@
    * - ``SMS_WEBHOOK_URL``
      - 電話番号確認コードとログイン確認番号のSMS配送先。空ならサーバログに本文を残す
    * - ``GOOGLE_CLIENT_ID`` / ``GOOGLE_CLIENT_SECRET``
-     - Google サインイン。空なら登録画面で設定不足と表示する
+     - Google サインイン。空なら登録画面で設定不足と表示する。Google ログインの入口は当面画面に出していないが、 ``GET /api/v1/auth/google`` とコールバックは残すので、値は入れておく
    * - ``OPENAI_API_KEY``
      - イベント作成画面の音声入力（音声認識）。空ならマイクボタンは使えず、手入力に戻る
    * - ``VOICE_TRANSCRIBE_MODEL``

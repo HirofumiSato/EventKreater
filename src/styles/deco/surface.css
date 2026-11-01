@@ -285,6 +285,18 @@
   margin-top: 1rem;
 }
 
+/* フォームの外に続く操作（確認番号の再送・ログインからやり直す）は、上の欄と
+   接しないよう 1 段空ける。認証カードは `deco--tape-quiet` ではないので、
+   deco 側の余白は付かない。 */
+.auth-card > .panel__actions {
+  margin-top: 1rem;
+}
+
+/* 操作どうしの間隔は、入力欄の間隔（0.875rem）にそろえる。 */
+.auth-card .panel__actions {
+  gap: 0.875rem;
+}
+
 .auth-alt {
   margin-top: 1rem;
   padding-top: 0.875rem;
@@ -1630,7 +1642,7 @@
    チラシの列に落とすと、ボタンが 4.5rem の幅に潰れる。 */
 .event-card > .event-card__actions,
 .event-card > .card__actions,
-.event-card > .event-card__tools {
+.event-card > .event-card__more {
   grid-column: 1 / -1;
 }
 
@@ -1649,15 +1661,17 @@
 }
 
 @media (min-width: 640px) {
-  /* 操作が 3〜4 個ある画面では、右の細い列に積むと本文が潰れる。
-     操作は本文の下へ回し、幅は本文に使う。 */
+  /* 右の細い列に操作を積むと本文が潰れる。操作と折りたたみは本文の下へ回し、
+     幅は本文に使う（折りたたみも同じ列にそろえないと、左端だけ張り出す）。 */
   .event-card > .event-card__actions,
-  .event-card > .card__actions {
+  .event-card > .card__actions,
+  .event-card > .event-card__more {
     grid-column: 2;
   }
 
   .event-card--no-thumb > .event-card__actions,
-  .event-card--no-thumb > .card__actions {
+  .event-card--no-thumb > .card__actions,
+  .event-card--no-thumb > .event-card__more {
     grid-column: 1;
   }
 }
@@ -1722,11 +1736,9 @@
   gap: 0.5rem;
 }
 
-/* カードの操作。押す的を揃え、段数はカードの幅で決める。
-   スマホ（390px でカード 358px）は 2 列。4 つを 1 段に収めると 1 マスが 78px になり、
-   文字を 15px から落とさないと入らない。文字を落とすより、2×2 に折り返す。
-   カードが 1 枚で全幅になる 640〜899px は 4 つを 1 段。
-   一覧が 2 列になる 900px 以上（カード 410〜488px）は 2×2 に戻す。
+/* カードの操作。常に出すのは「出欠」と「編集」の 2 つなので、幅が変わっても 2 列。
+   390px（カード 358px・中身 318px）でも 1 マスは 155px あり、15px の文字が
+   そのまま入る。段を増やして 1 行に詰める必要はない。
    `.event-card__actions` は行（`Rows` の aside）でも使うので、カード直下だけに効かせる。 */
 .event-card > .event-card__actions {
   display: grid;
@@ -1744,37 +1756,63 @@
 }
 
 @media (min-width: 640px) {
-  .event-card > .event-card__actions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .event-card > .event-card__actions .btn {
     padding-inline: 0.75rem;
   }
 }
 
-@media (min-width: 900px) {
-  .event-card > .event-card__actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* 操作の下の 1 行。URL のコピー（アイコン 1 つ）と、停止・削除を並べる。
-   折りたたまずに出すので、面も罫線も重ねず、行の間隔だけ詰める。 */
-.event-card__tools {
+/* 2 つ目以降の操作は折りたたむ。札を縦に伸ばさず、押す前に「まだ何かある」と
+   分かるよう、見出しはボタンと同じ高さ・同じ文字の大きさにする。
+   印（ChevronDown）は右端に置き、開いたら反転させる。 */
+.event-card__more-summary {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  /* 格子の間隔（1rem）のままだと操作の行から離れすぎるので、1 段詰める。 */
-  margin-top: -0.5rem;
+  min-height: var(--tap-target);
+  padding-top: 0.5rem;
+  color: var(--color-text);
+  font-size: var(--font-action);
+  font-weight: 500;
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
 }
 
-/* 見る系と編集系のまとまりは DOM（親）が持っている。格子の中では箱を作らず、
-   4 つを同じ大きさの升として並べる。右寄せと縦罫線は、折り返した瞬間に
-   片側だけ線が残って崩れるので使わない。 */
-.event-card__actions-edit {
-  display: contents;
+/* 既定の三角印は消す。印は右端の `ChevronDown` 1 つに任せる。 */
+.event-card__more-summary::-webkit-details-marker {
+  display: none;
+}
+
+.event-card__more-summary .icon {
+  transition: transform 0.15s ease;
+}
+
+.event-card__more[open] .event-card__more-summary .icon {
+  transform: rotate(180deg);
+}
+
+/* 折りたたみの中身。上の帯と見分けが付くよう、破線 1 本で切る。
+   2 列にすれば、操作が増えても札の高さは半分で済む。 */
+.event-card__more-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+/* 削除は折りたたみの中で赤を主張させない。塗らずに、危険色の枠と文字だけにする。 */
+.event-card__delete {
+  grid-column: 1 / -1;
+  border-color: var(--color-danger-border);
+  background: transparent;
+  color: var(--color-danger-text);
+}
+
+.event-card__delete:hover {
+  background: var(--color-danger-bg);
 }
 
 /* 名簿の要約。数は 1 か所にまとめ、表と二重に置かない。 */

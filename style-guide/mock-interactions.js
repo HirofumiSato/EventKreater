@@ -797,19 +797,33 @@
 
         const label = normalized(target.textContent);
 
-        // 文字を持たない操作（一覧の札の URL コピー）は、読み上げ名で見分ける。
-        // 入力欄が無いので、同じ札のチラシが指す告知ページをコピーする。
+        // 一覧の札の URL コピー。文字を持たない操作は読み上げ名で見分ける。
+        // 文字のボタン（「URLをコピー」と、押したあとの「コピーしました」）も同じ経路に
+        // 乗せる。同じ操作が文言の有無で別の分岐へ落ちると、モックの返事が食い違うため。
         const spoken = normalized(target.getAttribute("aria-label") || "");
-        if (label === "" && spoken.includes("コピー")) {
+        const copiesCardUrl =
+          (label === "" && spoken.includes("コピー")) ||
+          label === "URLをコピー" ||
+          label === "コピーしました";
+        if (copiesCardUrl) {
+          // コピー先は同じ札の「公開ページ」を先に読む。チラシ画像の無い札では
+          // サムネイルのリンクが無いので、画像の有無でコピーの行き先が消えないようにする。
+          // 「公開ページ」が無ければ従来どおりチラシのリンクを使う。
           const card = target.closest(".event-card");
-          const publicLink = card ? card.querySelector(".event-card__thumb-link") : null;
-          if (publicLink) {
-            copyText(new URL(publicLink.getAttribute("href"), location.href).href);
+          const link = card
+            ? card.querySelector(".event-card__public-link") ||
+              card.querySelector(".event-card__thumb-link")
+            : null;
+          if (link) {
+            copyText(new URL(link.getAttribute("href"), location.href).href);
             toast("URL をコピーしました。");
-          } else {
-            toast("コピーする URL がありません。", "error");
+            return;
           }
-          return;
+          if (label !== "URLをコピー") {
+            toast("コピーする URL がありません。", "error");
+            return;
+          }
+          // 札の外の「URLをコピー」は、下の分岐で近くの入力欄からコピーする。
         }
 
         if (label === "URLをコピー") {

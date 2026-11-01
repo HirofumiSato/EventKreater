@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Copy } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
@@ -99,49 +99,59 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
         )}
       </div>
 
-      {/* 見る系と編集系。幅に応じて 1 段か 2×2 に並ぶ（段数は CSS の格子が決める）。
-          編集は一覧でいちばん使うので、塗りと文字色を変えて主の操作として置く。 */}
+      {/* 札の上に常に出すのは「出欠」と「編集」の 2 つだけ。幅が変わっても 2 列のまま
+          （段数は CSS の格子が決める）。編集は一覧でいちばん使うので、塗りで主の操作にする。 */}
       <div className="event-card__actions">
         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
           出欠
         </Link>
-        {/* 下書きは配る先が無い。告知ページのある催しだけ、その場で LINE へ渡せるようにする。 */}
-        {event.status !== "DRAFT" && (
-          <LineShareButton
-            title={event.title}
-            schedules={event.schedules}
-            location={event.location}
-            path={publicPath}
-            className="btn btn--outline btn--sm"
-          />
-        )}
-        <div className="event-card__actions-edit">
-          <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--accent btn--sm">
-            編集
-          </Link>
-          <button type="button" onClick={onClone} disabled={busy} className="btn btn--ghost btn--sm">
-            コピー作成
-          </button>
-        </div>
+        <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--accent btn--sm">
+          編集
+        </Link>
       </div>
 
-      {/* 共有の URL と停止だけを、札の下に 1 行で置く。折りたたまない。
-          URL は入力欄を持たず、アイコン 1 つでコピーする（札を縦に伸ばさないため）。
-          読み上げ名は aria-label が持つので、中のアイコンは読み上げない。 */}
-      {event.status !== "DRAFT" && (
-        <div className="event-card__tools">
-          <button
-            type="button"
-            className="btn btn--outline btn--icon"
-            onClick={() => void copyPublicUrl()}
-            aria-label="参加者に送るURLをコピー"
-            title="URLをコピー"
-          >
-            {copied ? <Check className="icon" aria-hidden="true" /> : <Copy className="icon" aria-hidden="true" />}
+      {/* 残りの操作は 1 段にまとめ、札を縦に伸ばさないよう折りたたむ。並びは読み上げと
+          焦点の順に合わせ、見る系 → 共有 → 編集系 → 停止・削除 とする。 */}
+      <details className="event-card__more">
+        <summary className="event-card__more-summary">
+          その他の操作
+          <ChevronDown className="icon" aria-hidden="true" />
+        </summary>
+        <div className="event-card__more-body">
+          {/* 告知ページは、チラシが無くても必ず辿れるようにする。下書きには公開ページが無い。 */}
+          {event.status !== "DRAFT" && (
+            <a
+              href={publicPath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="event-card__public-link btn btn--outline btn--sm"
+            >
+              公開ページ
+            </a>
+          )}
+          {/* 下書きは配る先が無い。告知ページのある催しだけ、その場で LINE へ渡せるようにする。 */}
+          {event.status !== "DRAFT" && (
+            <LineShareButton
+              title={event.title}
+              schedules={event.schedules}
+              location={event.location}
+              path={publicPath}
+              className="btn btn--outline btn--sm"
+            />
+          )}
+          {/* 押した結果はボタンの文字と、下の読み上げ用の 1 行で伝える。 */}
+          {event.status !== "DRAFT" && (
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => void copyPublicUrl()}
+            >
+              {copied ? "コピーしました" : "URLをコピー"}
+            </button>
+          )}
+          <button type="button" onClick={onClone} disabled={busy} className="btn btn--outline btn--sm">
+            コピー作成
           </button>
-          <span className="visually-hidden" role="status" aria-live="polite">
-            {copied ? "URLをコピーしました" : ""}
-          </span>
           {event.role === "OWNER" && (
             <>
               {event.status === "CLOSED" ? (
@@ -153,13 +163,21 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
                   停止
                 </button>
               )}
-              <button type="button" className="btn btn--danger btn--sm" disabled={busy} onClick={onDelete}>
+              <button
+                type="button"
+                className="btn btn--danger btn--sm event-card__delete"
+                disabled={busy}
+                onClick={onDelete}
+              >
                 削除
               </button>
             </>
           )}
         </div>
-      )}
+        <span className="visually-hidden" role="status" aria-live="polite">
+          {copied ? "URLをコピーしました" : ""}
+        </span>
+      </details>
     </article>
   );
 }
