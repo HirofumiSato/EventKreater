@@ -4,7 +4,7 @@ import { yen } from "@/lib/format";
 import type { EventPricePlanOption, MyRsvp, RsvpStatus } from "@/modules/events/types";
 
 const STATUS_LABELS: Record<RsvpStatus, string> = {
-  ATTENDING: "出席",
+  ATTENDING: "参加",
   WAITLISTED: "参加要望",
   DECLINED: "欠席",
 };
@@ -13,6 +13,10 @@ interface RsvpSummaryProps {
   status: RsvpStatus;
   /** 参加要望のときの待ち順（1 始まり）。要望でなければ null。 */
   waitlistPosition: number | null;
+  /** 自分を含む参加人数。 */
+  partySize: number;
+  /** 選んだ日時の短いラベル（11/21 など）。 */
+  scheduleLabels: string[];
   /** 申込時に選んだ費用プラン。見つからなければ null。 */
   plan: EventPricePlanOption | null;
   /** 申込時点の割引の写し。定義が消えていても、申込んだときの額を出す。 */
@@ -39,6 +43,8 @@ interface RsvpSummaryProps {
 export function RsvpSummary({
   status,
   waitlistPosition,
+  partySize,
+  scheduleLabels,
   plan,
   discounts,
   payable,
@@ -47,21 +53,27 @@ export function RsvpSummary({
   onOpen,
 }: RsvpSummaryProps) {
   const discountTotal = discounts.reduce((total, row) => total + Math.max(0, row.amount), 0);
+  const size = partySize >= 1 ? partySize : 1;
 
   return (
     <section id="rsvp" className={barEntry ? "rsvp-summary rsvp-summary--bar" : "rsvp-summary"}>
       <p className="eyebrow">出欠</p>
       <p className="rsvp-summary__status">
         <span className="rsvp-summary__mark">{STATUS_LABELS[status]}</span>
+        {status === "ATTENDING" && ` ${size}人`}
         {status === "WAITLISTED" && waitlistPosition !== null && `（${waitlistPosition}番目）`}
         {memberName && <span className="rsvp-summary__who">{memberName} さん</span>}
       </p>
+      {status !== "DECLINED" && scheduleLabels.length > 0 && (
+        <p className="rsvp-summary__meta">{scheduleLabels.join("・")}</p>
+      )}
       {status === "ATTENDING" && plan && (
         <p className="rsvp-summary__amount">
           {plan.price}
-          {discountTotal > 0 && ` − 割引 ${yen(discountTotal)}`}
+          {size > 1 && ` × ${size}人`}
+          {discountTotal > 0 && ` − 割引 ${yen(discountTotal * size)}`}
           {" = "}
-          <strong>{yen(payable ?? plan.amount)}</strong>
+          <strong>{yen(payable ?? plan.amount * size)}</strong>
         </p>
       )}
       {status === "WAITLISTED" && (

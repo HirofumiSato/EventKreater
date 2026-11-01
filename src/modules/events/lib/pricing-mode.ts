@@ -12,7 +12,7 @@ type Audience = "ANY" | "MALE" | "FEMALE";
 export function assertPricingEditable(
   existing: {
     status: "DRAFT" | "PUBLISHED" | "CLOSED";
-    participants: { status: RsvpStatus; pricePlanId: string | null }[];
+    participants: { status: RsvpStatus; pricePlanId: string | null; partySize?: number }[];
     pricePlans: { id: string; audience: Audience }[];
   },
   input: { pricePlans: { id?: string; audience: Audience }[] },
@@ -20,6 +20,11 @@ export function assertPricingEditable(
   if (existing.status === "DRAFT") return;
   const attending = existing.participants.filter((row) => row.status === "ATTENDING");
   if (attending.length === 0) return;
+  // 人数（自分を含む合計）で数える。1 回答が複数人ぶんのプランを選ぶことがある。
+  const attendingHeadcount = attending.reduce(
+    (total, row) => total + (row.partySize && row.partySize >= 1 ? row.partySize : 1),
+    0,
+  );
 
   const modeChanged = pricingModeOf(existing.pricePlans) !== pricingModeOf(input.pricePlans);
   const submitted = new Map(
@@ -38,7 +43,7 @@ export function assertPricingEditable(
   throw new ProblemDetailException({
     status: 409,
     title: "Pricing Locked",
-    detail: `出席者が${attending.length}名いるため、料金の共通・男女別の切り替えや、選ばれているプランの削除はできません。金額・プラン名・補足は変更できます。`,
+    detail: `出席者が${attendingHeadcount}名いるため、料金の共通・男女別の切り替えや、選ばれているプランの削除はできません。金額・プラン名・補足は変更できます。`,
     error: "PRICING_LOCKED",
   });
 }

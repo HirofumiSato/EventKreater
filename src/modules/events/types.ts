@@ -298,7 +298,12 @@ export interface MyRsvp {
   status: RsvpStatus;
   gender: Gender | null;
   comment: string | null;
+  /** 代表の開催日時。複数日を選んでいれば、並び順で最初の日。 */
   scheduleId: string | null;
+  /** 出席する日時（複数可）。空なら日程を選んでいない（古い回答は `scheduleId` で補う）。 */
+  scheduleIds: string[];
+  /** 自分を含む参加人数。 */
+  partySize: number;
   pricePlanId: string | null;
   /** 申込時に選んだ割引の写し。無ければ空配列。 */
   discounts: ParticipantDiscountSnapshot[];
@@ -382,8 +387,14 @@ export interface ParticipantRow {
   status: RsvpStatus;
   gender: Gender | null;
   comment: string | null;
+  /** 代表の開催日時。複数日を選んでいれば、並び順で最初の日。 */
   scheduleId: string | null;
+  /** 出席する日時（複数可）。 */
+  scheduleIds: string[];
+  /** 自分を含む参加人数。 */
+  partySize: number;
   pricePlanId: string | null;
+  /** 選んだ全日程のラベル。1 件ならそのまま、複数なら ` / ` で並べる。 */
   scheduleLabel: string | null;
   pricePlanLabel: string | null;
   /** 領収書の金額の初期値に使う。プラン未選択なら null。 */
@@ -392,8 +403,10 @@ export interface ParticipantRow {
   discounts: ParticipantDiscountSnapshot[];
   /** 割引の合計額（円）。無ければ 0。 */
   discountAmount: number;
-  /** 割引を引いた支払額。プラン未選択なら null。 */
+  /** 割引を引いた支払額（人数ぶんの合計）。プラン未選択なら null。 */
   payableAmount: number | null;
+  /** 割引を引いた 1 人ぶんの支払額。領収書の既定額。プラン未選択なら null。 */
+  unitPayableAmount: number | null;
   createdAt: string;
   updatedAt: string;
   /** 参加要望を出した日時。要望でなければ null。 */

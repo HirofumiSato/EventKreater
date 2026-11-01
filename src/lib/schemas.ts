@@ -3,6 +3,7 @@ import { normalizePostalCode } from "@/lib/postal-code";
 import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
 import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
+import { RSVP_PARTY_SIZE_MAX } from "@/modules/attendance/lib/rsvp-form";
 import { profileUrlProblem } from "@/modules/organizers/lib/profile";
 import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
 import { isAllowedCheckoutReturnTo } from "@/modules/billing/lib/checkout-return";
@@ -130,12 +131,15 @@ function refineAttendanceChoice(
     status: "ATTENDING" | "DECLINED" | "WAITLISTED";
     gender?: "MALE" | "FEMALE";
     scheduleId?: string;
+    /** 複数日を選ぶときの日時。1 件だけなら `scheduleId` でも送れる。 */
+    scheduleIds?: string[];
+    partySize?: number;
     pricePlanId?: string;
   },
   ctx: z.RefinementCtx,
 ) {
   if (value.status !== "ATTENDING") return;
-  if (!value.scheduleId) {
+  if (!value.scheduleId && (value.scheduleIds?.length ?? 0) === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["scheduleId"],
@@ -373,6 +377,10 @@ export const OrganizerParticipantSchema = z
     gender: z.enum(["MALE", "FEMALE"]).optional(),
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
+    /** 複数日を選ぶときの日時。省略すると `scheduleId` 1 件として扱う。 */
+    scheduleIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).optional(),
+    /** 自分を含む参加人数。省略すると今の人数を保つ。 */
+    partySize: z.number().int().min(1).max(RSVP_PARTY_SIZE_MAX).optional(),
     pricePlanId: z.string().uuid().optional(),
     /**
      * 幹事が名簿から割引を選び直すときだけ送る。省略したら今の割引をそのまま残す
@@ -400,6 +408,10 @@ export const SubmitRsvpSchema = z
     gender: z.enum(["MALE", "FEMALE"]).optional(),
     comment: z.string().trim().max(500).optional(),
     scheduleId: z.string().uuid().optional(),
+    /** 複数日を選ぶときの日時。省略すると `scheduleId` 1 件として扱う。 */
+    scheduleIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).optional(),
+    /** 自分を含む参加人数。省略すると 1 人。 */
+    partySize: z.number().int().min(1).max(RSVP_PARTY_SIZE_MAX).optional(),
     pricePlanId: z.string().uuid().optional(),
     /** 申込時に選んだ割引。出席のときだけ使う。省略したクライアントは 0 件として扱う。 */
     discountIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).default([]),

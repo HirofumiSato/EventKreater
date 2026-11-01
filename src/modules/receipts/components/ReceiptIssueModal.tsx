@@ -44,7 +44,7 @@ export function ReceiptIssueModal({
           {reissue ? "領収書を再発行" : "領収書を発行"}
         </h3>
         <p className="dialog__body">
-          宛名、金額、但し書きを入れて発行します。金額は選んだ費用プランから入れています。参加費の決済はこのシステムでは行いません。
+          宛名、金額、但し書きを入れて発行します。金額は 1 人ぶんの費用から入れています。参加費の決済はこのシステムでは行いません。
         </p>
         {suggestedAmount === 0 && (
           <Alert tone="warning">

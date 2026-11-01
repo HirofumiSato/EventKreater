@@ -32,6 +32,25 @@ export async function findMyParticipant(
   return null;
 }
 
+/**
+ * 選んだ日程の ID を、イベントの並び順（`sortOrder`）で返す。
+ * 複数日を選べるので、`Participant.scheduleId`（代表）の根拠もこの並びで決める。
+ * 古い回答は join 行が空なので、そのときは `scheduleId` 1 件に戻す。
+ */
+export function participantScheduleIds(
+  rows:
+    | readonly { scheduleId: string; schedule?: { sortOrder: number } | null }[]
+    | null
+    | undefined,
+  fallbackScheduleId: string | null = null,
+): string[] {
+  const sorted = [...(rows ?? [])]
+    .sort((left, right) => (left.schedule?.sortOrder ?? 0) - (right.schedule?.sortOrder ?? 0))
+    .map((row) => row.scheduleId);
+  if (sorted.length > 0) return sorted;
+  return fallbackScheduleId ? [fallbackScheduleId] : [];
+}
+
 export interface RsvpTarget {
   participant: Participant;
   /** 会員の行に統合した結果、削除する端末だけの行。 */

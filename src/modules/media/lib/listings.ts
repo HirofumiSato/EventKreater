@@ -53,7 +53,9 @@ export async function listListableEvents(input: MediaListingQuery) {
       include: {
         flyerAsset: true,
         ...eventOptionsInclude,
-        participants: { where: { status: "ATTENDING" }, select: { id: true } },
+        // 席を取っている人だけ。人数は行数ではなく `partySize` の合計で数える
+        // （1 行が 3 人ぶんのことがある）。
+        participants: { where: { status: "ATTENDING" }, select: { partySize: true } },
       },
     }),
   ]);

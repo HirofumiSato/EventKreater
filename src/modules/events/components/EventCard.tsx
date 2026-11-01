@@ -85,7 +85,7 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
             参加 {event.stats.attendingCount}名 / {event.capacity === null ? "定員なし" : `定員 ${event.capacity}名`}
           </span>
           <span>
-            回答 {event.stats.totalResponses}名 ・ 不参加 {event.stats.declinedCount}名
+            回答 {event.stats.totalResponses}件 ・ 欠席 {event.stats.declinedCount}件
           </span>
         </div>
         {ratio !== null && (

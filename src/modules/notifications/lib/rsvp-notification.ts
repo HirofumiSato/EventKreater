@@ -71,9 +71,12 @@ export function buildRsvpNotification(input: {
   eventTitle: string;
   participantName: string;
   status: "ATTENDING" | "WAITLISTED";
+  /** 自分を含む参加人数。1 人なら本文に出さない。 */
+  partySize?: number;
 }): RsvpNotificationContent {
   const name = input.participantName.trim() || "参加者";
   const title = input.eventTitle.trim() || "イベント";
+  const size = Math.max(1, Math.floor(input.partySize ?? 1));
 
   if (input.status === "WAITLISTED") {
     return {
@@ -90,7 +93,13 @@ export function buildRsvpNotification(input: {
   return {
     kind: "RSVP_ATTENDING",
     title: trimTo("参加表明がありました", NOTIFICATION_TITLE_MAX),
-    body: trimTo(`${name}さんが「${title}」に出席します。`, NOTIFICATION_BODY_MAX),
+    // 人数は 2 人以上のときだけ添える。1 人のたびに「1人で」と書くと本文が長くなる。
+    body: trimTo(
+      size > 1
+        ? `${name}さんが「${title}」に${size}人で出席します。`
+        : `${name}さんが「${title}」に出席します。`,
+      NOTIFICATION_BODY_MAX,
+    ),
     href: participantsPath(input.eventId),
   };
 }

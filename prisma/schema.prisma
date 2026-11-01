@@ -701,6 +701,7 @@ model EventSchedule {
 
   event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   participants Participant[]
+  participantSchedules ParticipantSchedule[]
 
   @@index([eventId, sortOrder])
   @@index([eventDate])
@@ -842,7 +843,12 @@ model Participant {
   gender        Gender?
   status        RsvpStatus
   comment       String?    @db.Text
+  /// 代表の開催日時。複数日を選んだときは、イベントの並び順で最初の日時。
+  /// 名簿・売上の「開催回別」・カレンダーはこの値を代表として見る（選択した全日は
+  /// `participant_schedules` が持つ）。
   scheduleId    String?    @map("schedule_id") @db.Uuid
+  /// 自分を含む参加人数。定員は人数ぶん消費し、売上も人数ぶんで数える。
+  partySize     Int        @default(1) @map("party_size") @db.Integer
   pricePlanId   String?    @map("price_plan_id") @db.Uuid
   /// 出欠確定時点の費用プラン金額。null はプラン未選択、0 は無料プラン。
   /// プラン金額を後から編集しても、過去の見込み売上が変わらないようにする。
@@ -862,6 +868,7 @@ model Participant {
   schedule  EventSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
   pricePlan EventPricePlan? @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
   discounts ParticipantDiscount[]
+  schedules ParticipantSchedule[]
   receipt   Receipt?
   notifications Notification[]
 
@@ -872,6 +879,20 @@ model Participant {
   @@index([scheduleId])
   @@index([pricePlanId])
   @@map("participants")
+}
+
+/// 参加者が出席する開催日時。複数日を選べるので、1 参加者につき 0〜8 行。
+/// `Participant.scheduleId` はこのうち並び順で最初の日時を代表として持つ。
+model ParticipantSchedule {
+  participantId String @map("participant_id") @db.Uuid
+  scheduleId    String @map("schedule_id") @db.Uuid
+
+  participant Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  schedule    EventSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@id([participantId, scheduleId])
+  @@index([scheduleId])
+  @@map("participant_schedules")
 }
 
 // 参加費の領収書。決済は行わず、幹事が金額を入力して発行する。1参加者につき1件。

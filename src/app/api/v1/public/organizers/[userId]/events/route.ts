@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             discounts: { orderBy: { sortOrder: "asc" } },
             participants: {
               where: { status: { in: ["ATTENDING", "WAITLISTED"] } },
-              select: { status: true },
+              select: { status: true, partySize: true },
             },
           },
         },
@@ -84,7 +84,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const today = todayInTokyo();
     const candidates = rows.map((row) => {
       const event = row.event;
-      const attendingCount = event.participants.filter((participant) => participant.status === "ATTENDING").length;
+      const attendingCount = event.participants
+        .filter((participant) => participant.status === "ATTENDING")
+        .reduce((total, participant) => total + participant.partySize, 0);
       const rsvpOpen = isRsvpAccepting(event);
       const full = isFull(event.capacity, attendingCount);
       return {

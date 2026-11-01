@@ -3,7 +3,9 @@ import {
   averageRevenue,
   groupByPlan,
   groupBySchedule,
+  payableAmount,
   summarizeRevenue,
+  unitPayableAmount,
   type RevenueParticipant,
 } from "@/modules/revenue/lib/revenue";
 import { keepPriceSnapshot } from "@/modules/events/lib/events";
@@ -240,6 +242,80 @@ describe("participantPriceDisplay", () => {
         pricePlan: null,
       }),
     ).toEqual({ label: "一般 無料", amount: 0 });
+  });
+});
+
+describe("参加人数ぶんの売上", () => {
+  it("3 人なら人数・売上・支払額を 3 倍で数える", () => {
+    const summary = summarizeRevenue([attending(3000, { partySize: 3 })]);
+    expect(summary.attendingCount).toBe(3);
+    expect(summary.paidAttendingCount).toBe(3);
+    expect(summary.expectedRevenue).toBe(9000);
+    expect(summary.averagePerAttendee).toBe(3000);
+  });
+
+  it("割引は 1 人ぶんとして、人数ぶんを引く", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { partySize: 2, discounts: [{ amount: 500 }] }),
+    ]);
+    expect(summary.expectedRevenue).toBe(5000);
+  });
+
+  it("人数が省略された行は 1 人として数える", () => {
+    const summary = summarizeRevenue([attending(3000), attending(3000, { partySize: 0 })]);
+    expect(summary.attendingCount).toBe(2);
+    expect(summary.expectedRevenue).toBe(6000);
+  });
+
+  it("プラン未選択は人数だけを足す", () => {
+    const summary = summarizeRevenue([attending(null, { partySize: 4 })]);
+    expect(summary.attendingCount).toBe(4);
+    expect(summary.unassignedPlanCount).toBe(4);
+    expect(summary.expectedRevenue).toBe(0);
+  });
+
+  it("プラン別・開催回別も人数と割引小計を人数ぶんで数える", () => {
+    const planRows = groupByPlan([
+      attending(3000, { partySize: 3, discounts: [{ amount: 500 }] }),
+      attending(3000, { partySize: 2, discounts: [{ amount: 500 }] }),
+    ]);
+    expect(planRows).toEqual([
+      {
+        name: "一般",
+        audience: "ANY",
+        amount: 3000,
+        attendingCount: 5,
+        discountSubtotal: 2500,
+        subtotal: 12500,
+      },
+    ]);
+
+    const scheduleRows = groupBySchedule([
+      attending(3000, { partySize: 2, scheduleId: "a", discounts: [{ amount: 500 }] }),
+    ]);
+    expect(scheduleRows).toEqual([
+      { scheduleId: "a", attendingCount: 2, discountSubtotal: 1000, subtotal: 5000 },
+    ]);
+  });
+});
+
+describe("1 人ぶんの支払額", () => {
+  it("人数を掛けず、割引だけを引く", () => {
+    expect(unitPayableAmount({ priceAmount: 3000, discounts: [{ amount: 500 }] })).toBe(2500);
+  });
+
+  it("プラン未選択は null", () => {
+    expect(unitPayableAmount({ priceAmount: null })).toBeNull();
+  });
+
+  it("割引が金額を超えても 0 円で止まる", () => {
+    expect(unitPayableAmount({ priceAmount: 1000, discounts: [{ amount: 1500 }] })).toBe(0);
+  });
+
+  it("合計額は 1 人ぶんに人数を掛けた値になる", () => {
+    const row = { priceAmount: 3000, discounts: [{ amount: 500 }], partySize: 3 };
+    expect(unitPayableAmount(row)).toBe(2500);
+    expect(payableAmount(row)).toBe(7500);
   });
 });
 

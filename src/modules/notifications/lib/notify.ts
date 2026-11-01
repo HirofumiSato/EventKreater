@@ -32,6 +32,8 @@ export interface RsvpSubmittedInput {
   previousStatus: RsvpStatus | null;
   /** 更新後の状態。 */
   nextStatus: RsvpStatus;
+  /** 自分を含む参加人数。通知の本文に出す。 */
+  partySize?: number;
   /** 変化があった時刻。指紋に使い、同じ変化を二重に作らない。 */
   changedAt: Date;
 }
@@ -79,6 +81,7 @@ export async function notifyRsvpSubmitted(input: RsvpSubmittedInput): Promise<nu
     eventTitle: input.eventTitle,
     participantName: input.participantName,
     status: input.nextStatus,
+    partySize: input.partySize,
   });
 
   const rows = recipients.map((userId) => ({

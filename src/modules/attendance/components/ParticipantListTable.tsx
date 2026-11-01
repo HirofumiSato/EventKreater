@@ -11,6 +11,11 @@ import {
   type RsvpStatus,
 } from "@/modules/events/types";
 import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
+import {
+  RSVP_PARTY_SIZE_MAX,
+  RSVP_PARTY_SIZE_MIN,
+  clampRsvpPartySize,
+} from "@/modules/attendance/lib/rsvp-form";
 import { formatDateTimeJa, yen } from "@/lib/format";
 import { Badge } from "@/components/ui";
 
@@ -24,7 +29,15 @@ interface ParticipantListTableProps {
   onSave?: (
     row: Pick<
       ParticipantRow,
-      "id" | "name" | "status" | "gender" | "comment" | "scheduleId" | "pricePlanId"
+      | "id"
+      | "name"
+      | "status"
+      | "gender"
+      | "comment"
+      | "scheduleId"
+      | "scheduleIds"
+      | "partySize"
+      | "pricePlanId"
     >,
   ) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
@@ -39,12 +52,13 @@ function csvCell(value: string): string {
 }
 
 function downloadCsv(rows: ParticipantRow[]) {
-  const header = ["名前", "性別", "出欠", "日時", "費用プラン", "割引", "支払額", "コメント", "回答日時"];
+  const header = ["名前", "性別", "出欠", "人数", "日時", "費用プラン", "割引", "支払額", "コメント", "回答日時"];
   const lines = rows.map((row) =>
     [
       csvCell(row.name),
       row.gender ? GENDER_LABELS[row.gender] : "未設定",
-      row.status === "ATTENDING" ? "出席" : row.status === "WAITLISTED" ? "参加要望" : "欠席",
+      row.status === "ATTENDING" ? "参加" : row.status === "WAITLISTED" ? "参加要望" : "欠席",
+      row.status === "ATTENDING" ? String(row.partySize) : "",
       csvCell(row.scheduleLabel ?? ""),
       csvCell(row.pricePlanLabel ?? ""),
       csvCell(row.discounts.map((discount) => discount.label).join(" / ")),
@@ -80,7 +94,8 @@ export function ParticipantListTable({
   const [draftComment, setDraftComment] = useState("");
   const [draftStatus, setDraftStatus] = useState<RsvpStatus>("ATTENDING");
   const [draftGender, setDraftGender] = useState<Gender | "">("");
-  const [draftScheduleId, setDraftScheduleId] = useState("");
+  const [draftScheduleIds, setDraftScheduleIds] = useState<string[]>([]);
+  const [draftPartySize, setDraftPartySize] = useState("1");
   const [draftPricePlanId, setDraftPricePlanId] = useState("");
 
   /** 編集中の性別に合わせて選べるプランを絞る。 */
@@ -105,7 +120,7 @@ export function ParticipantListTable({
     ["ALL", `すべて ${rows.length}`],
     ["ATTENDING", `参加 ${attendingCount}`],
     ["WAITLISTED", `参加要望 ${waitlistedCount}`],
-    ["DECLINED", `不参加 ${declinedCount}`],
+    ["DECLINED", `欠席 ${declinedCount}`],
   ] as const;
 
   /** 行を編集モードにする。参加要望の承認は status を出席に上げて同じフォームで行う。 */
@@ -115,7 +130,16 @@ export function ParticipantListTable({
     setDraftComment(row.comment ?? "");
     setDraftStatus(nextStatus ?? row.status);
     setDraftGender(row.gender ?? "");
-    setDraftScheduleId(row.scheduleId ?? schedules[0]?.id ?? "");
+    setDraftScheduleIds(
+      row.scheduleIds.length > 0
+        ? row.scheduleIds
+        : row.scheduleId
+          ? [row.scheduleId]
+          : schedules.length > 0
+            ? [schedules[0].id]
+            : [],
+    );
+    setDraftPartySize(String(row.partySize));
     const allowed = pricePlans.filter(
       (plan) => plan.audience === "ANY" || (row.gender !== null && plan.audience === row.gender),
     );
@@ -129,7 +153,7 @@ export function ParticipantListTable({
   return (
     <div className="table-card">
       <div className="table-card__head">
-        <h2 className="table-card__title">回答者 {rows.length}人</h2>
+        <h2 className="table-card__title">回答 {rows.length}件</h2>
         <div className="panel__actions">
           <button type="button" className="btn btn--outline btn--sm" onClick={() => downloadCsv(rows)}>
             CSVで書き出す
@@ -171,6 +195,7 @@ export function ParticipantListTable({
               <th scope="col">名前</th>
               <th scope="col">性別</th>
               <th scope="col">出欠</th>
+              <th scope="col">人数</th>
               <th scope="col">日時</th>
               <th scope="col">費用プラン</th>
               <th scope="col">コメント</th>
@@ -181,7 +206,7 @@ export function ParticipantListTable({
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={onSave ? 8 : 7} className="roster__meta">
+                <td colSpan={onSave ? 9 : 8} className="roster__meta">
                   該当する参加者はいません。
                 </td>
               </tr>
@@ -245,13 +270,46 @@ export function ParticipantListTable({
                   </td>
                   <td className="roster__meta">
                     {editing && draftStatus === "ATTENDING" ? (
-                      <select className="select" value={draftScheduleId} onChange={(event) => setDraftScheduleId(event.target.value)}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={RSVP_PARTY_SIZE_MIN}
+                        max={RSVP_PARTY_SIZE_MAX}
+                        className="input input--compact roster__party-size"
+                        aria-label="参加人数"
+                        value={draftPartySize}
+                        onChange={(event) => setDraftPartySize(event.target.value)}
+                        onBlur={() => setDraftPartySize(String(clampRsvpPartySize(draftPartySize)))}
+                      />
+                    ) : row.status === "ATTENDING" ? (
+                      `${row.partySize}人`
+                    ) : (
+                      // 欠席と参加要望は席を取らない。承認したときに人数を入れる。
+                      "—"
+                    )}
+                  </td>
+                  <td className="roster__meta">
+                    {editing && draftStatus === "ATTENDING" ? (
+                      <div className="roster__schedule-edit">
                         {schedules.map((schedule) => (
-                          <option key={schedule.id} value={schedule.id}>
-                            {schedule.eventDate} {schedule.eventTime}
-                          </option>
+                          <label key={schedule.id} className="check">
+                            <input
+                              type="checkbox"
+                              checked={draftScheduleIds.includes(schedule.id)}
+                              onChange={(event) =>
+                                setDraftScheduleIds((current) =>
+                                  event.target.checked
+                                    ? [...current, schedule.id]
+                                    : current.filter((id) => id !== schedule.id),
+                                )
+                              }
+                            />
+                            <span>
+                              {schedule.eventDate} {schedule.eventTime}
+                            </span>
+                          </label>
                         ))}
-                      </select>
+                      </div>
                     ) : (
                       row.scheduleLabel || "—"
                     )}
@@ -278,9 +336,23 @@ export function ParticipantListTable({
                             ))}
                           </span>
                         )}
-                        {row.status === "ATTENDING" && row.discountAmount > 0 && row.payableAmount !== null && (
-                          <span className="roster__payable">支払額 {yen(row.payableAmount)}</span>
-                        )}
+                        {row.status === "ATTENDING" &&
+                          row.payableAmount !== null &&
+                          (row.discountAmount > 0 || row.partySize > 1) && (
+                            <>
+                              {/* 領収書は 1 人ずつ切る。1 人ぶんを先に、人数ぶんの合計を次に出す。 */}
+                              {row.partySize > 1 && (
+                                <span className="roster__payable">
+                                  1人 {yen(row.unitPayableAmount ?? row.payableAmount)}
+                                </span>
+                              )}
+                              <span className="roster__payable">
+                                {row.partySize > 1
+                                  ? `${row.partySize}人 合計 ${yen(row.payableAmount)}`
+                                  : `支払額 ${yen(row.payableAmount)}`}
+                              </span>
+                            </>
+                          )}
                       </>
                     )}
                   </td>
@@ -303,6 +375,9 @@ export function ParticipantListTable({
                           <button
                             type="button"
                             className="btn btn--primary btn--sm"
+                            disabled={
+                              draftStatus === "ATTENDING" && draftScheduleIds.length === 0
+                            }
                             onClick={() =>
                               void onSave({
                                 id: row.id,
@@ -310,7 +385,19 @@ export function ParticipantListTable({
                                 status: draftStatus,
                                 gender: draftStatus === "DECLINED" ? row.gender : draftGender || null,
                                 comment: draftComment,
-                                scheduleId: draftStatus === "ATTENDING" ? draftScheduleId : null,
+                                // 代表は並び順で最初の日時。押した順ではなくイベントの順で送る。
+                                scheduleId:
+                                  draftStatus === "ATTENDING"
+                                    ? (schedules.find((schedule) =>
+                                        draftScheduleIds.includes(schedule.id),
+                                      )?.id ?? null)
+                                    : null,
+                                scheduleIds:
+                                  draftStatus === "ATTENDING" ? draftScheduleIds : [],
+                                partySize:
+                                  draftStatus === "ATTENDING"
+                                    ? clampRsvpPartySize(draftPartySize)
+                                    : 1,
                                 pricePlanId: draftStatus === "ATTENDING" ? draftPricePlanId : null,
                               })
                                 .then(() => setEditingId(null))

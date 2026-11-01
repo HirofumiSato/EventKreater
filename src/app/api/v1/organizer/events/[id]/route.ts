@@ -30,7 +30,7 @@ async function loadManagedEvent(eventId: string) {
     include: {
       flyerAsset: true,
       ...eventOptionsInclude,
-      participants: { select: { status: true, pricePlanId: true } },
+      participants: { select: { status: true, partySize: true, pricePlanId: true } },
       organizers: {
         select: {
           id: true,
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       role: ctx.role,
       // 未登録のゲスト幹事かどうか。公開直後の案内ページが、登録済みの幹事を管理画面へ返すために使う。
       registered: Boolean(ctx.userId),
-      stats: summarizeStatuses(event.participants.map((row) => row.status)),
+      stats: summarizeStatuses(event.participants),
       lock: event.lock ? { holderName: event.lock.lockHolderName } : null,
     });
   } catch (error) {
@@ -101,7 +101,10 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     }
 
     if (input.capacity && input.capacity > 0) {
-      const attending = existing.participants.filter((row) => row.status === "ATTENDING").length;
+      // 定員より多い席は取らせない。人数（partySize）ぶんで数える。
+      const attending = existing.participants
+        .filter((row) => row.status === "ATTENDING")
+        .reduce((total, row) => total + row.partySize, 0);
       if (input.capacity < attending) {
         throw new ProblemDetailException({
           status: 400,

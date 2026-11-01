@@ -552,7 +552,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 
 名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。領収書の発行画面が使う既定額（`pricePlanAmount`）も同じ値になる。
 
-割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計）、`payableAmount`（`pricePlanAmount` から割引を引いた支払額。0 円で止める）を返す。`payableAmount` が `null` なのはプラン未選択の行だけで、領収書の発行画面の既定額もこの値を使う。名簿の変更（`PATCH`）は `discountIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。
+割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計 × `partySize`）、`payableAmount`（`(pricePlanAmount − 割引の合計) × partySize` の支払額。0 円で止めてから人数を掛ける）、`unitPayableAmount`（`pricePlanAmount − 割引の合計`。人数を掛けない 1 人ぶん）を返す。`payableAmount` と `unitPayableAmount` が `null` なのはプラン未選択の行だけで、**領収書の発行画面の既定額は 1 人ずつ切る前提で `unitPayableAmount` を使う**（名簿には「1人 2,500円」と「3人 合計 7,500円」の 2 行で両方を出す）。名簿の変更（`PATCH`）は `discountIds` と `partySize`、`scheduleIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。出席でない行の `partySize` は 1 に戻し、参加要望は 1 人として並べて、承認したときに名簿で人数を入れる。
 
 横断の売上（`GET /api/v1/organizer/revenue`）は会員の幹事だけが使える。ゲスト幹事の Cookie では 403 `REGISTER_REQUIRED`、未ログインは 401 を返す（`requireOrganizerAccount`）。
 
@@ -847,6 +847,8 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
     "id": "p1a2b3c4-1111-2222-3333-444455556666",
     "name": "佐藤",
     "status": "ATTENDING",
+    "partySize": 2,
+    "scheduleIds": ["11111111-1111-4111-8111-111111111111"],
     "comment": "楽しみにしています！少し遅れるかもしれません。",
     "discounts": [
       {
@@ -861,6 +863,8 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
 }
 ```
 
+`attendingCount` は `ATTENDING` の人の合計（`Σ party_size`）であり、`WAITLISTED` は数えない。`isFull` も人数の合計で判定する。`myRsvp.partySize` は自分を含む人数（既定 1）、`myRsvp.scheduleIds` は選んだ日時で、`participant_schedules` に join 行が無い古い参加者は `scheduleId` 1 件として返す。
+
 ---
 
 ### 5.3. POST `/api/v1/public/events/[id]/rsvp`（未登録出欠登録・変更）
@@ -872,7 +876,11 @@ export const SubmitRsvpSchema = z.object({
   name: z.string().min(1, '名前を入力してください').max(50),
   status: z.enum(['ATTENDING', 'DECLINED']),
   comment: z.string().max(500).optional(),
+  /** 出席する日時。複数選べる。代表（先頭）は scheduleId にも入る。 */
+  scheduleIds: z.array(z.string().uuid()).max(8).optional(),
   scheduleId: z.string().uuid().optional(),
+  /** 自分を含む参加人数。1〜20、既定 1。 */
+  partySize: z.number().int().min(1).max(20).optional(),
   pricePlanId: z.string().uuid().optional(),
   /** 申込時に選んだ割引。0〜8 件で、出席のときだけ保存する。 */
   discountIds: z.array(z.string().uuid()).max(8).default([]),
@@ -888,6 +896,8 @@ export const SubmitRsvpSchema = z.object({
   6. `Set-Cookie: rsvp_token_<id>=<token>; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure` をセット。会員の行を使い続ける場合は新しいトークンを発行しない。
   7. 出席にしたときは、選んだ費用プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
   8. 出席にしたときは、`discountIds` を `event_discounts` と突き合わせ、名前・金額・補足を `participant_discounts` に写す（スナップショット）。重複した ID は畳み、イベントに属さない ID が混ざっていれば 400 `DISCOUNT_NOT_FOUND`。更新で同じ割引を選び直しただけなら申込時点の金額を保つ（`keepDiscountSnapshot`）。欠席・参加要望にしたときは行を消し、`myRsvp.discounts` は空になる。定義を後から編集・削除しても、保存済みの写しは動かない。
+  9. 日程は `scheduleIds`（無ければ `scheduleId` 1 件）をイベントの `sort_order` 順に正規化し、`participant_schedules` を `deleteMany` → `create` で差し替える。`participants.schedule_id` には先頭を代表として入れ、欠席・参加要望のときは join 行を空にして `schedule_id` も `NULL` にする。イベントに属さない `scheduleIds` が混ざっていれば 400 `VALIDATION_ERROR`。
+  10. 参加人数は `partySize`（既定 1、1〜20 の外は 400）。出席のときだけ持ち、欠席・参加要望は 1 に戻す（要望は席を取らない）。定員は人数の合計 `Σ attending.party_size` で判定し、更新時は自分が使っていた人数を差し引いてから比べる。超えるときは `ATTENDING` を `WAITLISTED` に読み替える（更新の場合は 409 `CAPACITY_REACHED` で拒否）。
 - **取消（DELETE）:** 申し込み期限後も取り消せる。対象行の決め方は POST と同じで、Cookie と `userId` の両方を受け付ける。削除後は Cookie を消す。
 
 ---
@@ -927,7 +937,7 @@ export const SubmitRsvpSchema = z.object({
 }
 ```
 
-下書きも含めて全件を返す（絞り込みのクエリは持たない）。参加者を持つのは公開後の催しだけなので、下書きの `stats` はすべて 0 になる。主催一覧（SCR-ORG-01）とマイページは `DRAFT` を除いて表示し、下書きは専用の一覧（SCR-ORG-15）が受け持つ。カレンダー（SCR-ORG-13）は全件を使い、下書きの予定から編集画面へ進む。
+下書きも含めて全件を返す（絞り込みのクエリは持たない）。参加者を持つのは公開後の催しだけなので、下書きの `stats` はすべて 0 になる。`stats.attendingCount` は出席の人数の合計（`Σ party_size`）、`totalResponses` は回答の件数である。主催一覧（SCR-ORG-01）とマイページは `DRAFT` を除いて表示し、下書きは専用の一覧（SCR-ORG-15）が受け持つ。カレンダー（SCR-ORG-13）は全件を使い、下書きの予定から編集画面へ進む。
 
 ---
 
@@ -1122,7 +1132,7 @@ POST /api/v1/organizer/events/[id]/reminders
 
 - `period` は受け取った絞り込みをそのまま返す。`from` と `to` は `YYYY-MM-DD`、`status` は受け取った値か `null`。
 - `totals` は、返した `events` の参加者をまとめて集計した値である。合計は `events` の各行の単純和と一致する。
-- 金額は `participants.price_amount`（出欠確定時点のスナップショット）から、申込時に選んだ割引の合計を引いた額の合計である（0 円で止める）。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。割引は 4 つの売上 API（`/organizer/revenue`、`/organizer/events/[id]/revenue`、`allocation`、`participants`）で同じように効く。
+- 金額は `participants.price_amount`（出欠確定時点のスナップショット）から、申込時に選んだ割引の合計を引いた額に、参加人数（`party_size`）を掛けた合計である（0 円で止めてから人数を掛ける）。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。`attendingCount` は出席の人数の合計（`Σ party_size`）であり、`averagePerAttendee` は 1 人あたりの額になる。割引は 4 つの売上 API（`/organizer/revenue`、`/organizer/events/[id]/revenue`、`allocation`、`participants`）で同じように効く。
 - `issuedRevenue` は `receipts.amount` の合計であり、決済や入金の記録ではない。`unreconciled` は `expectedRevenue − issuedRevenue` で、負にもなる。未回収額ではない。
 - `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
 - 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
@@ -1151,8 +1161,8 @@ POST /api/v1/organizer/events/[id]/reminders
 ```
 
 - `event.sortDate` は `YYYY-MM-DD` の文字列である。
-- `byPlan` は対象（`audience`）・プラン名・金額の 3 つと、選んだ割引の合計をキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額や割引を変えた場合）。その差は隠さずに別行で見せる。`discountSubtotal` はその行の割引の合計、`subtotal` は割引を引いた小計である。並びは対象のアルファベット順、小計の降順、名前の五十音順。
-- `bySchedule` は出席者を開催回でまとめる。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。`discountSubtotal` と `subtotal` の意味は `byPlan` と同じ。並びはラベルの昇順で、`日時なし` は最後へ送る。
+- `byPlan` は対象（`audience`）・プラン名・金額の 3 つと、選んだ割引の合計をキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額や割引を変えた場合）。その差は隠さずに別行で見せる。`discountSubtotal` はその行の割引の合計、`subtotal` は割引を引いた額に人数を掛けた小計である。`attendingCount` は人数の合計で、同じ行に 2 人来たときは 2 になる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
+- `bySchedule` は出席者を開催回でまとめる。代表日（`participants.schedule_id`）で数えるため、複数日を選んだ人は代表日 1 件に入る。`attendingCount` は人数の合計、`subtotal` は人数分の合計である。`scheduleId` が `null` の行は、日時が消えた参加者であり、ラベルは `日時なし`。`discountSubtotal` と `subtotal` の意味は `byPlan` と同じ。並びはラベルの昇順で、`日時なし` は最後へ送る。
 - 日程を選んでいない出席者を代表日に寄せることはない。選んだ日程がそのまま無い場合は `日時なし` として別行に出す。
 - 削除済みのイベントは 404。他幹事のイベントは 403。
 
@@ -2141,7 +2151,7 @@ export interface ProblemDetails {
 }
 ```
 
-`summary` は `status` と `scope` の絞り込みに関係なく、その会員の全参加を数える。`receiptId` は領収書が発行済みのときだけ入り、画面は `/events/{eventId}/receipt` へリンクする。
+`summary` は `status` と `scope` の絞り込みに関係なく、その会員の全参加を数える。`receiptId` は領収書が発行済みのときだけ入り、画面は `/events/{eventId}/receipt` へリンクする。`scheduleLabel` は選んだ日時をすべて ` / ` でつなぎ、`payableAmount` は人数分の支払額になる。参加者カレンダー（`GET /api/v1/user/calendar`）は、複数日を選んだ回答を選んだ日ごとに 1 件返す。
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 

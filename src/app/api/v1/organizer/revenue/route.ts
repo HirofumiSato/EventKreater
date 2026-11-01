@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
                 pricePlanName: true,
                 priceAudience: true,
                 scheduleId: true,
+                partySize: true,
                 discounts: { select: { amount: true } },
               },
             },

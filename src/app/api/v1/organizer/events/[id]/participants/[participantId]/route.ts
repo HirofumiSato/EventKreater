@@ -14,12 +14,14 @@ import {
 } from "@/modules/events/lib/events";
 import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import {
+  composeScheduleLabels,
   formatEventDate,
   formatEventDateLabel,
   participantPriceDisplay,
   serializeParticipantDiscounts,
 } from "@/lib/serializers";
-import { discountTotal, payableAmount } from "@/modules/revenue/lib/revenue";
+import { participantScheduleIds } from "@/modules/participants/lib/rsvp";
+import { discountTotal, payableAmount, unitPayableAmount } from "@/modules/revenue/lib/revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +60,18 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     await assertRegisteredOrganizer(req, params.id);
     const input = OrganizerParticipantSchema.parse(await req.json());
     const current = await loadParticipant(params.id, params.participantId);
+    // 人数は省略されたら今の値を保つ（名前だけの修正で席の数が変わらない）。
+    // 出席でなければ人数は持たない。参加要望は席を取らないので、承認したときに名簿で入れる。
+    const partySize =
+      input.status === "ATTENDING" ? (input.partySize ?? current.partySize) : 1;
     const updated = await prisma.$transaction(async (tx) => {
       // 承認は席を1つ使う。数えてから書くまでを閉じ、他の承認と競合させない。
       await lockEventForCapacity(tx, params.id);
-      await assertCapacityAllows(tx, params.id, input.status, current.id);
+      await assertCapacityAllows(tx, params.id, {
+        status: input.status,
+        partySize,
+        ignoreParticipantId: current.id,
+      });
       const choice = await resolveAttendanceChoice(tx, params.id, input);
       const snapshot = keepPriceSnapshot(current, choice);
       /**
@@ -108,14 +118,30 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           gender: input.gender ?? current.gender,
           comment: input.comment ? input.comment : null,
           scheduleId: choice.scheduleId,
+          partySize,
           pricePlanId: choice.pricePlanId,
+          // 選んだ日程は毎回入れ替える。出席でなければ空になる。
+          schedules: {
+            deleteMany: {},
+            create: choice.scheduleIds.map((scheduleId) => ({ scheduleId })),
+          },
           // 承認・辞退で要望ではなくなったら、待ち順の時刻を落とす。
           waitlistedAt:
             input.status === "WAITLISTED" ? (current.waitlistedAt ?? new Date()) : null,
           ...snapshot,
           ...(discountsData ? { discounts: discountsData } : {}),
         },
-        include: { schedule: true, pricePlan: true, discounts: { orderBy: { sortOrder: "asc" } } },
+        include: {
+          schedule: true,
+          pricePlan: true,
+          discounts: { orderBy: { sortOrder: "asc" } },
+          schedules: {
+            select: {
+              scheduleId: true,
+              schedule: { select: { eventDate: true, eventTime: true, sortOrder: true } },
+            },
+          },
+        },
       });
     });
     const waitlistRows = await prisma.participant.findMany({
@@ -131,15 +157,29 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         gender: updated.gender,
         comment: updated.comment,
         scheduleId: updated.scheduleId,
+        scheduleIds: participantScheduleIds(updated.schedules, updated.scheduleId),
+        partySize: updated.partySize,
         pricePlanId: updated.pricePlanId,
-        scheduleLabel: updated.schedule
-          ? `${formatEventDateLabel(formatEventDate(updated.schedule.eventDate))} ${updated.schedule.eventTime}`
-          : null,
+        scheduleLabel:
+          updated.schedules.length > 0
+            ? composeScheduleLabels(updated.schedules.map((link) => link.schedule))
+            : updated.schedule
+              ? `${formatEventDateLabel(formatEventDate(updated.schedule.eventDate))} ${updated.schedule.eventTime}`
+              : null,
         pricePlanLabel: price.label,
         pricePlanAmount: price.amount,
         discounts: serializeParticipantDiscounts(updated.discounts),
-        discountAmount: discountTotal(updated.discounts),
-        payableAmount: payableAmount({ priceAmount: price.amount, discounts: updated.discounts }),
+        discountAmount: discountTotal(updated.discounts) * updated.partySize,
+        payableAmount: payableAmount({
+          priceAmount: price.amount,
+          discounts: updated.discounts,
+          partySize: updated.partySize,
+        }),
+        // 領収書は 1 人ずつ切る。既定額は人数を掛けない 1 人ぶんにする。
+        unitPayableAmount: unitPayableAmount({
+          priceAmount: price.amount,
+          discounts: updated.discounts,
+        }),
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),
         waitlistedAt: updated.waitlistedAt ? updated.waitlistedAt.toISOString() : null,

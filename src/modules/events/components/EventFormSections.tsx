@@ -171,7 +171,7 @@ export function BasicSection({
             日時を追加
           </button>
           <p className="help">
-            開始と終了は必須。{MAX_EVENT_OPTIONS}件まで。参加者は1つ選びます。
+            開始と終了は必須。{MAX_EVENT_OPTIONS}件まで。参加者は複数選べます。
           </p>
         </div>
       </fieldset>

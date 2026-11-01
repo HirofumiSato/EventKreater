@@ -109,20 +109,66 @@ export interface RsvpScheduleChoice {
   checked: boolean;
 }
 
-/** 出席する日時の札。値は先頭の日時に寄せ、選べない日時は無効にする。 */
+/**
+ * 出席する日時の札。複数日を選べるので、値は選んだ日時の配列で受ける。
+ * 選んでいない日は `checked: false` のまま置き、札は消さない。
+ */
 export function rsvpScheduleChoices(input: {
   schedules: EventScheduleOption[];
   enabled: boolean;
   locked: boolean;
-  selectedScheduleId: string;
+  selectedScheduleIds: string[];
 }): RsvpScheduleChoice[] {
-  const checkedId =
-    input.selectedScheduleId && input.schedules.some((row) => row.id === input.selectedScheduleId)
-      ? input.selectedScheduleId
-      : (input.schedules[0]?.id ?? "");
+  const selected = new Set(input.selectedScheduleIds);
   return input.schedules.map((schedule) => ({
     schedule,
     disabled: input.locked || !input.enabled,
-    checked: schedule.id === checkedId,
+    checked: selected.has(schedule.id),
   }));
 }
+
+/**
+ * 日時の札を押したときの選択。選んでいれば外し、選んでいなければ足す。
+ * 選んだ順はイベントの並びへそろえるため、ここでは集合としてだけ扱う。
+ */
+export function toggleRsvpScheduleId(current: string[], scheduleId: string): string[] {
+  return current.includes(scheduleId)
+    ? current.filter((id) => id !== scheduleId)
+    : [...current, scheduleId];
+}
+
+/** 要約に出す短い日付（`2026-11-21` → `11/21`）。 */
+export function rsvpScheduleShortLabel(eventDate: string): string {
+  const [, month, day] = eventDate.split("-");
+  if (!month || !day) return eventDate;
+  return `${Number(month)}/${Number(day)}`;
+}
+
+/** 選んだ日時の短いラベル。イベントの並び順で返す。1 件も選んでいなければ空配列。 */
+export function rsvpScheduleLabels(
+  schedules: EventScheduleOption[],
+  selectedScheduleIds: string[],
+): string[] {
+  const selected = new Set(selectedScheduleIds);
+  return schedules
+    .filter((row) => selected.has(row.id))
+    .map((row) => rsvpScheduleShortLabel(row.eventDate));
+}
+
+/** 自分を含む参加人数の下限・上限。 */
+export const RSVP_PARTY_SIZE_MIN = 1;
+export const RSVP_PARTY_SIZE_MAX = 20;
+
+/**
+ * 参加人数の入力を、送れる値に丸める。
+ * 空・小数・0 以下・上限超えは、入力の途中でも送れる値へ寄せる（保留しない）。
+ */
+export function clampRsvpPartySize(value: string | number): number {
+  const parsed = typeof value === "number" ? value : Number(value.trim());
+  if (!Number.isFinite(parsed)) return RSVP_PARTY_SIZE_MIN;
+  const rounded = Math.floor(parsed);
+  if (rounded < RSVP_PARTY_SIZE_MIN) return RSVP_PARTY_SIZE_MIN;
+  if (rounded > RSVP_PARTY_SIZE_MAX) return RSVP_PARTY_SIZE_MAX;
+  return rounded;
+}
+

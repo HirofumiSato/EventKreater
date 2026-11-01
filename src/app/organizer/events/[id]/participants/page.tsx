@@ -65,7 +65,15 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   const saveRow = async (
     row: Pick<
       ParticipantRow,
-      "id" | "name" | "status" | "gender" | "comment" | "scheduleId" | "pricePlanId"
+      | "id"
+      | "name"
+      | "status"
+      | "gender"
+      | "comment"
+      | "scheduleId"
+      | "scheduleIds"
+      | "partySize"
+      | "pricePlanId"
     >,
   ) => {
     const res = await fetch(`/api/v1/organizer/events/${params.id}/participants/${row.id}`, {
@@ -74,9 +82,10 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
       body: JSON.stringify({
         name: row.name,
         status: row.status,
+        partySize: row.partySize,
         ...(row.gender ? { gender: row.gender } : {}),
         comment: row.comment ?? "",
-        ...(row.scheduleId ? { scheduleId: row.scheduleId } : {}),
+        ...(row.scheduleIds.length > 0 ? { scheduleIds: row.scheduleIds } : {}),
         ...(row.pricePlanId ? { pricePlanId: row.pricePlanId } : {}),
       }),
     });
@@ -186,7 +195,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
           <span className="roster-summary__label">回答</span>
           <span className="roster-summary__value">
             {data.stats.totalResponses}
-            <span>人</span>
+            <span>件</span>
           </span>
         </div>
         <div className="roster-summary__item">
@@ -294,7 +303,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         <ReceiptIssueModal
           participantName={issuing.name}
           suggestedDescription={issuing.pricePlanLabel ?? "イベント参加費"}
-          suggestedAmount={issuing.payableAmount}
+          suggestedAmount={issuing.unitPayableAmount}
           reissue={Boolean(issuing.receipt)}
           busy={issuingBusy}
           onClose={() => setIssuing(null)}

@@ -48,6 +48,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             pricePlanName: true,
             priceAudience: true,
             scheduleId: true,
+            partySize: true,
             discounts: { select: { amount: true } },
           },
         },

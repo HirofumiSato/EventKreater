@@ -9,7 +9,10 @@ export interface RsvpDraft {
   status: RsvpStatus;
   gender?: Gender;
   comment: string;
-  scheduleId?: string;
+  /** 出席する日時（複数可）。 */
+  scheduleIds?: string[];
+  /** 自分を含む参加人数。 */
+  partySize?: number;
   pricePlanId?: string;
   /** 申込時に選んだ割引。出席のときだけ送る。 */
   discountIds?: string[];
@@ -36,7 +39,9 @@ export function useRsvp(eventId: string, initial: MyRsvp | null) {
         status: draft.status,
         gender: draft.gender ?? null,
         comment: draft.comment || null,
-        scheduleId: draft.status === "ATTENDING" ? draft.scheduleId ?? null : null,
+        scheduleId: draft.status === "ATTENDING" ? draft.scheduleIds?.[0] ?? null : null,
+        scheduleIds: draft.status === "ATTENDING" ? draft.scheduleIds ?? [] : [],
+        partySize: draft.partySize ?? 1,
         pricePlanId: draft.status === "ATTENDING" ? draft.pricePlanId ?? null : null,
         discounts: previous?.discounts ?? [],
         waitlistPosition: previous?.waitlistPosition ?? null,
@@ -53,8 +58,12 @@ export function useRsvp(eventId: string, initial: MyRsvp | null) {
             status: draft.status,
             comment: draft.comment || undefined,
             ...(draft.gender ? { gender: draft.gender } : {}),
+            partySize: draft.partySize ?? 1,
             ...(draft.status === "ATTENDING"
-              ? { scheduleId: draft.scheduleId, pricePlanId: draft.pricePlanId }
+              ? {
+                  scheduleIds: draft.scheduleIds ?? [],
+                  pricePlanId: draft.pricePlanId,
+                }
               : {}),
             // 出席のときだけ割引を送る。欠席・参加要望ではサーバーが無視する。
             ...(draft.status === "ATTENDING" ? { discountIds: draft.discountIds ?? [] } : {}),
