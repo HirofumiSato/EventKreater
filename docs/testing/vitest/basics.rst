@@ -211,8 +211,8 @@ Route Handler を試験するときは、``src/app/api/`` の下のファイル�
      - —
      - 全テストの前に 1 回走る。``DATABASE_URL`` の差し替え
    * - ``tests/routes/`` ``tests/components/``
-     - 0
-     - これから作る。ルートは ``tests/routes/``、画面は ``tests/components/`` です（:doc:`../scope`）
+     - 1
+     - ``tests/components/`` は書ける（``rsvp-modal.test.tsx``）。``tests/routes/`` はこれから（:doc:`../scope`）
 
 現在のファイル数と件数は :doc:`../scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/unit/`` だけが実行され、``tests/integration/`` は skip されます。内訳と、それぞれが何を見ているかも同じページにあります。
 

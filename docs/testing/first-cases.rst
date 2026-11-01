@@ -193,7 +193,7 @@ Webhook の入口は ``POST`` を直接呼びます。``api.stripe.com`` へは�
 画面
 ----
 
-前の二つのまとまりが通ってから、``tests/components/`` に次を書きます。このとき ``jsdom`` と ``@testing-library/react`` を足し、``vitest.config.ts`` の ``include`` に ``**/*.test.tsx`` を加えます。加えないと、置いたファイルは 1 件も集められません。
+前の二つのまとまりが通ってから、``tests/components/`` に次を書きます。``jsdom`` と Testing Library は入っているので、``tests/components/rsvp-modal.test.tsx`` と同じ形で足せます。ファイルの先頭に ``// @vitest-environment jsdom`` を置いてください。
 
 * イベント作成が HTTP 402 を返したとき、料金モーダルに 299 円と 980 円が出る
 * 作成フォームが、空の催し名に「催しの名前を入力してください」を出す

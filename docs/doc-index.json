@@ -5545,7 +5545,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1969,
+      "lineCount": 1972,
       "headings": [
         {
           "level": 1,
@@ -5928,6 +5928,10 @@
         },
         {
           "path": "src/modules/admin/components/AdminChrome.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/attendance/lib/rsvp-form.ts",
           "exists": true
         },
         {
@@ -8905,7 +8909,7 @@
       "title": "定員に達した催しを「参加要望」として受け付け、幹事が承認できるようにする",
       "summary": "> 起票済み: [#20](https://github.com/HirofumiSato/EventKreater/issues/20)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 299,
+      "lineCount": 300,
       "headings": [
         {
           "level": 1,
@@ -9056,6 +9060,10 @@
         },
         {
           "path": "src/modules/attendance/components/ParticipantListTable.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/attendance/lib/rsvp-form.ts",
           "exists": true
         },
         {
@@ -10293,6 +10301,10 @@
           "exists": true
         },
         {
+          "path": "tests/components/rsvp-modal.test.tsx",
+          "exists": true
+        },
+        {
           "path": "tests/integration",
           "exists": true
         },
@@ -10347,6 +10359,10 @@
         },
         {
           "path": "src/modules/billing/lib/quota.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/components/rsvp-modal.test.tsx",
           "exists": true
         },
         {
@@ -10507,7 +10523,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 582,
+      "lineCount": 594,
       "headings": [
         {
           "level": 1,
@@ -10550,6 +10566,10 @@
       "codePaths": [
         {
           "path": "src/app/api",
+          "exists": true
+        },
+        {
+          "path": "tests/components/rsvp-modal.test.tsx",
           "exists": true
         },
         {
@@ -10798,6 +10818,14 @@
         },
         {
           "path": "tests/unit/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/rsvp-form.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/rsvp-modal-styles.test.mjs",
           "exists": true
         },
         {

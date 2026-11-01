@@ -12,7 +12,7 @@
 //   4. 音声入力 … 録音 → 文字化 → 入力欄へ反映、を疑似タイマーで
 //   5. 共通 … URL のコピー、コピー作成・プレビュー・ログアウトの遷移、API 依存のトースト
 //   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
-//   7. 申込の割引 … 告知ページの「割引を選ぶ」モーダルと支払額の計算
+//   7. 出欠の層 … 告知ページの層を開き、割引の支払額を計算し、送信の返事を出す
 //
 // 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
 // 絞り込みモーダルの中身、申込の割引モーダルの中身だけ。他の表示は製品の DOM のまま動かす。
@@ -754,7 +754,7 @@
   /** この JS が動かしている操作。押してもトーストを出さない。 */
   const WIRED =
     ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab, .list-filters, " +
-    '.rsvp__foot [type="submit"]';
+    ".rsvp-entry, .rsvp-summary__actions, .sticky-rsvp, .modal--sheet";
 
   function normalized(text) {
     return (text || "").replace(/\s+/g, "").trim();
@@ -1075,142 +1075,185 @@
   // ---- 7. 申込の割引 -----------------------------------------------------
 
   /**
-   * 告知ページの「割引を選ぶ」。製品は送信の直前に React で組み立てるので、
-   * 撮った HTML には残らない。ここで `Dialog` と同じ骨格を組み直す。
+   * 告知ページの出欠。製品は層（`.modal--sheet`）を閉じたまま DOM に置き、
+   * `hidden` を外して開く。撮った HTML にも同じ形で残るので、中身は組み直さず、
+   * 隠す印を外すだけで開ける（押したときにしか出ない画面を作り直さずに済む）。
    *
-   * 条件は `EventMetaCard` の「割引」の行から、料金は選んだ費用プランから読む。
-   * 回答済み（`.discount-applied`）の画面では、いま適用している割引を最初から選んでおく。
-   * 送信そのものは API が要るので行わない。
+   * 動かすのは 3 つだけ。開閉、割引を選び直したときの支払額、送信の返事。
+   * 支払額は React が計算するので、写した HTML のままでは数字が動かない。
    */
-  function wireDiscountPicker() {
-    const form = document.querySelector("#rsvp form");
-    if (!form) return;
-    const facts = Array.from(document.querySelectorAll(".event-facts__row")).find(
-      (row) => (row.querySelector("dt")?.textContent || "").trim() === "割引",
-    );
-    if (!facts) return;
-
-    const discounts = Array.from(facts.querySelectorAll(".event-facts__line"))
-      .filter((line) => !line.classList.contains("event-facts__note"))
-      .map((line) => {
-        const label = (line.textContent || "").trim();
-        const found = /([\d,]+)\s*円引き/.exec(label);
-        return { label, amount: found ? Number(found[1].replace(/,/g, "")) : 0 };
-      })
-      .filter((row) => row.label !== "");
-    if (discounts.length === 0) return;
-
-    const applied = new Set(
-      Array.from(document.querySelectorAll(".discount-applied__item")).map((item) =>
-        (item.textContent || "").trim(),
-      ),
-    );
-
+  function wireRsvpSheet() {
+    const sheet = document.querySelector(".modal--sheet");
+    if (!sheet) return;
+    const form = sheet.querySelector("form");
     const yen = (value) => value.toLocaleString("ja-JP") + "円";
 
-    /** 選んでいる費用プランの金額。無料は 0、読めなければ null。 */
-    const planPrice = () => {
+    const setOpen = (open) => {
+      if (open) {
+        sheet.removeAttribute("hidden");
+        sheet.classList.add("modal--open");
+        document.documentElement.setAttribute("data-scroll-lock", "true");
+      } else {
+        sheet.setAttribute("hidden", "");
+        sheet.classList.remove("modal--open");
+        document.documentElement.removeAttribute("data-scroll-lock");
+      }
+    };
+
+    // 入口は 3 つ。面のボタン、回答済みの「変更する」、画面下の帯。
+    for (const trigger of document.querySelectorAll(
+      ".rsvp-entry .btn, .rsvp-summary__actions .btn, .sticky-rsvp .btn--primary",
+    )) {
+      if (trigger.disabled) continue;
+      trigger.addEventListener("click", () => setOpen(true));
+    }
+
+    const close = () => setOpen(false);
+    const closeButton = sheet.querySelector(".dialog__close");
+    if (closeButton) closeButton.addEventListener("click", close);
+    const backdrop = sheet.querySelector(".modal__backdrop");
+    if (backdrop) backdrop.addEventListener("click", close);
+    for (const button of sheet.querySelectorAll(".dialog__actions .btn--ghost")) {
+      button.addEventListener("click", close);
+    }
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !sheet.hasAttribute("hidden")) close();
+    });
+
+    if (form) {
+      // 送信は API が要る。層は開いたまま、返事だけ返す。
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        toast("モックでは送信しません（API が要ります）。");
+      });
+    }
+
+    // 出欠と性別を選び直したときの、入力できる欄の切り替え。
+    //
+    // 製品（`src/modules/attendance/lib/rsvp-form.ts`）は React が同じ規則で描く。
+    // 撮った HTML は「出席・性別未選択」の状態なので、押したときにだけ同じ計算を
+    // やり直す。欄は消さず、`field--disabled` と `disabled` を付け替えるだけ。
+    let syncSummary = () => {};
+    if (form) {
+      const fieldOf = (name) => form.querySelector(`input[name="${name}"]`)?.closest("fieldset") ?? null;
+      const radiosOf = (name) => Array.from(form.querySelectorAll(`input[name="${name}"]`));
+      const attending = () => {
+        const checked = form.querySelector('input[name="rsvp"]:checked');
+        return !checked || checked.value !== "DECLINED";
+      };
+      const gender = () => form.querySelector('input[name="gender"]:checked')?.value || "";
+
+      const paint = () => {
+        const canInput = attending();
+        for (const name of ["gender", "schedule", "price-plan"]) {
+          const field = fieldOf(name);
+          if (field) field.classList.toggle("field--disabled", !canInput);
+        }
+        for (const input of radiosOf("gender")) input.disabled = !canInput;
+        for (const input of radiosOf("schedule")) input.disabled = !canInput;
+        for (const input of radiosOf("price-plan")) {
+          const audience = input.getAttribute("data-audience") || "ANY";
+          input.disabled = !canInput || (audience !== "ANY" && audience !== gender());
+        }
+        // 選んでいた札が押せなくなったら、先頭の押せる札へ移す（製品と同じ）。
+        const plans = radiosOf("price-plan");
+        const selected = plans.find((input) => input.checked);
+        if (!selected || selected.disabled) {
+          const first = plans.find((input) => !input.disabled) ?? null;
+          for (const input of plans) input.checked = input === first;
+        }
+        for (const box of sheet.querySelectorAll(".discount-picker input")) box.disabled = !canInput;
+        const extras = sheet.querySelector(".discount-picker")?.closest("details");
+        if (extras) extras.classList.toggle("rsvp-extras--disabled", !canInput);
+        syncSummary();
+      };
+
+      for (const radio of [...radiosOf("rsvp"), ...radiosOf("gender")]) {
+        radio.addEventListener("change", paint);
+      }
+      paint();
+    }
+
+    // 割引を選び直したときの支払額。料金は選んでいる費用プランから読む。
+    const summary = sheet.querySelector(".discount-picker__summary");
+    if (!summary || !form) return;
+    const cell = (label) =>
+      Array.from(summary.querySelectorAll(".discount-picker__line"))
+        .find((line) => (line.querySelector("dt")?.textContent || "").trim() === label)
+        ?.querySelector("dd") ?? null;
+    const planCell = cell("料金");
+    const discountCell = cell("割引");
+    const totalCell = cell("支払額");
+
+    /** 選んでいる費用プランの札。金額と補足は別の要素に分かれている。 */
+    const planChip = () => {
       const checked = form.querySelector('input[name="price-plan"]:checked');
       if (!checked) return null;
-      const label = (checked.closest("label")?.textContent || "").trim();
-      if (label.includes("無料")) return 0;
-      const found = /([\d,]+)\s*円/.exec(label);
+      const chip = checked.closest("label");
+      return {
+        price: (chip.querySelector(".choice__price")?.textContent || "").trim(),
+        note: (chip.querySelector(".choice__note")?.textContent || "").trim(),
+      };
+    };
+    /** 料金の欄に出す文字。「1,500円（1ドリンク付）」「無料（小学生まで）」。 */
+    const planText = (chip) => {
+      if (!chip) return "未選択";
+      return chip.note ? chip.price + "（" + chip.note + "）" : chip.price;
+    };
+    /** 支払額の計算に使う金額。0 円（無料）は 0、読めなければ null。 */
+    const planAmount = (chip) => {
+      if (!chip) return null;
+      if (chip.price.includes("無料")) return 0;
+      const found = /([\d,]+)\s*円/.exec(chip.price);
       return found ? Number(found[1].replace(/,/g, "")) : null;
     };
 
-    let modal = null;
-
-    const onKey = (event) => {
-      if (event.key === "Escape") close();
-    };
-
-    function close() {
-      if (!modal) return;
-      modal.remove();
-      document.body.classList.remove("is-modal-open");
-      document.removeEventListener("keydown", onKey);
-    }
-
-    function build() {
-      const host = document.createElement("div");
-      host.className = "modal modal--open";
-      host.innerHTML =
-        '<button type="button" class="modal__backdrop" aria-label="割引を閉じる"></button>' +
-        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-discount-title">' +
-        '<button type="button" class="dialog__close" aria-label="割引を閉じる">' +
-        icon("close") +
-        "</button>" +
-        '<h3 id="mock-discount-title" class="dialog__title">割引を選ぶ</h3>' +
-        '<p class="dialog__body">使う割引にチェックを入れてください。' +
-        "当てはまるものがなければ、そのままで大丈夫です。</p>" +
-        '<div class="discount-picker"></div>' +
-        '<dl class="discount-picker__summary">' +
-        '<div class="discount-picker__line"><dt>料金</dt><dd data-mock-plan></dd></div>' +
-        '<div class="discount-picker__line"><dt>割引</dt><dd data-mock-discount></dd></div>' +
-        '<div class="discount-picker__line discount-picker__line--total">' +
-        "<dt>支払額</dt><dd data-mock-total></dd></div>" +
-        "</dl>" +
-        '<div class="dialog__actions">' +
-        '<button type="button" class="btn btn--primary btn--block" data-mock-submit>' +
-        "この内容で申し込む</button>" +
-        '<button type="button" class="btn btn--ghost btn--block" data-mock-cancel>やめる</button>' +
-        "</div></div>";
-
-      const picker = host.querySelector(".discount-picker");
-      const inputs = discounts.map((row) => {
-        const field = document.createElement("label");
-        field.className = "check discount-picker__row";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.checked = applied.has(row.label);
-        input.addEventListener("change", sync);
-        const text = document.createElement("span");
-        text.textContent = row.label;
-        field.append(input, text);
-        picker.append(field);
-        return input;
-      });
-
-      const planCell = host.querySelector("[data-mock-plan]");
-      const discountCell = host.querySelector("[data-mock-discount]");
-      const totalCell = host.querySelector("[data-mock-total]");
-
-      /** 料金 − 割引 = 支払額。製品と同じく 0 円で止める。 */
-      function sync() {
-        const price = planPrice();
-        const total = inputs.reduce(
-          (sum, input, index) => (input.checked ? sum + discounts[index].amount : sum),
-          0,
-        );
-        planCell.textContent = price === null ? "未選択" : yen(price);
-        discountCell.textContent = total > 0 ? "−" + yen(total) : "なし";
-        totalCell.textContent = price === null ? "未選択" : yen(Math.max(0, price - total));
+    /** 料金 − 割引 = 支払額。製品と同じく 0 円で止める。 */
+    const sync = () => {
+      const chip = planChip();
+      const price = planAmount(chip);
+      const total = Array.from(sheet.querySelectorAll(".discount-picker input")).reduce(
+        (sum, input) => {
+          if (!input.checked) return sum;
+          const found = /([\d,]+)\s*円引き/.exec((input.closest("label")?.textContent || "").trim());
+          return sum + (found ? Number(found[1].replace(/,/g, "")) : 0);
+        },
+        0,
+      );
+      if (planCell) planCell.textContent = planText(chip);
+      if (discountCell) discountCell.textContent = total > 0 ? "−" + yen(total) : "なし";
+      if (totalCell) totalCell.textContent = price === null ? "未選択" : yen(Math.max(0, price - total));
+      // 見出しの件数の札も、選び直した数に合わせる（矢印と札は触らない）。
+      const picker = sheet.querySelector(".discount-picker");
+      const extrasLabel = picker?.closest("details")?.querySelector(".rsvp-extras__label");
+      if (extrasLabel) {
+        const count = Array.from(picker.querySelectorAll("input")).filter((input) => input.checked)
+          .length;
+        let badge = extrasLabel.querySelector(".rsvp-extras__count");
+        if (count === 0) {
+          badge?.remove();
+        } else {
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "rsvp-extras__count";
+            extrasLabel.append(badge);
+          }
+          badge.textContent = count + "件";
+        }
       }
-      sync();
-
-      host.querySelector("[data-mock-cancel]").addEventListener("click", close);
-      host.querySelector(".dialog__close").addEventListener("click", close);
-      host.querySelector(".modal__backdrop").addEventListener("click", close);
-      host.querySelector("[data-mock-submit]").addEventListener("click", () => {
-        close();
-        toast("モックでは送信しません（API が要ります）。");
-      });
-      return host;
-    }
-
-    const open = (event) => {
-      event.preventDefault();
-      if (!modal || !modal.isConnected) modal = build();
-      document.body.append(modal);
-      document.body.classList.add("is-modal-open");
-      document.addEventListener("keydown", onKey);
-      const first = modal.querySelector(".discount-picker input");
-      if (first) first.focus();
     };
 
-    // 送信ボタンも Enter も、form の submit で受ける（API は呼ばない）。
-    form.addEventListener("submit", open);
+    // 撮った時点の数字は製品のまま。選び直したときだけ計算し直す。
+    for (const box of sheet.querySelectorAll(".discount-picker input")) {
+      box.addEventListener("change", sync);
+    }
+    for (const radio of sheet.querySelectorAll('input[name="price-plan"]')) {
+      radio.addEventListener("change", sync);
+    }
+    // 出欠・性別を選び直したときは、押せる札が変わったあとの金額へ合わせる。
+    syncSummary = sync;
   }
+
 
   // ---- 起動 -------------------------------------------------------------
 
@@ -1220,7 +1263,7 @@
     wireSteps();
     wireVoice();
     wireListFilters();
-    wireDiscountPicker();
+    wireRsvpSheet();
     wireActions();
   }
 

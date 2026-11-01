@@ -21,7 +21,7 @@
 
 ### 画面
 
-- 出欠フォームは「出席 / 欠席」の2択で、`status === "ATTENDING"` のときだけ性別・日時・費用プランを出す（`src/modules/attendance/components/DynamicRsvpBox.tsx:105-198`）。
+- 出欠フォームは「出席 / 欠席」の2択。性別・日時・費用プランは最初から並べ、欠席・参加要望のときは消さずにグレーアウトする（`field--disabled`）。判定は `src/modules/attendance/lib/rsvp-form.ts` に閉じている。
 - 名簿は「参加 / 不参加 / 回答」の3集計で、行の状態は2値の三項演算子で出している（`src/modules/attendance/components/ParticipantListTable.tsx:43,179-184`）。
 - 参加者ホーム・履歴・カレンダーも「出席 / 欠席」の二択で表示する（`src/app/participant/page.tsx:120`、`src/app/participant/history/page.tsx:43`、`src/modules/participants/lib/participations.ts:76`）。
 - 色は緑（出席）・赤（欠席）・アンバー（`--color-warning-*`）が既にあり、`.choice--tentative` と `.badge--tentative` が未使用で残っている（`src/styles/components.css`）。
@@ -179,11 +179,12 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 **告知ページ（`DynamicRsvpBox`）**
 
 - 満員のときは「出席」を出さず、「参加要望 / 欠席」の2択にする。見出しは「定員に達しました」、リードは「空きが出たら、幹事が順番に承認します。」。
-- 要望では名前とコメントだけを入力する。性別・日時・費用プランは出さない。
+- 要望を選んだときも、性別・日時・費用プランの欄は消さずにグレーアウトする（サーバーへは送らない）。
+- 要望で送るのは名前とコメントだけ。性別・日時・費用プランは `null` のまま送らない。
 - 送信後は「参加要望を受け付けました。空きが出たら幹事が承認します。（N番目）」。
 - 自分が `WAITLISTED` のときは現在の状態と順番を出し、取り消しと欠席への変更を選べる。
 - `EventMetaCard` の事実欄は「参加 2名 / 定員 2名（満員）」までを出す。参加要望の件数は出欠フォームと `StickyRsvpBar`（「要望 3名」）に任せる。
-- 出席の日時・費用プランは、候補が 1 件だけなら選ばせず、その値をそのまま送る（増えるのは候補が 2 件以上のときだけ）。
+- 出席の日時は、候補が 1 件だけなら選ばせず、その値をそのまま送る（増えるのは候補が 2 件以上のときだけ）。費用プランは 1 件でも札を出して初期選択にする。
 - `StickyRsvpBar` は「参加 2名 · 要望 3名 · 定員 2名」。
 
 **名簿（`ParticipantListTable`）**
@@ -250,7 +251,7 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 ### 出欠
 
 - [ ] 定員に達した催しで、出欠フォームに「出席」が出ず「参加要望 / 欠席」になる
-- [ ] 「参加要望」では名前とコメントだけを入力でき、日時・費用プランは聞かれない
+- [ ] 「参加要望」では名前とコメントだけを送り、日時・費用プランは送らない（欄は残したまま押せない）
 - [ ] 送信後に「参加要望を受け付けました（N番目）」と出る
 - [ ] 要望は参加人数に数えられず、売上・領収書にも入らない
 - [ ] 自分の要望を取り消せる

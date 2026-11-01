@@ -108,7 +108,7 @@ watch のサイクル
        Q1 -->|いいえ| Q2{"HTTP の応答を見るか"}
        Q2 -->|はい| R["npm test<br/>tests/routes に置く（これから）"]
        Q2 -->|いいえ| Q3{"画面の文言を見るか"}
-       Q3 -->|はい| C2["npm test<br/>jsdom 導入後に tests/components（これから）"]
+       Q3 -->|はい| C2["npm test<br/>tests/components（jsdom）"]
        Q3 -->|いいえ| U["npm test<br/>tests/unit の純粋関数"]
        D --> F["一区切りで npm run check"]
        R --> F

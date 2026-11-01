@@ -764,32 +764,210 @@
   text-align: center;
 }
 
-/* 出欠。名前と出欠だけで終わる。 */
-.rsvp {
+/* 出欠。面（紙）に残すのは、未回答なら入口の 1 ボタン、回答済みなら結果の 1 枚だけ。
+   申込そのものは層（モーダル）へ出したので、ここにフォームは置かない。 */
+
+/* 未回答のときの入口。読み物の途中に置くが、主操作は画面下の帯が持つ。
+   帯がある画面では、狭い画面で 2 つ目の朱を出さないよう落とす（`--bar`）。 */
+.rsvp-entry {
+  display: grid;
+  gap: 0.5rem;
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background: var(--color-surface);
 }
 
+.rsvp-entry--bar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .rsvp-entry--bar {
+    display: grid;
+  }
+}
+
 /* 見出しに貼る札は傾いている。下の見出しと重ならないよう、間を空ける。 */
-.rsvp .eyebrow {
+.rsvp-entry .eyebrow,
+.rsvp-summary .eyebrow {
   margin-bottom: 0.5rem;
 }
 
-.rsvp__title {
+.rsvp-entry__title {
   font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 700;
 }
 
-/* ログインは必須ではない。名前と出欠だけで答えられるので、
-   アカウントを持つ人にだけ「あとから変えられる」ことを 1 行で添える。 */
-.rsvp__login {
-  margin-top: 0.5rem;
+.rsvp-entry__note {
   color: var(--color-text-subtle);
   font-size: 0.8125rem;
-  line-height: 1.75;
+  line-height: 1.7;
+}
+
+/* 答えたあとの 1 枚。出欠と支払額という「読む情報」なので、層ではなく紙に残す。 */
+.rsvp-summary {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.rsvp-summary__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* 出欠の値は、題より先に目が行くよう太くする。 */
+.rsvp-summary__mark {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.rsvp-summary__who {
+  margin-inline-start: auto;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.rsvp-summary__amount {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.rsvp-summary__amount strong {
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.rsvp-summary__note {
+  margin-top: 0.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.rsvp-summary__actions {
+  display: flex;
+  margin-top: 0.75rem;
+}
+
+/* 帯が変更の入口を持つ画面では、狭い画面のボタンを落とす（朱を 2 つ並べない）。 */
+.rsvp-summary--bar .rsvp-summary__actions {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .rsvp-summary--bar .rsvp-summary__actions {
+    display: flex;
+  }
+}
+
+/* 層の中で畳む任意の項目（コメント・割引）。必須の項目はここに入れない。
+   押すと開く「操作」なので、ただの見出しではなく、枠・地・矢印で押せると分かる形にする。 */
+.rsvp-extras {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.rsvp-extras + .rsvp-extras {
+  margin-top: 0.5rem;
+}
+
+/* 欠席・参加要望のときの任意の項目。開けるが、中身は選べない。 */
+.rsvp-extras--disabled {
+  background: var(--color-slate-100);
+}
+
+.rsvp-extras--disabled .rsvp-extras__summary,
+.rsvp-extras--disabled .rsvp-extras__label {
+  color: var(--color-text-subtle);
+}
+
+.rsvp-extras__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--tap-target);
+  padding: 0 0.75rem;
+  color: var(--color-text);
+  font-size: var(--font-action);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+/* 既定の三角は消し、右端の矢印 1 つに寄せる（開閉の向きが言葉に依らず伝わる）。 */
+.rsvp-extras__summary::-webkit-details-marker {
+  display: none;
+}
+
+.rsvp-extras__summary:hover {
+  background: var(--color-surface);
+  border-radius: calc(var(--radius-lg) - 1px);
+}
+
+.rsvp-extras__summary:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.rsvp-extras__label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* 選んだ件数は、札にして畳んだままでも分かるようにする。 */
+.rsvp-extras__count {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: var(--color-text-strong);
+  color: var(--color-surface);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.rsvp-extras__optional {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.rsvp-extras__chevron {
+  margin-inline-start: auto;
+  color: var(--color-text-subtle);
+  transition: transform 150ms ease;
+}
+
+.rsvp-extras[open] .rsvp-extras__chevron {
+  transform: rotate(180deg);
+}
+
+.rsvp-extras__body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+/* ログインは必須ではない。名前と出欠だけで答えられるので、
+   アカウントを持つ人にだけ「あとから変えられる」ことを 1 行で添える。
+   層では送信の直前ではなく一番上に置く。答える前に知らせたい 1 行なので、
+   本文の一部ではなく、層の頭に貼る細い帯として見せる。 */
+.rsvp__login {
+  margin: 0 0 0.75rem;
+  padding: 0.4375rem 0.625rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.7;
 }
 
 .rsvp__login a {
@@ -798,34 +976,29 @@
   text-underline-offset: 0.2em;
 }
 
-/* 誰として答えるか。ログインしているときだけ、フォームの先頭に 1 行。 */
+/* 誰として答えるか。ログインしているときだけ、フォームの先頭に 1 行。
+   会員名で答えるので、切り替えのリンクは置かない（名前の欄も出さない）。 */
 .rsvp__member {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.625rem;
   margin-top: 0.75rem;
-  padding: 0.4375rem 0.625rem;
+  padding: 0.3125rem 0.625rem;
   border-radius: var(--radius-lg);
   background: var(--color-slate-100);
   color: var(--color-text-muted);
   font-size: 0.8125rem;
-  line-height: 1.6;
-}
-
-.rsvp__member a {
-  margin-inline-start: auto;
-  color: var(--color-text);
-  font-size: 0.75rem;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  white-space: nowrap;
+  line-height: 1.5;
 }
 
 /* 出欠の選択肢。モックは button + aria-pressed で組むが、製品は input[type=radio] を
    そのまま残す（フォーム項目と送信値を変えないため）。見た目だけを :has() で拾う。 */
+/* 「出席」「欠席」の 2 択は、縦に積まず 1 行に並べる。答えは 2 つしかないので、
+   縦 2 段にすると層がその分だけ伸びる。 */
 .rsvp__choices {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 0.875rem;
 }
@@ -886,18 +1059,6 @@
   outline-offset: 2px;
 }
 
-.rsvp__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.875rem;
-}
-
-.rsvp__foot .btn {
-  flex: 1 1 auto;
-}
-
 /* 満員の案内。赤は「もう入れない」ことだけを伝え、参加要望の導線は下に残す。 */
 .rsvp__alert {
   margin-top: 0.75rem;
@@ -916,13 +1077,14 @@
   font-weight: 700;
 }
 
-.deco.deco--tape-shadow .rsvp {
+.deco.deco--tape-shadow .rsvp-entry,
+.deco.deco--tape-shadow .rsvp-summary {
   border: 0;
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.15);
 }
 
 @media (min-width: 768px) {
-  /* 横に広いときは選択肢を 2 列に。縦 2 段のままだと、札が間延びする。 */
+  /* 横に広い画面では、2 択にもう少し余裕を渡す（文字が折り返さない幅で割る）。 */
   .rsvp__choices {
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   }

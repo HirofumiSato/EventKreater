@@ -702,6 +702,44 @@ try {
     ],
   });
 
+  /**
+   * 3 日間にわたる合宿。男女別の費用と、申込時に選べる割引 3 件の見本。
+   *
+   * 開催日は土日月（勤労感謝の日）に置き、2 泊 3 日として読める並びにする。
+   * 参加者はゼロのまま置き、新しい催しの一覧カードと告知ページを見られるようにする。
+   */
+  const campDate = addDays(today, 20);
+  const camp = await createEvent({
+    title: "秋の川辺キャンプ 2泊3日",
+    sortDate: campDate,
+    location: "川辺のキャンプ場 東京都奥多摩町119-1",
+    prefecture: "東京都",
+    city: "奥多摩町",
+    addressLine: "119-1",
+    venueName: "川辺のキャンプ場",
+    rainPolicy: "POSTPONE_ON_RAIN",
+    capacity: 24,
+    status: "PUBLISHED",
+    targetGeneration: "20代から40代",
+    themeId: "sage",
+    rsvpDeadline: tokyoDateTime(addDays(campDate, -3), "23:59"),
+    schedules: [
+      schedule(campDate, "13:00", "21:00", 0),
+      schedule(addDays(campDate, 1), "07:00", "21:00", 1),
+      schedule(addDays(campDate, 2), "07:00", "15:00", 2),
+    ],
+    plans: [
+      { name: "一般", audience: "MALE", amount: 4500, note: "2泊3日・食事付" },
+      { name: "一般", audience: "FEMALE", amount: 4000, note: "2泊3日・食事付" },
+    ],
+    // 申込時に選べる割引。金額はすべて同じでも、条件の違う 3 件を並べる。
+    discounts: [
+      { name: "友達と参加", amount: 500, note: "2人以上のとき" },
+      { name: "おつまみ持ち込み", amount: 500, note: "1品以上" },
+      { name: "10日より前申請", amount: 500, note: "開催10日前までの申込" },
+    ],
+  });
+
   const lastMonth = await createEvent({
     title: "先月の芋煮会",
     sortDate: addDays(today, -35),
@@ -921,8 +959,8 @@ try {
   /**
    * 0円の単発チケット（無料チケット）で公開した 1 件。
    *
-   * 月額プランの 8 件には数えないので、マイページの要約は「プラン公開 7件 /
-   * チケット公開 1件」になる。帯の「7 / 8 件」が動かないことも同時に見られる。
+   * 月額プランの 8 件には数えないので、マイページの要約は「プラン公開 8件 /
+   * チケット公開 1件」になる。帯の「8 / 8 件」が動かないことも同時に見られる。
    * チケットは公開のときに使い切っているので、`paidCredits` は 0 のままにする。
    */
   const reading = await createEvent({
@@ -1327,6 +1365,7 @@ try {
       full: full.event.id,
       closed: closed.event.id,
       takoyaki: takoyaki.event.id,
+      camp: camp.event.id,
       lastMonth: lastMonth.event.id,
       draft: draft.event.id,
       craftMarket: craftMarket.event.id,
@@ -1368,6 +1407,7 @@ try {
   console.log(`    冬の焚き火会（満員・定員3）: ${full.event.id}`);
   console.log(`    写真展「夜の港」（受付停止）: ${closed.event.id}`);
   console.log(`    第3回 たこ焼きパーティー（チラシなし）: ${takoyaki.event.id}`);
+  console.log(`    秋の川辺キャンプ 2泊3日（3日間・男女別・割引3件）: ${camp.event.id}`);
   console.log(`    先月の芋煮会（過去日・領収書）: ${lastMonth.event.id}`);
   console.log(`    下書きの披露宴（下書き）: ${draft.event.id}`);
   console.log(`    手しごとの市 秋の道具市（過去日・和紙と藍）: ${craftMarket.event.id}`);

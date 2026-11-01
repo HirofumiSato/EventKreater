@@ -59,11 +59,11 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
      - ``@`` → ``./src``
      - ``tsconfig.json`` の ``paths`` を読み替える。テストから製品コードを import するときに使う
    * - ``test.include``
-     - ``tests/**/*.test.ts``
-     - 集めるファイル。``tests/`` の下の ``.test.ts`` だけ
+     - ``tests/**/*.test.ts`` / ``.test.tsx`` / ``.test.mjs``
+     - 集めるファイル。``tests/`` の下の 3 種類
    * - ``test.environment``
      - ``node``
-     - ``document`` も ``window`` も無い。画面の試験には jsdom が要る
+     - 既定は ``document`` も ``window`` も無い。画面の試験はファイルの先頭で ``// @vitest-environment jsdom`` を書いて切り替える
    * - ``test.setupFiles``
      - ``tests/setup/db.ts``
      - 各テストファイルより先に 1 回走る。``DATABASE_URL`` をテスト用に差し替える
@@ -84,7 +84,7 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
 
 既定は Node です。Prisma、Stripe、``node:crypto`` を使うファイルは Node のままにします。
 
-いまの設定に jsdom は入っていません。``tests/components/`` を作るときに、``jsdom`` と ``@testing-library/react`` を足し、``environment`` をファイル単位かディレクトリ単位で切り替えます。それまでは ``document`` を触るテストは書けません。
+``jsdom`` と Testing Library は入っています。``tests/components/`` のファイルは先頭に ``// @vitest-environment jsdom`` を置き、そのファイルだけ環境を切り替えます。``environment`` は ``node`` のままなので、既存の試験は影響を受けません。
 
 ブラウザを起動する試験は Vitest の担当外です。Playwright を別コマンド（``npm run test:e2e``）にし、``next build`` のあと ``next start`` したアプリを叩きます。既定の ``vitest run`` には混ぜません。理由は、ビルドとブラウザ起動で 1 回が数十秒かかり、実装中の待ち時間が読めなくなるためです。
 
@@ -115,7 +115,7 @@ Jest と同じ書き味（``describe`` / ``it`` / ``expect``）で、設定が�
    * - ``npm run check:serial``
      - 同じ 3 つを順に走らせる。並列で落ちたときに、単体で再現させるため
    * - ``npm test``
-     - Vitest だけを一度実行する。``tests/`` の ``.test.ts`` 全体が対象
+     - Vitest だけを一度実行する。``tests/`` の ``.test.ts`` / ``.test.tsx`` / ``.test.mjs`` が対象
    * - ``npm run test:watch``
      - 実装中。保存のたびに、変更の影響する範囲だけを再実行する
    * - ``npm run typecheck``

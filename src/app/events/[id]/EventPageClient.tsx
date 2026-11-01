@@ -16,6 +16,13 @@ import { Alert, Loading, SemanticThemeScope } from "@/components/ui";
 export default function PublicEventPage({ params }: { params: { id: string } }) {
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 出欠の層を開いているか。面のボタンと画面下の帯が、同じ 1 枚を開く。 */
+  const [rsvpOpen, setRsvpOpen] = useState(false);
+  /**
+   * 答えたかどうか。`initialRsvp` は読み込み時の写しなので、答えた直後に帯の文言を
+   * 切り替えるには、こちらで上書きする（null の間は読み込み時の値に従う）。
+   */
+  const [answered, setAnswered] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -45,6 +52,7 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
   }
 
   const full = event.capacity !== null && event.attendingCount >= event.capacity;
+  const hasAnswered = answered ?? Boolean(event.myRsvp);
 
   return (
     // テーマ未選択なら何も包まない。既存イベントの DOM と見た目を変えない。
@@ -82,6 +90,10 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           }
           memberName={event.viewer.loggedIn ? event.viewer.name ?? event.myRsvp?.name ?? null : null}
           loginHref={`/participant/login?next=${encodeURIComponent(`/events/${event.id}`)}`}
+          open={rsvpOpen}
+          onOpenChange={setRsvpOpen}
+          onAnsweredChange={setAnswered}
+          barEntry
           onCountChange={(count) => setEvent((current) => (current ? { ...current, attendingCount: count } : current))}
           onWaitlistCountChange={(count) =>
             setEvent((current) => (current ? { ...current, waitlistCount: count } : current))
@@ -111,8 +123,9 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         attendingCount={event.attendingCount}
         waitlistCount={event.waitlistCount}
         capacity={event.capacity}
-        answered={Boolean(event.myRsvp)}
+        answered={hasAnswered}
         closed={!event.rsvpOpen}
+        onOpen={() => setRsvpOpen(true)}
         organizerHref={
           event.organizers.owner?.userId ? `/organizers/${event.organizers.owner.userId}` : null
         }

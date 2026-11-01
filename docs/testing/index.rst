@@ -70,7 +70,7 @@
 
 PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm run test:e2e`` に分け、既定の ``check`` には入れません。``test:e2e`` はまだありません。CI は ``.github/workflows/ci.yml`` が ``npm run check:full`` を呼びます。
 
-現在の ``package.json`` にある自動実行は ``npm run lint``、``npm run typecheck``、``npm test``、``npm run test:watch``、``npm run test:db``、``npm run check``、``npm run check:full`` です。``npm test`` は ``tests/`` の ``.test.ts`` 全体を集めます。``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ中身が走り、無ければ skip されます。**skip は成功と同じ終了コードです。**
+現在の ``package.json`` にある自動実行は ``npm run lint``、``npm run typecheck``、``npm test``、``npm run test:watch``、``npm run test:db``、``npm run check``、``npm run check:full`` です。``npm test`` は ``tests/`` の ``.test.ts`` / ``.test.tsx`` / ``.test.mjs`` を集めます。``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ中身が走り、無ければ skip されます。**skip は成功と同じ終了コードです。**
 
 .. rubric:: これから書く順
 
@@ -79,7 +79,7 @@ PostgreSQL が要る試験は ``npm run test:db``、ブラウザ行程は ``npm 
 1. ``tests/routes/`` を作り、``NextRequest`` と ``vi.mock("@/lib/prisma")`` で 1 本通す。ルート試験の土台です。
 2. 未登録の 2 件目（403 ``REGISTER_REQUIRED``）、``viewer`` の 3 フラグ、幹事 GET の ``registered`` を足す。
 3. ``ref`` の永続化と hydrate の応答を ``tests/integration/`` に足す。
-4. ``jsdom`` と ``@testing-library/react`` を入れ、``include`` に ``**/*.test.tsx`` を足してから、勧誘カードと登録案内の 2 本を書く。
+4. ``tests/components/`` に勧誘カードと登録案内の 2 本を書く（``jsdom`` と Testing Library は導入済み。出欠の層が 1 本目）。
 5. Playwright を入れ、ローカル登録と、アカウントなしの出欠を各 1 本通す。
 6. CI の ``test-db`` ジョブで PostgreSQL を立て、``npm run test:db`` を ``check`` とは別に呼ぶ。手順は :doc:`ci` にある。
 

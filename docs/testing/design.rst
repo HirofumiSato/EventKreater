@@ -34,8 +34,8 @@
      - 稼働（件数は :doc:`scope`）
    * - 画面の振る舞い
      - ``npm test``
-     - 勧誘カードの出し分け、登録案内の 3 状態、HTTP 402 で料金モーダルが出る
-     - これから（jsdom 未導入）
+     - 出欠の層の初期表示と無効化（``tests/components/rsvp-modal.test.tsx``）、勧誘カードの出し分け、登録案内の 3 状態、HTTP 402 で料金モーダルが出る
+     - 一部稼働（出欠の層だけ。``// @vitest-environment jsdom``。他はこれから）
    * - ブラウザ行程
      - ``npm run test:e2e``
      - ローカル登録と、アカウントなしの出欠。各 1 本
@@ -70,7 +70,7 @@ Vitest まで走らせると、その json レポートを使って ``docs-count
 * ``getStripe`` はプロセス内にクライアントを保持します。署名の試験では、鍵をその試験の最初に固定します。
 * チラシ API への ``fetch`` は偽物にします。接続失敗は 502、相手の 422 と 429 はそのステータスのまま、それ以外の失敗も 502 です。
 
-いまの設定には、画面を動かすための部品がありません。``jsdom`` と ``@testing-library/react`` は未導入で、``vitest.config.ts`` の ``environment`` は ``node`` のままです。画面の試験を書くときに、この 2 つを足してから ``tests/components/`` を作ります。
+画面を動かす部品は入っています。``jsdom`` と ``@testing-library/react`` を ``devDependencies`` に置き、``tests/components/`` のファイルだけ先頭の ``// @vitest-environment jsdom`` で環境を切り替えます。``vitest.config.ts`` の既定は ``node`` のままなので、Prisma・Stripe・``node:crypto`` を使う試験はこれまでどおり Node で走ります。``include`` は ``**/*.test.tsx`` も集めます。
 
 ケースの切り方
 --------------
@@ -96,9 +96,9 @@ Vitest まで走らせると、その json レポートを使って ``docs-count
    ├── integration/   テスト用 PostgreSQL が要るもの。helpers.ts が行の作成と削除
    ├── setup/         db.ts。全テストの前に 1 回走る
    ├── routes/        これから。Route Handler。Prisma と Stripe は偽物
-   └── components/    これから。Testing Library。見える文言と操作
+   └── components/    Testing Library。見える文言と操作。先頭で jsdom に切り替える
 
-ファイル名は ``対象.test.ts`` です。例は ``tests/unit/problem.test.ts`` です。コンポーネントを足すときは ``対象.test.tsx`` にしますが、そのとき ``vitest.config.ts`` の ``include`` に ``**/*.test.tsx`` を足す必要があります。今の設定は ``tests/**/*.test.ts`` だけを集めるので、``.test.tsx`` は置いても実行されません。
+ファイル名は ``対象.test.ts`` です。例は ``tests/unit/problem.test.ts`` です。画面の試験は ``対象.test.tsx`` にし、ファイルの先頭へ ``// @vitest-environment jsdom`` を置きます。``vitest.config.ts`` の ``include`` は ``**/*.test.tsx`` も集めるので、置けばそのまま走ります。
 
 ``tests/integration/`` は ``TEST_DATABASE_URL`` があるときだけ実行し、無ければ ``describe.skip`` で飛ばされます。``npm run test:db`` はこの層だけを実行します。分け方は :doc:`vitest/index` にあります。
 
