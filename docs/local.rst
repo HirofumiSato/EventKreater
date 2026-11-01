@@ -151,6 +151,26 @@ Turbopack と Webpack は ``.next`` の作りが違います。片方で作っ�
 
 ``JWT_SECRET`` や ``DATABASE_URL`` を変えたあとは、開発サーバーを止めて再起動します。
 
+保存した直後に、どの URL も 500 になることがあります（ ``npm run dev`` で起動した場合のみ自動で戻ります）
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Windows の作業ツリー（このリポジトリは OneDrive の下にあります）では、保存した直後のファイルを
+OneDrive やエディタが短く掴むことがあります。その瞬間に Tailwind が ``src/**/*.tsx`` を読み直すと、
+``EBUSY: resource busy or locked`` で ``globals.css`` のビルドが落ちます。Turbopack はその失敗を覚えたままなので、
+以後どの URL も 500 を返し続け、ファイルを触り直しても直りません（再起動だけが効きます）。
+
+``npm run dev`` は、この失敗の行（ ``EBUSY`` ・ ``Failed to read source code`` ・ ``os error 32`` ）を見つけると
+``next dev`` を 1 回だけ立て直します。2.5 秒待ってから起動し直すので、掴んでいた側が離れてから戻ります。
+案内が「ビルドの失敗が続いています」に変わったときは、自動では直らない失敗なので、手で立て直します。
+
+.. code-block:: powershell
+
+   Remove-Item -Recurse -Force .next
+   npm run dev
+
+``npm run dev:web`` を単体で起動したときは、この見張りがありません。500 が続くときは止めて起動し直します。
+原因が手元のコードにある失敗（構文エラーなど）では、再起動はせず、そのままエラーを出します。
+
 Docker で動かす
 ~~~~~~~~~~~~~~~
 
@@ -285,8 +305,8 @@ npm scripts
 
    * - コマンド
      - 内容
-   * - ``npm run dev``
-     - チラシ API（8000）と Web（3012）を起動する。Web は Turbopack
+  * - ``npm run dev``
+    - チラシ API（8000）と Web（3012）を起動する。Web は Turbopack。ビルドが止まったままになったら Web を立て直す
    * - ``npm run dev:web``
      - Next.js だけをポート 3012 で起動する。Turbopack
    * - ``npm run dev:web:webpack``

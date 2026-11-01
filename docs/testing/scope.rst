@@ -147,7 +147,7 @@
 
 .. count-start
 
-83 ファイル、``it`` は 1101 件です。内訳は ``tests/unit/`` が 65 ファイル 970 件、``tests/integration/`` が 16 ファイル 102 件です。結合の 102 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+85 ファイル、``it`` は 1116 件です。内訳は ``tests/unit/`` が 66 ファイル 980 件、``tests/integration/`` が 16 ファイル 102 件です。結合の 102 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -443,19 +443,27 @@
      - 84
      - HTML の整形（script・Next の CSS リンク・コメントの除去、``lang`` と body のクラスの保持）、アセットの差し替え（``/_next/image``・``/samples``・``data:``）、内部リンクの対応付けと未知リンクの ``#``、``uiHash`` の一致と変化（改行が CRLF でも LF でも同じ）、同期要否（manifest 無し・ハッシュ不一致・一致・HTML 欠け）、目録の No の重複と ``page.tsx`` の実在、``--only`` の絞り込み、枠ページ（iframe・幅の切り替え・状態の表記・エスケープ・生成物の欠け）
      - 該当なし（検査）
-   * - ``tests/unit/write-if-changed.test.mjs``
-     - 4
-     - 生成物を中身が変わったときだけ書くこと。ファイルが無ければ書いて true を返す、同じ中身なら書かずに false を返して mtime も動かさない、違えば書き換えて true を返す、同期版も生成スクリプトから同じ規則で使える
-     - 該当なし（検査）
+  * - ``tests/unit/write-if-changed.test.mjs``
+    - 4
+    - 生成物を中身が変わったときだけ書くこと。ファイルが無ければ書いて true を返す、同じ中身なら書かずに false を返して mtime も動かさない、違えば書き換えて true を返す、同期版も生成スクリプトから同じ規則で使える
+    - 該当なし（検査）
+  * - ``tests/unit/dev-stuck.test.mjs``
+    - 10
+    - 開発サーバーが「ビルドに失敗したまま」固まったことを見つける判定。``EBUSY``・``Failed to read source code``・``os error 32`` を拾い、構文エラーやビルド成功の行は拾わない。立て直しの間隔（直前なら見送る）と、立て直した直後に前のプロセスの失敗を読み飛ばす時間の関係
+    - 該当なし（検査）
    * - ``tests/components/rsvp-modal.test.tsx``
      - 24
      - 出欠の層。選ぶ前から欄が出ること、欠席で消さずに押せなくすること、性別に合わない費用プランを残して無効にすること、男女別プランが 1 件でも欄が出ること、日時 3 件の横並びと複数選択、参加人数の入力と欠席時の無効化、文言「参加／欠席」「コメント」、送信本文の ``scheduleIds`` と ``partySize``、ログイン中の名前欄と「アカウントを切り替える」の不在、送る名前
      - SCR-PUB-01
   * - ``tests/components/participant-list-table.test.tsx``
-     - 5
-     - 名簿。人数は出席のときだけ出して欠席・参加要望は「—」、2 人以上は「1人 2,500円」と「3人 合計 7,500円」の 2 行、1 人は「支払額」だけ、参加要望の承認で人数の入力が出て出席で保存すること、出席で日時が 0 件なら保存できないこと
-     - SCR-ORG-06
-   * - ``tests/integration/draft-publish.test.ts``
+    - 5
+    - 名簿。人数は出席のときだけ出して欠席・参加要望は「—」、2 人以上は「1人 2,500円」と「3人 合計 7,500円」の 2 行、1 人は「支払額」だけ、参加要望の承認で人数の入力が出て出席で保存すること、出席で日時が 0 件なら保存できないこと
+    - SCR-ORG-06
+  * - ``tests/components/app-error.test.tsx``
+    - 5
+    - 画面が失敗したときの受け皿（``src/app/error.tsx``）。何が起きたかと、どうすればよいかを日本語で出す、失敗の中身（例外の文面）は出さない、主操作は「もう一度読み込む」1 つで押すと ``reset`` を呼ぶ、トップへ戻る道を持つ、``digest`` があるときだけ問い合わせ用の番号を出す
+    - 全画面の共通レイアウト
+  * - ``tests/integration/draft-publish.test.ts``
      - 4
      - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
      - SCR-ORG-02
@@ -494,7 +502,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 970、``tests/integration/`` が 102 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 970 件を実行して 102 件を skip します。
+件数の内訳は ``tests/unit/`` が 980、``tests/integration/`` が 102 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 980 件を実行して 102 件を skip します。
 
 .. breakdown-end
 
