@@ -1380,6 +1380,130 @@ body:has(.profile-actions) .site-footer {
 }
 
 /* ==========================================================================
+   公開プロフィールのヘッダー画像（SCR-ORG-14）
+
+   横長の画像は小さく縮めると何が写っているか分からないので、アイコンと違い
+   左へ並べず 1 段を使う。見本は 3:1 を保ち、高さは幅に任せる（390px なら約 100px）。
+   ========================================================================== */
+
+.header-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.header-field__preview {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 3 / 1;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+  color: var(--color-text-faint);
+  font-size: 0.8125rem;
+}
+
+.header-field__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-field__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.header-field__body .btn-row {
+  gap: 0.5rem;
+}
+
+.header-field__body .help {
+  margin: 0;
+}
+
+/* ==========================================================================
+   ヘッダー画像の切り抜き（SCR-ORG-14）
+
+   枠は 3:1 のまま。中は canvas 1 枚で、位置と倍率は `lib/crop.ts` の計算どおりに描く。
+   ドラッグは枠が受け持つので、canvas は指を通さない。
+   ========================================================================== */
+
+.header-crop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.header-crop__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 3 / 1;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.header-crop__frame:active {
+  cursor: grabbing;
+}
+
+.header-crop__frame:focus-visible {
+  outline: 2px solid var(--color-primary-ring);
+  outline-offset: 2px;
+}
+
+.header-crop__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.header-crop__status {
+  position: absolute;
+  color: var(--color-text-faint);
+  font-size: 0.8125rem;
+}
+
+/* 拡大の段。つまみを指で押せるよう、縦は押せる的の高さを確保する。 */
+.header-crop__zoom {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-crop__range {
+  width: 100%;
+  height: var(--tap-target);
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.header-crop__value {
+  min-width: 3.5em;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.header-crop__help {
+  margin: 0;
+}
+
+/* ==========================================================================
    主催者マイページの新着（参加表明・参加要望）。
    行の骨格は `.rows` / `.rows__item` に任せ、ここでは未読の点と添え書きだけを足す。
    ========================================================================== */

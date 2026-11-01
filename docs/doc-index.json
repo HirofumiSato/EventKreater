@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 115,
+    "docs": 116,
     "preImplementation": 15,
-    "markdown": 50,
+    "markdown": 51,
     "rst": 65,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2701,
+      "lineCount": 2731,
       "headings": [
         {
           "level": 2,
@@ -2185,6 +2185,10 @@
         {
           "level": 3,
           "text": "5.17. POST / DELETE /api/v1/organizer/profile/avatar（プロフィールのアイコン）"
+        },
+        {
+          "level": 3,
+          "text": "5.17.1. POST / DELETE /api/v1/organizer/profile/header（プロフィールのヘッダー画像）"
         },
         {
           "level": 3,
@@ -2859,7 +2863,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1733,
+      "lineCount": 1742,
       "headings": [
         {
           "level": 2,
@@ -2950,6 +2954,10 @@
       "codePaths": [
         {
           "path": "prisma/migrations/20261021150000_pricing_campaigns/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql",
           "exists": true
         },
         {
@@ -5541,7 +5549,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1993,
+      "lineCount": 2005,
       "headings": [
         {
           "level": 1,
@@ -6047,6 +6055,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/organizers/lib/crop.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/organizers/lib/public-page.ts",
           "exists": true
         },
@@ -6091,6 +6103,10 @@
           "exists": true
         },
         {
+          "path": "tests/integration/organizer-header.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/organizer-profile.test.ts",
           "exists": true
         },
@@ -6108,6 +6124,10 @@
         },
         {
           "path": "tests/unit/allocation.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/image-crop.test.ts",
           "exists": true
         },
         {
@@ -7475,7 +7495,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 26,
+      "lineCount": 27,
       "headings": [
         {
           "level": 1,
@@ -7489,6 +7509,7 @@
         "docs/issues/public-organizer-page.md",
         "docs/issues/organizer-profile.md",
         "docs/issues/organizer-profile-appearance.md",
+        "docs/issues/organizer-profile-header.md",
         "docs/issues/event-owner-and-cohosts.md",
         "docs/issues/organizer-revenue-dashboard.md",
         "docs/issues/cohost-revenue-allocation.md",
@@ -8017,6 +8038,211 @@
         },
         {
           "path": "tests/unit/semantic-theme.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/organizer-profile-header.md",
+      "sphinxDoc": "issues/organizer-profile-header",
+      "format": "markdown",
+      "title": "公開プロフィールにヘッダー画像を足す",
+      "summary": "> 公開プロフィールの本文は [public-organizer-page.md](public-organizer-page.md) で、アイコンとテーマは [organizer-profile-appearance.md](organizer-profile-appearance.md) で足した。この issue は、そのあとに残った「ページの先頭に絵を置く」を扱う。",
+      "preImplementation": false,
+      "lineCount": 259,
+      "headings": [
+        {
+          "level": 1,
+          "text": "公開プロフィールにヘッダー画像を足す"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "決定"
+        },
+        {
+          "level": 3,
+          "text": "なぜ「画面側で切り抜いてから送る」のか"
+        },
+        {
+          "level": 2,
+          "text": "データ"
+        },
+        {
+          "level": 3,
+          "text": "organizer_profiles（追加列）"
+        },
+        {
+          "level": 3,
+          "text": "image_assets"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 3,
+          "text": "1. 画像の変換"
+        },
+        {
+          "level": 3,
+          "text": "2. ヘッダーの API"
+        },
+        {
+          "level": 3,
+          "text": "3. 型・ストア"
+        },
+        {
+          "level": 3,
+          "text": "4. 切り抜きの純ロジック"
+        },
+        {
+          "level": 3,
+          "text": "5. 切り抜き画面"
+        },
+        {
+          "level": 3,
+          "text": "6. 編集画面"
+        },
+        {
+          "level": 3,
+          "text": "7. 公開ページ"
+        },
+        {
+          "level": 3,
+          "text": "8. パフォーマンス"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "ドキュメント"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/api-routes.md",
+          "exists": true
+        },
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/DBschema.md",
+          "exists": true
+        },
+        {
+          "path": "docs/doc-index.json",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/issues/index.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/testing/scope.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/traceability.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/profile/header/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/profile/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizers/[userId]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/image-assets.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/image-upload.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/ImageCropDialog.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/OrganizerHeaderField.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/OrganizerProfileForm.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/OrganizerProfileView.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/crop.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/profile-store.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/profile.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/types.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/surface.css",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-header.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-profile.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/image-crop.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/organizer-profile.test.ts",
           "exists": true
         }
       ],
@@ -10515,7 +10741,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 618,
+      "lineCount": 626,
       "headings": [
         {
           "level": 1,
@@ -10606,6 +10832,10 @@
         },
         {
           "path": "tests/integration/organizer-avatar.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/organizer-header.test.ts",
           "exists": true
         },
         {
@@ -10770,6 +11000,10 @@
         },
         {
           "path": "tests/unit/hydration-quota.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/image-crop.test.ts",
           "exists": true
         },
         {

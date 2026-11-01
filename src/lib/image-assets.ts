@@ -17,7 +17,7 @@ import { prisma } from "@/lib/prisma";
  */
 
 /** 用途。DB の列挙型にはせず、ここで検証する。 */
-export const IMAGE_ASSET_KINDS = ["AVATAR", "EVENT_COVER"] as const;
+export const IMAGE_ASSET_KINDS = ["AVATAR", "EVENT_COVER", "PROFILE_HEADER"] as const;
 export type ImageAssetKind = (typeof IMAGE_ASSET_KINDS)[number];
 
 /** アイコンの一辺。画面では 64px で出す。高解像度の端末でも 2 倍で足りる。 */
@@ -28,6 +28,15 @@ export const MIN_AVATAR_SIZE = 64;
 
 /** 表紙（将来のイベント公開ページ）の幅。高さは原本の比に任せる。 */
 export const COVER_WIDTH = 1200;
+
+/** プロフィールのヘッダー。公開ページの先頭に画面幅いっぱい（3:1）で敷く。 */
+export const PROFILE_HEADER_WIDTH = 1920;
+
+/** プロフィールのヘッダーの高さ。3:1 を保つ。 */
+export const PROFILE_HEADER_HEIGHT = 640;
+
+/** ヘッダーに使える元画像の最小幅。これ未満は粗く見えるので受け付けない。 */
+export const MIN_PROFILE_HEADER_WIDTH = 800;
 
 /** 保存する形式。いまは WebP だけ。 */
 export const IMAGE_ASSET_CONTENT_TYPE = "image/webp";
@@ -81,7 +90,7 @@ interface TransformResult {
   height: number;
 }
 
-/** 用途ごとの縮め方。アイコンは中央で正方形に切り抜き、表紙は幅だけを揃える。 */
+/** 用途ごとの縮め方。アイコンは中央で正方形、ヘッダーは 3:1、表紙は幅だけを揃える。 */
 async function transform(bytes: Buffer, kind: ImageAssetKind): Promise<TransformResult> {
   const base = sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS, failOn: "error" }).rotate();
 
@@ -97,6 +106,30 @@ async function transform(bytes: Buffer, kind: ImageAssetKind): Promise<Transform
     const { data, info } = await base
       .resize(size, size, { fit: "cover", position: "centre" })
       .webp({ quality: 82 })
+      .toBuffer({ resolveWithObject: true });
+    return { data, width: info.width, height: info.height };
+  }
+
+  if (kind === "PROFILE_HEADER") {
+    // 回転したあとの向きで、使える大きさかを先に見る。小さすぎる画像は粗く見える。
+    const meta = await base.metadata();
+    const swap = meta.orientation !== undefined && meta.orientation >= 5;
+    const naturalWidth = swap ? (meta.height ?? 0) : (meta.width ?? 0);
+    const naturalHeight = swap ? (meta.width ?? 0) : (meta.height ?? 0);
+    const minimumHeight = Math.ceil(MIN_PROFILE_HEADER_WIDTH / 3);
+    if (naturalWidth < MIN_PROFILE_HEADER_WIDTH || naturalHeight < minimumHeight) {
+      throw new ProblemDetailException({
+        status: 422,
+        title: "Validation Error",
+        type: "probs/validation-error",
+        error: "IMAGE_TOO_SMALL",
+        detail: `ヘッダー画像は横${MIN_PROFILE_HEADER_WIDTH}px以上にしてください。`,
+      });
+    }
+    // 画面側で 3:1 に切り出して送る。中央切り抜きは、比がずれた画像への保険。
+    const { data, info } = await base
+      .resize(PROFILE_HEADER_WIDTH, PROFILE_HEADER_HEIGHT, { fit: "cover", position: "centre" })
+      .webp({ quality: 80 })
       .toBuffer({ resolveWithObject: true });
     return { data, width: info.width, height: info.height };
   }
@@ -120,7 +153,9 @@ export async function createImageAsset({
   let transformed: TransformResult;
   try {
     transformed = await transform(bytes, kind);
-  } catch {
+  } catch (error) {
+    // 大きさの不足など、画面に出せる理由があればそのまま返す。
+    if (error instanceof ProblemDetailException) throw error;
     throw new ProblemDetailException({
       status: 422,
       title: "Validation Error",

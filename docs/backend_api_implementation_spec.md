@@ -45,12 +45,14 @@ flowchart TD
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/events/[id]/receipt` | GET | SCR-PUB-04 | 出欠 Cookie または会員 | 自分の参加費領収書 |
-| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマを空にする（アイコンの `avatarUrl` は返す）。会員が無い・退会済み・催しが0件は 404 |
+| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済み・催しが0件は 404 |
 | `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 9 テーマのいずれか |
 | `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.17） |
 | `/api/v1/organizer/profile/avatar` | DELETE | SCR-ORG-14 | 同左 | アイコンの削除。以後は名前の頭文字に戻る（5.17） |
+| `/api/v1/organizer/profile/header` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | ヘッダー画像の登録・差し替え。3:1 を WebP 1920x640 に作り直して保存し、旧画像を退役させる（5.17.1） |
+| `/api/v1/organizer/profile/header` | DELETE | SCR-ORG-14 | 同左 | ヘッダーの削除。以後は画像無しの見た目に戻る（5.17.1） |
 | `/api/v1/image-assets/[id]/image` | GET | SCR-ORG-14、SCR-PUB-14 | 不要 | 会員が上げた画像の配信。WebP・1 年キャッシュ。論理削除済みは 404（5.18） |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | GET | SCR-ORG-09 | 幹事（会員のみ） | 発行済み領収書の取得。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -1249,6 +1251,7 @@ POST /api/v1/organizer/events/[id]/reminders
 - `stats` は `show_stats = true` のときだけ。開催済み（`status != DRAFT`・未削除・今日以前の開催日がある）催しの件数と、その最も早い開催日の年。共同主催も1件として数える。
 - `themeId` は `is_published = true` のときだけ、既知の 9 テーマのいずれか。非公開・未知の値は `null`（標準の見た目）。
 - `avatarUrl` は `avatar_image_id` があれば `/api/v1/image-assets/{id}/image`。**非公開でも返す**（本文ではなく、その人を示す印のため）。
+- `headerUrl` は `header_image_id` があれば同じ形の URL。**非公開なら null**（本文の一部のため、アイコンとは扱いを分ける）。未設定も null。
 
 ```json
 {
@@ -1263,6 +1266,7 @@ POST /api/v1/organizer/events/[id]/reminders
     "links": [{ "kind": "X", "label": "X", "url": "https://x.com/example" }],
     "stats": { "eventCount": 12, "sinceYear": 2019 },
     "avatarUrl": "/api/v1/image-assets/{id}/image",
+    "headerUrl": "/api/v1/image-assets/{id}/image",
     "themeId": "parchment"
   }
 }
@@ -1302,7 +1306,8 @@ GET の応答:
   },
   "stats": { "eventCount": 3, "sinceYear": 2024 },
   "homePath": "/organizers/{userId}",
-  "avatarUrl": "/api/v1/image-assets/{id}/image"
+  "avatarUrl": "/api/v1/image-assets/{id}/image",
+  "headerUrl": "/api/v1/image-assets/{id}/image"
 }
 ```
 
@@ -1321,7 +1326,7 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `isPublished` / `showStats` | 真偽値。既定は false |
 | `themeId` | `modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` / `washi` / `sage` / `candy` / `dusk` のいずれか、または null（標準）。未知の値は 400 |
 
-URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.17 の `avatar` で別に保存する。
+URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.17 の `avatar` と 5.17.1 の `header` で別に保存する。
 
 ### 5.15. GET / DELETE `/api/v1/venues`（過去の会場の候補）
 
@@ -1399,6 +1404,31 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 400 | - | `file` が無い、または本文を読めない |
 | 413 | - | 4MB を超えた |
 | 422 | `INVALID_IMAGE` | JPEG / PNG / WebP でない、または画像として読めない |
+| 429 | - | 短時間のアップロードが多すぎる |
+
+### 5.17.1. POST / DELETE `/api/v1/organizer/profile/header`（プロフィールのヘッダー画像）
+
+対象画面は SCR-ORG-14。認可は 5.17 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
+
+公開ページの先頭に敷く横長（3:1）の画像を扱う。アイコンと同じく**選んだ時点で保存**し、本文の `PUT`（5.14）からは分ける。画面側で 3:1 に切り抜いてから送るが、比のずれた画像でも崩れないよう、サーバーでも中央で切り抜き直す。
+
+- `multipart/form-data` の `file` を 1 つ受け取る。
+- 受け付けるのは JPEG / PNG / WebP。判定は先頭バイトだけで行う（`src/lib/image-upload.ts` の `detectImageKind`）。
+- 8MB（`MAX_HEADER_BYTES`）を超える本文は 413。`Content-Length` が 8MB + 1MB を超えるときは `formData()` を読む前に弾く。
+- 変換は `sharp` で行い、**EXIF の向きを反映したうえで 1920x640 に中央で切り抜き**、WebP（品質 80）にする。原本は保存しない。
+- 元画像が**横 800px・縦 267px**（`MIN_PROFILE_HEADER_WIDTH` と 3:1 の高さ）に満たないときは 422 `IMAGE_TOO_SMALL`。向きが 90 度回る画像は、回したあとの幅と高さで判定する。
+- バイト列を `storage/images/{id}.webp`、行を `image_assets`（`kind = PROFILE_HEADER`）に持つ。DB の作成に失敗したらファイルも消す。
+- `organizer_profiles.header_image_id` を新しい ID に差し替え、**差し替え前の画像は `is_deleted = true` にして配信を止め、ファイルを消す**。参照を移す前に消さない（失敗したときにヘッダーが消えたままになる）。
+- 同じ会員の試行は 10 分間に 5 回まで（`src/lib/upload-limit.ts`、キーは `header:{userId}`）。超過は 429。
+- 応答は `201 { "headerUrl": "/api/v1/image-assets/{id}/image" }`。削除は参照を NULL に戻して旧画像を退役させ、`200 { "headerUrl": null }`。
+- 未設定のままでも公開ページは画像を出さないだけで、本文は変わらない。
+
+| 状態 | error | 意味 |
+| :---- | :---- | :---- |
+| 400 | - | `file` が無い、0 バイト、または本文を読めない |
+| 413 | - | 8MB を超えた |
+| 422 | `INVALID_IMAGE` | JPEG / PNG / WebP でない、または画像として読めない |
+| 422 | `IMAGE_TOO_SMALL` | 横 800px・縦 267px に満たない |
 | 429 | - | 短時間のアップロードが多すぎる |
 
 ### 5.18. GET `/api/v1/image-assets/[id]/image`（会員が上げた画像の配信）

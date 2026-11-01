@@ -37,6 +37,13 @@ export function OrganizerProfileView({
 
   return (
     <div className="stack">
+      {/* ヘッダー画像は画面幅いっぱい（3:1）に敷く。直下に名前が来るので装飾として alt は空にする。
+          非公開なら headerUrl が null なので、プレビュー以外では何も出ない。 */}
+      {profile.headerUrl && (
+        <div className="profile-hero">
+          <img src={profile.headerUrl} alt="" width={1920} height={640} decoding="async" />
+        </div>
+      )}
       <div className="profile-head">
         <span className="profile-head__avatar">
           {profile.avatarUrl ? (

@@ -12,6 +12,12 @@ export const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
 /** アップロードできる画像形式。SVG・GIF・アニメーションは対象外。 */
 export type UploadImageKind = "jpeg" | "png" | "webp";
 
+/**
+ * プロフィールのヘッダーの上限。チラシと同じ 8MB。
+ * 端末の写真をそのまま選べる大きさにしつつ、変換の待ち時間を抑える。
+ */
+export const MAX_HEADER_BYTES = 8 * 1024 * 1024;
+
 export const UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp";
 
 const IMAGE_MIME: Record<UploadImageKind, string> = {

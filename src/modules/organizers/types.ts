@@ -66,6 +66,11 @@ export interface OrganizerProfileContent {
    * 非公開でも返す。プロフィールの本文ではなく、その人を示す印だから。
    */
   avatarUrl: string | null;
+  /**
+   * ヘッダー画像の URL（3:1）。未設定は null（何も出さない）。
+   * 非公開のときは null。本文の一部として扱うため、アイコンとは違う。
+   */
+  headerUrl: string | null;
   /** 公開ページのテーマ。非公開のときは null（標準の見た目）。 */
   themeId: SemanticThemeId | null;
 }
@@ -97,6 +102,11 @@ export interface OrganizerProfileDraftResponse {
    * プロフィールの保存（PUT）とは切り離して返す。
    */
   avatarUrl: string | null;
+  /**
+   * 設定中のヘッダー画像。アイコンと同じく、`header/` の API で別に扱い、
+   * 本文の保存（PUT）とは切り離して返す。
+   */
+  headerUrl: string | null;
 }
 
 /** 公開プロフィール API の応答。 */

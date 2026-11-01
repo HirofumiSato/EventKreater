@@ -232,8 +232,9 @@ model ImageAsset {
   isDeleted   Boolean  @default(false) @map("is_deleted")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  organizerProfile OrganizerProfile?
+  user                   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizerProfile       OrganizerProfile? @relation("OrganizerProfileAvatar")
+  organizerProfileHeader OrganizerProfile? @relation("OrganizerProfileHeader")
 
   @@index([userId, isDeleted])
   @@map("image_assets")
@@ -1028,6 +1029,9 @@ model OrganizerProfile {
   showStats     Boolean  @default(false) @map("show_stats")
   /// 公開ページに出すアイコン画像。未設定なら名前の頭文字を出す。
   avatarImageId String?  @unique @map("avatar_image_id") @db.Uuid
+  /// 公開ページの先頭に敷く横長の画像（3:1）。未設定なら何も出さない。
+  /// アイコンと同じく、非公開のときは公開ページに出さない。
+  headerImageId String?  @unique @map("header_image_id") @db.Uuid
   /// 公開ページのセマンティックテーマ。NULL は標準の見た目。
   /// 列挙型にしないのは、テーマを増やすたびにマイグレーションが要るため。
   themeId       String?  @map("theme_id") @db.VarChar(32)
@@ -1035,7 +1039,8 @@ model OrganizerProfile {
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avatarImage ImageAsset? @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
+  avatarImage ImageAsset? @relation("OrganizerProfileAvatar", fields: [avatarImageId], references: [id], onDelete: SetNull)
+  headerImage ImageAsset? @relation("OrganizerProfileHeader", fields: [headerImageId], references: [id], onDelete: SetNull)
 
   @@map("organizer_profiles")
 }

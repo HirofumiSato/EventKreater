@@ -149,6 +149,9 @@ const SAMPLE_DIR = path.join(ROOT, "public", "samples");
 /** デモ主催者のアイコン。内容も ID も固定にして、撮り直しても画像名が変わらないようにする。 */
 const DEMO_AVATAR_ID = "8f3c1d2e-5a4b-4c6d-9e70-2b1a4c8d6f31";
 
+/** デモ主催者のヘッダー画像。アイコンと同じく、固定 ID で 1920x640（3:1）を作る。 */
+const DEMO_HEADER_ID = "3c7a9e14-6b2d-4f58-8a1c-5d9e0b4f7a62";
+
 /** パスワードと確認済みメール・電話を持つ会員を用意する。 */
 async function upsertUser(account) {
   const passwordHash = await bcrypt.hash(account.password, 12);
@@ -299,6 +302,47 @@ async function ensureDemoAvatar(userId) {
   return DEMO_AVATAR_ID;
 }
 
+/**
+ * デモ主催者のヘッダー画像を置く。
+ *
+ * アイコンと同じくアップロード API は通さず、同じ形（1920x640 の WebP）を SVG から作って
+ * `storage/images` と `image_assets` に直接入れる。固定の ID なので、何度実行しても
+ * モックの画像ファイル名は変わらない。公開ページのフルブリードで確かめられるよう、
+ * アイコンと同じ色（えんじ・山吹・生成り）で、空と丘が見える横長の構図にする。
+ */
+async function ensureDemoHeader(userId) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="640">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8b2635"/>
+        <stop offset="1" stop-color="#d9a05b"/>
+      </linearGradient>
+    </defs>
+    <rect width="1920" height="640" fill="url(#sky)"/>
+    <circle cx="1470" cy="200" r="92" fill="#fbf6e9" opacity="0.9"/>
+    <path d="M0 420c220-90 430 40 660 10s470-150 710-90 380 100 550 50v250H0z" fill="#fbf6e9" opacity="0.25"/>
+    <path d="M0 510c280-70 500 60 760 20s510-110 760-50 300 80 400 50v110H0z" fill="#fbf6e9" opacity="0.45"/>
+    <path d="M0 590c300-40 560 30 860 0s570-50 1060 10v40H0z" fill="#fbf6e9" opacity="0.8"/>
+  </svg>`;
+  const data = await sharp(Buffer.from(svg)).webp({ quality: 80 }).toBuffer();
+  await mkdir(IMAGE_DIR, { recursive: true });
+  await writeFile(path.join(IMAGE_DIR, `${DEMO_HEADER_ID}.webp`), data);
+  await prisma.imageAsset.upsert({
+    where: { id: DEMO_HEADER_ID },
+    create: {
+      id: DEMO_HEADER_ID,
+      userId,
+      kind: "PROFILE_HEADER",
+      contentType: "image/webp",
+      width: 1920,
+      height: 640,
+      byteSize: data.byteLength,
+    },
+    update: { userId, kind: "PROFILE_HEADER", isDeleted: false, byteSize: data.byteLength },
+  });
+  return DEMO_HEADER_ID;
+}
+
 try {
   const [organizer, participant, coHost, verifyUser, organizerUnlimited, organizerFree] =
     await Promise.all([
@@ -384,8 +428,9 @@ try {
   });
 
   // 公開プロフィール。タグは 3 つまで。公開ページに出すのは X と Instagram。
-  // テーマは羊皮紙（読み物として見せる）。アイコンと合わせて、モックで適用後の見た目を確認できるようにする。
+  // テーマは羊皮紙（読み物として見せる）。アイコンとヘッダーを合わせて、モックで適用後の見た目を確認できるようにする。
   const avatarImageId = await ensureDemoAvatar(organizer.id);
+  const headerImageId = await ensureDemoHeader(organizer.id);
   const appearance = {
     isPublished: true,
     headline: "月に一度、川辺でごはんを炊く人",
@@ -399,6 +444,7 @@ try {
     showStats: true,
     themeId: "parchment",
     avatarImageId,
+    headerImageId,
   };
   await prisma.organizerProfile.upsert({
     where: { userId: organizer.id },

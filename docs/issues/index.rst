@@ -13,6 +13,7 @@
    public-organizer-page
    organizer-profile
    organizer-profile-appearance
+   organizer-profile-header
    event-owner-and-cohosts
    organizer-revenue-dashboard
    cohost-revenue-allocation

@@ -8,6 +8,7 @@ import { registerUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { OrganizerAvatarField } from "@/modules/organizers/components/OrganizerAvatarField";
+import { OrganizerHeaderField } from "@/modules/organizers/components/OrganizerHeaderField";
 import { profileContentFromDraft } from "@/modules/organizers/lib/profile";
 import {
   EMPTY_PROFILE_DRAFT,
@@ -34,6 +35,7 @@ export function OrganizerProfileForm() {
   const [name, setName] = useState("");
   const [stats, setStats] = useState<OrganizerProfileStats | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [headerUrl, setHeaderUrl] = useState<string | null>(null);
   const [homePath, setHomePath] = useState("");
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export function OrganizerProfileForm() {
     setDraft(data.profile);
     setStats(data.stats);
     setAvatarUrl(data.avatarUrl);
+    setHeaderUrl(data.headerUrl);
     setHomePath(data.homePath);
   }, []);
 
@@ -181,7 +184,7 @@ export function OrganizerProfileForm() {
         <SemanticThemeScope themeId={draft.themeId}>
           <OrganizerProfileView
             name={name}
-            profile={profileContentFromDraft(draft, stats, avatarUrl)}
+            profile={profileContentFromDraft(draft, stats, avatarUrl, headerUrl)}
             preview
           />
         </SemanticThemeScope>
@@ -231,9 +234,16 @@ export function OrganizerProfileForm() {
             title="公開ページに出る内容"
             note={
               draft.isPublished
-                ? "公開中です。参加者のページにこの内容が出ます。"
-                : "非公開です。名前とイベントへの導線だけが出ます。"
+                ? "公開中です。参加者のページにこの内容が出ます。ヘッダー画像はページの先頭に横長で出ます。"
+                : "非公開です。名前とイベントへの導線だけが出ます。ヘッダー画像は公開するとページの先頭に出ます。"
             }
+          />
+
+          {/* ヘッダーはページの先頭に敷くので、アイコンより先に置く。 */}
+          <OrganizerHeaderField
+            headerUrl={headerUrl}
+            onChange={setHeaderUrl}
+            onMessage={setToast}
           />
 
           <OrganizerAvatarField

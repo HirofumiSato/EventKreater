@@ -147,7 +147,7 @@
 
 .. count-start
 
-85 ファイル、``it`` は 1116 件です。内訳は ``tests/unit/`` が 66 ファイル 980 件、``tests/integration/`` が 16 ファイル 102 件です。結合の 102 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+87 ファイル、``it`` は 1152 件です。内訳は ``tests/unit/`` が 67 ファイル 1006 件、``tests/integration/`` が 17 ファイル 112 件です。結合の 112 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -367,9 +367,13 @@
      - 9
      - 幹事の表示名の優先順位、筆頭の分離、公開用に渡す項目の絞り込み
      - SCR-ORG-01 / SCR-PUB-03
+   * - ``tests/unit/image-crop.test.ts``
+     - 24
+     - ヘッダー画像を 3:1 に切り出す計算。枠を覆う倍率、ずらし幅の端、中心を保つ拡大、元画像の外へ出ない整数の矩形、切り出し幅 800px を割らない最大倍率とその判定
+     - SCR-ORG-14
    * - ``tests/unit/organizer-profile.test.ts``
-     - 42
-     - プロフィールの入力検証（URL のホスト・ジャンル・文字数）、公開条件、実績の数え方、表示の短縮、テーマとアイコンの受け渡し
+     - 44
+     - プロフィールの入力検証（URL のホスト・ジャンル・文字数）、公開条件、実績の数え方、表示の短縮、テーマとアイコンとヘッダーの受け渡し
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/unit/participant-calendar.test.ts``
      - 16
@@ -475,9 +479,13 @@
      - 8
      - プロフィールのアイコンの登録（201・DB の行・WebP の配信）、差し替えで旧画像が 404、削除で参照が NULL、4MB 超と画像でないバイト列の拒否、``storage/images`` の後片付け
      - SCR-ORG-14
+   * - ``tests/integration/organizer-header.test.ts``
+     - 9
+     - プロフィールのヘッダー画像の登録（201・DB の行・WebP 1920x640 の配信）、公開 API の ``headerUrl`` と非公開時の null、差し替えで旧画像が 404、削除で参照が NULL、横 800px 未満は 422、画像でないバイト列は 422、8MB 超は 413、``storage/images`` の後片付け
+     - SCR-ORG-14
    * - ``tests/integration/organizer-profile.test.ts``
-     - 16
-     - プロフィールの保存と公開、テーマの保存と公開 API への反映、未知のテーマの 400、非公開に戻したときの扱い、退会者と UUID でない URL の 404
+     - 17
+     - プロフィールの保存と公開、テーマの保存と公開 API への反映、未知のテーマの 400、非公開に戻したときの扱い、退会者と UUID でない URL の 404、編集画面の応答の ``headerUrl``
      - SCR-ORG-14 / SCR-PUB-14
    * - ``tests/integration/organizers.test.ts``
      - 4
@@ -502,7 +510,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 980、``tests/integration/`` が 102 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 980 件を実行して 102 件を skip します。
+件数の内訳は ``tests/unit/`` が 1006、``tests/integration/`` が 112 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1006 件を実行して 112 件を skip します。
 
 .. breakdown-end
 

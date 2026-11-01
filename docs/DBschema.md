@@ -35,7 +35,7 @@
 * **Receipt (参加費の領収書):** 幹事が出席者へ発行する文書。1参加者につき1件。金額は幹事が入力し、参加費の決済は持たない。
 * **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した A4 縦（1080×1528）の JPEG、または主催者がアップロードした完成済みの画像。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは生成なら `storage/flyers/{id}.jpg`、アップロードなら `storage/flyers/{id}.{jpg|png|webp}` に置く。アップロードは再エンコードせず、`aspectRatio` は `auto`、`externalFlyerId` は NULL になる。ダウンロード用の A4 PDF と告知ページの QR は保存せず、`GET /api/v1/flyer-assets/{id}/pdf` が要求のたびに作る。チラシなしのイベントも許容する。
 * **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（筆頭幹事。1イベント1行）とCO_HOST（共同主催者）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
-* **ImageAsset (会員が上げた画像):** プロフィールのアイコンなど、会員がアップロードした画像の実体。1行1画像で、バイト列は `storage/images/{id}.webp` に置き、`GET /api/v1/image-assets/{id}/image` で配る。参照する側（`organizer_profiles.avatar_image_id`、将来は `events.cover_image_id`）に外部キーを置く。用途（`kind`）は列挙型にせずアプリ側で検証する。
+* **ImageAsset (会員が上げた画像):** プロフィールのアイコンやヘッダーなど、会員がアップロードした画像の実体。1行1画像で、バイト列は `storage/images/{id}.webp` に置き、`GET /api/v1/image-assets/{id}/image` で配る。参照する側（`organizer_profiles.avatar_image_id` / `organizer_profiles.header_image_id`、将来は `events.cover_image_id`）に外部キーを置く。用途（`kind`）は `AVATAR` / `EVENT_COVER` / `PROFILE_HEADER` の3つで、列挙型にせずアプリ側で検証する。
 * **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。
 * **EventLock (排他編集ロック):** 共同主催者間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
 * **EventInvitation (共同主催者の招待):** 既存幹事が他の会員を共同主催者として迎えるためのワンタイム招待実体。受諾は会員のみ。
@@ -742,13 +742,16 @@ model OrganizerProfile {
   showStats     Boolean  @default(false) @map("show_stats")
   /// 公開ページのアイコン。未設定は名前の頭文字。
   avatarImageId String?  @unique @map("avatar_image_id") @db.Uuid
+  /// 公開ページの先頭に敷く横長の画像（3:1）。未設定は何も出さない。
+  headerImageId String?  @unique @map("header_image_id") @db.Uuid
   /// 公開ページのテーマ。NULL は標準の見た目。
   themeId       String?  @map("theme_id") @db.VarChar(32)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avatarImage ImageAsset? @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
+  avatarImage ImageAsset? @relation("OrganizerProfileAvatar", fields: [avatarImageId], references: [id], onDelete: SetNull)
+  headerImage ImageAsset? @relation("OrganizerProfileHeader", fields: [headerImageId], references: [id], onDelete: SetNull)
 
   @@map("organizer_profiles")
 }
@@ -770,8 +773,9 @@ model ImageAsset {
   isDeleted   Boolean  @default(false) @map("is_deleted")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  organizerProfile OrganizerProfile?
+  user                   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizerProfile       OrganizerProfile? @relation("OrganizerProfileAvatar")
+  organizerProfileHeader OrganizerProfile? @relation("OrganizerProfileHeader")
 
 // =============================================================
 // 11. 主催者へのアプリ内通知
@@ -1255,6 +1259,7 @@ CREATE TABLE organizer_profiles (
     line_url VARCHAR(200) NULL,
     show_stats BOOLEAN NOT NULL DEFAULT FALSE,
     avatar_image_id UUID NULL UNIQUE REFERENCES image_assets(id) ON DELETE SET NULL,
+    header_image_id UUID NULL UNIQUE REFERENCES image_assets(id) ON DELETE SET NULL,
     theme_id VARCHAR(32) NULL, -- 未知の値はアプリ側で NULL（標準）に落とす
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1265,7 +1270,7 @@ CREATE TABLE organizer_profiles (
 CREATE TABLE image_assets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
-    kind VARCHAR(20) NOT NULL, -- AVATAR / EVENT_COVER
+    kind VARCHAR(20) NOT NULL, -- AVATAR / EVENT_COVER / PROFILE_HEADER
     content_type VARCHAR(40) NOT NULL, -- いまは image/webp のみ
     width INT NOT NULL,
     height INT NOT NULL,
@@ -1302,6 +1307,10 @@ CREATE INDEX notifications_user_id_created_at_idx
 > `image_assets` は `organizer_profiles` より先に作る必要がある（外部キーの向き）。
 > 実際のマイグレーション（`20261028120000_organizer_profile_theme_and_avatar`）もこの順で流す。
 > バイト列は `storage/images/{id}.webp` に置き、DB には所在と大きさだけを持つ。
+>
+> `header_image_id` は後から足した列である。`prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql` が
+> `ALTER TABLE` で列と UNIQUE 索引を足し、`image_assets(id)` への外部キーを `ON DELETE SET NULL` で張る。
+> 既存行は NULL のままで、ヘッダーを設定していない主催者の見た目は変わらない。
 
 ---
 

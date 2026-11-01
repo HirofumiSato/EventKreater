@@ -1343,6 +1343,29 @@
   color: var(--color-warning-text);
 }
 
+/* 主催者のヘッダー画像。画面幅いっぱいの 3:1 で敷く。 */
+.profile-hero {
+  /* 親の左右余白のぶんだけ外へ出して画面端まで戻す。`body` の overflow-x: clip が
+     スクロールバーを止める（テーマの地 `.semantic-theme--page` と同じ手法）。 */
+  margin-inline: calc(50% - 50vw);
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+/* 公開ページは地の上端に敷く。地の内側の余白（2rem）ぶんだけ上へ寄せる。 */
+.semantic-theme--page .profile-hero {
+  margin-block-start: -2rem;
+}
+
+/* 1920x640 の画像を枠の比率で切り抜く。比率の違う画像でも帯が歪まない。 */
+.profile-hero img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* 主催者のプロフィール。人物 1 枚を先に置き、催しは下へ回す。 */
 .profile-head {
   display: grid;
