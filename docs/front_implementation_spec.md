@@ -1688,6 +1688,17 @@ interface OrganizerInviteCardProps {
 * 結合: `tests/integration/*.test.ts`。環境変数 `TEST_DATABASE_URL` があるときだけ実行し、`tests/setup/db.ts` が `DATABASE_URL` をテスト用 DB に差し替える。無い環境ではスキップされる。
 * 結合テスト用 DB は `DATABASE_URL="<test-db>" npx prisma migrate deploy` で用意する。`db push` は部分ユニーク索引と `CHECK` 制約を作らないため、テスト用には使わない。開発用 DB を指したまま実行しない。
 
+### 12.11. 画面が失敗したときの受け皿
+
+`src/app/error.tsx`（クライアント）と `src/app/global-error.tsx` が、描画中の例外を受ける。この 2 つが無いと、利用者には Next.js の英語の画面が出るだけで、戻る道が無い。
+
+| ファイル | 受ける範囲 | 出すもの |
+| :--- | :--- | :--- |
+| `src/app/error.tsx` | `layout.tsx` の内側（ほとんどすべての画面） | 「画面を開けませんでした」・「一時的な不具合のことがあります。もう一度読み込んでください。」・「もう一度読み込む」（`reset()`）・「トップへ」 |
+| `src/app/global-error.tsx` | `layout.tsx` 自体が落ちたとき | 同じ文言と「もう一度読み込む」。`html` と `body` を自分で出し、共有スタイルを読めない前提で inline style を使う |
+
+失敗の中身は画面に出さず `console.error` に残す。サーバー側の例外には `digest` が付くので、問い合わせのときの手掛かりとして画面の末尾にその番号だけを出す（入力の不備を利用者に見せない、という第1.3節の規則と同じ扱い）。
+
 ---
 
 ## 13. 売上ダッシュボード（SCR-ORG-11 / SCR-ORG-12 / SCR-ORG-06）
