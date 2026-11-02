@@ -147,7 +147,7 @@
 
 .. count-start
 
-91 ファイル、``it`` は 1206 件です。内訳は ``tests/unit/`` が 69 ファイル 1046 件、``tests/integration/`` が 19 ファイル 123 件です。結合の 123 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+93 ファイル、``it`` は 1232 件です。内訳は ``tests/unit/`` が 70 ファイル 1065 件、``tests/integration/`` が 20 ファイル 130 件です。結合の 130 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -194,6 +194,10 @@
    * - ``tests/unit/first-month-free.test.ts``
      - 10
      - 初月無料の対象判定（未使用・契約なし・支払済みなしの 3 条件）、再加入とプラン変更では再適用しないこと、加入から 1 か月後の終了日時（月末・うるう年・年またぎ）、元の日時を書き換えないこと
+     - SCR-MOD-01 / SCR-PUB-06
+   * - ``tests/unit/free-ticket.test.ts``
+     - 19
+     - 期限が最も近い券を選ぶ、期限切れと期限ちょうどの券は返さない、渡した配列を並べ替えない、動画券は前回発行から 30 日（暦月にしない）、紹介は生涯 10 枚で端数を落とす（9 枚なら 1 枚・10 枚なら 0 枚）、有効期限（動画 7 日・紹介と運営付与 3 か月・月末の丸め）
      - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/unit/event-details.test.ts``
      - 40
@@ -242,6 +246,10 @@
    * - ``tests/integration/subscription-trial.test.ts``
      - 6
      - 無料期間中（``ACTIVE``・``trial_ends_at`` が未来）もイベントを公開でき、無料枠と単発クレジットを減らさないこと。``trial_used_at`` がある会員と支払済みの月額がある会員は再加入でも対象外になること。``GET /api/v1/billing/quota`` が ``trial`` と ``trialEligible`` を返すこと。通知バッチが無料期間を拾い、3 日前と 1 日前に 1 回ずつ送り、同じ ``period_end`` では再送しないこと
+     - SCR-MOD-01 / SCR-PUB-06
+   * - ``tests/integration/free-ticket.test.ts``
+     - 7
+     - 同じ ``reason_key`` では 2 枚目を作れない（紹介の二重付与を UNIQUE で止める）、期限切れの券は残っていても選ばれない、期限切れの券には使用の印を立てられない（``usedAt: null`` と ``expiresAt > now`` を更新の条件にする）、同じ券を 2 回消費できない、紹介の数え上げが生涯上限に達したら配らない、会員を消すと券も消える、紹介コードは一意で誰の紹介かは 1 度だけ決まる
      - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/unit/rsvp-notification.test.ts``
      - 23
@@ -526,7 +534,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1046、``tests/integration/`` が 123 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1046 件を実行して 123 件を skip します。
+件数の内訳は ``tests/unit/`` が 1065、``tests/integration/`` が 130 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1065 件を実行して 130 件を skip します。
 
 .. breakdown-end
 

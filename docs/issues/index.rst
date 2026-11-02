@@ -24,3 +24,4 @@
    auth-attempt-limits
    auth-session-skip-and-challenge-resend
    venue-suggestions
+   free-ticket-and-referral
