@@ -5,6 +5,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { AuthSchema } from "@/lib/schemas";
 import { clientIp } from "@/modules/auth/lib/cookies";
+import { readReferralCookie } from "@/modules/auth/lib/referral-cookie";
 import { challengeResponse, purposeForAudience, startLoginChallenge } from "@/modules/auth/lib/login-challenge";
 import { assertPasswordNotBreached } from "@/modules/auth/lib/pwned";
 import {
@@ -80,6 +81,8 @@ export async function POST(req: NextRequest) {
         name: existing?.name || input.name,
         passwordHash: await hashPassword(input.password),
         audience: input.audience === "participant" ? "PARTICIPANT" : "ORGANIZER",
+        // 紹介リンクから来ていれば、会員になるまで Cookie に残っている。
+        referralCode: readReferralCookie(req),
       });
       await sendIntentVerification(intent);
       return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });

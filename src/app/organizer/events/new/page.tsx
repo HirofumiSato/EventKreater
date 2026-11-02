@@ -300,10 +300,7 @@ function NewEventScreen() {
         onClose={quotaState.closePricingModal}
         onSelectOneTime={quotaState.startOneTimeCheckout}
         onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quotes={quotaState.quota?.pricing ?? null}
-        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        currentPlan={quotaState.quota?.subscriptionPlan}
-        trialEligible={quotaState.quota?.trialEligible}
+        quota={quotaState.quota}
         context="create"
         onGranted={() => {
           setToastTone("success");

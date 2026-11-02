@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
+import { ReferralPanel } from "@/modules/account/components/ReferralPanel";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { NotificationList } from "@/modules/notifications/components/NotificationList";
@@ -175,6 +176,9 @@ export default function MyPage() {
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
+      {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線を同じ場所で見せる。 */}
+      <ReferralPanel />
+
       {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。
           マイページは 4 件までにし、続きは通知一覧（/notifications）が受ける。 */}
       {profile.isOrganizer && (
@@ -273,10 +277,7 @@ export default function MyPage() {
         onClose={quotaState.closePricingModal}
         onSelectOneTime={quotaState.startOneTimeCheckout}
         onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quotes={quotaState.quota?.pricing ?? null}
-        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        currentPlan={quotaState.quota?.subscriptionPlan}
-        trialEligible={quotaState.quota?.trialEligible}
+        quota={quotaState.quota}
         context="mypage"
         onGranted={() => void quotaState.refreshQuota()}
       />

@@ -2352,6 +2352,19 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 同じ確認済み電話番号で登録し直したときは、8.6 の決定順で退会済みの行が見つかる。このときは新しい行を作らず、`deleted_at = NULL` に戻し、今回のメール、表示名、パスワード、Google の結び付けで上書きする。`user_usage_quotas` は引き継ぎ、`free_event_count` と `paid_credits` は戻さない。`account_change_logs` に `REACTIVATE` を残し、`POST /api/v1/auth/phone/confirm` の応答に `reactivated: true` を付ける。
 
+### 8.17. GET `/api/v1/user/referral`（紹介リンクと実績）
+
+対象画面は SCR-PUB-03（主催者マイページ）の「紹介」の紙。認証は会員 Cookie。
+
+応答は `{ "code": "x7Kd2mQp", "url": "https://.../auth/register?ref=x7Kd2mQp", "invited": 2, "granted": 4, "limit": 10 }`。
+
+- `code` は `users.referral_code`。**まだ無ければこの呼び出しで作る**（8 文字の英数。`0`・`O`・`1`・`l` は使わない）。既にあるコードは変えない。
+- `invited` は `users.referred_by_user_id` が自分で、退会していない会員の数。
+- `granted` は `free_tickets` のうち `user_id` が自分・`source = REFERRAL` の枚数。生涯上限 `limit` と同じ数え方をする。
+- `url` は登録の入口を指す絶対 URL。紹介コードは 8.6 の登録で Cookie（`ref_code`、30 日）から `signup_intents.referral_code` へ入り、会員になった時点で `users.referred_by_user_id` に確定する。存在しないコードと退会者は紹介者にしない。
+
+紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。
+
 ---
 
 ## 9. チラシ生成 API と生成処理

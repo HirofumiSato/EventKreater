@@ -133,6 +133,7 @@ export function resolveAudience(value: string | null | undefined): AuthAudience 
 export async function resolveGoogleAccount(
   profile: GoogleProfile,
   audience: AuthAudience = "organizer",
+  referralCode: string | null = null,
 ): Promise<GoogleResolution> {
   // 退会時に googleSub は NULL にするので、通常ここで退会済み行は拾わない。保険として条件に足す。
   const bySub = await prisma.user.findFirst({
@@ -153,6 +154,7 @@ export async function resolveGoogleAccount(
       googleSub: profile.sub,
       emailVerifiedAt: new Date(),
       audience: audience === "participant" ? "PARTICIPANT" : "ORGANIZER",
+      referralCode,
     });
     return { kind: "phone", intentId: intent.id };
   }
@@ -185,6 +187,7 @@ export async function resolveGoogleAccount(
     googleSub: profile.sub,
     emailVerifiedAt: new Date(),
     audience: audience === "participant" ? "PARTICIPANT" : "ORGANIZER",
+    referralCode,
   });
   return { kind: "phone", intentId: intent.id };
 }

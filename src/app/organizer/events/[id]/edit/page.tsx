@@ -265,11 +265,9 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         onClose={quotaState.closePricingModal}
         onSelectOneTime={quotaState.startOneTimeCheckout}
         onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quotes={quotaState.quota?.pricing ?? null}
-        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        currentPlan={quotaState.quota?.subscriptionPlan}
-        trialEligible={quotaState.quota?.trialEligible}
+        quota={quotaState.quota}
         context="edit"
+        onUseTicket={() => void save()}
         onGranted={() => {
           void quotaState.refreshQuota();
           setToast("0円チケットを受け取りました。もう一度保存してください。");

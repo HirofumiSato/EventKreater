@@ -17,6 +17,7 @@ import {
 } from "@/modules/billing/lib/tickets";
 import { createEventForUser, publishDraftEvent } from "@/modules/events/lib/events";
 import { GET as getQuota } from "@/app/api/v1/billing/quota/route";
+import { GET as getReferral } from "@/app/api/v1/user/referral/route";
 import { cleanup, seedEvent, uniqueEmail } from "./helpers";
 
 const describeDb = process.env.TEST_DATABASE_URL ? describe : describe.skip;
@@ -422,5 +423,166 @@ describeDb("無料チケットの消費順（結合）", () => {
     });
     // 券があるので、無料枠が尽きていても作成できると返す。
     expect(body.canCreate).toBe(true);
+  });
+});
+
+describeDb("紹介の付与（結合）", () => {
+  const eventIds: string[] = [];
+  const userIds: string[] = [];
+
+  async function member(referredByUserId: string | null = null) {
+    const created = await prisma.user.create({
+      data: {
+        email: uniqueEmail("referral"),
+        name: "紹介の会員",
+        phoneVerifiedAt: new Date(),
+        referredByUserId,
+        quota: { create: {} },
+      },
+    });
+    userIds.push(created.id);
+    return created;
+  }
+
+  async function draft(userId: string) {
+    const created = await seedEvent({ userId, role: "OWNER", status: "DRAFT" });
+    eventIds.push(created.id);
+    return created;
+  }
+
+  /** 紹介者が受け取った券。`grantedByUserId` で「誰の紹介か」を数える。 */
+  async function grantedTo(referrerId: string) {
+    return prisma.freeTicket.findMany({
+      where: { userId: referrerId, source: "REFERRAL" },
+      orderBy: { reasonKey: "asc" },
+    });
+  }
+
+  afterEach(async () => {
+    await cleanup({ eventIds, userIds });
+    eventIds.length = 0;
+    userIds.length = 0;
+  });
+
+  it("紹介された人が初回公開すると、紹介者に2枚付く", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+    const target = await draft(guest.id);
+
+    await publishDraftEvent(guest.id, target.id);
+
+    const tickets = await grantedTo(referrer.id);
+    expect(tickets).toHaveLength(2);
+    // 誰の紹介で配ったかが残る（紹介の実績はここで数える）。
+    expect(tickets.every((ticket) => ticket.grantedByUserId === guest.id)).toBe(true);
+    // 紹介券は3か月。期限は発行のたびに同じ日へそろう。
+    expect(tickets[0].expiresAt.toISOString()).toBe(tickets[1].expiresAt.toISOString());
+  });
+
+  it("2回目の公開では増えない", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+    const first = await draft(guest.id);
+    const second = await draft(guest.id);
+
+    await publishDraftEvent(guest.id, first.id);
+    await publishDraftEvent(guest.id, second.id);
+
+    expect(await grantedTo(referrer.id)).toHaveLength(2);
+  });
+
+  it("自分で自分を紹介しても付かない", async () => {
+    const guest = await member();
+    await prisma.user.update({ where: { id: guest.id }, data: { referredByUserId: guest.id } });
+    const target = await draft(guest.id);
+
+    await publishDraftEvent(guest.id, target.id);
+
+    expect(await grantedTo(guest.id)).toHaveLength(0);
+  });
+
+  it("紹介者が退会していたら付かない", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+    await prisma.user.update({
+      where: { id: referrer.id },
+      data: { deletedAt: new Date() },
+    });
+    const target = await draft(guest.id);
+
+    await publishDraftEvent(guest.id, target.id);
+
+    expect(await grantedTo(referrer.id)).toHaveLength(0);
+  });
+
+  it("生涯10枚に達していたら、これ以上は付かない", async () => {
+    const referrer = await member();
+    const donor = await member();
+    await prisma.freeTicket.createMany({
+      data: Array.from({ length: 10 }, (_, index) => ({
+        userId: referrer.id,
+        source: "REFERRAL" as const,
+        grantedByUserId: donor.id,
+        reasonKey: `seed:referral:${referrer.id}:${index}`,
+        expiresAt: new Date("2027-02-02T00:00:00.000Z"),
+      })),
+    });
+    const guest = await member(referrer.id);
+    const target = await draft(guest.id);
+
+    await publishDraftEvent(guest.id, target.id);
+
+    expect(await grantedTo(referrer.id)).toHaveLength(10);
+  });
+
+  it("即公開でも、紹介者に2枚付く", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+    const input = CreateEventSchema.parse({
+      title: "紹介からの即公開",
+      schedules: [{ eventDate: "2026-12-15", startTime: "18:00", endTime: "20:00" }],
+      pricePlans: [{ name: "一般", amount: 3000 }],
+      location: "テスト会場",
+      rainPolicy: "RAIN_OR_SHINE",
+      status: "PUBLISHED",
+    });
+
+    const { event } = await createEventForUser(guest.id, input);
+    eventIds.push(event.id);
+
+    expect(await grantedTo(referrer.id)).toHaveLength(2);
+  });
+
+  it("紹介 API がリンクと実績を返す（コードは初回に作る）", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+
+    const response = await getReferral(
+      new NextRequest("http://localhost/api/v1/user/referral", {
+        headers: {
+          cookie: `auth_token=${await signLocalToken({ userId: referrer.id, email: referrer.email })}`,
+        },
+      }),
+    );
+    const body = await response.json();
+
+    expect(body.code).toMatch(/^[0-9A-Za-z]{8}$/);
+    expect(body.url).toContain(`/auth/register?ref=${body.code}`);
+    expect(body.invited).toBe(1);
+    expect(body.granted).toBe(0);
+    expect(body.limit).toBe(10);
+
+    // 2回目は同じコードを返す（作ったコードは変えない）。
+    const again = await getReferral(
+      new NextRequest("http://localhost/api/v1/user/referral", {
+        headers: {
+          cookie: `auth_token=${await signLocalToken({ userId: referrer.id, email: referrer.email })}`,
+        },
+      }),
+    );
+    expect((await again.json()).code).toBe(body.code);
+
+    // この会員を紹介した人ではないので、実績には数えない。
+    expect(guest.referredByUserId).toBe(referrer.id);
   });
 });

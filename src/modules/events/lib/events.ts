@@ -3,6 +3,7 @@ import type { QuotaSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertCanCreateEvent, consumeEventQuota, quotaSourceOf } from "@/modules/billing/lib/quota";
+import { grantReferralTickets } from "@/modules/billing/lib/referral";
 import {
   audiencesForGender,
   composeEventTime,
@@ -467,6 +468,9 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           data: { eventId: event.id },
         });
       }
+      // 紹介で登録した人が最初に公開したとき、紹介者へ券を配る。
+      // `reasonKey` の UNIQUE で冪等なので、公開のたびに呼んでよい。
+      if (!isDraft) await grantReferralTickets(tx, userId);
       await tx.eventOrganizer.create({
         data: {
           eventId: event.id,
@@ -570,7 +574,7 @@ export async function publishDraftEvent(
   return prisma.$transaction(async (tx) => {
     const { charged, quotaSource } = await consumeQuotaForDraftPublish(tx, userId, eventId);
     if (input) await syncEventOptions(tx, eventId, input);
-    return tx.event.update({
+    const published = await tx.event.update({
       where: { id: eventId },
       data: {
         ...(input ? eventUpdateData(input) : {}),
@@ -579,6 +583,9 @@ export async function publishDraftEvent(
       },
       include: { flyerAsset: true, ...eventOptionsInclude },
     });
+    // 紹介で登録した人の初回公開。`reasonKey` の UNIQUE で冪等なので毎回呼んでよい。
+    await grantReferralTickets(tx, userId);
+    return published;
   });
 }
 

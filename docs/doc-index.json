@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2775,
+      "lineCount": 2788,
       "headings": [
         {
           "level": 2,
@@ -2301,6 +2301,10 @@
         {
           "level": 3,
           "text": "8.16. DELETE /api/v1/user（退会）"
+        },
+        {
+          "level": 3,
+          "text": "8.17. GET /api/v1/user/referral（紹介リンクと実績）"
         },
         {
           "level": 2,
@@ -7511,7 +7515,7 @@
       "title": "無料チケット（紹介・動画視聴）の実装計画",
       "summary": "> 決定日: 2026-11-02。実装するのは 紹介（P4）を先、動画（P3）は後。 > 動画は広告事業者の SSV に直結する方針で、事業者と契約が決まるまでコードを書かない。 > > この文書は計画なので、新規に作るファイルは （新規） と添え、置き場所を本文で示す。 > 実装が入った PR で、実在するパスへ書き換える（npm run docs:links が原稿中のパスを見るため）。 > > Sphinx の目次へ載せるには docs/issues/index.rst の toctree へ1行足し、npm run docs:gen で > docs/doc-index.json を作り直す。どちらも P5 で行う（この文書を先にコミットすると docs ジョブは赤になる）。",
       "preImplementation": false,
-      "lineCount": 394,
+      "lineCount": 395,
       "headings": [
         {
           "level": 1,
@@ -7702,10 +7706,6 @@
         },
         {
           "path": "src/app/mypage/page.tsx",
-          "exists": true
-        },
-        {
-          "path": "src/app/organizer/events/[id]/preview/PreviewClient.tsx",
           "exists": true
         },
         {
@@ -11039,7 +11039,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 650,
+      "lineCount": 654,
       "headings": [
         {
           "level": 1,
@@ -11374,6 +11374,10 @@
         },
         {
           "path": "tests/unit/published-counts.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/referral-code.test.ts",
           "exists": true
         },
         {

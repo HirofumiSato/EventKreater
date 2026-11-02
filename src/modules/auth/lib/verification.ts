@@ -54,6 +54,11 @@ export async function beginSignupIntent(input: {
   googleSub?: string | null;
   emailVerifiedAt?: Date | null;
   audience?: "ORGANIZER" | "PARTICIPANT";
+  /**
+   * 紹介リンクのコード。会員になった時点で `users.referred_by_user_id` に確定する。
+   * この関数は毎回 `deleteMany` してから作り直すので、登録のたびに渡し直すこと。
+   */
+  referralCode?: string | null;
 }): Promise<{ id: string; email: string; name: string; audience: "ORGANIZER" | "PARTICIPANT" }> {
   await prisma.signupIntent.deleteMany({ where: { email: input.email } });
   return prisma.signupIntent.create({
@@ -64,6 +69,7 @@ export async function beginSignupIntent(input: {
       googleSub: input.googleSub ?? null,
       emailVerifiedAt: input.emailVerifiedAt ?? null,
       audience: input.audience ?? "ORGANIZER",
+      referralCode: input.referralCode ?? null,
       expiresAt: new Date(Date.now() + INTENT_TTL_MS),
     },
     select: { id: true, email: true, name: true, audience: true },

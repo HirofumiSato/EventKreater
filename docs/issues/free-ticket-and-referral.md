@@ -236,8 +236,9 @@ export function ticketExpiresAt(source: FreeTicketSource, issuedAt: Date): Date;
 `src/modules/billing/components/PricingModal.tsx` の先頭に1ブロック足す。5画面から同じ形で呼ばれているので、
 ここで完結すれば配線は増えない。
 
-- 見出し: 「無料チケット」／本文: 「紹介した人がイベントを公開すると、2回ぶんもらえます。」
-- 残数が1以上なら主操作を「チケットで公開する」（`btn--primary` は1画面1つ。既存の主操作と入れ替える）。
+- 見出し: 「チケットで公開する」／本文: 「残り N 枚。期限。紹介した人が公開すると2回もらえます。」
+- 残数が1以上なら主操作を「チケットで公開する」に入れ替える（`btn--primary` は1画面1つ。単発と公開し放題を補助へ落とす）。押すと閉じて、呼び出した画面が公開をやり直す。
+- 公開をやり直せない画面（作成中・マイページ）では札を出さない。押しても何も起きないボタンになるため。
 - 0円キャンペーン中（`pricing.oneTime.chargedPrice === 0`）はこのブロックを出さない。0円で受け取れるので無意味。
 
 なお `freeGrantRemaining` と同じく props を1つずつ足すと5ファイルに配線が増える。
@@ -252,7 +253,7 @@ export function ticketExpiresAt(source: FreeTicketSource, issuedAt: Date): Date;
 - 共有は既存の `src/modules/organizers/components/LineShareDialog.tsx` の作りを流用する。
 
 **公開が成功した直後にもリンクを出す。** 母数が小さいうちは、マイページに置くだけでは紹介が回らない。
-`src/app/organizer/events/[id]/preview/PreviewClient.tsx` の公開完了の表示に1行添える。
+公開すると告知ページへ移るので、プレビューの「このイベントは公開済みです」の下に1行（「紹介した人が公開すると2枚増えます。マイページ」）を添える。
 
 ### 5.3. 文言
 

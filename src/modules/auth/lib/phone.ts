@@ -5,6 +5,7 @@ import { ProblemDetailException, isUniqueViolation } from "@/lib/exceptions";
 import { deliverSms } from "@/lib/sms";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
 import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
+import { isReferralCodeShape } from "@/modules/billing/lib/referral-code";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const CODE_TTL_SECONDS = CODE_TTL_MS / 1000;
@@ -394,6 +395,17 @@ async function completeSignup(intentId: string, phoneE164: string, codeId: strin
         return { user, attachedExisting: true, reactivated: false };
       }
 
+      // 紹介リンクから来た登録は、ここで紹介者を確定する。退会者と存在しないコードは紹介者にしない。
+      // 会員になった後は変えない（`users.referred_by_user_id` はこの1回だけ書く）。
+      const referralCode =
+        intent.referralCode && isReferralCodeShape(intent.referralCode) ? intent.referralCode : null;
+      const referrer = referralCode
+        ? await tx.user.findFirst({
+            where: { referralCode, deletedAt: null },
+            select: { id: true },
+          })
+        : null;
+
       const user = await tx.user.create({
         data: {
           email: intent.email,
@@ -403,6 +415,7 @@ async function completeSignup(intentId: string, phoneE164: string, codeId: strin
           emailVerifiedAt: intent.emailVerifiedAt,
           phoneE164,
           phoneVerifiedAt: new Date(),
+          referredByUserId: referrer?.id ?? null,
           quota: { create: {} },
         },
         select: userSelect,

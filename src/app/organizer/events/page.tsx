@@ -47,6 +47,8 @@ function OrganizerEventsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 枠が足りずに止まった複製。チケットで公開し直すとき、同じ催しをもう一度押させる。
+  const [pendingCloneId, setPendingCloneId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -114,9 +116,11 @@ function OrganizerEventsScreen() {
 
   const cloneEvent = async (id: string) => {
     setBusyId(id);
+    setPendingCloneId(null);
     try {
       const res = await fetch(`/api/v1/organizer/events/${id}/clone`, { method: "POST" });
       if (res.status === 402) {
+        setPendingCloneId(id);
         quotaState.openPricingModal({ returnTo: "/organizer/events" });
         return;
       }
@@ -139,8 +143,14 @@ function OrganizerEventsScreen() {
     }
   };
 
-  const runLifecycle = async (id: string, action: LifecycleAction) => {
-    setBusyId(id);
+  /** チケットで公開する。枠が足りずに止まった複製を、同じ催しのままやり直す。 */
+  const retryClone = () => {
+    const id = pendingCloneId;
+    setPendingCloneId(null);
+    if (id) void cloneEvent(id);
+  };
+
+  const runLifecycle = async (id: string, action: LifecycleAction) => {    setBusyId(id);
     try {
       const res = await fetch(`/api/v1/organizer/events/${id}/lifecycle`, {
         method: "POST",
@@ -463,11 +473,9 @@ function OrganizerEventsScreen() {
         onClose={quotaState.closePricingModal}
         onSelectOneTime={quotaState.startOneTimeCheckout}
         onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quotes={quotaState.quota?.pricing ?? null}
-        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        currentPlan={quotaState.quota?.subscriptionPlan}
-        trialEligible={quotaState.quota?.trialEligible}
+        quota={quotaState.quota}
         context="list"
+        onUseTicket={() => void retryClone()}
         onGranted={() => setToast("0円チケットを受け取りました。もう一度「コピー作成」を押してください。")}
       />
       {deletingId && (
