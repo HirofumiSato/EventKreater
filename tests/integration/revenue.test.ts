@@ -73,7 +73,7 @@ describeDb("売上の集計（結合）", () => {
     ]);
   });
 
-  it("領収書発行額と見込みの差額を出す", async () => {
+  it("集金済みの参加者だけを集金に数え、未集金との差を出す", async () => {
     const event = await seedEvent();
     eventIds.push(event.id);
     const plan = await prisma.eventPricePlan.create({
@@ -103,26 +103,19 @@ describeDb("売上の集計（結合）", () => {
         priceAudience: "ANY",
       },
     });
-    await prisma.receipt.create({
-      data: {
-        participantId: paid.id,
-        eventId: event.id,
-        addressee: "佐藤",
-        amount: 4000,
-        description: "参加費",
-        issuerName: "テスト幹事",
-      },
+    // 集金は領収書ではなく、参加者ごとの日時で持つ。
+    await prisma.participant.update({
+      where: { id: paid.id },
+      data: { collectedAt: new Date() },
     });
 
-    const [rows, receipts] = await Promise.all([
-      prisma.participant.findMany({ where: { eventId: event.id } }),
-      prisma.receipt.findMany({ where: { eventId: event.id }, select: { amount: true } }),
-    ]);
+    const rows = await prisma.participant.findMany({ where: { eventId: event.id } });
 
-    const summary = summarizeRevenue(rows, receipts);
+    const summary = summarizeRevenue(rows);
     expect(summary.expectedRevenue).toBe(8000);
-    expect(summary.issuedRevenue).toBe(4000);
-    expect(summary.unreconciled).toBe(4000);
+    expect(summary.collectedRevenue).toBe(4000);
+    expect(summary.collectedCount).toBe(1);
+    expect(summary.uncollected).toBe(4000);
     expect(summary.averagePerAttendee).toBe(4000);
   });
 
@@ -187,7 +180,7 @@ describeDb("売上の集計（結合）", () => {
       setting: source.revenueSetting,
       shares: source.revenueShares,
       expectedRevenue: 10000,
-      issuedRevenue: 10000,
+      collectedRevenue: 10000,
       attendingCount: 2,
     };
 
@@ -256,14 +249,14 @@ describeDb("売上の集計（結合）", () => {
       viewerUserId: guest.id,
       viewerRole: "CO_HOST",
       expectedRevenue: 9000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 3,
     });
 
     expect(view.mode).toBe("HEADCOUNT");
     expect(view.rows).toHaveLength(2);
     expect(view.hiddenRows).toBe(0);
-    expect(view.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, issuedRevenue: 0 });
+    expect(view.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, collectedRevenue: 0 });
   });
 
   it("共同主催を解除すると配分行も消え、残った主催者だけで再計算する", async () => {
@@ -317,7 +310,7 @@ describeDb("売上の集計（結合）", () => {
       viewerUserId: owner.id,
       viewerRole: "OWNER",
       expectedRevenue: 10000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 1,
     });
     expect(view.rows).toHaveLength(1);

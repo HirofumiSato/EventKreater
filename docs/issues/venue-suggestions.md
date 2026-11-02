@@ -103,5 +103,5 @@
 - `src/modules/events/components/VenueSelectModal.tsx` — 選択モーダル
 - `src/modules/events/components/EventFormSections.tsx` — 開催場所の入力欄
 - `prisma/schema.prisma` — `VenueSuggestion`
-- `docs/backend_api_implementation_spec.md` — 5.15
+- `docs/backend_api_implementation_spec.md` — 5.14
 - `docs/front_implementation_spec.md` — 12.3

@@ -23,7 +23,7 @@ export interface BuildAllocationViewInput {
   viewerUserId: string;
   viewerRole: OrganizerRole;
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
   attendingCount: number;
 }
 
@@ -45,7 +45,7 @@ export function buildAllocationView(input: BuildAllocationViewInput): RevenueAll
     organizers,
     shares: input.shares,
     expectedRevenue: input.expectedRevenue,
-    issuedRevenue: input.issuedRevenue,
+    collectedRevenue: input.collectedRevenue,
     attendingCount: input.attendingCount,
   });
 
@@ -67,7 +67,7 @@ export function buildAllocationView(input: BuildAllocationViewInput): RevenueAll
         shareBps: row.shareBps,
         headcount: row.headcount,
         expectedRevenue: row.expectedRevenue,
-        issuedRevenue: row.issuedRevenue,
+        collectedRevenue: row.collectedRevenue,
       },
     ];
   });

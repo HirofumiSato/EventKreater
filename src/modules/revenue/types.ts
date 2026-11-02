@@ -16,7 +16,7 @@ export interface RevenueAllocationRowView {
   shareBps: number;
   headcount: number | null;
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
 }
 
 export interface RevenueAllocationView {
@@ -33,7 +33,7 @@ export interface RevenueAllocationView {
   unallocated: {
     headcount: number;
     expectedRevenue: number;
-    issuedRevenue: number;
+    collectedRevenue: number;
   };
   /** 絞った結果として見えていない行数。 */
   hiddenRows: number;

@@ -94,4 +94,8 @@
      一覧を隠さないよう、帯は文字だけ 14px に詰める。 */
   --tap-target-dock: 2.5rem;
   --font-action-dock: 0.875rem;
+  /* 札の「その他の操作」を開いた中身だけは 32px・13px。開いたときだけ札が伸びる場所なので、
+     40px にすると 1 枚が画面を占めてしまう。常に目に入る操作（`.event-card__actions`）には使わない。 */
+  --tap-target-quiet: 2rem;
+  --font-action-quiet: 0.8125rem;
 }

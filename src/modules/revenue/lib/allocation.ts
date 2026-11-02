@@ -29,7 +29,7 @@ export interface AllocationInput {
   organizers: readonly AllocationOrganizer[];
   shares: readonly AllocationShare[];
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
   /** 按分の分母になる出席者数。費用プラン未選択の人も数える。 */
   attendingCount: number;
 }
@@ -42,13 +42,13 @@ export interface AllocationRow {
   /** 人数方式のときだけ入る。割合方式は null。 */
   headcount: number | null;
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
 }
 
 export interface AllocationAmounts {
   headcount: number;
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
 }
 
 export interface AllocationResult {
@@ -159,17 +159,17 @@ export function isAllocationConfigured(
 }
 
 /**
- * 見込み売上と領収書発行額を、同じ配分で按分する。
+ * 見込み売上と集金済みの金額を、同じ配分で按分する。
  * 端数は金額ごとに主催者へ寄せるので、それぞれの合計は元の金額と一致する。
  */
 export function allocateRevenue(input: AllocationInput): AllocationResult {
-  const { organizers, mode, expectedRevenue, issuedRevenue, attendingCount } = input;
+  const { organizers, mode, expectedRevenue, collectedRevenue, attendingCount } = input;
   const owner = ownerIndex(organizers);
 
   if (mode === "RATIO") {
     const bps = resolveSharesBps(organizers, input.shares);
     const expected = splitAmount(expectedRevenue, bps, SHARE_BPS_TOTAL, owner);
-    const issued = splitAmount(issuedRevenue, bps, SHARE_BPS_TOTAL, owner);
+    const collected = splitAmount(collectedRevenue, bps, SHARE_BPS_TOTAL, owner);
     return {
       mode,
       rows: organizers.map((row, index) => ({
@@ -178,9 +178,9 @@ export function allocateRevenue(input: AllocationInput): AllocationResult {
         shareBps: bps[index] ?? 0,
         headcount: null,
         expectedRevenue: expected[index] ?? 0,
-        issuedRevenue: issued[index] ?? 0,
+        collectedRevenue: collected[index] ?? 0,
       })),
-      unallocated: { headcount: 0, expectedRevenue: 0, issuedRevenue: 0 },
+      unallocated: { headcount: 0, expectedRevenue: 0, collectedRevenue: 0 },
     };
   }
 
@@ -197,9 +197,9 @@ export function allocateRevenue(input: AllocationInput): AllocationResult {
         shareBps: 0,
         headcount: headcounts[index] ?? 0,
         expectedRevenue: 0,
-        issuedRevenue: 0,
+        collectedRevenue: 0,
       })),
-      unallocated: { headcount: 0, expectedRevenue: 0, issuedRevenue: 0 },
+      unallocated: { headcount: 0, expectedRevenue: 0, collectedRevenue: 0 },
     };
   }
 
@@ -210,9 +210,9 @@ export function allocateRevenue(input: AllocationInput): AllocationResult {
   const allocatedExpected = oversubscribed
     ? expectedRevenue
     : Math.floor((expectedRevenue * totalHeadcount) / attending);
-  const allocatedIssued = oversubscribed
-    ? issuedRevenue
-    : Math.floor((issuedRevenue * totalHeadcount) / attending);
+  const allocatedCollected = oversubscribed
+    ? collectedRevenue
+    : Math.floor((collectedRevenue * totalHeadcount) / attending);
 
   const expected = splitAmount(
     expectedRevenue,
@@ -221,7 +221,7 @@ export function allocateRevenue(input: AllocationInput): AllocationResult {
     owner,
     allocatedExpected,
   );
-  const issued = splitAmount(issuedRevenue, headcounts, denominator, owner, allocatedIssued);
+  const collected = splitAmount(collectedRevenue, headcounts, denominator, owner, allocatedCollected);
 
   return {
     mode,
@@ -231,12 +231,12 @@ export function allocateRevenue(input: AllocationInput): AllocationResult {
       shareBps: 0,
       headcount: headcounts[index] ?? 0,
       expectedRevenue: expected[index] ?? 0,
-      issuedRevenue: issued[index] ?? 0,
+      collectedRevenue: collected[index] ?? 0,
     })),
     unallocated: {
       headcount: oversubscribed ? 0 : Math.max(0, attending - totalHeadcount),
       expectedRevenue: Math.max(0, expectedRevenue - allocatedExpected),
-      issuedRevenue: Math.max(0, issuedRevenue - allocatedIssued),
+      collectedRevenue: Math.max(0, collectedRevenue - allocatedCollected),
     },
   };
 }

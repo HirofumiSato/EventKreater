@@ -131,7 +131,7 @@ describe("複数日の参加", () => {
     ],
     pricePlan: { name: "一般", audience: "ANY" as const, amount: 3000, note: null },
     discounts: [],
-    receipt: null,
+    collectedAt: null,
     event: {
       id: "event-1",
       title: "芋煮会",

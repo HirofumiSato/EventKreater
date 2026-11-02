@@ -395,10 +395,9 @@ export const LifecycleSchema = z.object({
   action: z.enum(["close", "reopen", "delete"]),
 });
 
-export const IssueReceiptSchema = z.object({
-  addressee: z.string().trim().min(1, "宛名を入力してください").max(100),
-  amount: z.number().int("金額は整数の円です").positive("金額は1円以上にしてください").max(9_999_999),
-  description: z.string().trim().min(1, "但し書きを入力してください").max(100),
+/** 名簿の 1 枚から、集金済みかどうかだけを切り替える。出欠や割引は触らない。 */
+export const ParticipantCollectionSchema = z.object({
+  collected: z.boolean(),
 });
 
 export const SubmitRsvpSchema = z

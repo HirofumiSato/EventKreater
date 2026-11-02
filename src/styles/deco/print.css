@@ -39,18 +39,11 @@
     transition: none !important;
   }
 
-  .deco .receipt,
-  .deco .receipt-sheet,
   .deco .card,
   .deco .panel {
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
-  }
-
-  .deco .receipt,
-  .deco .receipt-sheet {
-    break-inside: avoid;
   }
 
   /* 貼り紙のテープは紙に要らない。ボタンの中身だけを刷る。 */

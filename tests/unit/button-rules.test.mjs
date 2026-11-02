@@ -3,10 +3,13 @@
 // 参加者はスマホで開くので、押せる的は 40px を下回らせず、ボタンの文字は 15px を
 // 下回らせない（AGENTS.md「画面の組み方」、docs/front_implementation_spec.md §1.2）。
 // `.btn--sm` は左右の余白だけを詰める指定で、高さと文字は既定のままにする。
-// ここが崩れると、狭い画面で 4 つを 1 段に収めるために文字を 12px まで落とす
-// 書き方が戻ってきます。並びは段（`grid-template-columns`）を変えて収めます。
-// 例外は画面下に固定する帯（`.action-dock`）だけで、高さは 40px のまま、
-// 文字だけ 14px に詰めます（一覧の上にずっと乗るため）。40px は下回らせません。
+// ここが崩れると、狭い画面で 1 段に収めるために文字を 12px まで落とす書き方が
+// 戻ってきます。並びは段（`grid-template-columns`）を変えるか、操作を折りたたんで収めます。
+// 例外は 2 つだけで、どちらも「常に目に入る操作ではない」ことが条件です。
+// 1 つは画面下に固定する帯（`.action-dock`）。高さは 40px のまま、一覧の上に
+// ずっと乗るので文字だけ 14px に詰めます。40px は下回らせません。
+// もう 1 つは札の折りたたみ（`.event-card__more-body .btn`）。開いたときだけ現れる
+// 場所なので 32px・13px まで詰めます。常設の「申込/出欠一覧」「編集」は 40px・15px です。
 //
 // 値を変えるときは src/styles/tokens.css と、この期待値を同じ PR で直します。
 
@@ -93,6 +96,15 @@ describe("ボタンの押せる的と文字", () => {
     expect(tokens).toContain("--font-action-dock: 0.875rem;");
   });
 
+  it("札の折りたたみだけ 32px・13px まで詰める", () => {
+    expect(tokens).toContain("--tap-target-quiet: 2rem;");
+    expect(tokens).toContain("--font-action-quiet: 0.8125rem;");
+
+    const quiet = declarations(block(surface, ".event-card__more-body .btn"));
+    expect(quiet["min-height"]).toBe("var(--tap-target-quiet)");
+    expect(quiet["font-size"]).toBe("var(--font-action-quiet)");
+  });
+
   it(".btn は 40px 以上・15px・指の操作向けに固定する", () => {
     const btn = declarations(block(components, ".btn"));
     expect(btn["min-height"]).toBe("var(--tap-target)");
@@ -158,30 +170,31 @@ describe("入力欄と小さな操作", () => {
 });
 
 describe("操作の並び", () => {
-  it("イベント札の操作はスマホ 2 列、640px で 4 列、900px で 2 列", () => {
-    const phone = declarations(block(surface, ".event-card > .event-card__actions"));
-    expect(phone["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
-
-    const middle = declarations(
-      wideBlock(surface, 640, ".event-card > .event-card__actions"),
-    );
-    expect(middle["grid-template-columns"]).toBe("repeat(4, minmax(0, 1fr))");
-
-    const wide = declarations(wideBlock(surface, 900, ".event-card > .event-card__actions"));
-    expect(wide["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
+  it("イベント札の操作は幅によらず 2 列、折りたたみの見出しも 40px・15px", () => {
+    const actions = declarations(block(surface, ".event-card > .event-card__actions"));
+    expect(actions["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
 
     const btn = declarations(block(surface, ".event-card > .event-card__actions .btn"));
     expect(btn["min-height"]).toBe("var(--tap-target)");
     expect(btn["font-size"]).toBe("var(--font-action)");
+    expect(btn["white-space"]).toBe("nowrap");
+
+    // 折りたたみの見出しも押せる的。開く前に 40px と 15px を割らない。
+    const summary = declarations(block(surface, ".event-card__more-summary"));
+    expect(summary["min-height"]).toBe("var(--tap-target)");
+    expect(summary["font-size"]).toBe("var(--font-action)");
   });
 
-  it("名簿の行の操作はスマホ 2 列、640px から横並び", () => {
-    const phone = declarations(block(organizer, ".roster .btn-row"));
-    expect(phone.display).toBe("grid");
-    expect(phone["grid-template-columns"]).toBe("repeat(2, minmax(0, 1fr))");
+  it("名簿の 1 枚の操作は幅いっぱいの 1 列に並べる", () => {
+    // 名簿の行から操作の列を外し、保存・削除・集金は 1 枚（`ParticipantSheet`）が持つ。
+    // どれも `.btn--block` で 1 段に 1 つだけ置き、押せる的は `.btn` の 40px を保つ。
+    const blockButton = declarations(block(components, ".btn--block"));
+    expect(blockButton.display).toBe("flex");
+    expect(blockButton.width).toBe("100%");
 
-    const wide = declarations(wideBlock(organizer, 640, ".roster .btn-row"));
-    expect(wide.display).toBe("flex");
+    const btn = declarations(block(components, ".btn"));
+    expect(btn["min-height"]).toBe("var(--tap-target)");
+    expect(btn["font-size"]).toBe("var(--font-action)");
   });
 
   it("画面下の帯は 40px、プロフィールの保存も 40px を下回らない", () => {

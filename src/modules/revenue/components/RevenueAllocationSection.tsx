@@ -276,7 +276,7 @@ export function RevenueAllocationSection({
                       見込み
                     </th>
                     <th scope="col" className="is-num">
-                      発行済み
+                      集金済み
                     </th>
                   </tr>
                 </thead>
@@ -297,7 +297,7 @@ export function RevenueAllocationSection({
                           : `${row.headcount ?? 0} 人`}
                       </td>
                       <td className="is-num">{yen(row.expectedRevenue)}</td>
-                      <td className="is-num">{yen(row.issuedRevenue)}</td>
+                      <td className="is-num">{yen(row.collectedRevenue)}</td>
                     </tr>
                   ))}
                 </tbody>

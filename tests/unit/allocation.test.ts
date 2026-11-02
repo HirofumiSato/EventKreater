@@ -71,7 +71,7 @@ describe("allocateRevenue（割合方式）", () => {
       organizers: three,
       shares: [],
       expectedRevenue: 10000,
-      issuedRevenue: 10000,
+      collectedRevenue: 10000,
       attendingCount: 3,
     });
     expect(result.rows.map((row) => row.expectedRevenue)).toEqual([3334, 3333, 3333]);
@@ -85,24 +85,31 @@ describe("allocateRevenue（割合方式）", () => {
       organizers: three,
       shares: shares("RATIO", [5000, 3000, 2000]),
       expectedRevenue: 12345,
-      issuedRevenue: 8000,
+      collectedRevenue: 8000,
       attendingCount: 3,
     });
     expect(result.rows.map((row) => row.expectedRevenue)).toEqual([6173, 3703, 2469]);
-    expect(result.rows.map((row) => row.issuedRevenue)).toEqual([4000, 2400, 1600]);
+    expect(result.rows.map((row) => row.collectedRevenue)).toEqual([4000, 2400, 1600]);
   });
 
-  it("領収書発行額も同じ配分で按分し、見込みと合計が食い違わない", () => {
+  it("集金済み額も同じ配分で按分し、見込みと合計が食い違わない", () => {
     const result = allocateRevenue({
       mode: "RATIO",
       organizers: three,
       shares: [],
       expectedRevenue: 10000,
-      issuedRevenue: 9999,
+      collectedRevenue: 9999,
       attendingCount: 3,
     });
-    expect(result.rows.reduce((sum, row) => sum + row.expectedRevenue, 0)).toBe(10000);
-    expect(result.rows.reduce((sum, row) => sum + row.issuedRevenue, 0)).toBe(9999);
+    // 行の合計に未割当を足すと、入力した金額へ戻る（按分でお金が増減しない）。
+    expect(
+      result.rows.reduce((sum, row) => sum + row.expectedRevenue, 0) +
+        result.unallocated.expectedRevenue,
+    ).toBe(10000);
+    expect(
+      result.rows.reduce((sum, row) => sum + row.collectedRevenue, 0) +
+        result.unallocated.collectedRevenue,
+    ).toBe(9999);
   });
 
   it("主催者が1人なら全額がその人に入る", () => {
@@ -111,10 +118,10 @@ describe("allocateRevenue（割合方式）", () => {
       organizers: [three[0]],
       shares: [],
       expectedRevenue: 8000,
-      issuedRevenue: 5000,
+      collectedRevenue: 5000,
       attendingCount: 2,
     });
-    expect(result.rows[0]).toMatchObject({ expectedRevenue: 8000, issuedRevenue: 5000 });
+    expect(result.rows[0]).toMatchObject({ expectedRevenue: 8000, collectedRevenue: 5000 });
   });
 });
 
@@ -125,7 +132,7 @@ describe("allocateRevenue（人数方式）", () => {
       organizers: three,
       shares: shares("HEADCOUNT", [1, 1, 1]),
       expectedRevenue: 10000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 3,
     });
     expect(result.rows.map((row) => row.expectedRevenue)).toEqual([3334, 3333, 3333]);
@@ -138,15 +145,32 @@ describe("allocateRevenue（人数方式）", () => {
       organizers: three,
       shares: shares("HEADCOUNT", [1, 1, 0]),
       expectedRevenue: 10000,
-      issuedRevenue: 10000,
+      collectedRevenue: 10000,
       attendingCount: 3,
     });
     expect(result.rows.map((row) => row.expectedRevenue)).toEqual([3333, 3333, 0]);
     expect(result.unallocated).toEqual({
       headcount: 1,
       expectedRevenue: 3334,
-      issuedRevenue: 3334,
+      collectedRevenue: 3334,
     });
+  });
+
+  it("人数方式でも、集金済み額の按分は未割当を足すと入力と一致する", () => {
+    const result = allocateRevenue({
+      mode: "HEADCOUNT",
+      organizers: three,
+      shares: shares("HEADCOUNT", [1, 1, 0]),
+      expectedRevenue: 10000,
+      collectedRevenue: 5000,
+      attendingCount: 3,
+    });
+    expect(
+      result.rows.reduce((sum, row) => sum + row.collectedRevenue, 0) +
+        result.unallocated.collectedRevenue,
+    ).toBe(5000);
+    // 3 人のうち 2 人ぶんだけ配るので、未割当が残る。
+    expect(result.unallocated.collectedRevenue).toBeGreaterThan(0);
   });
 
   it("18 人中 12 人を配分すると、未割当が 6 人残る", () => {
@@ -162,7 +186,7 @@ describe("allocateRevenue（人数方式）", () => {
         { organizerId: "co-a", shareBps: null, headcount: 6 },
       ],
       expectedRevenue: 18000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 18,
     });
     expect(result.unallocated.headcount).toBe(6);
@@ -176,11 +200,11 @@ describe("allocateRevenue（人数方式）", () => {
       organizers: three,
       shares: shares("HEADCOUNT", [1, 1, 1]),
       expectedRevenue: 10000,
-      issuedRevenue: 5000,
+      collectedRevenue: 5000,
       attendingCount: 0,
     });
     expect(result.rows.every((row) => row.expectedRevenue === 0)).toBe(true);
-    expect(result.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, issuedRevenue: 0 });
+    expect(result.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, collectedRevenue: 0 });
   });
 
   it("出席者が減って人数の合計を超えたら、売上を超えず未割当も出ない", () => {
@@ -189,11 +213,11 @@ describe("allocateRevenue（人数方式）", () => {
       organizers: three,
       shares: shares("HEADCOUNT", [3, 3, 3]),
       expectedRevenue: 9000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 2,
     });
     expect(result.rows.reduce((sum, row) => sum + row.expectedRevenue, 0)).toBe(9000);
-    expect(result.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, issuedRevenue: 0 });
+    expect(result.unallocated).toEqual({ headcount: 0, expectedRevenue: 0, collectedRevenue: 0 });
   });
 
   it("共同主催を解除すると、残った主催者だけで再計算する", () => {
@@ -203,7 +227,7 @@ describe("allocateRevenue（人数方式）", () => {
       organizers: remaining,
       shares: shares("HEADCOUNT", [1, 1, 1]),
       expectedRevenue: 10000,
-      issuedRevenue: 0,
+      collectedRevenue: 0,
       attendingCount: 2,
     });
     expect(result.rows.map((row) => row.expectedRevenue)).toEqual([5000, 5000]);

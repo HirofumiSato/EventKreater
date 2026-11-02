@@ -35,7 +35,7 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     // 残りは書かない。`N / 8` を読めば引けるうえ、件数が動くたびに文が伸び縮みする。
     const head =
       remaining === 0
-        ? `公開中のイベントが${limit}件に達しました。終わったものを削除するか止めてください。放題（2,980円）へ変えることもできます。`
+        ? `公開中のイベントが${limit}件に達しました。終わったものは削除するか「公開一時停止」を使ってください。`
         : `月額プランで公開中のイベント ${count} / ${limit} 件`;
     return `${head}${detail}`;
   }

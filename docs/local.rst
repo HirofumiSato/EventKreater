@@ -63,7 +63,7 @@
    * - ``SMS_WEBHOOK_URL``
      - 電話番号確認コードとログイン確認番号のSMS配送先。空ならサーバログに本文を残す
    * - ``GOOGLE_CLIENT_ID`` / ``GOOGLE_CLIENT_SECRET``
-     - Google サインイン。空なら登録画面で設定不足と表示する
+     - Google サインイン。空なら登録画面で設定不足と表示する。Google ログインの入口は当面画面に出していないが、 ``GET /api/v1/auth/google`` とコールバックは残すので、値は入れておく
    * - ``OPENAI_API_KEY``
      - イベント作成画面の音声入力（音声認識）。空ならマイクボタンは使えず、手入力に戻る
    * - ``VOICE_TRANSCRIBE_MODEL``
@@ -247,9 +247,7 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
    * - ``/organizer/events/{id}/edit``
      - イベント編集。排他ロックは期限なし。保持者本人には排他の表示を出さない。催し名はリード
    * - ``/organizer/events/{id}/participants``
-     - 参加者名簿。催し名はリード
-   * - ``/organizer/events/{id}/receipts/{participantId}``
-     - 幹事向け領収書。印刷しない見出しが画面名
+     - 参加者名簿。見出しは催し名にし、上に小さく「参加者名簿」を置く。行を開いて出欠・人数・集金を直す。リマインドは持たない
    * - ``/invitations/{code}``
      - 共同幹事受諾。催し名はリード
    * - ``/events/{id}``

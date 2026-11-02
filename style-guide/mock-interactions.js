@@ -14,10 +14,12 @@
 //   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
 //   7. 出欠の層 … 告知ページの層を開き、割引の支払額を計算し、送信の返事を出す
 //   8. ヘッダーの切り抜き … 編集画面からトリミングのダイアログを開き、倍率だけ変える
+//   9. 名簿の表示列 … 「表示列」からチェックボックスのダイアログを開き、列を出し入れする
+//  10. 名簿の 1 枚 … 行を押して開く 1 枚。集金の切り替えをその場で入れ替える
 //
 // 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
-// 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログだけ。
-// 他の表示は製品の DOM のまま動かす。
+// 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
+// 名簿の表示列ダイアログ、名簿の 1 枚の集金日時だけ。他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
 (function () {
@@ -733,6 +735,8 @@
     "更新する",
     "公開を一時停止",
     "公開を再開",
+    "公開一時停止",
+    "公開再開",
     "削除する",
     "招待する",
     "解除する",
@@ -756,7 +760,7 @@
   /** この JS が動かしている操作。押してもトーストを出さない。 */
   const WIRED =
     ".site-header, .cal, .event-step__toggle, .event-step__next, .voice-fab, .list-filters, " +
-    ".rsvp-entry, .rsvp-summary__actions, .sticky-rsvp, .modal--sheet";
+    ".rsvp-entry, .rsvp-summary__actions, .sticky-rsvp, .modal--sheet, [data-mock-wired]";
 
   function normalized(text) {
     return (text || "").replace(/\s+/g, "").trim();
@@ -797,19 +801,33 @@
 
         const label = normalized(target.textContent);
 
-        // 文字を持たない操作（一覧の札の URL コピー）は、読み上げ名で見分ける。
-        // 入力欄が無いので、同じ札のチラシが指す告知ページをコピーする。
+        // 一覧の札の URL コピー。文字を持たない操作は読み上げ名で見分ける。
+        // 文字のボタン（「URLをコピー」と、押したあとの「コピーしました」）も同じ経路に
+        // 乗せる。同じ操作が文言の有無で別の分岐へ落ちると、モックの返事が食い違うため。
         const spoken = normalized(target.getAttribute("aria-label") || "");
-        if (label === "" && spoken.includes("コピー")) {
+        const copiesCardUrl =
+          (label === "" && spoken.includes("コピー")) ||
+          label === "URLをコピー" ||
+          label === "コピーしました";
+        if (copiesCardUrl) {
+          // コピー先は同じ札の「公開ページ」を先に読む。チラシ画像の無い札では
+          // サムネイルのリンクが無いので、画像の有無でコピーの行き先が消えないようにする。
+          // 「公開ページ」が無ければ従来どおりチラシのリンクを使う。
           const card = target.closest(".event-card");
-          const publicLink = card ? card.querySelector(".event-card__thumb-link") : null;
-          if (publicLink) {
-            copyText(new URL(publicLink.getAttribute("href"), location.href).href);
+          const link = card
+            ? card.querySelector(".event-card__public-link") ||
+              card.querySelector(".event-card__thumb-link")
+            : null;
+          if (link) {
+            copyText(new URL(link.getAttribute("href"), location.href).href);
             toast("URL をコピーしました。");
-          } else {
-            toast("コピーする URL がありません。", "error");
+            return;
           }
-          return;
+          if (label !== "URLをコピー") {
+            toast("コピーする URL がありません。", "error");
+            return;
+          }
+          // 札の外の「URLをコピー」は、下の分岐で近くの入力欄からコピーする。
         }
 
         if (label === "URLをコピー") {
@@ -1336,6 +1354,289 @@
     });
   }
 
+  // ---- 9. 参加者名簿の表示列 ---------------------------------------------
+
+  /**
+   * 名簿の「表示列」から、列のチェックボックスを開く。
+   *
+   * **このダイアログだけ骨格を組み直す**のは、製品では押したときにしか出ず、
+   * 撮った HTML に残らないため（8 のヘッダー切り抜きと同じ扱い）。
+   * 並び・ラベル・初期値は撮った `th[data-column]` から読み、製品の列の定義は写さない。
+   * チェックを変えたら `th` / `td` の `hidden` を付け替えるだけで、製品と同じ計算になる。
+   * 名前の列は、製品と同じく disabled にして外せなくする。
+   */
+  function wireRosterColumns() {
+    const table = document.querySelector("table.roster");
+    if (!table) return;
+    const head = table.closest(".table-card")?.querySelector(".table-card__head");
+    const openButton = Array.from(head?.querySelectorAll("button") ?? []).find(
+      (button) => (button.textContent || "").trim() === "表示列",
+    );
+    if (!openButton) return;
+
+    // 外せない列。名前が無いと誰の行か分からなくなる（製品と同じ）。
+    const LOCKED = ["name"];
+    const columns = Array.from(table.querySelectorAll("thead th[data-column]")).map((th) => ({
+      key: th.getAttribute("data-column"),
+      label: (th.textContent || "").trim(),
+      th,
+      locked: LOCKED.includes(th.getAttribute("data-column")),
+    }));
+    if (columns.length === 0) return;
+
+    // 該当なしの行の colspan も、製品と同じく出している列の数へ合わせる。
+    const emptyCells = Array.from(table.querySelectorAll("tbody td[colspan]"));
+
+    /** 押したことのある操作として印を付ける（wireActions のトーストを出さない）。 */
+    openButton.setAttribute("data-mock-wired", "true");
+    openButton.setAttribute("aria-haspopup", "dialog");
+    openButton.setAttribute("aria-expanded", "false");
+
+    let modal = null;
+    /** 列のキー → ダイアログのチェックボックス。 */
+    let boxes = new Map();
+
+    const syncTable = () => {
+      let shown = 0;
+      for (const column of columns) {
+        const show = column.locked || Boolean(boxes.get(column.key)?.checked);
+        if (show) shown += 1;
+        for (const cell of table.querySelectorAll('[data-column="' + column.key + '"]')) {
+          cell.hidden = !show;
+        }
+      }
+      for (const cell of emptyCells) cell.colSpan = shown;
+    };
+
+    const close = () => {
+      if (!modal) return;
+      modal.remove();
+      modal = null;
+      openButton.setAttribute("aria-expanded", "false");
+      document.documentElement.removeAttribute("data-scroll-lock");
+    };
+
+    const buildDialog = () => {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="閉じる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-roster-columns-title" tabindex="-1">' +
+        '<button type="button" class="dialog__close" aria-label="閉じる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-roster-columns-title" class="dialog__title">表示する列</h3>' +
+        '<p class="dialog__body">よく見る列だけを残すと、スマホでも横に送らずに読めます。</p>' +
+        '<div class="column-picker"></div>' +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--sm" data-mock-columns-close>閉じる</button>' +
+        "</div></div>";
+
+      const picker = host.querySelector(".column-picker");
+      boxes = new Map();
+      for (const column of columns) {
+        const label = document.createElement("label");
+        label.className = "check";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        // 開くたびに、いま隠している列をそのまま初期値にする。
+        input.checked = column.locked || !column.th.hidden;
+        input.disabled = column.locked;
+        input.addEventListener("change", syncTable);
+        const text = document.createElement("span");
+        text.textContent = column.label;
+        label.append(input, text);
+        picker.append(label);
+        boxes.set(column.key, input);
+      }
+
+      for (const button of host.querySelectorAll(
+        ".dialog__close, .modal__backdrop, [data-mock-columns-close]",
+      )) {
+        button.addEventListener("click", close);
+      }
+      return host;
+    };
+
+    openButton.addEventListener("click", () => {
+      if (modal && modal.isConnected) return;
+      modal = buildDialog();
+      document.body.append(modal);
+      document.documentElement.setAttribute("data-scroll-lock", "true");
+      openButton.setAttribute("aria-expanded", "true");
+    });
+
+    // 製品の `Dialog` は Escape でも閉じる。開いている間だけ拾う。
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal) close();
+    });
+  }
+
+
+  // ---- 10. 参加者名簿の 1 枚 ---------------------------------------------
+
+  /**
+   * 名簿の行を押したときに開く 1 枚（製品の `ParticipantSheet`）。
+   *
+   * 製品では押したときにしか出ず、撮った HTML に残らないので、ここで骨格を組み直す。
+   * 値は押した行のセルから読む（名前・出欠・人数・費用プラン・コメント）。
+   * 日時は撮った HTML に無い（既定の表示列に無い）ので、この写しでは出さない。
+   * 出欠を「出席」以外にすると、席を取らない項目を隠す（製品と同じ）。
+   */
+  function wireRosterRowSheet() {
+    const table = document.querySelector("table.roster");
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll("tbody tr")).filter((row) =>
+      row.querySelector(".roster__open"),
+    );
+    if (rows.length === 0) return;
+
+    let modal = null;
+
+    const cellText = (row, key) => {
+      const cell = row.querySelector('td[data-column="' + key + '"]');
+      return cell ? (cell.textContent || "").trim() : "";
+    };
+
+    /** 費用プランは、割引と支払額の行を除いた「プラン名 金額」だけを取る。 */
+    const planText = (row) => {
+      const cell = row.querySelector('td[data-column="pricePlan"]');
+      if (!cell) return "";
+      const first = Array.from(cell.childNodes).find(
+        (node) => node.nodeType === Node.TEXT_NODE && (node.textContent || "").trim(),
+      );
+      return (first?.textContent || "").trim() || cellText(row, "pricePlan");
+    };
+
+    const close = () => {
+      if (!modal) return;
+      modal.remove();
+      modal = null;
+      document.documentElement.removeAttribute("data-scroll-lock");
+    };
+
+    const build = (row) => {
+      const name = cellText(row, "name").replace(/待ち \d+番目/, "").trim();
+      const status = cellText(row, "status");
+      const gender = cellText(row, "gender");
+      const partySize = cellText(row, "partySize").replace(/[^\d]/g, "") || "1";
+      const plan = planText(row);
+      const comment = cellText(row, "comment").replace(/^—$/, "");
+      // 集金を切り替えてよいのは出席の行だけ。製品の `canCollect` は画面の出欠ではなく
+      // 行（サーバー）の出欠を見るので、下の select を動かしても切り替えは出さない。
+      const attendingRow = (status || "出席") === "出席";
+      // 表の集金の列は「済」だけで日時を持たない。注記の形（製品の `formatDateTimeJa`）を
+      // 再現するため、日時は同じ行の回答日時を借りる。未集金は空にして注記を出さない。
+      let collectedAt = /済/.test(cellText(row, "collected"))
+        ? cellText(row, "createdAt").replace(/^要望\s*/, "")
+        : "";
+
+      const host = document.createElement("div");
+      host.className = "modal modal--sheet modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="閉じる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-roster-sheet-title" tabindex="-1">' +
+        '<button type="button" class="dialog__close" aria-label="閉じる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-roster-sheet-title" class="dialog__title"></h3>' +
+        '<p class="dialog__body"></p>' +
+        // 集金は保存のフォームの外に置く（製品の `ParticipantSheet` と同じ並び）。
+        // 出席以外の行ではボタンを消し、記録できないことだけを伝える。
+        '<div class="form--spaced">' +
+        '<button type="button" class="btn btn--outline btn--block" data-mock-sheet-collect></button>' +
+        '<p class="help alert__actions" data-mock-sheet-collected-at hidden></p>' +
+        '<p class="help" data-mock-sheet-collect-help hidden>出席のときに記録できます。</p>' +
+        "</div>" +
+        '<div class="field"><label class="label" for="mock-roster-sheet-name">名前</label>' +
+        '<input id="mock-roster-sheet-name" class="input" maxlength="100"></div>' +
+        '<div class="field"><label class="label" for="mock-roster-sheet-status">出欠</label>' +
+        '<select id="mock-roster-sheet-status" class="select">' +
+        '<option value="出席">出席</option><option value="参加要望">参加要望</option><option value="欠席">欠席</option>' +
+        "</select></div>" +
+        '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-gender">性別</label>' +
+        '<select id="mock-roster-sheet-gender" class="select">' +
+        '<option value="未設定">未設定</option><option value="男性">男性</option><option value="女性">女性</option>' +
+        "</select></div>" +
+        '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-party">人数</label>' +
+        '<input id="mock-roster-sheet-party" class="input" type="number" inputmode="numeric" min="1" max="20">' +
+        '<p class="help">自分を含めた人数です。</p></div>' +
+        '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-plan">費用プラン</label>' +
+        '<input id="mock-roster-sheet-plan" class="input"></div>' +
+        '<div class="field"><label class="label" for="mock-roster-sheet-comment">コメント</label>' +
+        '<input id="mock-roster-sheet-comment" class="input" maxlength="500"></div>' +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-sheet-save>保存する</button>' +
+        '<button type="button" class="btn btn--danger btn--block" data-mock-sheet-delete>名簿から削除</button>' +
+        "</div></div>";
+
+      host.querySelector(".dialog__title").textContent = name;
+      host.querySelector(".dialog__body").textContent =
+        "いまは" + (status || "出席") + "。申込後に変わったことがあれば、ここで直します。";
+      host.querySelector("#mock-roster-sheet-name").value = name;
+      host.querySelector("#mock-roster-sheet-status").value = status || "出席";
+      host.querySelector("#mock-roster-sheet-gender").value = gender || "未設定";
+      host.querySelector("#mock-roster-sheet-party").value = partySize;
+      host.querySelector("#mock-roster-sheet-plan").value = plan.replace(/^—$/, "");      host.querySelector("#mock-roster-sheet-comment").value = comment;
+
+      const syncAttending = () => {
+        const attending = host.querySelector("#mock-roster-sheet-status").value === "出席";
+        for (const field of host.querySelectorAll("[data-mock-sheet-attending]")) {
+          field.hidden = !attending;
+        }
+      };
+      host.querySelector("#mock-roster-sheet-status").addEventListener("change", syncAttending);
+      syncAttending();
+
+      // 集金の切り替え。製品と同じ文言・同じ注記を出し、押したらその場で入れ替える。
+      const collectButton = host.querySelector("[data-mock-sheet-collect]");
+      const collectedNote = host.querySelector("[data-mock-sheet-collected-at]");
+      const collectHelp = host.querySelector("[data-mock-sheet-collect-help]");
+
+      const syncCollection = () => {
+        collectButton.textContent = collectedAt ? "集金を戻す" : "集金済みにする";
+        collectedNote.textContent = collectedAt ? collectedAt + " に集金" : "";
+        collectedNote.hidden = !collectedAt;
+      };
+
+      if (attendingRow) {
+        // API は呼ばない。押した瞬間に、その場の時刻で見た目だけを切り替える。
+        collectButton.addEventListener("click", () => {
+          collectedAt = collectedAt ? "" : new Date().toLocaleString("ja-JP");
+          syncCollection();
+        });
+        syncCollection();
+      } else {
+        // 製品はボタンを描かない。`.btn` は `display` を持つので、hidden ではなく外す。
+        collectButton.remove();
+        collectHelp.hidden = false;
+      }
+
+      for (const button of host.querySelectorAll(
+        ".dialog__close, .modal__backdrop, [data-mock-sheet-save], [data-mock-sheet-delete]",
+      )) {
+        button.addEventListener("click", close);
+      }
+      return host;
+    };
+
+    for (const row of rows) {
+      const open = () => {
+        if (modal && modal.isConnected) return;
+        modal = build(row);
+        document.body.append(modal);
+        document.documentElement.setAttribute("data-scroll-lock", "true");
+      };
+      row.addEventListener("click", open);
+      row.querySelector(".roster__open").addEventListener("click", open);
+    }
+
+    // 製品の `Dialog` は Escape でも閉じる。開いている間だけ拾う。
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal) close();
+    });
+  }
+
 
   // ---- 起動 -------------------------------------------------------------
 
@@ -1347,6 +1648,8 @@
     wireListFilters();
     wireRsvpSheet();
     wireHeaderCrop();
+    wireRosterColumns();
+    wireRosterRowSheet();
     wireActions();
   }
 

@@ -19,6 +19,13 @@ import { Alert, Field, Loading, PageHeader } from "@/components/ui";
 
 export type AuthAudience = "organizer" | "participant";
 
+/**
+ * Google ログインの入口はいったん画面に出さない。
+ * 入口を出さないだけで、`/api/v1/auth/google` とコールバック、`GOOGLE_ERRORS` の表示は残す。
+ * 戻すときはこの値を true にする。
+ */
+const SHOW_GOOGLE_ENTRY = false;
+
 const GOOGLE_ERRORS: Record<string, string> = {
   google_config: "GoogleログインのクライアントIDが設定されていません。",
   google_denied: "Googleログインがキャンセルされました。",
@@ -52,7 +59,7 @@ const COPY: Record<
   participant: {
     title: { register: "参加者の会員登録", login: "参加者ログイン" },
     lead:
-      "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠と領収書を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
+      "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
     submit: { register: "登録して履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
     otherLabel: "イベントを開く幹事なら、",
@@ -309,14 +316,16 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
             {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
           </button>
         </form>
-        <div className="panel__actions">
-          <a
-            href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
-            className="btn btn--outline btn--block"
-          >
-            Googleで続ける
-          </a>
-        </div>
+        {SHOW_GOOGLE_ENTRY && (
+          <div className="panel__actions">
+            <a
+              href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
+              className="btn btn--outline btn--block"
+            >
+              Googleで続ける
+            </a>
+          </div>
+        )}
         <div className="auth-alt">
           {copy.otherLabel}
           <Link href={copy.switchToOther.href} className="text-link">

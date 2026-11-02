@@ -10,7 +10,7 @@
    2. 管理（admin）— 静かめ
    数字と行を走査する画面。傾けない・塗らない・細くする。
    影は残すが、硬いずれではなく「紙が 1 枚ぶん浮いている」だけにする。
-   主催者ホーム、参加者名簿、売上、領収書。
+   主催者ホーム、参加者名簿、売上。
    ========================================================================== */
 
 .deco.deco--tape-quiet {
@@ -252,7 +252,6 @@
 }
 
 .deco.deco--tape-quiet .draft-card,
-.deco.deco--tape-quiet .receipt-sheet,
 .deco.deco--tape-quiet .plan-card,
 .deco.deco--tape-quiet .auth-card,
 .deco.deco--tape-quiet .event-sheet {

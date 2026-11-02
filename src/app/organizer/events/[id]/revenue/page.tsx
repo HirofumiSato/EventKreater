@@ -162,6 +162,23 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
           </Rows>
         )}
       </Section>
+
+      {summary.uncollected > 0 && (
+        <Section>
+          <SectionHead title="未集金" note="見込みのうち、まだ受け取っていない額です。" />
+          <Panel as="div">
+            <p className="panel__note panel__note--warning">
+              {/* 未集金の人数は API に専用の値が無いので、金額だけで示す。 */}
+              未集金 {yen(summary.uncollected)}。名簿で集金を記録できます。
+            </p>
+            <p className="alert__actions">
+              <Link href={`/organizer/events/${params.id}/participants`} className="text-link">
+                名簿で集金を記録する
+              </Link>
+            </p>
+          </Panel>
+        </Section>
+      )}
     </div>
   );
 }

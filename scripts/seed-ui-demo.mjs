@@ -14,7 +14,7 @@ import path from "node:path";
  * 何度実行してもデモ用のアカウントと、その催しだけを作り直す。
  * 他の会員・催しには触らない。撮影用の識別子は storage/ui-demo.json に書き出す。
  *
- * 画面を見るためのデータなので、業務上の意味（按分・領収書・利用枠）は
+ * 画面を見るためのデータなので、業務上の意味（按分・集金・利用枠）は
  * 実装が読む列にだけ入れ、計算結果を直接持たせない。
  */
 
@@ -457,7 +457,7 @@ try {
     update: {},
   });
 
-  // 前回のデモ催しを消す（出欠・領収書・招待はカスケードで消える）。
+  // 前回のデモ催しを消す（出欠・招待はカスケードで消える）。
   const demoUserIds = [
     organizer.id,
     coHost.id,
@@ -587,6 +587,13 @@ try {
               at.setUTCHours(2 + (row.appliedDaysBefore % 9), (row.appliedDaysBefore * 7) % 60, 0, 0);
               return at;
             })();
+      // 集金済みの日時。`collectedAt` を直接渡せばその日時、`collected: true` なら
+      // 開催日の 12 時（当日に集めた想定）。出席のときだけ持つ。
+      const collectedAt =
+        row.status !== "ATTENDING"
+          ? null
+          : (row.collectedAt ??
+            (row.collected === true ? tokyoDateTime(input.sortDate, "12:00") : null));
       const record = await prisma.participant.create({
         data: {
           eventId: event.id,
@@ -610,6 +617,7 @@ try {
           priceAudience: plan ? plan.audience : null,
           waitlistedAt:
             row.status === "WAITLISTED" ? new Date(Date.now() - (index + 1) * 3600 * 1000) : null,
+          collectedAt,
           // 出席のときだけ割引を持たせる。欠席・参加要望では残さない。
           discounts:
             row.status === "ATTENDING" && chosenDiscounts.length > 0
@@ -623,19 +631,6 @@ try {
           createdAt: appliedAt,
         },
       });
-      if (row.receipt) {
-        await prisma.receipt.create({
-          data: {
-            participantId: record.id,
-            eventId: event.id,
-            addressee: row.name,
-            amount: row.receipt.amount,
-            description: row.receipt.description,
-            issuerName: row.receipt.issuerName ?? organizer.name,
-            issuedAt: new Date(Date.now() - 3 * DAY_MS),
-          },
-        });
-      }
       created.push(record);
     }
 
@@ -672,9 +667,10 @@ try {
         partySize: 2,
         comment: "子ども用に椅子を1脚お願いします",
         // 回答済みの画面（告知ページの「適用中の割引」）でも割引が見えるようにする。
-        // 領収書は割引後の支払額で発行したことにする。
+        // 1 人だけ先に集金済みにして、名簿の「集金」列と売上の差額を確かめられるようにする。
+        // 開催前の催しなので、集金日は直近（3 日前）に置く。
         discountIndexes: [0],
-        receipt: { amount: 1000, description: "秋の芋煮会 参加費" },
+        collectedAt: new Date(Date.now() - 3 * DAY_MS),
       },
       { name: "鈴木 大輔", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, partySize: 3, discountIndexes: [0] },
       { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
@@ -810,6 +806,7 @@ try {
     status: "PUBLISHED",
     schedules: [schedule(addDays(today, -35), "11:00", "15:00", 0)],
     plans: [{ name: "大人", audience: "ANY", amount: 1500, note: null }],
+    // 先月の催しなので、出席者 3 人は当日に集金済み。欠席者は未集金のまま。
     participants: [
       {
         name: PARTICIPANT.name,
@@ -818,10 +815,10 @@ try {
         status: "ATTENDING",
         planIndex: 0,
         scheduleIndex: 0,
-        receipt: { amount: 3000, description: "先月の芋煮会 参加費" },
+        collected: true,
       },
-      { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0 },
-      { name: "渡辺 健", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0 },
+      { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, collected: true },
+      { name: "渡辺 健", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0, collected: true },
       { name: "中村 あゆみ", gender: "FEMALE", status: "DECLINED", scheduleIndex: 0 },
     ],
   });
@@ -1441,7 +1438,6 @@ try {
     participantId: participant.id,
     organizerId: organizer.id,
     coHostId: coHost.id,
-    receiptParticipant: main.participants[0].id,
     inviteCode: INVITE_CODE,
     emailVerifyToken: EMAIL_VERIFY_TOKEN,
     emailChangeTokens: EMAIL_CHANGE_TOKENS,
@@ -1470,7 +1466,7 @@ try {
   console.log(`    写真展「夜の港」（受付停止）: ${closed.event.id}`);
   console.log(`    第3回 たこ焼きパーティー（チラシなし）: ${takoyaki.event.id}`);
   console.log(`    秋の川辺キャンプ 2泊3日（3日間・男女別・割引3件）: ${camp.event.id}`);
-  console.log(`    先月の芋煮会（過去日・領収書）: ${lastMonth.event.id}`);
+  console.log(`    先月の芋煮会（過去日・出席者は集金済み）: ${lastMonth.event.id}`);
   console.log(`    下書きの披露宴（下書き）: ${draft.event.id}`);
   console.log(`    手しごとの市 秋の道具市（過去日・和紙と藍）: ${craftMarket.event.id}`);
   console.log(`    ハロウィン おやこマルシェ（過去日・キャンディ）: ${halloween.event.id}`);

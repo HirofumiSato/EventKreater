@@ -114,22 +114,6 @@ a.card,
   }
 }
 
-.receipt {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-  background: #fff;
-  border: 1px solid var(--color-line);
-}
-
-
-
-
-
-
-
-
-
 @media print {
   .site-header,
   .site-footer,
@@ -141,10 +125,6 @@ a.card,
   .page {
     padding: 0;
     max-width: none;
-  }
-
-  .receipt {
-    border: none;
   }
 }
 

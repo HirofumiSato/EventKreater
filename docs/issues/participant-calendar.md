@@ -64,7 +64,7 @@
 - 外部カレンダーへの書き出し・購読（`.ics`、Google カレンダー）
 - リマインドや通知
 - 月ごとの API（`?from=&to=` の絞り込み）
-- 領収書への直接リンク（一覧の行はイベントページだけ）
+- 集金の表示・切り替え（一覧の行はイベントページだけ）
 
 ## 実装方針
 
@@ -88,7 +88,7 @@ GET /api/v1/user/calendar
 ```
 
 - `requireUserId` で認証する。未ログインは 401。
-- `Participant` を `userId = 自分`、`event.isDeleted = false` で全件読み、`participationInclude`（`schedule`・`receipt`・`event`＋`flyerAsset`）で必要な項目を取る。
+- `Participant` を `userId = 自分`、`event.isDeleted = false` で全件読み、`participationInclude`（`schedule`・`pricePlan`・`discounts`・`event`＋`flyerAsset`）で必要な項目を取る。集金の印は持たない。
 - 応答は次の形。日付は `schedule.eventDate`、無ければ `event.sortDate` を `YYYY-MM-DD` にする。
 
 ```json

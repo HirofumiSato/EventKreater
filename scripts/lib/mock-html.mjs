@@ -207,7 +207,7 @@ export function rewriteInternalLinks(html, targets) {
  * パスに合うモックを探す。完全一致を先に見て、無ければ `*` の型と比べる。
  *
  * 型はセグメント数が同じものだけを比べ、`*` が少ない（文字が合うところが多い）型を選ぶ。
- * `events` の 1 階層だけの型と、その下の `receipt` まで含む型は長さが違うので取り違えない。
+ * `organizers/<userId>` と `organizers/<userId>/events` は長さが違うので取り違えない。
  */
 export function matchLinkTarget(pathname, targets) {
   const exact = targets.get(pathname);

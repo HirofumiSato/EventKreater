@@ -77,6 +77,10 @@
      値の正は src/styles/tokens.css。ここは見本を同じ大きさで見せるための写し。 */
   --tap-target: 44px;
   --font-action: 15px;
+  /* 札の折りたたみの操作だけは、札の常設（40px・15px）より小さい 32px・13px に詰める。
+     値の正は src/styles/tokens.css の --tap-target-quiet / --font-action-quiet。 */
+  --tap-target-quiet: 32px;
+  --font-action-quiet: 13px;
   --font: "Zen Kaku Gothic New", sans-serif;
   --font-maru: "Zen Maru Gothic", "Zen Kaku Gothic New", sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -629,13 +633,16 @@ svg {
   pointer-events: none;
 }
 
-.btn--primary {
+/* 主操作（朱）。製品は札の「編集」を btn--accent で持つので、同じ見た目を両方の名前で置く。 */
+.btn--primary,
+.btn--accent {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: #fff;
 }
 
-.btn--primary:hover {
+.btn--primary:hover,
+.btn--accent:hover {
   background: var(--color-primary-hover);
 }
 
@@ -1466,6 +1473,14 @@ fieldset.field {
   margin-top: 1.25rem;
 }
 
+/* 札の見本は、製品の札（390px で 358px）に近い幅で見せる。見本の枠は左右 40px の
+   余白を持つため、そのままだと 7 文字の操作と印付きのボタンが 2 段に折れる。 */
+@media (max-width: 639px) {
+  .sg-specimen--fill {
+    margin-inline: 0;
+  }
+}
+
 .sg-caption {
   margin-bottom: 0.5rem;
   color: var(--color-text-subtle);
@@ -2068,6 +2083,13 @@ h3,
   padding: 0.375rem 0.875rem;
 }
 
+/* 文字を持たない操作。正方形のまま置き、読み上げ名は aria-label に任せる。 */
+.btn--icon {
+  flex: 0 0 auto;
+  width: var(--tap-target);
+  padding: 0;
+}
+
 .btn--lg {
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-full);
@@ -2077,7 +2099,8 @@ h3,
   border-radius: var(--radius-full);
 }
 
-.btn--primary {
+.btn--primary,
+.btn--accent {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-tape);
 }
@@ -2346,6 +2369,8 @@ h3,
    -------------------------------------------------------------------------- */
 
 .event-card {
+  /* 右上に置くコピーの基準。 */
+  position: relative;
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
@@ -2369,6 +2394,8 @@ h3,
   flex-wrap: wrap;
   align-items: center;
   gap: 0.375rem 0.5rem;
+  /* 右上のコピーと催し名を重ねない。 */
+  padding-right: 1.75rem;
 }
 
 .event-card__title {
@@ -2406,6 +2433,110 @@ h3,
   height: 100%;
   border-radius: var(--radius-full);
   background: var(--color-success-line);
+}
+
+/* 操作は本文に混ぜず、札の幅いっぱいに置く。チラシの列に落とすと、ボタンが 4.5rem に潰れる。 */
+.event-card > .event-card__actions,
+.event-card > .event-card__more {
+  grid-column: 1 / -1;
+}
+
+/* 札の右上に置く、文字を持たないコピー。常設の 40px より小さいが、
+   催し名の隣に収めるため 28px に留める（押せる的の例外）。 */
+.event-card__copy {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+}
+
+.event-card__copy .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* 札に常に出す 2 つ（申込/出欠一覧・編集）。幅が変わっても 2 列のまま置く。
+   見本の土台は 44px だが、札の常設は製品どおり 40px。 */
+.event-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.event-card__actions .btn {
+  min-height: 40px;
+  padding-inline: 0.5rem;
+  font-size: var(--font-action);
+  white-space: nowrap;
+}
+
+/* 2 つ目以降の操作は折りたたむ。見出しはボタンと同じ高さ・同じ文字の大きさにし、
+   印（ChevronDown）は右端へ置いて、開いたら反転させる。 */
+.event-card__more-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--tap-target);
+  padding-top: 0.5rem;
+  color: var(--color-text);
+  font-size: var(--font-action);
+  font-weight: 500;
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
+}
+
+/* 既定の三角印は消す。印は右端の 1 つに任せる。 */
+.event-card__more-summary::-webkit-details-marker {
+  display: none;
+}
+
+.event-card__more-summary .icon {
+  transition: transform 0.15s ease;
+}
+
+.event-card__more[open] .event-card__more-summary .icon {
+  transform: rotate(180deg);
+}
+
+/* 折りたたみの中身。上の帯と見分けが付くよう破線 1 本で切る。
+   狭い札に 4 つ並べるので、常設の 40px・15px より小さい 32px・13px に詰める。 */
+.event-card__more-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.event-card__more-body .btn {
+  min-height: var(--tap-target-quiet);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-action-quiet);
+}
+
+.event-card__more-body .btn .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* 削除は折りたたみの中で赤を主張させない。塗らずに、危険色の枠と文字だけにする。 */
+.event-card__delete {
+  grid-column: 1 / -1;
+  border-color: var(--color-danger-border);
+  background: transparent;
+  color: var(--color-danger-text);
+}
+
+.event-card__delete:hover {
+  background: var(--color-danger-bg);
 }
 
 /* 導入では、札ごと 0.5 度だけ傾ける。1 度を超えると行が揃って見えない。 */

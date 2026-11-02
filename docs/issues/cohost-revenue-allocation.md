@@ -12,7 +12,7 @@
 - `Participant` は `priceAmount` を持つが、どの主催者が集めたかの列はない（`prisma/schema.prisma` の `Participant`）。
 - 横断の売上は、自分が `OWNER` のイベントと `CO_HOST` のイベントを区別せず合算する（`src/app/api/v1/organizer/revenue/route.ts:64-115`）。
 - 売上の内訳は幹事なら誰でも全会額を見られる（`src/app/api/v1/organizer/events/[id]/revenue/route.ts:22`、`assertRegisteredOrganizer`）。
-- 領収書の発行者は「発行した幹事」で、イベントの代表ではない（`src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts:66-73`）。
+- 集金は `collectedAt` を持つだけで、どの幹事が集めたかの列はない（`src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts`）。
 - 共同主催者は招待で追加されるだけで、売上の分担を決める場所がない（`src/modules/organizers/lib/invitations.ts`）。
 
 ## 決定事項
@@ -22,7 +22,7 @@
 | 割合方式 | 均等割を初期値にし、主催者ごとの割合を上書きできる。内部は basis points（1/10000）、合計 10000 を必須 |
 | 人数方式 | 共同主催者ごとに人数を後から入力する。合計は出席者数を超えられない |
 | 方式の選択 | イベントごとに「割合方式」「人数方式」を選ぶ |
-| 按分の対象 | 見込み売上と領収書発行額の両方を、同じ配分で按分する |
+| 按分の対象 | 見込み売上と集金済み額の両方を、同じ配分で按分する |
 | 端数 | 各人を切り捨て、余りは主催者（`OWNER`）へ寄せる |
 | 人数の不一致 | 出席者数を超える保存は 409。不足分は「未割当」として残す |
 | 閲覧範囲 | イベントごとに「全員に公開」「各自の分だけ」を選ぶ。既定は「各自の分だけ」。主催者は常に全員分を見る |
@@ -45,7 +45,7 @@
 
 ## 計算規則
 
-主催者の並びは `createdAt` 昇順とする。`total` は `expectedRevenue` または `issuedRevenue`。
+主催者の並びは `createdAt` 昇順とする。`total` は `expectedRevenue` または `collectedRevenue`。
 
 ### 割合方式
 
@@ -68,7 +68,7 @@
 ### 共通
 
 - 金額は円の整数。`Math.floor` のみ使い、四捨五入はしない。
-- 領収書発行額は、発行後に不参加になった人の分も含む。人数方式でも参加者単位の紐付けは行わず、合計に対して同じ配分を掛ける。この差は「按分は集金の分担を決める表示であり、入金の記録ではない」と脚注で説明する。
+- 集金済み額は、集金の印を付けた後に不参加になった人の分を含まない（集計は出席だけを見るため、分母の出席者数と食い違わない）。人数方式でも参加者単位の紐付けは行わず、合計に対して同じ配分を掛ける。按分は「集金の分担を決める表示であり、入金の記録ではない」と脚注で説明する。
 - 主催者の変更（共同主催者の解除）で配分は変わる。解除された人の行は Cascade で消え、残った主催者だけで再計算する。
 
 ### 計算例
@@ -140,7 +140,7 @@ model EventRevenueShare {
 - `equalSharesBps(organizerIds)` → 均等割の bps。主催者へ余りを寄せる。
 - `allocateByRatio(total, rows)` → `{ rows, unallocated }`
 - `allocateByHeadcount(total, rows, attendingCount)` → `{ rows, unallocated }`
-- `allocateRevenue(input)` → 見込みと発行済みの両方を持つ結果。端数は主催者へ寄せる。
+- `allocateRevenue(input)` → 見込みと集金済みの両方を持つ結果。端数は主催者へ寄せる。
 
 ```
 type AllocationInput = {
@@ -148,12 +148,12 @@ type AllocationInput = {
   organizers: { organizerId: string; role: "OWNER" | "CO_HOST" }[]; // createdAt 昇順
   shares: { organizerId: string; shareBps: number | null; headcount: number | null }[];
   expectedRevenue: number;
-  issuedRevenue: number;
+  collectedRevenue: number;
   attendingCount: number;
 };
 ```
 
-戻り値は主催者ごとの `expectedRevenue` / `issuedRevenue` と、全体の `unallocated`。
+戻り値は主催者ごとの `expectedRevenue` / `collectedRevenue` と、全体の `unallocated`。
 
 ### 2. 読み取り
 
@@ -192,10 +192,10 @@ type AllocationInput = {
       "shareBps": 5000,
       "headcount": null,
       "expectedRevenue": 4000,
-      "issuedRevenue": 3000
+      "collectedRevenue": 3000
     }
   ],
-  "unallocated": { "headcount": 0, "expectedRevenue": 0, "issuedRevenue": 0 },
+  "unallocated": { "headcount": 0, "expectedRevenue": 0, "collectedRevenue": 0 },
   "hiddenRows": 1
 }
 ```
@@ -238,7 +238,7 @@ type AllocationInput = {
 
 #### SCR-ORG-12（`/organizer/events/[id]/revenue`）
 
-- サマリの下に「主催者別」の表を置く。列は、名前、立場、割合または人数、見込み、発行済み。
+- サマリの下に「主催者別」の表を置く。列は、名前、立場、割合または人数、見込み、集金済み。
 - 主催者には「配分を設定」ボタンを出す。押すとこの画面内のパネルを開く（モーダルは増やさない）。
   - 方式のラジオ（割合／人数）
   - 各主催者の入力欄。割合は % 表示（小数第2位まで）、人数は人。
@@ -273,7 +273,7 @@ type AllocationInput = {
 - 按分結果の確定保存（イベント終了時のスナップショット）
 - 按分の変更履歴、監査ログ
 - 主催者以外（参加者・管理者）への按分の表示
-- 領収書の発行者を主催者に固定する変更
+- 集金の記録者を主催者に固定する変更（いまは記録者を持たない）
 
 ## 受け入れ条件
 
@@ -285,7 +285,7 @@ type AllocationInput = {
 - [ ] 人数方式で 18 人中 12 人を配分すると、未割当 6 人分が残る
 - [ ] 人数方式で合計が出席者数を超える保存は 409 `HEADCOUNT_EXCEEDS_ATTENDING`
 - [ ] 割合の合計が 100% でない保存は 400 `SHARE_TOTAL_NOT_100`
-- [ ] 領収書発行額も同じ配分で按分され、見込みと発行済みで配分が食い違わない
+- [ ] 集金済み額も同じ配分で按分され、見込みと集金済みで配分が食い違わない
 - [ ] 出席者 0 人でも 0 除算せず、全員 0 円になる
 - [ ] 主催者が1人のイベントでは按分の節が出ず、全額がその1人になる
 
@@ -311,7 +311,7 @@ type AllocationInput = {
 
 ### テスト
 
-- [ ] `tests/unit/allocation.test.ts` を追加: 均等割の bps、端数、人数方式、未割当、0 除算、領収書
+- [ ] `tests/unit/allocation.test.ts` を追加: 均等割の bps、端数、人数方式、未割当、0 除算、集金済み額
 - [ ] `tests/integration/revenue.test.ts` に、設定の保存・再取得、閲覧範囲の絞り込み、403、409 を追加
 - [ ] `tests/unit/revenue.test.ts` の既存 27 件がそのまま通る
 

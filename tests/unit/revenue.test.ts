@@ -22,25 +22,30 @@ function attending(priceAmount: number | null, extra?: Partial<RevenueParticipan
   };
 }
 
-function declined(): RevenueParticipant {
+function declined(extra?: Partial<RevenueParticipant>): RevenueParticipant {
   return {
     status: "DECLINED",
     priceAmount: null,
     pricePlanName: null,
     priceAudience: null,
     scheduleId: null,
+    ...extra,
   };
 }
 
-function waitlisted(): RevenueParticipant {
+function waitlisted(extra?: Partial<RevenueParticipant>): RevenueParticipant {
   return {
     status: "WAITLISTED",
     priceAmount: null,
     pricePlanName: null,
     priceAudience: null,
     scheduleId: null,
+    ...extra,
   };
 }
+
+/** 集金日時の見本。日付そのものは集計に使わない（入っているかどうかだけを見る）。 */
+const COLLECTED_AT = new Date("2026-11-01T00:00:00.000Z");
 
 describe("summarizeRevenue", () => {
   it("出席者のプラン金額を足す", () => {
@@ -91,16 +96,68 @@ describe("summarizeRevenue", () => {
     expect(summary.averagePerAttendee).toBe(0);
   });
 
-  it("領収書発行額と差額を出す", () => {
-    const summary = summarizeRevenue([attending(3000), attending(3000)], [{ amount: 3000 }]);
-    expect(summary.issuedRevenue).toBe(3000);
-    expect(summary.receiptCount).toBe(1);
-    expect(summary.unreconciled).toBe(3000);
+  it("出席かつ集金済みの行だけを集金に数える", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { collectedAt: COLLECTED_AT }),
+      attending(3000),
+    ]);
+    expect(summary.expectedRevenue).toBe(6000);
+    expect(summary.collectedRevenue).toBe(3000);
+    expect(summary.collectedCount).toBe(1);
+    expect(summary.uncollected).toBe(3000);
   });
 
-  it("領収書が多くても差額はマイナスで返す", () => {
-    const summary = summarizeRevenue([attending(1000)], [{ amount: 3000 }]);
-    expect(summary.unreconciled).toBe(-2000);
+  it("欠席と参加要望の集金日時は数えない", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { collectedAt: COLLECTED_AT }),
+      declined({ collectedAt: COLLECTED_AT }),
+      waitlisted({ collectedAt: COLLECTED_AT }),
+    ]);
+    expect(summary.collectedRevenue).toBe(3000);
+    expect(summary.collectedCount).toBe(1);
+    expect(summary.uncollected).toBe(0);
+  });
+
+  it("2 人以上の行は人数ぶんを集金に足す", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { partySize: 3, collectedAt: COLLECTED_AT }),
+    ]);
+    expect(summary.expectedRevenue).toBe(9000);
+    expect(summary.collectedRevenue).toBe(9000);
+    expect(summary.collectedCount).toBe(3);
+  });
+
+  it("集金済みの人数は件数ではなく partySize の合計で数える", () => {
+    const summary = summarizeRevenue([
+      attending(3000, { partySize: 2, collectedAt: COLLECTED_AT }),
+      attending(2000, { collectedAt: COLLECTED_AT }),
+    ]);
+    // 2 件でも 3 人。件数で数えると 2 になってしまう。
+    expect(summary.collectedCount).toBe(3);
+    expect(summary.collectedRevenue).toBe(8000);
+  });
+
+  it("未集金は見込みから集金を引いた額になる", () => {
+    const summary = summarizeRevenue([
+      attending(1000, { collectedAt: COLLECTED_AT }),
+      attending(3000),
+      attending(2000),
+    ]);
+    expect(summary.expectedRevenue).toBe(6000);
+    expect(summary.collectedRevenue).toBe(1000);
+    expect(summary.uncollected).toBe(5000);
+  });
+
+  it("プラン未選択は見込みにも集金にも入れず、人数にも数えない", () => {
+    const summary = summarizeRevenue([
+      attending(null, { partySize: 2, collectedAt: COLLECTED_AT }),
+      attending(3000, { collectedAt: COLLECTED_AT }),
+    ]);
+    expect(summary.expectedRevenue).toBe(3000);
+    expect(summary.collectedRevenue).toBe(3000);
+    expect(summary.collectedCount).toBe(1);
+    expect(summary.uncollected).toBe(0);
+    expect(summary.unassignedPlanCount).toBe(2);
   });
 });
 

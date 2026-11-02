@@ -18,7 +18,7 @@ import {
 /** 編集画面だけが出す 6 段目。新規作成の 5 段には無いので `EVENT_STEPS` には入れない。 */
 const STATUS_STEP = {
   title: "公開状態",
-  hint: "止めるときは主催一覧の「停止」から。",
+  hint: "止めるときは主催一覧の「公開一時停止」から。",
   mandatory: false,
 } as const;
 

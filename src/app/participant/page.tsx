@@ -74,7 +74,7 @@ export default function ParticipantHomePage() {
       <PageHeader
         eyebrow="参加者"
         title={<>こんにちは、{profile.user.name}さん</>}
-        lead={<>{profile.user.email} ・ 出欠の履歴と領収書を確認できます。</>}
+        lead={<>{profile.user.email} ・ 出欠の履歴を確認できます。</>}
       />
 
       {/* 数は 4 つ。モックの「次の支払い」は実装に持つ金額が無いので出さない。 */}
@@ -158,11 +158,6 @@ export default function ParticipantHomePage() {
               <Link href={`/events/${nextItem.event.id}`} className="btn btn--outline btn--sm">
                 開く
               </Link>
-              {nextItem.receiptId && (
-                <Link href={`/events/${nextItem.event.id}/receipt`} className="btn btn--ghost btn--sm">
-                  領収書を見る
-                </Link>
-              )}
               {nextItem.event.ownerUserId && (
                 <Link
                   href={`/organizers/${nextItem.event.ownerUserId}`}
@@ -204,14 +199,6 @@ export default function ParticipantHomePage() {
                       <Link href={`/events/${row.event.id}`} className="text-link">
                         出欠を変更
                       </Link>
-                      {row.receiptId && (
-                        <>
-                          {" ・ "}
-                          <Link href={`/events/${row.event.id}/receipt`} className="text-link">
-                            領収書を見る
-                          </Link>
-                        </>
-                      )}
                       {row.event.ownerUserId && (
                         <>
                           {" ・ "}

@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 81
-- エンドポイント（メソッド × パス）: 100
-- 仕様書に記載: 95
+- ルートファイル: 79
+- エンドポイント（メソッド × パス）: 96
+- 仕様書に記載: 91
 - 実装のみ（仕様書に記載なし）: 5
 - 仕様書のみ（実装なし）: 0
 
@@ -77,11 +77,8 @@
 | GET | `/api/v1/organizer/events/[id]/participants` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/route.ts` |
 | PATCH | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
-| GET | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts` |
-| POST | `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts` |
+| PUT | `/api/v1/organizer/events/[id]/participants/[participantId]/collection` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/publish` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/publish/route.ts` |
-| GET | `/api/v1/organizer/events/[id]/reminders` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/reminders/route.ts` |
-| POST | `/api/v1/organizer/events/[id]/reminders` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/reminders/route.ts` |
 | GET | `/api/v1/organizer/events/[id]/revenue` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/revenue/route.ts` |
 | PUT | `/api/v1/organizer/events/[id]/revenue/allocation` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/revenue/allocation/route.ts` |
 | GET | `/api/v1/organizer/profile` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/profile/route.ts` |
@@ -93,7 +90,6 @@
 | GET | `/api/v1/organizer/revenue` | 必須（requireOrganizerAccount） | あり | `src/app/api/v1/organizer/revenue/route.ts` |
 | POST | `/api/v1/public/events` | 条件付き（resolveUserId） | あり | `src/app/api/v1/public/events/route.ts` |
 | GET | `/api/v1/public/events/[id]` | 条件付き（collectGuestTokenHashes, resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/route.ts` |
-| GET | `/api/v1/public/events/[id]/receipt` | 条件付き（resolveUserId） | あり | `src/app/api/v1/public/events/[id]/receipt/route.ts` |
 | POST | `/api/v1/public/events/[id]/rsvp` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/rsvp/route.ts` |
 | DELETE | `/api/v1/public/events/[id]/rsvp` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/rsvp/route.ts` |
 | GET | `/api/v1/public/organizers/[userId]` | なし | あり | `src/app/api/v1/public/organizers/[userId]/route.ts` |

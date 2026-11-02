@@ -10,7 +10,7 @@
 - 一覧: `src/app/organizer/events/page.tsx`（`stats.attendingCount` / `declinedCount` のみ）
 - 名簿: `src/app/organizer/events/[id]/participants/page.tsx`
 - 集計 API: `src/app/api/v1/organizer/events/[id]/participants/route.ts` の `summarizeStatuses`
-- データ: `EventPricePlan.amount`、`Participant.status` / `pricePlanId`、`Receipt.amount`
+- データ: `EventPricePlan.amount`、`Participant.status` / `pricePlanId` / `collectedAt`
 
 参加者は出欠時に対象プランを選ぶため、売上は「プラン × 人数」で機械的に算出できる。
 ただし現状は金額の履歴を保持しておらず、プラン金額を編集すると過去の参加者の金額も変わってしまう。
@@ -21,13 +21,13 @@
 
 1. 主催イベント横断の売上ダッシュボードを追加する
 2. イベント単体でもプラン別・開催回別の内訳を見られるようにする
-3. プラン未選択・領収書未発行など「売上に数えられていない人」を可視化する
+3. プラン未選択・未集金など「売上に数えられていない・まだ受け取っていない人」を可視化する
 4. プラン金額の編集で過去の売上数字が変わらないようにする
 5. ホームで売上管理の価値を伝え、初見の幹事が「自分のためのサービスだ」と理解できるようにする
 
 ## スコープ外
 
-- 参加費のオンライン決済（`Receipt` は領収書の発行のみで、入金・決済の記録は持たない）
+- 参加費のオンライン決済（集金は名簿の「集金済み」を切り替えるだけで、入金・決済の記録は持たない）
 - プラットフォーム側の課金・クォータ（`src/modules/billing/*`、Stripe）の変更
 - 返金・キャンセル待ち・定員超過の扱い
 - CSV エクスポート（別 issue とする）
@@ -37,7 +37,7 @@
 
 | 項目 | 決定 |
 | :---- | :---- |
-| 主指標 | 見込み売上（プラン金額 × ATTENDING 人数）。領収書発行額は副指標として並記 |
+| 主指標 | 見込み売上（プラン金額 × ATTENDING 人数）。集金済み額は副指標として並記 |
 | 金額の履歴 | `Participant` に選択時点の金額スナップショットを保持する |
 | 期間の基準 | 開催日（`Event.sortDate`） |
 | 初期表示期間 | 全期間（削除済み以外すべて） |
@@ -54,16 +54,17 @@
 
 | 指標 | 定義 |
 | :---- | :---- |
-| 見込み売上 `expectedRevenue` | `status = ATTENDING` かつ金額スナップショットあり の `Σ priceAmount` |
-| 領収書発行額 `issuedRevenue` | イベントの `Receipt.amount` の合計 |
-| 差額 `unreconciled` | `expectedRevenue − issuedRevenue`。「未回収」ではなく**要確認の差額**として表示する |
+| 見込み売上 `expectedRevenue` | `status = ATTENDING` かつ金額スナップショットあり の `Σ 支払額`。支払額は `(priceAmount − 割引) × partySize`（0 円で止める） |
+| 集金済み額 `collectedRevenue` | 出席かつ `collectedAt` ありの `Σ 支払額`。見込みと同じ支払額を使い、金額は手入力しない |
+| 未集金 `uncollected` | `expectedRevenue − collectedRevenue`。「未回収」ではなく**まだ受け取っていない額**として表示する |
+| 集金済みの人数 `collectedCount` | 出席かつ `collectedAt` ありの `Σ partySize`。**人数**で数え、件数とは呼ばない |
 | 平均単価 `averagePerAttendee` | `expectedRevenue ÷ 金額スナップショットありの ATTENDING 人数`（0 除算は 0、`Math.round`） |
 | プラン未選択 `unassignedPlanCount` | `status = ATTENDING` かつ `priceAmount IS NULL` の人数。売上には加算しない |
 | 不参加 | `DECLINED` は売上に含めない。「不参加だがプラン選択済み」は仕様上存在しない |
 
 - 金額は円・整数、丸めなし。表示は `toLocaleString("ja-JP")`
 - 無料プラン（`amount = 0`）は小計 0 円・件数のみ計上
-- 領収書は参加者が後から `DECLINED` になっても残るため、`issuedRevenue` と現在の参加者数は一致しないことがある。差額の注記に明記する
+- 集金済みの印は参加者が後から `DECLINED` になっても残るが、集計は `ATTENDING` だけを見るため、未集金の額には現れない。集計の範囲は注記に明記する
 
 ## 現行実装の制約（根拠）
 
@@ -72,7 +73,7 @@
    - プラン名の変更も同様
    - 出席者が選んでいるプランの削除・対象変更は 409 `PRICING_LOCKED` で止めている（削除経路は塞がっている）
 2. `resolveAttendanceChoice` は `ATTENDING` 以外で `scheduleId` / `pricePlanId` を `null` にする
-3. 領収書は `ATTENDING` のときのみ発行可能だが、発行後のステータス変更で削除されない
+3. 集金は `ATTENDING` のときだけ切り替えられる（API は `ATTENDING` 以外を 400 で返す）が、切り替えた後にステータスを変えても印は消えない
 4. 出欠受付は `PUBLISHED` のみ（`isRsvpAccepting`）。`CLOSED` は過去イベントとして集計対象に必要
 5. ヘッダーの主催者ナビは `docs/front_implementation_spec.md` の FE-PUB-03 で固定されているため、導線は本文側に置く
 6. ホームは公開ページで、サーバーコンポーネント（`src/app/page.tsx`）。実データを持たない
@@ -109,7 +110,7 @@ model Participant {
 
 `src/modules/revenue/lib/revenue.ts` に純粋関数を置き、API から使う。
 
-- `summarizeRevenue(participants, receipts)` → `RevenueSummary`
+- `summarizeRevenue(participants)` → `RevenueSummary`（`collectedAt` を見て集金済みを数える）
 - `groupByPlan(participants)` → `[{ name, audience, amount, attendingCount, subtotal }]`
 - `groupBySchedule(participants, schedules)` → `[{ scheduleId, label, attendingCount, subtotal }]`
 
@@ -121,9 +122,9 @@ model Participant {
 
 ### 5. UI（主催者画面）
 
-- `/organizer/revenue`（新規）: 上部の帳票風サマリ（見込み / 発行済 / 差額 / 平均単価）、期間フィルタ、イベント別テーブル
+- `/organizer/revenue`（新規）: 上部の帳票風サマリ（見込み / 集金済み / 未集金 / 平均単価）、期間フィルタ、イベント別テーブル
 - サマリはカードを並べず、`RevenueSummaryLedger`（`src/modules/revenue/components/`）で罫線の行にする。ラベル左・金額右で桁を揃え、狭い幅でも折り返さない
-- 注記は短い名詞句にする（`参加 4 人` / `発行 1 件` / `プラン選択済み 1 人あたり`）。差額の行は注記を持たず、式も出さない。説明は `※差額は、領収書と突き合わせるためのものです。未回収額ではありません。` の脚注に1回だけ置く
+- 注記は短い名詞句にする（`参加 4 人` / `集金 3 人` / `プラン選択済み 1 人あたり`）。未集金の行は注記を持たず、式も出さない。説明は `※未集金は、見込み売上から集金済みを引いた額です。` の脚注に1回だけ置く
 - 金額は `tabular-nums` と `white-space: nowrap`。負の数は `U+2212`（`−1,000円`）にする。0 円は「無料」と言い換えない
 - `/organizer/events/[id]/participants` のヘッダに売上サマリと「プラン未選択が N 人」バナー
 - `OrganizerTabs`（主催一覧 / 売上）を両画面の冒頭に置く
@@ -160,9 +161,9 @@ model Participant {
 - [ ] プラン金額を編集しても、過去参加者の見込み売上が変わらない
 - [ ] イベント別・プラン別・開催回別に件数と小計が出る
 - [ ] プラン未選択の参加者が件数として表示され、名簿の該当者へ誘導できる
-- [ ] 領収書発行額と差額が表示され、差額が「未回収」ではない旨が脚注で分かる
+- [ ] 集金済み額と未集金が表示され、未集金が「未回収」ではない旨が脚注で分かる
 - [ ] サマリは 3 画面で同じ見た目（`RevenueSummaryLedger`）で、360px でも金額が折り返さない
-- [ ] 差額の行に式や長い説明を出さず、注記は名詞句に揃っている
+- [ ] 未集金の行に式や長い説明を出さず、注記は名詞句に揃っている
 - [ ] 初期表示が全期間で、開催日基準の絞り込みができる
 - [ ] 未登録幹事（ゲスト）は会員登録の案内へ誘導される
 - [ ] 未認証 401 / 他幹事 403 / 削除済みイベント除外が既存ポリシーどおり
@@ -180,7 +181,7 @@ model Participant {
 
 ## 参考
 
-- `prisma/schema.prisma` — `EventPricePlan`, `Participant`, `Receipt`
+- `prisma/schema.prisma` — `EventPricePlan`, `Participant`（`collectedAt`）
 - `src/modules/events/lib/events.ts` — `resolveAttendanceChoice`
 - `src/modules/events/lib/pricing-mode.ts` — `assertPricingEditable`
 - `src/app/organizer/events/page.tsx` / `[id]/participants/page.tsx`

@@ -176,7 +176,7 @@ export default function OrganizerRevenuePage() {
               title={<>{data.period.from || data.period.to
                   ? `${data.period.from ?? "指定なし"} 〜 ${data.period.to ?? "指定なし"}`
                   : "全期間"}</>}
-              note="見込みと領収書の差が、そのまま残りです。"
+              note="見込みと集金の差が、そのまま残りです。"
             />
             <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
           </Panel>
@@ -237,10 +237,10 @@ export default function OrganizerRevenuePage() {
                   >
                     <p className="rows__meta">
                         見込み {yen(event.expectedRevenue)} ／ あなたの取り分{" "}
-                        {yen(event.myShare.expectedRevenue)} ／ 発行済み {yen(event.issuedRevenue)} ／
-                        差額{" "}
-                        <span className={event.unreconciled < 0 ? "text-warning" : undefined}>
-                          {yen(event.unreconciled)}
+                        {yen(event.myShare.expectedRevenue)} ／ 集金済み {yen(event.collectedRevenue)} ／
+                        未集金{" "}
+                        <span className={event.uncollected < 0 ? "text-warning" : undefined}>
+                          {yen(event.uncollected)}
                         </span>
                       </p>
                   </Row>

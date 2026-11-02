@@ -13,8 +13,6 @@ export interface ParticipationItem {
   /** 割引を引いた支払額。プラン未選択なら null。 */
   payableAmount: number | null;
   statusLabel: string;
-  receiptId: string | null;
-  receiptIssuedAt: string | null;
   answeredAt: string;
   event: {
     id: string;

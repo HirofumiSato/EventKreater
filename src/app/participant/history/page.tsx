@@ -44,13 +44,7 @@ function HistoryRow({ row }: { row: ParticipationItem }) {
           {row.pricePlanLabel ? ` ／ ${row.pricePlanLabel}` : ""}
           {row.discountLabel ? ` ／ ${row.discountLabel}` : ""}
           {` ／ ${row.event.location}`}</>}
-      aside={<>{row.receiptId ? (
-        <Link href={`/events/${row.event.id}/receipt`} className="btn btn--ghost btn--sm">
-          領収書
-        </Link>
-      ) : (
-        <Badge tone={rsvpStatusTone(row.status)} small>{row.statusLabel}</Badge>
-      )}</>}
+      aside={<Badge tone={rsvpStatusTone(row.status)} small>{row.statusLabel}</Badge>}
     >
       {row.comment && <p className="rows__meta">コメント: {row.comment}</p>}
         <p className="rows__meta">回答日: {answeredLabel(row.answeredAt)}</p>
@@ -111,7 +105,7 @@ export default function ParticipantHistoryPage() {
       <PageHeader
         eyebrow="参加者"
         title="参加履歴"
-        lead="答えた出欠と、受け取った領収書の一覧です。"
+        lead="答えた出欠の一覧です。"
         actions={<><Link href="/participant" className="btn btn--outline btn--sm">
             参加者ホームへ
           </Link></>}

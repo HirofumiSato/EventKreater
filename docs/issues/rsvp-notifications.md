@@ -176,7 +176,7 @@ model Notification {
 
 ## メールを後から足すとき
 
-`src/modules/notifications/lib/notify.ts` の `deliver()` を差し替えるだけで足せる。作成した通知と同じ `title` / `body` を `src/lib/mail.ts` の `deliverMail()` に渡し、`MAIL_WEBHOOK_URL` が空なら `RECORDED` として記録する（既存のリマインドと同じ挙動）。配信結果を残すなら `Notification` に `emailStatus` / `emailedAt` を足すマイグレーションが 1 本増える。今回のマイグレーションには列を作っていない。
+`src/modules/notifications/lib/notify.ts` の `deliver()` を差し替えるだけで足せる。作成した通知と同じ `title` / `body` を `src/lib/mail.ts` の `deliverMail()` に渡し、`MAIL_WEBHOOK_URL` が空なら `RECORDED` として記録する（メール送信の記録と同じ扱い）。配信結果を残すなら `Notification` に `emailStatus` / `emailedAt` を足すマイグレーションが 1 本増える。今回のマイグレーションには列を作っていない。
 
 ## 参考
 

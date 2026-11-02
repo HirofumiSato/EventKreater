@@ -85,15 +85,7 @@ export function buildScreens(demo) {
         { key: "camp", label: "複数日（3日間）", path: `/events/${demo.events.camp}`, auth: null },
       ],
     },
-    {
-      no: "05",
-      group: "public",
-      slug: "event-receipt",
-      name: "参加費の領収書",
-      path: `/events/${demo.events.main}/receipt`,
-      auth: "participant",
-      note: "参加者本人の領収書。印刷して渡せる形。",
-    },
+    // 05 は空き。領収書の画面を外したため、番号は詰めない（--only の番号とファイル名の対応を保つ）。
     {
       no: "06",
       group: "public",
@@ -299,7 +291,7 @@ export function buildScreens(demo) {
       slug: "participant-history",
       name: "参加履歴",
       auth: "participant",
-      note: "出欠と領収書の一覧。主催している催しは出さない。",
+      note: "答えた出欠と参加費の一覧。主催している催しは出さない。",
       states: [
         { key: "default", label: "履歴あり", path: "/participant/history", auth: "participant" },
         { key: "empty", label: "履歴なし", path: "/participant/history", auth: "coHost" },
@@ -400,15 +392,7 @@ export function buildScreens(demo) {
       auth: "organizer",
       note: "表。行の軸が揃っていることが機能そのもの。",
     },
-    {
-      no: "25",
-      group: "organizer",
-      slug: "receipt",
-      name: "幹事向け領収書",
-      path: `/organizer/events/${demo.events.main}/receipts/${demo.receiptParticipant}`,
-      auth: "organizer",
-      note: "再発行と印刷。番号は変わらず、発行日だけが進む。",
-    },
+    // 25 は空き。幹事向け領収書の画面を外したため、番号は詰めない。
     {
       no: "26",
       group: "organizer",
@@ -568,7 +552,6 @@ function demoIds(demo) {
   if (!demo) return [];
   const values = [
     demo.organizerId,
-    demo.receiptParticipant,
     demo.inviteCode,
     ...Object.values(demo.events ?? {}),
   ].filter((value) => typeof value === "string" && value.length > 0);
@@ -588,7 +571,6 @@ const PLACEHOLDER_DEMO = {
     draft: "event-draft",
   },
   organizerId: "user-organizer",
-  receiptParticipant: "participant-receipt",
   inviteCode: "code-invite",
   emailVerifyToken: "token-verify",
   emailChangeTokens: { "390": "token-390", "1280": "token-1280" },
@@ -614,7 +596,6 @@ const DYNAMIC_SEGMENTS = {
   "event-camp": "[id]",
   "event-draft": "[id]",
   "user-organizer": "[userId]",
-  "participant-receipt": "[participantId]",
   "code-invite": "[code]",
   // 見本の詳細（`/sample/dj` など）。slug は `src/app/sample/samples.ts` が持つ。
   dj: "[slug]",

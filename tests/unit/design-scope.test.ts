@@ -18,7 +18,6 @@ describe("装飾スコープの判定", () => {
 
   it("告知ページと参加者の画面は導入のスコープになる", () => {
     expect(designScope("/events/abc")).toBe("pop");
-    expect(designScope("/events/abc/receipt")).toBe("pop");
     expect(designScope("/organizers/u1")).toBe("pop");
     expect(designScope("/organizers/u1/events")).toBe("pop");
     expect(designScope("/participant")).toBe("pop");

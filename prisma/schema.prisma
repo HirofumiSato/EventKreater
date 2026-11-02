@@ -861,6 +861,10 @@ model Participant {
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
   /// 参加要望を出した日時。承認順に使う。出席・欠席に戻すと NULL。
   waitlistedAt  DateTime?  @map("waitlisted_at") @db.Timestamptz
+  /// 参加費を受け取った日時。NULL は未集金。
+  /// 領収書の画面を外した代わりに、幹事が名簿で 1 タップして記録する。
+  /// 事前決済を入れるときは、決済の成功でここを埋めれば同じ集計が使える。
+  collectedAt   DateTime?  @map("collected_at") @db.Timestamptz
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -896,7 +900,8 @@ model ParticipantSchedule {
   @@map("participant_schedules")
 }
 
-// 参加費の領収書。決済は行わず、幹事が金額を入力して発行する。1参加者につき1件。
+/// 参加費の領収書。1参加者につき1件。
+/// 画面からは外した。新しい書き込みはしない。既存データと会員統合ロジックのためだけに残す。
 model Receipt {
   id            String   @id @default(uuid()) @db.Uuid
   participantId String   @unique @map("participant_id") @db.Uuid

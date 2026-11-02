@@ -893,7 +893,7 @@ export function StatusSection({ value, onChange, disabled = false }: EventSectio
         <>
           <p>{value.status ? STATUS_LABELS[value.status] : ""}</p>
           <p className="help">
-            ここでは変えられません。止めるときは主催一覧の「停止」から。
+            ここでは変えられません。止めるときは主催一覧の「公開一時停止」から。
           </p>
         </>
       )}
