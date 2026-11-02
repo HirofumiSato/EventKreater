@@ -179,7 +179,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    cd ..\..
    fly launch --no-deploy --name event-creater-web --region nrt
 
-``fly.toml`` は次の内容にします。``NEXT_PUBLIC_APP_URL`` はビルド時に焼き込まれるので、``[build.args]`` で渡します。
+``fly.toml`` は次の内容にします。``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、``[build.args]`` で渡します。
 
 .. code-block:: toml
 
@@ -191,6 +191,8 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      target = "runner"
      [build.args]
        NEXT_PUBLIC_APP_URL = "https://example.com"
+       # 任意。GA4 の測定 ID。空なら計測しない。
+       NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
 
    [env]
      NODE_ENV = "production"
@@ -223,10 +225,10 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
 
 .. important::
 
-   ``NEXT_PUBLIC_APP_URL`` は **ビルド時に埋め込まれます**。ドメインを変えたら ``fly deploy`` し直してください。
+   ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` は **ビルド時に埋め込まれます**。値を変えたら ``fly deploy`` し直してください。
    シークレットとして ``fly secrets set`` しても、既にビルドされた JS は変わりません。
 
-環境変数は次のとおりです。値は ``fly secrets set`` で入れます。
+環境変数は次のとおりです。``fly secrets set`` で入れるものと、``fly.toml`` の ``[build.args]`` で渡すものがあります。
 
 .. list-table::
    :header-rows: 1
@@ -244,6 +246,9 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    * - ``NEXT_PUBLIC_APP_URL``
      - 必須
      - 公開 URL。ビルド引数と同じ値を実行時にも渡します
+   * - ``NEXT_PUBLIC_GA_MEASUREMENT_ID``
+     - 任意
+     - GA4 の測定 ID（``G-...``）。空なら計測しません。``[build.args]`` で渡すビルド時の値なので、変えたら ``fly deploy`` し直します
    * - ``FLYER_API_URL``
      - 必須
      - ``http://event-creater-flyer.internal:8000``

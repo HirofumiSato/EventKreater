@@ -18,6 +18,7 @@ import {
 } from "@/modules/billing/lib/publish-confirm";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { trackEvent } from "@/lib/analytics";
 import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { flyerPdfDownloadHref } from "@/modules/flyers/lib/pdf-link";
@@ -138,6 +139,8 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         return;
       }
       if (!res.ok) throw new Error(await readProblem(res));
+      // 公開が完了した回数。402（枠不足）・403（電話番号未確認など）・409・失敗では送らない。
+      trackEvent("event_publish");
 
       if (confirmation) {
         // 使ったあとの残りは、取り直した最新のクォータから読む。

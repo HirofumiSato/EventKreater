@@ -1480,9 +1480,9 @@ interface PricingModalProps {
 
 ### 10.4. 利用規約ページ（SCR-PUB-10）
 
-- `src/app/terms/page.tsx` は静的ページ。目次、第1条〜第14条、問い合わせで構成する。
+- `src/app/terms/page.tsx` は静的ページ。目次、第1条〜第16条（うち第15条が外部送信）、問い合わせで構成する。
 - 定価は `plans.ts` の定数を読み、0円販売・自動更新・通知の条件は文章で明記する。
-- 初月無料は常時オンの制度なので、キャンペーン設定に依存させない。第3条に「はじめて月額プランに加入する方は、初月の月額料金を無料とする」を置き、第6条（初月無料と自動更新）に対象プラン（月額の2つ。単発は対象外）、1アカウント1回、再加入・プラン変更では再適用しないこと、カード登録、無料期間中の解約は請求なし、2か月目からの自動請求、3日前・1日前の通知、価格キャンペーンと併用しないことを書く。要約の 1 文にも初月0円と併用しない規則を入れる。
+- 初月無料は常時オンの制度なので、キャンペーン設定に依存させない。第3条に「はじめて月額プランに加入する方は、初月の月額料金を無料とする」を置き、第7条（初月無料と自動更新）に対象プラン（月額の2つ。単発は対象外）、1アカウント1回、再加入・プラン変更では再適用しないこと、カード登録、無料期間中の解約は請求なし、2か月目からの自動請求、3日前・1日前の通知、価格キャンペーンと併用しないことを書く。要約の 1 文にも初月0円と併用しない規則を入れる。
 - フッター（`SiteChrome`）、料金ページ、課金プランモーダル、`QuotaStatusBanner` からリンクする。
 - 法的な文面はキャンペーン設定に依存させず、定価と一般条件だけを載せる。実際の販売価格は `/service` とモーダルが出す。
 
@@ -2006,3 +2006,78 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * 結合（`tests/integration/organizer-header.test.ts`、9件）: PNG を 1920x640 の WebP にして `kind = PROFILE_HEADER` で保存する、公開 API の `headerUrl` と非公開時の `null`、差し替えで旧画像が 404、削除で参照とファイルが消える、横 800px 未満は 422 `IMAGE_TOO_SMALL`、画像でない本文 422、8MB 超 413、未ログイン 401、不正な UUID 404。`storage/images` の後片付けも行う。
 * 結合（`tests/integration/organizer-avatar.test.ts`、8件）: PNG の WebP 化と 256px 角、公開 API の `avatarUrl`、差し替えで旧画像が 404、削除で参照とファイルが消える、画像でない本文 422、4MB 超 413、未ログイン 401、不正な UUID 404。`storage/images` の後片付けも行う。
 * 表示の確認は第7節 FE-ORG-08 / 09 / 10 / 15 に従う。
+
+## 15. アクセス解析（Google Analytics 4）
+
+目的は 2 つ。全体のアクセス数（どの画面がどれだけ読まれているか）と、主要操作（登録・ログイン・公開・購入開始）の回数を知ることである。個人を特定する情報と、招待コード・紹介コードは集計へ載せない。追加の依存は入れず、Next.js の `next/script` で gtag.js を直接読み込む。
+
+### 15.1. 読み込み経路と測定 ID
+
+| 項目 | 内容 |
+| :---- | :---- |
+| 読み込み | `src/components/common/GoogleAnalytics.tsx`（クライアント）。`src/app/layout.tsx` の `<body>` 末尾に 1 行置く |
+| 初期化 | `<Script id="ga-init" strategy="beforeInteractive">` で `window.dataLayer` と `gtag` のスタブを作り、`gtag("js", new Date())` と `gtag("config", ID, { send_page_view: false })` を実行する |
+| 本体 | `<Script src="https://www.googletagmanager.com/gtag/js?id=..." strategy="afterInteractive" />` |
+| 測定 ID | `NEXT_PUBLIC_GA_MEASUREMENT_ID`（`G-XXXXXXXXXX`）。`src/lib/analytics.ts` の `GA_MEASUREMENT_ID` が前後の空白を除いて受ける |
+| ID が空 | `analyticsEnabled()` が偽になり、`GoogleAnalytics` は `null` を返す。script も DOM も出さない |
+| 除外する画面 | `/console` 配下では `analyticsPagePath()` が `null` になり、`GoogleAnalytics` は `null` を返す。gtag.js も初期化も出さない |
+| 焼き込み | `NEXT_PUBLIC_` はビルド時に置き換わる。値を変えたら再ビルド（再デプロイ）する。設定箇所は `.env.example`、`Dockerfile`、`docker-compose.prod.yml`、`docs/deploy.rst` |
+
+`analyticsEnabled()` は、測定 ID が空でないことと `NODE_ENV === "production"` であることの両方を見る。`npm run dev` とテストでは送らない。判定はこの 1 か所にだけ置き、画面ごとに `NODE_ENV` を見ない。
+
+### 15.2. ページビュー
+
+- GA4 の自動ページビューは使わない。`gtag("config", ID, { send_page_view: false })` で切り、`GoogleAnalytics` が `usePathname()` の変化ごとに `trackPageView(pathname, document.title)` を 1 回だけ呼ぶ。
+- `useSearchParams` は使わない。Suspense 境界を要求し、ルートレイアウト全体を包む必要が出るためである。送るのはパスだけなので `usePathname()` で足りる。
+- クエリ文字列とハッシュは送らない。招待コード（`/invitations/<code>`）と紹介コード（`?ref=...`）を集計に載せないためである。
+- 送る値は `page_path`（正規化したパス）、`page_title`（`document.title`）、`page_location`（`window.location.origin` と `page_path` の連結）の 3 つで、クエリは含めない。
+
+### 15.3. パスの正規化
+
+`analyticsPagePath(pathname)` が送る形を決める。除外する画面では `null` を返し、`trackPageView` は何も送らない。
+
+| 入力 | 送る値 | 規則 |
+| :---- | :---- | :---- |
+| `/events/<uuid>` | `/events/:id` | UUID の節を `:id` に寄せる |
+| `/organizers/<uuid>/events` | `/organizers/:id/events` | 同上 |
+| `/invitations/abc123` | `/invitations/:code` | 2 節目が `invitations` のとき、3 節目を `:code` にする |
+| `/terms/` | `/terms` | 末尾のスラッシュを落とす（ルートは残す） |
+| `/` | `/` | そのまま |
+| `/console`、`/console/users` | 送らない（`null`） | 管理コンソールは集計から外す |
+| `/consolex` | `/consolex` | 前方一致で巻き込まない |
+
+順番は、クエリとハッシュを切る → 絶対 URL ならパスだけを取り出す → `/` で始まらなければ捨てる → 管理コンソールを除外する → 末尾スラッシュを落とす → UUID と招待コードを置き換える、である。パスでない値でも例外は投げない。
+
+### 15.4. 送るイベント
+
+| イベント | 送る場所 | パラメータ | 送る条件 |
+| :---- | :---- | :---- | :---- |
+| `page_view` | `GoogleAnalytics` | `page_path`・`page_title`・`page_location` | パスが変わるたび 1 回。`/console` 配下は送らない |
+| `login` | `AuthEntryScreen` | `{ audience }` | パスワードでログインできたとき（`challengeRequired` でない経路）と、確認番号の照合に成功したとき |
+| `sign_up` | `AuthEntryScreen` | `{ audience }` | `POST /api/v1/auth/phone/confirm` の応答が `created: true` のときだけ。新しい会員行が作られた場合に限る |
+| `event_publish` | `PreviewClient` | なし | 公開 API が成功（`res.ok`）したとき。402（枠不足）・403（電話番号未確認など）・409（公開済み）・失敗では送らない |
+| `begin_checkout` | `useEventQuota` | `{ payment: "one_time" }` または `{ payment: "subscription", plan }` | `checkoutUrl` を受けて Stripe へ遷移する直前。0 円付与（`GRANTED`）と受取済み（`LIMITED`）は送らない |
+
+`audience` は画面の立場で、`organizer`（主催者）か `participant`（参加者）である。`plan` は `MONTHLY_8` か `UNLIMITED` をそのまま載せる。`sign_up` は、既存会員へ電話番号を足したとき・退会済みの行を復帰させたとき・ログイン済みの会員へ結び付けたときには送らない（`created` が偽になる）。
+
+### 15.5. 送信方法
+
+`trackPageView` と `trackEvent` は `src/lib/analytics.ts` の `sendEvent` に集める。
+
+- `window.gtag` が関数なら、コマンド形 `gtag("event", name, params)` で渡す。gtag.js が読むのは `dataLayer` に積まれた `arguments` なので、コマンド形のほうが確実に拾われる。
+- `window.gtag` が無いときだけ、`window.dataLayer` へ素のオブジェクト `{ event: name, ...params }` を積む。gtag.js の読み込み前に呼ばれても配列に残り、読み込み後に拾われる。
+- サーバー（`window` が無い）と `analyticsEnabled()` が偽のときは何もしない。例外も投げない。
+
+### 15.6. 管理コンソールを除く理由
+
+`/console` 配下はプラットフォーム管理者だけが使う画面で、一般の利用状況と混ぜると「どの画面が読まれているか」が読めなくなる。ページビューもイベントも送らない。そのため `GoogleAnalytics` は `/console` 配下で `null` を返し、gtag.js を読み込まない。読み込むと、`send_page_view: false` で page_view は止められても、GA4 の拡張計測（スクロール・外部リンクなど）は動いてしまう。`/consolex` のような別のパスは、前方一致で巻き込まないよう除外しない。
+
+### 15.7. 運用（GA4 管理画面）
+
+- GA4 の管理画面で「管理 > データストリーム > 拡張計測機能」を開き、「ブラウザの履歴イベントに基づくページ変更」を**オフ**にする。オンのままだと、GA4 が履歴の変化を自動で `page_view` として送り、手動送信と二重に数える。
+- 測定 ID はビルド時に焼き込まれる。ローカルの `.env` と本番のビルド環境（`fly.toml` の `[build.args]`、compose の `build.args`）へ設定し、変えたら再デプロイする。
+- 開発では送らない。確認は本番ビルド（`NODE_ENV=production`）で画面を移動し、リアルタイムの `page_view` が 1 回ずつ増えることで行う。
+
+### 15.8. テスト
+
+* 単体（`tests/unit/analytics.test.ts`、15件）: 測定 ID が空・本番以外で無効になること、`/console` と `/console/users` を送らないこと、`/consolex` を除外しないこと、UUID と招待コードの置き換え、クエリとハッシュの切り落とし、末尾スラッシュ、パスでない値、`window` が無いときと `dataLayer` が無いときに例外を投げないこと、`gtag` があるときはコマンド形で送り `dataLayer` へ積まないこと、無いときは素のオブジェクトを積むこと。

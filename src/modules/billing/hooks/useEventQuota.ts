@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
+import { trackEvent } from "@/lib/analytics";
 import { problemMessage, readProblemBody } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
@@ -103,6 +104,8 @@ export function useEventQuota() {
       return "GRANTED";
     }
     if (data.checkoutUrl) {
+      // Stripe へ進む購入開始の回数。0円で付与された経路はここへ来ない。
+      trackEvent("begin_checkout", { payment: "one_time" });
       window.location.href = data.checkoutUrl;
       return "REDIRECT";
     }
@@ -125,6 +128,8 @@ export function useEventQuota() {
       }
       const data = (await res.json()) as { checkoutUrl?: string };
       if (data.checkoutUrl) {
+        // Stripe へ進む購入開始の回数。どのプランかは引数の値をそのまま載せる。
+        trackEvent("begin_checkout", { payment: "subscription", plan });
         window.location.href = data.checkoutUrl;
       }
     },

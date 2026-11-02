@@ -147,7 +147,7 @@
 
 .. count-start
 
-99 ファイル、``it`` は 1321 件です。内訳は ``tests/unit/`` が 73 ファイル 1115 件、``tests/integration/`` が 22 ファイル 160 件です。結合の 160 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+100 ファイル、``it`` は 1336 件です。内訳は ``tests/unit/`` が 74 ファイル 1130 件、``tests/integration/`` が 22 ファイル 160 件です。結合の 160 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -235,6 +235,10 @@
      - 8
      - 登録前の入力の退避と復元、取り出すと 1 回で消えること、壊れた値と形の違う値を捨てること、保存先が無い・書けない環境でも落ちないこと
      - SCR-ORG-02
+   * - ``tests/unit/analytics.test.ts``
+     - 15
+     - GA4 の計測の判定（測定 ID が空・本番以外は無効）、管理コンソールの除外と ``/consolex`` を巻き込まないこと、UUID と招待コードの置き換え、クエリとハッシュの切り落とし、末尾スラッシュ、パスでない値、``window`` と ``dataLayer`` が無いときに例外を投げないこと、``gtag`` があるときはコマンド形で送り ``dataLayer`` へ積まないこと
+     - 全画面（第15章）
    * - ``tests/integration/collection.test.ts``
      - 5
      - 集金済みにすると日時が入り、戻すと空になること。出席のままなら出欠と人数を変えないこと。出席以外（参加要望・欠席）は記録せず 400 にすること。他のイベントの参加者は 404 にすること
@@ -558,7 +562,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1115、``tests/integration/`` が 160 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1115 件を実行して 160 件を skip します。
+件数の内訳は ``tests/unit/`` が 1130、``tests/integration/`` が 160 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1130 件を実行して 160 件を skip します。
 
 .. breakdown-end
 

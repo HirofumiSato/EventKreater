@@ -38,6 +38,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3012
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+# 空なら計測しない。runner ステージには渡さない（焼き込み済みのため）。
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID=""
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 # ビルド中に route モジュールが評価され、PrismaClient が DATABASE_URL を
 # 検証する。接続はしないのでダミーで足りる。本物は実行時に渡す。
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
