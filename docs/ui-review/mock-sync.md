@@ -3,13 +3,21 @@
 モック（`style-guide/mock-*.html`）は**製品の DOM を写した生成物**です。手で書きません。
 製品が正で、モックはその写しです。比較（parity）はしません。
 
-```text
-製品の src を変更 → npm run mock:sync → style-guide/mock-*.html をコミット
-                                     ↘ storage/mock-shots/*.png（ローカルのみ）
-                                     ↘ storage/mock-variants/*.json（隠し DOM の控え。ローカルのみ）
+実装とモックの同期は分けて考えます。実装 PR はモックを待たず、モックは遅れて追いつく生成物です。
 
-npm run check → ソースの指紋と manifest を比べる → 違えば「mock:sync を実行してください」で止まる
+```text
+【実装中】
+製品の src を変更 → npm run check:full（モックは見ない） → PR → CI 緑（モックは見ない）
+
+【まとめて追いつく（任意のタイミング）】
+npm run mock:catchup → ui-demo.json の確認 → 全 53 画面を本番ビルドで撮る
+                     → npm run mock:check（同期の判定） → style-guide/mock-*.html をコミット
+                     ↘ storage/mock-shots/*.png（ローカルのみ）
+                     ↘ storage/mock-variants/*.json（隠し DOM の控え。ローカルのみ）
 ```
+
+`npm run mock:check` は、ソースの指紋と manifest を比べ、違えば「mock:sync を実行してください」と
+返します。`npm run check` の中では走らず、呼んだときだけ判定します。
 
 ## 前提
 
@@ -24,60 +32,78 @@ npm run db:seed:ui
 ## 404 の写しを残さない
 
 `storage/ui-demo.json` の ID が DB とずれると、主催者・催しの画面は 404 になります。そのまま撮ると
-モックに「見つかりません」の絵が残り、画面の確認ができないまま `npm run check` も通ります
-（`check` が見るのはソースの指紋だけのため）。`mock:sync` は撮る前に 2 段で止めます。
+モックに「見つかりません」の絵が残り、画面の確認ができないまま `npm run mock:check` も通ります
+（`mock:check` が見るのはソースの指紋だけのため）。`mock:sync`（`mock:catchup` も）は撮る前に
+2 段で止めます。
 
 | いつ | 何を見るか | 止まったとき |
 | --- | --- | --- |
 | 撮る前 | `ui-demo.json` の `events.*` / `organizerId` / `coHostId` / `participantId` が DB にあるか（ビルドもブラウザも使わない） | `storage/ui-demo.json の ID が DB にありません（…）` |
 | 1 画面ごと | その画面の 4xx / 5xx（`ui-browser` が期待どおりの 4xx を除いた残り）と `document.title` | `NG 04 mock-event.html  「見つかりません」の画面でした（…）` |
 
-どちらも `npm run db:seed:ui` でデモデータを作り直し、`npm run mock:sync` をやり直せば解消します。
+どちらも `npm run db:seed:ui` でデモデータを作り直し、`npm run mock:catchup` をやり直せば解消します。
 止まった回は `mock-manifest.json` を書き換えないので、モックは前回のまま残ります（壊れた写しで
 上書きされません）。
 
 判定そのものは `scripts/lib/mock-found.mjs`（ブラウザも DB も知らない）にあり、`tests/unit/mock-sync.test.mjs`
 が題名・応答・別ホストの扱いを固定しています。
 
-## 3 手順
+## 手順
+
+### 実装中
 
 ```powershell
 # 1. 製品を直す（src/app/**/page.tsx、src/components/ui/**、src/styles/** など）
 
-# 2. 反復中は直した画面だけを撮る。開発サーバー（3012）で撮るので next build をしない
-npm run mock:sync -- --only=20,24
-
-# 3. コミットの前に全体を撮り直す。こちらは本番ビルド（.next-ui-prod）を配って撮る
-npm run mock:sync
-
-# 4. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）
-npm run check
+# 2. モックは撮らない。check:full と CI が緑になれば PR を出せる
+npm run check:full
 ```
 
-部分同期（`--only`）は開発サーバーで撮るため、本番ビルドの 1〜2 分を待ちません。
-本番ビルドと CSS の当たり方がずれる画面があるので、コミットの前は必ず全体（本番）を回します。
-部分同期でも本番ビルドで撮りたいときは `--only` に `--prod` を足します。
+実装 PR では `mock:sync` を回しません。`style-guide/**` は追いつくまで前回のままなので、
+その間はモックを見た UI レビューができません。`npm run check` もモックを見ません。
 
-`style-guide/` 以下と `style-guide/assets/` を、`mock:sync` が書き換えたぶんだけコミットします。
+### まとめて追いつく（任意のタイミング）
+
+```powershell
+# 1. デモデータを用意する（初回と、データを作り直すときだけ）
+npm run db:seed:ui
+
+# 2. 全 53 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる
+npm run mock:catchup
+
+# 3. style-guide/ 以下と style-guide/assets/ の差分をコミットする
+```
+
+急いで 1 画面だけ見たいときは `npm run mock:sync -- --only=20,24` も使えます。部分同期は開発サーバー
+（3012）で撮るので本番ビルドの 1〜2 分を待ちませんが、`mock-manifest.json` の `uiHash` は進みません。
+本番ビルドと CSS の当たり方がずれる画面があるので、追いつきは必ず `mock:catchup`（全体・本番）で
+行います。部分同期を本番ビルドで撮りたいときは `--only` に `--prod` を足します。
+
+`mock:catchup` は `--refresh` / `--no-shots` / `--dev` / `--prod` / `--concurrency=N` を `mock:sync` へ
+そのまま渡します。`--only` は受け付けません（全体を追いつかせるコマンドのため）。`storage/ui-demo.json`
+が無ければ `npm run db:seed:ui` を案内して止まります。
+
+`style-guide/` 以下と `style-guide/assets/` を、`mock:catchup` が書き換えたぶんだけコミットします。
 PNG（`storage/mock-shots/`）はコミットしません。
 
 ## コマンド
 
 | コマンド | 何をするか |
 | --- | --- |
+| `npm run mock:catchup` | 追いつき。全 53 画面を本番ビルドで撮り、最後に `mock:check` で確かめる。`--only` は受け付けない |
 | `npm run mock:sync` | 全 53 画面（30 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
 | `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。開発サーバー（3012）で撮る。`--only=04-event-member` でも絞れる |
-| `npm run mock:sync -- --only=20,24 --prod` | 絞った画面を、本番ビルドで撮る（コミット前の差分確認用） |
+| `npm run mock:sync -- --only=20,24 --prod` | 絞った画面を、本番ビルドで撮る（差分確認用） |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
 | `npm run mock:sync -- --refresh` | 控え（断片・CSS・PNG）を使わず、全画面を取り直す（下の「控え」を参照） |
 | `npm run mock:sync -- --dev` | 全体同期でも開発サーバー（3012）で撮る。保存がそのまま出るが、CSS の当たり方が本番とずれることがある |
 | `npm run mock:sync -- --concurrency=6` | 同時に開く数。既定は論理コアから 4〜6 を決める（16 コアなら 6） |
-| `npm run mock:check` | 同期の判定だけ（`npm run check` の中でも走る） |
+| `npm run mock:check` | 同期の判定だけ。明示的に回したときだけ働き、`npm run check` の中では走らない |
 | `npm run mock:serve` | 生成したモックを `http://127.0.0.1:4321/style-guide/mock-index.html` で配る |
 
 部分同期（`--only`）は `mock-manifest.json` の `uiHash` を進めません。撮っていない画面まで
-「同期済み」に見えてしまうためです。**コミットの前は必ず全体を回してください**（部分同期の
-あとは `npm run check` が通りません）。
+「同期済み」に見えてしまうためです。**追いつきは必ず全体で行ってください**（部分同期の
+あとは `npm run mock:check` が通りません）。
 
 ## モックだけが持つもの
 
@@ -93,7 +119,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 付箋の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
 巻き込まれて消えます。`scripts/check-mock-sync.mjs` は、目録の各 HTML に `data-mock-shell` と
-`mock-interactions.js` が無ければ `npm run check` を止めます。
+`mock-interactions.js` が無ければ `npm run mock:check` を止めます。
 
 付箋は既定で閉じており、押すたびに開閉します（`aria-expanded` と `Esc`）。状態はページの中だけで
 持ち、次の画面へは持ち越しません。製品の `.action-dock` や `.profile-actions` が画面下に固定される
@@ -105,8 +131,9 @@ PNG（`storage/mock-shots/`）はコミットしません。
 ### 音声入力の写しは製品に合わせて手で直す
 
 `mock-interactions.js` は音声パネルも組み立てます。製品の音声入力（欄のまわりだけを残す黒い覆い、
-既定でオンになる「任意の項目も聞く」、郵便番号からの住所補完）を変えたら、**同じ PR でこのファイルも直します**。
-撮り直しても戻らないためです。`npm run check` は、この 3 つが消えていないかも見ます。
+既定でオンになる「任意の項目も聞く」、郵便番号からの住所補完）を変えたら、追いつきのときに
+このファイルも直します。撮り直しても戻らないためです。`npm run mock:check` は、この 3 つが
+消えていないかも見ます。
 
 見た目と動きの確かめは `npm run mock:serve` で `mock-create.html` を開き、右下のマイクを押して行います。
 郵便番号の見本は `1540005`（東京都世田谷区三宿）で、音声で入れると都道府県・市区町村・町域が埋まり、
@@ -183,7 +210,7 @@ DB やデモデータが変われば画面上の DOM も変わるので、断片
 06 主催者のページは、未ログイン・ログイン済みに加えて、標準と 9 テーマの計 12 枚を持ちます
 （`mock-organizer-public-theme-neon.html` など）。テーマ名は `src/lib/semantic-themes.ts` の
 ラベルと同じで、ずれると `tests/unit/mock-sync.test.mjs` が止めます。テーマを足したら、
-`screens` の `states` にも 1 行足してから `npm run mock:sync` を回してください。
+`screens` の `states` にも 1 行足してから `npm run mock:catchup` を回してください。
 
 ## 端末の幅で見る（`mock-frame.html`）
 
@@ -201,7 +228,7 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 - `HTML をそのまま開く` で、枠なしのモックを開く（付箋つき）
 - 一覧（`mock-index.html`）の画面名もこの枠へ入る。行の「スマホ」「PC」「HTML」で直接開ける
 
-枠ページ・一覧・付箋の 3 ファイルは、`mock:sync` のたびに存在を確認します（消えていれば `npm run check` が止めます）。
+枠ページ・一覧・付箋の 3 ファイルは、`mock:sync` のたびに存在を確認します（消えていれば `npm run mock:check` が止めます）。
 
 ### 撮るときの幅は 1280、見る既定は 390
 
@@ -242,7 +269,7 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
   `style-guide/assets/<hash>.<ext>` に保存し、`src` と `srcset` を差し替える。`data:` はそのまま
 - 内部リンクは、目録（`scripts/lib/mock-screens.mjs`）のパスに一致すればそのモックへ、
   一致しなければ `#` へ。撮るたびに変わる ID は `*` の型で照合する（上の「遷移リンクと操作」）
-- 先頭に「生成物。`npm run mock:sync` で作り直す。手で編集しない」のコメントを入れる
+- 先頭に「生成物。`npm run mock:catchup` で追いつかせる。手で編集しない」のコメントを入れる
 - 中身が同じなら書き換えない（2 回続けて実行しても差分が出ない）
 
 撮れなかった素材は元の URL のまま残し、その画面の行に「素材 N 件は元の URL のまま」と出ます。
@@ -255,9 +282,11 @@ http://127.0.0.1:4321/style-guide/mock-frame.html?p=mock-create.html&w=390
 - **22 イベントの編集**（`/organizer/events/<id>/edit`）は、開いた時点で排他ロックを取ります。
   `mock:sync` は開く前にロックを消し、撮り終えたら返します。直列に 1 画面ずつ開きます。
 
-## 同期漏れを止める仕組み
+## 同期の確認（任意）
 
-`npm run check` の `mock-sync` が `scripts/check-mock-sync.mjs` を呼びます。見るのは 3 つです。
+同期の判定は `npm run mock:check` が `scripts/check-mock-sync.mjs` で行います。`npm run check` /
+`check:full` / CI はここを通らないので、実装 PR はモックの同期漏れで止まりません。
+`npm run mock:catchup` は最後にこの判定を自動で回します。見るのは 3 つです。
 
 1. 画面の見た目を決めるソースの指紋（`uiHash`）が、最後に `mock:sync` したときと同じか
 2. 目録にある画面の HTML がそろっているか
@@ -282,8 +311,11 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 指紋は改行コードを LF にそろえてから計算します。Windows の作業ツリーには CRLF のファイルが
 混ざることがあり、そのままでは「手元では通るのに CI だけ落ちる」になるためです。
 
-どうしても同期せずに通す必要があるときだけ、`MOCK_SYNC_ALLOW_STALE=1` を付けます。
-使ったときは PR に理由を書いてください。CI では通りません（環境変数を渡していないため）。
+判定を `check` / CI から外したのは、実装 PR をモックの待ちにしないためです。モックは遅れて
+追いつく生成物なので、追いつくまで `style-guide/mock-*.html` は前回の見た目のままになります。
+
+`MOCK_SYNC_ALLOW_STALE=1` は、`npm run mock:check` を単独で回したときだけ使います。
+使ったときは PR に理由を書いてください。`mock:catchup` の最後の判定はこれを通さない前提です。
 
 ## うまくいかないとき
 
@@ -295,8 +327,8 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 | 画面が「他の人が編集中」になる | `mock:sync` がロックを消せていない。`npm run mock:sync -- --only=21` で撮り直す |
 | 1 画面だけ `NG` と出る | その画面の API かデモデータ。`manifest` は前回のままなので、直してから全体を回す |
 | CSS が当たらない（`--dev`） | 本番ビルドで撮り直す（`--dev` は開発サーバーの都合で CSS が `<link>` にならないことがある） |
-| カレンダーの日付や音声入力が動かない | `mock-interactions.js` が読まれているか（`npm run check` が止める）。それでも動かなければ `npm run mock:sync -- --refresh` |
-| 反映が古い（画像だけ差し替えた等） | `npm run mock:sync -- --refresh`（控えを使わずに取り直す） |
+| カレンダーの日付や音声入力が動かない | `mock-interactions.js` が読まれているか（`npm run mock:check` が止める）。それでも動かなければ `npm run mock:sync -- --refresh` |
+| 反映が古い（画像だけ差し替えた等） | `npm run mock:catchup -- --refresh`（控えを使わずに取り直す） |
 | 部分同期の HTML が全体と違う（CSS の link が 1 本になる） | 仕様。`--only` は開発サーバーで撮るため、CSS が 1 本にまとまる。次の全体同期（本番）で戻る。**dev で撮った結果はコミットしない** |
 | 開発サーバーが 500 を返して `NG` と出る（`Invalid hook call` など） | 並列で開いた再コンパイル中の一時的な失敗。`manifest` は書かれていないので、同じ `--only` を撮り直す |
 | 枠ページが「画面」だけになる | `mock-frame.html` が古い。`npm run mock:sync` で作り直す |
@@ -306,5 +338,5 @@ API や `src/modules/*/lib/**` は含めません（DOM を作らないため）
 1. `scripts/lib/mock-screens.mjs` の `buildScreens` に 1 行足す（`no` / `slug` / `name` / `group` / `path` / `auth` / `note`）。
    同じ画面の別状態は `states` に足し、テーマを変えるだけなら `theme` も書く
 2. `npm run db:seed:ui`（その画面が見るデータを足した場合）
-3. `npm run mock:sync` → `style-guide/mock-*.html` と `mock-index.html` が増える
-4. `npm run check` が通ることを確かめる（目録と manifest の突き合わせはここで行う）
+3. `npm run mock:catchup` → `style-guide/mock-*.html` と `mock-index.html` が増える
+4. `npm run mock:check` が通ることを確かめる（目録と manifest の突き合わせはここで行う）

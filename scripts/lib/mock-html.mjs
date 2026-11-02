@@ -15,7 +15,7 @@ export function noticeFor({ name, path }) {
     "  生成物です。手で編集しないでください。",
     "  `npm run mock:sync` が製品の DOM から書き出します。",
     `  画面: ${name}（${path}）`,
-    "  製品を直したら、同じ PR で `npm run mock:sync` を回してください。",
+    "  追いつくときは `npm run mock:catchup` を回してください。",
     "-->",
   ].join("\n");
 }

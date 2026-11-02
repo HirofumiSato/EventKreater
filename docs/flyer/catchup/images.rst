@@ -14,7 +14,7 @@
 
 AI で背景を作れなかったときは、テーマの紙色で描いた代替背景を使います。黙って差し替えると利用者が理由を知れないため、候補の応答には ``ai_fallback`` を付け、画面には「AI の上限」か「生成の失敗」かを出します。紙面の性格の 3 枚は、ステップ 1 で選んだ背景を親にして描き直すだけで、AI は呼びません。
 
-UI 確認用のデモ催しは ``scripts/seed-ui-demo.mjs`` が ``public/samples/*.jpg`` をそのまま配ります。seed は描画しないので、**チラシを作り直したら同じ PR でサンプルも差し替えます**。忘れると ``npm run db:seed:ui`` のたびに古い見本（古い文字サイズや下地）へ戻ります。差し替えは ``storage/flyers/<flyerAssetId>.jpg`` を ``public/samples/<対応する名前>.jpg`` へ上書きコピーするだけです。画像はモックの指紋に入らないため、``npm run mock:sync -- --refresh`` で撮り直します。手順の正は ``AGENTS.md`` の「チラシの見本」です。
+UI 確認用のデモ催しは ``scripts/seed-ui-demo.mjs`` が ``public/samples/*.jpg`` をそのまま配ります。seed は描画しないので、**チラシを作り直したら同じ PR でサンプルも差し替えます**。忘れると ``npm run db:seed:ui`` のたびに古い見本（古い文字サイズや下地）へ戻ります。差し替えは ``storage/flyers/<flyerAssetId>.jpg`` を ``public/samples/<対応する名前>.jpg`` へ上書きコピーするだけです。画像はモックの指紋に入らないため、追いつくときに ``npm run mock:catchup -- --refresh`` で撮り直します。手順の正は ``AGENTS.md`` の「チラシの見本」です。
 
 ファイル形式
 ------------

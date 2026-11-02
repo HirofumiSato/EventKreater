@@ -139,7 +139,7 @@ describe("製品の HTML をモックに整える", () => {
       path: "/",
     });
     expect(html.startsWith("<!doctype html>\n<!--")).toBe(true);
-    expect(html).toContain("npm run mock:sync");
+    expect(html).toContain("npm run mock:catchup");
     expect(html).toContain("画面: ホーム（/）");
   });
 

@@ -64,7 +64,7 @@
 
 .. rubric:: 今の到達点
 
-自動実行の入口は、リポジトリ直下の ``npm run check``（速い方）と ``npm run check:full``（PR の前と CI）です。``check`` の中身は ESLint（キャッシュ）・``tsc --noEmit``・モックの同期検査（``mock-sync``）で、``check:full`` がそれに Vitest を足します。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
+自動実行の入口は、リポジトリ直下の ``npm run check``（速い方）と ``npm run check:full``（PR の前と CI）です。``check`` の中身は ESLint（キャッシュ）と ``tsc --noEmit`` で、``check:full`` がそれに Vitest を足します。モックは実装 PR では撮らず、``npm run mock:catchup`` で任意のタイミングにまとめて追いつかせます（``check`` は見ません）。人が画面をクリックせず、Stripe の Dashboard も開かずに終わります。
 
 テストのファイル数と件数、内訳は :doc:`scope` の「現在のテスト」にあります。``TEST_DATABASE_URL`` の無い環境では、``tests/integration/`` が skip され、``tests/unit/`` だけが実行されます。``npm test`` は 6 秒前後、``npm run check`` は 10 秒前後、``npm run check:full`` は 30 秒前後で終わります。
 

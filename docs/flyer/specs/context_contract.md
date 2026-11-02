@@ -128,7 +128,7 @@ LLM へ渡り、`must_depict_hint` の先頭行にも英語の制約として並
 7. 描画で使うなら `services/flyer/src/adapters/renderer/` と `src/domain/models.py` の描画用の型
 8. この表
 9. テスト（`services/flyer/tests/test_prompt_context.py`、`tests/unit/event-preview.test.ts`）
-10. `npm run docs:gen` / `npm run docs:counts` / `npm run docs:links`。画面の見た目が変わるなら `npm run mock:sync`
+10. `npm run docs:gen` / `npm run docs:counts` / `npm run docs:links`。画面の見た目が変わるなら、追いつくときに `npm run mock:catchup`
 
 ## この契約で塞いだ穴
 

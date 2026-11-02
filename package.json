@@ -35,6 +35,7 @@
     "docs:counts": "node scripts/gen-test-counts.mjs",
     "docs:counts:last": "node scripts/gen-test-counts.mjs --last",
     "mock:sync": "node --env-file-if-exists=.env scripts/mock-sync.mjs",
+    "mock:catchup": "node --env-file-if-exists=.env scripts/mock-catchup.mjs",
     "mock:check": "node scripts/check-mock-sync.mjs",
     "mock:serve": "node scripts/mock-serve.mjs",
     "billing:notices": "node scripts/billing-notices.mjs"
