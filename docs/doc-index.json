@@ -10137,7 +10137,7 @@
       "title": "ドキュメントの派生・検証マップ",
       "summary": "正はコードです。このディレクトリの文書はコードの検証面であり、差分を見つけたら同じ PR で文書も直します。",
       "preImplementation": false,
-      "lineCount": 85,
+      "lineCount": 88,
       "headings": [
         {
           "level": 1,
@@ -10173,7 +10173,7 @@
         },
         {
           "level": 3,
-          "text": "npm run mock:sync（モックを撮り直すとき）"
+          "text": "モックの追いつき（npm run mock:catchup）"
         }
       ],
       "toctree": [],
@@ -11825,9 +11825,9 @@
       "sphinxDoc": "ui-review/mock-sync",
       "format": "markdown",
       "title": "1. 製品を直す（src/app//page.tsx、src/components/ui/、src/styles/ など）",
-      "summary": "npm run mock:sync -- --only=20,24",
+      "summary": "npm run check:full",
       "preImplementation": false,
-      "lineCount": 311,
+      "lineCount": 343,
       "headings": [
         {
           "level": 2,
@@ -11839,7 +11839,11 @@
         },
         {
           "level": 2,
-          "text": "3 手順"
+          "text": "手順"
+        },
+        {
+          "level": 3,
+          "text": "実装中"
         },
         {
           "level": 1,
@@ -11847,15 +11851,23 @@
         },
         {
           "level": 1,
-          "text": "2. 反復中は直した画面だけを撮る。開発サーバー（3012）で撮るので next build をしない"
+          "text": "2. モックは撮らない。check:full と CI が緑になれば PR を出せる"
+        },
+        {
+          "level": 3,
+          "text": "まとめて追いつく（任意のタイミング）"
         },
         {
           "level": 1,
-          "text": "3. コミットの前に全体を撮り直す。こちらは本番ビルド（.next-ui-prod）を配って撮る"
+          "text": "1. デモデータを用意する（初回と、データを作り直すときだけ）"
         },
         {
           "level": 1,
-          "text": "4. 同期していることを確かめる（ブラウザも DB も使わない。1 秒未満）"
+          "text": "2. 全 53 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる"
+        },
+        {
+          "level": 1,
+          "text": "3. style-guide/ 以下と style-guide/assets/ の差分をコミットする"
         },
         {
           "level": 2,
@@ -11911,7 +11923,7 @@
         },
         {
           "level": 2,
-          "text": "同期漏れを止める仕組み"
+          "text": "同期の確認（任意）"
         },
         {
           "level": 2,

@@ -12,7 +12,7 @@
 | API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 80 ルートの照合 |
 | 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 37 ページの照合 |
 | チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 304 件 + `mypy`（src の strict） |
-| モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run check`（ソースの指紋と `mock-manifest.json` の一致）。生成は `npm run mock:sync` |
+| モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run mock:check`（任意。ソースの指紋と `mock-manifest.json` の一致）。追いつきは `npm run mock:catchup` |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |
 
 ## 既知の乖離（2026-10-22 時点）
@@ -63,8 +63,9 @@ npm run docs         # Sphinx の HTML を docs/_build/html に生成
 
 ### `npm run check` の意味（2026-10-26 に変わった点）
 
-`npm run check` は **速い検査**（eslint のキャッシュ実行・`tsc --noEmit`・UI の静的検査）だけを走らせ、
-Vitest とこの「テスト件数の照合」は走らせません。保存のたびに回せる重さに保つためです。
+`npm run check` は **速い検査**（eslint のキャッシュ実行と `tsc --noEmit`）だけを走らせ、
+Vitest とこの「テスト件数の照合」は走らせません。モックの同期も見ません（`npm run mock:check` を
+明示的に呼んだときだけ判定します）。保存のたびに回せる重さに保つためです。
 **テスト込みの判定は `npm run check:full`** で、CI はこちらを呼びます。PR の前には `check:full` を通してください。
 
 テストを足したら、これまでどおり `npm run docs:counts` で [testing/scope.rst](testing/scope.rst) を
@@ -72,13 +73,15 @@ Vitest とこの「テスト件数の照合」は走らせません。保存の�
 
 `docs:links` は [../scripts/check-doc-links.mjs](../scripts/check-doc-links.mjs) が担当します。`docs/**` に加えて、`AGENTS.md`、`README.md`、`llms.txt`、`services/flyer/AGENTS.md`、`services/flyer/README.md` も検査します。パスの拾い方と免除リストは [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) に共通化しています。
 
-### `npm run mock:sync`（モックを撮り直すとき）
+### モックの追いつき（`npm run mock:catchup`）
 
-モックは製品の DOM を写した生成物です。画面を直したら `npm run mock:sync` を実行し、
-`style-guide/mock-*.html` を同じ PR でコミットしてください。同期漏れは `npm run check` が
-（ブラウザも DB も使わずに）止めます。手順は [ui-review/mock-sync.md](ui-review/mock-sync.md) が正です。
+モックは製品の DOM を写した生成物です。実装 PR では撮り直さず、任意のタイミングで
+`npm run mock:catchup` を 1 回回して追いつかせ、`style-guide/mock-*.html` をその PR でコミットします。
+`npm run check` / `check:full` / CI はモックを見ません。同期の判定は `npm run mock:check` を
+明示的に呼んだときだけで（`mock:catchup` の最後にも走ります）、ブラウザも DB も使いません。
+手順は [ui-review/mock-sync.md](ui-review/mock-sync.md) が正です。
 
-既定は `.next-ui-prod` に本番ビルドして別ポート（3014）で配るので、動いている `npm run dev` の
-`.next` は壊しません。ビルドは `src` が変わったときだけ 1 回走ります。実測は全 46 画面で
-**40〜50 秒**（ビルドを含めると 1〜2 分）、1 画面だけなら `-- --only=20` で **5 秒前後**です。
+`mock:catchup` は既定で `.next-ui-prod` に本番ビルドして別ポート（3014）で配るので、動いている
+`npm run dev` の `.next` は壊しません。ビルドは `src` が変わったときだけ 1 回走ります。実測は全 46 画面で
+**40〜50 秒**（ビルドを含めると 1〜2 分）、1 画面だけ見たいときは `mock:sync -- --only=20` で **5 秒前後**です。
 公開プロフィールの 10 枚（9 テーマと標準）は、同じ URL を属性だけ変えて撮るので 1 枚 1〜2 秒です。

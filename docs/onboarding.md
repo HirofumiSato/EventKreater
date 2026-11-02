@@ -83,7 +83,7 @@ Next.js 側は `src/modules/flyers/` です。`quota.ts` はチラシ生成回�
 ## 4. 検証（15 分）
 
 ```powershell
-npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit + モックの同期検査
+npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit（モックは見ない）
 npm run check:full   # 上に Vitest と docs のテスト件数の照合を足したもの（PR の前）
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx

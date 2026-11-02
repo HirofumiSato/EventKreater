@@ -51,11 +51,12 @@ Next.js 14（App Router）+ Prisma + PostgreSQL。チラシ生成のみ Python �
 ## コマンド
 
 ```powershell
-npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit + mock-sync（同期漏れ）
+npm run check        # 速い検査: eslint（キャッシュ）+ tsc --noEmit（モックは見ない）
 npm run check:full   # 上に Vitest と docs のテスト件数照合を足す（CI と PR の前）
 npm run verify       # docs:gen のあと、check:full・Sphinx・docs:links を並列に回す（PR の直前）
+npm run mock:catchup # モックをまとめて追いつかせる（全体・本番ビルド。最後に mock:check）
 npm run mock:sync    # 製品の DOM から style-guide/mock-*.html を作り直す（--only=20 / --no-shots / --dev / --prod）
-npm run mock:check   # モックが製品のソースと同期しているかだけを見る
+npm run mock:check   # モックが製品のソースと同期しているかだけを見る（任意）
 npm run mock:serve   # 生成したモックを 127.0.0.1:4321 で配信
 npm run test:db      # 実 DB の結合テスト（TEST_DATABASE_URL が要る）
 npm run docs         # Sphinx の HTML を docs/_build/html に生成
@@ -72,8 +73,8 @@ cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 既定は「作業ブランチを 1 本切り、1 つのツリーで進める」です。`main` へは PR で入れます。
 必須チェック（`check` / `db` / `flyer`）は PR でしかゲートにならないためです（`docs/testing/ci.rst`）。
 
-1. 作業を始める前に、前の作業をコミットする。`style-guide/**` の生成物はコミットまでを 1 セットにする
-2. `main` から `feat/...` か `fix/...` を切る。実装・`mock:sync`・検証はそのブランチで行う
+1. 作業を始める前に、前の作業をコミットする。`style-guide/**` を撮り直したときは、生成物のコミットまでを 1 セットにする
+2. `main` から `feat/...` か `fix/...` を切る。実装・検証はそのブランチで行う（モックの追いつきは別の PR にしてよい）
 3. PR を出し、必須チェックが緑になってからマージする
 
 `git worktree` は、未コミットを残したまま並行作業が要るときだけ使います。
@@ -81,17 +82,26 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 マージしたら `git worktree remove` で片付け、ブランチも消します。残すのは今触っている 1 つだけです。
 `main` に未コミットが残っている状態で別件を始めるときは、worktree ではなくまずコミットします。
 
-## 製品→モックの同期（必須ループ）
+## モックはまとめて追いつく
 
 **製品が正**です。`style-guide/mock-*.html` は製品の DOM を写した生成物で、手で編集しません。
-比較（parity）はしません。見た目を変えたら、次を同じ PR で終わらせます。
+比較（parity）はしません。モックは遅れて追いつく生成物なので、実装 PR では `mock:sync` を回しません。
+
+`npm run check` / `check:full` / CI は、モックの同期を見ません。同期の判定は `npm run mock:check` を
+明示的に呼んだときだけ働きます。実装 PR をモック待ちで止めないためです。
+
+任意のタイミングで `npm run mock:catchup` を 1 回回すと、全 53 画面を本番ビルドで撮り直し、
+最後に `npm run mock:check` で同期を確かめます。`--refresh` / `--no-shots` / `--dev` / `--prod` /
+`--concurrency=N` は `mock:sync` へそのまま渡ります（`--only` は受け付けません）。
+`storage/ui-demo.json` が無ければ `npm run db:seed:ui` を案内して止まります。
 
 モックだけが持つものは 4 つです。画面下部の帯（`style-guide/mock-shell.js` / `mock-shell.css`）、
 操作の script（`style-guide/mock-interactions.js`）、画面の一覧（`style-guide/mock-index.html`）、
 幅の枠（`style-guide/mock-frame.html`）。
 帯と操作の script は `scripts/lib/mock-html.mjs` の `withMockShell` / `withMockInteractions` が
-`sanitizeHtml` のあとに差し込むので、撮り直しても消えません。消せば `npm run check` が止まります。
-帯・操作・一覧の CSS/JS だけは手で保守します。
+`sanitizeHtml` のあとに差し込むので、撮り直しても消えません。消せば `npm run mock:check` が止まります。
+帯・操作・一覧の CSS/JS だけは手で保守します。追いつくまでに製品の操作が変わっていたら、
+追いつきのときに `mock-interactions.js` / `mock-shell.js` / `mock-shell.css` の 3 つも手で直します。
 
 押したときにしか出ない画面（ダイアログ、送信の確認、絞り込みなど）は、撮った HTML に残りません。
 新しく足したら `style-guide/mock-interactions.js` に同じ骨格と計算を再現し、モックでも開いて確かめられる
@@ -99,26 +109,27 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
-npm run mock:sync -- --only=20,24   # 直した画面だけ。開発サーバーで撮る（本番ビルドをしない）
-npm run mock:sync    # 全 53 画面（30 画面 + 状態）。本番ビルドで撮る（コミット前の正）
-npm run mock:sync -- --only=20,24 --prod   # 絞った画面を、本番ビルドで撮る
-npm run mock:sync -- --refresh      # 控え（隠し DOM・CSS・PNG）を使わず取り直す
-npm run check        # 同期漏れをハッシュで確認（ブラウザも DB も使わない）
+npm run mock:catchup # 追いつき。全 53 画面（30 画面 + 状態）を本番ビルドで撮り、mock:check で確かめる
+npm run mock:catchup -- --refresh   # 控え（隠し DOM・CSS・PNG）を使わず取り直す
+npm run mock:sync -- --only=20,24   # 直した画面だけを先に見たいとき。開発サーバーで撮る（本番ビルドをしない）
+npm run mock:check   # 同期の判定だけ（ブラウザも DB も使わない）
 npm run verify       # PR の直前に 1 回（check:full + Sphinx + docs:links）
 ```
 
 1. 製品を直す（`src/styles/**` → `src/components/ui/**` → 画面 TSX の順）
-2. `npm run mock:sync -- --only=…` で直した画面だけ撮る（開発サーバーなので `next build` をしない）。
-   コミット前に `npm run mock:sync`（全体）を本番ビルドで回す
-3. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
-4. PNG（`storage/mock-shots/`）と控え（`storage/mock-variants/`・`storage/mock-assets.json`）はコミットしない
+2. 実装 PR ではモックを撮らない。`npm run check:full` と必須チェックが緑になれば出す
+3. 任意のタイミングで `npm run mock:catchup` を回す（全 53 画面・本番ビルド。最後に `mock:check`）
+4. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
+5. PNG（`storage/mock-shots/`）と控え（`storage/mock-variants/`・`storage/mock-assets.json`）はコミットしない
 
 撮り直しは控えで短くなります。隠し DOM（閉じているステップの本文・選んでいない日の一覧）は
 `storage/mock-variants/` に、CSS は `storage/mock-assets.json` に残り、HTML が変わらない画面は撮影を省きます。
-画像だけを差し替えたときなど、DOM に出ない差分は `--refresh` で取り直してください。
+画像だけを差し替えたときなど、DOM に出ない差分は `npm run mock:catchup -- --refresh` で取り直してください。
 
-同期漏れは `npm run check` が止めます。どうしても通すときだけ `MOCK_SYNC_ALLOW_STALE=1` を付け、
-PR に理由を書きます。404 の写しは `mock:sync` が撮る前に止めます（`storage/ui-demo.json` の ID が
+同期の確認は `npm run mock:catchup` の最後に走る `npm run mock:check` です。`npm run check` は止めません。
+古いままコミットすることもできますが、その間モックを見た UI レビューはできません。
+`MOCK_SYNC_ALLOW_STALE=1` は `mock:check` を単独で回すときにだけ使い、理由を PR に書きます。
+404 の写しは `mock:catchup` が撮る前に止めます（`storage/ui-demo.json` の ID が
 DB に無い、または画面が「見つかりません」になった場合）。手順の正は `docs/ui-review/mock-sync.md` です。
 
 ## チラシの見本（`public/samples/**`）
@@ -131,7 +142,7 @@ DB に無い、または画面が「見つかりません」になった場合�
 1. 催しの見本を作り直す（ウィザードのステップ 1〜5、または `services/flyer` の API）
 2. できた画像を `storage/flyers/<flyerAssetId>.jpg` から `public/samples/<対応する名前>.jpg` へ上書きコピーする
 3. 同じ催しを直に直したときは、`storage/flyers/<flyerAssetId>.jpg` も同じ画像にそろえる（seed を回さずに済む）
-4. 画像は指紋（`computeUiHash`）に入らないので、`npm run mock:sync -- --refresh` で撮り直す
+4. 画像は指紋（`computeUiHash`）に入らないので、追いつくときに `npm run mock:catchup -- --refresh` で撮り直す
 5. 何を作り直したか（題・テーマ・テンプレート）を `docs/ui-review/home-audit.md` の一覧へ 1 行足す
 
 対応する名前は `scripts/seed-ui-demo.mjs` の `createFlyer(...)` の第 3 引数です
@@ -144,7 +155,7 @@ DB に無い、または画面が「見つかりません」になった場合�
 - メディアクエリの外（既定）はスマホの見た目にします。PC 用の指定を既定に置き、`max-width` でスマホへ戻す書き方はしません。
 - 広い画面向けの差分は `min-width` で足します。`max-width` は、狭い画面だけを詰める指定と、`min-width` の対（`min-width: 640px` に対する `max-width: 639px`）だけに使います。
 - 幅の段は `640` / `768` / `900` / `1024`（広げる）と `360` / `400` / `480` / `540`（狭める）だけです。段を増やすときは `tests/unit/style-breakpoints.test.mjs` の表も同じ PR で直します。
-- 狭い端末（360px 級）でも横スクロールを出しません。確認は `npm run mock:sync` の 390 / 1280 の撮影で行います。
+- 狭い端末（360px 級）でも横スクロールを出しません。実装中は開発サーバーと実ブラウザの 390px で、追いつきのときは `npm run mock:catchup` の 390 / 1280 の撮影で確認します。
 - 押せる的は 40×40px 以上、ボタンの文字は 15px 以上です。`--sm` は左右の余白だけを詰め、高さと文字を下げません（`--tap-target` / `--font-action`）。入力欄もスマホでは 16px にします。例外は 2 つだけです。画面下に固定する帯（`.action-dock`）は一覧を隠さないよう文字だけ 14px に詰めます（高さは 40px のまま。`--tap-target-dock` / `--font-action-dock`）。札の折りたたみ（`.event-card__more-body .btn`）は開いたときだけ現れ、40px のままだと札 1 枚が画面を占めるので 32px・13px にします（`--tap-target-quiet` / `--font-action-quiet`）。常に目に入る操作には使わないでください。
 - 主操作（朱）は 1 画面に 1 つ。進む操作は画面の下（固定の帯か本文の最後）へ置き、見出しの右は戻る・プレビューなどの補助だけにします。行とカードの操作は 1 段に 2 つまでです。
 - 参加者の画面ほど「片手で完結するか」を先に確かめます。PC で崩れないことは、スマホで使えることの代わりになりません。

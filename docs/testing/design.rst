@@ -18,7 +18,7 @@
      - いまの状態
    * - 静的検査
      - ``npm run check``
-     - ``eslint``（キャッシュ）と ``tsc --noEmit``、モックの同期検査
+     - ``eslint``（キャッシュ）と ``tsc --noEmit``
      - 稼働
    * - 純粋関数
      - ``npm test``
@@ -43,7 +43,7 @@
 
 Route Handler は、``src/app/api/`` から export された ``GET`` や ``POST`` を import し、``NextRequest`` を渡して呼びます。``next dev`` も ``next start`` も立てません。戻り値の ``status`` と JSON を断言します。
 
-``npm run check`` は ESLint（キャッシュ）・``tsc --noEmit``・モックの同期検査を並列で走らせます。``npm run check:full`` は、そこに Vitest と ``docs-count`` を足します。タスクは互いに依存しないので、待ち時間は一番遅いもので決まります。出力は各コマンドごとに溜め、失敗したときだけ中身を出します。落ちたものを個別に再現するときは ``npm run check:serial`` です。
+``npm run check`` は ESLint（キャッシュ）と ``tsc --noEmit`` を並列で走らせます。モックの同期は見ません（追いつきは ``npm run mock:catchup``、判定は ``npm run mock:check``）。``npm run check:full`` は、そこに Vitest と ``docs-count`` を足します。タスクは互いに依存しないので、待ち時間は一番遅いもので決まります。出力は各コマンドごとに溜め、失敗したときだけ中身を出します。落ちたものを個別に再現するときは ``npm run check:serial`` です。
 
 Vitest まで走らせると、その json レポートを使って ``docs-count`` が走ります（速い方では走りません）。手順は ``docs/testing/scope.rst`` に書いた件数が実測と合っているかを見るだけで、合わなければ ``npm run docs:counts`` を促して終わります。件数は 1 か所だけが持ち、手で合わせません。
 

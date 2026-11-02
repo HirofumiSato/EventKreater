@@ -50,7 +50,7 @@ CI への接続
      - 見ているもの
    * - ``check``
      - ``npm ci``（キャッシュヒット時は ``npx prisma generate``）のあと ``npm run check:full``
-     - ESLint（キャッシュ）、``tsc --noEmit``、モックの同期検査（``mock-sync``）、``tests/unit/`` のすべて、``docs/testing/scope.rst`` の件数の照合
+     - ESLint（キャッシュ）、``tsc --noEmit``、``tests/unit/`` のすべて、``docs/testing/scope.rst`` の件数の照合（モックの同期は見ない。``npm run mock:check`` を明示的に呼んだときだけ）
    * - ``db``
      - ``npm ci``、``prisma migrate deploy``、``npm run test:db``
      - ``tests/integration/`` のすべて。テスト専用の PostgreSQL をサービスとして立てる

@@ -7,6 +7,8 @@
 // 見た目を 1 つ直すたびに全テストを待つ必要はなく、逆に PR の前は
 // 全部を通したい。既定は速い方で、遅い方は名前で選ぶ。
 //
+// モックの同期検査は含めない（任意のタイミングで npm run mock:catchup / npm run mock:check）。
+//
 // 逐次だと合計時間がそのまま待ち時間になる。互いに依存しないので同時に走らせ、
 // 全部終わってから結果をまとめて出す。落ちたものが複数あっても 1 回で分かる。
 //
@@ -79,10 +81,9 @@ const STATIC_TASKS = [
     ],
   },
   { label: "typecheck", module: "typescript/bin/tsc", args: ["--noEmit"] },
-  // リポジトリ内のスクリプトは import.meta.resolve を通さず、パスで直接起動する。
-  // 製品の UI ソースを変えたのに `npm run mock:sync` を回していない状態を、
-  // ブラウザも DB も使わずに（ハッシュ比較だけで）止める。
-  { label: "mock-sync", script: "scripts/check-mock-sync.mjs", args: [] },
+  // モックの同期検査（scripts/check-mock-sync.mjs）はここに入れない。製品が正で、
+  // モックは遅れて追いつく生成物なので、実装 PR を同期漏れで止めない。見たいときは
+  // `npm run mock:check` か `npm run mock:catchup` を明示的に回す。
 ];
 
 const TASKS = full
