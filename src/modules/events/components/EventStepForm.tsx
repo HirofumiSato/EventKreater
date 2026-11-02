@@ -50,7 +50,7 @@ interface EventStepFormProps {
    * 認証画面は新規登録とログインを 1 枚で扱うので、遷移先は同じでよい。
    */
   onRequireAuth?: () => void;
-  /** 利用枠の読み込み中など、最終操作のボタンだけを止めたいとき。入力欄は止めない。 */
+  /** チケットの読み込み中など、最終操作のボタンだけを止めたいとき。入力欄は止めない。 */
   actionsDisabled?: boolean;
   /** チラシ生成のパネル。最終ステップに出す。 */
   flyerSlot: ReactNode;

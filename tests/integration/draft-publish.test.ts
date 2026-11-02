@@ -12,7 +12,7 @@ async function createUser(freeEventCount = 0) {
     data: {
       email: uniqueEmail("draft-publish"),
       name: "テスト会員",
-      // 無料枠の消費には電話番号の確認が要る。課金判定だけを見たいので確認済みにする。
+      // 無料チケットの消費には電話番号の確認が要る。課金判定だけを見たいので確認済みにする。
       phoneVerifiedAt: new Date(),
       quota: { create: { freeEventCount } },
     },
@@ -29,7 +29,7 @@ describeDb("publishDraftEvent（結合）", () => {
     userIds.length = 0;
   });
 
-  it("未消費の下書きは、公開時に1回だけ枠を消費する", async () => {
+  it("未消費の下書きは、公開時に1枚だけチケットを消費する", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
     const draft = await seedEvent({ userId: user.id, role: "OWNER", status: "DRAFT" });
@@ -61,7 +61,7 @@ describeDb("publishDraftEvent（結合）", () => {
     expect(quota.freeEventCount).toBe(0);
   });
 
-  it("二重公開は 409 で、枠を追加で消費しない", async () => {
+  it("二重公開は 409 で、チケットを追加で消費しない", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
     const draft = await seedEvent({ userId: user.id, role: "OWNER", status: "DRAFT" });
@@ -80,7 +80,7 @@ describeDb("publishDraftEvent（結合）", () => {
     expect(quota.freeEventCount).toBe(1);
   });
 
-  it("枠を使い切っている未消費の下書きは 402", async () => {
+  it("チケットを使い切っている未消費の下書きは 402", async () => {
     const user = await createUser(FREE_EVENT_LIMIT);
     userIds.push(user.id);
     const draft = await seedEvent({ userId: user.id, role: "OWNER", status: "DRAFT" });

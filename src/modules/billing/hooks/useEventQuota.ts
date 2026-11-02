@@ -27,17 +27,24 @@ export function useEventQuota() {
   // モーダルを開いた画面の文脈。購入後の戻り先と、復元する下書きを引き継ぐ。
   const intentRef = useRef<CheckoutIntent | undefined>(undefined);
 
-  const fetchQuota = useCallback(async () => {
+  /**
+   * チケットを取り直し、取れた値をそのまま返す。
+   * 押した直後の判定に使えるよう、state を待たずに最新の残数を渡すため。
+   * 取得に失敗したときは null を返し、呼び出し元は手元の値で判断する。
+   */
+  const fetchQuota = useCallback(async (): Promise<UserQuota | null> => {
     try {
       const res = await fetch("/api/v1/billing/quota");
-      if (res.ok) {
-        const data = (await res.json()) as UserQuota;
-        setQuota(data);
-      } else {
+      if (!res.ok) {
         setQuota(null);
+        return null;
       }
+      const data = (await res.json()) as UserQuota;
+      setQuota(data);
+      return data;
     } catch (error) {
       console.error("クォータ取得に失敗しました", error);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -60,8 +67,8 @@ export function useEventQuota() {
   );
 
   /**
-   * 0円キャンペーン中は Stripe へ行かず、その場で1回分が付与される。
-   * 付与されたら枠を読み直して、作成画面がそのまま再試行できるようにする。
+   * 0円キャンペーン中は Stripe へ行かず、その場で1枚が付与される。
+   * 付与されたらチケットを読み直して、作成画面がそのまま再試行できるようにする。
    */
   const startOneTimeCheckout = useCallback(
     async (override?: CheckoutIntent): Promise<OneTimeCheckoutResult> => {

@@ -431,12 +431,12 @@ function mapForeignKey(error: unknown): never {
 }
 
 export async function createEventForUser(userId: string, input: CreateEventInput) {
-  // 枠が無いときに作る下書きは課金しない。公開（publish）で初めて枠を消費する。
+  // チケットが無いときに作る下書きは課金しない。公開（publish）で初めてチケットを消費する。
   const isDraft = input.status === "DRAFT";
   const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
     return await prisma.$transaction(async (tx) => {
-      // 枠を消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
+      // チケットを消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
       const consumption = decision ? await decision.consume(tx) : null;
       const quotaSource = consumption ? quotaSourceOf(consumption.type) : null;
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
@@ -455,13 +455,13 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           visibility: "UNLISTED",
           rsvpDeadline: deadlineOrThrow(input.rsvpDeadline),
           status: input.status,
-          // 即公開はここで枠を消費している。下書きは公開時に消費する。
+          // 即公開はここでチケットを消費している。下書きは公開時に消費する。
           quotaChargedAt: isDraft ? null : new Date(),
           quotaSource,
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });
-      // 即公開はイベント行より先に枠を消費する。使った券があったら、できたイベントを結ぶ。
+      // 即公開はイベント行より先にチケットを消費する。使った券があったら、できたイベントを結ぶ。
       if (consumption?.ticketId) {
         await tx.freeTicket.update({
           where: { id: consumption.ticketId },
@@ -528,7 +528,7 @@ export function eventUpdateData(input: UpdateEventInput) {
 }
 
 /**
- * 下書きを公開する直前に、まだ枠を消費していなければ消費する。
+ * 下書きを公開する直前に、まだチケットを消費していなければ消費する。
  * 公開済みのまま再公開する経路はないので、二重に引くことはない。
  */
 export async function consumeQuotaForDraftPublish(
@@ -564,7 +564,7 @@ export async function consumeQuotaForDraftPublish(
 
 /**
  * 下書きを公開する。入力が渡されたときは、公開と同時に内容も更新する。
- * 枠の消費と公開を1つのトランザクションに閉じる。
+ * チケットの消費と公開を1つのトランザクションに閉じる。
  */
 export async function publishDraftEvent(
   userId: string,

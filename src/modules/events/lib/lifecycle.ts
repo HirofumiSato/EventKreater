@@ -21,9 +21,9 @@ export function assertCanStopEvent(event: { status: string }): void {
 /**
  * 公開の再開は「受付停止にしたイベント」だけを戻す操作である。
  *
- * 状態は CLOSED → PUBLISHED に戻すだけで、枠はここで消費する。
- * 一時停止は枠を空けるので、再開はもう一度枠を1つ使う。満杯なら 402 で断る。
- * 下書きを公開するときは `/publish` を通す（枠の消費と公開の条件が別にある）。
+ * 状態は CLOSED → PUBLISHED に戻すだけで、チケットはここで消費する。
+ * 一時停止はチケットを空けるので、再開はもう一度チケットを1枚使う。満杯なら 402 で断る。
+ * 下書きを公開するときは `/publish` を通す（チケットの消費と公開の条件が別にある）。
  * 公開中のイベントは、そもそも止まっていないので 409 で断る。
  */
 export function assertCanReopenEvent(event: { status: string }): void {
@@ -37,8 +37,8 @@ export function assertCanReopenEvent(event: { status: string }): void {
 }
 
 /**
- * 受付を停止したイベントを公開へ戻す。枠の消費と状態の更新を1つのトランザクションに閉じる。
- * 未登録の幹事（`userId` が null）は利用枠を持たないので、状態だけを戻す。
+ * 受付を停止したイベントを公開へ戻す。チケットの消費と状態の更新を1つのトランザクションに閉じる。
+ * 未登録の幹事（`userId` が null）はチケットを持たないので、状態だけを戻す。
  */
 export async function reopenEvent(userId: string | null, eventId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {

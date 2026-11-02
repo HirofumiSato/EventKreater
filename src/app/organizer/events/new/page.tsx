@@ -62,7 +62,7 @@ function NewEventScreen() {
   const searchParams = useSearchParams();
   // 告知ページの勧誘カードから来たときの参照元。登録を挟んでも消えないよう next にも載せる。
   const referrerEventId = searchParams.get("ref");
-  // 枠が無いときに保存した下書き。購入後はこの ID で復元し、公開は専用 API を呼ぶ。
+  // チケットが無いときに保存した下書き。購入後はこの ID で復元し、公開は専用 API を呼ぶ。
   const draftIdParam = searchParams.get("draftId");
   const [form, setForm] = useState<EventFormValues>(EMPTY_EVENT_FORM);
   const [draftId, setDraftId] = useState<string | null>(draftIdParam);

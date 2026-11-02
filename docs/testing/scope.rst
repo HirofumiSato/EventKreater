@@ -75,7 +75,7 @@
            ADM04["SCR-ADM-04: 管理者ホーム<br/>/console"]
            ADM01["SCR-ADM-01: 会員検索・権限変更<br/>/console/users"]
            ADM02["SCR-ADM-02: イベント検索<br/>/console/events"]
-           ADM03["SCR-ADM-03: 利用枠の決済履歴<br/>/console/payments"]
+           ADM03["SCR-ADM-03: チケットの決済履歴<br/>/console/payments"]
            ADM05["SCR-ADM-05: 価格キャンペーン<br/>/console/pricing"]
        end
        subgraph bill["課金"]
@@ -102,7 +102,7 @@
        PUB01 -.->|"unit: 勧誘カードの出し分け と ref の適格判定"| ORG02
        PUB01 -->|"3秒出欠登録 Cookie付与"| PUB01
        PUB01 -.->|"会員登録して履歴保存"| PUB02
-       PUB02 -->|"integration: 枠の引継ぎ"| PUB03
+       PUB02 -->|"integration: チケットの引継ぎ"| PUB03
        PUB03 -.->|"ログアウト"| PUB00
        PUB06 -.->|"イベント告知ページを作る"| ORG02
        ORG01 -.->|"新規作成ボタン"| ORG02
@@ -116,7 +116,7 @@
        ORG02 -.->|"公開 上限未達 未登録"| ORG10
        ORG02 -.->|"integration: 2件目は403 画面内に案内"| ORG10
        ORG02 -->|"route これから: HTTP 402"| MOD01
-       ORG02 -.->|"integration: 公開時の枠消費"| ORG04
+       ORG02 -.->|"integration: 公開時のチケット消費"| ORG04
        ORG04 -.->|"共有リンク"| PUB01
        ORG04 -.->|"管理ダッシュボードへ"| ORG01
        ORG05 -.->|"unit: 24時間の境界"| ORG10
@@ -147,7 +147,7 @@
 
 .. count-start
 
-94 ファイル、``it`` は 1264 件です。内訳は ``tests/unit/`` が 71 ファイル 1080 件、``tests/integration/`` が 20 ファイル 147 件です。結合の 147 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+96 ファイル、``it`` は 1297 件です。内訳は ``tests/unit/`` が 72 ファイル 1104 件、``tests/integration/`` が 20 ファイル 147 件です。結合の 147 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -177,7 +177,7 @@
      - SCR-PUB-01
    * - ``tests/unit/hydration-quota.test.ts``
      - 4
-     - 引き継いだ筆頭幹事の数だけ無料枠が増える。上限を超えない。不正な値は 0 として扱う
+     - 引き継いだ筆頭幹事の数だけ無料チケットが増える。上限を超えない。不正な値は 0 として扱う
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/unit/problem.test.ts``
      - 4
@@ -189,7 +189,7 @@
      - SCR-ORG-08
    * - ``tests/unit/subscription-plans.test.ts``
      - 15
-     - 月額で8件まで公開 980 円・公開し放題 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方と枠の記録先（単発・無料枠は枠の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題として引き継ぐ）
+     - 月額で8件まで公開 980 円・公開し放題 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方とチケットの記録先（単発・無料チケットは件数の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題として引き継ぐ）
      - SCR-MOD-01 / SCR-PUB-06 / SCR-ADM-05
    * - ``tests/unit/first-month-free.test.ts``
      - 10
@@ -241,15 +241,15 @@
      - SCR-ORG-06
    * - ``tests/integration/hydrate.test.ts``
      - 5
-     - 筆頭幹事の付け替え、二度呼んでも枠が増えない、上限を超えない
+     - 筆頭幹事の付け替え、二度呼んでもチケットが増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/integration/subscription-quota.test.ts``
      - 8
-     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題は件数を数えない。公開の再開は枠を再消費する。複製は下書きの時点では消費しない
+     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題は件数を数えない。公開の再開はチケットを再消費する。複製は下書きの時点では消費しない
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
    * - ``tests/integration/subscription-trial.test.ts``
      - 6
-     - 無料期間中（``ACTIVE``・``trial_ends_at`` が未来）もイベントを公開でき、無料枠と単発クレジットを減らさないこと。``trial_used_at`` がある会員と支払済みの月額がある会員は再加入でも対象外になること。``GET /api/v1/billing/quota`` が ``trial`` と ``trialEligible`` を返すこと。通知バッチが無料期間を拾い、3 日前と 1 日前に 1 回ずつ送り、同じ ``period_end`` では再送しないこと
+     - 無料期間中（``ACTIVE``・``trial_ends_at`` が未来）もイベントを公開でき、無料チケットと単発クレジットを減らさないこと。``trial_used_at`` がある会員と支払済みの月額がある会員は再加入でも対象外になること。``GET /api/v1/billing/quota`` が ``trial`` と ``trialEligible`` を返すこと。通知バッチが無料期間を拾い、3 日前と 1 日前に 1 回ずつ送り、同じ ``period_end`` では再送しないこと
      - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/integration/free-ticket.test.ts``
      - 22
@@ -325,7 +325,7 @@
      - SCR-ORG-01
    * - ``tests/unit/published-counts.test.ts``
      - 4
-     - マイページの公開中の件数を、月額プランとチケット（単発・無料枠）に分ける。帯と同じく公開中・今日以降・自分の筆頭幹事だけを数え、枠の記録が無い催しはチケット側に置く
+     - マイページの公開中の件数を、月額プランとチケット（単発・無料チケット）に分ける。帯と同じく公開中・今日以降・自分の筆頭幹事だけを数え、チケットの記録が無い催しはチケット側に置く
      - SCR-PUB-03
    * - ``tests/unit/flyer-download.test.ts``
      - 11
@@ -483,6 +483,10 @@
     - 10
     - 開発サーバーが「ビルドに失敗したまま」固まったことを見つける判定。``EBUSY``・``Failed to read source code``・``os error 32`` を拾い、構文エラーやビルド成功の行は拾わない。立て直しの間隔（直前なら見送る）と、立て直した直後に前のプロセスの失敗を読み飛ばす時間の関係
     - 該当なし（検査）
+  * - ``tests/unit/publish-confirm.test.ts``
+    - 24
+    - 公開の直前に確認を出すかの判定。定額（公開し放題・月額で8件まで公開）が有効な間は出さず、期限切れは出す。支払いに問題がある間は出さない。月額で8件まで公開の上限に達したときだけチケット・単発へ落とす。使う順はチケット → 単発 → 無料チケットで、電話番号が未確認なら無料チケットを除き、どれも無ければ出さない。チケット情報が分からないときも出さない。残り 1 で 0 に止める
+    - SCR-ORG-16
    * - ``tests/components/rsvp-modal.test.tsx``
      - 24
      - 出欠の層。選ぶ前から欄が出ること、欠席で消さずに押せなくすること、性別に合わない費用プランを残して無効にすること、男女別プランが 1 件でも欄が出ること、日時 3 件の横並びと複数選択、参加人数の入力と欠席時の無効化、文言「参加／欠席」「コメント」、送信本文の ``scheduleIds`` と ``partySize``、ログイン中の名前欄と「アカウントを切り替える」の不在、送る名前
@@ -495,13 +499,17 @@
     - 5
     - 画面が失敗したときの受け皿（``src/app/error.tsx``）。何が起きたかと、どうすればよいかを日本語で出す、失敗の中身（例外の文面）は出さない、主操作は「もう一度読み込む」1 つで押すと ``reset`` を呼ぶ、トップへ戻る道を持つ、``digest`` があるときだけ問い合わせ用の番号を出す
     - 全画面の共通レイアウト
+  * - ``tests/components/publish-confirm-modal.test.tsx``
+    - 9
+    - 公開前の確認の層。チケット・単発は「チケットを消費して公開します」で枚、無料チケットは「無料チケットを使って公開します」で枚。本文に使うものと残りの枚数を出す。「公開する」で ``onConfirm``、「やめる」で ``onClose``、送信中は 2 つのボタンを押せず主操作を「公開中…」にする
+    - SCR-ORG-16
   * - ``tests/integration/draft-publish.test.ts``
      - 4
-     - 下書きの公開で枠を 1 回だけ消費する。二重公開は 409、枠切れは 402
+     - 下書きの公開でチケットを 1 枚だけ消費する。二重公開は 409、チケット切れは 402
      - SCR-ORG-02
    * - ``tests/integration/draft-save-preview-publish.test.ts``
      - 5
-     - 下書き保存では枠を消費せず公開で消費する。上書き保存の可否と、402・409・404 の分かれ方
+     - 下書き保存ではチケットを消費せず公開で消費する。上書き保存の可否と、402・409・404 の分かれ方
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/integration/organizer-avatar.test.ts``
      - 8
@@ -538,7 +546,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1080、``tests/integration/`` が 147 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1080 件を実行して 147 件を skip します。
+件数の内訳は ``tests/unit/`` が 1104、``tests/integration/`` が 147 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1104 件を実行して 147 件を skip します。
 
 .. breakdown-end
 

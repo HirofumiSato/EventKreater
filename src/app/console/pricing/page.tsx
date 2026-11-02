@@ -369,7 +369,7 @@ export default function AdminPricingPage() {
             />
             <p className="help">重なったときに大きい方が適用されます。同じなら新しい方が勝ちます。</p>
           </Field>
-          <Field label="0円チケットを1人が受け取れる回数" htmlFor="campaign-limit">
+          <Field label="0円チケットを1人が受け取れる枚数" htmlFor="campaign-limit">
             <input
               id="campaign-limit"
               className="input"

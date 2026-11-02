@@ -288,7 +288,7 @@ describeDb("無料チケットの消費順（結合）", () => {
 
     const published = await publishDraftEvent(user.id, target.id);
 
-    // チケット経由でも、イベントの枠の種別は単発クレジットのまま（QuotaSource は増やさない）。
+    // チケット経由でも、イベントに残す種別は単発クレジットのまま（QuotaSource は増やさない）。
     expect(published.quotaSource).toBe("PAID_CREDIT");
     expect((await quotaOf(user.id)).paidCredits).toBe(1);
     const used = await prisma.freeTicket.findUniqueOrThrow({ where: { id: ticket.id } });
@@ -324,7 +324,7 @@ describeDb("無料チケットの消費順（結合）", () => {
     const used = await prisma.freeTicket.findUniqueOrThrow({ where: { id: ticket.id } });
     expect(used.eventId).toBe(target.id);
 
-    // 2枚目は無いので、次の公開は 402（無料枠では抜けられない）。
+    // 2枚目は無いので、次の公開は 402（無料チケットでは抜けられない）。
     const blocked = await draft(user.id);
     await expectQuotaError(publishDraftEvent(user.id, blocked.id), "PUBLISHED_EVENTS_FULL");
   });
@@ -371,14 +371,14 @@ describeDb("無料チケットの消費順（結合）", () => {
     const { event } = await createEventForUser(user.id, input);
     eventIds.push(event.id);
 
-    // 即公開はイベント行を作る前に枠を消費する。作成後に券と結び直せていないと空のまま残る。
+    // 即公開はイベント行を作る前にチケットを消費する。作成後に券と結び直せていないと空のまま残る。
     expect(event.quotaSource).toBe("PAID_CREDIT");
     const used = await prisma.freeTicket.findUniqueOrThrow({ where: { id: ticket.id } });
     expect(used.usedAt).not.toBeNull();
     expect(used.eventId).toBe(event.id);
   });
 
-  it("券だけでも作成できると判定する（単発クレジットも無料枠も無くても）", async () => {
+  it("券だけでも作成できると判定する（単発クレジットも無料チケットも無くても）", async () => {
     const user = await member({ freeEventCount: FREE_EVENT_LIMIT, phoneVerified: false });
     await giveTicket(user.id, { expiresAt: inDays(3) });
 
@@ -421,7 +421,7 @@ describeDb("無料チケットの消費順（結合）", () => {
       grantedCount: 2,
       limit: 10,
     });
-    // 券があるので、無料枠が尽きていても作成できると返す。
+    // 券があるので、無料チケットが尽きていても作成できると返す。
     expect(body.canCreate).toBe(true);
   });
 });

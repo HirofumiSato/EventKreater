@@ -27,7 +27,7 @@ describeDb("migrateGuestOrganizers（結合）", () => {
     userIds.length = 0;
   });
 
-  it("筆頭幹事の分だけ無料枠に移し、共同幹事は数えない", async () => {
+  it("筆頭幹事の分だけ無料チケットに移し、共同幹事は数えない", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
 
@@ -54,7 +54,7 @@ describeDb("migrateGuestOrganizers（結合）", () => {
     expect(organizers.every((row) => row.userId === user.id && row.guestTokenHash === null)).toBe(true);
   });
 
-  it("同じ端末で二度呼んでも枠は増えない", async () => {
+  it("同じ端末で二度呼んでもチケットは増えない", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
 
@@ -71,7 +71,7 @@ describeDb("migrateGuestOrganizers（結合）", () => {
     expect(quota.freeEventCount).toBe(1);
   });
 
-  it("無料枠の上限を超えない", async () => {
+  it("無料チケットの上限を超えない", async () => {
     const user = await createUser(FREE_EVENT_LIMIT);
     userIds.push(user.id);
 

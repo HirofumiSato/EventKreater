@@ -97,7 +97,7 @@ describeDb("公開中のイベント数（結合）", () => {
     userIds.length = 0;
   });
 
-  it("8件未満なら公開でき、公開したイベントは定額プランの枠として数える", async () => {
+  it("8件未満なら公開でき、公開したイベントは定額プランの件数として数える", async () => {
     const user = await createUser({ plan: "MONTHLY_8" });
     userIds.push(user.id);
     for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - 1; index += 1) {
@@ -110,7 +110,7 @@ describeDb("公開中のイベント数（結合）", () => {
     expect(published.status).toBe("PUBLISHED");
     expect(published.quotaSource).toBe("SUBSCRIPTION");
     expect(published.quotaChargedAt).not.toBeNull();
-    // 単発クレジットと無料枠は動かさない。
+    // 単発クレジットと無料チケットは動かさない。
     const quota = await quotaOf(user.id);
     expect(quota.paidCredits).toBe(0);
     expect(quota.freeEventCount).toBe(0);
@@ -193,7 +193,7 @@ describeDb("公開中のイベント数（結合）", () => {
     expect((await quotaOf(user.id)).paidCredits).toBe(0);
   });
 
-  it("一時停止した催しの再開は、枠が空いていれば通り、満杯なら 402", async () => {
+  it("一時停止した催しの再開は、公開できる件数が残っていれば通り、満杯なら 402", async () => {
     const user = await createUser({ plan: "MONTHLY_8" });
     userIds.push(user.id);
     const token = await signLocalToken({ userId: user.id, email: user.email });
@@ -218,7 +218,7 @@ describeDb("公開中のイベント数（結合）", () => {
     );
   });
 
-  it("複製は下書きを作るだけで、枠を消費しない", async () => {
+  it("複製は下書きを作るだけで、チケットを消費しない", async () => {
     const user = await createUser({ plan: "MONTHLY_8" });
     userIds.push(user.id);
     for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT; index += 1) {

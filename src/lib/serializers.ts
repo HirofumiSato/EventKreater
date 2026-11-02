@@ -286,7 +286,7 @@ export interface EventRecordShape {
   themeId?: string | null;
   status: EventStatus;
   visibility: EventVisibility;
-  /** どの利用枠から公開したか。主催者向けの一覧だけが返す。 */
+  /** どのチケットから公開したか。主催者向けの一覧だけが返す。 */
   quotaSource?: QuotaSource | null;
   rsvpDeadline: Date | null;
   createdAt: Date;
@@ -550,7 +550,7 @@ export function serializeOrganizerListItem(
   return {
     ...serializeEvent(event),
     role,
-    // 公開ページの応答には出さない。マイページの要約が枠ごとの件数を出すためだけに持つ。
+    // 公開ページの応答には出さない。マイページの要約がチケットごとの件数を出すためだけに持つ。
     quotaSource: event.quotaSource ?? null,
     ownerName,
     ownerUserId,

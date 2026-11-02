@@ -62,7 +62,7 @@ export default function OrganizerDraftsPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="下書き一覧" lead="公開するまで利用枠は減りません。プレビューで確かめてから公開できます。" />
+      <PageHeader title="下書き一覧" lead="公開するまでチケットは減りません。プレビューで確かめてから公開できます。" />
 
       {loading && (
         <Loading>

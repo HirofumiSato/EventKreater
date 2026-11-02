@@ -428,7 +428,7 @@ function PhoneScreen({
       }
       const body = (await res.json()) as { attachedExisting?: boolean; reactivated?: boolean };
       if (body.reactivated) {
-        setNotice("以前のアカウントを引き継ぎました。利用枠は前回の続きからになります。");
+        setNotice("以前のアカウントを引き継ぎました。チケットは前回の続きからになります。");
       } else if (body.attachedExisting) {
         setNotice("同じ電話番号の会員へ結びつけました。");
       }
@@ -447,7 +447,7 @@ function PhoneScreen({
         title="電話番号の確認"
         lead={<>{audience === "participant"
             ? "履歴を残す会員は、確認済みの電話番号が必要です。メールアドレスや Google アカウントが違っても、同じ番号なら同じ会員になります。"
-            : "無料枠は、確認済みの電話番号 1 件につき 2 回です。メールアドレスや Google アカウントが違っても、同じ番号なら同じ会員になります。"}{" "}
+            : "無料チケットは、確認済みの電話番号 1 件につき 2 枚です。メールアドレスや Google アカウントが違っても、同じ番号なら同じ会員になります。"}{" "}
           確認後の移動先は {nextPath} です。
         </>}
       />

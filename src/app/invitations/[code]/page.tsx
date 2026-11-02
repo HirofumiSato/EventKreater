@@ -84,7 +84,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
       <div className="auth-card">
         <h2 className="auth-card__title">{preview.event.organizer.ownerName ?? "主催者"} からの招待</h2>
         <p className="auth-card__note">
-          加わると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
+          加わると、このイベントの編集と名簿を分担できます。チケットは消費しません。
         </p>
         <dl className="kv">
           <div className="kv__row">
@@ -113,7 +113,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
           ) : (
             <>
               <p className="help">
-                共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。利用枠は消費しません。
+                共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。チケットは消費しません。
               </p>
               <Link href={loginHref} className="btn btn--primary btn--block">
                 会員登録して受諾する

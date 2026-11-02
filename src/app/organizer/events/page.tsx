@@ -47,7 +47,7 @@ function OrganizerEventsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  // 枠が足りずに止まった複製。チケットで公開し直すとき、同じ催しをもう一度押させる。
+  // チケットが足りずに止まった複製。チケットで公開し直すとき、同じ催しをもう一度押させる。
   const [pendingCloneId, setPendingCloneId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -143,7 +143,7 @@ function OrganizerEventsScreen() {
     }
   };
 
-  /** チケットで公開する。枠が足りずに止まった複製を、同じ催しのままやり直す。 */
+  /** チケットで公開する。チケットが足りずに止まった複製を、同じ催しのままやり直す。 */
   const retryClone = () => {
     const id = pendingCloneId;
     setPendingCloneId(null);

@@ -3,7 +3,7 @@ import { mergedFreeEventCount } from "@/modules/auth/lib/hydrate";
 import { FREE_EVENT_LIMIT } from "@/modules/billing/lib/quota";
 
 describe("mergedFreeEventCount", () => {
-  it("移行した筆頭幹事の数だけ無料枠が増える", () => {
+  it("移行した筆頭幹事の数だけ無料チケットが増える", () => {
     expect(mergedFreeEventCount(0, 1)).toBe(1);
     expect(mergedFreeEventCount(1, 1)).toBe(FREE_EVENT_LIMIT);
   });

@@ -28,7 +28,7 @@ async function createUser(freeEventCount = 0) {
     data: {
       email: uniqueEmail("draft-save"),
       name: "テスト会員",
-      // 枠の消費には電話番号の確認が要る。保存と公開だけを見たいので確認済みにする。
+      // チケットの消費には電話番号の確認が要る。保存と公開だけを見たいので確認済みにする。
       phoneVerifiedAt: new Date(),
       quota: { create: { freeEventCount } },
     },
@@ -37,7 +37,7 @@ async function createUser(freeEventCount = 0) {
 
 /**
  * 作成画面の「下書き保存」から「プレビュー」「公開」までの流れ。
- * 下書きは枠を消費せず、公開で1回だけ消費する。
+ * 下書きはチケットを消費せず、公開で1枚だけ消費する。
  */
 describeDb("下書きの保存と公開（結合）", () => {
   const eventIds: string[] = [];
@@ -49,7 +49,7 @@ describeDb("下書きの保存と公開（結合）", () => {
     userIds.length = 0;
   });
 
-  it("下書き作成では枠を消費せず、公開で1回だけ消費する", async () => {
+  it("下書き作成ではチケットを消費せず、公開で1枚だけ消費する", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
 
@@ -102,12 +102,12 @@ describeDb("下書きの保存と公開（結合）", () => {
     });
     expect(plans.map((row) => row.name)).toEqual(["一般", "学生"]);
 
-    // 保存では枠を消費しない。
+    // 保存ではチケットを消費しない。
     const quota = await prisma.userUsageQuota.findUniqueOrThrow({ where: { userId: user.id } });
     expect(quota.freeEventCount).toBe(0);
   });
 
-  it("枠を使い切った会員でも下書きは保存でき、公開で 402 になる", async () => {
+  it("チケットを使い切った会員でも下書きは保存でき、公開で 402 になる", async () => {
     const user = await createUser(FREE_EVENT_LIMIT);
     userIds.push(user.id);
 

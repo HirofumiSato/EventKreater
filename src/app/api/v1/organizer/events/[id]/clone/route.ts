@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 401,
         title: "Unauthorized",
-        detail: "イベントの複製には会員登録が必要です。複製すると筆頭幹事として利用枠を消費します。",
+        detail: "イベントの複製には会員登録が必要です。複製すると筆頭幹事としてチケットを消費します。",
       });
     }
     const userId = ctx.userId;
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     try {
       const event = await prisma.$transaction(async (tx) => {
-        // 複製は下書きなので、ここでは枠を消費しない。公開（publish）で消費する。
+        // 複製は下書きなので、ここではチケットを消費しない。公開（publish）で消費する。
         const created = await tx.event.create({
           data: {
             title,
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             visibility: "UNLISTED",
             rsvpDeadline: source.rsvpDeadline,
             status: "DRAFT",
-            // 複製は下書き。枠は公開のときに消費する。
+            // 複製は下書き。チケットは公開のときに消費する。
             quotaChargedAt: null,
             schedules: {
               create: source.schedules.map((row) => ({

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       throw new ProblemDetailException({
         status: 404,
         title: "Quota Not Found",
-        detail: "主催者の利用枠情報が存在しません。",
+        detail: "主催者のチケット情報が存在しません。",
       });
     }
     if (!quota.stripeCustomerId) {

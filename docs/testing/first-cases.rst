@@ -3,7 +3,7 @@
 
 読む順の 9 番です。前は :doc:`scope`、次は :doc:`local-run` です。
 
-実装を始める入口は、このページの「データベース不要」です。PostgreSQL も Stripe の API も使わず、期待値が仕様の数そのものになります。ソースの所在は、利用枠が ``src/modules/billing/lib/quota.ts``、入力が ``src/lib/schemas.ts``、Webhook が ``src/app/api/v1/webhooks/stripe/route.ts`` です。
+実装を始める入口は、このページの「データベース不要」です。PostgreSQL も Stripe の API も使わず、期待値が仕様の数そのものになります。ソースの所在は、チケットが ``src/modules/billing/lib/quota.ts``、入力が ``src/lib/schemas.ts``、Webhook が ``src/app/api/v1/webhooks/stripe/route.ts`` です。
 
 このページは、これから書くケースの一覧です。すでに書けたものは :doc:`scope` にあります。重複するものは、そちらが現在の状態を示します。
 
@@ -43,7 +43,7 @@
    * - 出欠コメントが 501 文字
      - ``SubmitRsvpSchema`` が拒否する
 
-利用枠の純粋関数は、時刻を引数で固定します。
+チケットの純粋関数は、時刻を引数で固定します。
 
 .. list-table::
    :header-rows: 1
@@ -166,8 +166,8 @@ Webhook の入口は ``POST`` を直接呼びます。``api.stripe.com`` へは�
      - ``FREE_TRIAL``。``freeEventCount`` が 1 増える
    * - クレジットが 0 で ``freeEventCount`` が 2 未満、電話番号未確認
      - 403、``PHONE_REQUIRED``。``freeEventCount`` は変わらない
-   * - 無料枠が 2 に達している
-     - 402、``QUOTA_EXCEEDED``。既定の詳細文は 2 回、299 円、980 円を含む
+   * - 無料チケットが 2 枚に達している
+     - 402、``QUOTA_EXCEEDED``。既定の詳細文は 2 枚、299 円、980 円を含む
 
 ロックと Webhook の再送も、このデータベースで見ます。
 

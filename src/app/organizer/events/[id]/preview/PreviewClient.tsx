@@ -9,6 +9,13 @@ import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
+import { PublishConfirmModal } from "@/modules/billing/components/PublishConfirmModal";
+import { PublishUsedModal } from "@/modules/billing/components/PublishUsedModal";
+import {
+  publishConfirmation,
+  remainingFor,
+  type PublishConfirmation,
+} from "@/modules/billing/lib/publish-confirm";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
@@ -72,6 +79,12 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  /** 公開の直前に出す確認。null なら層を出さない。 */
+  const [confirm, setConfirm] = useState<PublishConfirmation | null>(null);
+  /** 公開後に出す「チケットを使いました」の層。使ったあとの残り枚数を持つ。 */
+  const [used, setUsed] = useState<{ remaining: number } | null>(null);
+  /** 押した直後にチケットを読み直している間。二重押しを止めるのに使う。 */
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -91,13 +104,19 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
     };
   }, [params.id]);
 
-  const publish = async () => {
+  /**
+   * 公開を実行する。`confirmation` は確認の層を経てチケットを1枚使う公開のときだけ渡す。
+   *
+   * 確認を経た公開は、使ったあとの残りを最新のクォータから読んでから
+   * `PublishUsedModal` を出し、閉じたときに告知ページへ移る。渡されなければ従来どおり即遷移する。
+   */
+  const publish = async (confirmation?: PublishConfirmation) => {
     setPublishing(true);
     setToast(null);
     try {
       const res = await fetch(`/api/v1/organizer/events/${params.id}/publish`, { method: "POST" });
       if (res.status === 402) {
-        // 枠が無い。購入後にこのプレビューへ戻り、そのまま公開できる。
+        // チケットが無い。購入後にこのプレビューへ戻り、そのまま公開できる。
         quotaState.openPricingModal({ draftId: params.id, returnTo });
         return;
       }
@@ -119,12 +138,47 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         return;
       }
       if (!res.ok) throw new Error(await readProblem(res));
+
+      if (confirmation) {
+        // 使ったあとの残りは、取り直した最新のクォータから読む。
+        // 取り直せないときは、確認のときに計算した値で代用する。
+        const latest = await quotaState.refreshQuota();
+        setConfirm(null);
+        setUsed({
+          remaining: latest ? remainingFor(latest, confirmation.kind) : confirmation.remainingAfter,
+        });
+        return;
+      }
+
       void quotaState.refreshQuota();
       router.replace(`/events/${params.id}`);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : "公開に失敗しました");
     } finally {
       setPublishing(false);
+      // 成功・402・失敗のどれでも層を閉じる（402 は料金モーダルへ移る）。
+      setConfirm(null);
+    }
+  };
+
+  /**
+   * 「公開する」の入口。直前にチケットを読み直し、チケット・単発チケット・無料チケットを
+   * 1枚使うときだけ確認の層を挟む。定額はそのまま、チケットが無ければ従来どおり 402 へ。
+   */
+  const requestPublish = async () => {
+    setChecking(true);
+    setToast(null);
+    try {
+      // 古い残数を出すと実際に減る数と食い違うので、押した直後に取り直す。
+      const latest = (await quotaState.refreshQuota()) ?? quotaState.quota;
+      const next = publishConfirmation(latest);
+      if (next) {
+        setConfirm(next);
+        return;
+      }
+      await publish();
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -158,8 +212,13 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         <div className="preview-toolbar__inner">
           <div className="preview-toolbar__actions">
             {canPublish && (
-              <button type="button" className="btn btn--primary btn--sm" disabled={publishing} onClick={() => void publish()}>
-                {publishing ? "公開中…" : "公開する"}
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                disabled={publishing || checking}
+                onClick={() => void requestPublish()}
+              >
+                {publishing ? "公開中…" : checking ? "確認しています…" : "公開する"}
               </button>
             )}
             {event.status === "PUBLISHED" && event.flyerAsset && (
@@ -178,7 +237,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
             </Link>
           </div>
           <p className="preview-toolbar__note">
-            公開には、利用枠を 1回使います。公開すると、告知URLが有効になり出欠を受け付けます。
+            公開には、チケットを1枚使います。公開すると、告知URLが有効になり出欠を受け付けます。
           </p>
         </div>
       </div>
@@ -272,9 +331,28 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         onUseTicket={() => void publish()}
         onGranted={() => {
           void quotaState.refreshQuota();
-          setToast("0円チケットを1回分受け取りました。「公開する」をもう一度押してください。");
+          setToast("0円チケットを1枚受け取りました。「公開する」をもう一度押してください。");
         }}
       />
+      {confirm && (
+        <PublishConfirmModal
+          eventTitle={event.title}
+          confirmation={confirm}
+          busy={publishing}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => void publish(confirm)}
+        />
+      )}
+      {used && (
+        <PublishUsedModal
+          eventTitle={event.title}
+          remaining={used.remaining}
+          onClose={() => {
+            setUsed(null);
+            router.replace(`/events/${params.id}`);
+          }}
+        />
+      )}
       {toast && <Toast message={toast} tone={toast.includes("失敗") ? "error" : "success"} onClose={() => setToast(null)} />}
     </div>
   );

@@ -104,9 +104,9 @@ export default function AdminPaymentsPage() {
   return (
     <AdminChrome>
       <div>
-        <h1 className="page-title">利用枠の決済履歴</h1>
+        <h1 className="page-title">チケットの決済履歴</h1>
         <p className="page-lead">
-          利用枠の単発購入と月額請求です。会員の名前、メール、Stripe のセッション ID・請求書 ID・PaymentIntent ID で検索します。
+          チケットの単発購入と月額請求です。会員の名前、メール、Stripe のセッション ID・請求書 ID・PaymentIntent ID で検索します。
         </p>
       </div>
       <form className="form" onSubmit={search}>

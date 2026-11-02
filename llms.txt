@@ -16,21 +16,21 @@
 
 ## 仕様（正はコード）
 
-- [チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）](docs/backend_api_implementation_spec.md): 本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様…
+- [チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）](docs/backend_api_implementation_spec.md): 本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様…
 - [フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）](docs/front_implementation_spec.md): 本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カ…
-- [イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書](docs/DBschema.md): 本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理…
+- [イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書](docs/DBschema.md): 本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデ…
 - [システム詳細設計書](docs/detailed_design_spec.md): 本設計書は、先行して策定された「企画要件定義書」「システム要件定義書」「実装仕様書」を基に、バックエンドおよびフロントエンドの実装者が迷いなくコードを記述できるレベルまで構造・振る舞いを具体化したものである。
 
 ## 手順
 
 - [ローカルでの操作](docs/local.rst): 手元で動かすために、次を用意します。
 - [本番デプロイ](docs/deploy.rst): このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。
-- [Stripe のローカルテストと操作](docs/stripe.rst): このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、利用枠の確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。
+- [Stripe のローカルテストと操作](docs/stripe.rst): このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、チケットの確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。
 - [データベース操作](docs/database.rst): このアプリのデータベースは PostgreSQL です。スキーマの正は prisma/schema.prisma で、適用済みの SQL は prisma/migrations/ にあります。 初期マイグレーションは 20261018171707_init_schema_with_billing です。
 
 ## 検証
 
-- [自動テスト](docs/testing/index.rst): この節は、利用枠・課金決済の Next.js アプリを手元で自動実行するときの文書です。読む順は 11 ページで、このページが 1 番です。
+- [自動テスト](docs/testing/index.rst): この節は、チケット・課金決済の Next.js アプリを手元で自動実行するときの文書です。読む順は 11 ページで、このページが 1 番です。
 - [テスト範囲のフロー](docs/testing/scope.rst): 読む順の 8 番です。前は vitest/practice、次は first-cases です。
 - [CI への接続](docs/testing/ci.rst): 読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。
 

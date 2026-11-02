@@ -22,7 +22,7 @@ interface PricingModalProps {
   onSelectOneTime: () => Promise<unknown>;
   onSelectSubscription: (plan: SubscriptionChoice) => Promise<unknown>;
   /**
-   * 利用枠と販売価格。価格・残り・加入中のプランを 1 つにまとめて受ける。
+   * チケットと販売価格。価格・残り・加入中のプランを 1 つにまとめて受ける。
    * 項目を足すたびに5画面の呼び出しを直さないため、個別の props は持たない。
    */
   quota?: UserQuota | null;
@@ -141,7 +141,7 @@ export function PricingModal({
   const currentPlan = quota?.subscriptionPlan ?? "NONE";
   const trialEligible = quota?.trialEligible ?? false;
   // 期限つきのチケットを持っているなら、それが一番安く早い。0円キャンペーン中は
-  // そちらで1回分を受け取れるので、チケットの札は出さない（選ぶものが2つになる）。
+  // そちらで1枚を受け取れるので、チケットの札は出さない（選ぶものが2つになる）。
   // 押したあとに公開をやり直せない画面（作成中・マイページ）では、使えない札を出さない。
   const ticketAvailable = isFree ? 0 : (quota?.tickets?.available ?? 0);
   const hasTicket = ticketAvailable > 0 && Boolean(onUseTicket);
@@ -201,7 +201,7 @@ export function PricingModal({
               <h4 className="card__title">チケットで公開する</h4>
               <p className="card__body">
                 残り{ticketAvailable}枚。{ticketExpiringAt ? `${ticketExpiringAt} まで有効。` : ""}
-                紹介した人が公開すると2回もらえます。
+                紹介した人が公開すると2枚もらえます。
               </p>
               <button
                 type="button"
@@ -217,8 +217,8 @@ export function PricingModal({
             <h4 className="card__title">単発チケット</h4>
             <PriceBlock quote={oneTime} fallback={ONE_TIME_PRICE_JPY} />
             <p className="card__body">
-              1回分。スポット開催に。
-              {isFree && ` おひとり${oneTime?.freePerUserLimit ?? 1}回まで無料です。`}
+              1枚。スポット開催に。
+              {isFree && ` おひとり${oneTime?.freePerUserLimit ?? 1}枚まで無料です。`}
             </p>
             <button
               type="button"

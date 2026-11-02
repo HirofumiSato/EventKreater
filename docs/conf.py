@@ -8,7 +8,7 @@ FLYER_ROOT = Path(__file__).resolve().parents[1] / "services" / "flyer"
 if FLYER_ROOT.is_dir():
     sys.path.insert(0, str(FLYER_ROOT))
 
-project = "利用枠管理・課金決済基盤"
+project = "チケット管理・課金決済基盤"
 copyright = "2026, event-platform-billing"
 author = "event-platform-billing"
 release = "1.0.0"
@@ -68,5 +68,5 @@ exclude_patterns = [
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
-html_title = "利用枠管理・課金決済基盤"
+html_title = "チケット管理・課金決済基盤"
 html_show_sourcelink = False

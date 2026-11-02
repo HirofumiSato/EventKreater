@@ -67,7 +67,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
         : "alert--success";
 
   const message = needsPhone
-    ? "無料枠を使うには電話番号の確認が必要です。"
+    ? "無料チケットを使うには電話番号の確認が必要です。"
     : quota.subscriptionStatus === "PAST_DUE"
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
@@ -76,8 +76,8 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             quota.publishedEventCount
               ? `公開中のイベント ${quota.publishedEventCount} 件。`
               : ""
-          }無料トライアル残り ${quota.remainingFree}回${quota.paidCredits > 0 ? `（単発 ${quota.paidCredits}回）` : ""}${
-            freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}回` : ""
+          }無料チケット 残り ${quota.remainingFree}枚${quota.paidCredits > 0 ? `（単発 ${quota.paidCredits}枚）` : ""}${
+            freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
           }`;
 
   // 公開し放題は 402 が起きないので、プランを勧めるボタンを出さない。

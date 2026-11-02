@@ -1,7 +1,7 @@
-利用枠管理・課金決済基盤
-========================
+チケット管理・課金決済基盤
+==========================
 
-イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。
+イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。
 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。
 ソースは ``docs/`` にあり、HTML は Sphinx で生成します。
 
@@ -131,7 +131,7 @@
    * - ``docs/stripe.rst``
      - Stripe のテストモード、課金の境界、Webhook
    * - ``docs/database.rst``
-     - PostgreSQL、Prisma、利用枠の確認 SQL
+     - PostgreSQL、Prisma、チケットの確認 SQL
    * - ``docs/testing/``
      - Next.js の自動テスト。読む順 11 ページ。``vitest/`` に実行基盤の 4 ページ、``scope.rst`` にテスト範囲のフロー
    * - ``docs/conf.py``
@@ -139,9 +139,9 @@
    * - ``docs/requirements.txt``
      - Sphinx の Python 依存
    * - ``docs/billing_and_quota_planning_requirements.md``
-     - 利用枠・課金の企画要件
+     - チケット・課金の企画要件
    * - ``docs/billing_and_quota_system_requirements.md``
-     - 利用枠・課金のシステム要件
+     - チケット・課金のシステム要件
    * - ``docs/pricing_campaign_requirements.md``
      - 価格キャンペーン、0円販売、無料期間の終了前通知、利用規約
    * - ``docs/overall_system_requirements_common.md``

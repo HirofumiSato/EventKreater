@@ -28,7 +28,7 @@
      - :doc:`testing/index` 。Stripe の Dashboard は開かない
    * - 画面と API の正を追う
      - :doc:`overall_system_requirements_common` → :doc:`front_implementation_spec` と :doc:`backend_api_implementation_spec`
-   * - 利用枠と Stripe 連携の仕様
+   * - チケットと Stripe 連携の仕様
      - :doc:`billing_and_quota_planning_requirements` → :doc:`billing_and_quota_system_requirements`
    * - 価格キャンペーンと利用規約
      - :doc:`pricing_campaign_requirements`
@@ -70,7 +70,7 @@
       CommonDoc --> Schema["DBschema"]
       CommonDoc --> ApiSpec["backend / front 実装仕様"]
 
-      Features --> Billing["利用枠・課金の要件"]
+      Features --> Billing["チケット・課金の要件"]
       Features --> Event["event-page"]
       Features --> Voice["音声入力"]
       Features --> Flyer["flyer"]
@@ -103,13 +103,13 @@
    * - このページ
      - 全体の見取り図とサイトマップ
    * - :doc:`local`
-     - ローカル起動、環境変数、画面パス、利用枠の優先順
+     - ローカル起動、環境変数、画面パス、チケットの優先順
    * - :doc:`deploy`
      - 本番デプロイ。Cloudflare、Fly.io、Neon、R2 の順に設定する。ローリング更新と切り戻し
    * - :doc:`stripe`
      - Stripe テストモード、課金の境界、Webhook、確認 SQL への案内
    * - :doc:`database`
-     - PostgreSQL、Prisma、確認 SQL、ローカルだけの利用枠書き換え
+     - PostgreSQL、Prisma、確認 SQL、ローカルだけのチケット書き換え
 
 検証
 ^^^^
@@ -165,8 +165,8 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - :doc:`front_implementation_spec`
      - 共通のフロントエンド実装仕様
 
-利用枠・課金
-^^^^^^^^^^^^
+チケット・課金
+^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -175,7 +175,7 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
    * - ページ
      - 中身
    * - :doc:`billing_and_quota_planning_requirements`
-     - 企画要件。無料 2 回、単発 299 円、月額で8件まで公開 980 円、公開し放題 2,980 円
+     - 企画要件。無料チケット 2 枚、単発 299 円、月額で8件まで公開 980 円、公開し放題 2,980 円
    * - :doc:`billing_and_quota_system_requirements`
      - システム要件。Checkout、Webhook、冪等性
    * - :doc:`pricing_campaign_requirements`

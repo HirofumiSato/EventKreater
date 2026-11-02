@@ -7,7 +7,7 @@ export type EventStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
 export type EventVisibility = "PUBLIC" | "UNLISTED";
 export type RsvpStatus = "ATTENDING" | "DECLINED" | "WAITLISTED";
 export type OrganizerRole = "OWNER" | "CO_HOST";
-/** どの利用枠から公開したか。未公開・移行前のイベントは null。 */
+/** どのチケットから公開したか。未公開・移行前のイベントは null。 */
 export type QuotaSource = "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION";
 /** 費用プランの対象。ANY は男女共通。 */
 export type PriceAudience = "ANY" | "MALE" | "FEMALE";
@@ -89,8 +89,8 @@ export interface UserQuota {
   subscriptionPlan?: UserSubscriptionPlan;
   /**
    * いま公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のものだけ。
-   * 月額で8件まで公開プランでは枠の判定と同じく定額から公開したものだけを数え、
-   * それ以外（公開し放題・未加入）は単発や無料枠から公開したものも数える。
+   * 月額で8件まで公開プランでは件数の上限の判定と同じく定額から公開したものだけを数え、
+   * それ以外（公開し放題・未加入）は単発や無料チケットから公開したものも数える。
    */
   publishedEventCount?: number;
   /** 月額で8件まで公開プランの上限（8）。 */
@@ -112,7 +112,7 @@ export interface UserQuota {
     subscription8: PricingQuote;
     subscriptionUnlimited: PricingQuote;
   };
-  /** 0円の単発チケットを、この人があと何回受け取れるか。 */
+  /** 0円の単発チケットを、この人があと何枚受け取れるか。 */
   freeGrantRemaining?: number;
   /** 期限つきの無料チケットの残り。 */
   tickets?: UserQuotaTickets;
@@ -393,7 +393,7 @@ export interface OrganizerEvent {
   flyerAssetId: string | null;
   role: OrganizerRole;
   /**
-   * どの利用枠から公開したか。マイページの要約を「プラン公開」と「チケット公開」に
+   * どのチケットから公開したか。マイページの要約を「プラン公開」と「チケット公開」に
    * 分けるために返す。未公開・移行前のイベントは null。
    */
   quotaSource: QuotaSource | null;

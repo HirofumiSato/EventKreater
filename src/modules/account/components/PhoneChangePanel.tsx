@@ -113,7 +113,7 @@ export function PhoneChangePanel({ profile, onChange }: Props) {
       <div>
         <p className="label">現在の登録</p>
         <p>{profile.phoneVerified && profile.phoneMasked ? profile.phoneMasked : "未登録"}</p>
-        <p className="help">無料枠の判定と、ログイン時の確認番号に使います。変更すると新しい番号へSMSが届きます。</p>
+        <p className="help">無料チケットの判定と、ログイン時の確認番号に使います。変更すると新しい番号へSMSが届きます。</p>
       </div>
 
       {!open && (

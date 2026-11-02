@@ -140,7 +140,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       await lock.releaseAwait();
       router.push("/organizer/events");
     } catch (cause) {
-      // 下書きの公開で枠が足りない。編集内容は画面に残したまま、購入へ誘う。
+      // 下書きの公開でチケットが足りない。編集内容は画面に残したまま、購入へ誘う。
       if (cause instanceof RequestProblemError && cause.status === 402) {
         setSaving(false);
         quotaState.openPricingModal({ draftId: params.id, returnTo });

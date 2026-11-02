@@ -124,7 +124,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     }
 
     const event = await prisma.$transaction(async (tx) => {
-      // 下書きの公開は、複製で消費済みの枠を二重に引かない。
+      // 下書きの公開は、複製で消費済みのチケットを二重に引かない。
       const charged = publishingDraft
         ? (await consumeQuotaForDraftPublish(tx, ctx.userId as string, existing.id)).charged
         : false;

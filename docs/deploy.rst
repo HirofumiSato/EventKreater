@@ -48,7 +48,7 @@
    * - Cloudflare のドメイン
      - ネームサーバーを Cloudflare に向けます。無料プランで足ります
    * - Neon のプロジェクト
-     - PostgreSQL 16。無料枠から始めます
+     - PostgreSQL 16。無料プランから始めます
    * - Stripe の本番キー
      - ``sk_live_`` と Webhook の署名シークレット。テストは :doc:`stripe`
    * - OpenAI の API キー

@@ -1,10 +1,10 @@
 ﻿# データベース物理設計書（DBschema.md）
 
-## イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書
+## イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書
 
 ## 1. 全体アーキテクチャ・設計方針
 
-本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを `flyer_assets` に記録する。
+本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを `flyer_assets` に記録する。
 
 ### 1.1. 5大設計基本方針
 
@@ -15,10 +15,10 @@
 3. **PostgreSQL固有のアトミック排他制御（Pessimistic Lease Lock）:**
    - 共同幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
 4. **マネタイズ基盤（課金クォータ・Stripe連携）の完全統合:**
-   - 主催者の利用枠（累計2回無料、単発299円クレジット、月額で8件まで公開980円・公開し放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の回数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
+   - 主催者のチケット（累計2枚無料、単発299円クレジット、月額で8件まで公開980円・公開し放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の公開件数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
    - 決済監査ログ（`billing_transactions`）および Webhook冪等性制御（`stripe_webhook_events`）を統合し、二重課金・二重付与を物理遮断する。
-5. **筆頭作成者（オーナー）のみ枠消費ルール:**
-   - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）の枠は消費しない。
+5. **筆頭作成者（オーナー）のみチケット消費ルール:**
+   - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）のチケットは消費しない。
 
 ---
 
@@ -27,9 +27,9 @@
 ### 2.1. コア概念（Entities）の抽出と役割
 
 * **User (認証済み会員):** 確認済み電話番号（E.164）で人物を一意にする会員。メールアドレスと Google の `sub` はログイン手段である。パスワードだけの会員は `passwordHash` を持ち `googleSub` は空。Google だけの会員は `googleSub` を持ち `passwordHash` は空。同じ確認済みメールの会員が後から Google で入ったときは、既存行へ `googleSub` を結ぶ。同じ確認済み電話番号の会員が別メールや別 Google で入ったときも、新しい行は作らずその会員へ手段を足す。パスワード登録は確認メールのあと、電話番号確認が終わるまで会員行を作らない。プラットフォーム全体の権限は `platformRole`（`MEMBER` / `ADMIN`）であり、イベント単位の幹事ロールとは別である。公開登録の初期値は `MEMBER` である。ログイン中のセッションは `auth_sessions`、確認メールのトークンハッシュは `email_verification_tokens`、登録意向は `signup_intents`、SMS 確認コードのハッシュは `phone_verification_codes`、ログイン確認番号のハッシュは `login_challenges`、試行回数とログインロックの開始時刻は `auth_attempts` に置く。確認番号の失敗が 10 回に達した会員は 15 分ロックする。
-* **SignupIntent (登録意向):** メール確認または Google 確認のあと、電話番号確認が終わるまでの一時行。会員行と利用枠はまだ無い。
-* **UserUsageQuota (利用枠クォータ):** 主催者のイベント作成可能枠（無料消化数、単発クレジット残数、サブスク状態、Stripe連携情報）を管理。
-* **BillingTransaction (課金決済履歴):** 利用枠の単発購入、月額の初回 Checkout、月額の更新請求、失敗、全額返金、異議申立の監査ログ。管理者の一覧は SCR-ADM-03。参加費の集金記録とは別である。
+* **SignupIntent (登録意向):** メール確認または Google 確認のあと、電話番号確認が終わるまでの一時行。会員行とチケット情報はまだ無い。
+* **UserUsageQuota (チケット情報):** 主催者のイベント公開チケット（無料チケットの消化枚数、単発クレジット残数、サブスク状態、Stripe連携情報）を管理。
+* **BillingTransaction (課金決済履歴):** チケットの単発購入、月額の初回 Checkout、月額の更新請求、失敗、全額返金、異議申立の監査ログ。管理者の一覧は SCR-ADM-03。参加費の集金記録とは別である。
 * **StripeWebhookEvent (Webhook冪等性ログ):** Stripeから受信・処理したWebhook Event IDを記録し、重複処理を防止。
 * **Event (イベント本体):** 主催者が告知・出欠を集めるイベントの実体（基本7項目＋ステータス＋掲載フラグ＋任意の申し込み期限）。`visibility` は将来のメディアサイト用の予約列であり、いまのアプリは一覧を持たないため常に `UNLISTED`（紹介制）。
 * **Receipt (参加費の領収書・旧):** 旧画面で幹事が出席者へ発行した文書。1参加者につき1件。金額は幹事の入力で、参加費の決済は持たない。**画面からは外した**（参加者向け・主催者向けの領収書画面を廃止）。既存データの保護と `GET /api/v1/user/hydrate` の会員統合が参照するため残し、新しい書き込みはしない。今後は `participants.collected_at` で集金を記録する。
@@ -45,7 +45,7 @@
 ```mermaid
 erDiagram
     Users ||--o{ BillingTransaction : "決済履歴 1 対 0..*"
-    Users ||--|| UserUsageQuota : "利用枠 1 対 1"
+    Users ||--|| UserUsageQuota : "チケット 1 対 1"
     Users ||--o{ LoginChallenge : "ログイン確認 1 対 0..*"
     Users ||--o{ EventOrganizers : "幹事 1 対 0..*"
     EventOrganizers }o--|| Events : "管理対象 0..* 対 1"
@@ -60,7 +60,7 @@ erDiagram
         string role "決済履歴"
     }
     UserUsageQuota {
-        string role "利用枠・Stripe"
+        string role "チケット・Stripe"
     }
     EventOrganizers {
         string role "幹事権限 OWNER / CO_HOST"
@@ -97,7 +97,7 @@ erDiagram
 * **第1正規形 (1NF):** `event_date` (DATE) と `event_time` (VARCHAR) を分離。ステータスや雨天対応、決済方式を列挙型（ENUM）で独立定義し、アトミック値を保証。
 * **第2正規形 (2NF):** `EventOrganizer` をサロゲートキーで独立させ、複合キーによる部分関数従属を排除。
 * **第3正規形 (3NF):**
-  * 課金・利用枠情報（`UserUsageQuota`）および決済ログ（`BillingTransaction`）を `User` から完全に分離。
+  * 課金・チケット情報（`UserUsageQuota`）および決済ログ（`BillingTransaction`）を `User` から完全に分離。
   * 出欠人数（参加確定数等）は集計クエリとして導出し、物理テーブルへの二重保持による更新不整合を防止。
 
 ### 3.2. 列挙型（ENUM）定義一覧
@@ -106,7 +106,7 @@ erDiagram
 | :---- | :---- | :---- |
 | **SubscriptionStatus** | `NONE`, `ACTIVE`, `PAST_DUE`, `CANCELED`, `INCOMPLETE` | サブスクリプション契約状態 |
 | **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（月額で8件まで公開980円 / 公開し放題2980円 / 未加入） |
-| **QuotaSource** | `FREE_TRIAL`, `PAID_CREDIT`, `SUBSCRIPTION` | イベントを公開したときの利用枠。公開中の件数に数えるのは `SUBSCRIPTION` だけ |
+| **QuotaSource** | `FREE_TRIAL`, `PAID_CREDIT`, `SUBSCRIPTION` | イベントを公開したときのチケット。公開中の件数に数えるのは `SUBSCRIPTION` だけ |
 | **PaymentType** | `ONE_TIME`, `SUBSCRIPTION` | 決済種別（単発299円 / 月額） |
 | **PaymentStatus** | `PENDING`, `SUCCEEDED`, `FAILED`, `REFUNDED`, `DISPUTED` | 決済ステータス。`DISPUTED` は異議申立 |
 | **RainPolicy** | `RAIN_OR_SHINE`, `CANCEL_ON_RAIN`, `POSTPONE_ON_RAIN`, `INDOOR` | 雨天時の催行方針 |
@@ -185,8 +185,8 @@ enum EventVisibility {
 }
 
 enum OrganizerRole {
-  OWNER    // 主催幹事（筆頭作成者・枠消費対象）
-  CO_HOST  // 共同幹事（枠消費なし）
+  OWNER    // 主催幹事（筆頭作成者・チケット消費対象）
+  CO_HOST  // 共同幹事（チケット消費なし）
 }
 
 enum RsvpStatus {
@@ -331,7 +331,7 @@ model LoginChallenge {
 }
 
 // =============================================================
-// 2. 利用枠・課金管理（マネタイズ基盤）
+// 2. チケット・課金管理（マネタイズ基盤）
 // =============================================================
 model UserUsageQuota {
   userId               String             @id @map("user_id") @db.Uuid
@@ -467,9 +467,9 @@ model Event {
   /// この日時（日本時間で入力）になると出欠の新規登録と変更を止める。空なら期限なし。
   rsvpDeadline DateTime?   @map("rsvp_deadline") @db.Timestamptz
   isDeleted    Boolean     @default(false) @map("is_deleted")
-  /// 公開のときに利用枠を消費した日時。下書きと複製では NULL。
+  /// 公開のときにチケットを消費した日時。下書きと複製では NULL。
   quotaChargedAt DateTime? @map("quota_charged_at") @db.Timestamptz
-  /// どの利用枠から公開したか。公開中の件数に数えるのは SUBSCRIPTION だけ。
+  /// どのチケットから公開したか。公開中の件数に数えるのは SUBSCRIPTION だけ。
   quotaSource  QuotaSource? @map("quota_source")
   /// 告知ページの勧誘カードから作ったときの参照元。直接の参照元だけを持ち、消えたら NULL に戻す。
   referrerEventId String?  @map("referrer_event_id") @db.Uuid
@@ -945,7 +945,7 @@ CREATE INDEX idx_login_challenges_user_id ON login_challenges(user_id);
 -- ロックの開始時刻は bucket = 'login-2fa:lock:user:<user_id>' として auth_attempts に置く。
 -- 失敗が 10 回に達したらロック開始行を作り、15 分後に自動で解除する。
 
--- 2. 利用枠クォータテーブル
+-- 2. チケット情報テーブル
 CREATE TABLE user_usage_quotas (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     free_event_count SMALLINT NOT NULL DEFAULT 0 CHECK (free_event_count >= 0),
@@ -1470,7 +1470,7 @@ ALTER TABLE billing_transactions
 
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）
 
-### 5.1. イベント新規作成（課金認可ゲート判定＆枠消費）
+### 5.1. イベント新規作成（課金認可ゲート判定＆チケット消費）
 
 ```ts
 import { prisma } from '@/lib/prisma';
@@ -1494,7 +1494,7 @@ export async function createEventWithQuotaGate(
     });
     const now = new Date();
     let isAuthorized = false;
-    // ① サブスクリプション判定 (最優先・枠消費なし)
+    // ① サブスクリプション判定 (最優先・チケット消費なし)
     if (
       quota.subscriptionStatus === 'ACTIVE' &&
       quota.currentPeriodEnd &&
@@ -1510,7 +1510,7 @@ export async function createEventWithQuotaGate(
       });
       isAuthorized = true;
     }
-    // ③ 無料枠判定 (第3優先・累計利用数を1インクリメント)
+    // ③ 無料チケット判定 (第3優先・累計利用数を1インクリメント)
     else if (quota.freeEventCount < 2) {
       await tx.userUsageQuota.update({
         where: { userId },
@@ -1688,7 +1688,7 @@ export async function cloneEvent(sourceEventId: string, currentUserId: string) {
 
 ### 5.5. 退会（論理削除）と復帰のトランザクション
 
-退会は `users` の行を消さない。確認済みの電話番号だけを残し、同じ番号で登録し直したときに前の行と利用枠を引き継ぐ。無料枠の使い回しを防ぐため、`user_usage_quotas` の `free_event_count` と `paid_credits` は戻さない。
+退会は `users` の行を消さない。確認済みの電話番号だけを残し、同じ番号で登録し直したときに前の行とチケット情報を引き継ぐ。無料チケットの使い回しを防ぐため、`user_usage_quotas` の `free_event_count` と `paid_credits` は戻さない。
 
 ```ts
 export async function withdrawAccount(input: {
@@ -1772,7 +1772,7 @@ if (target?.deletedAt) {
       phoneVerifiedAt: target.phoneVerifiedAt ?? new Date(),
     },
   });
-  // update: {} なので、消化済みの無料枠は戻らない。
+  // update: {} なので、消化済みの無料チケットは戻らない。
   await tx.userUsageQuota.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
   await tx.accountChangeLog.create({ data: { userId: user.id, kind: 'REACTIVATE' } });
   await tx.signupIntent.delete({ where: { id: intentId } });

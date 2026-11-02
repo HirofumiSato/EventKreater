@@ -17,7 +17,7 @@ export async function ensureStripeCustomer(userId: string): Promise<string> {
     throw new ProblemDetailException({
       status: 404,
       title: "Quota Not Found",
-      detail: "主催者の利用枠情報が存在しません。",
+      detail: "主催者のチケット情報が存在しません。",
     });
   }
   if (quota.stripeCustomerId) return quota.stripeCustomerId;
@@ -192,7 +192,7 @@ export async function cancelSubscriptionForWithdrawal(subscriptionId: string): P
 }
 
 /**
- * 割引（無料期間）の終了日時を利用枠へ記録する。
+ * 割引（無料期間）の終了日時をチケット情報へ記録する。
  * 0円月額の「3日前・1日前」の案内は、この日時だけを見て送る。
  */
 async function applyDiscountWindow(
@@ -262,7 +262,7 @@ export function priceIdForPlan(plan: SubscriptionProduct): string | null {
 
 /**
  * 旧・980 円の公開し放題 Price。値上げ前に加入した人は、この Price のまま
- * 回数を数えない契約を続ける。新規の申込には使わない。
+ * 件数を数えない契約を続ける。新規の申込には使わない。
  */
 export function legacyUnlimitedPriceId(): string | null {
   return envPrice("STRIPE_PRICE_ID_MONTHLY_980_LEGACY") ?? envPrice("STRIPE_PRICE_ID_MONTHLY_980");

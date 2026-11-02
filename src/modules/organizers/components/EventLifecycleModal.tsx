@@ -34,7 +34,7 @@ export function EventLifecycleModal({ title, status, busy, onClose, onDelete }: 
     >
       <p className="dialog__body">
         {isDraft
-          ? `${title}。元に戻せません。利用枠は減りません。`
+          ? `${title}。元に戻せません。チケットは減りません。`
           : `${title}。一覧と告知URLから外れます。出欠の記録は残ります。元に戻せません。`}
       </p>
     </Dialog>

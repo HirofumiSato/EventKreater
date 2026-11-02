@@ -24,7 +24,7 @@ npm run dev
 | --- | --- |
 | `/` | サービス紹介。ここからイベント一覧へは行かない |
 | `/events/[id]` | 公開告知と出欠。このアプリの中心 |
-| `/organizer/events` | 主催者の一覧。利用枠の残数と Stripe ポータル |
+| `/organizer/events` | 主催者の一覧。チケットの残数と Stripe ポータル |
 
 ## 1. 1 画面を縦に貫く（25 分）
 
@@ -50,10 +50,10 @@ npm test -- tests/unit/rsvp-status.test.ts
 
 ## 2. 課金を横に貫く（20 分）
 
-利用枠は「イベントを作るとき」だけ消費されます。参加者の出欠では消費しません。
+チケットは「イベントを作るとき」だけ消費されます。参加者の出欠では消費しません。
 
 ```text
-src/modules/billing/lib/quota.ts        consumeEventQuota が枠を 1 つ減らす
+src/modules/billing/lib/quota.ts        consumeEventQuota がチケットを 1 枚減らす
 src/modules/events/lib/events.ts        イベント作成のトランザクションから呼ばれる
 src/app/api/v1/billing/checkout/*       Stripe Checkout へ遷移
 src/app/api/v1/billing/checkout/verify  戻ってきた直後の同期検証
@@ -68,7 +68,7 @@ DB は 3 つだけ追えば足ります。
 | `BillingTransaction` | 決済履歴 |
 | `StripeWebhookEvent` | Webhook の冪等キー |
 
-`quota.ts` の `consumeEventQuota` を読むと、`PAST_DUE` の拒否、サブスク有効なら無制限、単発クレジットの減算、無料枠の順に判定していることが分かります。
+`quota.ts` の `consumeEventQuota` を読むと、`PAST_DUE` の拒否、サブスク有効なら無制限、単発クレジットの減算、無料チケットの順に判定していることが分かります。
 
 ## 3. チラシ生成（15 分）
 
@@ -78,7 +78,7 @@ Python の独立サービスです。Next.js からは HTTP で呼ぶだけで�
 - 全体: [flyer/index.rst](flyer/index.rst) と [flyer/architecture.rst](flyer/architecture.rst)
 - 実装の規約: `services/flyer/AGENTS.md`
 
-Next.js 側は `src/modules/flyers/` です。`quota.ts` はチラシ生成回数の制限で、イベント作成の利用枠とは別物です。混同しないでください。
+Next.js 側は `src/modules/flyers/` です。`quota.ts` はチラシ生成回数の制限で、イベント作成のチケットとは別物です。混同しないでください。
 
 ## 4. 検証（15 分）
 

@@ -15,7 +15,7 @@ function row(overrides: Partial<PublishedCountRow> = {}): PublishedCountRow {
 }
 
 describe("マイページの公開中の件数", () => {
-  it("月額プランとチケット（単発・無料枠）に分ける", () => {
+  it("月額プランとチケット（単発・無料チケット）に分ける", () => {
     const counts = countPublishedBySource(
       [
         row(),
@@ -44,7 +44,7 @@ describe("マイページの公開中の件数", () => {
     expect(counts).toEqual({ plan: 1, ticket: 0 });
   });
 
-  it("枠が記録されていない移行前の催しはチケット側に置く", () => {
+  it("チケットが記録されていない移行前の催しはチケット側に置く", () => {
     expect(countPublishedBySource([row({ quotaSource: null })], TODAY)).toEqual({
       plan: 0,
       ticket: 1,
