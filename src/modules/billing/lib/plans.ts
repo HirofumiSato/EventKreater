@@ -6,6 +6,10 @@ export const SUBSCRIPTION_8_PRICE_JPY = 980;
 export const SUBSCRIPTION_UNLIMITED_PRICE_JPY = 2980;
 /** 月額で8件まで公開プランで、同時に公開しておけるイベント数。 */
 export const SUBSCRIPTION_PUBLISHED_EVENT_LIMIT = 8;
+/** 初回の月額加入だけ無料にする月数。1アカウント1回きり。 */
+export const FIRST_MONTH_FREE_MONTHS = 1;
+/** 初月無料の札に出す短い言葉。 */
+export const FIRST_MONTH_FREE_LABEL = "初月0円";
 
 /** 定額プランの種類。DB の SubscriptionPlan と揃える（NONE は未加入）。 */
 export type ServicePlanId = "free" | "single" | "subscription-8" | "subscription-unlimited";
@@ -25,6 +29,8 @@ export interface ServicePlan {
   discountPercent: number;
   campaignName: string | null;
   campaignEndsAt: string | null;
+  /** 初回加入のときに無料になる月数。0 なら初月無料の対象外。 */
+  trialMonths: number;
 }
 
 /** 画面に出すときだけ使う、価格キャンペーン適用後の金額。 */
@@ -44,6 +50,8 @@ function planFrom(
   priceYen: number,
   highlights: string[],
   recommended = false,
+  /** 初月無料の月数。月額のプランだけ 1 を渡し、無料と単発は 0 のまま。 */
+  trialMonths = 0,
 ): ServicePlan {
   return {
     id,
@@ -57,6 +65,7 @@ function planFrom(
     discountPercent: 0,
     campaignName: null,
     campaignEndsAt: null,
+    trialMonths,
   };
 }
 
@@ -96,6 +105,8 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
       "上限を超えるときは単発チケットを1件ずつ",
       "解約はいつでも。次の更新で止まる",
     ],
+    false,
+    FIRST_MONTH_FREE_MONTHS,
   ),
   planFrom(
     "subscription-unlimited",
@@ -105,6 +116,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
     SUBSCRIPTION_UNLIMITED_PRICE_JPY,
     ["公開中のイベント数が無制限", "月額2,980円（税込）", "解約はいつでも。次の更新で止まる"],
     true,
+    FIRST_MONTH_FREE_MONTHS,
   ),
 ];
 

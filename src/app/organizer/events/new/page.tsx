@@ -303,6 +303,7 @@ function NewEventScreen() {
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
         currentPlan={quotaState.quota?.subscriptionPlan}
+        trialEligible={quotaState.quota?.trialEligible}
         context="create"
         onGranted={() => {
           setToastTone("success");

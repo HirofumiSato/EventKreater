@@ -1435,6 +1435,39 @@ model BillingNotice {
 
 ---
 
+### 4.4. 初月無料（追加マイグレーション）
+
+`prisma/migrations/20261102180000_first_month_free_trial/migration.sql` で追加する。仕様は [価格キャンペーン要件定義書 §4.4](pricing_campaign_requirements.md) と [バックエンド API §6.3](backend_api_implementation_spec.md) を正とする。
+
+#### 追加カラム
+
+```sql
+-- 初月無料の終了日時と、使った印。既存行は NULL のままで請求は変わらない。
+ALTER TABLE user_usage_quotas
+  ADD COLUMN trial_ends_at TIMESTAMPTZ,
+  ADD COLUMN trial_used_at TIMESTAMPTZ;
+
+-- 3日前・1日前の案内が、無料期間の終わりを毎日1回だけ引くための索引
+CREATE INDEX user_usage_quotas_trial_ends_at_idx ON user_usage_quotas(trial_ends_at);
+
+-- 0円の初回請求を、クーポンによる割引と区別する
+ALTER TABLE billing_transactions
+  ADD COLUMN trial_applied BOOLEAN NOT NULL DEFAULT false;
+```
+
+#### 列の意味
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `user_usage_quotas` | `trial_ends_at` | TIMESTAMPTZ NULL | 初月無料の終了日時。Stripe が `trialing` のあいだだけ値を持つ |
+| `user_usage_quotas` | `trial_used_at` | TIMESTAMPTZ NULL | 初月無料を使った日時。無料期間が終わっても消さず、再加入の判定に使う |
+| `billing_transactions` | `trial_applied` | BOOLEAN NOT NULL DEFAULT false | 初月無料の 0 円請求か。クーポン割引の 0 円と区別する |
+
+- `trial_ends_at` は `trialing` から `active` へ移った時点で NULL に戻す（`syncSubscription` / `recordSubscriptionInvoice`）。`trial_used_at` は残す。
+- 再加入の可否は `trial_used_at IS NULL` かつ有効な定額契約がないことで判定し、`trial_ends_at` では判定しない。
+
+---
+
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）
 
 ### 5.1. イベント新規作成（課金認可ゲート判定＆枠消費）

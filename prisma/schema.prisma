@@ -294,6 +294,10 @@ model UserUsageQuota {
   /// 割引（無料期間）が終わる日時。0円月額の事前案内はこの日時を基準にする。
   discountEndsAt       DateTime?          @map("discount_ends_at") @db.Timestamptz
   discountPercent      Int?               @map("discount_percent") @db.SmallInt
+  /// 初月無料の終了日時。trialing のあいだだけ値を持つ。
+  trialEndsAt          DateTime?          @map("trial_ends_at") @db.Timestamptz
+  /// 初月無料を使った日時。再加入で繰り返さないための印。
+  trialUsedAt          DateTime?          @map("trial_used_at") @db.Timestamptz
   createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -303,6 +307,7 @@ model UserUsageQuota {
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
   @@index([discountEndsAt])
+  @@index([trialEndsAt])
   @@map("user_usage_quotas")
 }
 
@@ -325,6 +330,8 @@ model BillingTransaction {
   stripeCouponId          String?       @map("stripe_coupon_id") @db.VarChar(255)
   /// 0円の単発付与を二重に実行しないためのキー。
   requestKey              String?       @unique @map("request_key") @db.VarChar(255)
+  /// 初月無料の加入か。0円の初回請求を通常の割引と区別する。
+  trialApplied            Boolean       @default(false) @map("trial_applied")
   createdAt               DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt               DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 

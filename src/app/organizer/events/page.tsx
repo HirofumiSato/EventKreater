@@ -466,6 +466,7 @@ function OrganizerEventsScreen() {
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
         currentPlan={quotaState.quota?.subscriptionPlan}
+        trialEligible={quotaState.quota?.trialEligible}
         context="list"
         onGranted={() => setToast("0円チケットを受け取りました。もう一度「コピー作成」を押してください。")}
       />

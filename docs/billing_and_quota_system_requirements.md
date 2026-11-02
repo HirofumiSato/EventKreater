@@ -43,7 +43,7 @@ flowchart LR
 #### 2.1. クォータ判定・消費の優先順位
 
 1. **第1優先：定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）**
-   - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`
+   - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`。初月無料の `trialing` も `ACTIVE` に写すので、無料期間中も同じように公開できる。
    - 処理: プランを見て分岐する。
      - `subscription_plan = 'UNLIMITED'`（公開し放題）: 公開を即時認可。枠（クレジット）は消費せず、公開中のイベント数も数えない。
      - `subscription_plan = 'MONTHLY_8'`: 公開中のイベント数を数える。8 件未満なら認可（`quota_source = 'SUBSCRIPTION'`）。8 件に達していれば第2優先へ落ちる。
@@ -393,7 +393,7 @@ model StripeWebhookEvent {
 | `checkout.session.completed` | 単発299円 または サブスク初回のCheckout完了 | 署名検証のあと、`paid`、通貨 `jpy`、単発 299 円または月額（980 円 / 2,980 円のいずれか）、階層の Price ID、`livemode`、`metadata.userId`、保存済みの Stripe 顧客 ID が一致するときだけ付与する。単発は `paid_credits + 1`。月額は `ACTIVE`、`subscription_plan`、期間終了を保存する。金額が無いときは付与しない |
 | `invoice.payment_succeeded` | サブスクリプションの初回または月次更新 | 顧客またはサブスク ID から会員を特定し、Price と階層の定価（980 円 / 2,980 円）と `jpy` が一致するとき `ACTIVE`・`subscription_plan`・`current_period_end` を更新する。初回は Checkout の行へ請求書 ID を足す。2 回目以降は `billing_transactions` に支払済みの行を増やす |
 | `invoice.payment_failed` | サブスクリプションの請求失敗 | `subscription_status = PAST_DUE`。同じ請求書 ID の履歴を失敗にする。既に支払済みの行は失敗へ戻さない |
-| `customer.subscription.updated` | 契約状態の変化 | `active` は Price が階層の Price ID のときだけ `ACTIVE`（`subscription_plan` も Price ID から決める）。`past_due` は `PAST_DUE`。`incomplete` と `trialing` は `INCOMPLETE`。それ以外は `CANCELED` |
+| `customer.subscription.updated` | 契約状態の変化 | `active` は Price が階層の Price ID のときだけ `ACTIVE`（`subscription_plan` も Price ID から決める）。`trialing` も `ACTIVE` に写し、`trial_end` を `trial_ends_at` に記録する（`active` になったら `trial_ends_at` は NULL、`trial_used_at` は残す）。`past_due` は `PAST_DUE`。`incomplete` は `INCOMPLETE`。それ以外は `CANCELED` |
 | `customer.subscription.deleted` | サブスクリプションの解約完了 | `subscription_status = CANCELED`。以後の作成は単発クレジットまたは無料枠へ戻る |
 | `charge.refunded` | 全額返金 | 履歴を `REFUNDED` にする。単発で未使用クレジットが残っていれば 1 つ戻す。月額なら `CANCELED`。一部返金では枠を変えない。公開済みイベントは自動では消さない |
 | `charge.dispute.created` | 異議申立 | 履歴を `DISPUTED` にし、全額返金と同じ枠の戻しを一度だけ行う |
@@ -425,7 +425,7 @@ model StripeWebhookEvent {
 
 - **URL:** `POST /api/v1/billing/checkout/subscription`
 - **認可:** 認証済み主催者（JWT セッション）
-- **補足:** `plan` で加入する階層を選ぶ。省略時は `UNLIMITED`。すでに有効な定額プランがあるときは 409（`ALREADY_SUBSCRIBED`）を返し、階層の変更は Customer Portal に委ねる。
+- **補足:** `plan` で加入する階層を選ぶ。省略時は `UNLIMITED`。すでに有効な定額プランがあるときは 409（`ALREADY_SUBSCRIBED`）を返し、階層の変更は Customer Portal に委ねる。初月無料を使える会員（`trial_used_at` が NULL で有効な契約が無い）は `subscription_data.trial_end` を1か月後にし、クーポンは付けない。`trial_used_at` がある再加入者は対象外で、キャンペーン中ならクーポンを付ける。
 - **リクエスト Body:**
 
 ```json
@@ -446,9 +446,12 @@ model StripeWebhookEvent {
     "chargedPrice": 980,
     "discountPercent": 0,
     "campaignName": null
-  }
+  },
+  "trial": { "endsAt": "2026-12-02T09:00:00.000Z" }
 }
 ```
+
+`trial` は初月無料を使ったときだけ `{ endsAt }`、使わないときは `null`。初月無料でも `pricing` は定価のまま（0 円は `trial` で表す）。
 
 #### 6.3. 同期セッション検証（リダイレクト時即時反映）
 
@@ -497,9 +500,13 @@ model StripeWebhookEvent {
   "remainingPublished": 5,
   "currentPeriodEnd": "2026-11-19T00:00:00.000Z",
   "canCreate": true,
-  "planType": "SUBSCRIPTION_MONTHLY_8"
+  "planType": "SUBSCRIPTION_MONTHLY_8",
+  "trial": { "endsAt": "2026-12-02T09:00:00.000Z" },
+  "trialEligible": false
 }
 ```
+
+`trial` は `trial_ends_at` が未来のときだけ `{ endsAt }`、それ以外は `null`。`trialEligible` は加入中でなく、まだ初月無料を使っていないときだけ `true`。
 
 #### 6.5. 公開の認可ロジック (`assertCanCreateEvent` / `consumeEventQuota`)
 
@@ -633,6 +640,7 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
   - 共通: `duration = "repeating"`、`duration_in_months = 加入から終了までの切り上げ月数`
 - `payment_method_collection: "always"` でカードを登録させ、無料期間の終了後は Stripe が通常価格で自動請求する。
 - 加入確定時に `user_usage_quotas.discount_ends_at` を記録する。これが通知の基準日時になる。
+- はじめての加入の初月無料は、この 0 円クーポンではなく `subscription_data.trial_end` で表す。`trial_ends_at` と `trial_used_at` に記録し、`billing_transactions.trial_applied = true` で 0 円クーポンと区別する。初月無料とキャンペーンは同じ加入に併用しない。無料期間が終わったら `trial_ends_at` は NULL に戻す（`trial_used_at` は残す）。
 
 #### 8.4. 金額検証の変更
 
@@ -645,7 +653,8 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 
 #### 8.5. 終了前通知
 
-- `discount_ends_at` が 3 日以内の `ACTIVE` 契約を対象に、残り 24 時間以内なら 1 日前、それ以外は 3 日前の案内を送る。
+- `discount_ends_at` または `trial_ends_at` が 3 日以内の `ACTIVE` 契約を対象に、残り 24 時間以内なら 1 日前、それ以外は 3 日前の案内を送る。両方あるときは早く終わる方だけを案内する。
+- 初月無料（`trial_ends_at`）は「無料期間」、価格キャンペーン（`discount_ends_at`）は「割引期間」の文面で送る。
 - `billing_notices` の一意制約で同じ無料期間に 1 回だけ送る。
 - 実行は `POST /api/v1/internal/billing/notices`（`BILLING_NOTICE_SECRET`）または `npm run billing:notices`。1 日 1 回の cron を想定する。
 

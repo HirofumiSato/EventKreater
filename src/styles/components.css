@@ -1996,6 +1996,32 @@ html[data-scroll-lock] {
   width: min(100%, var(--width-form));
 }
 
+/* 中央寄せの 1 枚。札が縦に長くなっても、題と閉じる印は画面の上に残す。
+   器を flex の列にして、本文の列（`.dialog__content`）だけを送る。
+   高さは画面の内側（`.modal` の上下の余白 1rem ずつを引いた分）に収め、PC では
+   52rem で頭打ちにする。`dvh` を知らない環境では先の `vh` の行がそのまま効く。
+   出欠の層（`.modal--sheet`）は下端から出る別の形なので、ここでは触らない。 */
+.modal:not(.modal--sheet) .dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: min(calc(100vh - 2rem), 52rem);
+  max-height: min(calc(100dvh - 2rem), 52rem);
+  overflow: hidden;
+}
+
+/* 送るのは本文の列だけ。題（`.dialog__title`）・閉じる印（`.dialog__close`）・
+   操作（`.dialog__actions`）は器に残るので、どこまで送っても画面の上にある。
+   押せる面のフォーカスリングが端で切れないよう、本文は 0.25rem だけ外へ張り出す
+   （見た目の幅は変えない）。 */
+.dialog__content {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-inline: -0.25rem;
+  padding-inline: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .dialog {
   /* 右上の閉じる印（`.dialog__close`）の基準。モーダルの外に単体で置く見本でも同じ。 */
   position: relative;

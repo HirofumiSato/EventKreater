@@ -122,9 +122,9 @@ flowchart TD
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
-| `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引を返す |
+| `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
-| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。割引中は期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
+| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
 | `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・枠反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
 | `/api/v1/billing/portal` | POST | SCR-ORG-01 | 会員必須 | Stripe Customer Portal（解約・カード変更）遷移URL発行 |
 | `/api/v1/webhooks/stripe` | POST | - | Stripe署名検証 | Stripe Webhook 受信ハンドラー（二重処理遮断） |
@@ -1499,11 +1499,15 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
   "currentPeriodEnd": null,
   "canCreate": true,
   "planType": "FREE_TRIAL",
-  "phoneVerified": true
+  "phoneVerified": true,
+  "trial": null,
+  "trialEligible": true
 }
 ```
 
 `publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは枠の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
+
+`trial` は初月無料の無料期間中（`trial_ends_at > now`）だけ `{ "endsAt": "<ISO 8601>" }` を返し、終われば `null` に戻る。`trialEligible` は `resolveTrial` の結果で、`trial_used_at` が NULL、`stripe_subscription_id` が NULL、支払済み（`SUCCEEDED`）の月額取引が 0 件のときだけ `true` になる。加入中は新しい初月無料を使えないので `false` を返す。無料期間中はクーポンを使わないため `discount` は `null` のままである。
 
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
@@ -1517,6 +1521,7 @@ import {
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from '@/modules/billing/lib/quota';
+import { resolveTrial } from '@/modules/billing/lib/trial';
 
 export async function GET(req: NextRequest) {
   const { userId } = await resolveAuthContext(req);
@@ -1570,6 +1575,11 @@ export async function GET(req: NextRequest) {
     canCreate,
     planType,
     phoneVerified,
+    // 初月無料の無料期間中だけ `trial` を持つ。加入中は新しい初月無料を使えない。
+    trial: quota.trialEndsAt && quota.trialEndsAt > now
+      ? { endsAt: quota.trialEndsAt.toISOString() }
+      : null,
+    trialEligible: isSubActive ? false : (await resolveTrial(userId, now)).eligible,
   });
 }
 ```
@@ -1675,16 +1685,20 @@ export async function POST(req: NextRequest) {
 主催者が月額で8件まで公開プラン（980円/月）または公開し放題（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
-- **リクエスト Body:** `SubscriptionCheckoutSchema` = `CheckoutIntentSchema` + `plan`（`"MONTHLY_8"` / `"UNLIMITED"`）。`plan` を省略したときは `UNLIMITED`。`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。既に有効な定額契約があるときは 409 `ALREADY_SUBSCRIBED`。
+- **リクエスト Body:** `SubscriptionCheckoutSchema` = `CheckoutIntentSchema` + `plan`（`"MONTHLY_8"` / `"UNLIMITED"`）。`plan` を省略したときは `UNLIMITED`。`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。既に有効な定額契約があるときは 409 `ALREADY_SUBSCRIBED`（`trialing` も `ACTIVE` に写すので弾く）。
+- **初月無料:** `resolveTrial(userId, now)` が `eligible` のときは `subscription_data.trial_end` を1か月後にし、月額を0円にする。このときクーポンは付けず、`pricing` は定価のまま（初月0円は `trial` で表す）。無料期間でもカードを登録させ（`payment_method_collection: "always"`）、期間終了後は定価で自動請求する。`trialUsedAt` がある再加入者は対象外で、キャンペーン中なら従来どおり期間付きクーポンを付ける（初月無料と併用しない）。
 - **レスポンス (200 OK):**
 
 ```json
 {
   "checkoutUrl": "[STRIPE_HOSTED_CHECKOUT_URL]",
   "plan": "MONTHLY_8",
-  "pricing": { "target": "SUBSCRIPTION_8", "listPrice": 980, "chargedPrice": 980, "discountPercent": 0 }
+  "pricing": { "target": "SUBSCRIPTION_8", "listPrice": 980, "chargedPrice": 980, "discountPercent": 0 },
+  "trial": { "endsAt": "2026-12-02T09:00:00.000Z" }
 }
 ```
+
+`trial` は初月無料を使ったときだけ `{ "endsAt": <ISO 8601> }`、使わないときは `null`。
 
 - **実装ハンドラー (`src/app/api/v1/billing/checkout/subscription/route.ts`):**
 
@@ -1696,8 +1710,9 @@ import { resolveAuthContext } from '@/lib/guards';
 import { SubscriptionCheckoutSchema } from '@/lib/schemas';
 import { DEFAULT_CHECKOUT_RETURN_TO, assertOwnDraft, checkoutReturnUrls } from '@/modules/billing/lib/checkout-intent';
 import { priceIdForPlan } from '@/modules/billing/lib/billing';
-import { pricingKindOfPlan, quoteFor } from '@/modules/billing/lib/pricing';
-import { loadActiveCampaigns } from '@/modules/billing/lib/campaigns';
+import { discountMonths, pricingKindOfPlan, quoteFor } from '@/modules/billing/lib/pricing';
+import { ensureCampaignCoupon, loadActiveCampaigns } from '@/modules/billing/lib/campaigns';
+import { resolveTrial } from '@/modules/billing/lib/trial';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -1726,6 +1741,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ALREADY_SUBSCRIBED' }, { status: 409 });
   }
   const quote = quoteFor(pricingKindOfPlan(plan), await loadActiveCampaigns(now), now);
+  // 初月無料を使えるときは、月額のキャンペーンを併用しない（初月無料を優先する）。
+  // キャンペーンは、初月無料を使えない再加入者にだけ効く。
+  const trial = await resolveTrial(userId, now);
+  const trialEnd = trial.eligible ? trial.endsAt : null;
+  const campaign =
+    trialEnd === null && quote.campaignId
+      ? await prisma.pricingCampaign.findUnique({ where: { id: quote.campaignId } })
+      : null;
+  const couponId =
+    campaign && quote.discountPercent > 0
+      ? await ensureCampaignCoupon(campaign, discountMonths(now, campaign.endsAt), plan)
+      : null;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const intent = body;
   const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
@@ -1738,6 +1765,8 @@ export async function POST(req: NextRequest) {
     mode: 'subscription',
     // 0円の無料期間でもカードを登録させ、期間終了後に自動で請求する。
     payment_method_collection: 'always',
+    // 初月無料のときは couponId が null。無料期間のあいだはクーポンを付けない。
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: {
@@ -1746,9 +1775,13 @@ export async function POST(req: NextRequest) {
       plan,
       ...(intent.draftId ? { draftId: intent.draftId } : {}),
       ...(intent.returnTo ? { returnTo: intent.returnTo } : {}),
-      ...(quote.campaignId ? { campaignId: quote.campaignId } : {}),
+      ...(campaign ? { campaignId: campaign.id } : {}),
     },
-    subscription_data: { metadata: { userId, plan } },
+    subscription_data: {
+      // 初回だけ、加入から1か月を0円にする。2か月目からは定価で自動請求する。
+      ...(trialEnd ? { trial_end: Math.floor(trialEnd.getTime() / 1000) } : {}),
+      metadata: { userId, plan, ...(campaign ? { campaignId: campaign.id } : {}) },
+    },
   });
   await prisma.billingTransaction.upsert({
     where: { stripeCheckoutSessionId: session.id },
@@ -1756,16 +1789,24 @@ export async function POST(req: NextRequest) {
       userId,
       paymentType: 'SUBSCRIPTION',
       paymentStatus: 'PENDING',
-      amount: quote.chargedPrice,
+      amount: trialEnd ? 0 : quote.chargedPrice,
       listAmount: quote.listPrice,
-      discountAmount: quote.discountAmount,
-      campaignId: quote.campaignId,
-      appliedPercent: quote.discountPercent > 0 ? quote.discountPercent : null,
+      discountAmount: trialEnd ? quote.listPrice : quote.discountAmount,
+      campaignId: trialEnd ? null : quote.campaignId,
+      appliedPercent: trialEnd ? null : quote.discountPercent > 0 ? quote.discountPercent : null,
+      stripeCouponId: couponId,
+      trialApplied: trialEnd !== null,
       stripeCheckoutSessionId: session.id,
     },
-    update: { amount: quote.chargedPrice, listAmount: quote.listPrice },
+    update: { amount: trialEnd ? 0 : quote.chargedPrice, listAmount: quote.listPrice },
   });
-  return NextResponse.json({ checkoutUrl: session.url, plan, pricing: quote });
+  return NextResponse.json({
+    checkoutUrl: session.url,
+    plan,
+    pricing: quote,
+    // 初月無料を使ったときだけ `{ endsAt }` を返す。使わないときは null。
+    trial: trialEnd ? { endsAt: trialEnd.toISOString() } : null,
+  });
 }
 ```
 
@@ -1916,6 +1957,13 @@ export async function POST(req: NextRequest) {
 Stripe から送信される非同期イベントを受信し、署名検証と冪等性トランザクションを実行する。付与するのは、`paid`、通貨 `jpy`、単発 299 円または定額（980 円 / 2,980 円のいずれか）かつ Price が `STRIPE_PRICE_ID_MONTHLY_8` か `STRIPE_PRICE_ID_UNLIMITED`（既存加入者は `STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）、`livemode` が秘密鍵と一致、`metadata.userId` と Stripe 顧客 ID がその会員の利用枠と一致するときだけである。署名失敗の応答は `INVALID_SIGNATURE` のみとし、検証ライブラリのメッセージは返さない。
 
 受け付けるイベントは `checkout.session.completed`、`invoice.payment_succeeded`、`invoice.payment_failed`、`customer.subscription.updated`、`customer.subscription.deleted`、`charge.refunded`、`charge.dispute.created` である。定額の更新請求と、失敗、全額返金、異議申立は `billing_transactions` に残す。全額返金と異議申立では、単発の未使用クレジットが残っていれば 1 つ戻し、定額は `CANCELED` にする。使い切ったあとの公開済みイベントは自動では消さない。
+
+**課金状態と初月無料の写像:**
+
+- `mapStripeSubscriptionStatus` は `active` と `trialing` を内部の `ACTIVE` に写す（無料期間中もイベントを公開できる）。`past_due` は `PAST_DUE`、`incomplete` は `INCOMPLETE`、それ以外（`canceled` / `unpaid` / `incomplete_expired` / `paused`）は `CANCELED`。
+- `checkout.session.completed`（`mode = "subscription"`）は `fulfillPaidCheckout` で `activateSubscription` を呼ぶ。`loadSubscriptionWindow` が `trialing` のときだけ `trial_end` を `UserUsageQuota.trialEndsAt` に写し、同じ更新で `trialUsedAt` を入れる。申込時の `billing_transactions` には `trialApplied = true` を残す。`trialUsedAt` は無料期間が終わっても消さない。
+- `customer.subscription.updated` / `deleted` は `syncSubscription` で状態を写す。`trialing` のあいだは `trialEndsAt = trial_end`、`active` へ移ったら `trialEndsAt = null`（`trialUsedAt` は残す）。解約時は割引の案内用の `pricingCampaignId` / `discountPercent` / `discountEndsAt` も消す。
+- `invoice.payment_succeeded` は `recordSubscriptionInvoice` で、加入直後の `amount_paid = 0` かつ `trialing` の請求だけを初月無料として通し（`trialApplied = true`）、期間末をそのまま `trialEndsAt` に写す。無料期間後の `subscription_cycle` は定価の請求として記録し、`trialEndsAt` を `null` に戻す。`invoice.payment_failed` は `PAST_DUE`。
 
 - **認証方式:** `stripe-signature` ヘッダーによる HMAC-SHA256 署名検証
 - **リクエスト Body:** Raw Buffer
@@ -2667,6 +2715,8 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
   "publishedEventLimit": 8,
   "remainingPublished": 5,
   "freeGrantRemaining": 1,
+  "trial": { "endsAt": "2026-11-21T00:00:00.000Z" },
+  "trialEligible": false,
   "discount": {
     "percent": 100,
     "endsAt": "2026-11-21T00:00:00.000Z",
@@ -2676,7 +2726,7 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 }
 ```
 
-`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り回数で、対象キャンペーンが無ければ 0。
+`trial` は `trial_ends_at` が未来のときだけ `{ "endsAt": <ISO 8601> }`、それ以外は `null`。`trialEligible` は「加入中でなく、まだ初月無料を使っていない」ときだけ `true`（`resolveTrial` の判定）。`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り回数で、対象キャンペーンが無ければ 0。
 
 ### 11.7. POST `/api/v1/billing/checkout/one-time` の 0 円分岐
 
@@ -2698,17 +2748,19 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 
 ### 11.8. POST `/api/v1/billing/checkout/subscription` の割引
 
-- `ACTIVE` の定額契約がある場合は `409 ALREADY_SUBSCRIBED`。
+- `ACTIVE` の定額契約がある場合は `409 ALREADY_SUBSCRIBED`（`trialing` も `ACTIVE`）。
 - ボディの `plan`（`MONTHLY_8` / `UNLIMITED`、省略時 `UNLIMITED`）で Price ID を選ぶ。
-- 割引中は `discounts: [{ "coupon": "..." }]` を付け、`payment_method_collection: "always"` を指定する。
+- 初月無料を使える会員（`resolveTrial(...).eligible`）は `trial_end` を1か月後にし、初月を0円にする。クーポンは付けず、`pricing` は定価のまま、応答の `trial` に `endsAt` を返す。無料期間中もカードを登録させ、期間終了後は定価で自動請求する。
+- 初月無料を使えない会員が割引中なら `discounts: [{ "coupon": "..." }]` を付け、`payment_method_collection: "always"` を指定する。初月無料とキャンペーンは併用しない。
 - クーポンは `pricing_campaign_coupons` に保存し、同じ `(campaignId, version, months, kind, plan)` は再利用する。
-- `metadata` と `subscription_data.metadata` に `plan` と `campaignId` を残す。
+- `metadata` と `subscription_data.metadata` に `plan` と（併用する場合だけ）`campaignId` を残す。申込時の `billing_transactions` は、初月無料なら `amount = 0`・`discountAmount = 定価`・`trialApplied = true`、キャンペーンなら割引額と `campaignId` / `appliedPercent` を控える。
 
 ### 11.9. POST `/api/v1/internal/billing/notices`
 
 - ヘッダー `x-billing-secret`（または `Authorization: Bearer`）が `BILLING_NOTICE_SECRET` と一致すること。未設定なら 503、不一致なら 403。
-- `discount_ends_at` が 3 日以内の `ACTIVE` 契約へ、3 日前と 1 日前の案内を送る。
-- `billing_notices` の `UNIQUE(user_id, kind, period_end)` で重複を防ぐ。
+- `discount_ends_at` または `trial_ends_at` が 3 日以内の `ACTIVE` 契約へ、3 日前と 1 日前の案内を送る。両方あるときは早く終わる方だけを案内する。
+- 初月無料（`trial_ends_at`）は「無料期間」、価格キャンペーン（`discount_ends_at`）は「割引期間」の文面で送る。初月無料の本文には、終了後に定価で自動請求することを書く。
+- `billing_notices` の `UNIQUE(user_id, kind, period_end)` で重複を防ぐ。同じ `period_end` には 2 回目を送らない。
 - 応答は `{ "scanned", "sent", "recorded", "skipped", "notices": [...] }`。
 
 

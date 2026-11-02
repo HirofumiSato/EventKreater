@@ -261,6 +261,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
         currentPlan={quotaState.quota?.subscriptionPlan}
+        trialEligible={quotaState.quota?.trialEligible}
         context="preview"
         onGranted={() => {
           void quotaState.refreshQuota();

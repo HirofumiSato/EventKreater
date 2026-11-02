@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 106（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 404
+- 文書から参照されているコードパス: 408
 - API ルート: 79（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -22,6 +22,7 @@
 | `prisma/migrations/20261028120000_organizer_profile_theme_and_avatar/migration.sql` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `prisma/migrations/20261029190000_rsvp_notifications/migration.sql` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
+| `prisma/migrations/20261102180000_first_month_free_trial/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
 | `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -181,6 +182,7 @@
 | `src/components/common/Navbar.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/common/SiteChrome.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/ui` | `AGENTS.md` / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `src/components/ui/PlanCard.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/components/ui/SemanticThemeScope.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/components/ui/Subnav.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/components/ui/ThemePicker.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
@@ -346,6 +348,7 @@
 | `tests/integration/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-notifications.test.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/subscription-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/subscription-trial.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/waitlist.test.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/setup/db.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
@@ -370,6 +373,7 @@
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/first-month-free.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-candidates.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-payload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

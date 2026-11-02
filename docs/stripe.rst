@@ -29,8 +29,8 @@
      - テスト鍵ならテスト上の 299 円。 ``sk_live_`` なら実課金
      - Checkout セッションを作る。完了後に ``paid_credits`` を 1 増やす
    * - ``POST /api/v1/billing/checkout/subscription``
-     - テスト鍵ならテスト上の 980 円 / 2,980 円。 ``sk_live_`` なら初回課金と以後の自動更新
-     - 月額で8件まで公開プランまたは公開し放題を開始する。本文の ``plan`` で選ぶ
+     - テスト鍵ならテスト上の初月 0 円（初月無料）または 980 円 / 2,980 円。 ``sk_live_`` なら初回課金と以後の自動更新
+     - 月額で8件まで公開プランまたは公開し放題を開始する。本文の ``plan`` で選ぶ。初月無料は ``trial_end`` で表す
    * - ``POST /api/v1/billing/portal``
      - 課金はしない。解約すると次回以降の請求が止まる（ live なら実契約）
      - カード変更と解約は Stripe 側。このアプリは URL を発行するだけ
@@ -68,6 +68,7 @@
 * 100% 割引のときだけ 0 円です。それ以外は 10 円単位の切り上げで、最低 10 円です。
 * 0 円の単発は Stripe のセッションを作りません。確認済み電話番号があり、そのキャンペーンでの受け取りが上限未満のときだけ、``paid_credits`` を 1 増やします。``Idempotency-Key`` を変えても、同じキャンペーンで上限を超えて付与されることはありません。
 * 0 円の定額プランも Price は加入する階層の定価のままです。100% off の繰り返しクーポンを付け、``payment_method_collection`` は ``always`` にします。テストカードを登録すると、初回は 0 円です。期間が終わると Stripe が定価で自動請求します。
+* はじめての加入の初月無料は、この 0 円クーポンではなく ``subscription_data.trial_end`` で表します。初月無料の加入にクーポンは付けず、再加入者だけがキャンペーンのクーポンを使えます。
 * 割引の月数は、加入からキャンペーン終了までを暦月で数えて切り上げ、1〜12 か月です。キャンペーンを停止しても、既存の加入者のクーポンは満了まで残ります。
 
 無料期間の終了前通知は、``BILLING_NOTICE_SECRET`` を置いたうえで、日次で次を実行します。
@@ -80,6 +81,31 @@
 
 ``stripeExpectsLive()`` は ``STRIPE_SECRET_KEY`` に ``_live_`` が含まれるかで判定します（ ``src/modules/billing/lib/stripe.ts`` ）。
 テスト鍵のアプリに live の Webhook を流しても枠は増えません。逆も同じです。
+
+初月無料（トライアル）
+----------------------
+
+はじめての定額加入は、Stripe のネイティブトライアルで初月を 0 円にします。価格キャンペーンとは別の仕組みで、同じ加入には併用しません。
+
+* 加入セッションは ``subscription_data.trial_end`` を 1 か月後にし、クーポン（ ``discounts`` ）は付けません。``billing_transactions`` は ``amount = 0``、``trial_applied = true``、``stripe_coupon_id`` は NULL になります。
+* ``payment_method_collection`` は ``always`` です。0 円でもカードを登録し、無料期間が終わると Stripe が定価（980 円 / 2,980 円）で自動請求します。
+* Stripe の購読状態は ``trialing`` になります。アプリは ``trialing`` を ``ACTIVE`` に写すので、無料期間中もイベントを公開できます。
+* ``checkout.session.completed`` で ``user_usage_quotas.trial_ends_at`` と ``trial_used_at`` を記録します。``trial_used_at`` は無料期間が終わっても残し、再加入の判定に使います。
+* 無料期間が終わって ``active`` になると ``trial_ends_at`` は NULL に戻ります（ ``customer.subscription.updated`` と ``invoice.payment_succeeded`` の両方）。
+* 初月無料の対象かは ``GET /api/v1/billing/quota`` の ``trialEligible`` で分かります。再加入者にはキャンペーンのクーポンだけを付けます。
+
+Test Clock での確認
+~~~~~~~~~~~~~~~~~~~
+
+1. Dashboard（**テストデータ**）の **Test clocks** で新しいクロックを作る。
+2. そのクロックを選んだ状態で、会員として ``/service`` から定額プランへ加入する。テストカード ``4242 4242 4242 4242`` を使う。
+3. Checkout 完了後、``user_usage_quotas`` の ``subscription_status`` が ``ACTIVE``、``trial_ends_at`` と ``trial_used_at`` が入っていることを見る。``billing_transactions`` は ``amount = 0``、``trial_applied = true`` の 1 行になる。
+4. Test Clock を無料期間の 3 日前まで進め、``npm run billing:notices`` を実行する。 ``FREE_PERIOD_ENDING_3D`` が 1 回だけ届く。同じ日に再実行しても、 ``billing_notices`` の一意制約で再送しない。
+5. さらに 1 日前まで進めて再実行し、 ``FREE_PERIOD_ENDING_1D`` が 1 回だけ届くことを見る。
+6. 無料期間の終了まで進める。 ``invoice.payment_succeeded`` が届き、定価の取引が ``SUCCEEDED`` で増え、 ``trial_ends_at`` が NULL に戻ることを見る。
+7. 解約して再加入し、加入セッションの応答 ``trial`` が ``null`` になる（初月無料が付かない）ことを確認する。
+
+無料期間の途中で解約した場合も ``trial_used_at`` は残ります。再加入で初月無料をやり直すことはできません。
 
 してはいけないこと
 ------------------
@@ -189,13 +215,13 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
    * - ``checkout.session.completed`` （ ``payment`` ）
      - 取引を ``SUCCEEDED`` にし、 ``paid_credits`` を 1 増やす
    * - ``checkout.session.completed`` （ ``subscription`` ）
-     - 購読を ``ACTIVE`` にし、期間終了を保存する。取引を ``SUCCEEDED`` にする
+     - 購読を ``ACTIVE`` にし、期間終了を保存する。初月無料なら ``trial_ends_at`` と ``trial_used_at`` も入れる。取引を ``SUCCEEDED`` にし、 ``trial_applied`` を残す
    * - ``invoice.payment_succeeded``
-     - 顧客 ID または購読 ID から利用枠を ``ACTIVE`` に更新する。2 回目以降の定額請求は取引行を増やす
+     - 顧客 ID または購読 ID から利用枠を ``ACTIVE`` に更新する。初回の 0 円請求は ``trial_ends_at`` を記録し、 ``trial_applied`` を立てる。2 回目以降の定額請求は取引行を増やし、 ``trial_ends_at`` を NULL に戻す
    * - ``invoice.payment_failed``
      - ``subscription_status`` を ``PAST_DUE`` にする。イベント作成はできなくなる
    * - ``customer.subscription.updated``
-     - Stripe の購読状態を利用枠へ写す。想定外の Price では ``ACTIVE`` にしない
+     - Stripe の購読状態を利用枠へ写す（ ``trialing`` は ``ACTIVE`` ）。 ``trialing`` のあいだだけ ``trial_ends_at`` を持ち、 ``active`` になったら NULL に戻す。想定外の Price では ``ACTIVE`` にしない
    * - ``customer.subscription.deleted``
      - ``subscription_status`` を ``CANCELED`` にする
    * - ``charge.refunded``
@@ -213,6 +239,7 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
 
 * ``user_usage_quotas.paid_credits`` が 1 増えている（単発）
 * ``subscription_status`` が ``ACTIVE`` で、``current_period_end`` が未来（定額）
+* 初月無料なら ``trial_ends_at`` と ``trial_used_at`` が入り、 ``billing_transactions.trial_applied`` が true（ ``amount`` は 0 ）
 * ``billing_transactions`` に ``SUCCEEDED`` の行がある
 * ``/console/payments`` に同じ行が見える。ここからは返金しない
 

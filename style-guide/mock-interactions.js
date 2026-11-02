@@ -16,10 +16,12 @@
 //   8. ヘッダーの切り抜き … 編集画面からトリミングのダイアログを開き、倍率だけ変える
 //   9. 名簿の表示列 … 「表示列」からチェックボックスのダイアログを開き、列を出し入れする
 //  10. 名簿の 1 枚 … 行を押して開く 1 枚。集金の切り替えをその場で入れ替える
+//  11. 料金プラン … 利用枠の帯から加入モーダルを開き、初月0円の札と 2 か月目からの金額を出す
 //
 // 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
 // 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
-// 名簿の表示列ダイアログ、名簿の 1 枚の集金日時だけ。他の表示は製品の DOM のまま動かす。
+// 名簿の表示列ダイアログ、名簿の 1 枚の集金日時、料金プランの加入モーダルだけ。
+// 他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
 (function () {
@@ -1029,7 +1031,9 @@
         '<button type="button" class="modal__backdrop" aria-label="絞り込みを閉じる"></button>' +
         '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-filter-title">' +
         '<h3 id="mock-filter-title" class="dialog__title">絞り込む</h3>' +
+        '<div class="dialog__content">' +
         '<div class="filter-dialog"></div>' +
+        "</div>" +
         '<div class="dialog__actions">' +
         '<button type="button" class="btn btn--primary btn--block" data-mock-apply>この条件で絞り込む</button>' +
         '<button type="button" class="btn btn--ghost btn--block" data-mock-reset>条件を戻す</button>' +
@@ -1280,6 +1284,7 @@
         icon("close") +
         "</button>" +
         '<h3 id="mock-header-crop-title" class="dialog__title">ヘッダー画像を切り抜く</h3>' +
+        '<div class="dialog__content">' +
         '<div class="header-crop">' +
         '<div class="header-crop__frame" role="group" aria-label="切り抜く位置">' +
         (imageSrc
@@ -1296,6 +1301,7 @@
         "</div>" +
         '<p class="dialog__body header-crop__help">ドラッグか矢印キーで位置を決めます。</p>' +
         '<p class="dialog__note">幅800px未満になる範囲は選べません。</p>' +
+        "</div>" +
         "</div>" +
         '<div class="dialog__actions">' +
         '<button type="button" class="btn btn--primary btn--block" data-mock-crop-ok>この範囲で決定</button>' +
@@ -1426,8 +1432,10 @@
         icon("close") +
         "</button>" +
         '<h3 id="mock-roster-columns-title" class="dialog__title">表示する列</h3>' +
+        '<div class="dialog__content">' +
         '<p class="dialog__body">よく見る列だけを残すと、スマホでも横に送らずに読めます。</p>' +
         '<div class="column-picker"></div>' +
+        "</div>" +
         '<div class="dialog__actions">' +
         '<button type="button" class="btn btn--sm" data-mock-columns-close>閉じる</button>' +
         "</div></div>";
@@ -1638,6 +1646,223 @@
   }
 
 
+  // ---- 11. 料金プランの加入モーダル -------------------------------------
+
+  /** 定価。`src/modules/billing/lib/plans.ts` と同じで、デモには価格キャンペーンが無い。 */
+  const PLAN_PRICES = { single: 299, monthly8: 980, unlimited: 2980 };
+
+  /** 画面の金額表記。`src/lib/format.ts` の `yen` / `yenMark` と同じ組み方。 */
+  function yen(amount) {
+    return amount.toLocaleString("ja-JP") + "円";
+  }
+  function yenMark(amount) {
+    return "¥" + amount.toLocaleString("ja-JP");
+  }
+
+  /**
+   * 利用枠の帯の「公開し放題プランを見る」「0円チケットを受け取る」から、
+   * 加入モーダル（製品の `PricingModal`）を開く。
+   *
+   * **このダイアログだけ骨格を組み直す**のは、製品では押したときにしか出ず、
+   * 撮った HTML に残らないため（8・9・10 と同じ扱い）。
+   * 初月無料ははじめての月額加入だけなので、帯の文から未加入かどうかを見分け、
+   * 未加入は「初月0円」の 2 段、加入済みは月額の金額を出す。金額の計算は
+   * 製品と同じ（初月は 0、2 か月目からは 980 円 / 2,980 円、単発は 299 円）。
+   */
+  function wirePricingModal() {
+    const LABELS = ["公開し放題プランを見る", "0円チケットを受け取る"];
+    const triggers = Array.from(document.querySelectorAll("button")).filter((button) =>
+      LABELS.includes((button.textContent || "").trim()),
+    );
+    if (triggers.length === 0) return;
+
+    // 戻る道の文言は、開いた画面で変える（製品の `context`）。
+    const CANCEL_LABELS = {
+      "mock-create.html": "作成に戻る",
+      "mock-edit.html": "編集に戻る",
+      "mock-preview.html": "プレビューに戻る",
+    };
+    const file = (location.pathname.split("/").pop() || "").toLowerCase();
+    const cancelLabel = CANCEL_LABELS[file] || "閉じる";
+
+    /** 初月0円の 2 段。札の見出しは「初月0円」、下に 2 か月目の定価を置く。 */
+    const trialPrice = (listPrice) =>
+      '<p class="eyebrow" style="color:var(--color-primary-text)">初月0円</p>' +
+      '<p class="stat__value">0<span style="margin-left:0.25rem;font-size:0.875rem;font-weight:500">円 / 初月</span></p>' +
+      '<p class="help">2か月目から ' +
+      yen(listPrice) +
+      "（税込）</p>";
+
+    /** 加入済み・キャンペーン用の 1 段。 */
+    const price = (charged) =>
+      '<p class="stat__value">' +
+      yenMark(charged) +
+      '</p><p class="help">（税込）</p>';
+
+    const button = (plan, label, disabled, primary) =>
+      '<button type="button" class="btn ' +
+      (primary ? "btn--primary " : "") +
+      'btn--block" data-mock-plan="' +
+      plan +
+      '"' +
+      (disabled ? " disabled" : "") +
+      ">" +
+      label +
+      "</button>";
+
+    const build = (trigger) => {
+      const banner = trigger.closest(".alert");
+      const bannerText = banner ? banner.textContent || "" : "";
+      const label = (trigger.textContent || "").trim();
+      // 未加入は帯に残り回数が出る。加入済みは公開中の件数が出る。
+      const trialEligible = bannerText.includes("無料トライアル残り");
+      const freeTicket = label === "0円チケットを受け取る";
+      // 加入中のプランは帯の文で見分ける。8 件の上限に達した文も 8 件プランだけが出す。
+      const currentPlan = bannerText.includes("公開し放題に加入中")
+        ? "UNLIMITED"
+        : bannerText.includes("月額プランで公開中のイベント") || bannerText.includes("件に達しました")
+          ? "MONTHLY_8"
+          : "NONE";
+
+      const singlePrice = freeTicket
+        ? '<p class="eyebrow" style="color:var(--color-primary-text)">全額無料</p>' +
+          '<p class="stat__value">' +
+          yenMark(0) +
+          '<span style="margin-left:0.5rem;font-size:0.875rem;color:var(--color-text-faint);text-decoration:line-through">' +
+          yenMark(PLAN_PRICES.single) +
+          "</span></p>"
+        : price(PLAN_PRICES.single);
+
+      const single =
+        '<article class="card">' +
+        '<h4 class="card__title">単発チケット</h4>' +
+        singlePrice +
+        '<p class="card__body">1回分。スポット開催に。' +
+        (freeTicket ? " おひとり1回まで無料です。" : "") +
+        "</p>" +
+        button("SINGLE", freeTicket ? "無料で受け取る" : "単発で購入する", false, false) +
+        "</article>";
+
+      const monthly8 =
+        '<article class="card">' +
+        (trialEligible ? "" : '<p class="eyebrow">公開中のイベントを同時に8件まで</p>') +
+        '<h4 class="card__title">月額で8件まで公開プラン</h4>' +
+        (trialEligible ? trialPrice(PLAN_PRICES.monthly8) : price(PLAN_PRICES.monthly8)) +
+        '<p class="card__body">公開中は8件まで。終了したものと停止中は数えません。</p>' +
+        button(
+          "MONTHLY_8",
+          currentPlan === "MONTHLY_8"
+            ? "現在のプラン"
+            : trialEligible
+              ? "初月0円で始める"
+              : "このプランを始める",
+          currentPlan === "MONTHLY_8",
+          false,
+        ) +
+        "</article>";
+
+      // 公開し放題は製品でいちばん勧める 1 枚なので、枠を濃くする。
+      const unlimited =
+        '<article class="card" style="border-top:3px solid var(--color-primary)">' +
+        (trialEligible ? "" : '<p class="eyebrow">公開中の件数を数えない</p>') +
+        '<h4 class="card__title">公開し放題</h4>' +
+        (trialEligible ? trialPrice(PLAN_PRICES.unlimited) : price(PLAN_PRICES.unlimited)) +
+        '<p class="card__body">公開中の件数を数えません。教室や常設のイベント向けです。</p>' +
+        button(
+          "UNLIMITED",
+          currentPlan === "UNLIMITED"
+            ? "現在のプラン"
+            : trialEligible
+              ? "初月0円で始める"
+              : "定期購入で公開し放題",
+          currentPlan === "UNLIMITED",
+          true,
+        ) +
+        "</article>";
+
+      const notes =
+        (trialEligible
+          ? ""
+          : '<p class="help" style="margin-top:0.75rem">初月無料は、はじめての月額プラン加入のみです。</p>') +
+        '<p class="help" style="margin-top:1rem">初月無料の終了後は、登録したカードへ自動で請求します。3日前と1日前にメールでお知らせします。詳しくは' +
+        '<a href="mock-terms.html" class="text-link">利用規約</a>をご確認ください。</p>';
+
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="閉じる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-pricing-title" tabindex="-1">' +
+        '<button type="button" class="dialog__close" aria-label="閉じる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-pricing-title" class="dialog__title">プランを選ぶ</h3>' +
+        // 製品の `Dialog` と同じく、本文だけを `.dialog__content` に入れて送る
+        // （題と閉じる印は器に残す）。
+        '<div class="dialog__content">' +
+        '<p class="dialog__body">続けるには、どれかを選んでください。</p>' +
+        '<div class="stack" style="margin-top:1.25rem">' +
+        single +
+        monthly8 +
+        unlimited +
+        "</div>" +
+        notes +
+        "</div>" +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--ghost btn--block" data-mock-pricing-close>' +
+        cancelLabel +
+        "</button>" +
+        "</div></div>";
+      return host;
+    };
+
+    let modal = null;
+
+    const close = () => {
+      if (!modal) return;
+      modal.remove();
+      modal = null;
+      document.documentElement.removeAttribute("data-scroll-lock");
+      for (const trigger of triggers) trigger.setAttribute("aria-expanded", "false");
+    };
+
+    for (const trigger of triggers) {
+      // 帯のボタンは、ここの処理だけで開く（wireActions のトーストを出さない）。
+      trigger.setAttribute("data-mock-wired", "true");
+      trigger.setAttribute("aria-haspopup", "dialog");
+      trigger.setAttribute("aria-expanded", "false");
+
+      trigger.addEventListener("click", () => {
+        if (modal && modal.isConnected) return;
+        modal = build(trigger);
+        document.body.append(modal);
+        document.documentElement.setAttribute("data-scroll-lock", "true");
+        trigger.setAttribute("aria-expanded", "true");
+
+        const dialog = modal.querySelector(".dialog");
+        // 題と閉じる印は器に残したまま、本文の列（`.dialog__content`）だけが送られる。
+        dialog.focus();
+
+        for (const closer of modal.querySelectorAll(
+          ".dialog__close, .modal__backdrop, [data-mock-pricing-close]",
+        )) {
+          closer.addEventListener("click", close);
+        }
+        // 加入の操作は Stripe の画面が要る。押した結果だけを返す。
+        for (const plan of modal.querySelectorAll("[data-mock-plan]")) {
+          plan.addEventListener("click", () => {
+            if (plan.disabled) return;
+            toast("モックでは実行しません（API が要ります）。");
+          });
+        }
+      });
+    }
+
+    // 製品の `Dialog` は Escape でも閉じる。開いている間だけ拾う。
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal) close();
+    });
+  }
+
   // ---- 起動 -------------------------------------------------------------
 
   function start() {
@@ -1650,6 +1875,7 @@
     wireHeaderCrop();
     wireRosterColumns();
     wireRosterRowSheet();
+    wirePricingModal();
     wireActions();
   }
 
