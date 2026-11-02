@@ -15,6 +15,7 @@ import {
   type SubscriptionProduct,
 } from "@/modules/billing/lib/pricing";
 import { isSubscriptionActive } from "@/modules/billing/lib/quota";
+import { resolveTrial } from "@/modules/billing/lib/trial";
 import { SubscriptionCheckoutSchema } from "@/lib/schemas";
 import {
   DEFAULT_CHECKOUT_RETURN_TO,
@@ -54,9 +55,14 @@ export async function POST(req: NextRequest) {
     }
 
     const quote = quoteFor(pricingKindOfPlan(plan), await loadActiveCampaigns(now), now);
-    const campaign = quote.campaignId
-      ? await prisma.pricingCampaign.findUnique({ where: { id: quote.campaignId } })
-      : null;
+    // 初月無料を使えるときは、月額のキャンペーンを併用しない（初月無料を優先する）。
+    // キャンペーンは、初月無料を使えない再加入者にだけ効く。
+    const trial = await resolveTrial(userId, now);
+    const trialEnd = trial.eligible ? trial.endsAt : null;
+    const campaign =
+      trialEnd === null && quote.campaignId
+        ? await prisma.pricingCampaign.findUnique({ where: { id: quote.campaignId } })
+        : null;
 
     let couponId: string | null = null;
     if (campaign && quote.discountPercent > 0) {
@@ -103,6 +109,8 @@ export async function POST(req: NextRequest) {
             : {}),
         },
         subscription_data: {
+          // 初回だけ、加入から1か月を0円にする。2か月目からは定価で自動請求する。
+          ...(trialEnd ? { trial_end: Math.floor(trialEnd.getTime() / 1000) } : {}),
           metadata: {
             userId,
             plan,
@@ -125,12 +133,14 @@ export async function POST(req: NextRequest) {
       userId,
       paymentType: "SUBSCRIPTION" as const,
       paymentStatus: "PENDING" as const,
-      amount: quote.chargedPrice,
+      // 初月無料の申込は 0 円。定価と割引額は、あとから会計記録を辿れるように残す。
+      amount: trialEnd ? 0 : quote.chargedPrice,
       listAmount: listPriceFor(pricingKindOfPlan(plan)),
-      discountAmount: quote.discountAmount,
-      campaignId: quote.campaignId,
-      appliedPercent: quote.discountPercent > 0 ? quote.discountPercent : null,
+      discountAmount: trialEnd ? listPriceFor(pricingKindOfPlan(plan)) : quote.discountAmount,
+      campaignId: trialEnd ? null : quote.campaignId,
+      appliedPercent: trialEnd ? null : quote.discountPercent > 0 ? quote.discountPercent : null,
       stripeCouponId: couponId,
+      trialApplied: trialEnd !== null,
       requestKey: idempotencyKey ?? null,
       currency: "jpy",
     };
@@ -140,7 +150,12 @@ export async function POST(req: NextRequest) {
       update: data,
     });
 
-    return NextResponse.json({ checkoutUrl: session.url, plan, pricing: quote });
+    return NextResponse.json({
+      checkoutUrl: session.url,
+      plan,
+      pricing: quote,
+      trial: trialEnd ? { endsAt: trialEnd.toISOString() } : null,
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "STRIPE_SECRET_KEY is not set") {
       return toErrorResponse(

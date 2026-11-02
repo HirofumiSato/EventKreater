@@ -171,7 +171,9 @@ export function Dialog({
         <h3 id={titleId} className="dialog__title">
           {title}
         </h3>
-        {children}
+        {/* 中央寄せの紙は、題と操作を残したまま本文の列だけを送る（`.dialog__content`）。
+            出欠の層（`sheet`）は `<form>` 自体を送るので、包まずにそのまま渡す。 */}
+        {variant === "sheet" ? children : <div className="dialog__content">{children}</div>}
         {actions ? <div className="dialog__actions">{actions}</div> : null}
       </div>
     </div>

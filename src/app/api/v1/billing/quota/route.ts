@@ -12,6 +12,7 @@ import {
 } from "@/modules/billing/lib/quota";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
+import { resolveTrial } from "@/modules/billing/lib/trial";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,6 +97,13 @@ export async function GET(req: NextRequest) {
           }
         : null;
 
+    // 初月無料の無料期間中だけ `trial` を持つ。加入中は新しく使えないので trialEligible は false。
+    const trial =
+      quota.trialEndsAt && quota.trialEndsAt > now
+        ? { endsAt: quota.trialEndsAt.toISOString() }
+        : null;
+    const trialEligible = isSubActive ? false : (await resolveTrial(userId, now)).eligible;
+
     return NextResponse.json({
       freeEventCount: quota.freeEventCount,
       freeLimit: FREE_EVENT_LIMIT,
@@ -113,6 +121,8 @@ export async function GET(req: NextRequest) {
       pricing,
       freeGrantRemaining,
       discount,
+      trial,
+      trialEligible,
     });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/billing/quota");

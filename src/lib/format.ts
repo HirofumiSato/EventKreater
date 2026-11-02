@@ -16,6 +16,16 @@ export function yenMark(amount: number): string {
 }
 
 /**
+ * 3桁区切りの数字だけ。「2,980」。
+ *
+ * 「2,980円 / 月」のように単位を小さい字で別に組む場所で使う。`yen()` は「円」まで
+ * 返すため、そのまま置くと単位の字が二重になる。桁区切りの規則はここだけに置く。
+ */
+export function yenDigits(amount: number): string {
+  return `${amount.toLocaleString("ja-JP")}`;
+}
+
+/**
  * 日時。「2026/10/24 18:30:00」。
  *
  * 端末のタイムゾーンで出す。サーバーの `formatRsvpDeadlineLabel` は日本時間に固定して

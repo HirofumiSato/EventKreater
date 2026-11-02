@@ -87,18 +87,20 @@ function buildMessage(input: {
 
 /**
  * 無料期間・割引期間が 3日以内に終わる契約へ案内を送る。
+ * 初月無料（trialEndsAt）と価格キャンペーン（discountEndsAt）の両方を見る。
  * cron から1日1回呼ぶ想定。重複は (userId, kind, periodEnd) の一意制約で防ぐ。
  */
 export async function sendFreePeriodEndingNotices(
   now = new Date(),
 ): Promise<NoticeRunResult> {
+  const windowEnd = new Date(now.getTime() + NOTICE_WINDOW_MS);
   const quotas = await prisma.userUsageQuota.findMany({
     where: {
       subscriptionStatus: "ACTIVE",
-      discountEndsAt: {
-        gt: now,
-        lte: new Date(now.getTime() + NOTICE_WINDOW_MS),
-      },
+      OR: [
+        { discountEndsAt: { gt: now, lte: windowEnd } },
+        { trialEndsAt: { gt: now, lte: windowEnd } },
+      ],
     },
     include: {
       user: { select: { id: true, name: true, email: true } },
@@ -116,8 +118,16 @@ export async function sendFreePeriodEndingNotices(
   if (quotas.length === 0) return result;
 
   for (const quota of quotas) {
-    const periodEnd = quota.discountEndsAt;
+    // 初月無料とキャンペーンが重なることは無いが、どちらも未来にあるときは早く終わる方を案内する。
+    const periodEnd =
+      [quota.trialEndsAt, quota.discountEndsAt]
+        .filter((value): value is Date => value !== null && value > now)
+        .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
     if (!periodEnd || !quota.user) continue;
+
+    // 初月無料は、定価の 100% 引きと同じ文面（「無料期間」）で送る。
+    const isTrial =
+      quota.trialEndsAt !== null && quota.trialEndsAt.getTime() === periodEnd.getTime();
 
     const remaining = periodEnd.getTime() - now.getTime();
     const kind: NoticeKind =
@@ -139,10 +149,11 @@ export async function sendFreePeriodEndingNotices(
       continue;
     }
 
-    const percent = quota.discountPercent ?? (quota.pricingCampaign ? 100 : 0);
+    const percent = isTrial ? 100 : quota.discountPercent ?? (quota.pricingCampaign ? 100 : 0);
+    const campaignName = isTrial ? null : quota.pricingCampaign?.name ?? null;
     const { subject, body } = buildMessage({
       name: quota.user.name,
-      campaignName: quota.pricingCampaign?.name ?? null,
+      campaignName,
       percent,
       periodEnd,
       kind,
@@ -154,7 +165,7 @@ export async function sendFreePeriodEndingNotices(
       await prisma.billingNotice.create({
         data: {
           userId: quota.userId,
-          campaignId: quota.pricingCampaignId,
+          campaignId: isTrial ? null : quota.pricingCampaignId,
           kind,
           periodEnd,
           recipientEmail: quota.user.email,

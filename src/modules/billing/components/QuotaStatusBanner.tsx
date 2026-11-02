@@ -21,23 +21,25 @@ function dateLabel(iso: string): string {
   }).format(new Date(iso));
 }
 
-function subscribedMessage(quota: UserQuota, discountLabel: string | null): string {
+function subscribedMessage(quota: UserQuota, periodLabel: string | null): string {
   const price = quota.subscriptionPlan === "MONTHLY_8" ? "980円" : "2,980円";
   // 日付入りの割引は、いつまで何円で使えるかが要るので残す。通常の自動更新は
   // 一覧の見出しでは繰り返さない（解約の条件は契約の画面が持つ）。
-  const detail = discountLabel
-    ? `${discountLabel}。終了後は月額${price}を自動で請求します（3日前と1日前にメールでお知らせ）。`
+  // 初月無料も同じ位置・同じ 1 文で受け、無料期間の終わりだけを添える。
+  const detail = periodLabel
+    ? `${periodLabel}。終了後は月額${price}を自動で請求します（3日前と1日前にメールでお知らせ）。`
     : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
     const count = quota.publishedEventCount ?? 0;
     const limit = quota.publishedEventLimit ?? SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
     const remaining = Math.max(0, quota.remainingPublished ?? 0);
     // 残りは書かない。`N / 8` を読めば引けるうえ、件数が動くたびに文が伸び縮みする。
+    // 件数の見出しは句点で終えないので、日付の 1 文は「。」でつないでから足す。
     const head =
       remaining === 0
-        ? `公開中のイベントが${limit}件に達しました。終わったものは削除するか「公開一時停止」を使ってください。`
+        ? `公開中のイベントが${limit}件に達しました。終わったものは削除するか「公開一時停止」を使ってください`
         : `月額プランで公開中のイベント ${count} / ${limit} 件`;
-    return `${head}${detail}`;
+    return detail ? `${head}。${detail}` : `${head}。`;
   }
   const count = quota.publishedEventCount ?? 0;
   return `公開し放題に加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
@@ -51,6 +53,10 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
   const discountLabel = discount
     ? `${discount.percent >= 100 ? "無料期間" : `${discount.percent}%割引`}（${dateLabel(discount.endsAt)} まで）`
     : null;
+  const trial = quota.trial ?? null;
+  const trialLabel = trial ? `初月無料（${dateLabel(trial.endsAt)} まで）` : null;
+  // 初月無料と価格キャンペーンは併用しない。両方立つことはないが、先に初月無料を見る。
+  const periodLabel = trialLabel ?? discountLabel;
   const freeTicketAvailable = (quota.freeGrantRemaining ?? 0) > 0 && quota.pricing?.oneTime.chargedPrice === 0;
 
   const tone =
@@ -65,7 +71,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
     : quota.subscriptionStatus === "PAST_DUE"
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
-        ? subscribedMessage(quota, discountLabel)
+        ? subscribedMessage(quota, periodLabel)
         : `${
             quota.publishedEventCount
               ? `公開中のイベント ${quota.publishedEventCount} 件。`
@@ -86,7 +92,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             電話番号を確認する
           </Link>
         )}
-        {isSubscribed && discount && (
+        {isSubscribed && periodLabel && (
           <Link href="/terms" className="text-link">
             解約と自動更新の条件
           </Link>

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  FIRST_MONTH_FREE_LABEL,
   ONE_TIME_PRICE_JPY,
   SUBSCRIPTION_8_PRICE_JPY,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
 import type { PricingQuote } from "@/modules/events/types";
-import { yenMark } from "@/lib/format";
+import { yen, yenMark } from "@/lib/format";
 import { Alert, Dialog } from "@/components/ui";
 
 /** 申し込む定額プラン。DB の SubscriptionPlan から NONE を除いた形。 */
@@ -30,6 +31,8 @@ interface PricingModalProps {
   onGranted?: () => void;
   /** 加入中の定額プラン。「現在のプラン」を出して、同じ札を押せなくする。 */
   currentPlan?: "NONE" | "MONTHLY_8" | "UNLIMITED";
+  /** 初月無料を使えるか。月額2枚の価格段とボタンの文言が変わる。 */
+  trialEligible?: boolean;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
   context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
@@ -93,6 +96,28 @@ function PriceBlock({ quote, fallback }: { quote: PricingQuote | null; fallback:
   );
 }
 
+/**
+ * 初月無料の価格段。キャンペーン用の `PriceBlock` とは別に、
+ * 「0円 / 初月」と「2か月目から」の 2 段で組む。初月無料があるときは
+ * キャンペーン価格よりこちらを優先する（併用しない規則）。
+ */
+function TrialPriceBlock({ listPrice }: { listPrice: number }) {
+  return (
+    <div>
+      <p className="eyebrow" style={{ color: "var(--color-primary-text)" }}>
+        {FIRST_MONTH_FREE_LABEL}
+      </p>
+      <p className="stat__value">
+        0
+        <span style={{ marginLeft: "0.25rem", fontSize: "0.875rem", fontWeight: 500 }}>
+          円 / 初月
+        </span>
+      </p>
+      <p className="help">2か月目から {yen(listPrice)}（税込）</p>
+    </div>
+  );
+}
+
 export function PricingModal({
   isOpen,
   onClose,
@@ -101,6 +126,7 @@ export function PricingModal({
   quotes,
   freeGrantRemaining,
   currentPlan = "NONE",
+  trialEligible = false,
   onGranted,
   context = "list",
 }: PricingModalProps) {
@@ -181,12 +207,19 @@ export function PricingModal({
             </button>
           </article>
           <article className="card">
-            <p className="eyebrow">公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで</p>
+            {/* 初月無料のときは、価格段の見出し（初月0円）に場所を譲る。 */}
+            {!trialEligible && (
+              <p className="eyebrow">公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで</p>
+            )}
             <h4 className="card__title">月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
-            <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
+            {trialEligible ? (
+              <TrialPriceBlock listPrice={subscription8?.listPrice ?? SUBSCRIPTION_8_PRICE_JPY} />
+            ) : (
+              <PriceBlock quote={subscription8} fallback={SUBSCRIPTION_8_PRICE_JPY} />
+            )}
             <p className="card__body">
               公開中は{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで。終了したものと停止中は数えません。
-              {subscription8?.chargedPrice === 0
+              {!trialEligible && subscription8?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
@@ -200,18 +233,24 @@ export function PricingModal({
                 ? "現在のプラン"
                 : loadingPlan === "MONTHLY_8"
                   ? "接続しています…"
-                  : subscription8?.chargedPrice === 0
-                    ? "0円で定期購入を始める"
-                    : "このプランを始める"}
+                  : trialEligible
+                    ? "初月0円で始める"
+                    : subscription8?.chargedPrice === 0
+                      ? "0円で定期購入を始める"
+                      : "このプランを始める"}
             </button>
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
-            <p className="eyebrow">公開中の件数を数えない</p>
+            {!trialEligible && <p className="eyebrow">公開中の件数を数えない</p>}
             <h4 className="card__title">公開し放題</h4>
-            <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
+            {trialEligible ? (
+              <TrialPriceBlock listPrice={subscriptionUnlimited?.listPrice ?? SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
+            ) : (
+              <PriceBlock quote={subscriptionUnlimited} fallback={SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
+            )}
             <p className="card__body">
               公開中の件数を数えません。教室や常設のイベント向けです。
-              {subscriptionUnlimited?.chargedPrice === 0
+              {!trialEligible && subscriptionUnlimited?.chargedPrice === 0
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
@@ -225,15 +264,22 @@ export function PricingModal({
                 ? "現在のプラン"
                 : loadingPlan === "UNLIMITED"
                   ? "接続しています…"
-                  : subscriptionUnlimited?.chargedPrice === 0
-                    ? "0円で定期購入を始める"
-                    : "定期購入で公開し放題"}
+                  : trialEligible
+                    ? "初月0円で始める"
+                    : subscriptionUnlimited?.chargedPrice === 0
+                      ? "0円で定期購入を始める"
+                      : "定期購入で公開し放題"}
             </button>
           </article>
         </div>
+        {!trialEligible && (
+          <p className="help" style={{ marginTop: "0.75rem" }}>
+            初月無料は、はじめての月額プラン加入のみです。
+          </p>
+        )}
         {error && <Alert tone="error" style={{ marginTop: "1rem" }}>{error}</Alert>}
         <p className="help" style={{ marginTop: "1rem" }}>
-          無料期間が終わると自動で有料になります。3日前と1日前にメールでお知らせします。詳しくは
+          初月無料の終了後は、登録したカードへ自動で請求します。3日前と1日前にメールでお知らせします。詳しくは
           <Link href="/terms" className="text-link">
             利用規約
           </Link>

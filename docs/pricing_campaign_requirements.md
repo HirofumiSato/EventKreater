@@ -23,6 +23,8 @@
 | 0 円単発の丸め | 10 円単位の切り上げ、最低 10 円 | 100% 割引のときだけ 0 円 |
 | 0 円の定額プランの請求方法 | Stripe クーポン（100% off / repeating） | カード登録を必須にし、期間終了後は自動課金 |
 | 月額割引の適用開始 | 加入時から | 日割りはせず、各請求サイクル全体に適用 |
+| 初月無料 | 常時オン（1 人 1 回） | はじめての定額加入は初月 0 円。`trialUsedAt` を持つ再加入者は対象外 |
+| 初月無料と月額割引 | 併用しない（初月無料を優先） | 初月 0 円の加入にはクーポンを付けない。キャンペーンは初月無料を使えない再加入者にだけ効く |
 | 割引の最小期間 | 1 サイクル以上 | 端数は 1 か月に切り上げ |
 | キャンペーン停止時 | 既存購入者は割引継続 | 新規申込のみ停止 |
 | 終了前通知 | 3 日前と 1 日前の 2 回 | 0 円の定額プラン（および 100% 未満の割引で加入した定額プラン）が対象 |
@@ -98,8 +100,8 @@
   - 100% 未満: `amount_off = その階層の定価 - 請求額`（980 円 / 2,980 円）, `currency = "jpy"`
   - 共通: `duration = "repeating"`, `duration_in_months = months`
 - `payment_method_collection: "always"` を指定し、0 円でもカードを登録させる。
-- セッションの `metadata` に `plan`、`campaignId`、`appliedPercent` を残す。
-- 申込時に `billing_transactions` へ `PENDING` 行を作り、`amount`（請求額）、`listAmount`（その階層の定価）、`discountAmount`、`campaignId`、`appliedPercent`、`stripeCouponId` を控える。
+- セッションの `metadata` に `plan`、クーポンを併用するときだけ `campaignId` を残す。
+- 申込時に `billing_transactions` へ `PENDING` 行を作り、`amount`（請求額）、`listAmount`（その階層の定価）、`discountAmount`、`campaignId`、`appliedPercent`、`stripeCouponId` を控える。初月無料のときは `amount = 0`、`discountAmount = 定価`、`trialApplied = true` とし、`campaignId` / `appliedPercent` / `stripeCouponId` は入れない。
 
 ### 4.2. 確定と自動課金
 
@@ -115,6 +117,19 @@
 - 階層の変更（月額で8件まで公開 ⇄ 公開し放題）は Stripe Customer Portal で行う。`customer.subscription.updated` の Price ID から `subscription_plan` を判定し直す。
 - 値上げ前に 980 円の公開し放題へ加入した契約は `STRIPE_PRICE_ID_MONTHLY_980_LEGACY` のままとし、`UNLIMITED` として回数を数えない。
 
+### 4.4. 初月無料（常時オンの 0 円）との関係
+
+初月無料はキャンペーンではなく、すべての定額プランに常時備わる加入特典である。価格キャンペーンとは別の仕組みで動かし、**同じ加入に両方を適用しない**。
+
+- **対象判定:** `trial_used_at` が NULL で、有効な定額契約がない会員だけが対象（`resolveTrial(...).eligible`）。一度でも初月無料を使った会員は、解約して再加入しても対象外になる。
+- **請求方法:** Stripe の `subscription_data.trial_end` を加入から 1 か月後にし、初回請求を 0 円にする。0 円の定額プランでもカードは登録させ（`payment_method_collection: "always"`）、無料期間の終了後はその階層の定価（980 円 / 2,980 円）で自動請求する。
+- **クーポンとの排他:** 初月無料の加入では `discounts` を付けず、`campaignId` / `appliedPercent` / `stripeCouponId` も記録しない。Stripe の 100% off クーポンによる 0 円（§4.1）は、初月無料を使えない再加入者にキャンペーンを適用するときだけ使う。
+- **表示:** 初月無料の対象者には、販売価格（キャンペーン適用後の `chargedPrice`）ではなく「初月 0 円、2 か月目から定価」を出す。対象外の会員には、これまでどおりキャンペーン適用後の価格を出す。
+- **記録:** `user_usage_quotas.trial_ends_at` に無料期間の終了日時、`trial_used_at` に使った日時を残す。`billing_transactions.trial_applied = true` で、0 円の初回請求がキャンペーンによるものか初月無料かを区別する。
+- **通知:** 無料期間の終了も §5 の対象にする（`trial_ends_at` を見る）。文面は「無料期間」とし、終了後に定価で請求することを書く。
+
+初月無料の対象かどうかは価格計算（`quoteFor`）に混ぜない。`GET /api/v1/billing/quota` の `trial` / `trialEligible` と、加入セッションの `trial_end` だけで扱う。
+
 ---
 
 ## 5. 終了前の通知（3 日前・1 日前）
@@ -122,8 +137,10 @@
 ### 5.1. 対象
 
 - `user_usage_quotas.subscription_status = ACTIVE`
-- `discount_ends_at > now`
-- `discount_ends_at <= now + 3 日 + 12 時間`
+- `discount_ends_at > now` または `trial_ends_at > now`
+- 終了日時が `now + 3 日 + 12 時間` 以内
+
+初月無料（`trial_ends_at`）と価格キャンペーン（`discount_ends_at`）の両方が未来にあるときは、早く終わる方を案内する。実際には両方を同じ加入へ重ねない（§4.4）。
 
 ### 5.2. 判定
 
@@ -178,9 +195,9 @@
 | `/api/v1/admin/pricing-campaigns/[id]` | PATCH | 管理者 | 編集（必要なら版を上げる） |
 | `/api/v1/admin/pricing-campaigns/[id]/stop` | POST | 管理者 | 停止 |
 | `/api/v1/public/pricing` | GET | 不要 | 現在の販売価格と実施中キャンペーン |
-| `/api/v1/billing/quota` | GET | 会員 | 利用枠に加えて `pricing`, `freeGrantRemaining`, `discount` を返す |
+| `/api/v1/billing/quota` | GET | 会員 | 利用枠に加えて `pricing`, `freeGrantRemaining`, `trial`, `trialEligible`, `discount` を返す |
 | `/api/v1/billing/checkout/one-time` | POST | 会員 | 0 円なら付与、それ以外は Stripe セッション |
-| `/api/v1/billing/checkout/subscription` | POST | 会員 | `plan` で階層を選び、クーポン付きの定額セッションを作る |
+| `/api/v1/billing/checkout/subscription` | POST | 会員 | `plan` で階層を選び、初月無料なら `trial_end`、キャンペーンならクーポン付きの定額セッションを作る |
 | `/api/v1/internal/billing/notices` | POST | 共有秘密 | 3 日前・1 日前の通知バッチ |
 
 `402 QUOTA_EXCEEDED` の `pricingOptions` は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を返す。
@@ -210,6 +227,7 @@
 | `applied_percent` | SMALLINT NULL | 適用割引率 |
 | `stripe_coupon_id` | VARCHAR(255) NULL | 使用したクーポン |
 | `request_key` | VARCHAR(255) UNIQUE NULL | 0 円付与の冪等キー |
+| `trial_applied` | BOOLEAN NOT NULL DEFAULT false | 初月無料の 0 円請求か |
 
 `user_usage_quotas`:
 
@@ -218,6 +236,10 @@
 | `pricing_campaign_id` | UUID NULL | 適用中キャンペーン |
 | `discount_ends_at` | TIMESTAMPTZ NULL | 割引（無料期間）の終了日時 |
 | `discount_percent` | SMALLINT NULL | 適用割引率 |
+| `trial_ends_at` | TIMESTAMPTZ NULL | 初月無料の終了日時（`trialing` のあいだだけ） |
+| `trial_used_at` | TIMESTAMPTZ NULL | 初月無料を使った日時（無料期間が終わっても残す） |
+
+`trial_ends_at` には、通知バッチ（`trial_ends_at > now` の走査）用のインデックスを張る。
 
 ### 8.3. マイグレーション
 

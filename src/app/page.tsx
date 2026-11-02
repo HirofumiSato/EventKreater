@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { SERVICE_PLANS } from "@/modules/billing/lib/plans";
 import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
-import { Section, SectionHead } from "@/components/ui";
+import { PlanCard, Section, SectionHead } from "@/components/ui";
 
 /*
  * ホームの役割は「初見の幹事が、自分のためのサービスだと理解し、1つ作り始めること」。
@@ -68,6 +69,12 @@ const steps = [
     "参加者は名前と出欠だけで回答します。幹事は参加者名簿で集計を確認し、見込みの売上も同じ流れで確かめられます。",
   ],
 ];
+
+/**
+ * 月額プランだけ。どれが初月無料かは `plans.ts` の `trialMonths` が持つ。
+ * ホームでは金額を比べさせず、初月0円だけを予告する。
+ */
+const monthlyPlans = SERVICE_PLANS.filter((plan) => plan.trialMonths > 0);
 
 export default function HomePage() {
   return (
@@ -164,6 +171,24 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
+      </Section>
+
+      {/*
+        料金の予告。比較は /service が受け持つので、ここは月額2枚だけを並べる。
+        主操作（朱）はヒーローの1つに絞ったまま、詳しい料金は枠線のボタンへ回す。
+      */}
+      <Section>
+        <SectionHead title="月額プランは、初月0円。" note="2か月目から、公開中のイベント数に合わせて選べます。" />
+        <ul className="plan-list plan-list--pair">
+          {monthlyPlans.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} />
+          ))}
+        </ul>
+        <div className="panel__actions">
+          <Link href={SITE.nav.service.href} className="btn btn--outline">
+            料金の詳細を見る
+          </Link>
+        </div>
       </Section>
 
       <section className="cta-band">

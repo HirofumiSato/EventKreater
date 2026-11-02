@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { toErrorResponse } from "@/lib/http";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
+import { FIRST_MONTH_FREE_MONTHS } from "@/modules/billing/lib/plans";
 import { campaignStatus, quoteAll } from "@/modules/billing/lib/pricing";
 
 export const runtime = "nodejs";
@@ -23,6 +24,11 @@ export async function GET() {
         endsAt: campaign.endsAt.toISOString(),
         status: campaignStatus(campaign, now),
       })),
+      // 初月無料は常時。対象は月額の2プランだけで、単発は含まない。
+      trial: {
+        months: FIRST_MONTH_FREE_MONTHS,
+        plans: ["SUBSCRIPTION_8", "SUBSCRIPTION_UNLIMITED"] as const,
+      },
       fetchedAt: now.toISOString(),
     });
   } catch (error) {

@@ -276,6 +276,7 @@ export default function MyPage() {
         quotes={quotaState.quota?.pricing ?? null}
         freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
         currentPlan={quotaState.quota?.subscriptionPlan}
+        trialEligible={quotaState.quota?.trialEligible}
         context="mypage"
         onGranted={() => void quotaState.refreshQuota()}
       />

@@ -51,6 +51,11 @@ export interface ActiveDiscount {
   campaignName: string | null;
 }
 
+/** 初月無料の無料期間。`endsAt` を過ぎると `trial` は null に戻る。 */
+export interface ActiveTrial {
+  endsAt: string;
+}
+
 /** 加入中の定額プラン。NONE は未加入。 */
 export type UserSubscriptionPlan = "NONE" | "MONTHLY_8" | "UNLIMITED";
 
@@ -90,6 +95,16 @@ export interface UserQuota {
   freeGrantRemaining?: number;
   /** 適用中の月額割引（無料期間を含む）。 */
   discount?: ActiveDiscount | null;
+  /**
+   * 初月無料の無料期間中だけ持つ。終わると null。
+   * 無料期間中は `discount` を持たない（クーポンを使わないため）。
+   */
+  trial?: ActiveTrial | null;
+  /**
+   * はじめての月額加入で初月無料を使えるか。
+   * 加入中・使用済み・再加入は false。
+   */
+  trialEligible?: boolean;
 }
 
 export interface PricingOption {

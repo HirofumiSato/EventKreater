@@ -134,6 +134,18 @@
   }
 }
 
+/* 月額2枚だけを並べる面（ホームの予告）。スマホは 1 列のままで、広い画面だけ 2 列にする。 */
+.plan-list--pair {
+  /* 上の `.plan-list`（768px で 3 列）より後ろに置き、同じ特異度で打ち消す。 */
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .plan-list--pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* 行の一覧。見出しと補足を左、値を右に置く。 */
 .rows {
   display: grid;

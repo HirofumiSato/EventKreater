@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  FIRST_MONTH_FREE_LABEL,
+  FIRST_MONTH_FREE_MONTHS,
   FREE_EVENT_LIMIT,
   SERVICE_PLANS,
   SUBSCRIPTION_8_PRICE_JPY,
@@ -73,6 +75,35 @@ describe("定額プランの価格", () => {
     expect(eight?.name).toBe("月額で8件まで公開プラン");
     expect(eight?.body).toContain("公開中のイベント");
     expect(eight?.body).toContain("終わったものは数えません");
+  });
+});
+
+describe("初月無料の対象プラン", () => {
+  it("月額の2プランだけ trialMonths が 1 で、無料と単発は 0", () => {
+    expect(FIRST_MONTH_FREE_MONTHS).toBe(1);
+    expect(FIRST_MONTH_FREE_LABEL).toBe("初月0円");
+    const months = SERVICE_PLANS.map((plan) => [plan.id, plan.trialMonths]);
+    expect(months).toEqual([
+      ["free", 0],
+      ["single", 0],
+      ["subscription-8", 1],
+      ["subscription-unlimited", 1],
+    ]);
+  });
+
+  it("価格を差し替えても trialMonths は残り、札の並びも変わらない", () => {
+    const plans = buildServicePlans(quoteAll([], new Date()));
+    expect(plans.map((plan) => plan.id)).toEqual([
+      "free",
+      "single",
+      "subscription-8",
+      "subscription-unlimited",
+    ]);
+    expect(plans.find((plan) => plan.id === "subscription-8")?.trialMonths).toBe(
+      FIRST_MONTH_FREE_MONTHS,
+    );
+    expect(plans.find((plan) => plan.id === "subscription-unlimited")?.trialMonths).toBe(1);
+    expect(plans.find((plan) => plan.id === "single")?.trialMonths).toBe(0);
   });
 });
 

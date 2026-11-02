@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2715,
+      "lineCount": 2767,
       "headings": [
         {
           "level": 2,
@@ -2513,7 +2513,7 @@
       "title": "機能別企画要件定義書",
       "summary": "本ドキュメントは、イベント告知ページ生成機能における「無料体験を通じた主催者の獲得」と「単発購入・月額サブスクリプションによる収益化」を両立するための目的関数と業務境界を定義する。",
       "preImplementation": false,
-      "lineCount": 235,
+      "lineCount": 237,
       "headings": [
         {
           "level": 1,
@@ -2617,7 +2617,7 @@
       "title": "Stripe 決済設定",
       "summary": "STRIPE_PUBLISHABLE_KEY=\"pk_test_...\" STRIPE_WEBHOOK_SECRET=\"whsec_...\" STRIPE_PRICE_ID_MONTHLY_8=\"price_...\" STRIPE_PRICE_ID_UNLIMITED=\"price_...\"",
       "preImplementation": false,
-      "lineCount": 662,
+      "lineCount": 671,
       "headings": [
         {
           "level": 2,
@@ -2859,7 +2859,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1750,
+      "lineCount": 1783,
       "headings": [
         {
           "level": 2,
@@ -2922,6 +2922,18 @@
           "text": "Prisma モデル（抜粋）"
         },
         {
+          "level": 3,
+          "text": "4.4. 初月無料（追加マイグレーション）"
+        },
+        {
+          "level": 4,
+          "text": "追加カラム"
+        },
+        {
+          "level": 4,
+          "text": "列の意味"
+        },
+        {
           "level": 2,
           "text": "5. CRUD操作詳細仕様（トランザクション＆アトミック処理）"
         },
@@ -2954,6 +2966,10 @@
         },
         {
           "path": "prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261102180000_first_month_free_trial/migration.sql",
           "exists": true
         },
         {
@@ -5545,7 +5561,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 1989,
+      "lineCount": 2006,
       "headings": [
         {
           "level": 1,
@@ -5912,6 +5928,10 @@
         },
         {
           "path": "src/components/common/SiteChrome.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/PlanCard.tsx",
           "exists": true
         },
         {
@@ -9920,7 +9940,7 @@
       "title": "イベント主催者向け 販売価格の期間制御・0円販売・無料期間の自動課金",
       "summary": "本ドキュメントは、管理コンソールから単発チケット（定価 299 円）と2つの定額プラン（月額で8件まで公開 980 円 / 公開し放題 2,980 円）の販売価格を期間限定で制御する機能の要件と実装方針を定める。あわせて、0 円販売時の課金・通知・利用規約の扱いを定義する。",
       "preImplementation": false,
-      "lineCount": 285,
+      "lineCount": 307,
       "headings": [
         {
           "level": 2,
@@ -9977,6 +9997,10 @@
         {
           "level": 3,
           "text": "4.3. 既存の定額契約"
+        },
+        {
+          "level": 3,
+          "text": "4.4. 初月無料（常時オンの 0 円）との関係"
         },
         {
           "level": 2,
@@ -10295,7 +10319,7 @@
       "title": "Stripe のローカルテストと操作",
       "summary": "このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、利用枠の確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。",
       "preImplementation": false,
-      "lineCount": 234,
+      "lineCount": 261,
       "headings": [
         {
           "level": 1,
@@ -10308,6 +10332,14 @@
         {
           "level": 2,
           "text": "価格キャンペーンと 0 円販売"
+        },
+        {
+          "level": 2,
+          "text": "初月無料（トライアル）"
+        },
+        {
+          "level": 3,
+          "text": "Test Clock での確認"
         },
         {
           "level": 2,
@@ -10737,7 +10769,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 634,
+      "lineCount": 642,
       "headings": [
         {
           "level": 1,
@@ -10867,6 +10899,10 @@
           "exists": true
         },
         {
+          "path": "tests/integration/subscription-trial.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/venue-suggestions.test.ts",
           "exists": true
         },
@@ -10956,6 +10992,10 @@
         },
         {
           "path": "tests/unit/event-steps.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/first-month-free.test.ts",
           "exists": true
         },
         {

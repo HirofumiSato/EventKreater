@@ -147,7 +147,7 @@
 
 .. count-start
 
-89 ファイル、``it`` は 1188 件です。内訳は ``tests/unit/`` が 68 ファイル 1034 件、``tests/integration/`` が 18 ファイル 117 件です。結合の 117 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+91 ファイル、``it`` は 1206 件です。内訳は ``tests/unit/`` が 69 ファイル 1046 件、``tests/integration/`` が 19 ファイル 123 件です。結合の 123 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -188,9 +188,13 @@
      - チラシ生成の利用枠の判定。残数、上限、会員とゲストの扱い
      - SCR-ORG-08
    * - ``tests/unit/subscription-plans.test.ts``
-     - 13
+     - 15
      - 月額で8件まで公開 980 円・公開し放題 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方と枠の記録先（単発・無料枠は枠の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題として引き継ぐ）
      - SCR-MOD-01 / SCR-PUB-06 / SCR-ADM-05
+   * - ``tests/unit/first-month-free.test.ts``
+     - 10
+     - 初月無料の対象判定（未使用・契約なし・支払済みなしの 3 条件）、再加入とプラン変更では再適用しないこと、加入から 1 か月後の終了日時（月末・うるう年・年またぎ）、元の日時を書き換えないこと
+     - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/unit/event-details.test.ts``
      - 40
      - 日時の移行（チルダ・全角数字・1 桁のゼロ埋め・翌日またぎ）、料金の「無料」と補足、会場名と住所の結合、チラシ用の 30 文字以内の料金ラベル、男女別の組の判定・組単位のプラン名の反映と食い違いの検出・共通からの展開・組単位の上限・共通へ戻すときの同名の整理
@@ -235,7 +239,11 @@
      - 8
      - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題は件数を数えない。公開の再開は枠を再消費する。複製は下書きの時点では消費しない
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
-  * - ``tests/unit/rsvp-notification.test.ts``
+   * - ``tests/integration/subscription-trial.test.ts``
+     - 6
+     - 無料期間中（``ACTIVE``・``trial_ends_at`` が未来）もイベントを公開でき、無料枠と単発クレジットを減らさないこと。``trial_used_at`` がある会員と支払済みの月額がある会員は再加入でも対象外になること。``GET /api/v1/billing/quota`` が ``trial`` と ``trialEligible`` を返すこと。通知バッチが無料期間を拾い、3 日前と 1 日前に 1 回ずつ送り、同じ ``period_end`` では再送しないこと
+     - SCR-MOD-01 / SCR-PUB-06
+   * - ``tests/unit/rsvp-notification.test.ts``
      - 23
      - 通知する変化（新規・欠席から・要望から出席へ・同じ状態の再送信・出席から要望や欠席へ）、出席と参加要望の文面と 300 文字での切り詰め、名簿への行き先、二重作成を防ぐ指紋（同じ入力で安定・宛先が違えば別）、宛先からゲスト主催者と自分を落とすこと、未読数の ``9+``
      - SCR-PUB-03 / SCR-ORG-06
@@ -518,7 +526,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1034、``tests/integration/`` が 117 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1034 件を実行して 117 件を skip します。
+件数の内訳は ``tests/unit/`` が 1046、``tests/integration/`` が 123 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1046 件を実行して 123 件を skip します。
 
 .. breakdown-end
 

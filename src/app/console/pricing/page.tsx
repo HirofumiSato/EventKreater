@@ -304,6 +304,9 @@ export default function AdminPricingPage() {
               <option value="SUBSCRIPTION_8">月額で8件まで公開プランのみ</option>
               <option value="SUBSCRIPTION_UNLIMITED">公開し放題のみ</option>
             </select>
+            <p className="help">
+              月額のキャンペーンは、初月無料を使えない再加入者に適用されます。初月無料と併用しません。
+            </p>
           </Field>
           <Field label="割引の種類" htmlFor="campaign-kind">
             <select

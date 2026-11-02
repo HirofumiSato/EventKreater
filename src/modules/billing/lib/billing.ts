@@ -121,6 +121,11 @@ export async function activateSubscription(
     subscriptionId?: string | null;
     periodEnd?: Date | null;
     plan?: SubscriptionProduct | null;
+    /**
+     * 初月無料の終了日時。`Date` を渡すと無料期間として記録し、`null` を渡すと消す
+     * （トライアルが終わった通常の更新請求）。省略したときは触らない。
+     */
+    trialEndsAt?: Date | null;
   },
 ): Promise<void> {
   const data: Prisma.UserUsageQuotaUpdateManyMutationInput = {
@@ -130,6 +135,13 @@ export async function activateSubscription(
   if (input.customerId) data.stripeCustomerId = input.customerId;
   if (input.periodEnd) data.currentPeriodEnd = input.periodEnd;
   if (input.plan) data.subscriptionPlan = input.plan;
+  if (input.trialEndsAt === null) {
+    data.trialEndsAt = null;
+  } else if (input.trialEndsAt) {
+    // 使った印は、無料期間が終わっても残す。再加入で繰り返さないため。
+    data.trialEndsAt = input.trialEndsAt;
+    data.trialUsedAt = new Date();
+  }
 
   if (input.userId) {
     await tx.userUsageQuota.update({
@@ -149,11 +161,25 @@ export async function activateSubscription(
   await tx.userUsageQuota.updateMany({ where, data });
 }
 
-export async function loadSubscriptionPeriodEnd(subscriptionId: string): Promise<Date | null> {
+/**
+ * 契約の期間末と、初月無料（trialing）の終了日時。
+ * 無料期間中は `current_period_end` も trial_end と同じ値になるが、
+ * 案内と表示に使う値を取り違えないよう、trialing のときだけ `trial_end` を読む。
+ */
+export async function loadSubscriptionWindow(
+  subscriptionId: string,
+): Promise<{ periodEnd: Date | null; trialEndsAt: Date | null }> {
   const stripe = getStripe();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  if (!subscription.current_period_end) return null;
-  return new Date(subscription.current_period_end * 1000);
+  return {
+    periodEnd: subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000)
+      : null,
+    trialEndsAt:
+      subscription.status === "trialing" && subscription.trial_end
+        ? new Date(subscription.trial_end * 1000)
+        : null,
+  };
 }
 
 /**
@@ -264,10 +290,12 @@ export function mapStripeSubscriptionStatus(status: Stripe.Subscription.Status):
   switch (status) {
     case "active":
       return "ACTIVE";
+    // 初月無料の trialing は、イベントを公開できる加入として扱う。
+    case "trialing":
+      return "ACTIVE";
     case "past_due":
       return "PAST_DUE";
     case "incomplete":
-    case "trialing":
       return "INCOMPLETE";
     default:
       return "CANCELED";
@@ -295,6 +323,8 @@ export interface PayableCheckout {
   campaignId: string | null;
   appliedPercent: number | null;
   couponId: string | null;
+  /** 初月無料の加入か。0円の初回請求を通常の割引と区別する。 */
+  trialApplied: boolean;
 }
 
 /**
@@ -351,6 +381,7 @@ export async function loadPayableCheckout(
       campaignId: pending?.campaignId ?? session.metadata?.campaignId ?? null,
       appliedPercent: pending?.appliedPercent ?? null,
       couponId,
+      trialApplied: false,
     };
   }
 
@@ -383,12 +414,18 @@ export async function loadPayableCheckout(
     campaignId: pending?.campaignId ?? session.metadata?.campaignId ?? null,
     appliedPercent: pending?.appliedPercent ?? null,
     couponId: couponId ?? pending?.stripeCouponId ?? null,
+    // 初月無料は申込時に控えた印を正とする。0円でもクーポンは付かない。
+    trialApplied: pending?.trialApplied ?? false,
   };
 }
 
 export async function fulfillPaidCheckout(session: Stripe.Checkout.Session, userId: string) {
   const payable = await loadPayableCheckout(session, userId);
-  const periodEnd = payable.subscriptionId ? await loadSubscriptionPeriodEnd(payable.subscriptionId) : null;
+  const subscriptionWindow = payable.subscriptionId
+    ? await loadSubscriptionWindow(payable.subscriptionId)
+    : { periodEnd: null, trialEndsAt: null };
+  const periodEnd = subscriptionWindow.periodEnd;
+  const trialEndsAt = subscriptionWindow.trialEndsAt;
   const now = new Date();
   return prisma.$transaction(async (tx) => {
     if (payable.mode === "payment") {
@@ -406,6 +443,8 @@ export async function fulfillPaidCheckout(session: Stripe.Checkout.Session, user
         subscriptionId: payable.subscriptionId,
         periodEnd,
         plan: payable.plan,
+        // 初月無料の加入だけ、無料期間の終了日時を記録する。
+        ...(trialEndsAt ? { trialEndsAt } : {}),
       });
       const listPrice =
         payable.plan === null ? payable.amount : listPriceFor(pricingKindOfPlan(payable.plan));
@@ -419,6 +458,7 @@ export async function fulfillPaidCheckout(session: Stripe.Checkout.Session, user
           amount: payable.amount,
           listAmount: listPrice,
           discountAmount: Math.max(0, listPrice - payable.amount),
+          ...(payable.trialApplied ? { trialApplied: true } : {}),
           ...(payable.paymentIntentId ? { stripePaymentIntentId: payable.paymentIntentId } : {}),
           ...(payable.invoiceId ? { stripeInvoiceId: payable.invoiceId } : {}),
         },
@@ -484,6 +524,8 @@ export async function recordSubscriptionInvoice(
   if (!quota || !invoice.id) return;
 
   let plan: SubscriptionProduct | null = null;
+  // 初月無料の開始時は、クーポンが付かない 0 円の請求になる。
+  let trialing = false;
   if (status === "SUCCEEDED") {
     if ((invoice.currency ?? "").toLowerCase() !== "jpy") return;
     if (typeof invoice.amount_paid !== "number") return;
@@ -491,13 +533,18 @@ export async function recordSubscriptionInvoice(
     const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
     plan = planForPriceId(subscription.items.data[0]?.price?.id);
     if (!plan) return;
+    trialing = subscription.status === "trialing";
     const listPrice = listPriceFor(pricingKindOfPlan(plan));
     if (invoice.amount_paid > listPrice) return;
-    // 定価より安い請求は、このアプリが発行したクーポンが付いているときだけ通す。
-    if (invoice.amount_paid < listPrice && !invoiceHasDiscount(invoice)) return;
+    // 定価より安い請求は、このアプリが発行したクーポンが付いているか、
+    // 初月無料の 0 円請求のときだけ通す。他の 0 円請求は今までどおり拒否する。
+    const isTrialCharge = trialing && invoice.amount_paid === 0;
+    if (invoice.amount_paid < listPrice && !invoiceHasDiscount(invoice) && !isTrialCharge) return;
   }
 
   const amount = status === "SUCCEEDED" ? (invoice.amount_paid ?? 0) : (invoice.amount_due ?? 0);
+  // 初月無料の 0 円請求。あとから通常の割引と混ざらないよう、行に印を残す。
+  const trialApplied = status === "SUCCEEDED" && trialing && amount === 0;
   const paymentIntentId = stripeResourceId(invoice.payment_intent);
   const periodEnd = invoicePeriodEnd(invoice);
   const couponId = invoiceCouponId(invoice);
@@ -527,6 +574,7 @@ export async function recordSubscriptionInvoice(
                 campaignId,
                 appliedPercent,
                 stripeCouponId: couponId,
+                ...(trialApplied ? { trialApplied: true } : {}),
               }
             : {}),
           ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
@@ -554,6 +602,7 @@ export async function recordSubscriptionInvoice(
             appliedPercent: appliedPercent ?? open.appliedPercent,
             stripeCouponId: couponId ?? open.stripeCouponId,
             stripeInvoiceId: invoice.id,
+            ...(trialApplied ? { trialApplied: true } : {}),
             ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
           },
         });
@@ -569,6 +618,7 @@ export async function recordSubscriptionInvoice(
             campaignId,
             appliedPercent,
             stripeCouponId: couponId,
+            trialApplied,
             currency: "jpy",
             stripeInvoiceId: invoice.id,
             stripePaymentIntentId: paymentIntentId,
@@ -587,6 +637,7 @@ export async function recordSubscriptionInvoice(
           campaignId: status === "SUCCEEDED" ? campaignId : null,
           appliedPercent: status === "SUCCEEDED" ? appliedPercent : null,
           stripeCouponId: couponId,
+          trialApplied,
           currency: "jpy",
           stripeInvoiceId: invoice.id,
           stripePaymentIntentId: paymentIntentId,
@@ -600,6 +651,8 @@ export async function recordSubscriptionInvoice(
         customerId,
         subscriptionId,
         periodEnd,
+        // trialing の請求なら無料期間を記録し、通常の更新請求なら消す。
+        ...(trialing ? { trialEndsAt: periodEnd } : { trialEndsAt: null }),
       });
       if (campaignId && appliedPercent) {
         await applyDiscountWindow(tx, {
@@ -640,6 +693,11 @@ export async function syncSubscription(subscription: Stripe.Subscription): Promi
       ...(subscription.current_period_end
         ? { currentPeriodEnd: new Date(subscription.current_period_end * 1000) }
         : {}),
+      // 初月無料は trialing のあいだだけ持つ。終わったら消し、使った印（trialUsedAt）は残す。
+      trialEndsAt:
+        subscription.status === "trialing" && subscription.trial_end
+          ? new Date(subscription.trial_end * 1000)
+          : null,
       // 解約済みなら、終了前の案内はもう要らない。
       ...(nextStatus === "CANCELED"
         ? { pricingCampaignId: null, discountPercent: null, discountEndsAt: null }

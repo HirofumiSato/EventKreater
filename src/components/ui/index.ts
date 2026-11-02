@@ -12,6 +12,7 @@ export { Field } from "./Field";
 export { Loading } from "./Loading";
 export { PageHeader } from "./PageHeader";
 export { Panel, PanelHead } from "./Panel";
+export { PlanCard } from "./PlanCard";
 export { Row, Rows } from "./Rows";
 export { Section, SectionHead } from "./Section";
 export { SemanticThemeScope } from "./SemanticThemeScope";
