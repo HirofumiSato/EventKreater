@@ -16,6 +16,7 @@ import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
 import { REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
+import { REFERRAL_TICKET_GRANT } from "@/modules/billing/lib/tickets";
 import { Alert, Field, Loading, PageHeader } from "@/components/ui";
 
 export type AuthAudience = "organizer" | "participant";
@@ -67,7 +68,7 @@ const COPY: Record<
   },
 };
 
-function AuthEntry({ audience }: { audience: AuthAudience }) {
+function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteName: string | null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const copy = COPY[audience];
@@ -99,10 +100,21 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
 
   // 紹介リンクのコードを30日だけ覚える。登録の入口は主催者・参加者の両方がこの画面なので、
   // 書く場所はここ1か所で足りる（Google のコールバックにも同じオリジンで送られる）。
+  // Cookie へ移したあとは URL から `ref` を落とす。`router.replace` は使わない
+  // （再取得と着地判定を動かさず、表示中の紹介者名も消さないため）。
   useEffect(() => {
     const code = searchParams.get("ref")?.trim();
     if (!code) return;
     document.cookie = `${REFERRAL_COOKIE}=${encodeURIComponent(code)}; path=/; max-age=${REFERRAL_MAX_AGE}; samesite=lax`;
+
+    const rest = new URLSearchParams(searchParams.toString());
+    rest.delete("ref");
+    const query = rest.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+    );
   }, [searchParams]);
 
   useEffect(() => {
@@ -275,6 +287,12 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
             : "パスワードを忘れたときは、確認番号で入れます。"}
         </p>
         <form onSubmit={submit} className="auth-card__body">
+          {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
+          {mode === "register" && inviteName && (
+            <Alert tone="success">
+              {`${inviteName}さんの紹介です。はじめて公開すると、紹介した方にチケット${REFERRAL_TICKET_GRANT}枚が届きます。`}
+            </Alert>
+          )}
           {mode === "register" && (
             <Field label="名前" htmlFor="register-name">
               <input
@@ -521,7 +539,14 @@ function PhoneScreen({
   );
 }
 
-export function AuthEntryScreen({ audience }: { audience: AuthAudience }) {
+export function AuthEntryScreen({
+  audience,
+  inviteName = null,
+}: {
+  audience: AuthAudience;
+  /** 紹介リンクから来たときの紹介者名。取れなければ null。 */
+  inviteName?: string | null;
+}) {
   return (
     <Suspense
       fallback={
@@ -530,7 +555,7 @@ export function AuthEntryScreen({ audience }: { audience: AuthAudience }) {
         </Loading>
       }
     >
-      <AuthEntry audience={audience} />
+      <AuthEntry audience={audience} inviteName={inviteName} />
     </Suspense>
   );
 }

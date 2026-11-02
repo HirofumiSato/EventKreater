@@ -90,7 +90,7 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 `npm run check` / `check:full` / CI は、モックの同期を見ません。同期の判定は `npm run mock:check` を
 明示的に呼んだときだけ働きます。実装 PR をモック待ちで止めないためです。
 
-任意のタイミングで `npm run mock:catchup` を 1 回回すと、全 53 画面を本番ビルドで撮り直し、
+任意のタイミングで `npm run mock:catchup` を 1 回回すと、全 55 画面を本番ビルドで撮り直し、
 最後に `npm run mock:check` で同期を確かめます。`--refresh` / `--no-shots` / `--dev` / `--prod` /
 `--concurrency=N` は `mock:sync` へそのまま渡ります（`--only` は受け付けません）。
 `storage/ui-demo.json` が無ければ `npm run db:seed:ui` を案内して止まります。
@@ -109,7 +109,7 @@ OneDrive 配下なので、ツリーを増やすと `node_modules` と `.next` �
 
 ```powershell
 npm run db:seed:ui   # 初回と、データを作り直すときだけ
-npm run mock:catchup # 追いつき。全 53 画面（30 画面 + 状態）を本番ビルドで撮り、mock:check で確かめる
+npm run mock:catchup # 追いつき。全 55 画面（31 画面 + 状態）を本番ビルドで撮り、mock:check で確かめる
 npm run mock:catchup -- --refresh   # 控え（隠し DOM・CSS・PNG）を使わず取り直す
 npm run mock:sync -- --only=20,24   # 直した画面だけを先に見たいとき。開発サーバーで撮る（本番ビルドをしない）
 npm run mock:check   # 同期の判定だけ（ブラウザも DB も使わない）
@@ -118,7 +118,7 @@ npm run verify       # PR の直前に 1 回（check:full + Sphinx + docs:links�
 
 1. 製品を直す（`src/styles/**` → `src/components/ui/**` → 画面 TSX の順）
 2. 実装 PR ではモックを撮らない。`npm run check:full` と必須チェックが緑になれば出す
-3. 任意のタイミングで `npm run mock:catchup` を回す（全 53 画面・本番ビルド。最後に `mock:check`）
+3. 任意のタイミングで `npm run mock:catchup` を回す（全 55 画面・本番ビルド。最後に `mock:check`）
 4. `style-guide/mock-*.html`・`style-guide/assets/`・`mock-manifest.json`・`mock-index.html` をコミットする
 5. PNG（`storage/mock-shots/`）と控え（`storage/mock-variants/`・`storage/mock-assets.json`）はコミットしない
 

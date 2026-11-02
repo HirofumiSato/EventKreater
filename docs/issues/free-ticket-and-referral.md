@@ -248,7 +248,7 @@ export function ticketExpiresAt(source: FreeTicketSource, issuedAt: Date): Date;
 
 `src/app/mypage/page.tsx` に紹介パネルを1枚。`src/modules/account/components/` に `ReferralPanel.tsx`（新規）。
 
-- 紹介URL（`/auth/register?ref=<code>`）とコピー。
+- 紹介URL（`/invite/<code>`。着地ページから `/auth/register?ref=<code>` へ送る）とコピー。
 - 「紹介した人数」「もらった枚数（10枚まで）」。
 - 共有は既存の `src/modules/organizers/components/LineShareDialog.tsx` の作りを流用する。
 
@@ -275,7 +275,7 @@ export function ticketExpiresAt(source: FreeTicketSource, issuedAt: Date): Date;
 
 合計 6.0日。バッファ1.5日を見て 7.5日（本業と並行なら2.5〜3週間）。
 
-### P1: 台帳（1.5日）
+### P1: 台帳（1.5日）— 実装済み
 
 作るもの:
 
@@ -286,7 +286,7 @@ export function ticketExpiresAt(source: FreeTicketSource, issuedAt: Date): Date;
 
 UI を触らないのでモックの撮り直しは不要。**ここで止めても壊れた状態が残らない。**
 
-### P2: 消費順（1.0日）
+### P2: 消費順（1.0日）— 実装済み
 
 - `src/modules/billing/lib/quota.ts` の `consumeEventQuota` にチケットの判定を挿す。
 - `src/modules/events/lib/events.ts` と `src/modules/events/lib/lifecycle.ts` に `eventId` を渡す。
@@ -295,20 +295,22 @@ UI を触らないのでモックの撮り直しは不要。**ここで止めて
 
 終わった時点で「券があれば公開できる」状態になる。UIが無いだけで機能は生きている。
 
-### P4: 紹介（2.5日）
+### P4: 紹介（2.5日）— 実装済み
 
 1. `prisma/schema.prisma` の `SignupIntent.referralCode` と `User` の2列（P1 と同じマイグレーションに含めてよい）。
-2. **帰属**: `src/modules/auth/lib/cookies.ts` に `ref` cookie（30日、`httpOnly`）を足し、
+2. **帰属**: `src/modules/auth/lib/referral-cookie.ts` の `ref_code`（30日）を、
    `src/app/api/v1/auth/local/route.ts` と `src/app/api/v1/auth/google/callback/route.ts` の両方で読む。
-   **片方だけ直すと Google 登録が漏れる。**
+   **片方だけ直すと Google 登録が漏れる。** Cookie を書くのは登録画面のクライアント（`AuthEntryScreen`）で、
+   サーバーが応答を返す前に書く必要があるため `httpOnly` にできない。値は `readReferralCookie` で形だけに削り、
+   `resolveReferrer` がサーバー側で引き当てる（存在しないコードと退会者はここで落ちる）。書いたあとは URL から `ref` を落とす。
 3. **確定**: `src/modules/auth/lib/phone.ts` の `tx.user.create` の同じトランザクションで
    `referredByUserId` を引き当てる。退会者は紹介者にしない。
 4. **付与**: 初回公開の成功時に `grantReferralTickets(tx, userId)`。`reasonKey` の UNIQUE で冪等。
-5. **API と画面**: 4章のルート、`ReferralPanel.tsx`（新規）、`PricingModal.tsx` のブロック。
+5. **API と画面**: 4章のルート、`ReferralPanel.tsx`、`PricingModal.tsx` のブロック。
 
 モックはこの PR では撮り直しません。実装 PR をモック待ちにしないためです。追いつくときに、別のタイミングで `npm run mock:catchup` を1回回します（`--only` の番号は `style-guide/mock-index.html` で引く）。
 
-### P5: 文書と規約（1.0日）
+### P5: 文書と規約（1.0日）— 実装済み
 
 - `docs/issues/index.rst` の toctree に `free-ticket-and-referral` を足す（無いと Sphinx の検索に出ない）。
 - `docs/DBschema.md`、`docs/backend_api_implementation_spec.md`、`docs/front_implementation_spec.md`。
@@ -388,7 +390,7 @@ API の形は事業者に依存させない。`provider` 列と署名検証を `
 
 ## 12. 未決事項
 
-- **紹介券を被紹介者にも渡すか。** いまは「紹介者に2枚」だけ。被紹介者にも1枚渡すと初回公開の
-  ハードルは下がるが、原価が1枚増える（12円）。P4 に入れる前に決める。
+- **紹介券を被紹介者にも渡すか。** → **渡さない（紹介者のみ2枚）で確定**（2026-11-03）。被紹介者にも1枚渡すと
+  初回公開のハードルは下がるが、原価が1枚増える（12円）。紹介の動機を「相手の初公開」に置く設計を採る。
 - **動画券を加入者に出すか。** 月1枚なら差は0.1ポイントなので、分岐を作らない判断を既定にした。
 - **`free_tickets` の保持期間。** 使用済み行をいつ消すか。当面は消さない（分析に使う）。

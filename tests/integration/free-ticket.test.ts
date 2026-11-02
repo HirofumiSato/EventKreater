@@ -567,7 +567,7 @@ describeDb("紹介の付与（結合）", () => {
     const body = await response.json();
 
     expect(body.code).toMatch(/^[0-9A-Za-z]{8}$/);
-    expect(body.url).toContain(`/auth/register?ref=${body.code}`);
+    expect(body.url).toContain(`/invite/${body.code}`);
     expect(body.invited).toBe(1);
     expect(body.granted).toBe(0);
     expect(body.limit).toBe(10);

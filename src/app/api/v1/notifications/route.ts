@@ -5,28 +5,40 @@ import { toErrorResponse } from "@/lib/http";
 import { MarkNotificationsSchema } from "@/lib/schemas";
 import { requireUserId } from "@/modules/auth/lib/guards";
 import { participantsPath } from "@/modules/notifications/lib/rsvp-notification";
+import { REFERRAL_NOTIFICATION_HREF } from "@/modules/notifications/lib/referral-notification";
+import type { NotificationKind } from "@/modules/notifications/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * 主催者へのアプリ内通知。参加者の出席・参加要望を、名簿を開かなくても気づけるようにする。
+ * 主催者へのアプリ内通知。参加者の出席・参加要望と、紹介でのチケット付与を返す。
  *
  * 自分の行しか読めない・既読にできない。未読数は札のバッジとメニューが出す。
  * 通知の本文は作成時点の文面をそのまま返す（イベント名を後から変えても過去の通知は動かない）。
+ * 行き先は種別で分ける（出欠は名簿、紹介はマイページ）。
  */
 
 const QuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
-/** 1 行を画面の形へ。行き先は `participantsPath` が組み立てる（文面の href と同じ 1 箇所）。 */
+/** 1 行の行き先。出欠は名簿、紹介はマイページ（催しに紐づかない）。 */
+function hrefFor(row: { kind: NotificationKind; eventId: string | null }): string {
+  // 紹介の通知は催しを持たない。催しが無い行も同じくマイページへ送る。
+  if (row.kind === "REFERRAL_GRANTED" || row.eventId === null) {
+    return REFERRAL_NOTIFICATION_HREF;
+  }
+  return participantsPath(row.eventId);
+}
+
+/** 1 行を画面の形へ。行き先は種別で分ける（組み立ては `hrefFor` の 1 箇所）。 */
 function serialize(row: {
   id: string;
-  kind: "RSVP_ATTENDING" | "RSVP_WAITLISTED";
+  kind: NotificationKind;
   title: string;
   body: string;
-  eventId: string;
+  eventId: string | null;
   participantId: string | null;
   readAt: Date | null;
   createdAt: Date;
@@ -38,7 +50,7 @@ function serialize(row: {
     body: row.body,
     eventId: row.eventId,
     participantId: row.participantId,
-    href: participantsPath(row.eventId),
+    href: hrefFor(row),
     readAt: row.readAt ? row.readAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   };

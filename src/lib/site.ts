@@ -51,7 +51,7 @@ export const SITE = {
     /** 下書き（SCR-ORG-15）。主催者の節からは外し、頭文字のメニューが受ける。 */
     organizerDrafts: { href: "/organizer/events/drafts", label: "下書き" },
     /**
-     * 主催者の新着（参加表明・参加要望）。全件は通知一覧（SCR-PUB-15）が受け、
+     * 主催者の新着（参加表明・参加要望・紹介でのチケット付与）。全件は通知一覧（SCR-PUB-15）が受け、
      * マイページの「新着」は 4 件までに留める。
      */
     notifications: { href: "/notifications", label: "通知" },

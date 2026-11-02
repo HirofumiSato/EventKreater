@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 107（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 417
+- 文書から参照されているコードパス: 425
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -23,6 +23,8 @@
 | `prisma/migrations/20261029190000_rsvp_notifications/migration.sql` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `prisma/migrations/20261101150000_organizer_profile_header_image/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
 | `prisma/migrations/20261102180000_first_month_free_trial/migration.sql` | [docs/DBschema.md](DBschema.md) |
+| `prisma/migrations/20261102190000_free_tickets/migration.sql` | [docs/DBschema.md](DBschema.md) |
+| `prisma/migrations/20261103090000_referral_notifications/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
 | `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -226,13 +228,14 @@
 | `src/modules/auth/lib/auth-landing.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/auth-mode.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/auth/lib/auth.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/modules/auth/lib/guards.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/auth/lib/hydrate.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/modules/auth/lib/login-challenge.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/phone.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/auth/lib/rate-limit.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/modules/auth/lib/referral-cookie.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/auth/lib/resend.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/verification.ts` | [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/billing` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
@@ -246,6 +249,7 @@
 | `src/modules/billing/lib/plans.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/billing/lib/pricing.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
+| `src/modules/billing/lib/referral.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/billing/lib/stripe.ts` | [docs/stripe.rst](stripe.rst) |
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
@@ -292,6 +296,7 @@
 | `src/modules/notifications/components/NotificationRows.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/hooks/useNotifications.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/lib/notify.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/modules/notifications/lib/referral-notification.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/notifications/lib/rsvp-notification.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/lib/unread.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/organizers/components/CalendarView.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
@@ -351,6 +356,8 @@
 | `tests/integration/organizers.test.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/participant-party-size.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/referral-invite.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/referral-notification.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-notifications.test.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/subscription-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -408,6 +415,7 @@
 | `tests/unit/publish-confirm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/published-counts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referral-code.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/referral-notification.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referrer.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/resend-cooldown.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |

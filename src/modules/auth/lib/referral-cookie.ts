@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 /**
  * 紹介リンクのコードを覚えておく Cookie。
  *
- * 登録の入口（`/auth/register?ref=...`）でクライアントが書き、確認のときにサーバーが読む。
+ * 紹介の着地ページ（`/invite/<code>`）から来た登録の入口（`/auth/register?ref=...`）で
+ * クライアントが書き、確認のときにサーバーが読む。過去に配った `?ref=` 付きの URL も同じ経路を通る。
  * この画面は httpOnly にできない（サーバー側で応答を返す前に書く場所が無い）ので、
  * 値は必ずサーバー側で引き当てる。存在しないコードと退会者は `resolveReferrer` が弾く。
  */

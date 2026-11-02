@@ -3,7 +3,8 @@ import type { QuotaSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertCanCreateEvent, consumeEventQuota, quotaSourceOf } from "@/modules/billing/lib/quota";
-import { grantReferralTickets } from "@/modules/billing/lib/referral";
+import { grantReferralTickets, type ReferralGrant } from "@/modules/billing/lib/referral";
+import { notifyReferralGranted } from "@/modules/notifications/lib/notify";
 import {
   audiencesForGender,
   composeEventTime,
@@ -435,7 +436,7 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   const isDraft = input.status === "DRAFT";
   const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
-    return await prisma.$transaction(async (tx) => {
+    const { event, referralGrant } = await prisma.$transaction(async (tx) => {
       // チケットを消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
       const consumption = decision ? await decision.consume(tx) : null;
       const quotaSource = consumption ? quotaSourceOf(consumption.type) : null;
@@ -470,7 +471,7 @@ export async function createEventForUser(userId: string, input: CreateEventInput
       }
       // 紹介で登録した人が最初に公開したとき、紹介者へ券を配る。
       // `reasonKey` の UNIQUE で冪等なので、公開のたびに呼んでよい。
-      if (!isDraft) await grantReferralTickets(tx, userId);
+      const referralGrant = isDraft ? null : await grantReferralTickets(tx, userId);
       await tx.eventOrganizer.create({
         data: {
           eventId: event.id,
@@ -483,10 +484,36 @@ export async function createEventForUser(userId: string, input: CreateEventInput
         await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
       }
       // 作成したイベントだけを返す。未登録の幹事トークンは発行しない（応答では常に null）。
-      return { event };
+      return { event, referralGrant };
     });
+    // 通知はコミット後に作る。失敗しても公開は成立させる（`notifyRsvpSubmitted` と同じ扱い）。
+    await notifyReferralGrantedQuietly(referralGrant, userId);
+    return { event };
   } catch (error) {
     mapForeignKey(error);
+  }
+}
+
+/**
+ * 紹介の付与を紹介者へ知らせる。
+ *
+ * 公開のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * **ここで失敗しても公開は成立させる**（`notifyRsvpSubmitted` の呼び出しと同じ扱い）。
+ * 配らなかった（`null`）ときは何もしない。
+ */
+async function notifyReferralGrantedQuietly(
+  grant: ReferralGrant | null,
+  newUserId: string,
+): Promise<void> {
+  if (!grant) return;
+  try {
+    await notifyReferralGranted({
+      referrerId: grant.referrerId,
+      newUserId,
+      granted: grant.granted,
+    });
+  } catch (error) {
+    console.error("紹介の通知に失敗しました", error);
   }
 }
 
@@ -571,7 +598,7 @@ export async function publishDraftEvent(
   eventId: string,
   input: UpdateEventInput | null = null,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const { published, referralGrant } = await prisma.$transaction(async (tx) => {
     const { charged, quotaSource } = await consumeQuotaForDraftPublish(tx, userId, eventId);
     if (input) await syncEventOptions(tx, eventId, input);
     const published = await tx.event.update({
@@ -584,9 +611,12 @@ export async function publishDraftEvent(
       include: { flyerAsset: true, ...eventOptionsInclude },
     });
     // 紹介で登録した人の初回公開。`reasonKey` の UNIQUE で冪等なので毎回呼んでよい。
-    await grantReferralTickets(tx, userId);
-    return published;
+    const referralGrant = await grantReferralTickets(tx, userId);
+    return { published, referralGrant };
   });
+  // 通知はコミット後に作る。失敗しても公開は成立させる。
+  await notifyReferralGrantedQuietly(referralGrant, userId);
+  return published;
 }
 
 /**

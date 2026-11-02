@@ -70,8 +70,16 @@ export async function resolveReferrer(
   });
 }
 
+/** 付与の結果。配らなかったときは `null`（紹介なし・自己紹介・退会・上限・付与済み）。 */
+export interface ReferralGrant {
+  /** チケットを受け取った紹介者。通知の宛先になる。 */
+  referrerId: string;
+  /** 今回配った枚数。 */
+  granted: number;
+}
+
 /**
- * 紹介された人の初回公開で、紹介者にチケットを配る。配った枚数を返す。
+ * 紹介された人の初回公開で、紹介者にチケットを配る。配った相手と枚数を返す。
  *
  * `reasonKey = "referral:<新規userId>:<n>"` の UNIQUE で冪等。何度呼んでも増えない。
  * 生涯上限を超えないよう、紹介者の行を `FOR UPDATE` で押さえてから数える
@@ -80,14 +88,14 @@ export async function resolveReferrer(
 export async function grantReferralTickets(
   tx: Prisma.TransactionClient,
   newUserId: string,
-): Promise<number> {
+): Promise<ReferralGrant | null> {
   const user = await tx.user.findUnique({
     where: { id: newUserId },
     select: { referredByUserId: true },
   });
   const referrerId = user?.referredByUserId;
   // 自己紹介と、紹介なしの登録は配らない。
-  if (!referrerId || isSelfReferral(referrerId, newUserId)) return 0;
+  if (!referrerId || isSelfReferral(referrerId, newUserId)) return null;
 
   await tx.$queryRaw`SELECT id FROM users WHERE id = ${referrerId}::uuid FOR UPDATE`;
 
@@ -95,13 +103,13 @@ export async function grantReferralTickets(
     where: { id: referrerId },
     select: { deletedAt: true },
   });
-  if (!referrer || referrer.deletedAt) return 0;
+  if (!referrer || referrer.deletedAt) return null;
 
   const grantedCount = await tx.freeTicket.count({
     where: { userId: referrerId, source: "REFERRAL" },
   });
   const size = referralGrantSize(grantedCount);
-  if (size === 0) return 0;
+  if (size === 0) return null;
 
   const issuedAt = new Date();
   const expiresAt = ticketExpiresAt("REFERRAL", issuedAt);
@@ -116,7 +124,9 @@ export async function grantReferralTickets(
     })),
     skipDuplicates: true,
   });
-  return created.count;
+  // すでに配った相手なら 0 枚。通知も作らない（呼び出し側は null で判断する）。
+  if (created.count === 0) return null;
+  return { referrerId, granted: created.count };
 }
 
 export interface TicketSummary {

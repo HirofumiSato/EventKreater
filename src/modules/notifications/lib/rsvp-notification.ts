@@ -105,7 +105,7 @@ export function buildRsvpNotification(input: {
 }
 
 /** 上限で切る。絵文字を途中で割らないよう、コードポイント単位で数える。 */
-function trimTo(value: string, max: number): string {
+export function trimTo(value: string, max: number): string {
   const chars = Array.from(value);
   if (chars.length <= max) return value;
   return chars.slice(0, max).join("");

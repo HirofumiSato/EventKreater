@@ -384,8 +384,8 @@ describe("画面の目録", () => {
     const themeRows = screens.filter((row) => row.theme !== undefined);
     // テーマ未選択 1 枚 + 全テーマ 1 枚ずつ。
     expect(themeRows).toHaveLength(SEMANTIC_THEME_IDS.length + 1);
-    // テーマ以外の状態は 43 枚。画面そのものを足したときだけ、この数を直す。
-    expect(expectedFiles()).toHaveLength(43 + themeRows.length);
+    // テーマ以外の状態は 45 枚。画面そのものを足したときだけ、この数を直す。
+    expect(expectedFiles()).toHaveLength(45 + themeRows.length);
   });
 
   it("外した領収書の画面は目録に残らない", () => {

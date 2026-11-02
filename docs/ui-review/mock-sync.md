@@ -10,7 +10,7 @@
 製品の src を変更 → npm run check:full（モックは見ない） → PR → CI 緑（モックは見ない）
 
 【まとめて追いつく（任意のタイミング）】
-npm run mock:catchup → ui-demo.json の確認 → 全 53 画面を本番ビルドで撮る
+npm run mock:catchup → ui-demo.json の確認 → 全 55 画面を本番ビルドで撮る
                      → npm run mock:check（同期の判定） → style-guide/mock-*.html をコミット
                      ↘ storage/mock-shots/*.png（ローカルのみ）
                      ↘ storage/mock-variants/*.json（隠し DOM の控え。ローカルのみ）
@@ -68,7 +68,7 @@ npm run check:full
 # 1. デモデータを用意する（初回と、データを作り直すときだけ）
 npm run db:seed:ui
 
-# 2. 全 53 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる
+# 2. 全 55 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる
 npm run mock:catchup
 
 # 3. style-guide/ 以下と style-guide/assets/ の差分をコミットする
@@ -90,8 +90,8 @@ PNG（`storage/mock-shots/`）はコミットしません。
 
 | コマンド | 何をするか |
 | --- | --- |
-| `npm run mock:catchup` | 追いつき。全 53 画面を本番ビルドで撮り、最後に `mock:check` で確かめる。`--only` は受け付けない |
-| `npm run mock:sync` | 全 53 画面（30 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
+| `npm run mock:catchup` | 追いつき。全 55 画面を本番ビルドで撮り、最後に `mock:check` で確かめる。`--only` は受け付けない |
+| `npm run mock:sync` | 全 55 画面（31 画面 + 状態）。本番ビルドを `.next-ui-prod` に作り、3014 で配って撮る |
 | `npm run mock:sync -- --only=20,24` | No. で絞る（1 画面 5 秒前後）。開発サーバー（3012）で撮る。`--only=04-event-member` でも絞れる |
 | `npm run mock:sync -- --only=20,24 --prod` | 絞った画面を、本番ビルドで撮る（差分確認用） |
 | `npm run mock:sync -- --no-shots` | HTML だけ（PNG を撮らない） |
@@ -114,7 +114,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- |
 | 左下の付箋（開くと「← 画面一覧 / スマホ / PC / HTML / 画面名 / 実装パス」） | `scripts/lib/mock-html.mjs` の `withMockShell` が各 HTML に script を 1 行足し、`style-guide/mock-shell.js` が組み立てる | モック同士を行き来する。既定は閉じていて、付箋を押すと上へ開く。製品には無い |
 | 操作の script（`mock-interactions.js`） | `withMockInteractions` が付箋の script の直後に 1 行足す。中身は `style-guide/mock-interactions.js`（**手で保守する**） | ヘッダーの開閉、日付の選択、ステップの開閉、音声入力、一覧の絞り込み、コピーと遷移。製品は API を呼ぶので、押した結果だけを再現する |
-| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 53 画面の入口。製品には無い |
+| 画面の一覧（`mock-index.html`） | `scripts/lib/mock-index.mjs` の `indexHtml` | 55 画面の入口。製品には無い |
 | 幅の枠（`mock-frame.html`） | `scripts/lib/mock-frame.mjs` の `frameHtml` | 390 / 1280 を iframe で切り替える。製品には無い |
 
 付箋の script は `sanitizeHtml` の**あと**に足します。先に足すと、製品側の `<script>` を落とす処理に
@@ -184,7 +184,7 @@ PNG（`storage/mock-shots/`）はコミットしません。
 | --- | --- | --- | --- |
 | 断片 | `storage/mock-variants/<画面>.json` | 日付・ステップを押して集める往復（1 画面 1〜6 秒） | 合成前の HTML の指紋（`sourceHash`）が変わったとき。`--refresh` でも捨てる |
 | CSS | `storage/mock-assets.json`（`{ uiHash, stylesheets }`） | 同じ CSS を画面ごとに取り直す往復 | `uiHash` が変わったとき。`--refresh` でも捨てる |
-| 素材（同一実行内） | メモリの表 | 同じ画像を 53 画面ぶん取り直す往復 | 実行が終われば消える |
+| 素材（同一実行内） | メモリの表 | 同じ画像を 55 画面ぶん取り直す往復 | 実行が終われば消える |
 | PNG | `storage/mock-shots/*.png` | 変化の無い画面の 390 / 1280 撮影 | 生成した HTML が既存ファイルと違うとき、PNG が欠けているとき、`--refresh` |
 
 DB やデモデータが変われば画面上の DOM も変わるので、断片の控えは自然に外れます。画像だけが

@@ -65,15 +65,21 @@ describe("紹介券の理由キー", () => {
 });
 
 describe("紹介リンク", () => {
-  it("登録の入口を指す", () => {
+  it("紹介の着地ページを指す（登録画面へ直接送らない）", () => {
     expect(referralUrl("https://example.com", "x7Kd2mQp")).toBe(
-      "https://example.com/auth/register?ref=x7Kd2mQp",
+      "https://example.com/invite/x7Kd2mQp",
     );
   });
 
   it("末尾のスラッシュが重ならない", () => {
     expect(referralUrl("https://example.com/", "x7Kd2mQp")).toBe(
-      "https://example.com/auth/register?ref=x7Kd2mQp",
+      "https://example.com/invite/x7Kd2mQp",
+    );
+  });
+
+  it("コードは URL に載せても壊れない形に包む", () => {
+    expect(referralUrl("https://example.com", "x7Kd 2mQp")).toBe(
+      "https://example.com/invite/x7Kd%202mQp",
     );
   });
 });
