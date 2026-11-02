@@ -2715,6 +2715,12 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
   "publishedEventLimit": 8,
   "remainingPublished": 5,
   "freeGrantRemaining": 1,
+  "tickets": {
+    "available": 2,
+    "expiringAt": "2026-12-02T00:00:00.000Z",
+    "ad": { "nextGrantAt": null },
+    "referral": { "code": "x7Kd2mQp", "grantedCount": 2, "limit": 10 }
+  },
   "trial": { "endsAt": "2026-11-21T00:00:00.000Z" },
   "trialEligible": false,
   "discount": {
@@ -2727,6 +2733,8 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 ```
 
 `trial` は `trial_ends_at` が未来のときだけ `{ "endsAt": <ISO 8601> }`、それ以外は `null`。`trialEligible` は「加入中でなく、まだ初月無料を使っていない」ときだけ `true`（`resolveTrial` の判定）。`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り回数で、対象キャンペーンが無ければ 0。
+
+`tickets` は期限つきの無料チケット（`free_tickets`）の残りで、`freeGrantRemaining` とは別物。`available` は期限内で未使用の枚数、`expiringAt` はそのうち最も早い期限（1 枚も無ければ `null`）。`ad.nextGrantAt` は次の動画券を配れる日時（すぐ配れるなら `null`）。`referral.grantedCount` はこの人が紹介で配った枚数、`limit` は生涯上限（10）。`canCreate` は `available` が 1 以上でも `true` になる。
 
 ### 11.7. POST `/api/v1/billing/checkout/one-time` の 0 円分岐
 

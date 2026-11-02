@@ -436,7 +436,8 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   try {
     return await prisma.$transaction(async (tx) => {
       // 枠を消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
-      const quotaSource = decision ? quotaSourceOf(await decision.consume(tx)) : null;
+      const consumption = decision ? await decision.consume(tx) : null;
+      const quotaSource = consumption ? quotaSourceOf(consumption.type) : null;
       const referrerEventId = await resolveReferrerEventId(tx, input.referrerEventId);
       const event = await tx.event.create({
         data: {
@@ -459,6 +460,13 @@ export async function createEventForUser(userId: string, input: CreateEventInput
         },
         include: { flyerAsset: true, ...eventOptionsInclude },
       });
+      // 即公開はイベント行より先に枠を消費する。使った券があったら、できたイベントを結ぶ。
+      if (consumption?.ticketId) {
+        await tx.freeTicket.update({
+          where: { id: consumption.ticketId },
+          data: { eventId: event.id },
+        });
+      }
       await tx.eventOrganizer.create({
         data: {
           eventId: event.id,
@@ -546,7 +554,7 @@ export async function consumeQuotaForDraftPublish(
     });
   }
   if (row.quota_charged_at) return { charged: false, quotaSource: null };
-  const type = await consumeEventQuota(tx, userId);
+  const { type } = await consumeEventQuota(tx, userId, eventId);
   return { charged: true, quotaSource: quotaSourceOf(type) };
 }
 

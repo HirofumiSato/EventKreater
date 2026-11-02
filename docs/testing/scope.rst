@@ -147,7 +147,7 @@
 
 .. count-start
 
-93 ファイル、``it`` は 1232 件です。内訳は ``tests/unit/`` が 70 ファイル 1065 件、``tests/integration/`` が 20 ファイル 130 件です。結合の 130 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+93 ファイル、``it`` は 1240 件です。内訳は ``tests/unit/`` が 70 ファイル 1065 件、``tests/integration/`` が 20 ファイル 138 件です。結合の 138 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -248,8 +248,8 @@
      - 無料期間中（``ACTIVE``・``trial_ends_at`` が未来）もイベントを公開でき、無料枠と単発クレジットを減らさないこと。``trial_used_at`` がある会員と支払済みの月額がある会員は再加入でも対象外になること。``GET /api/v1/billing/quota`` が ``trial`` と ``trialEligible`` を返すこと。通知バッチが無料期間を拾い、3 日前と 1 日前に 1 回ずつ送り、同じ ``period_end`` では再送しないこと
      - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/integration/free-ticket.test.ts``
-     - 7
-     - 同じ ``reason_key`` では 2 枚目を作れない（紹介の二重付与を UNIQUE で止める）、期限切れの券は残っていても選ばれない、期限切れの券には使用の印を立てられない（``usedAt: null`` と ``expiresAt > now`` を更新の条件にする）、同じ券を 2 回消費できない、紹介の数え上げが生涯上限に達したら配らない、会員を消すと券も消える、紹介コードは一意で誰の紹介かは 1 度だけ決まる
+     - 15
+     - 同じ ``reason_key`` では 2 枚目を作れない、期限切れの券は選ばれない、期限を条件にしないと使用の印を立てられない、同じ券を 2 回消費できない、紹介の数え上げが生涯上限に達したら配らない、会員を消すと券も消える、紹介コードは一意で誰の紹介かは 1 度だけ決まる。消費順は「券が単発クレジットより先」「期限切れの券は飛ばす」「8 件プランが満杯でも券で 1 件だけ通る」「期限が近い券から使う」。チケット経由の公開も ``quota_source`` は ``PAID_CREDIT`` で、下書きの公開と即公開のどちらでも ``free_tickets.event_id`` が埋まる。``GET /api/v1/billing/quota`` が ``tickets`` を返し、券があれば ``canCreate`` が真になる
      - SCR-MOD-01 / SCR-PUB-06
    * - ``tests/unit/rsvp-notification.test.ts``
      - 23
@@ -534,7 +534,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1065、``tests/integration/`` が 130 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1065 件を実行して 130 件を skip します。
+件数の内訳は ``tests/unit/`` が 1065、``tests/integration/`` が 138 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1065 件を実行して 138 件を skip します。
 
 .. breakdown-end
 

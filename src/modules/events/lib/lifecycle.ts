@@ -42,7 +42,9 @@ export function assertCanReopenEvent(event: { status: string }): void {
  */
 export async function reopenEvent(userId: string | null, eventId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const quotaSource = userId ? quotaSourceOf(await consumeEventQuota(tx, userId)) : null;
+    const quotaSource = userId
+      ? quotaSourceOf((await consumeEventQuota(tx, userId, eventId)).type)
+      : null;
     await tx.event.update({
       where: { id: eventId },
       data: {

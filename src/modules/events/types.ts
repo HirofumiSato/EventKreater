@@ -59,6 +59,27 @@ export interface ActiveTrial {
 /** 加入中の定額プラン。NONE は未加入。 */
 export type UserSubscriptionPlan = "NONE" | "MONTHLY_8" | "UNLIMITED";
 
+/**
+ * 期限つきの無料チケットの残り。`freeGrantRemaining`（0円キャンペーンの残り）とは別物。
+ * `expiringAt` は残りのうち最も早い期限。1枚も無ければ null。
+ */
+export interface UserQuotaTickets {
+  available: number;
+  expiringAt: string | null;
+  ad: {
+    /** 次の動画券を配れる日時。すぐ配れるなら null。 */
+    nextGrantAt: string | null;
+  };
+  referral: {
+    /** 紹介URLのコード。まだ作っていなければ null。 */
+    code: string | null;
+    /** 紹介で受け取った枚数。 */
+    grantedCount: number;
+    /** 紹介で受け取れる生涯の上限。 */
+    limit: number;
+  };
+}
+
 export interface UserQuota {
   freeEventCount: number;
   freeLimit: number;
@@ -93,6 +114,8 @@ export interface UserQuota {
   };
   /** 0円の単発チケットを、この人があと何回受け取れるか。 */
   freeGrantRemaining?: number;
+  /** 期限つきの無料チケットの残り。 */
+  tickets?: UserQuotaTickets;
   /** 適用中の月額割引（無料期間を含む）。 */
   discount?: ActiveDiscount | null;
   /**

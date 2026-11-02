@@ -113,9 +113,20 @@ export type QuotaPlanType =
   | "PAID_CREDIT"
   | "FREE_TRIAL";
 
+/**
+ * 枠を1つ消費した結果。
+ *
+ * `ticketId` は、期限つきの無料チケットで通したときだけ入る。即公開はイベント行より先に
+ * 枠を消費するので、作成後に `free_tickets.event_id` を結ぶために呼び出し側へ返す。
+ */
+export interface QuotaConsumption {
+  type: QuotaPlanType;
+  ticketId: string | null;
+}
+
 export interface QuotaDecision {
   type: QuotaPlanType;
-  consume: (tx: Prisma.TransactionClient) => Promise<QuotaPlanType>;
+  consume: (tx: Prisma.TransactionClient) => Promise<QuotaConsumption>;
 }
 
 export function isSubscriptionActive(
@@ -266,16 +277,48 @@ async function lockQuotaRow(tx: Prisma.TransactionClient, userId: string): Promi
 }
 
 /**
+ * 期限内のチケットを1枚だけ使い、その id を返す。無ければ null。
+ *
+ * `lockQuotaRow` の内側で呼ぶこと。判定と更新を1つの条件で行い、
+ * 同時押しで同じ券を2回使わないようにする（`usedAt: null` と `expiresAt > now`）。
+ * 期限が最も近い券から使うのは、期限切れで捨てる枚数を減らすため。
+ */
+async function claimFreeTicket(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  now: Date,
+  eventId: string | null,
+): Promise<{ id: string } | null> {
+  const candidate = await tx.freeTicket.findFirst({
+    where: { userId, usedAt: null, expiresAt: { gt: now } },
+    orderBy: [{ expiresAt: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+  if (!candidate) return null;
+
+  const claimed = await tx.freeTicket.updateMany({
+    where: { id: candidate.id, usedAt: null, expiresAt: { gt: now } },
+    data: { usedAt: now, ...(eventId ? { eventId } : {}) },
+  });
+  return claimed.count === 1 ? candidate : null;
+}
+
+/**
  * 枠を1つ消費する。公開の直前に、イベントと同じトランザクションで呼ぶ。
  *
+ * 消費順は「定額 → チケット（期限が近い順） → 単発クレジット → 無料枠」。
  * 月額で8件まで公開プランは、公開中のイベントが上限未満なら通す。
- * 上限に達していても単発クレジットがあれば、そちらを1つ使って通す。
+ * 上限に達していても単発クレジットかチケットがあれば、そちらを1つ使って通す。
  * 公開し放題は件数を数えない。
+ *
+ * `eventId` はチケットにイベントを結ぶためだけに使う。まだイベント行が無い
+ * 即公開の経路では null を渡し、作成できた時点で呼び出し側が結ぶ。
  */
 export async function consumeEventQuota(
   tx: Prisma.TransactionClient,
   userId: string,
-): Promise<QuotaPlanType> {
+  eventId: string | null = null,
+): Promise<QuotaConsumption> {
   await lockQuotaRow(tx, userId);
   const quota = await tx.userUsageQuota.findUniqueOrThrow({ where: { userId } });
   const now = new Date();
@@ -296,18 +339,26 @@ export async function consumeEventQuota(
   );
 
   if (subscriptionActive) {
-    if (quota.subscriptionPlan !== "MONTHLY_8") return "SUBSCRIPTION_UNLIMITED";
+    if (quota.subscriptionPlan !== "MONTHLY_8") {
+      return { type: "SUBSCRIPTION_UNLIMITED", ticketId: null };
+    }
 
     const published = await countPublishedSubscriptionEvents(tx, userId, now);
-    if (published < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT) return "SUBSCRIPTION_MONTHLY_8";
+    if (published < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT) {
+      return { type: "SUBSCRIPTION_MONTHLY_8", ticketId: null };
+    }
   }
+
+  // 期限がある券を、期限の無い単発クレジットより先に使う。後ろに置くと期限切れで捨てる。
+  const ticket = await claimFreeTicket(tx, userId, now, eventId);
+  if (ticket) return { type: "PAID_CREDIT", ticketId: ticket.id };
 
   if (quota.paidCredits >= 1) {
     await tx.userUsageQuota.update({
       where: { userId },
       data: { paidCredits: { decrement: 1 } },
     });
-    return "PAID_CREDIT";
+    return { type: "PAID_CREDIT", ticketId: null };
   }
 
   // 無料枠は加入前のためのもの。8件プランの上限に達した人が無料枠で抜け道を作らない。
@@ -317,7 +368,7 @@ export async function consumeEventQuota(
       where: { userId },
       data: { freeEventCount: { increment: 1 } },
     });
-    return "FREE_TRIAL";
+    return { type: "FREE_TRIAL", ticketId: null };
   }
 
   const capped = subscriptionActive && quota.subscriptionPlan === "MONTHLY_8";
@@ -355,12 +406,27 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
       SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
   const subscriptionOk = subscriptionActive && !capped;
   const creditOk = quota.paidCredits >= 1;
+  // 期限内のチケットも1回分として数える。数えないと、券を持っているのに
+  // 「作成できない」と表示され、402 の画面へ誘導されてしまう。
+  // 定額か単発クレジットで通るなら数える必要がないので、そのときは問い合わせない。
+  const ticketOk =
+    !subscriptionOk &&
+    !creditOk &&
+    (await prisma.freeTicket.count({
+      where: { userId, usedAt: null, expiresAt: { gt: now } },
+    })) > 0;
   // 無料枠は加入前のためのもの。加入中は、上限に達しても無料枠では抜けない。
   const freeOk = !subscriptionActive && quota.freeEventCount < FREE_EVENT_LIMIT;
-  if (!subscriptionOk && !creditOk && freeOk && !(await hasVerifiedPhone(prisma, userId))) {
+  if (
+    !subscriptionOk &&
+    !creditOk &&
+    !ticketOk &&
+    freeOk &&
+    !(await hasVerifiedPhone(prisma, userId))
+  ) {
     throw phoneRequired();
   }
-  if (!subscriptionOk && !creditOk && !freeOk) {
+  if (!subscriptionOk && !creditOk && !ticketOk && !freeOk) {
     const pricing = await loadPricingOptions(now);
     throw capped ? publishedEventsFull(pricing) : quotaExceeded(undefined, pricing);
   }
@@ -369,7 +435,7 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     ? quota.subscriptionPlan === "MONTHLY_8"
       ? "SUBSCRIPTION_MONTHLY_8"
       : "SUBSCRIPTION_UNLIMITED"
-    : creditOk
+    : creditOk || ticketOk
       ? "PAID_CREDIT"
       : "FREE_TRIAL";
 

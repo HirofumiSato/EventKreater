@@ -12,6 +12,7 @@ import {
 } from "@/modules/billing/lib/quota";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
+import { REFERRAL_TICKET_LIMIT, nextAdGrantAt } from "@/modules/billing/lib/tickets";
 import { resolveTrial } from "@/modules/billing/lib/trial";
 
 export const runtime = "nodejs";
@@ -26,7 +27,10 @@ export async function GET(req: NextRequest) {
         where: { userId },
         include: { pricingCampaign: { select: { id: true, name: true } } },
       }),
-      prisma.user.findUnique({ where: { id: userId }, select: { phoneVerifiedAt: true } }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { phoneVerifiedAt: true, referralCode: true },
+      }),
       loadActiveCampaigns(now),
     ]);
     if (!quota) {
@@ -51,12 +55,31 @@ export async function GET(req: NextRequest) {
       ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
       : null;
     const capped = countedPlan && (remainingPublished ?? 0) === 0;
+
+    // 期限つきの無料チケット。残数は `freeGrantRemaining`（0円キャンペーンの残り）と混ぜない。
+    const [ticketRows, lastAdTicket, referralGrantedCount] = await Promise.all([
+      prisma.freeTicket.findMany({
+        where: { userId, usedAt: null, expiresAt: { gt: now } },
+        orderBy: { expiresAt: "asc" },
+        select: { expiresAt: true },
+      }),
+      prisma.freeTicket.findFirst({
+        where: { userId, source: "AD" },
+        orderBy: { issuedAt: "desc" },
+        select: { issuedAt: true },
+      }),
+      prisma.freeTicket.count({ where: { grantedByUserId: userId, source: "REFERRAL" } }),
+    ]);
+    const ticketAvailable = ticketRows.length;
+    const nextGrantAt = lastAdTicket ? nextAdGrantAt(lastAdTicket.issuedAt, now) : null;
+
     // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられないので、
-    // 未加入のときだけ canCreate に数える。
+    // 未加入のときだけ canCreate に数える。チケットは加入中でも1回分として数える。
     const canCreate =
       quota.subscriptionStatus !== "PAST_DUE" &&
       ((isSubActive && !capped) ||
         quota.paidCredits > 0 ||
+        ticketAvailable > 0 ||
         (!isSubActive && remainingFree > 0 && phoneVerified));
 
     let planType:
@@ -120,6 +143,16 @@ export async function GET(req: NextRequest) {
       phoneVerified,
       pricing,
       freeGrantRemaining,
+      tickets: {
+        available: ticketAvailable,
+        expiringAt: ticketRows[0]?.expiresAt.toISOString() ?? null,
+        ad: { nextGrantAt: nextGrantAt ? nextGrantAt.toISOString() : null },
+        referral: {
+          code: user?.referralCode ?? null,
+          grantedCount: referralGrantedCount,
+          limit: REFERRAL_TICKET_LIMIT,
+        },
+      },
       discount,
       trial,
       trialEligible,
