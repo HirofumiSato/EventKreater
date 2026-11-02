@@ -344,7 +344,7 @@ export const CreateEventSchema = eventBodySchema
       .nullish()
       .transform((value) => (value ? value : null)),
     /**
-     * 作成時の公開状態。枠が無いときに下書きとして保存し、購入後に公開する。
+     * 作成時の公開状態。チケットが無いときに下書きとして保存し、購入後に公開する。
      * 未指定は従来どおり即公開。Zod は未定義キーを捨てるため、ここで明示する。
      */
     status: z.enum(["DRAFT", "PUBLISHED"]).default("PUBLISHED"),

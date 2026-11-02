@@ -374,7 +374,7 @@ export async function ensureCampaignCoupon(
   }
 }
 
-/** 0円の単発チケットを、この人があと何回受け取れるか。 */
+/** 0円の単発チケットを、この人があと何枚受け取れるか。 */
 export async function remainingFreeGrants(
   userId: string,
   campaignId: string,

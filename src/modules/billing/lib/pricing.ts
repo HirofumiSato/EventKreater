@@ -56,7 +56,7 @@ export interface PricingQuote {
   campaignName: string | null;
   campaignVersion: number | null;
   campaignEndsAt: string | null;
-  /** 0円の単発を1人が受け取れる回数。キャンペーン外は null。 */
+  /** 0円の単発を1人が受け取れる枚数。キャンペーン外は null。 */
   freePerUserLimit: number | null;
 }
 

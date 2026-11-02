@@ -142,7 +142,7 @@ export default function MyPage() {
   }
 
   // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
-  // 月額プラン（上限に数える）とチケット（単発・無料枠。上限の外）に分ける。
+  // 月額プラン（上限に数える）とチケット（単発・無料チケット。上限の外）に分ける。
   // 参加の人数は出さない。直近のイベントの行と名簿が持ち、ここに置くと二重になる。
   const publishedCounts = countPublishedBySource(events, todayInTokyo());
 

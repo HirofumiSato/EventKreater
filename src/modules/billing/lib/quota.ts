@@ -114,10 +114,10 @@ export type QuotaPlanType =
   | "FREE_TRIAL";
 
 /**
- * 枠を1つ消費した結果。
+ * チケットを1枚消費した結果。
  *
  * `ticketId` は、期限つきの無料チケットで通したときだけ入る。即公開はイベント行より先に
- * 枠を消費するので、作成後に `free_tickets.event_id` を結ぶために呼び出し側へ返す。
+ * チケットを消費するので、作成後に `free_tickets.event_id` を結ぶために呼び出し側へ返す。
  */
 export interface QuotaConsumption {
   type: QuotaPlanType;
@@ -146,7 +146,7 @@ export function jstToday(now: Date): Date {
   return new Date(Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()));
 }
 
-/** どの利用枠で消費したかを、イベントに残す値へ写す。 */
+/** どのチケットで消費したかを、イベントに残す値へ写す。 */
 export function quotaSourceOf(type: QuotaPlanType): QuotaSource {
   switch (type) {
     case "FREE_TRIAL":
@@ -164,7 +164,7 @@ export function quotaSourceOf(type: QuotaPlanType): QuotaSource {
  *
  * 数えるのは、公開済みで、削除されておらず、開催日が今日以降のもの。
  * 受付を一時停止（CLOSED）したものは、告知ページが残っていても数えない。
- * 単発と無料枠で公開したものは枠の外なので含めない。
+ * 単発チケットと無料チケットで公開したものは件数に数えないので含めない。
  */
 export async function countPublishedSubscriptionEvents(
   db: Prisma.TransactionClient | typeof prisma,
@@ -185,7 +185,7 @@ export async function countPublishedSubscriptionEvents(
 /**
  * 画面に出す「公開中のイベント」の件数。
  *
- * 枠の判定（`countPublishedSubscriptionEvents`）と違い、どの枠から公開したものも数える。
+ * 件数の上限の判定（`countPublishedSubscriptionEvents`）と違い、どのチケットから公開したものも数える。
  * 公開し放題と未加入の帯にも件数を出すため。数える範囲は同じで、公開済み・未削除・
  * 開催日が今日以降・自分の筆頭幹事のものだけ。
  */
@@ -221,7 +221,7 @@ export function quotaExceeded(
     type: "probs/quota-exceeded",
     detail:
       detail ??
-      `無料の${FREE_EVENT_LIMIT}回を使い切りました。単発 ${yen(single)} ／ 月額8件 ${yen(monthly8)} ／ 放題 ${yen(unlimited)} から選べます。`,
+      `無料チケット${FREE_EVENT_LIMIT}枚を使い切りました。単発 ${yen(single)} ／ 月額8件 ${yen(monthly8)} ／ 放題 ${yen(unlimited)} から選べます。`,
     error: "QUOTA_EXCEEDED",
     pricingOptions: pricing,
   });
@@ -247,7 +247,7 @@ function phoneRequired(): ProblemDetailException {
   return new ProblemDetailException({
     status: 403,
     title: "Forbidden",
-    detail: "無料枠を使うには電話番号の確認が必要です。会員登録で確認してください。",
+    detail: "無料チケットを使うには電話番号の確認が必要です。会員登録で確認してください。",
     error: "PHONE_REQUIRED",
   });
 }
@@ -271,7 +271,7 @@ async function lockQuotaRow(tx: Prisma.TransactionClient, userId: string): Promi
     throw new ProblemDetailException({
       status: 404,
       title: "Quota Not Found",
-      detail: "主催者の利用枠情報が存在しません。",
+      detail: "主催者のチケット情報が存在しません。",
     });
   }
 }
@@ -304,11 +304,11 @@ async function claimFreeTicket(
 }
 
 /**
- * 枠を1つ消費する。公開の直前に、イベントと同じトランザクションで呼ぶ。
+ * チケットを1枚消費する。公開の直前に、イベントと同じトランザクションで呼ぶ。
  *
- * 消費順は「定額 → チケット（期限が近い順） → 単発クレジット → 無料枠」。
+ * 消費順は「定額 → チケット（期限が近い順） → 単発クレジット → 無料チケット」。
  * 月額で8件まで公開プランは、公開中のイベントが上限未満なら通す。
- * 上限に達していても単発クレジットかチケットがあれば、そちらを1つ使って通す。
+ * 上限に達していても単発クレジットかチケットがあれば、そちらを1枚使って通す。
  * 公開し放題は件数を数えない。
  *
  * `eventId` はチケットにイベントを結ぶためだけに使う。まだイベント行が無い
@@ -361,7 +361,7 @@ export async function consumeEventQuota(
     return { type: "PAID_CREDIT", ticketId: null };
   }
 
-  // 無料枠は加入前のためのもの。8件プランの上限に達した人が無料枠で抜け道を作らない。
+  // 無料チケットは加入前のためのもの。8件プランの上限に達した人が無料チケットで抜け道を作らない。
   if (!subscriptionActive && quota.freeEventCount < FREE_EVENT_LIMIT) {
     if (!(await hasVerifiedPhone(tx, userId))) throw phoneRequired();
     await tx.userUsageQuota.update({
@@ -381,7 +381,7 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     throw new ProblemDetailException({
       status: 404,
       title: "Quota Not Found",
-      detail: "主催者の利用枠情報が存在しません。",
+      detail: "主催者のチケット情報が存在しません。",
     });
   }
 
@@ -406,7 +406,7 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
       SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
   const subscriptionOk = subscriptionActive && !capped;
   const creditOk = quota.paidCredits >= 1;
-  // 期限内のチケットも1回分として数える。数えないと、券を持っているのに
+  // 期限内のチケットも1枚として数える。数えないと、券を持っているのに
   // 「作成できない」と表示され、402 の画面へ誘導されてしまう。
   // 定額か単発クレジットで通るなら数える必要がないので、そのときは問い合わせない。
   const ticketOk =
@@ -415,7 +415,7 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     (await prisma.freeTicket.count({
       where: { userId, usedAt: null, expiresAt: { gt: now } },
     })) > 0;
-  // 無料枠は加入前のためのもの。加入中は、上限に達しても無料枠では抜けない。
+  // 無料チケットは加入前のためのもの。加入中は、上限に達しても無料チケットでは抜けない。
   const freeOk = !subscriptionActive && quota.freeEventCount < FREE_EVENT_LIMIT;
   if (
     !subscriptionOk &&

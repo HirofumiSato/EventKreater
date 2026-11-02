@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       throw new ProblemDetailException({
         status: 404,
         title: "Quota Not Found",
-        detail: "主催者の利用枠情報が存在しません。",
+        detail: "主催者のチケット情報が存在しません。",
         error: "QUOTA_NOT_FOUND",
       });
     }
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
     const phoneVerified = Boolean(user?.phoneVerifiedAt);
     // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
-    // 残りの計算と食い違わないよう、枠の判定と同じ数え方（定額から公開したものだけ）にする。
+    // 残りの計算と食い違わないよう、件数の上限の判定と同じ数え方（定額から公開したものだけ）にする。
     const countedPlan = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
     const publishedCount = countedPlan
       ? await countPublishedSubscriptionEvents(prisma, userId, now)
@@ -57,8 +57,8 @@ export async function GET(req: NextRequest) {
     const tickets = await readTicketSummary(userId, now);
     const ticketAvailable = tickets.available;
 
-    // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられないので、
-    // 未加入のときだけ canCreate に数える。チケットは加入中でも1回分として数える。
+    // 無料チケットは加入前のためのもの。加入中は上限に達しても無料チケットでは抜けられないので、
+    // 未加入のときだけ canCreate に数える。チケットは加入中でも1枚として数える。
     const canCreate =
       quota.subscriptionStatus !== "PAST_DUE" &&
       ((isSubActive && !capped) ||
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 
     const pricing = quoteAll(campaigns, now);
 
-    // 0円の単発チケットを、この人があと何回受け取れるか。
+    // 0円の単発チケットを、この人があと何枚受け取れるか。
     let freeGrantRemaining = 0;
     if (pricing.oneTime.chargedPrice === 0 && pricing.oneTime.campaignId) {
       const used = await prisma.billingTransaction.count({

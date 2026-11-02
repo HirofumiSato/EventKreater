@@ -1,10 +1,10 @@
-# 枠超過時のサーバー下書きと、下書き公開 API を追加する
+# チケット超過時のサーバー下書きと、下書き公開 API を追加する
 
-> 枠（クォータ）を使い切った主催者が新規作成で 402 になったとき、入力内容を失わずに購入後へ復帰できるようにする issue。画面遷移側は [organizer-home-screen-flow.md](organizer-home-screen-flow.md)。
+> チケット（クォータ）を使い切った主催者が新規作成で 402 になったとき、入力内容を失わずに購入後へ復帰できるようにする issue。画面遷移側は [organizer-home-screen-flow.md](organizer-home-screen-flow.md)。
 
 ## 背景
 
-新規作成画面（`/organizer/events/new`）で「作成」を押したとき、枠が無いと `402 QUOTA_EXCEEDED` が返る。現状は `PricingModal` を開くだけで、入力中のフォームは保存されない。購入後に `/organizer/events/new` へ戻っても内容は空になり、参加者はもう一度入力し直すことになる。
+新規作成画面（`/organizer/events/new`）で「作成」を押したとき、チケットが無いと `402 QUOTA_EXCEEDED` が返る。現状は `PricingModal` を開くだけで、入力中のフォームは保存されない。購入後に `/organizer/events/new` へ戻っても内容は空になり、参加者はもう一度入力し直すことになる。
 
 Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で、どの入力を復元すべきかの手がかりが無い。
 
@@ -15,17 +15,17 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
 | 論点 | 決定 |
 | :---- | :---- |
 | 復元の方法 | サーバー側に `status = "DRAFT"` のイベントを作り、`draftId` を Checkout の `metadata` と戻り URL に載せる |
-| 下書き作成時の枠 | 消費しない。`assertCanCreateEvent` を呼ばずに作る |
-| 公開時の枠 | `POST /api/v1/organizer/events/[id]/publish` で、`DRAFT → PUBLISHED` と枠消費を1つのトランザクションで行う |
+| 下書き作成時のチケット | 消費しない。`assertCanCreateEvent` を呼ばずに作る |
+| 公開時のチケット | `POST /api/v1/organizer/events/[id]/publish` で、`DRAFT → PUBLISHED` とチケット消費を1つのトランザクションで行う |
 | 公開 API のロック | 要求しない。作成画面はロック機構を持たないため |
-| 二重公開 | `DRAFT` 以外は 409。二重に枠を消費しない |
+| 二重公開 | `DRAFT` 以外は 409。二重にチケットを消費しない |
 | ゲストの下書き | 不可。403 `REGISTER_REQUIRED` を返し、会員登録へ送る |
 | 編集画面の 402 | `PricingModal` を出し、`returnTo=/organizer/events/[id]/edit` で戻す |
 | 複製の 402 | 下書きを作らない。ORG-01 に留まり、購入後にもう一度「コピー作成」 |
 | `returnTo` の許可範囲 | `/mypage`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit` のみ |
 | `draftId` の所有確認 | Checkout 作成時に、そのイベントが本人の `DRAFT` であることを検証する。他人のものは 403 |
 | 下書きの `publicUrl` | `null` を返す |
-| 放置された下書き | 枠は消費しない。削除しても枠は戻らない |
+| 放置された下書き | チケットは消費しない。削除してもチケットは戻らない |
 
 ## フロー
 
@@ -37,7 +37,7 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
   → Stripe success_url に draftId と returnTo
   → /organizer/events/new?session_id=…&draftId=…
   → verify で復元
-  → POST /api/v1/organizer/events/[draftId]/publish（ここで枠を消費）
+  → POST /api/v1/organizer/events/[draftId]/publish（ここでチケットを消費）
   → 公開完了
 
 [複製]
@@ -62,7 +62,7 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
   - `createEventForUser`: `DRAFT` のときは `assertCanCreateEvent` を呼ばない。
   - `createEventForGuest`: `DRAFT` は 403 `REGISTER_REQUIRED`。
   - `createdEventBody`: `DRAFT` のとき `publicUrl: null`。
-  - `publishDraftEvent(userId, eventId, input)`: 筆頭幹事（`OWNER`）と `DRAFT` を確認し、`quota_charged_at` が未設定なら `consumeEventQuota` で枠を1つ消費して公開する。1トランザクションで行い、枠が無ければ 402、公開済みなら 409。入力が付いていれば公開と同時に保存する。
+  - `publishDraftEvent(userId, eventId, input)`: 筆頭幹事（`OWNER`）と `DRAFT` を確認し、`quota_charged_at` が未設定なら `consumeEventQuota` でチケットを1枚消費して公開する。1トランザクションで行い、チケットが無ければ 402、公開済みなら 409。入力が付いていれば公開と同時に保存する。
 - `src/app/api/v1/public/events/route.ts`: `input.status` を透過する。
 - `src/app/api/v1/organizer/events/[id]/publish/route.ts`（新規）: `publishDraftEvent` を呼ぶだけ。
 - `src/app/api/v1/organizer/events/[id]/route.ts`: `PUT` で `DRAFT → PUBLISHED` になる場合は `publishDraftEvent` と同じ判定を通す。
@@ -92,10 +92,10 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
 
 ## 受け入れ条件
 
-- [x] 枠 0 の会員が新規作成すると、402 の前に下書きが作られ、入力内容が失われない
+- [x] チケット 0 枚の会員が新規作成すると、402 の前に下書きが作られ、入力内容が失われない
 - [x] 購入後に `/organizer/events/new?draftId=…` へ戻り、フォームが復元される
-- [x] 下書きの作成では枠を消費せず、`publish` で1回だけ消費する
-- [x] 二重に publish しても枠を二重消費しない（2回目は 409）
+- [x] 下書きの作成ではチケットを消費せず、`publish` で1枚だけ消費する
+- [x] 二重に publish してもチケットを二重消費しない（2回目は 409）
 - [x] 他人の `draftId` を指定した Checkout は 403
 - [x] ゲストは下書きを作れず、403 `REGISTER_REQUIRED` で会員登録へ送られる
 - [x] 下書きの `publicUrl` は `null` で、カードに公開ページのリンクが出ない
@@ -109,5 +109,5 @@ Checkout の `success_url` も `/organizer/events/new?session_id=...` 固定で�
 
 - 下書きの自動保存・期限切れ削除
 - 購入前にフォーム内容をブラウザへ保存する仕組み
-- 枠の返還・払い戻し
+- チケットの返還・払い戻し
 - サブスクリプションのプラン変更 UI

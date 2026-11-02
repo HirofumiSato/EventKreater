@@ -2,7 +2,7 @@
 ========================================
 
 このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。
-起動と画面パスは :doc:`local`、利用枠の確認 SQL は :doc:`database`、仕様の正は :doc:`billing_and_quota_system_requirements` です。
+起動と画面パスは :doc:`local`、チケットの確認 SQL は :doc:`database`、仕様の正は :doc:`billing_and_quota_system_requirements` です。
 
 自動テストは Stripe の Dashboard も ``api.stripe.com`` も使いません。読む順は :doc:`testing/index` です。
 
@@ -36,10 +36,10 @@
      - カード変更と解約は Stripe 側。このアプリは URL を発行するだけ
    * - ``POST /api/v1/billing/checkout/verify``
      - しない。支払い済みセッションの確認
-     - Webhook 遅延時に、同じ条件で枠を付与する
+     - Webhook 遅延時に、同じ条件でチケットを付与する
    * - ``POST /api/v1/webhooks/stripe``
      - しない。Stripe へ課金も返金も打ち返さない
-     - 枠と ``billing_transactions`` の反映。イベント ID の再送は無視する
+     - チケットと ``billing_transactions`` の反映。イベント ID の再送は無視する
    * - ``GET /api/v1/admin/payments`` と ``/console/payments``
      - しない。返金ボタンは無い
      - 決済履歴の検索と閲覧
@@ -52,12 +52,12 @@
    * - ``POST /api/v1/internal/billing/notices``
      - しない。メールを送るだけ
      - 無料期間の終了が 3 日以内・1 日以内の契約へ通知し、``billing_notices`` に記録する
-   * - :doc:`database` の利用枠 SQL
+   * - :doc:`database` のチケット SQL
      - Stripe には届かない
      - ローカル DB の見た目だけ。本番では使わない
 
 付与の条件は ``src/modules/billing/lib/billing.ts`` の ``loadPayableCheckout`` です。
-``payment_status`` が ``paid``、通貨が ``jpy``、単発は現在の販売価格、定額は現在の販売価格かつ Price が ``STRIPE_PRICE_ID_MONTHLY_8`` か ``STRIPE_PRICE_ID_UNLIMITED``（既存加入者は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``）、セッションの ``livemode`` が秘密鍵のモードと一致、``metadata.userId`` と Stripe 顧客 ID がその会員の利用枠と一致するときだけ枠を増やします。
+``payment_status`` が ``paid``、通貨が ``jpy``、単発は現在の販売価格、定額は現在の販売価格かつ Price が ``STRIPE_PRICE_ID_MONTHLY_8`` か ``STRIPE_PRICE_ID_UNLIMITED``（既存加入者は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``）、セッションの ``livemode`` が秘密鍵のモードと一致、``metadata.userId`` と Stripe 顧客 ID がその会員のチケット情報と一致するときだけチケットを増やします。
 金額が無いセッションは付与しません。
 
 価格キャンペーンと 0 円販売
@@ -80,7 +80,7 @@
 ``MAIL_WEBHOOK_URL`` が空のときは、本文をサーバログに残し、``billing_notices.status`` を ``RECORDED`` にします。同じ契約と同じ終了日時には 1 回だけ送ります。テストで再送を見たいときは、``billing_notices`` の該当行を消してから実行します。
 
 ``stripeExpectsLive()`` は ``STRIPE_SECRET_KEY`` に ``_live_`` が含まれるかで判定します（ ``src/modules/billing/lib/stripe.ts`` ）。
-テスト鍵のアプリに live の Webhook を流しても枠は増えません。逆も同じです。
+テスト鍵のアプリに live の Webhook を流してもチケットは増えません。逆も同じです。
 
 初月無料（トライアル）
 ----------------------
@@ -124,8 +124,8 @@ Test Clock での確認
      - 実カードが必要になり、実課金になる
    * - ``/console/payments`` から返金や金額変更をする
      - その操作は実装していない。返金は Stripe Dashboard 側
-   * - 本番データベースで利用枠 SQL や ``prisma migrate reset`` を実行する
-     - 会員の枠と決済履歴が消える、または偽の枠が付く
+   * - 本番データベースでチケット SQL や ``prisma migrate reset`` を実行する
+     - 会員のチケット情報と決済履歴が消える、または偽のチケットが付く
 
 テストモードでしてよいこと
 --------------------------
@@ -135,7 +135,7 @@ Test Clock での確認
 * テストモードの Dashboard で全額返金する（ ``charge.refunded`` が届き、単発の未使用クレジットが残っていれば 1 戻す。定額は ``CANCELED`` ）
 * ``stripe trigger`` で ``invoice.payment_failed`` などを送り、``PAST_DUE`` を見る
 
-一部返金では枠を変えません。使い切ったあとの公開イベントは自動では消しません。
+一部返金ではチケットを変えません。使い切ったあとの公開イベントは自動では消しません。
 
 環境変数
 --------
@@ -169,7 +169,7 @@ Test Clock での確認
 ----
 
 1. Stripe Dashboard を開き、右上を **テストデータ** にする。
-2. 商品と Price を作る。月額で8件まで公開プランは 980 円、公開し放題は 2,980 円。どちらも通貨 JPY、請求は月次。その ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「月額で8件まで公開プラン」「公開し放題」）。請求書と領収書（利用枠の支払いのもので、参加費の集金とは別）に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
+2. 商品と Price を作る。月額で8件まで公開プランは 980 円、公開し放題は 2,980 円。どちらも通貨 JPY、請求は月次。その ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「月額で8件まで公開プラン」「公開し放題」）。請求書と領収書（チケットの支払いのもので、参加費の集金とは別）に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
 3. Customer Portal をテストモードで有効にする。マイページの「プラン・カード管理」がここを開きます。プラン変更（8 件プラン ↔ 公開し放題）を選べるように設定します。ダウングレードしても既存の掲載は消さず、新規の公開だけを止めます。
 4. ``NEXT_PUBLIC_APP_URL`` と開発サーバーのポートを揃える。``.env.example`` に合わせるときは ``npm run dev`` です。Web は 3012 です。
 5. アプリを起動したまま、別の端末で Stripe CLI を実行する。転送先のホストとポートは ``NEXT_PUBLIC_APP_URL`` に合わせます。
@@ -183,8 +183,8 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
 画面での確認
 ------------
 
-会員登録と電話番号確認が終わった主催者で、 ``/organizer/events/new`` を開きます。 ``npm run db:seed`` の ``organizer@example.com`` をそのまま使えます。無料 2 回を使い切ると料金モーダルが出ます。
-決済を通さずにモーダルだけ見る場合は、:doc:`database` の「ローカルでの利用枠の書き換え」を使います。本番では使いません。
+会員登録と電話番号確認が終わった主催者で、 ``/organizer/events/new`` を開きます。 ``npm run db:seed`` の ``organizer@example.com`` をそのまま使えます。無料チケット 2 枚を使い切ると料金モーダルが出ます。
+決済を通さずにモーダルだけ見る場合は、:doc:`database` の「ローカルでのチケットの書き換え」を使います。本番では使いません。
 
 テストカードは次です。有効期限は未来の任意月、CVC は任意の 3 桁、郵便番号は任意です。
 
@@ -199,7 +199,7 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
    * - ``4000 0000 0000 0002``
      - 失敗。定額の更新失敗や ``PAST_DUE`` を見るときに使う
 
-単発と定額の反映経路は 2 つあり、同じ条件のときだけ枠を付けます。
+単発と定額の反映経路は 2 つあり、同じ条件のときだけチケットを付けます。
 
 * Checkout から戻った画面が ``POST /api/v1/billing/checkout/verify`` を呼ぶ
 * Stripe が ``POST /api/v1/webhooks/stripe`` を呼ぶ。イベント ID は ``stripe_webhook_events`` に記録し、同じ ID の再送は本体処理をしない
@@ -217,17 +217,17 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
    * - ``checkout.session.completed`` （ ``subscription`` ）
      - 購読を ``ACTIVE`` にし、期間終了を保存する。初月無料なら ``trial_ends_at`` と ``trial_used_at`` も入れる。取引を ``SUCCEEDED`` にし、 ``trial_applied`` を残す
    * - ``invoice.payment_succeeded``
-     - 顧客 ID または購読 ID から利用枠を ``ACTIVE`` に更新する。初回の 0 円請求は ``trial_ends_at`` を記録し、 ``trial_applied`` を立てる。2 回目以降の定額請求は取引行を増やし、 ``trial_ends_at`` を NULL に戻す
+     - 顧客 ID または購読 ID からチケット情報を ``ACTIVE`` に更新する。初回の 0 円請求は ``trial_ends_at`` を記録し、 ``trial_applied`` を立てる。2 回目以降の定額請求は取引行を増やし、 ``trial_ends_at`` を NULL に戻す
    * - ``invoice.payment_failed``
      - ``subscription_status`` を ``PAST_DUE`` にする。イベント作成はできなくなる
    * - ``customer.subscription.updated``
-     - Stripe の購読状態を利用枠へ写す（ ``trialing`` は ``ACTIVE`` ）。 ``trialing`` のあいだだけ ``trial_ends_at`` を持ち、 ``active`` になったら NULL に戻す。想定外の Price では ``ACTIVE`` にしない
+     - Stripe の購読状態をチケット情報へ写す（ ``trialing`` は ``ACTIVE`` ）。 ``trialing`` のあいだだけ ``trial_ends_at`` を持ち、 ``active`` になったら NULL に戻す。想定外の Price では ``ACTIVE`` にしない
    * - ``customer.subscription.deleted``
      - ``subscription_status`` を ``CANCELED`` にする
    * - ``charge.refunded``
      - 全額のときだけ取引を ``REFUNDED`` にする。単発で未使用クレジットが残っていれば 1 戻す。定額は ``CANCELED``
    * - ``charge.dispute.created``
-     - 取引を ``DISPUTED`` にし、全額返金と同じ枠の戻しを一度だけ行う
+     - 取引を ``DISPUTED`` にし、全額返金と同じチケットの戻しを一度だけ行う
 
 処理中に失敗した場合、記録した Webhook 行を削除してから 500 を返します。Stripe は再送できます。
 署名が無い、または検証に失敗したときは 400 です。応答本文に検証ライブラリのメッセージは出しません。
@@ -235,7 +235,7 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
 確認
 ----
 
-決済のあと、次で枠と取引を見ます。SQL の全文は :doc:`database` です。
+決済のあと、次でチケットと取引を見ます。SQL の全文は :doc:`database` です。
 
 * ``user_usage_quotas.paid_credits`` が 1 増えている（単発）
 * ``subscription_status`` が ``ACTIVE`` で、``current_period_end`` が未来（定額）

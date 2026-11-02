@@ -337,7 +337,7 @@ export async function withdrawAccount(input: {
     });
     await tx.eventOrganizer.deleteMany({ where: { userId: input.userId, role: "CO_HOST" } });
 
-    // 電話番号は残す。同じ番号で再登録すると、この行と利用枠を引き継ぐ。
+    // 電話番号は残す。同じ番号で再登録すると、この行とチケットを引き継ぐ。
     await tx.user.update({
       where: { id: input.userId },
       data: {

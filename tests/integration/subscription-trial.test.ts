@@ -60,7 +60,7 @@ async function readQuota(token: string) {
   return { status: response.status, body: await response.json() };
 }
 
-describeDb("初月無料の利用枠（結合）", () => {
+describeDb("初月無料のチケット（結合）", () => {
   const eventIds: string[] = [];
   const userIds: string[] = [];
 
@@ -88,7 +88,7 @@ describeDb("初月無料の利用枠（結合）", () => {
 
     expect(published.status).toBe("PUBLISHED");
     expect(published.quotaSource).toBe("SUBSCRIPTION");
-    // 初月無料でも無料枠は減らない。
+    // 初月無料でも無料チケットは減らない。
     const quota = await prisma.userUsageQuota.findUniqueOrThrow({ where: { userId: user.id } });
     expect(quota.freeEventCount).toBe(0);
     expect(quota.paidCredits).toBe(0);

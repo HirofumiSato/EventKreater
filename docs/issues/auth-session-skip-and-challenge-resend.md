@@ -28,7 +28,7 @@
 | :--- | :--- |
 | スキップの条件 | 有効な `auth_token` があること。Cookie の存在ではなく、`auth_sessions` の行まで見る |
 | 判定の API | `GET /api/v1/auth/session` を新設。`authenticated`、`pendingChallenge`、`user`（`phoneVerified` / `platformRole`）を返す |
-| 電話未確認の会員 | ログインは省くが `?step=phone` へは進める。無料枠の要件は変えない |
+| 電話未確認の会員 | ログインは省くが `?step=phone` へは進める。無料チケットの要件は変えない |
 | 適用する画面 | `/auth/register`、`/participant/login`。`?step=phone` は画面自身の判定に任せる |
 | 着地 | 明示された `next` → 主催者の入口で `next` の無い管理者は `/console` → 入口ごとの既定 |
 | 別の会員で入り直す | `?switch=1` のときだけフォームを出す。確認番号の入力待ち（`pendingChallenge`）も飛ばさない |

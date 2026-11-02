@@ -1,10 +1,10 @@
 /**
- * 公開中のイベントを、どの利用枠から公開したかで分ける。
+ * 公開中のイベントを、どのチケットから公開したかで分ける。
  *
  * マイページの要約（`/mypage`）が「プラン公開」「チケット公開」を出すために使う。
- * 数え方は帯（`QuotaStatusBanner`）とサーバーの枠判定（`countPublishedSubscriptionEvents`）に
+ * 数え方は帯（`QuotaStatusBanner`）とサーバーの件数の上限の判定（`countPublishedSubscriptionEvents`）に
  * 揃える。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを数え、月額プラン
- * （`SUBSCRIPTION`）と、それ以外（単発チケット・無料枠）に分ける。
+ * （`SUBSCRIPTION`）と、それ以外（単発チケット・無料チケット）に分ける。
  *
  * 開催日は `YYYY-MM-DD` の文字列のまま比べる（`Date` に戻すと時差で 1 日ずれる余地が生まれる）。
  */
@@ -13,7 +13,7 @@ import type { EventStatus, OrganizerRole, QuotaSource } from "@/modules/events/t
 export interface PublishedCounts {
   /** 月額プランから公開した件数。帯の「N / 8 件」と同じ数え方。 */
   plan: number;
-  /** 単発チケットと無料枠から公開した件数。8 件の上限には数えない。 */
+  /** 単発チケットと無料チケットから公開した件数。8 件の上限には数えない。 */
   ticket: number;
 }
 

@@ -23,7 +23,7 @@ export function OrganizerInviteCard({ eventId, viewer }: OrganizerInviteCardProp
         あなたも{SITE.nav.createEvent.label}をしませんか？
       </h2>
       <p className="org-invite__note">
-        このページと同じチラシと告知ページを、5 分で作れます。最初の 2 回は無料です。
+        このページと同じチラシと告知ページを、5 分で作れます。最初の 2 枚は無料です。
       </p>
       <Link
         href={`${SITE.nav.createEvent.href}?ref=${encodeURIComponent(eventId)}`}

@@ -93,7 +93,7 @@ async function grantFreeTicket(userId: string, quote: PricingQuote, requestKey: 
       return { granted: true, limited: false, quota, pricing: quote };
     });
   } catch (error) {
-    // 同じ Idempotency-Key の二重送信。すでに付与済みとして現在の枠を返す。
+    // 同じ Idempotency-Key の二重送信。すでに付与済みとして現在のチケットを返す。
     if (isUniqueViolation(error)) {
       const quota = await prisma.userUsageQuota.findUniqueOrThrow({ where: { userId } });
       return { granted: true, limited: false, quota, pricing: quote };
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const quote = quoteFor("ONE_TIME", await loadActiveCampaigns(now), now);
     const requestKey = checkoutIdempotencyKey(req, userId, "free_ticket");
 
-    // 枠が無いときに作った下書きを、購入後に復元するための手がかり。
+    // チケットが無いときに作った下書きを、購入後に復元するための手がかり。
     const intent = CheckoutIntentSchema.parse(await req.json().catch(() => ({})));
     const returnTo = intent.returnTo ?? DEFAULT_CHECKOUT_RETURN_TO;
 
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
                   currency: "jpy",
                   product_data: {
                     name: "イベント紹介ページ生成 単発チケット",
-                    description: "イベント紹介ページを1回生成・公開できます。",
+                    description: "チケット1枚で、イベント紹介ページを1件公開できます。",
                   },
                   unit_amount: quote.chargedPrice,
                 },

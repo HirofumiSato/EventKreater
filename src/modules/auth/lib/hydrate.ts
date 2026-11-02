@@ -3,8 +3,8 @@ import { sha256 } from "@/lib/crypto";
 import { FREE_EVENT_LIMIT } from "@/modules/billing/lib/quota";
 
 /**
- * 端末で作ったイベントを会員の無料枠に移したあとの件数。
- * 登録によって枠が増えないよう、上限で頭打ちにする。
+ * 端末で作ったイベントを会員の無料チケットに移したあとの件数。
+ * 登録によってチケットが増えないよう、上限で頭打ちにする。
  */
 export function mergedFreeEventCount(current: number, migratedOwners: number): number {
   const base = Number.isFinite(current) ? Math.max(0, Math.trunc(current)) : 0;
@@ -15,16 +15,16 @@ export function mergedFreeEventCount(current: number, migratedOwners: number): n
 export interface GuestMigrationResult {
   /** 会員に付け替えた幹事行の数（OWNER と CO_HOST の合計）。 */
   migratedOrganizers: number;
-  /** そのうち筆頭幹事（OWNER）だった数。無料枠として数える対象。 */
+  /** そのうち筆頭幹事（OWNER）だった数。無料チケットとして数える対象。 */
   promotedOwners: number;
-  /** 付け替え後に確定した無料枠の消費数。移行が無ければ null。 */
+  /** 付け替え後に確定した無料チケットの消費数。移行が無ければ null。 */
   freeEventCount: number | null;
 }
 
 /**
  * 端末のゲスト幹事トークンで作られた幹事行を、いまログインした会員に付け替える。
  * 筆頭幹事だった分だけを `freeEventCount` に足し、端末で作ったイベントも
- * 会員の無料枠を使ったものとして扱う。共同幹事（CO_HOST）は他人のイベントなので数えない。
+ * 会員の無料チケットを使ったものとして扱う。共同幹事（CO_HOST）は他人のイベントなので数えない。
  */
 export async function migrateGuestOrganizers(
   tx: Prisma.TransactionClient,

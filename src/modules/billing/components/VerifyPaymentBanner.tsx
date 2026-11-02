@@ -64,7 +64,7 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
     );
   }
   if (status === "SUCCESS") {
-    return <Alert tone="success">お支払いを確認しました。作成枠を追加しました。</Alert>;
+    return <Alert tone="success">お支払いを確認しました。チケットを追加しました。</Alert>;
   }
   return <Alert tone="error">{errorMessage || "決済の確認が完了できませんでした。"}</Alert>;
 }

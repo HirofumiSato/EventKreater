@@ -6,7 +6,7 @@
 
 作成画面（SCR-ORG-02）の最終ステップの主操作は「公開する」だけで、途中でやめると入力が失われた。公開前に告知ページを確認する手段も無かった。`GET /api/v1/public/events/[id]` と `/events/[id]` は `PUBLISHED` / `CLOSED` だけを返し、`DRAFT` は 404 になるためである。
 
-`EventStatus.DRAFT` 自体は既にあったが、枠切れ時の退避（[draft-checkout-and-publish.md](draft-checkout-and-publish.md)）専用で、作成画面からの明示的な保存・プレビュー・下書き一覧・下書きの単独削除は無かった。
+`EventStatus.DRAFT` 自体は既にあったが、チケット切れ時の退避（[draft-checkout-and-publish.md](draft-checkout-and-publish.md)）専用で、作成画面からの明示的な保存・プレビュー・下書き一覧・下書きの単独削除は無かった。
 
 ## 決定
 
@@ -14,7 +14,7 @@
 | :---- | :---- |
 | 保存できる人 | 会員のみ。未登録の幹事には「下書き保存」を出さず、従来どおり即公開だけを出す（API は 403 `REGISTER_REQUIRED`） |
 | 下書きの必須項目 | 催し名・開催日時1件以上・費用プラン1件以上・場所。定員・申し込み期限・チラシは空でよい |
-| 枠 | 下書きでは消費しない。公開時に1回だけ消費する。複製由来の下書きは二重に引かない（`quota_charged_at`） |
+| チケット | 下書きでは消費しない。公開時に1枚だけ消費する。複製由来の下書きは二重に引かない（`quota_charged_at`） |
 | プレビュー | `/organizer/events/[id]/preview` を新設。幹事認証・`noindex`。告知ページと同じ部品を使い、出欠フォームは出さない |
 | 下書き一覧 | `/organizer/events/drafts` を新設。主催一覧（SCR-ORG-01）とマイページの要約からは `DRAFT` を外す |
 | 作成画面 | ステップの外側（`form-final`）に「下書き保存」と「プレビューを見る」の2ボタン。上に必須の残り数を出す |
@@ -31,9 +31,9 @@
 入力 →「下書き保存」→ POST /api/v1/public/events {status: DRAFT} → draftId
      → URL を ?draftId= に置き換え
      →「プレビューを見る」→ POST .../draft（2回目以降）→ /organizer/events/<id>/preview
-     →「公開する」→ POST .../publish（枠を1回消費）→ /events/<id>
+     →「公開する」→ POST .../publish（チケットを1枚消費）→ /events/<id>
 
-[枠が無い]
+[チケットが無い]
 プレビューで「公開する」→ 402 → PricingModal（returnTo=プレビュー）
   → 購入 → /organizer/events/<id>/preview?session_id=...&draftId=...
   →「公開する」を再試行
@@ -67,14 +67,14 @@
 - `tests/unit/draft-save.test.ts`: 下書きの入力条件（`SaveEventDraftSchema`）、保存入口の状態制限、保存できるステップ
 - `tests/unit/draft-lifecycle.test.ts`: 下書きの受付停止が 409、受付停止以外の再開が 409
 - `tests/unit/checkout-intent.test.ts`: プレビューの戻り先を許可し、類似パスを拒否する
-- `tests/integration/draft-save-preview-publish.test.ts`（`TEST_DATABASE_URL` があるときだけ）: 下書き作成で枠を消費しない、保存で状態が変わらない、公開で1回だけ消費する、枠切れは 402、公開済みの保存は 409、存在しない ID は 404
+- `tests/integration/draft-save-preview-publish.test.ts`（`TEST_DATABASE_URL` があるときだけ）: 下書き作成でチケットを消費しない、保存で状態が変わらない、公開で1枚だけ消費する、チケット切れは 402、公開済みの保存は 409、存在しない ID は 404
 
 ## 受け入れ条件
 
 - [x] 会員が「下書き保存」で `DRAFT` を作れ、催し名・日時・費用プラン・場所だけで保存できる
 - [x] 「プレビューを見る」で `/organizer/events/[id]/preview` が開き、告知ページと同じ見た目で確認できる（出欠フォームは無い）
-- [x] プレビューの「公開する」で `PUBLISHED` になり、枠を1回だけ消費する
-- [x] 枠が無いときは 402 → 購入 → プレビューへ戻り、そのまま公開できる
+- [x] プレビューの「公開する」で `PUBLISHED` になり、チケットを1枚だけ消費する
+- [x] チケットが無いときは 402 → 購入 → プレビューへ戻り、そのまま公開できる
 - [x] 二重公開は 409
 - [x] `/organizer/events/drafts` に自分の下書きだけが出て、プレビュー・編集・削除ができる
 - [x] 主催一覧とマイページの要約に下書きが出ない
@@ -90,4 +90,4 @@
 - 放置された下書きの自動削除・期限切れ通知
 - 共同主催者による下書きの公開
 - プレビューからの出欠送信・共有 URL の発行
-- 下書きの複製（複製は従来どおり枠を消費して下書きを作る）
+- 下書きの複製（複製は従来どおりチケットを消費して下書きを作る）

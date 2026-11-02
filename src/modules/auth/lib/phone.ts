@@ -343,8 +343,8 @@ async function completeSignup(intentId: string, phoneE164: string, codeId: strin
 
       const target = bySub ?? byEmail ?? byPhone;
       if (target?.deletedAt) {
-        // 退会済みの会員。確認済みの電話番号が一致するので本人とみなし、同じ行と利用枠を引き継ぐ。
-        // user_usage_quotas は update: {} で触らないため、消化済みの無料枠は戻らない。
+        // 退会済みの会員。確認済みの電話番号が一致するので本人とみなし、同じ行とチケットを引き継ぐ。
+        // user_usage_quotas は update: {} で触らないため、消化済みの無料チケットは戻らない。
         const user = await tx.user.update({
           where: { id: target.id },
           data: {

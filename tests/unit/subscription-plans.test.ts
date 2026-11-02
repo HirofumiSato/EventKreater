@@ -151,15 +151,15 @@ describe("公開中のイベントの数え方", () => {
     );
   });
 
-  it("消費した枠は、数える側（SUBSCRIPTION）と数えない側に分かれる", () => {
+  it("消費したチケットは、数える側（SUBSCRIPTION）と数えない側に分かれる", () => {
     expect(quotaSourceOf("SUBSCRIPTION_MONTHLY_8")).toBe("SUBSCRIPTION");
     expect(quotaSourceOf("SUBSCRIPTION_UNLIMITED")).toBe("SUBSCRIPTION");
-    // 単発と無料枠は枠の外。8 件が埋まっていても足せる。
+    // 単発と無料チケットは件数に数えない。8 件が埋まっていても足せる。
     expect(quotaSourceOf("PAID_CREDIT")).toBe("PAID_CREDIT");
     expect(quotaSourceOf("FREE_TRIAL")).toBe("FREE_TRIAL");
   });
 
-  it("無料枠の上限は 2 回、8 件プランの上限は 8 件", () => {
+  it("無料チケットの上限は 2 枚、8 件プランの上限は 8 件", () => {
     expect(FREE_EVENT_LIMIT).toBe(2);
     expect(SUBSCRIPTION_PUBLISHED_EVENT_LIMIT).toBe(8);
   });

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     if (input.action === "reopen") {
       assertCanReopenEvent(existing);
-      // 一時停止は枠を空ける。再開はもう一度枠を消費するので、満杯なら 402 で断る。
+      // 一時停止はチケットを空ける。再開はもう一度チケットを消費するので、満杯なら 402 で断る。
       await reopenEvent(ctx.userId, existing.id);
       return NextResponse.json({ success: true, status: "PUBLISHED" });
     }

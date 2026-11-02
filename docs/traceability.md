@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 107（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 415
+- 文書から参照されているコードパス: 417
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -333,6 +333,7 @@
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/publish-confirm-modal.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -404,6 +405,7 @@
 | `tests/unit/postal-code-search.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/problem.test.ts` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `tests/unit/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/publish-confirm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/published-counts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referral-code.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/referrer.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

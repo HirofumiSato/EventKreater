@@ -16,7 +16,7 @@ describe("公開画面の主操作", () => {
 
   it("無料の条件は注記で伝え、チケットという語を使わない", () => {
     expect(SITE.cta.freeNote.length).toBeLessThanOrEqual(30);
-    expect(SITE.cta.freeNote).toContain("2回");
+    expect(SITE.cta.freeNote).toContain("2枚");
     expect(SITE.cta.freeNote).not.toContain("チケット");
   });
 

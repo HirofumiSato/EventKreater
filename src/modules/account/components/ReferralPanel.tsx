@@ -54,7 +54,7 @@ export function ReferralPanel() {
 
   return (
     <Panel>
-      <PanelHead title="紹介" note={<>紹介した人が公開すると2回もらえます</>} />
+      <PanelHead title="紹介" note={<>紹介した人が公開すると2枚もらえます</>} />
       <p className="panel__body">このリンクから登録した人が、はじめて公開したときに2枚。</p>
       <div className="ticket-link">
         <input
@@ -74,7 +74,7 @@ export function ReferralPanel() {
           <dd>{summary.invited}人</dd>
         </div>
         <div className="kv__row">
-          <dt>もらった回数</dt>
+          <dt>もらった枚数</dt>
           <dd>
             {summary.granted} / {summary.limit}
           </dd>

@@ -343,7 +343,7 @@
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.1);
 }
 
-/* トライアルの回数券は、紙が 1 枚置いてあるように見せる。 */
+/* チケットの回数券は、紙が 1 枚置いてあるように見せる。 */
 .deco.deco--tape-shadow .trial-ticket {
   border-color: var(--pop-warm-deep);
   background: var(--pop-warm-tint);

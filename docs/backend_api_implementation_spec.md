@@ -1,6 +1,6 @@
 ﻿# バックエンドAPI実装仕様書
 
-## チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）
+## チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）
 
 ## 1. 全体アーキテクチャ・設計方針
 
@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・2回無料/単発299円/公開中8件まで980円/公開し放題2980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・無料2枚/単発299円/公開中8件まで980円/公開し放題2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・API境界・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計（DBschema.md）】<br>PostgreSQL 16・Prismaスキーマ・アトミック排他クエリ・クォータ/決済テーブル"]
     D["【本設計書：バックエンドAPI実装仕様】<br>全エンドポイント定義・Mermaidシーケンス・Zod検証・Stripe Webhook冪等処理"]
@@ -26,7 +26,7 @@ flowchart TD
 2. **PostgreSQLネイティブのアトミック排他編集ロック（Pessimistic Lease Lock）:**
    - 共同幹事の同時編集事故（Lost Update）を防ぐため、`INSERT ... ON CONFLICT (event_id) DO UPDATE WHERE lock_token_hash = :hash` を実行し、DBレベルで厳密な排他制御を担保する。ロックは期限を持たず、解放または引き継ぎまで保持する。
 3. **課金基盤（Stripe）との認可ゲート結合:**
-   - イベント作成リクエスト受付時に `canCreateEvent(userId)` ゲートを評価。サブスク有効 $\rightarrow$ 単発クレジット消費 $\rightarrow$ 電話番号確認済みの無料枠消化の優先順で判定する。電話未確認の無料枠は HTTP 403、上限超過時は HTTP 402 Payment Required と課金プラン一覧を返却。
+   - イベント作成リクエスト受付時に `canCreateEvent(userId)` ゲートを評価。サブスク有効 $\rightarrow$ 単発クレジット消費 $\rightarrow$ 電話番号確認済みの無料チケット消化の優先順で判定する。電話未確認の無料チケットは HTTP 403、上限超過時は HTTP 402 Payment Required と課金プラン一覧を返却。
 4. **Stripe 同期検証 ＆ Webhook 冪等性（Idempotency）二重化:**
    - Checkout 完了リダイレクト時に即時同期検証（`verify`）を行って待ち時間を排除し、バックグラウンドの Webhook では `stripe_webhook_events` テーブルを用いた排他制御により二重付与を物理遮断。
 5. **RFC 7807 準拠のエラーレスポンス:**
@@ -40,7 +40,7 @@ flowchart TD
 
 | エンドポイント | メソッド | 対象画面ID | 認証・認可 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・枠消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する。未登録の幹事は作れない |
+| `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・チケット消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する。未登録の幹事は作れない |
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
@@ -56,7 +56,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/participants/[participantId]/collection` | PUT | SCR-ORG-06 | 幹事（会員のみ） | 出席者の集金を記録する（`collected_at`）。未登録の幹事は 403 `REGISTER_REQUIRED`。出席以外は 400 |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
-| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点で枠を1つ消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点でチケットを1枚消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催幹事（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
@@ -66,10 +66,10 @@ flowchart TD
 | `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
-| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、枠は消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
-| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定なら枠を1つ消費し、入力内容も同時に保存して `PUBLISHED` にする。枠不足は 402、公開済みは 409 |
+| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
+| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` は枠を消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
+| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
@@ -79,7 +79,7 @@ flowchart TD
 | `/api/v1/auth/verification` | POST | SCR-PUB-02 | 不要 | 未確認の登録意向またはレガシー未確認会員へ確認メールを再送する。応答はメールの有無で変えない |
 | `/api/v1/auth/verify` | POST | SCR-PUB-05 | 不要 | 確認トークンを検証する。新規は電話番号確認へ進み、既存会員はログインへ戻す |
 | `/api/v1/auth/phone/start` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | 確認コードを SMS 送信する。番号と IP で回数を制限する |
-| `/api/v1/auth/phone/confirm` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | コードを検証し、電話番号で既存会員へ手段を足すか、会員と利用枠を作る |
+| `/api/v1/auth/phone/confirm` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | コードを検証し、電話番号で既存会員へ手段を足すか、会員とチケット情報を作る |
 | `/api/v1/auth/google` | GET | SCR-PUB-02 | 不要 | Google 認可画面へリダイレクト（state と nonce を Cookie に保存）。`next` は許可した相対パスだけ |
 | `/api/v1/auth/google/callback` | GET | SCR-PUB-02 | Google 認可コード | ID トークン検証。同じ確認済みメールの会員へ `googleSub` を結ぶ。会員が無ければ電話番号確認へ進む |
 | `/api/v1/auth/logout` | POST | SCR-PUB-02 | 不要 | セッション行を失効させ、会員 Cookie を削除する |
@@ -101,7 +101,7 @@ flowchart TD
 | `/api/v1/admin/users` | GET | SCR-ADM-01 | 管理者必須 | 登録会員の検索一覧 |
 | `/api/v1/admin/users/[id]` | PATCH | SCR-ADM-01 | 管理者必須 | 他会員の `platformRole` 変更 |
 | `/api/v1/admin/events` | GET | SCR-ADM-02 | 管理者必須 | 登録イベントの検索一覧（全状態） |
-| `/api/v1/admin/payments` | GET | SCR-ADM-03 | 管理者必須 | 利用枠の決済履歴。返金操作はしない |
+| `/api/v1/admin/payments` | GET | SCR-ADM-03 | 管理者必須 | チケットの決済履歴。返金操作はしない |
 | `/api/v1/admin/pricing-campaigns` | GET | SCR-ADM-05 | 管理者必須 | 価格キャンペーンの一覧と成立件数・売上・割引総額 |
 | `/api/v1/admin/pricing-campaigns` | POST | SCR-ADM-05 | 管理者必須 | 価格キャンペーン作成。監査ログを残す |
 | `/api/v1/admin/pricing-campaigns/[id]` | GET | SCR-ADM-05 | 管理者必須 | 詳細・監査ログ・発行済みクーポン |
@@ -122,10 +122,10 @@ flowchart TD
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
-| `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | 利用枠・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
-| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 回分を付与する |
+| `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
+| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
-| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・枠反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
+| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・チケット反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
 | `/api/v1/billing/portal` | POST | SCR-ORG-01 | 会員必須 | Stripe Customer Portal（解約・カード変更）遷移URL発行 |
 | `/api/v1/webhooks/stripe` | POST | - | Stripe署名検証 | Stripe Webhook 受信ハンドラー（二重処理遮断） |
 
@@ -135,7 +135,7 @@ flowchart TD
 
 ### 3.1. イベント作成＆クォータ認可ゲート（canCreateEvent）
 
-主催者がイベント作成を要求した際、クォータ判定ルール（サブスク $\rightarrow$ 単発クレジット $\rightarrow$ 無料枠）に従って検証・消費を行う。
+主催者がイベント作成を要求した際、クォータ判定ルール（サブスク $\rightarrow$ 単発クレジット $\rightarrow$ 無料チケット）に従って検証・消費を行う。
 
 ```mermaid
 sequenceDiagram
@@ -150,13 +150,13 @@ sequenceDiagram
     Client->>Route: POST /api/v1/public/events<br/>(Body, Header: auth_token)
     Note over Route,Client: 未ログインなら本文を読まずに 403 REGISTER_REQUIRED<br/>画面は入力を退避してログインへ送る
     Route->>Guard: assertCanCreateEvent(userId)
-    alt 課金・利用枠チェック
+    alt 課金・チケットチェック
         Guard->>DB: SELECT * FROM user_usage_quotas WHERE user_id = :userId
         alt サブスク有効 (ACTIVE && period > now)
             Guard-->>Route: 認可OK (サブスク適用・消費なし)
         else 単発クレジットあり (paid_credits >= 1)
             Guard-->>Route: 認可OK (クレジット1消費予約)
-        else 無料枠あり (free_event_count < 2)
+        else 無料チケットあり (free_event_count < 2)
             Guard-->>Route: 認可OK (無料カウント+1予約)
         else 上限超過 (すべて未達)
             Guard-->>Route: QuotaExceededError (HTTP 402)
@@ -170,7 +170,7 @@ sequenceDiagram
             Client->>Route: POST /api/v1/billing/checkout/verify { sessionId }
             Route-->>Client: { quota, draftId, returnTo }
             Client->>Route: POST /api/v1/organizer/events/[id]/publish
-            Route->>DB: BEGIN: 枠を1消費 + quota_charged_at を設定 + status: PUBLISHED
+            Route->>DB: BEGIN: チケットを1枚消費 + quota_charged_at を設定 + status: PUBLISHED
             Route-->>Client: HTTP 200 { event, publicUrl, manageUrl }
         end
     end
@@ -559,7 +559,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 
 **未登録の端末はイベントを作れない。** `POST /api/v1/public/events` は `resolveUserId` が `null` を返した時点で、本文を読まずに 403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。以前の「未登録でも1件だけ作れる」数え上げ（`assertGuestCanCreate`）は削除した。
 
-* 理由は 2 つある。出欠を見るには結局 `assertRegisteredOrganizer` が要るため、未登録で作っても直後に登録へ送られること。枠の消費と下書きの復元がゲストだけ別扱いになり、`createEventForGuest` が `createEventForUser` とほぼ同じ処理を二重に持っていたこと。
+* 理由は 2 つある。出欠を見るには結局 `assertRegisteredOrganizer` が要るため、未登録で作っても直後に登録へ送られること。チケットの消費と下書きの復元がゲストだけ別扱いになり、`createEventForGuest` が `createEventForUser` とほぼ同じ処理を二重に持っていたこと。
 * 画面は 403 を受けたら入力を `sessionStorage` に退避してログインへ送る（`docs/front_implementation_spec.md` 12.3.1）。応答の `guestOrganizerToken` は常に `null` にする。
 
 **登録・ログイン後の引き継ぎ。** `POST /api/v1/user/hydrate` は `migrateGuestOrganizers(tx, userId, guestTokens)`（`src/modules/auth/lib/hydrate.ts`）を呼ぶ。端末の `org_token_*` に一致し `user_id` が空の `event_organizers` を会員へ付け替え、`guest_token_hash` を `NULL` にする。付け替えた行のうち `OWNER` の数だけ `user_usage_quotas.free_event_count` に加算し、`FREE_EVENT_LIMIT` で頭打ちにする。`CO_HOST` は加算しない。応答は `{ success, migratedParticipants, migratedOrganizers, promotedOwners, freeEventCount }`。
@@ -599,7 +599,7 @@ export async function countPublishedSubscriptionEvents(db, userId: string, now =
 }
 
 /**
- * 消費の入口。行をロックしてから、公開中のイベントを数えて枠を決める。
+ * 消費の入口。行をロックしてから、公開中のイベントを数えて使うチケットを決める。
  * 参照だけの `assertCanCreateEvent` は同じ判定を読み取りで行う。
  */
 export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: string) {
@@ -627,7 +627,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
     });
     return 'PAID_CREDIT';
   }
-  // 4. 無料トライアル。加入中は、上限に達しても無料枠では抜けない。
+  // 4. 無料チケット。加入中は、上限に達しても無料チケットでは抜けない。
   if (!subscriptionActive && quota.freeEventCount < FREE_EVENT_LIMIT) {
     if (!(await hasVerifiedPhone(tx, userId))) throw phoneRequired();
     await tx.userUsageQuota.update({
@@ -652,7 +652,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
   "type": "probs/quota-exceeded",
   "title": "Payment Required",
   "status": 402,
-  "detail": "無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。",
+  "detail": "無料チケット2枚を使い切りました。単発 299円 ／ 月額8件 980円 ／ 放題 2,980円 から選べます。",
   "error": "QUOTA_EXCEEDED",
   "pricingOptions": [
     { "type": "SINGLE", "name": "単発生成チケット", "price": 299, "listPrice": 299, "currency": "JPY" },
@@ -671,7 +671,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は既定で `PUBLISHED` である。
 
 - **認可:** 会員のみ（`userId` が解決できないときは 403 `REGISTER_REQUIRED`、`type: probs/register-required`）。未登録の幹事はイベントを作れない。作成画面は入力を `sessionStorage` に退避してログインへ送り、戻ってから続きを保存する。
-- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。枠は消費しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
+- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。チケットは消費しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
 - **リクエストスキーマ (Zod):**
 
 ```ts
@@ -705,7 +705,7 @@ export const CreateEventSchema = z.object({
   rsvpDeadline: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
   /** 告知ページの勧誘カードから来たときの参照元。存在しない・削除済み・下書きなら NULL として保存する。 */
   referrerEventId: z.string().uuid().nullish(),
-  /** 未指定は公開。DRAFT は枠不足で入力を退避するときだけ使う。 */
+  /** 未指定は公開。DRAFT はチケット不足で入力を退避するときだけ使う。 */
   status: z.enum(['DRAFT', 'PUBLISHED']).default('PUBLISHED'),
 });
 ```
@@ -768,11 +768,11 @@ SCR-ORG-02 の購入後の復元と、SCR-ORG-05 の「公開する」から呼�
 1. `assertOrganizer` で幹事権限を確認し、`role` が `OWNER` であること。`CO_HOST` と未登録のゲスト幹事は 403、未ログインは 401。
 2. 本文は任意。付けるときは `UpdateEventSchema`（編集の保存と同じ形）で検証する。付いていれば `syncEventOptions` と `eventUpdateData` で公開と同時に保存する。
 3. `events` の行を `SELECT ... FOR UPDATE` で取る。無い、または削除済みは 404。`status` が `DRAFT` でなければ 409（`error: "ALREADY_PUBLISHED"`）。
-4. `quota_charged_at` が `NULL` のとき、`consumeEventQuota(userId, tx)` で枠を1つ消費し、`quota_charged_at = NOW()` と `quota_source`（消費した種別）を書く。すでに入っているときは消費しない。
+4. `quota_charged_at` が `NULL` のとき、`consumeEventQuota(userId, tx)` でチケットを1枚消費し、`quota_charged_at = NOW()` と `quota_source`（消費した種別）を書く。すでに入っているときは消費しない。
 5. `status = PUBLISHED` にして、`{ event, publicUrl, manageUrl }` を返す。
 
-- **枠が無いとき:** 例外でトランザクションが巻き戻り、402 を返す。`status` と `quota_charged_at` は変わらないので、下書きはそのまま残る。
-- **二重実行:** 同じ `id` で 2 回目を呼ぶと 409 になる。枠は 1 回しか引かれない。
+- **チケットが無いとき:** 例外でトランザクションが巻き戻り、402 を返す。`status` と `quota_charged_at` は変わらないので、下書きはそのまま残る。
+- **二重実行:** 同じ `id` で 2 回目を呼ぶと 409 になる。チケットは 1 枚しか引かれない。
 - **`PUT /api/v1/organizer/events/[id]` との関係:** 編集画面の保存で `DRAFT → PUBLISHED` にするときも、同じ規則（`quota_charged_at` が未設定なら消費）を通す。ロックは PUT 側の要件のままである。
 
 ---
@@ -790,7 +790,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
 
 - **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
 - **対象世代とテーマ:** `targetGeneration`（50 文字まで）と `themeId` はどちらも任意で、`events.target_generation`・`events.theme_id` に保存する。`themeId` は `null`（標準）または 9 テーマのいずれかで、未知の値は 400 にする。更新（`PUT .../organizer/events/[id]`）と下書き保存（`POST .../draft`）も同じ 2 項目を受け取る。
-- **枠:** 消費しない。公開時に 1 回だけ消費する。
+- **チケット:** 消費しない。公開時に 1 枚だけ消費する。
 - **行ロック:** 公開と同時に走っても、後から来た保存が公開済みの催しを上書きしない。
 
 ---
@@ -1476,7 +1476,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ---
 
-## 6. 利用枠・Stripe決済系 API エンドポイント詳細仕様
+## 6. チケット・Stripe決済系 API エンドポイント詳細仕様
 
 ### 6.1. GET `/api/v1/billing/quota`（主催者クォータ照会 API）
 
@@ -1505,7 +1505,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは枠の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
+`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは件数の上限の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
 
 `trial` は初月無料の無料期間中（`trial_ends_at > now`）だけ `{ "endsAt": "<ISO 8601>" }` を返し、終われば `null` に戻る。`trialEligible` は `resolveTrial` の結果で、`trial_used_at` が NULL、`stripe_subscription_id` が NULL、支払済み（`SUCCEEDED`）の月額取引が 0 件のときだけ `true` になる。加入中は新しい初月無料を使えないので `false` を返す。無料期間中はクーポンを使わないため `discount` は `null` のままである。
 
@@ -1541,7 +1541,7 @@ export async function GET(req: NextRequest) {
   });
   const phoneVerified = Boolean(user?.phoneVerifiedAt);
   // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
-  // 残りの計算と食い違わないよう、枠の判定と同じ数え方（定額から公開したものだけ）にする。
+  // 残りの計算と食い違わないよう、件数の上限の判定と同じ数え方（定額から公開したものだけ）にする。
   const countedPlan = isSubActive && quota.subscriptionPlan === 'MONTHLY_8';
   const publishedCount = countedPlan
     ? await countPublishedSubscriptionEvents(prisma, userId, now)
@@ -1550,7 +1550,7 @@ export async function GET(req: NextRequest) {
     ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
     : null;
   const capped = countedPlan && (remainingPublished ?? 0) === 0;
-  // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられない。
+  // 無料チケットは加入前のためのもの。加入中は上限に達しても無料チケットでは抜けられない。
   const canCreate =
     quota.subscriptionStatus !== 'PAST_DUE' &&
     ((isSubActive && !capped) ||
@@ -1584,13 +1584,13 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-`canCreate` が `false` でも、公開中の 8 件が埋まっていて単発クレジットが残っていれば `true` になる（単発は枠の外）。
+`canCreate` が `false` でも、公開中の 8 件が埋まっていて単発クレジットが残っていれば `true` になる（単発は件数に数えない）。
 
 ---
 
 ### 6.2. POST `/api/v1/billing/checkout/one-time`（単発299円チケット購入セッション発行）
 
-主催者が単発でイベントを1回作成するための Stripe Hosted Checkout URL を発行する。
+主催者が単発チケットでイベントを1件作成するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
 - **リクエスト Body（任意）:**
@@ -1954,7 +1954,7 @@ export async function POST(req: NextRequest) {
 
 ### 6.6. POST `/api/v1/webhooks/stripe`（Stripe Webhook 受信ハンドラー）
 
-Stripe から送信される非同期イベントを受信し、署名検証と冪等性トランザクションを実行する。付与するのは、`paid`、通貨 `jpy`、単発 299 円または定額（980 円 / 2,980 円のいずれか）かつ Price が `STRIPE_PRICE_ID_MONTHLY_8` か `STRIPE_PRICE_ID_UNLIMITED`（既存加入者は `STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）、`livemode` が秘密鍵と一致、`metadata.userId` と Stripe 顧客 ID がその会員の利用枠と一致するときだけである。署名失敗の応答は `INVALID_SIGNATURE` のみとし、検証ライブラリのメッセージは返さない。
+Stripe から送信される非同期イベントを受信し、署名検証と冪等性トランザクションを実行する。付与するのは、`paid`、通貨 `jpy`、単発 299 円または定額（980 円 / 2,980 円のいずれか）かつ Price が `STRIPE_PRICE_ID_MONTHLY_8` か `STRIPE_PRICE_ID_UNLIMITED`（既存加入者は `STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）、`livemode` が秘密鍵と一致、`metadata.userId` と Stripe 顧客 ID がその会員のチケット情報と一致するときだけである。署名失敗の応答は `INVALID_SIGNATURE` のみとし、検証ライブラリのメッセージは返さない。
 
 受け付けるイベントは `checkout.session.completed`、`invoice.payment_succeeded`、`invoice.payment_failed`、`customer.subscription.updated`、`customer.subscription.deleted`、`charge.refunded`、`charge.dispute.created` である。定額の更新請求と、失敗、全額返金、異議申立は `billing_transactions` に残す。全額返金と異議申立では、単発の未使用クレジットが残っていれば 1 つ戻し、定額は `CANCELED` にする。使い切ったあとの公開済みイベントは自動では消さない。
 
@@ -2108,8 +2108,8 @@ export interface ProblemDetails {
 | :---- | :---- | :---- |
 | **400** | `probs/validation-error` | 入力パラメータの Zod スキーマ検証違反、Stripe 署名不正 |
 | **401** | `probs/unauthorized` | 有効な認証情報（JWT/トークン）の欠落 |
-| **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月額で8件まで公開980円/公開し放題2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
-| **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料枠消費（`PHONE_REQUIRED`） |
+| **402** | `probs/quota-exceeded` | 無料チケット消化（2枚）に伴う課金誘導（単発299円/月額で8件まで公開980円/公開し放題2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
+| **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料チケット消費（`PHONE_REQUIRED`） |
 | **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・集金・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
 | **409** | `probs/lock-conflict` | 他幹事による排他ロック保持中（編集中） |
@@ -2123,7 +2123,7 @@ export interface ProblemDetails {
 
 ## 8. 会員認証 API（Google サインイン、ログアウト、プロフィール）
 
-ローカル登録とログインは `POST /api/v1/auth/local` である。登録時の `platformRole` は受け取らず、常に `MEMBER` を保存する。パスワードの新規登録は `signup_intents` を作り、確認メールを送ってセッションも会員行も発行しない。応答は、新規でも既登録でも「確認メールを送信しました」とする。ログインはメール確認済みの会員だけが第一段階を通る。成功時は JWT を出さず、`login_challenges` と Cookie を返す。電話番号が未確認でも確認番号（メール）は始められ、無料枠の消費だけを拒否する。会員がいないときもパスワード照合と同じ時間をかける。登録は IP あたり 1 時間に 5 回、ログイン失敗はメールあたり 15 分に 10 回かつ IP あたり 15 分に 40 回までである。上限は `src/modules/auth/lib/rate-limits.ts` に集約し、環境変数（`AUTH_ATTEMPT_LIMIT` など）で調整できる。パスワード不一致の 401 には、厳しいほうの上限について `limitLabel`、`attemptLimit`、`remainingAttempts`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を載せる（画面が残り回数を出すため）。パスワードが一致したら、メールアドレス単位の失敗回数は消す。IP 単位は消さない。漏えい済みパスワードは Have I Been Pwned の範囲 API で拒否する。照合先が応答しないときは登録を止めない。
+ローカル登録とログインは `POST /api/v1/auth/local` である。登録時の `platformRole` は受け取らず、常に `MEMBER` を保存する。パスワードの新規登録は `signup_intents` を作り、確認メールを送ってセッションも会員行も発行しない。応答は、新規でも既登録でも「確認メールを送信しました」とする。ログインはメール確認済みの会員だけが第一段階を通る。成功時は JWT を出さず、`login_challenges` と Cookie を返す。電話番号が未確認でも確認番号（メール）は始められ、無料チケットの消費だけを拒否する。会員がいないときもパスワード照合と同じ時間をかける。登録は IP あたり 1 時間に 5 回、ログイン失敗はメールあたり 15 分に 10 回かつ IP あたり 15 分に 40 回までである。上限は `src/modules/auth/lib/rate-limits.ts` に集約し、環境変数（`AUTH_ATTEMPT_LIMIT` など）で調整できる。パスワード不一致の 401 には、厳しいほうの上限について `limitLabel`、`attemptLimit`、`remainingAttempts`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を載せる（画面が残り回数を出すため）。パスワードが一致したら、メールアドレス単位の失敗回数は消す。IP 単位は消さない。漏えい済みパスワードは Have I Been Pwned の範囲 API で拒否する。照合先が応答しないときは登録を止めない。
 
 この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 
@@ -2151,7 +2151,7 @@ export interface ProblemDetails {
    - 無ければメールアドレスで探す。その行の `googleSub` が別の `sub` なら結び付けず、`google_conflict` で登録画面へ戻す。
    - メールアドレスの行があり `googleSub` が空なら、その行へ `googleSub` と `emailVerifiedAt` を書く。パスワードは消さない。
    - どちらも無ければ会員行は作らず、`signup_intents` を作って `/auth/register?step=phone` へ進む。Cookie `signup_intent` に意向 ID を入れる。
-5. 既存会員を使うときは、`user_usage_quotas` が無ければ作る。新規の利用枠は電話番号確認の完了時に作る。
+5. 既存会員を使うときは、`user_usage_quotas` が無ければ作る。新規のチケット情報は電話番号確認の完了時に作る。
 6. 既存会員なら確認番号チャレンジを始め、`/auth/register?step=login-code` へ進む。JWT はまだ発行しない。新規の電話確認へ進むときは OAuth 用 Cookie を消し、意向 Cookie を残す。
 
 表示名は ID トークンの `name` を 50 文字までに切る。空ならメールアドレスのローカル部、それも空なら「会員」とする。
@@ -2226,9 +2226,9 @@ export interface ProblemDetails {
 1. 確認済みの `phone_e164` で会員を探す。
 2. 登録意向の `googleSub`、次にメールで会員を探す。
 3. 見つかった行が複数の別人なら 409（`PHONE_CONFLICT`）。
-4. 1 行なら、空いている手段だけを足す。利用枠は増やさない。
-5. 無ければ会員、利用枠、電話番号を同じトランザクションで作る。
-6. 見つかった行が退会済み（`deleted_at` あり）なら、新しい行を作らずに復帰させる。メール、表示名、パスワード、Google の結び付けを今回の登録内容で上書きし、`deleted_at = NULL` にする。`user_usage_quotas` は引き継ぎ、無料枠は戻さない。`account_change_logs` に `REACTIVATE` を残し、応答の `reactivated` を `true` にする。
+4. 1 行なら、空いている手段だけを足す。チケット情報は増やさない。
+5. 無ければ会員、チケット情報、電話番号を同じトランザクションで作る。
+6. 見つかった行が退会済み（`deleted_at` あり）なら、新しい行を作らずに復帰させる。メール、表示名、パスワード、Google の結び付けを今回の登録内容で上書きし、`deleted_at = NULL` にする。`user_usage_quotas` は引き継ぎ、無料チケットは戻さない。`account_change_logs` に `REACTIVATE` を残し、応答の `reactivated` を `true` にする。
 7. 登録意向を消し、`auth_token` を発行する。この経路は番号をいま証明しているので、ログイン第二段階は開かない。
 
 ### 8.7. GET / POST `/api/v1/auth/login-challenge`（確認番号）
@@ -2745,7 +2745,7 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 }
 ```
 
-`trial` は `trial_ends_at` が未来のときだけ `{ "endsAt": <ISO 8601> }`、それ以外は `null`。`trialEligible` は「加入中でなく、まだ初月無料を使っていない」ときだけ `true`（`resolveTrial` の判定）。`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り回数で、対象キャンペーンが無ければ 0。
+`trial` は `trial_ends_at` が未来のときだけ `{ "endsAt": <ISO 8601> }`、それ以外は `null`。`trialEligible` は「加入中でなく、まだ初月無料を使っていない」ときだけ `true`（`resolveTrial` の判定）。`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り枚数で、対象キャンペーンが無ければ 0。
 
 `tickets` は期限つきの無料チケット（`free_tickets`）の残りで、`freeGrantRemaining` とは別物。`available` は期限内で未使用の枚数、`expiringAt` はそのうち最も早い期限（1 枚も無ければ `null`）。`ad.nextGrantAt` は次の動画券を配れる日時（すぐ配れるなら `null`）。`referral.grantedCount` はこの人が紹介で配った枚数、`limit` は生涯上限（10）。`canCreate` は `available` が 1 以上でも `true` になる。
 

@@ -7,9 +7,9 @@ interface SeedOptions {
   role?: "OWNER" | "CO_HOST";
   isDeleted?: boolean;
   status?: EventStatus;
-  /** 公開のときに消費した枠。公開中の件数を数える側が使う。 */
+  /** 公開のときに消費したチケット。公開中の件数を数える側が使う。 */
   quotaSource?: QuotaSource | null;
-  /** 作成時に利用枠を消費済みか。複製が作った下書きを表す。 */
+  /** 作成時にチケットを消費済みか。複製が作った下書きを表す。 */
   quotaChargedAt?: Date | null;
   /** 開催日（UTC 0 時）。公開中の判定はこの日付で行う。 */
   scheduleDates?: Date[];

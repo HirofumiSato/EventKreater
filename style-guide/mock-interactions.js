@@ -16,11 +16,13 @@
 //   8. ヘッダーの切り抜き … 編集画面からトリミングのダイアログを開き、倍率だけ変える
 //   9. 名簿の表示列 … 「表示列」からチェックボックスのダイアログを開き、列を出し入れする
 //  10. 名簿の 1 枚 … 行を押して開く 1 枚。集金の切り替えをその場で入れ替える
-//  11. 料金プラン … 利用枠の帯から加入モーダルを開き、初月0円の札と 2 か月目からの金額を出す
+//  11. 料金プラン … 帯から加入モーダルを開き、初月0円の札と 2 か月目からの金額を出す
+//  12. 公開の確認 … 「公開する」から確認の層を開き、公開後は「チケットを使いました」を出す
 //
 // 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
 // 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
-// 名簿の表示列ダイアログ、名簿の 1 枚の集金日時、料金プランの加入モーダルだけ。
+// 名簿の表示列ダイアログ、名簿の 1 枚の集金日時、料金プランの加入モーダル、
+// 公開の確認と公開後の「チケットを使いました」だけ。
 // 他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
@@ -728,9 +730,13 @@
 
   // ---- 5. 共通の操作 -----------------------------------------------------
 
-  /** API を呼ばないと進まないボタン。押したら「モックでは実行しません」と返す。 */
+  /**
+   * API を呼ばないと進まないボタン。押したら「モックでは実行しません」と返す。
+   *
+   * プレビュー画面の「公開する」は、押したときに確認の層を挟むのでここには入れない
+   * （`wirePublishConfirm` が開き、層の中の「公開する」だけがこの返事を使う）。
+   */
   const API_ACTIONS = new Set([
-    "公開する",
     "ログインして公開/下書き保存",
     "下書き保存",
     "保存する",
@@ -1660,7 +1666,7 @@
   }
 
   /**
-   * 利用枠の帯の「公開し放題プランを見る」「0円チケットを受け取る」から、
+   * チケットの帯の「公開し放題プランを見る」「0円チケットを受け取る」から、
    * 加入モーダル（製品の `PricingModal`）を開く。
    *
    * **このダイアログだけ骨格を組み直す**のは、製品では押したときにしか出ず、
@@ -1714,8 +1720,8 @@
       const banner = trigger.closest(".alert");
       const bannerText = banner ? banner.textContent || "" : "";
       const label = (trigger.textContent || "").trim();
-      // 未加入は帯に残り回数が出る。加入済みは公開中の件数が出る。
-      const trialEligible = bannerText.includes("無料トライアル残り");
+      // 未加入は帯にチケットの残り枚数が出る。加入済みは公開中の件数が出る。
+      const trialEligible = bannerText.includes("無料チケット 残り") || bannerText.includes("無料トライアル残り");
       const freeTicket = label === "0円チケットを受け取る";
       // 加入中のプランは帯の文で見分ける。8 件の上限に達した文も 8 件プランだけが出す。
       const currentPlan = bannerText.includes("公開し放題に加入中")
@@ -1863,6 +1869,218 @@
     });
   }
 
+  // ---- 12. 公開の確認 ---------------------------------------------------
+
+  /**
+   * 製品の `PublishConfirmModal` の `CONFIRM_TEXT` と同じ題と、使うものの呼び方。
+   * 単位はどれも枚にそろえる（「枠」「回」は使わない）。
+   */
+  const PUBLISH_CONFIRM_TEXT = {
+    FREE_TICKET: { title: "チケットを使って公開しますか？", used: "チケットを1枚使います" },
+    PAID_CREDIT: { title: "単発チケットを使って公開しますか？", used: "単発チケットを1枚使います" },
+    FREE_TRIAL: { title: "無料チケットを使って公開しますか？", used: "無料チケットを1枚使います" },
+  };
+
+  /**
+   * プレビュー画面の「公開する」から、公開前の確認の層（製品の `PublishConfirmModal`）を開き、
+   * 公開後の「チケットを使いました」の層（製品の `PublishUsedModal`）までを再現する。
+   *
+   * 製品では、チケット・単発チケット・無料チケットを 1 枚使って公開するときだけ確認の層が出て、
+   * 公開が通るとその層を閉じて 2 枚目を開く。どちらも押したときにしか出ず撮った HTML に
+   * 残らないので、`wirePricingModal` と同じ写し方で骨格（`.modal` + `.dialog`）を組み直す。
+   *
+   * 何を 1 枚使うかは帯（`.alert--compact`）の文から読む。帯が残りを出していなければ
+   * 定額が有効か上限に達している状態で、製品もこの層を出さない（402 は料金の層が受ける）。
+   * そのときは API の要る操作として返事だけを出す。チケットの残りは帯に出ないので、
+   * チケットが単発や無料チケットより先に使われる場合までは写せない。
+   *
+   * 2 枚目は閉じると告知ページへ移るが、モックは遷移先を持たない。閉じる道
+   * （背景・右上・Escape・「告知ページを見る」）はすべて同じ返事にまとめ、層を閉じるだけにする。
+   */
+  function wirePublishConfirm() {
+    // プレビュー画面の帯にある「公開する」だけを拾う。他の HTML では何もしない。
+    const trigger = Array.from(document.querySelectorAll(".preview-toolbar button")).find(
+      (button) => (button.textContent || "").trim() === "公開する",
+    );
+    if (!trigger) return;
+
+    trigger.setAttribute("data-mock-wired", "true");
+
+    // 帯の文は「無料チケット 残り 2枚（単発 1枚）…」の形。旧文言
+    // （「無料トライアル残り 2回（単発 1回）」）も読めるようにしておく。数字だけを読む。
+    const banner = document.querySelector(".alert--compact");
+    const bannerText = (banner && banner.textContent) || "";
+    const trialMatch =
+      bannerText.match(/無料チケット\s*残り\s*(\d+)\s*枚/) ||
+      bannerText.match(/無料トライアル残り\s*(\d+)\s*回/);
+    const creditMatch = bannerText.match(/単発\s*(\d+)\s*[枚回]/);
+    const trial = trialMatch ? Number(trialMatch[1]) : 0;
+    const credits = creditMatch ? Number(creditMatch[1]) : 0;
+
+    // 製品の順は チケット → 単発チケット → 無料チケット。帯から読めるのは単発と無料だけ。
+    const kind = credits >= 1 ? "PAID_CREDIT" : trial >= 1 ? "FREE_TRIAL" : null;
+
+    // 使うチケットを帯から読めないときは、製品と同じく確認を挟まない。
+    if (!kind) {
+      trigger.addEventListener("click", () => toast("モックでは実行しません（API が要ります）。"));
+      return;
+    }
+
+    const part = PUBLISH_CONFIRM_TEXT[kind];
+    const remaining = kind === "PAID_CREDIT" ? credits : trial;
+    /** 確認で 1 枚使ったあとの残り。2 枚目の注記に出す。 */
+    const remainingAfter = Math.max(0, remaining - 1);
+
+    // 催し名は告知ページと同じ部品の h1 から取る。無ければチラシの題を使う。
+    const heading =
+      document.querySelector(".event-page h1") ||
+      document.querySelector(".poster-hero__title") ||
+      document.querySelector("h1");
+    const eventTitle = ((heading && heading.textContent) || "").trim() || "このイベント";
+
+    // 本文は「何を 1 枚使うか」と「公開するとどうなるか」だけを言う。
+    // 残りは本文に混ぜず、下の `.dialog__note` に今の枚数だけを出す。
+    const body =
+      eventTitle +
+      "。" +
+      part.used +
+      "。公開すると、告知URLが有効になり出欠を受け付けます。";
+
+    const build = () => {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="公開をやめる"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-publish-confirm-title" tabindex="-1">' +
+        '<button type="button" class="dialog__close" aria-label="公開をやめる">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-publish-confirm-title" class="dialog__title"></h3>' +
+        // 製品の `Dialog` と同じく、本文だけを `.dialog__content` に入れて送る
+        // （題と閉じる印は器に残す）。
+        '<div class="dialog__content">' +
+        '<p class="dialog__body"></p>' +
+        '<p class="dialog__note"></p>' +
+        "</div>" +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-publish-confirm>' +
+        "公開する" +
+        "</button>" +
+        '<button type="button" class="btn btn--ghost btn--block" data-mock-publish-close>' +
+        "やめる" +
+        "</button>" +
+        "</div></div>";
+      // 題と催し名は外から来る文字なので、HTML に混ぜず文字として入れる。
+      host.querySelector(".dialog__title").textContent = part.title;
+      host.querySelector(".dialog__body").textContent = body;
+      host.querySelector(".dialog__note").textContent = "残りチケット数：" + remaining + "枚";
+      return host;
+    };
+
+    /** 公開後に出す 2 枚目（製品の `PublishUsedModal`）。主操作は「告知ページを見る」1 つだけ。 */
+    const buildUsed = () => {
+      const host = document.createElement("div");
+      host.className = "modal modal--open";
+      host.innerHTML =
+        '<button type="button" class="modal__backdrop" aria-label="告知ページを見る"></button>' +
+        '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-publish-used-title" tabindex="-1">' +
+        '<button type="button" class="dialog__close" aria-label="告知ページを見る">' +
+        icon("close") +
+        "</button>" +
+        '<h3 id="mock-publish-used-title" class="dialog__title">チケットを使いました</h3>' +
+        '<div class="dialog__content">' +
+        '<p class="dialog__body"></p>' +
+        '<p class="dialog__note"></p>' +
+        "</div>" +
+        '<div class="dialog__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-mock-publish-used>' +
+        "告知ページを見る" +
+        "</button>" +
+        "</div></div>";
+      // 催し名は外から来る文字なので、HTML に混ぜず文字として入れる。
+      host.querySelector(".dialog__body").textContent = "「" + eventTitle + "」を公開しました。";
+      host.querySelector(".dialog__note").textContent = "残りチケット数：" + remainingAfter + "枚";
+      return host;
+    };
+
+    let modal = null;
+    /** 公開後の 2 枚目。確認の層とは別に覚える。 */
+    let usedModal = null;
+
+    /** いま出ている層をすべて閉じる。2 枚目のあとは、本文の停止と印もここで戻す。 */
+    const close = () => {
+      if (!modal && !usedModal) return;
+      if (modal) {
+        modal.remove();
+        modal = null;
+      }
+      if (usedModal) {
+        usedModal.remove();
+        usedModal = null;
+      }
+      document.documentElement.removeAttribute("data-scroll-lock");
+      trigger.setAttribute("aria-expanded", "false");
+    };
+
+    /**
+     * 2 枚目の閉じる道（背景・右上・Escape・「告知ページを見る」）。
+     * 製品はどれも告知ページへ移るが、モックは遷移先を持たないので返事だけを出す。
+     */
+    const closeUsed = () => {
+      if (!usedModal) return;
+      toast("モックでは実行しません（API が要ります）。");
+      close();
+    };
+
+    /** 確認の層を閉じて、公開後の層へ差し替える。本文の停止と印は次の層が引き継ぐ。 */
+    const openUsed = () => {
+      if (modal) {
+        modal.remove();
+        modal = null;
+      }
+      usedModal = buildUsed();
+      document.body.append(usedModal);
+      usedModal.querySelector(".dialog").focus();
+      for (const closer of usedModal.querySelectorAll(
+        ".modal__backdrop, .dialog__close, [data-mock-publish-used]",
+      )) {
+        closer.addEventListener("click", closeUsed);
+      }
+    };
+
+    // 帯のボタンは、ここの処理だけで開く（`wireActions` のトーストを出さない）。
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-expanded", "false");
+
+    trigger.addEventListener("click", () => {
+      if ((modal && modal.isConnected) || (usedModal && usedModal.isConnected)) return;
+      modal = build();
+      document.body.append(modal);
+      document.documentElement.setAttribute("data-scroll-lock", "true");
+      trigger.setAttribute("aria-expanded", "true");
+
+      // 題と閉じる印は器に残したまま、本文の列（`.dialog__content`）だけが送られる。
+      const dialog = modal.querySelector(".dialog");
+      dialog.focus();
+
+      // 「やめる」の道は、何も使わずに閉じる。
+      for (const closer of modal.querySelectorAll(
+        ".dialog__close, .modal__backdrop, [data-mock-publish-close]",
+      )) {
+        closer.addEventListener("click", close);
+      }
+      // 公開は API が要る。モックは公開が通った後だけを写し、2 枚目へ差し替える。
+      modal.querySelector("[data-mock-publish-confirm]").addEventListener("click", openUsed);
+    });
+
+    // 製品の `Dialog` は Escape でも閉じる。2 枚目では、閉じたあと告知ページへ移る。
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (usedModal) closeUsed();
+      else if (modal) close();
+    });
+  }
+
   // ---- 起動 -------------------------------------------------------------
 
   function start() {
@@ -1876,6 +2094,7 @@
     wireRosterColumns();
     wireRosterRowSheet();
     wirePricingModal();
+    wirePublishConfirm();
     wireActions();
   }
 

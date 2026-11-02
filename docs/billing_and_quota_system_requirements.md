@@ -1,10 +1,10 @@
 ﻿# システム要件定義書
 
-## イベント主催者向け 利用枠（クォータ）管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）
+## イベント主催者向け チケット管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）
 
 ### 1. 文書概要とシステム境界
 
-本ドキュメントは、「利用枠（クォータ）管理＆課金決済基盤 機能別企画要件定義書」に基づき、Stripe Hosted Checkout、Webhookイベントハンドリング、クォータテーブル設計、およびイベント作成認可ゲートのシステム要件・アーキテクチャを定義する。
+本ドキュメントは、「チケット管理＆課金決済基盤 機能別企画要件定義書」に基づき、Stripe Hosted Checkout、Webhookイベントハンドリング、クォータテーブル設計、およびイベント作成認可ゲートのシステム要件・アーキテクチャを定義する。
 
 #### 1.1. システム間境界（疎結合インターフェース）
 
@@ -16,7 +16,7 @@ flowchart LR
         CreateReq[主催者: イベント作成/複製リクエスト]
         CoreLogic[イベント作成実行処理]
     end
-    subgraph BillingEngine [利用枠＆課金決済基盤]
+    subgraph BillingEngine [チケット＆課金決済基盤]
         AuthGate["認可ゲート<br>canCreateEvent(userId)"]
         QuotaDB[(クォータDB<br>user_usage_quotas)]
         Modal["課金モーダル表示<br>(HTTP 402)"]
@@ -26,49 +26,49 @@ flowchart LR
         StripeWebhook[Stripe Webhooks]
     end
     CreateReq --> AuthGate
-    AuthGate -- 枠照会 --> QuotaDB
-    AuthGate -- 認可OK (枠消費/サブスク有効) --> CoreLogic
-    AuthGate -- 認可NG (枠上限到達) --> Modal
+    AuthGate -- チケット照会 --> QuotaDB
+    AuthGate -- 認可OK (チケット消費/サブスク有効) --> CoreLogic
+    AuthGate -- 認可NG (チケット不足) --> Modal
     Modal --> StripeCheckout
     StripeCheckout --> StripeWebhook
-    StripeWebhook -- 枠付与 / サブスク更新 --> QuotaDB
+    StripeWebhook -- チケット付与 / サブスク更新 --> QuotaDB
 ```
 
 ---
 
 ### 2. クォータ判定ルールと消費仕様
 
-主催者がイベントを公開・再公開する際、以下の優先順位に従って判定および枠消費を行う。判定は公開の瞬間だけ行う。下書きの作成と複製では消費しない。
+主催者がイベントを公開・再公開する際、以下の優先順位に従って判定およびチケット消費を行う。判定は公開の瞬間だけ行う。下書きの作成と複製では消費しない。
 
 #### 2.1. クォータ判定・消費の優先順位
 
 1. **第1優先：定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）**
    - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`。初月無料の `trialing` も `ACTIVE` に写すので、無料期間中も同じように公開できる。
    - 処理: プランを見て分岐する。
-     - `subscription_plan = 'UNLIMITED'`（公開し放題）: 公開を即時認可。枠（クレジット）は消費せず、公開中のイベント数も数えない。
+     - `subscription_plan = 'UNLIMITED'`（公開し放題）: 公開を即時認可。チケットは消費せず、公開中のイベント数も数えない。
      - `subscription_plan = 'MONTHLY_8'`: 公開中のイベント数を数える。8 件未満なら認可（`quota_source = 'SUBSCRIPTION'`）。8 件に達していれば第2優先へ落ちる。
-   - 「公開中」の定義: `status = 'PUBLISHED'`、`is_deleted = false`、`quota_source = 'SUBSCRIPTION'`、`EventOrganizer.role = 'OWNER'` が本人、かつ開催日（`EventSchedule.event_date`）の最大値が今日（JST）以降。開催日を過ぎたもの、`CLOSED`、削除済みは数えない。単発と無料枠で公開したものは枠の外なので含めない。
-2. **第2優先：単発購入済みクレジット（299円/回）**
+   - 「公開中」の定義: `status = 'PUBLISHED'`、`is_deleted = false`、`quota_source = 'SUBSCRIPTION'`、`EventOrganizer.role = 'OWNER'` が本人、かつ開催日（`EventSchedule.event_date`）の最大値が今日（JST）以降。開催日を過ぎたもの、`CLOSED`、削除済みは数えない。単発と無料チケットで公開したものは件数の外なので含めない。
+2. **第2優先：単発購入済みクレジット（299円/枚）**
    - 判定条件: `paid_credits >= 1`
    - 処理: `paid_credits` を 1 デクリメント（消費）し、公開を認可（`quota_source = 'PAID_CREDIT'`）。8 件が埋まっていても使える。
-3. **第3優先：無料トライアル枠（累計2回まで）**
+3. **第3優先：無料チケット（累計2枚まで）**
    - 判定条件: サブスクが有効でなく、`free_event_count < 2` かつ、その会員の `phone_verified_at` が入っていること。
    - 処理: `free_event_count` を 1 インクリメントし、公開を認可（`quota_source = 'FREE_TRIAL'`）。
-   - 電話番号が未確認のときは HTTP 403（`PHONE_REQUIRED`）。枠は減らさない。
-   - 加入中は無料枠を使わない（8 件プランの上限に達した人が無料枠で抜けないようにする）。
+   - 電話番号が未確認のときは HTTP 403（`PHONE_REQUIRED`）。チケットは減らさない。
+   - 加入中は無料チケットを使わない（8 件プランの上限に達した人が無料チケットで抜けないようにする）。
 4. **上限到達（未認可）**
    - 判定条件: 上記すべてに該当しない場合。
    - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。月額で8件まで公開プランで公開中が 8 件に達しただけなら `error = "PUBLISHED_EVENTS_FULL"` とし、公開し放題への変更を案内する。それ以外は `QUOTA_EXCEEDED`。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
 
-加入中の会員は無料トライアル枠へは戻らない。月額で8件まで公開プランで枠が埋まっているときは、単発クレジットがあればそれを使い、無ければ 402 で公開し放題を案内する。
+加入中の会員は無料チケットへは戻らない。月額で8件まで公開プランで上限に達しているときは、単発クレジットがあればそれを使い、無ければ 402 で公開し放題を案内する。
 
-枠が空くのは「開催日を過ぎる」「公開を一時停止（`CLOSED`）」「削除（論理削除）」の3つだけ。使わなかった枠は翌月へ繰り越さない。解約後も既存の掲載は残し、新規の公開だけを止める。移行前に上限を超えている会員は、既存を消さず新規公開だけ止める（グランドファザー）。
+公開できる件数が空くのは「開催日を過ぎる」「公開を一時停止（`CLOSED`）」「削除（論理削除）」の3つだけ。使わなかった件数は翌月へ繰り越さない。解約後も既存の掲載は残し、新規の公開だけを止める。移行前に上限を超えている会員は、既存を消さず新規公開だけ止める（グランドファザー）。
 
-無料 2 回の主体は会員行ではなく、確認済み電話番号である。同じ番号で別メールや別 Google アカウントから入っても、会員行は増えず、枠も増えない。
+無料 2 枚の主体は会員行ではなく、確認済み電話番号である。同じ番号で別メールや別 Google アカウントから入っても、会員行は増えず、チケットも増えない。
 
-#### 2.2. 共同幹事の枠消費ルール
+#### 2.2. 共同幹事のチケット消費ルール
 
-- **イベントの筆頭作成者（オーナー）のみが枠を消費する。**
+- **イベントの筆頭作成者（オーナー）のみがチケットを消費する。**
 - 招待された共同幹事（Co-organizer）が同一イベントの編集、閲覧、参加者管理を行う際、共同幹事自身のクォータは一切消費されない。
 
 ---
@@ -194,7 +194,7 @@ flowchart TD
 
 | テーブル名 | 論理名 | 役割・責務 |
 | :---- | :---- | :---- |
-| `user_usage_quotas` | ユーザー利用枠クォータ | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層を一元管理。月額で8件まで公開プランの上限は、この行の回数ではなく公開中のイベント数で判定する |
+| `user_usage_quotas` | ユーザーチケット情報 | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層を一元管理。月額で8件まで公開プランの上限は、チケットの枚数ではなく公開中のイベント数で判定する |
 | `billing_transactions` | 課金決済トランザクション | Stripe決済（単発/定期）の監査ログ、金額、セッションID履歴 |
 | `stripe_webhook_events` | Webhook冪等性管理ログ | 処理済みStripe Event IDを記録し二重処理を物理遮断 |
 | `pricing_campaigns` | 価格キャンペーン | 期間・対象・割引率・優先度・停止日時。定価は変更しない |
@@ -206,7 +206,7 @@ flowchart TD
 
 #### 4.2. テーブル物理定義
 
-##### ① `user_usage_quotas`（ユーザー利用枠テーブル）
+##### ① `user_usage_quotas`（ユーザーチケットテーブル）
 
 ```sql
 CREATE TYPE subscription_status_enum AS ENUM (
@@ -218,7 +218,7 @@ CREATE TYPE subscription_status_enum AS ENUM (
 );
 
 CREATE TYPE quota_source_enum AS ENUM (
-    'FREE_TRIAL',   -- 無料枠（累計2回）
+    'FREE_TRIAL',   -- 無料チケット（累計2枚）
     'PAID_CREDIT',  -- 単発チケット
     'SUBSCRIPTION'  -- 定額プラン（公開中の件数に数える）
 );
@@ -302,7 +302,7 @@ enum SubscriptionPlan {
   UNLIMITED
 }
 
-/// イベントがどの利用枠から公開されたか。公開中の件数を数えるのは SUBSCRIPTION だけ。
+/// イベントがどのチケットから公開されたか。公開中の件数を数えるのは SUBSCRIPTION だけ。
 enum QuotaSource {
   FREE_TRIAL
   PAID_CREDIT
@@ -338,7 +338,7 @@ model UserUsageQuota {
   @@map("user_usage_quotas")
 }
 
-/// 公開したときの枠を残す。公開中の件数を数えるのはこの列が SUBSCRIPTION のものだけ。
+/// 公開したときのチケットを残す。公開中の件数を数えるのはこの列が SUBSCRIPTION のものだけ。
 model Event {
   id             String       @id @db.Uuid
   status         EventStatus
@@ -394,9 +394,9 @@ model StripeWebhookEvent {
 | `invoice.payment_succeeded` | サブスクリプションの初回または月次更新 | 顧客またはサブスク ID から会員を特定し、Price と階層の定価（980 円 / 2,980 円）と `jpy` が一致するとき `ACTIVE`・`subscription_plan`・`current_period_end` を更新する。初回は Checkout の行へ請求書 ID を足す。2 回目以降は `billing_transactions` に支払済みの行を増やす |
 | `invoice.payment_failed` | サブスクリプションの請求失敗 | `subscription_status = PAST_DUE`。同じ請求書 ID の履歴を失敗にする。既に支払済みの行は失敗へ戻さない |
 | `customer.subscription.updated` | 契約状態の変化 | `active` は Price が階層の Price ID のときだけ `ACTIVE`（`subscription_plan` も Price ID から決める）。`trialing` も `ACTIVE` に写し、`trial_end` を `trial_ends_at` に記録する（`active` になったら `trial_ends_at` は NULL、`trial_used_at` は残す）。`past_due` は `PAST_DUE`。`incomplete` は `INCOMPLETE`。それ以外は `CANCELED` |
-| `customer.subscription.deleted` | サブスクリプションの解約完了 | `subscription_status = CANCELED`。以後の作成は単発クレジットまたは無料枠へ戻る |
-| `charge.refunded` | 全額返金 | 履歴を `REFUNDED` にする。単発で未使用クレジットが残っていれば 1 つ戻す。月額なら `CANCELED`。一部返金では枠を変えない。公開済みイベントは自動では消さない |
-| `charge.dispute.created` | 異議申立 | 履歴を `DISPUTED` にし、全額返金と同じ枠の戻しを一度だけ行う |
+| `customer.subscription.deleted` | サブスクリプションの解約完了 | `subscription_status = CANCELED`。以後の作成は単発クレジットまたは無料チケットへ戻る |
+| `charge.refunded` | 全額返金 | 履歴を `REFUNDED` にする。単発で未使用クレジットが残っていれば 1 つ戻す。月額なら `CANCELED`。一部返金ではチケットを変えない。公開済みイベントは自動では消さない |
+| `charge.dispute.created` | 異議申立 | 履歴を `DISPUTED` にし、全額返金と同じチケットの戻しを一度だけ行う |
 
 ---
 
@@ -484,7 +484,7 @@ model StripeWebhookEvent {
 
 - **URL:** `GET /api/v1/billing/quota`
 - **認可:** 認証済み主催者（JWT セッション）
-- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、どのプランでも返す（未加入・公開し放題は単発や無料枠から公開したものも数える）。
+- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、どのプランでも返す（未加入・公開し放題は単発や無料チケットから公開したものも数える）。
 - **レスポンス (200 OK):**
 
 ```json
@@ -540,7 +540,7 @@ export async function assertCanCreateEvent(userId: string) {
     throw new ProblemDetailException({
       status: 404,
       title: 'Quota Not Found',
-      detail: '主催者の利用枠情報が存在しません。',
+      detail: '主催者のチケット情報が存在しません。',
     });
   }
   const now = new Date();
@@ -555,7 +555,7 @@ export async function assertCanCreateEvent(userId: string) {
     (await countPublishedSubscriptionEvents(prisma, userId, now)) >=
       SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
 
-  // 1. 定額プラン（公開し放題、または8件プランで枠が残っている）
+  // 1. 定額プラン（公開し放題、または8件プランで件数が残っている）
   if (subscriptionActive && !capped) {
     return { type: 'SUBSCRIPTION', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
@@ -563,7 +563,7 @@ export async function assertCanCreateEvent(userId: string) {
   if (quota.paidCredits >= 1) {
     return { type: 'PAID_CREDIT', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
-  // 3. 無料トライアル（累計2回まで。加入中は対象外）
+  // 3. 無料チケット（累計2枚まで。加入中は対象外）
   if (!subscriptionActive && quota.freeEventCount < 2) {
     return { type: 'FREE_TRIAL', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
@@ -574,7 +574,7 @@ export async function assertCanCreateEvent(userId: string) {
         status: 402,
         title: 'Payment Required',
         detail:
-          '無料トライアル枠（2回）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。',
+          '無料チケット（2枚）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。',
         pricingOptions: {
           oneTimePrice: 299,
           subscription8MonthlyPrice: 980,

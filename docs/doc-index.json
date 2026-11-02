@@ -2029,14 +2029,14 @@
       "path": "docs/backend_api_implementation_spec.md",
       "sphinxDoc": "backend_api_implementation_spec",
       "format": "markdown",
-      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
+      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
       "lineCount": 2788,
       "headings": [
         {
           "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）"
+          "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）"
         },
         {
           "level": 2,
@@ -2196,7 +2196,7 @@
         },
         {
           "level": 2,
-          "text": "6. 利用枠・Stripe決済系 API エンドポイント詳細仕様"
+          "text": "6. チケット・Stripe決済系 API エンドポイント詳細仕様"
         },
         {
           "level": 3,
@@ -2525,7 +2525,7 @@
         },
         {
           "level": 2,
-          "text": "イベント主催者向け 利用枠（クォータ）管理＆課金決済基盤（Usage Quota & Monetization Engine）"
+          "text": "イベント主催者向け チケット管理＆課金決済基盤（Ticket & Monetization Engine）"
         },
         {
           "level": 3,
@@ -2557,7 +2557,7 @@
         },
         {
           "level": 4,
-          "text": "2.3. 利用枠判定・認可ゲートフロー（Gate Flow）"
+          "text": "2.3. チケット判定・認可ゲートフロー（Gate Flow）"
         },
         {
           "level": 4,
@@ -2589,7 +2589,7 @@
         },
         {
           "level": 4,
-          "text": "批判2: 複数アカウント作成（捨てメアド）による「無料トライアル2回」の無限ループ悪用"
+          "text": "批判2: 複数アカウント作成（捨てメアド）による「無料チケット2枚」の無限ループ悪用"
         },
         {
           "level": 4,
@@ -2625,7 +2625,7 @@
       "headings": [
         {
           "level": 2,
-          "text": "イベント主催者向け 利用枠（クォータ）管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）"
+          "text": "イベント主催者向け チケット管理＆課金決済基盤（Stripe連携・クォータDB・Webhook）"
         },
         {
           "level": 3,
@@ -2645,7 +2645,7 @@
         },
         {
           "level": 4,
-          "text": "2.2. 共同幹事の枠消費ルール"
+          "text": "2.2. 共同幹事のチケット消費ルール"
         },
         {
           "level": 3,
@@ -2677,7 +2677,7 @@
         },
         {
           "level": 5,
-          "text": "① user_usage_quotas（ユーザー利用枠テーブル）"
+          "text": "① user_usage_quotas（ユーザーチケットテーブル）"
         },
         {
           "level": 5,
@@ -2830,7 +2830,7 @@
         },
         {
           "level": 2,
-          "text": "ローカルでの利用枠の書き換え"
+          "text": "ローカルでのチケットの書き換え"
         },
         {
           "level": 2,
@@ -2860,14 +2860,14 @@
       "path": "docs/DBschema.md",
       "sphinxDoc": "DBschema",
       "format": "markdown",
-      "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
-      "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
+      "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
+      "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
       "lineCount": 1783,
       "headings": [
         {
           "level": 2,
-          "text": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書"
+          "text": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書"
         },
         {
           "level": 2,
@@ -2943,7 +2943,7 @@
         },
         {
           "level": 3,
-          "text": "5.1. イベント新規作成（課金認可ゲート判定＆枠消費）"
+          "text": "5.1. イベント新規作成（課金認可ゲート判定＆チケット消費）"
         },
         {
           "level": 3,
@@ -5573,7 +5573,7 @@
         },
         {
           "level": 2,
-          "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）"
+          "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤（Next.js App Router / React / Tailwind CSS / Stripe）"
         },
         {
           "level": 2,
@@ -5617,7 +5617,7 @@
         },
         {
           "level": 2,
-          "text": "4. 課金・クォータ・ポータル関連UIコンポーネント詳細実装"
+          "text": "4. 課金・チケット・ポータル関連UIコンポーネント詳細実装"
         },
         {
           "level": 3,
@@ -5633,11 +5633,11 @@
         },
         {
           "level": 3,
-          "text": "4.4. QuotaStatusBanner.tsx（クォータ残数＆プラン状態表示バー）"
+          "text": "4.4. QuotaStatusBanner.tsx（チケット残数＆プラン状態表示バー）"
         },
         {
           "level": 2,
-          "text": "5. 課金＆クォータ統合カスタムフック (useEventQuota.ts)"
+          "text": "5. 課金＆チケット統合カスタムフック (useEventQuota.ts)"
         },
         {
           "level": 2,
@@ -6187,14 +6187,14 @@
       "path": "docs/index.rst",
       "sphinxDoc": "index",
       "format": "rst",
-      "title": "利用枠管理・課金決済基盤",
-      "summary": "イベント告知・出欠と、主催者の利用枠・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
+      "title": "チケット管理・課金決済基盤",
+      "summary": "イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
       "lineCount": 173,
       "headings": [
         {
           "level": 1,
-          "text": "利用枠管理・課金決済基盤"
+          "text": "チケット管理・課金決済基盤"
         },
         {
           "level": 2,
@@ -7013,14 +7013,14 @@
       "path": "docs/issues/draft-checkout-and-publish.md",
       "sphinxDoc": "issues/draft-checkout-and-publish",
       "format": "markdown",
-      "title": "枠超過時のサーバー下書きと、下書き公開 API を追加する",
-      "summary": "> 枠（クォータ）を使い切った主催者が新規作成で 402 になったとき、入力内容を失わずに購入後へ復帰できるようにする issue。画面遷移側は [organizer-home-screen-flow.md](organizer-home-screen-flow.md)。",
+      "title": "チケット超過時のサーバー下書きと、下書き公開 API を追加する",
+      "summary": "> チケット（クォータ）を使い切った主催者が新規作成で 402 になったとき、入力内容を失わずに購入後へ復帰できるようにする issue。画面遷移側は [organizer-home-screen-flow.md](organizer-home-screen-flow.md)。",
       "preImplementation": false,
       "lineCount": 114,
       "headings": [
         {
           "level": 1,
-          "text": "枠超過時のサーバー下書きと、下書き公開 API を追加する"
+          "text": "チケット超過時のサーバー下書きと、下書き公開 API を追加する"
         },
         {
           "level": 2,
@@ -9682,7 +9682,7 @@
         },
         {
           "level": 2,
-          "text": "利用枠の動き"
+          "text": "チケットの動き"
         },
         {
           "level": 2,
@@ -9888,7 +9888,7 @@
         },
         {
           "level": 3,
-          "text": "3.3. ゲスト幹事と利用枠の主体がつながっていない"
+          "text": "3.3. ゲスト幹事とチケットの主体がつながっていない"
         },
         {
           "level": 3,
@@ -10073,7 +10073,7 @@
         },
         {
           "level": 4,
-          "text": "UC-11 利用枠を購入し、契約を管理する"
+          "text": "UC-11 チケットを購入し、契約を管理する"
         },
         {
           "level": 4,
@@ -10532,7 +10532,7 @@
         },
         {
           "level": 3,
-          "text": "利用枠・課金"
+          "text": "チケット・課金"
         },
         {
           "level": 3,
@@ -10587,7 +10587,7 @@
       "sphinxDoc": "stripe",
       "format": "rst",
       "title": "Stripe のローカルテストと操作",
-      "summary": "このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、利用枠の確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。",
+      "summary": "このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、チケットの確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。",
       "preImplementation": false,
       "lineCount": 261,
       "headings": [
@@ -10939,7 +10939,7 @@
       "sphinxDoc": "testing/index",
       "format": "rst",
       "title": "自動テスト",
-      "summary": "この節は、利用枠・課金決済の Next.js アプリを手元で自動実行するときの文書です。読む順は 11 ページで、このページが 1 番です。",
+      "summary": "この節は、チケット・課金決済の Next.js アプリを手元で自動実行するときの文書です。読む順は 11 ページで、このページが 1 番です。",
       "preImplementation": false,
       "lineCount": 89,
       "headings": [
@@ -11039,7 +11039,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 654,
+      "lineCount": 662,
       "headings": [
         {
           "level": 1,
@@ -11094,6 +11094,10 @@
         },
         {
           "path": "tests/components/participant-list-table.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/publish-confirm-modal.test.tsx",
           "exists": true
         },
         {
@@ -11370,6 +11374,10 @@
         },
         {
           "path": "tests/unit/public-organizer-page.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/publish-confirm.test.ts",
           "exists": true
         },
         {

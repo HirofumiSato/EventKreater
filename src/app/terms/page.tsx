@@ -50,7 +50,7 @@ export default function TermsPage() {
       />
 
       <div className="notice">
-        <strong>要約</strong>　公開は累計 {FREE_EVENT_LIMIT} 回まで無料。単発は {yen(ONE_TIME_PRICE_JPY)}、
+        <strong>要約</strong>　公開は累計 {FREE_EVENT_LIMIT} 枚まで無料。単発は {yen(ONE_TIME_PRICE_JPY)}、
         月額は公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで {yen(SUBSCRIPTION_8_PRICE_JPY)}、
         公開し放題 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}（いずれも税込）。
         月額プランは、はじめての加入に限り初月0円で、2か月目から定価を請求します。
@@ -84,7 +84,7 @@ export default function TermsPage() {
         <h2>第2条（アカウント）</h2>
         <p>
           利用者は、正確な情報でアカウントを登録し、認証情報を自己の責任で管理するものとします。
-          無料枠および0円キャンペーンを利用するには、電話番号の確認が必要です。ひとりの利用者が複数のアカウントを作成して
+          無料チケットおよび0円キャンペーンを利用するには、電話番号の確認が必要です。ひとりの利用者が複数のアカウントを作成して
           特典を重複して受け取る行為は禁止します。
         </p>
       </section>
@@ -96,10 +96,10 @@ export default function TermsPage() {
         </p>
         <ul>
           <li>
-            <strong>無料枠</strong>: イベントの公開を累計 {FREE_EVENT_LIMIT} 回まで利用できます。
+            <strong>無料チケット</strong>: イベントの公開を累計 {FREE_EVENT_LIMIT} 枚まで利用できます。
           </li>
           <li>
-            <strong>単発チケット</strong>: 1回分 {yen(ONE_TIME_PRICE_JPY)}。イベントを1回公開するごとに1回分を消費します。
+            <strong>単発チケット</strong>: 1枚 {yen(ONE_TIME_PRICE_JPY)}。イベントを1回公開するごとに1枚を消費します。
           </li>
           <li>
             <strong>月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</strong>: 月額{" "}
@@ -168,12 +168,12 @@ export default function TermsPage() {
       <section className="legal" id="free-ticket">
         <h2>第5条（0円の単発チケット）</h2>
         <p>
-          単発チケットを対象とする0円キャンペーンでは、決済事業者を通さず、本サービス内で1回分の利用権を付与します。
+          単発チケットを対象とする0円キャンペーンでは、決済事業者を通さず、本サービス内で1枚の利用権を付与します。
           付与には電話番号の確認が必要です。
         </p>
         <ul>
           <li>
-            ひとりの利用者が受け取れる回数は、キャンペーンごとに定める回数（特に定めがない場合は1回）までです。
+            ひとりの利用者が受け取れる枚数は、キャンペーンごとに定める枚数（特に定めがない場合は1枚）までです。
             付与された利用権は、ほかの利用者へ譲渡できません。
           </li>
           <li>
@@ -181,7 +181,7 @@ export default function TermsPage() {
             ほかの特典へ交換したり、現金へ換えたりすることはできません。
           </li>
           <li>
-            0円で付与された利用権にも、第3条の無料枠とは別に、イベントを公開した時点で1回分を消費します。
+            0円で付与された利用権にも、第3条の無料チケットとは別に、イベントを公開した時点で1枚を消費します。
           </li>
         </ul>
       </section>
