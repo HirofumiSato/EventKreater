@@ -8,6 +8,7 @@ import {
   writeCookie,
 } from "@/modules/auth/lib/cookies";
 import { startLoginChallenge, purposeForAudience, writeLoginChallengeCookie } from "@/modules/auth/lib/login-challenge";
+import { readReferralCookie } from "@/modules/auth/lib/referral-cookie";
 import {
   GoogleAuthError,
   exchangeGoogleCode,
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
   try {
     const idToken = await exchangeGoogleCode(code);
     const profile = await verifyGoogleIdToken(idToken, nonce);
-    const resolved = await resolveGoogleAccount(profile, audience);
+    const resolved = await resolveGoogleAccount(profile, audience, readReferralCookie(req));
     if (resolved.kind === "phone") {
       const url = new URL(basePath, req.nextUrl.origin);
       url.searchParams.set("step", "phone");

@@ -2352,6 +2352,19 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 同じ確認済み電話番号で登録し直したときは、8.6 の決定順で退会済みの行が見つかる。このときは新しい行を作らず、`deleted_at = NULL` に戻し、今回のメール、表示名、パスワード、Google の結び付けで上書きする。`user_usage_quotas` は引き継ぎ、`free_event_count` と `paid_credits` は戻さない。`account_change_logs` に `REACTIVATE` を残し、`POST /api/v1/auth/phone/confirm` の応答に `reactivated: true` を付ける。
 
+### 8.17. GET `/api/v1/user/referral`（紹介リンクと実績）
+
+対象画面は SCR-PUB-03（主催者マイページ）の「紹介」の紙。認証は会員 Cookie。
+
+応答は `{ "code": "x7Kd2mQp", "url": "https://.../auth/register?ref=x7Kd2mQp", "invited": 2, "granted": 4, "limit": 10 }`。
+
+- `code` は `users.referral_code`。**まだ無ければこの呼び出しで作る**（8 文字の英数。`0`・`O`・`1`・`l` は使わない）。既にあるコードは変えない。
+- `invited` は `users.referred_by_user_id` が自分で、退会していない会員の数。
+- `granted` は `free_tickets` のうち `user_id` が自分・`source = REFERRAL` の枚数。生涯上限 `limit` と同じ数え方をする。
+- `url` は登録の入口を指す絶対 URL。紹介コードは 8.6 の登録で Cookie（`ref_code`、30 日）から `signup_intents.referral_code` へ入り、会員になった時点で `users.referred_by_user_id` に確定する。存在しないコードと退会者は紹介者にしない。
+
+紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。
+
 ---
 
 ## 9. チラシ生成 API と生成処理
@@ -2715,6 +2728,12 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
   "publishedEventLimit": 8,
   "remainingPublished": 5,
   "freeGrantRemaining": 1,
+  "tickets": {
+    "available": 2,
+    "expiringAt": "2026-12-02T00:00:00.000Z",
+    "ad": { "nextGrantAt": null },
+    "referral": { "code": "x7Kd2mQp", "grantedCount": 2, "limit": 10 }
+  },
   "trial": { "endsAt": "2026-11-21T00:00:00.000Z" },
   "trialEligible": false,
   "discount": {
@@ -2727,6 +2746,8 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 ```
 
 `trial` は `trial_ends_at` が未来のときだけ `{ "endsAt": <ISO 8601> }`、それ以外は `null`。`trialEligible` は「加入中でなく、まだ初月無料を使っていない」ときだけ `true`（`resolveTrial` の判定）。`discount` は `pricing_campaign_id` と `discount_ends_at` が入っているときだけ返す。`freeGrantRemaining` は 0 円の単発チケットの残り受け取り回数で、対象キャンペーンが無ければ 0。
+
+`tickets` は期限つきの無料チケット（`free_tickets`）の残りで、`freeGrantRemaining` とは別物。`available` は期限内で未使用の枚数、`expiringAt` はそのうち最も早い期限（1 枚も無ければ `null`）。`ad.nextGrantAt` は次の動画券を配れる日時（すぐ配れるなら `null`）。`referral.grantedCount` はこの人が紹介で配った枚数、`limit` は生涯上限（10）。`canCreate` は `available` が 1 以上でも `true` になる。
 
 ### 11.7. POST `/api/v1/billing/checkout/one-time` の 0 円分岐
 

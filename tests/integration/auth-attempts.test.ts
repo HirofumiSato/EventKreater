@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { sha256 } from "@/lib/crypto";
 import { confirmPhoneVerification } from "@/modules/auth/lib/phone";
+import { beginSignupIntent } from "@/modules/auth/lib/verification";
 import {
   assertWithinAttemptLimit,
   attemptWindow,
@@ -164,6 +165,19 @@ describeDb("電話番号の確認コード（結合）", () => {
     });
   }
 
+  /** 登録の途中（SignupIntent）に結び付いた確認コード。会員はまだ居ない。 */
+  async function seedIntentCode(intentId: string, phone: string, code: string) {
+    const pepper = process.env.JWT_SECRET ?? "phone";
+    await prisma.phoneVerificationCode.create({
+      data: {
+        phoneE164: phone,
+        codeHash: sha256(`${pepper}:${phone}:${code}`),
+        signupIntentId: intentId,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+  }
+
   it("入力ミスを使い切ると CODE_EXHAUSTED になり、再送を促す", async () => {
     const phone = `+8190${String(Date.now()).slice(-8)}`;
     phones.push(phone);
@@ -227,5 +241,77 @@ describeDb("電話番号の確認コード（結合）", () => {
     expect(state.remainingAttempts).toBe(rules.phoneConfirmIp.limit - 1);
     const stored = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(stored.phoneE164).toBe(phone);
+  });
+
+  it("?ref= 付きの登録は、紹介者を referredByUserId に残す", async () => {
+    const referrer = await seedUser("referrer");
+    // 結合テストは DB を共有するので、コードは実行ごとに変える。
+    const referralCode = `R${Date.now().toString(36).slice(-7)}`;
+    await prisma.user.update({
+      where: { id: referrer.id },
+      data: { referralCode },
+    });
+
+    const email = `intent-${Date.now()}-${Math.random().toString(16).slice(2)}@example.invalid`;
+    const intent = await beginSignupIntent({
+      email,
+      name: "紹介から登録",
+      emailVerifiedAt: new Date(),
+      referralCode,
+    });
+
+    const phone = `+8170${String(Date.now()).slice(-8)}`;
+    phones.push(phone);
+    const code = "112233";
+    await seedIntentCode(intent.id, phone, code);
+
+    const ip = key("ref-ip");
+    buckets.push(bucketOf(rules.phoneConfirmIp, ip));
+    const result = await confirmPhoneVerification({
+      userId: null,
+      intentId: intent.id,
+      phoneRaw: phone,
+      code,
+      ip,
+    });
+    userIds.push(result.user.id);
+
+    const created = await prisma.user.findUniqueOrThrow({
+      where: { id: result.user.id },
+      select: { referredByUserId: true },
+    });
+    expect(created.referredByUserId).toBe(referrer.id);
+  });
+
+  it("存在しない紹介コードなら、紹介者は残さない", async () => {
+    const email = `intent-${Date.now()}-${Math.random().toString(16).slice(2)}@example.invalid`;
+    const intent = await beginSignupIntent({
+      email,
+      name: "空の紹介",
+      emailVerifiedAt: new Date(),
+      referralCode: "zzzz9999",
+    });
+
+    const phone = `+8170${String(Date.now()).slice(-8)}`;
+    phones.push(phone);
+    const code = "445566";
+    await seedIntentCode(intent.id, phone, code);
+
+    const ip = key("ref-missing-ip");
+    buckets.push(bucketOf(rules.phoneConfirmIp, ip));
+    const result = await confirmPhoneVerification({
+      userId: null,
+      intentId: intent.id,
+      phoneRaw: phone,
+      code,
+      ip,
+    });
+    userIds.push(result.user.id);
+
+    const created = await prisma.user.findUniqueOrThrow({
+      where: { id: result.user.id },
+      select: { referredByUserId: true },
+    });
+    expect(created.referredByUserId).toBeNull();
   });
 });

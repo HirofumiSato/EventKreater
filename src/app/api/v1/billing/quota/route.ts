@@ -12,6 +12,7 @@ import {
 } from "@/modules/billing/lib/quota";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
+import { readTicketSummary } from "@/modules/billing/lib/referral";
 import { resolveTrial } from "@/modules/billing/lib/trial";
 
 export const runtime = "nodejs";
@@ -51,12 +52,18 @@ export async function GET(req: NextRequest) {
       ? Math.max(0, SUBSCRIPTION_PUBLISHED_EVENT_LIMIT - publishedCount)
       : null;
     const capped = countedPlan && (remainingPublished ?? 0) === 0;
+
+    // 期限つきの無料チケット。残数は `freeGrantRemaining`（0円キャンペーンの残り）と混ぜない。
+    const tickets = await readTicketSummary(userId, now);
+    const ticketAvailable = tickets.available;
+
     // 無料枠は加入前のためのもの。加入中は上限に達しても無料枠では抜けられないので、
-    // 未加入のときだけ canCreate に数える。
+    // 未加入のときだけ canCreate に数える。チケットは加入中でも1回分として数える。
     const canCreate =
       quota.subscriptionStatus !== "PAST_DUE" &&
       ((isSubActive && !capped) ||
         quota.paidCredits > 0 ||
+        ticketAvailable > 0 ||
         (!isSubActive && remainingFree > 0 && phoneVerified));
 
     let planType:
@@ -120,6 +127,7 @@ export async function GET(req: NextRequest) {
       phoneVerified,
       pricing,
       freeGrantRemaining,
+      tickets,
       discount,
       trial,
       trialEligible,

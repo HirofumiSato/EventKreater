@@ -35,6 +35,13 @@ enum QuotaSource {
   SUBSCRIPTION
 }
 
+/// 無料チケットの出どころ。AD は動画視聴、REFERRAL は紹介、MANUAL は運営の付与。
+enum FreeTicketSource {
+  AD
+  REFERRAL
+  MANUAL
+}
+
 enum PaymentType {
   ONE_TIME
   SUBSCRIPTION
@@ -171,24 +178,28 @@ enum AccountChangeKind {
 // =============================================================
 
 model User {
-  id              String       @id @default(uuid()) @db.Uuid
-  email           String       @unique @db.VarChar(255)
-  name            String       @db.VarChar(50)
+  id               String       @id @default(uuid()) @db.Uuid
+  email            String       @unique @db.VarChar(255)
+  name             String       @db.VarChar(50)
   /// ローカル会員認証用。Google のみのユーザーは NULL。
-  passwordHash    String?      @map("password_hash") @db.VarChar(255)
+  passwordHash     String?      @map("password_hash") @db.VarChar(255)
   /// Google アカウントの sub。
-  googleSub       String?      @unique @map("google_sub") @db.VarChar(255)
+  googleSub        String?      @unique @map("google_sub") @db.VarChar(255)
   /// 公開登録では常に MEMBER。ADMIN は DB または管理コンソールから付与する。
-  platformRole    PlatformRole @default(MEMBER) @map("platform_role")
+  platformRole     PlatformRole @default(MEMBER) @map("platform_role")
   /// パスワード登録は確認メールのリンクを開くまで NULL。Google は確認済みメールだけで作る。
-  emailVerifiedAt DateTime?    @map("email_verified_at") @db.Timestamptz
+  emailVerifiedAt  DateTime?    @map("email_verified_at") @db.Timestamptz
   /// 確認済みの電話番号（E.164）。未確認の番号はここへ入れない。NULL は複数行で共存できる。
-  phoneE164       String?      @unique @map("phone_e164") @db.VarChar(20)
-  phoneVerifiedAt DateTime?    @map("phone_verified_at") @db.Timestamptz
+  phoneE164        String?      @unique @map("phone_e164") @db.VarChar(20)
+  phoneVerifiedAt  DateTime?    @map("phone_verified_at") @db.Timestamptz
   /// 退会（論理削除）の日時。NULL は在籍。電話番号は退会後も残し、再登録の突き合わせに使う。
-  deletedAt       DateTime?    @map("deleted_at") @db.Timestamptz
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz
+  /// 紹介URLに載せる短いコード（8文字）。退会後も残す。既存行は NULL で、初めて開いたときに作る。
+  referralCode     String?      @unique @map("referral_code") @db.VarChar(12)
+  /// 誰の紹介で登録したか。確定後は変えない。自己紹介は入れない。
+  referredByUserId String?      @map("referred_by_user_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
   quota                   UserUsageQuota?
   transactions            BillingTransaction[]
@@ -207,6 +218,8 @@ model User {
   organizerProfile        OrganizerProfile?
   imageAssets             ImageAsset[]
   notifications           Notification[]
+  freeTickets             FreeTicket[]             @relation("FreeTicketOwner")
+  grantedTickets          FreeTicket[]             @relation("FreeTicketGrantedBy")
 
   @@index([deletedAt])
   @@map("users")
@@ -344,6 +357,37 @@ model BillingTransaction {
   @@map("billing_transactions")
 }
 
+/// 期限つきの無料1回分。残数を列に持たず、1枚1行で持つ。
+///
+/// `user_usage_quotas.paid_credits` と混ぜない。あの列は期限を持てないので、
+/// 7日の券と3か月の券を同じ残高に入れると、どちらが先に消えるかを表せない。
+/// 消費するときは `expires_at` の昇順で選ぶ。
+model FreeTicket {
+  id              String           @id @default(uuid()) @db.Uuid
+  userId          String           @map("user_id") @db.Uuid
+  source          FreeTicketSource
+  /// 紹介で配った相手。生涯上限の数え上げと自己紹介の検出に使う。
+  grantedByUserId String?          @map("granted_by_user_id") @db.Uuid
+  /// 二重付与を UNIQUE で止めるキー（例: "referral:<新規userId>"）。
+  reasonKey       String?          @unique @map("reason_key") @db.VarChar(255)
+  /// 動画券の広告事業者。いまは NULL で、事業者と繋いだときだけ入る。
+  provider        String?          @db.VarChar(50)
+  issuedAt        DateTime         @default(now()) @map("issued_at") @db.Timestamptz
+  expiresAt       DateTime         @map("expires_at") @db.Timestamptz
+  usedAt          DateTime?        @map("used_at") @db.Timestamptz
+  /// どのイベントで使ったか。分析用。イベントを消しても行は残す。
+  eventId         String?          @map("event_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  user      User  @relation("FreeTicketOwner", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User? @relation("FreeTicketGrantedBy", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, usedAt, expiresAt])
+  @@index([grantedByUserId, source])
+  @@index([expiresAt])
+  @@map("free_tickets")
+}
+
 /// 管理者が設定する価格キャンペーン。定価は plans.ts のまま、ここは割引だけを持つ。
 model PricingCampaign {
   id               String        @id @default(uuid()) @db.Uuid
@@ -457,6 +501,8 @@ model SignupIntent {
   emailVerifiedAt DateTime?      @map("email_verified_at") @db.Timestamptz
   /// 登録を始めた入口。メール確認後の着地（/mypage と /participant）を決める。
   audience        SignupAudience @default(ORGANIZER)
+  /// 紹介リンクのコード。会員になった時点で `referred_by_user_id` へ確定する。
+  referralCode    String?        @map("referral_code") @db.VarChar(12)
   expiresAt       DateTime       @map("expires_at") @db.Timestamptz
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
@@ -630,63 +676,63 @@ model VenueSuggestion {
 // =============================================================
 
 model Event {
-  id           String          @id @default(uuid()) @db.Uuid
-  title        String          @db.VarChar(100)
+  id               String          @id @default(uuid()) @db.Uuid
+  title            String          @db.VarChar(100)
   /// 開催候補のうち最も早い日。一覧の並びと検索インデックス用。
-  sortDate     DateTime        @map("sort_date") @db.Date
+  sortDate         DateTime        @map("sort_date") @db.Date
   /// 表示用に合成した開催場所。構造化住所があればそこから作り、無ければ入力された文字列をそのまま使う。
-  location     String          @db.VarChar(255)
+  location         String          @db.VarChar(255)
   /// 郵便番号検索で入れた住所。既存イベントは NULL のまま（location を表示に使う）。
-  postalCode   String?         @map("postal_code") @db.VarChar(7)
-  prefecture   String?         @db.VarChar(20)
-  city         String?         @db.VarChar(100)
-  town         String?         @db.VarChar(100)
+  postalCode       String?         @map("postal_code") @db.VarChar(7)
+  prefecture       String?         @db.VarChar(20)
+  city             String?         @db.VarChar(100)
+  town             String?         @db.VarChar(100)
   /// 丁目・番地・号。
-  addressLine  String?         @map("address_line") @db.VarChar(200)
-  building     String?         @db.VarChar(150)
-  venueName    String?         @map("venue_name") @db.VarChar(150)
-  rainPolicy   RainPolicy      @default(RAIN_OR_SHINE) @map("rain_policy")
-  capacity     Int?            @db.Integer
+  addressLine      String?         @map("address_line") @db.VarChar(200)
+  building         String?         @db.VarChar(150)
+  venueName        String?         @map("venue_name") @db.VarChar(150)
+  rainPolicy       RainPolicy      @default(RAIN_OR_SHINE) @map("rain_policy")
+  capacity         Int?            @db.Integer
   /// 想定する参加者の世代。「20代から40代」のような自由文。NULL は未設定で、告知ページに出さない。
-  targetGeneration String?    @map("target_generation") @db.VarChar(50)
+  targetGeneration String?         @map("target_generation") @db.VarChar(50)
   /// 告知ページのセマンティックテーマ。NULL は標準の見た目。主催者プロフィールと同じ ID を使う。
   /// 列挙型にしないのは、テーマを増やすたびにマイグレーションが要るため（`semantic-themes.ts` が一覧の正）。
-  themeId      String?         @map("theme_id") @db.VarChar(32)
-  flyerAssetId String?         @map("flyer_asset_id") @db.Uuid
-  status       EventStatus     @default(DRAFT)
+  themeId          String?         @map("theme_id") @db.VarChar(32)
+  flyerAssetId     String?         @map("flyer_asset_id") @db.Uuid
+  status           EventStatus     @default(DRAFT)
   /// 将来のメディアサイト向けの掲載フラグ。いまのアプリは一覧を持たないため常に UNLISTED（紹介制）。
   /// PUBLIC はメディアサイトを別サービスとして足したときに使う。読み取り契約として列は残す。
-  visibility   EventVisibility @default(UNLISTED)
+  visibility       EventVisibility @default(UNLISTED)
   /// この日時（日本時間で入力）になると出欠の新規登録と変更を止める。空なら期限なし。
-  rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz
-  isDeleted    Boolean         @default(false) @map("is_deleted")
+  rsvpDeadline     DateTime?       @map("rsvp_deadline") @db.Timestamptz
+  isDeleted        Boolean         @default(false) @map("is_deleted")
   /// 利用枠を消費した時刻。公開のときに消費する（下書きの作成では消費しない）。
-  quotaChargedAt DateTime?     @map("quota_charged_at") @db.Timestamptz
+  quotaChargedAt   DateTime?       @map("quota_charged_at") @db.Timestamptz
   /// どの利用枠から公開したか。公開中の件数を数えるのは SUBSCRIPTION だけ。
   /// 単発（PAID_CREDIT）と無料（FREE_TRIAL）は件数に含めない。
-  quotaSource  QuotaSource?    @map("quota_source")
+  quotaSource      QuotaSource?    @map("quota_source")
   /// 告知ページの「あなたもイベントを作りませんか？」から作ったときの参照元。
   /// 紹介の連鎖は数えず、直接の参照元だけを持つ。消えたイベントは NULL に戻す。
-  referrerEventId String?      @map("referrer_event_id") @db.Uuid
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  referrerEventId  String?         @map("referrer_event_id") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz
 
-  flyerAsset     FlyerAsset?        @relation(fields: [flyerAssetId], references: [id], onDelete: SetNull)
-  referrerEvent  Event?             @relation("EventReferral", fields: [referrerEventId], references: [id], onDelete: SetNull)
-  referredEvents Event[]            @relation("EventReferral")
-  schedules      EventSchedule[]
-  pricePlans     EventPricePlan[]
-  discounts      EventDiscount[]
-  organizers     EventOrganizer[]
-  participants   Participant[]
-  receipts       Receipt[]
-  lock           EventLock?
-  invitations    EventInvitation[]
-  reminders      ReminderDelivery[]
-  revenueSetting EventRevenueSetting?
-  revenueShares  EventRevenueShare[]
+  flyerAsset          FlyerAsset?          @relation(fields: [flyerAssetId], references: [id], onDelete: SetNull)
+  referrerEvent       Event?               @relation("EventReferral", fields: [referrerEventId], references: [id], onDelete: SetNull)
+  referredEvents      Event[]              @relation("EventReferral")
+  schedules           EventSchedule[]
+  pricePlans          EventPricePlan[]
+  discounts           EventDiscount[]
+  organizers          EventOrganizer[]
+  participants        Participant[]
+  receipts            Receipt[]
+  lock                EventLock?
+  invitations         EventInvitation[]
+  reminders           ReminderDelivery[]
+  revenueSetting      EventRevenueSetting?
+  revenueShares       EventRevenueShare[]
   flyerGenerationLogs FlyerGenerationLog[]
-  notifications  Notification[]
+  notifications       Notification[]
 
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
@@ -707,8 +753,8 @@ model EventSchedule {
   endTime   String?  @map("end_time") @db.VarChar(5)
   sortOrder Int      @map("sort_order")
 
-  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  participants Participant[]
+  event                Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participants         Participant[]
   participantSchedules ParticipantSchedule[]
 
   @@index([eventId, sortOrder])
@@ -795,8 +841,8 @@ model EventOrganizer {
   displayName    String?       @map("display_name") @db.VarChar(50)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 
-  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event        Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   revenueShare EventRevenueShare?
 
   @@unique([eventId, userId])
@@ -810,11 +856,11 @@ model EventOrganizer {
 
 /// イベントごとの按分の設定。行が無いときは RATIO / OWN_ONLY として扱う。
 model EventRevenueSetting {
-  eventId         String                @id @map("event_id") @db.Uuid
-  mode            RevenueSplitMode      @default(RATIO)
+  eventId         String                 @id @map("event_id") @db.Uuid
+  mode            RevenueSplitMode       @default(RATIO)
   visibility      RevenueShareVisibility @default(OWN_ONLY)
-  updatedByUserId String?               @map("updated_by_user_id") @db.Uuid
-  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+  updatedByUserId String?                @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -842,46 +888,46 @@ model EventRevenueShare {
 // =============================================================
 
 model Participant {
-  id            String     @id @default(uuid()) @db.Uuid
-  eventId       String     @map("event_id") @db.Uuid
-  userId        String?    @map("user_id") @db.Uuid
-  rsvpTokenHash String     @unique @map("rsvp_token_hash") @db.VarChar(64)
-  name          String     @db.VarChar(50)
+  id            String         @id @default(uuid()) @db.Uuid
+  eventId       String         @map("event_id") @db.Uuid
+  userId        String?        @map("user_id") @db.Uuid
+  rsvpTokenHash String         @unique @map("rsvp_token_hash") @db.VarChar(64)
+  name          String         @db.VarChar(50)
   /// 男女別の費用プランを選ぶための性別。移行前の既存行は NULL。
   gender        Gender?
   status        RsvpStatus
-  comment       String?    @db.Text
+  comment       String?        @db.Text
   /// 代表の開催日時。複数日を選んだときは、イベントの並び順で最初の日時。
   /// 名簿・売上の「開催回別」・カレンダーはこの値を代表として見る（選択した全日は
   /// `participant_schedules` が持つ）。
-  scheduleId    String?    @map("schedule_id") @db.Uuid
+  scheduleId    String?        @map("schedule_id") @db.Uuid
   /// 自分を含む参加人数。定員は人数ぶん消費し、売上も人数ぶんで数える。
-  partySize     Int        @default(1) @map("party_size") @db.Integer
-  pricePlanId   String?    @map("price_plan_id") @db.Uuid
+  partySize     Int            @default(1) @map("party_size") @db.Integer
+  pricePlanId   String?        @map("price_plan_id") @db.Uuid
   /// 出欠確定時点の費用プラン金額。null はプラン未選択、0 は無料プラン。
   /// プラン金額を後から編集しても、過去の見込み売上が変わらないようにする。
-  priceAmount   Int?       @map("price_amount") @db.Integer
+  priceAmount   Int?           @map("price_amount") @db.Integer
   /// 出欠確定時点のプラン名。プラン名を変えても内訳を保つ。
-  pricePlanName String?    @map("price_plan_name") @db.VarChar(50)
+  pricePlanName String?        @map("price_plan_name") @db.VarChar(50)
   /// 出欠確定時点のプラン対象。男女別の内訳を保つ。
   priceAudience PriceAudience? @map("price_audience")
-  ipHash        String?    @map("ip_hash") @db.VarChar(64)
+  ipHash        String?        @map("ip_hash") @db.VarChar(64)
   /// 参加要望を出した日時。承認順に使う。出席・欠席に戻すと NULL。
-  waitlistedAt  DateTime?  @map("waitlisted_at") @db.Timestamptz
+  waitlistedAt  DateTime?      @map("waitlisted_at") @db.Timestamptz
   /// 参加費を受け取った日時。NULL は未集金。
   /// 領収書の画面を外した代わりに、幹事が名簿で 1 タップして記録する。
   /// 事前決済を入れるときは、決済の成功でここを埋めれば同じ集計が使える。
-  collectedAt   DateTime?  @map("collected_at") @db.Timestamptz
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+  collectedAt   DateTime?      @map("collected_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz
 
-  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  schedule  EventSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
-  pricePlan EventPricePlan? @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
-  discounts ParticipantDiscount[]
-  schedules ParticipantSchedule[]
-  receipt   Receipt?
+  event         Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  schedule      EventSchedule?        @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  pricePlan     EventPricePlan?       @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
+  discounts     ParticipantDiscount[]
+  schedules     ParticipantSchedule[]
+  receipt       Receipt?
   notifications Notification[]
 
   @@unique([eventId, userId])

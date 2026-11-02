@@ -15,6 +15,7 @@ import {
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
+import { REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
 import { Alert, Field, Loading, PageHeader } from "@/components/ui";
 
 export type AuthAudience = "organizer" | "participant";
@@ -95,6 +96,14 @@ function AuthEntry({ audience }: { audience: AuthAudience }) {
   const existing = useExistingSession(!switching);
   // 確認番号の入力を待っているなら、それは「別の会員で入り直す」途中なので飛ばさない。
   const pendingLoginCode = loginCodeStep && existing.pendingChallenge;
+
+  // 紹介リンクのコードを30日だけ覚える。登録の入口は主催者・参加者の両方がこの画面なので、
+  // 書く場所はここ1か所で足りる（Google のコールバックにも同じオリジンで送られる）。
+  useEffect(() => {
+    const code = searchParams.get("ref")?.trim();
+    if (!code) return;
+    document.cookie = `${REFERRAL_COOKIE}=${encodeURIComponent(code)}; path=/; max-age=${REFERRAL_MAX_AGE}; samesite=lax`;
+  }, [searchParams]);
 
   useEffect(() => {
     if (existing.state !== "authenticated" || !existing.user) return;

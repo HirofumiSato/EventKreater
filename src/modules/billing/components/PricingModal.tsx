@@ -9,7 +9,7 @@ import {
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
-import type { PricingQuote } from "@/modules/events/types";
+import type { PricingQuote, UserQuota } from "@/modules/events/types";
 import { yen, yenMark } from "@/lib/format";
 import { Alert, Dialog } from "@/components/ui";
 
@@ -21,18 +21,17 @@ interface PricingModalProps {
   onClose: () => void;
   onSelectOneTime: () => Promise<unknown>;
   onSelectSubscription: (plan: SubscriptionChoice) => Promise<unknown>;
-  /** いまの販売価格。無いときは定価で表示する。 */
-  quotes?: {
-    oneTime: PricingQuote;
-    subscription8: PricingQuote;
-    subscriptionUnlimited: PricingQuote;
-  } | null;
-  freeGrantRemaining?: number;
+  /**
+   * 利用枠と販売価格。価格・残り・加入中のプランを 1 つにまとめて受ける。
+   * 項目を足すたびに5画面の呼び出しを直さないため、個別の props は持たない。
+   */
+  quota?: UserQuota | null;
   onGranted?: () => void;
-  /** 加入中の定額プラン。「現在のプラン」を出して、同じ札を押せなくする。 */
-  currentPlan?: "NONE" | "MONTHLY_8" | "UNLIMITED";
-  /** 初月無料を使えるか。月額2枚の価格段とボタンの文言が変わる。 */
-  trialEligible?: boolean;
+  /**
+   * 「チケットで公開する」を押したとき。閉じてから呼び出し元が公開をやり直す。
+   * 渡さない画面（一覧・マイページ）では、閉じるだけにする。
+   */
+  onUseTicket?: () => void;
   /** 開いた画面。キャンセル時の文言を合わせる。 */
   context?: "create" | "edit" | "preview" | "list" | "mypage";
 }
@@ -123,11 +122,9 @@ export function PricingModal({
   onClose,
   onSelectOneTime,
   onSelectSubscription,
-  quotes,
-  freeGrantRemaining,
-  currentPlan = "NONE",
-  trialEligible = false,
+  quota,
   onGranted,
+  onUseTicket,
   context = "list",
 }: PricingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<"SINGLE" | SubscriptionChoice | null>(null);
@@ -135,11 +132,25 @@ export function PricingModal({
 
   if (!isOpen) return null;
 
+  const quotes = quota?.pricing ?? null;
   const oneTime = quotes?.oneTime ?? null;
   const subscription8 = quotes?.subscription8 ?? null;
   const subscriptionUnlimited = quotes?.subscriptionUnlimited ?? null;
   const isFree = oneTime?.chargedPrice === 0;
-  const freeExhausted = isFree && freeGrantRemaining === 0;
+  const freeExhausted = isFree && (quota?.freeGrantRemaining ?? 0) === 0;
+  const currentPlan = quota?.subscriptionPlan ?? "NONE";
+  const trialEligible = quota?.trialEligible ?? false;
+  // 期限つきのチケットを持っているなら、それが一番安く早い。0円キャンペーン中は
+  // そちらで1回分を受け取れるので、チケットの札は出さない（選ぶものが2つになる）。
+  // 押したあとに公開をやり直せない画面（作成中・マイページ）では、使えない札を出さない。
+  const ticketAvailable = isFree ? 0 : (quota?.tickets?.available ?? 0);
+  const hasTicket = ticketAvailable > 0 && Boolean(onUseTicket);
+  const ticketExpiringAt = endsAtLabel(quota?.tickets?.expiringAt ?? null);
+
+  const handleUseTicket = () => {
+    onClose();
+    onUseTicket?.();
+  };
 
   const handleOneTime = async () => {
     setLoadingPlan("SINGLE");
@@ -184,6 +195,24 @@ export function PricingModal({
     >
       <p className="dialog__body">続けるには、どれかを選んでください。</p>
         <div className="stack" style={{ marginTop: "1.25rem" }}>
+          {/* チケットは買わずに使えるもの。札の並びの先頭に置き、主操作もここへ移す。 */}
+          {hasTicket && (
+            <article className="card ticket-card">
+              <h4 className="card__title">チケットで公開する</h4>
+              <p className="card__body">
+                残り{ticketAvailable}枚。{ticketExpiringAt ? `${ticketExpiringAt} まで有効。` : ""}
+                紹介した人が公開すると2回もらえます。
+              </p>
+              <button
+                type="button"
+                onClick={handleUseTicket}
+                disabled={loadingPlan !== null}
+                className="btn btn--primary btn--block"
+              >
+                チケットで公開する
+              </button>
+            </article>
+          )}
           <article className="card">
             <h4 className="card__title">単発チケット</h4>
             <PriceBlock quote={oneTime} fallback={ONE_TIME_PRICE_JPY} />
@@ -195,7 +224,7 @@ export function PricingModal({
               type="button"
               onClick={() => void handleOneTime()}
               disabled={loadingPlan !== null || freeExhausted}
-              className="btn btn--block"
+              className={`btn btn--block${hasTicket ? " btn--outline" : ""}`}
             >
               {loadingPlan === "SINGLE"
                 ? "処理しています…"
@@ -258,7 +287,7 @@ export function PricingModal({
               type="button"
               onClick={() => void handleSubscription("UNLIMITED")}
               disabled={loadingPlan !== null || currentPlan === "UNLIMITED"}
-              className="btn btn--primary btn--block"
+              className={`btn btn--block${hasTicket ? "" : " btn--primary"}`}
             >
               {currentPlan === "UNLIMITED"
                 ? "現在のプラン"

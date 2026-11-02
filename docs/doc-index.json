@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 116,
+    "docs": 117,
     "preImplementation": 15,
-    "markdown": 51,
+    "markdown": 52,
     "rst": 65,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2767,
+      "lineCount": 2788,
       "headings": [
         {
           "level": 2,
@@ -2301,6 +2301,10 @@
         {
           "level": 3,
           "text": "8.16. DELETE /api/v1/user（退会）"
+        },
+        {
+          "level": 3,
+          "text": "8.17. GET /api/v1/user/referral（紹介リンクと実績）"
         },
         {
           "level": 2,
@@ -7505,13 +7509,278 @@
       ]
     },
     {
+      "path": "docs/issues/free-ticket-and-referral.md",
+      "sphinxDoc": "issues/free-ticket-and-referral",
+      "format": "markdown",
+      "title": "無料チケット（紹介・動画視聴）の実装計画",
+      "summary": "> 決定日: 2026-11-02。実装するのは 紹介（P4）を先、動画（P3）は後。 > 動画は広告事業者の SSV に直結する方針で、事業者と契約が決まるまでコードを書かない。 > > この文書は計画なので、新規に作るファイルは （新規） と添え、置き場所を本文で示す。 > 実装が入った PR で、実在するパスへ書き換える（npm run docs:links が原稿中のパスを見るため）。 > > Sphinx の目次へ載せるには docs/issues/index.rst の toctree へ1行足し、npm run docs:gen で > docs/doc-index.json を作り直す。どちらも P5 で行う（この文書を先にコミットすると docs ジョブは赤になる）。",
+      "preImplementation": false,
+      "lineCount": 395,
+      "headings": [
+        {
+          "level": 1,
+          "text": "無料チケット（紹介・動画視聴）の実装計画"
+        },
+        {
+          "level": 2,
+          "text": "0. 結論"
+        },
+        {
+          "level": 2,
+          "text": "1. 数字の根拠"
+        },
+        {
+          "level": 3,
+          "text": "1.1. 1枚あたりの原価と広告収入"
+        },
+        {
+          "level": 3,
+          "text": "1.2. 月の枚数"
+        },
+        {
+          "level": 3,
+          "text": "1.3. 紹介の採算"
+        },
+        {
+          "level": 2,
+          "text": "2. データモデル"
+        },
+        {
+          "level": 3,
+          "text": "2.1. 設計方針"
+        },
+        {
+          "level": 3,
+          "text": "2.2. Prisma 案"
+        },
+        {
+          "level": 3,
+          "text": "2.3. マイグレーション"
+        },
+        {
+          "level": 2,
+          "text": "3. 消費フロー"
+        },
+        {
+          "level": 3,
+          "text": "3.1. 置き場所"
+        },
+        {
+          "level": 3,
+          "text": "3.2. 呼び出し元の修正"
+        },
+        {
+          "level": 3,
+          "text": "3.3. 純ロジック（billing/lib/tickets.ts・新規）"
+        },
+        {
+          "level": 3,
+          "text": "3.4. DB を読む関数（billing/lib/referral.ts・新規）"
+        },
+        {
+          "level": 2,
+          "text": "4. API"
+        },
+        {
+          "level": 2,
+          "text": "5. 画面"
+        },
+        {
+          "level": 3,
+          "text": "5.1. 料金モーダル（402 の受け皿）"
+        },
+        {
+          "level": 3,
+          "text": "5.2. マイページ"
+        },
+        {
+          "level": 3,
+          "text": "5.3. 文言"
+        },
+        {
+          "level": 2,
+          "text": "6. PR 分割"
+        },
+        {
+          "level": 3,
+          "text": "P1: 台帳（1.5日）"
+        },
+        {
+          "level": 3,
+          "text": "P2: 消費順（1.0日）"
+        },
+        {
+          "level": 3,
+          "text": "P4: 紹介（2.5日）"
+        },
+        {
+          "level": 3,
+          "text": "P5: 文書と規約（1.0日）"
+        },
+        {
+          "level": 2,
+          "text": "7. テスト観点"
+        },
+        {
+          "level": 2,
+          "text": "8. 計測（SQL 3本）"
+        },
+        {
+          "level": 2,
+          "text": "9. リスクと対策"
+        },
+        {
+          "level": 2,
+          "text": "10. やらないこと"
+        },
+        {
+          "level": 2,
+          "text": "11. 動画（P3）を再開する条件"
+        },
+        {
+          "level": 2,
+          "text": "12. 未決事項"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/billing_and_quota_planning_requirements.md",
+          "exists": true
+        },
+        {
+          "path": "docs/DBschema.md",
+          "exists": true
+        },
+        {
+          "path": "docs/doc-index.json",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/issues/index.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/ui-review/home-audit.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/src/domain/pricing.py",
+          "exists": true
+        },
+        {
+          "path": "services/flyer/tests/test_cost_budget.py",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/google/callback/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/local/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/billing/quota/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/user",
+          "exists": true
+        },
+        {
+          "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/terms/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/account/components",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/cookies.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/phone.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/verification.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/components/PricingModal.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/plans.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/quota.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/events.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/lifecycle.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/published-counts.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/types.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/quota.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components/LineShareDialog.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
       "path": "docs/issues/index.rst",
       "sphinxDoc": "issues/index",
       "format": "rst",
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 27,
+      "lineCount": 28,
       "headings": [
         {
           "level": 1,
@@ -7535,7 +7804,8 @@
         "docs/issues/rsvp-notifications.md",
         "docs/issues/auth-attempt-limits.md",
         "docs/issues/auth-session-skip-and-challenge-resend.md",
-        "docs/issues/venue-suggestions.md"
+        "docs/issues/venue-suggestions.md",
+        "docs/issues/free-ticket-and-referral.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -10769,7 +11039,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 642,
+      "lineCount": 654,
       "headings": [
         {
           "level": 1,
@@ -10852,6 +11122,10 @@
         },
         {
           "path": "tests/integration/event-discounts.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/free-ticket.test.ts",
           "exists": true
         },
         {
@@ -11031,6 +11305,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/free-ticket.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/guest-draft.test.ts",
           "exists": true
         },
@@ -11096,6 +11374,10 @@
         },
         {
           "path": "tests/unit/published-counts.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/referral-code.test.ts",
           "exists": true
         },
         {

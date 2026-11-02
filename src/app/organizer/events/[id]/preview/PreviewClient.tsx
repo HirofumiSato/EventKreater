@@ -186,12 +186,21 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
       {(!isDraft || (isDraft && (!registered || role !== "OWNER"))) && (
         <div className="preview-toolbar__status">
           {!isDraft && (
-            <Alert tone="success">
-              このイベントは公開済みです。{" "}
-              <Link href={`/events/${params.id}`} className="text-link">
-                告知ページを開く
-              </Link>
-            </Alert>
+            <>
+              <Alert tone="success">
+                このイベントは公開済みです。{" "}
+                <Link href={`/events/${params.id}`} className="text-link">
+                  告知ページを開く
+                </Link>
+              </Alert>
+              {/* 公開直後の画面は告知ページへ移るので、紹介の導線はここに1行だけ残す。 */}
+              <p className="preview-toolbar__note">
+                紹介した人が公開すると2枚増えます。{" "}
+                <Link href="/mypage" className="text-link">
+                  マイページ
+                </Link>
+              </p>
+            </>
           )}
           {isDraft && (!registered || role !== "OWNER") && (
             <Alert tone="warning">
@@ -258,11 +267,9 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         onClose={quotaState.closePricingModal}
         onSelectOneTime={quotaState.startOneTimeCheckout}
         onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quotes={quotaState.quota?.pricing ?? null}
-        freeGrantRemaining={quotaState.quota?.freeGrantRemaining}
-        currentPlan={quotaState.quota?.subscriptionPlan}
-        trialEligible={quotaState.quota?.trialEligible}
+        quota={quotaState.quota}
         context="preview"
+        onUseTicket={() => void publish()}
         onGranted={() => {
           void quotaState.refreshQuota();
           setToast("0円チケットを1回分受け取りました。「公開する」をもう一度押してください。");
