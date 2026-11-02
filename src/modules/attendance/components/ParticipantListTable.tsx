@@ -3,45 +3,38 @@
 import { useMemo, useState } from "react";
 import {
   GENDER_LABELS,
-  PRICE_AUDIENCE_LABELS,
   type EventPricePlanOption,
   type EventScheduleOption,
-  type Gender,
   type ParticipantRow,
   type RsvpStatus,
 } from "@/modules/events/types";
 import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
+import { formatDateTimeJa, yen } from "@/lib/format";
+import { Badge, Dialog } from "@/components/ui";
 import {
-  RSVP_PARTY_SIZE_MAX,
-  RSVP_PARTY_SIZE_MIN,
-  clampRsvpPartySize,
-} from "@/modules/attendance/lib/rsvp-form";
-import { formatDateWithWeekdayJa, formatDateTimeJa, yen } from "@/lib/format";
-import { Badge } from "@/components/ui";
+  DEFAULT_PARTICIPANT_COLUMNS,
+  LOCKED_PARTICIPANT_COLUMNS,
+  PARTICIPANT_COLUMNS_STORAGE_KEY,
+  PARTICIPANT_COLUMN_LABELS,
+  PARTICIPANT_COLUMN_ORDER,
+  parseParticipantColumns,
+  toggleParticipantColumn,
+  type ParticipantColumnKey,
+} from "@/modules/attendance/lib/participant-columns";
+import { ParticipantSheet, type ParticipantDraft } from "@/modules/attendance/components/ParticipantSheet";
 
 interface ParticipantListTableProps {
+  eventId: string;
   rows: ParticipantRow[];
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
   attendingCount: number;
   declinedCount: number;
   waitlistedCount: number;
-  onSave?: (
-    row: Pick<
-      ParticipantRow,
-      | "id"
-      | "name"
-      | "status"
-      | "gender"
-      | "comment"
-      | "scheduleId"
-      | "scheduleIds"
-      | "partySize"
-      | "pricePlanId"
-    >,
-  ) => Promise<void>;
+  onSave?: (draft: ParticipantDraft) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
-  onIssueReceipt?: (row: ParticipantRow) => void;
+  /** 集金の切り替えを親へ伝える。名簿の列と売上の数字を同じ値にするため。 */
+  onCollectionChange?: (id: string, collectedAt: string | null) => void;
 }
 
 type Filter = "ALL" | RsvpStatus;
@@ -52,7 +45,7 @@ function csvCell(value: string): string {
 }
 
 function downloadCsv(rows: ParticipantRow[]) {
-  const header = ["名前", "性別", "出欠", "人数", "日時", "費用プラン", "割引", "支払額", "コメント", "回答日時"];
+  const header = ["名前", "性別", "出欠", "人数", "日時", "費用プラン", "割引", "支払額", "集金", "コメント", "回答日時"];
   const lines = rows.map((row) =>
     [
       csvCell(row.name),
@@ -63,6 +56,7 @@ function downloadCsv(rows: ParticipantRow[]) {
       csvCell(row.pricePlanLabel ?? ""),
       csvCell(row.discounts.map((discount) => discount.label).join(" / ")),
       row.payableAmount === null ? "" : String(row.payableAmount),
+      row.status === "ATTENDING" && row.collectedAt ? "済" : "",
       csvCell(row.comment ?? ""),
       csvCell(formatDateTimeJa(row.createdAt)),
     ].join(","),
@@ -77,6 +71,7 @@ function downloadCsv(rows: ParticipantRow[]) {
 }
 
 export function ParticipantListTable({
+  eventId,
   rows,
   schedules,
   pricePlans,
@@ -85,24 +80,33 @@ export function ParticipantListTable({
   waitlistedCount,
   onSave,
   onDelete,
-  onIssueReceipt,
+  onCollectionChange,
 }: ParticipantListTableProps) {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
-  const [draftComment, setDraftComment] = useState("");
-  const [draftStatus, setDraftStatus] = useState<RsvpStatus>("ATTENDING");
-  const [draftGender, setDraftGender] = useState<Gender | "">("");
-  const [draftScheduleIds, setDraftScheduleIds] = useState<string[]>([]);
-  const [draftPartySize, setDraftPartySize] = useState("1");
-  const [draftPricePlanId, setDraftPricePlanId] = useState("");
+  /** 1 行を開いているか。直すときだけ層を出す（表には操作の列を置かない）。 */
+  const [openRow, setOpenRow] = useState<ParticipantRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  /**
+   * 表示する列。この表は参加者を読み終えてから描かれるので、初期化のときに
+   * `localStorage` を読める（SSR では既定へ戻す）。
+   */
+  const [columns, setColumns] = useState<ParticipantColumnKey[]>(() => {
+    if (typeof window === "undefined") return [...DEFAULT_PARTICIPANT_COLUMNS];
+    return parseParticipantColumns(window.localStorage.getItem(PARTICIPANT_COLUMNS_STORAGE_KEY));
+  });
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
 
-  /** 編集中の性別に合わせて選べるプランを絞る。 */
-  const draftPlans = useMemo(() => {
-    if (!draftGender) return pricePlans.filter((plan) => plan.audience === "ANY");
-    return pricePlans.filter((plan) => plan.audience === "ANY" || plan.audience === draftGender);
-  }, [draftGender, pricePlans]);
+  const toggleColumn = (key: ParticipantColumnKey) => {
+    const next = toggleParticipantColumn(columns, key);
+    setColumns(next);
+    try {
+      window.localStorage.setItem(PARTICIPANT_COLUMNS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // 保存できない環境（プライベートモードなど）では、その場の切り替えだけにする。
+    }
+  };
+
   const visible = useMemo(() => {
     const filtered = rows.filter((row) => {
       if (filter !== "ALL" && row.status !== filter) return false;
@@ -123,38 +127,43 @@ export function ParticipantListTable({
     ["DECLINED", `欠席 ${declinedCount}`],
   ] as const;
 
-  /** 行を編集モードにする。参加要望の承認は status を出席に上げて同じフォームで行う。 */
-  const startEdit = (row: ParticipantRow, nextStatus?: RsvpStatus) => {
-    setEditingId(row.id);
-    setDraftName(row.name);
-    setDraftComment(row.comment ?? "");
-    setDraftStatus(nextStatus ?? row.status);
-    setDraftGender(row.gender ?? "");
-    setDraftScheduleIds(
-      row.scheduleIds.length > 0
-        ? row.scheduleIds
-        : row.scheduleId
-          ? [row.scheduleId]
-          : schedules.length > 0
-            ? [schedules[0].id]
-            : [],
-    );
-    setDraftPartySize(String(row.partySize));
-    const allowed = pricePlans.filter(
-      (plan) => plan.audience === "ANY" || (row.gender !== null && plan.audience === row.gender),
-    );
-    setDraftPricePlanId(
-      row.pricePlanId && allowed.some((plan) => plan.id === row.pricePlanId)
-        ? row.pricePlanId
-        : (allowed[0]?.id ?? ""),
-    );
+  const saveRow = async (draft: ParticipantDraft) => {
+    if (!onSave) return;
+    setSaving(true);
+    try {
+      await onSave(draft);
+      setOpenRow(null);
+    } catch {
+      // 失敗の案内は呼び出し元（Toast）が持つ。開いたまま直せるようにする。
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const deleteRow = async (id: string) => {
+    if (!onDelete) return;
+    setSaving(true);
+    try {
+      await onDelete(id);
+      setOpenRow(null);
+    } catch {
+      // 失敗の案内は呼び出し元（Toast）が持つ。
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const showsColumn = (key: ParticipantColumnKey) => columns.includes(key);
+  const shownColumnCount = PARTICIPANT_COLUMN_ORDER.filter(showsColumn).length;
 
   return (
     <div className="table-card">
       <div className="table-card__head">
         <h2 className="table-card__title">回答 {rows.length}件</h2>
         <div className="panel__actions">
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => setColumnPickerOpen(true)}>
+            表示列
+          </button>
           <button type="button" className="btn btn--outline btn--sm" onClick={() => downloadCsv(rows)}>
             CSVで書き出す
           </button>
@@ -192,260 +201,171 @@ export function ParticipantListTable({
           <caption className="visually-hidden">参加者の名簿</caption>
           <thead>
             <tr>
-              <th scope="col">名前</th>
-              <th scope="col">性別</th>
-              <th scope="col">出欠</th>
-              <th scope="col">人数</th>
-              <th scope="col">日時</th>
-              <th scope="col">費用プラン</th>
-              <th scope="col">コメント</th>
-              <th scope="col">回答日時</th>
-              {onSave && <th scope="col">操作</th>}
+              {PARTICIPANT_COLUMN_ORDER.map((key) => (
+                <th key={key} scope="col" data-column={key} hidden={!showsColumn(key)}>
+                  {PARTICIPANT_COLUMN_LABELS[key]}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={onSave ? 9 : 8} className="roster__meta">
+                <td colSpan={shownColumnCount} className="roster__meta">
                   該当する参加者はいません。
                 </td>
               </tr>
             )}
-            {visible.map((row) => {
-              const editing = editingId === row.id;
-              return (
-                <tr key={row.id}>
-                  <td>
-                    {editing ? (
-                      <input className="input" value={draftName} onChange={(event) => setDraftName(event.target.value)} />
-                    ) : (
+            {visible.map((row) => (
+              <tr
+                key={row.id}
+                className={onSave ? "roster__row roster__row--open" : "roster__row"}
+                onClick={onSave ? () => setOpenRow(row) : undefined}
+              >
+                <td data-column="name" hidden={!showsColumn("name")}>
+                  {onSave ? (
+                    // 行そのものを押せるが、キーボードと読み上げにはこのボタンを使う。
+                    <button
+                      type="button"
+                      className="roster__open"
+                      aria-label={`${row.name} の出欠を変更`}
+                      onClick={() => setOpenRow(row)}
+                    >
+                      <span className="roster__name">{row.name}</span>
+                      {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
+                        <Badge tone="waitlist" small inline>
+                          待ち {row.waitlistPosition}番目
+                        </Badge>
+                      )}
+                    </button>
+                  ) : (
+                    <>
+                      <span className="roster__name">{row.name}</span>
+                      {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
+                        <Badge tone="waitlist" small inline>
+                          待ち {row.waitlistPosition}番目
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                </td>
+                <td className="roster__meta" data-column="gender" hidden={!showsColumn("gender")}>
+                  {row.gender ? GENDER_LABELS[row.gender] : "未設定"}
+                </td>
+                <td data-column="status" hidden={!showsColumn("status")}>
+                  <Badge tone={rsvpStatusTone(row.status)} small>
+                    {rsvpStatusLabel(row.status)}
+                  </Badge>
+                </td>
+                <td className="roster__meta" data-column="partySize" hidden={!showsColumn("partySize")}>
+                  {row.status === "ATTENDING" ? `${row.partySize}人` : "—"}
+                </td>
+                <td className="roster__meta" data-column="schedule" hidden={!showsColumn("schedule")}>
+                  {row.scheduleLabel || "—"}
+                </td>
+                <td className="roster__meta" data-column="pricePlan" hidden={!showsColumn("pricePlan")}>
+                  {row.pricePlanLabel || "—"}
+                  {row.status === "ATTENDING" && row.discounts.length > 0 && (
+                    <span className="roster__discounts">
+                      {row.discounts.map((discount, index) => (
+                        <span key={`${discount.name}-${index}`} className="roster__discount">
+                          {discount.label}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  {row.status === "ATTENDING" &&
+                    row.payableAmount !== null &&
+                    (row.discountAmount > 0 || row.partySize > 1) && (
                       <>
-                        <span className="roster__name">{row.name}</span>
-                        {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
-                          <Badge tone="waitlist" small inline>
-                            待ち {row.waitlistPosition}番目
-                          </Badge>
-                        )}
-                      </>
-                    )}
-                  </td>
-                  <td className="roster__meta">
-                    {editing ? (
-                      <select
-                        className="select"
-                        value={draftGender}
-                        onChange={(event) => {
-                          const next = event.target.value as Gender | "";
-                          setDraftGender(next);
-                          const allowed = pricePlans.filter(
-                            (plan) => plan.audience === "ANY" || (next !== "" && plan.audience === next),
-                          );
-                          if (!allowed.some((plan) => plan.id === draftPricePlanId)) {
-                            setDraftPricePlanId(allowed[0]?.id ?? "");
-                          }
-                        }}
-                      >
-                        <option value="">未設定</option>
-                        <option value="MALE">男性</option>
-                        <option value="FEMALE">女性</option>
-                      </select>
-                    ) : row.gender ? (
-                      GENDER_LABELS[row.gender]
-                    ) : (
-                      "未設定"
-                    )}
-                  </td>
-                  <td>
-                    {editing ? (
-                      <select className="select" value={draftStatus} onChange={(event) => setDraftStatus(event.target.value as RsvpStatus)}>
-                        <option value="ATTENDING">出席</option>
-                        <option value="WAITLISTED">参加要望</option>
-                        <option value="DECLINED">欠席</option>
-                      </select>
-                    ) : (
-                      <Badge tone={rsvpStatusTone(row.status)} small>
-                        {rsvpStatusLabel(row.status)}
-                      </Badge>
-                    )}
-                  </td>
-                  <td className="roster__meta">
-                    {editing && draftStatus === "ATTENDING" ? (
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={RSVP_PARTY_SIZE_MIN}
-                        max={RSVP_PARTY_SIZE_MAX}
-                        className="input input--compact roster__party-size"
-                        aria-label="参加人数"
-                        value={draftPartySize}
-                        onChange={(event) => setDraftPartySize(event.target.value)}
-                        onBlur={() => setDraftPartySize(String(clampRsvpPartySize(draftPartySize)))}
-                      />
-                    ) : row.status === "ATTENDING" ? (
-                      `${row.partySize}人`
-                    ) : (
-                      // 欠席と参加要望は席を取らない。承認したときに人数を入れる。
-                      "—"
-                    )}
-                  </td>
-                  <td className="roster__meta">
-                    {editing && draftStatus === "ATTENDING" ? (
-                      <div className="roster__schedule-edit">
-                        {schedules.map((schedule) => (
-                          <label key={schedule.id} className="check">
-                            <input
-                              type="checkbox"
-                              checked={draftScheduleIds.includes(schedule.id)}
-                              onChange={(event) =>
-                                setDraftScheduleIds((current) =>
-                                  event.target.checked
-                                    ? [...current, schedule.id]
-                                    : current.filter((id) => id !== schedule.id),
-                                )
-                              }
-                            />
-                            <span>
-                              {formatDateWithWeekdayJa(schedule.eventDate)} {schedule.eventTime}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      row.scheduleLabel || "—"
-                    )}
-                  </td>
-                  <td className="roster__meta">
-                    {editing && draftStatus === "ATTENDING" ? (
-                      <select className="select" value={draftPricePlanId} onChange={(event) => setDraftPricePlanId(event.target.value)}>
-                        {draftPlans.map((plan) => (
-                          <option key={plan.id} value={plan.id}>
-                            {plan.audience === "ANY" ? "" : `${PRICE_AUDIENCE_LABELS[plan.audience]} `}
-                            {plan.name} {plan.price}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <>
-                        {row.pricePlanLabel || "—"}
-                        {row.status === "ATTENDING" && row.discounts.length > 0 && (
-                          <span className="roster__discounts">
-                            {row.discounts.map((discount, index) => (
-                              <span key={`${discount.name}-${index}`} className="roster__discount">
-                                {discount.label}
-                              </span>
-                            ))}
+                        {/* 集金は 1 人ずつ記録する。1 人ぶんを先に、人数ぶんの合計を次に出す。 */}
+                        {row.partySize > 1 && (
+                          <span className="roster__payable">
+                            1人 {yen(row.unitPayableAmount ?? row.payableAmount)}
                           </span>
                         )}
-                        {row.status === "ATTENDING" &&
-                          row.payableAmount !== null &&
-                          (row.discountAmount > 0 || row.partySize > 1) && (
-                            <>
-                              {/* 領収書は 1 人ずつ切る。1 人ぶんを先に、人数ぶんの合計を次に出す。 */}
-                              {row.partySize > 1 && (
-                                <span className="roster__payable">
-                                  1人 {yen(row.unitPayableAmount ?? row.payableAmount)}
-                                </span>
-                              )}
-                              <span className="roster__payable">
-                                {row.partySize > 1
-                                  ? `${row.partySize}人 合計 ${yen(row.payableAmount)}`
-                                  : `支払額 ${yen(row.payableAmount)}`}
-                              </span>
-                            </>
-                          )}
+                        <span className="roster__payable">
+                          {row.partySize > 1
+                            ? `${row.partySize}人 合計 ${yen(row.payableAmount)}`
+                            : `支払額 ${yen(row.payableAmount)}`}
+                        </span>
                       </>
                     )}
-                  </td>
-                  <td className="roster__meta">
-                    {editing ? (
-                      <input className="input" value={draftComment} onChange={(event) => setDraftComment(event.target.value)} />
-                    ) : (
-                      row.comment || "—"
-                    )}
-                  </td>
-                  <td className="roster__meta">
-                    {row.status === "WAITLISTED" && row.waitlistedAt
-                      ? `要望 ${formatDateTimeJa(row.waitlistedAt)}`
-                      : formatDateTimeJa(row.createdAt)}
-                  </td>
-                  {onSave && (
-                    <td>
-                      <div className="btn-row">
-                        {editing ? (
-                          <button
-                            type="button"
-                            className="btn btn--primary btn--sm"
-                            disabled={
-                              draftStatus === "ATTENDING" && draftScheduleIds.length === 0
-                            }
-                            onClick={() =>
-                              void onSave({
-                                id: row.id,
-                                name: draftName,
-                                status: draftStatus,
-                                gender: draftStatus === "DECLINED" ? row.gender : draftGender || null,
-                                comment: draftComment,
-                                // 代表は並び順で最初の日時。押した順ではなくイベントの順で送る。
-                                scheduleId:
-                                  draftStatus === "ATTENDING"
-                                    ? (schedules.find((schedule) =>
-                                        draftScheduleIds.includes(schedule.id),
-                                      )?.id ?? null)
-                                    : null,
-                                scheduleIds:
-                                  draftStatus === "ATTENDING" ? draftScheduleIds : [],
-                                partySize:
-                                  draftStatus === "ATTENDING"
-                                    ? clampRsvpPartySize(draftPartySize)
-                                    : 1,
-                                pricePlanId: draftStatus === "ATTENDING" ? draftPricePlanId : null,
-                              })
-                                .then(() => setEditingId(null))
-                                .catch(() => undefined)
-                            }
-                          >
-                            保存
-                          </button>
-                        ) : (
-                          <>
-                            {row.status === "WAITLISTED" && (
-                              <button
-                                type="button"
-                                className="btn btn--primary btn--sm"
-                                onClick={() => startEdit(row, "ATTENDING")}
-                              >
-                                承認
-                              </button>
-                            )}
-                            <button type="button" className="btn btn--sm" onClick={() => startEdit(row)}>
-                              変更
-                            </button>
-                          </>
-                        )}
-                        {onDelete && (
-                          <button type="button" className="btn btn--danger btn--sm" onClick={() => void onDelete(row.id)}>
-                            削除
-                          </button>
-                        )}
-                        {onIssueReceipt && row.status === "ATTENDING" && !editing && (
-                          <button type="button" className="btn btn--outline btn--sm" onClick={() => onIssueReceipt(row)}>
-                            {row.receipt ? "領収書" : "領収書を発行"}
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                </td>
+                <td className="roster__meta" data-column="collected" hidden={!showsColumn("collected")}>
+                  {row.status === "ATTENDING" && row.collectedAt ? (
+                    <Badge tone="success" small>
+                      済
+                    </Badge>
+                  ) : (
+                    "—"
                   )}
-                </tr>
-              );
-            })}
+                </td>
+                <td className="roster__meta" data-column="comment" hidden={!showsColumn("comment")}>
+                  {row.comment || "—"}
+                </td>
+                <td className="roster__meta" data-column="createdAt" hidden={!showsColumn("createdAt")}>
+                  {row.status === "WAITLISTED" && row.waitlistedAt
+                    ? `要望 ${formatDateTimeJa(row.waitlistedAt)}`
+                    : formatDateTimeJa(row.createdAt)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
       <div className="table-card__foot">
         <p className="help">
-          回答順に並びます。「変更」で出欠・費用プランを直せます。
+          {onSave ? "行を押すと、出欠・人数・費用プランを直せます。" : "回答順に並びます。"}
         </p>
       </div>
+      {columnPickerOpen && (
+        <Dialog
+          title="表示する列"
+          titleId="participant-columns-title"
+          onClose={() => setColumnPickerOpen(false)}
+          actions={
+            <button type="button" className="btn btn--sm" onClick={() => setColumnPickerOpen(false)}>
+              閉じる
+            </button>
+          }
+        >
+          <p className="dialog__body">
+            よく見る列だけを残すと、スマホでも横に送らずに読めます。
+          </p>
+          <div className="column-picker">
+            {PARTICIPANT_COLUMN_ORDER.map((key) => {
+              const locked = LOCKED_PARTICIPANT_COLUMNS.includes(key);
+              return (
+                <label key={key} className="check">
+                  <input
+                    type="checkbox"
+                    checked={locked || columns.includes(key)}
+                    // 名前は外せない（誰の行か分からなくなるため）。
+                    disabled={locked}
+                    onChange={() => toggleColumn(key)}
+                  />
+                  <span>{PARTICIPANT_COLUMN_LABELS[key]}</span>
+                </label>
+              );
+            })}
+          </div>
+        </Dialog>
+      )}
+      {openRow && onSave && (
+        <ParticipantSheet
+          key={openRow.id}
+          eventId={eventId}
+          row={openRow}
+          schedules={schedules}
+          pricePlans={pricePlans}
+          busy={saving}
+          onClose={() => setOpenRow(null)}
+          onSave={saveRow}
+          onDelete={onDelete ? deleteRow : undefined}
+          onCollectedChange={onCollectionChange}
+        />
+      )}
     </div>
   );
 }

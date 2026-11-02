@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {  try {
             migratedParticipants += 1;
             continue;
           }
-          // 同じイベントに会員の行と端末だけの行がある。領収書を持つ方を残す。
+          // 同じイベントに会員の行と端末だけの行がある。領収書（将来の事前決済）を持つ方を残す。
           if (row.receipt && !already.receipt) {
             await mergeParticipantSchedules(tx, already.id, row.id);
             await tx.participant.update({ where: { id: row.id }, data: { userId } });

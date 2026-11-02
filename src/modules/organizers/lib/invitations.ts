@@ -88,7 +88,7 @@ export async function previewInvitation(code: string) {
 /**
  * 共同主催は会員だけが受諾できる。
  *
- * 未登録のまま共同主催になれると、名簿・領収書・売上を持たない権限だけの行が増え、
+ * 未登録のまま共同主催になれると、名簿・集金の記録・売上を持たない権限だけの行が増え、
  * 「誰が主催者か」を公開ページに出せない。未登録の端末は会員登録へ送る。
  */
 export async function acceptInvitation(code: string, identity: AuthContext) {

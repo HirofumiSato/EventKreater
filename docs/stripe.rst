@@ -143,7 +143,7 @@
 ----
 
 1. Stripe Dashboard を開き、右上を **テストデータ** にする。
-2. 商品と Price を作る。月額で8件まで公開プランは 980 円、公開し放題は 2,980 円。どちらも通貨 JPY、請求は月次。その ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「月額で8件まで公開プラン」「公開し放題」）。請求書と領収書に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
+2. 商品と Price を作る。月額で8件まで公開プランは 980 円、公開し放題は 2,980 円。どちらも通貨 JPY、請求は月次。その ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題は ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「月額で8件まで公開プラン」「公開し放題」）。請求書と領収書（利用枠の支払いのもので、参加費の集金とは別）に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
 3. Customer Portal をテストモードで有効にする。マイページの「プラン・カード管理」がここを開きます。プラン変更（8 件プラン ↔ 公開し放題）を選べるように設定します。ダウングレードしても既存の掲載は消さず、新規の公開だけを止めます。
 4. ``NEXT_PUBLIC_APP_URL`` と開発サーバーのポートを揃える。``.env.example`` に合わせるときは ``npm run dev`` です。Web は 3012 です。
 5. アプリを起動したまま、別の端末で Stripe CLI を実行する。転送先のホストとポートは ``NEXT_PUBLIC_APP_URL`` に合わせます。

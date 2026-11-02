@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ParticipantListTable } from "@/modules/attendance/components/ParticipantListTable";
-import { ReceiptIssueModal } from "@/modules/receipts/components/ReceiptIssueModal";
 import { Toast } from "@/components/common/Toast";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
 import type { EventPricePlanOption, EventScheduleOption, ParticipantRow } from "@/modules/events/types";
@@ -26,16 +23,10 @@ interface ParticipantsResponse {
 }
 
 export default function ParticipantsPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
   const [data, setData] = useState<ParticipantsResponse | null>(null);
-  const [issuing, setIssuing] = useState<ParticipantRow | null>(null);
-  const [issuingBusy, setIssuingBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
-  const [sending, setSending] = useState(false);
-  const [copyingText, setCopyingText] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/v1/organizer/events/${params.id}/participants`);
@@ -103,78 +94,36 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   const deleteRow = async (id: string) => {
     const res = await fetch(`/api/v1/organizer/events/${params.id}/participants/${id}`, { method: "DELETE" });
     if (!res.ok) {
+      const message = await readProblem(res);
       setToastTone("error");
-      setToast(await readProblem(res));
-      return;
+      setToast(message);
+      throw new Error(message);
     }
     await load();
     setToastTone("success");
     setToast("参加者を削除しました");
   };
 
-  const issueReceipt = async (input: { addressee: string; amount: number; description: string }) => {
-    if (!issuing) return;
-    setIssuingBusy(true);
-    try {
-      const res = await fetch(`/api/v1/organizer/events/${params.id}/participants/${issuing.id}/receipt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      if (!res.ok) throw new Error(await readProblem(res));
-      const participantId = issuing.id;
-      setIssuing(null);
-      router.push(`/organizer/events/${params.id}/receipts/${participantId}`);
-    } catch (cause) {
-      setToastTone("error");
-      setToast(cause instanceof Error ? cause.message : "領収書の発行に失敗しました");
-      setIssuingBusy(false);
-    }
-  };
 
-  const sendReminder = async () => {
-    setSending(true);
-    try {
-      const res = await fetch(`/api/v1/organizer/events/${params.id}/reminders`, { method: "POST" });
-      if (!res.ok) throw new Error(await readProblem(res));
-      const body = (await res.json()) as { sent: number; recorded: number; skippedGuests: number };
-      const delivery = body.sent > 0 ? `${body.sent}通を送信しました` : `${body.recorded}通を送信記録に残しました`;
-      setToastTone("success");
-      setToast(
-        body.skippedGuests > 0
-          ? `${delivery}。アカウントのない参加者 ${body.skippedGuests}人は、文面をコピーして個別に連絡してください。`
-          : delivery,
-      );
-    } catch (cause) {
+  /**
+   * 集金を切り替えたあとの帳尻合わせ。
+   * 名簿の列はすぐ書き換え、売上の集計はサーバーの値で取り直す（1 枚は開いたまま）。
+   */
+  const reloadAfterCollection = (id: string, collectedAt: string | null) => {
+    setData((current) =>
+      current
+        ? {
+            ...current,
+            participants: current.participants.map((row) =>
+              row.id === id ? { ...row, collectedAt } : row,
+            ),
+          }
+        : current,
+    );
+    void load().catch((cause: unknown) => {
       setToastTone("error");
-      setToast(cause instanceof Error ? cause.message : "リマインドに失敗しました");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const copyReminderText = async () => {
-    setCopyingText(true);
-    try {
-      const res = await fetch(`/api/v1/organizer/events/${params.id}/reminders`);
-      if (!res.ok) throw new Error(await readProblem(res));
-      const body = (await res.json()) as { subject: string; body: string };
-      await navigator.clipboard.writeText(`${body.subject}\n\n${body.body}`);
-      setToastTone("success");
-      setToast("リマインドの文面をコピーしました。LINE や DM に貼って送れます。");
-    } catch (cause) {
-      setToastTone("error");
-      setToast(cause instanceof Error ? cause.message : "文面のコピーに失敗しました");
-    } finally {
-      setCopyingText(false);
-    }
-  };
-
-  const copyShareLink = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}/events/${params.id}`);
-    setCopiedLink(true);
-    setToastTone("success");
-    setToast("参加者用の共有リンクをコピーしました。");
+      setToast(cause instanceof Error ? cause.message : "名簿を読み直せませんでした");
+    });
   };
 
   if (error) return <Alert tone="error">{error}</Alert>;
@@ -188,9 +137,9 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
   return (
     <div className="stack">
-      <PageHeader title="参加者名簿" lead={<>{data.event.title}</>} />
+      <PageHeader eyebrow="参加者名簿" title={data.event.title} />
 
-      <div className="roster-summary">
+      <div className="roster-summary roster-summary--five">
         <div className="roster-summary__item">
           <span className="roster-summary__label">回答</span>
           <span className="roster-summary__value">
@@ -222,59 +171,14 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         <div className="roster-summary__item roster-summary__item--money">
           <span className="roster-summary__label">集金済み</span>
           <span className="roster-summary__value">
-            {data.revenue.issuedRevenue.toLocaleString("ja-JP")}
+            {data.revenue.collectedRevenue.toLocaleString("ja-JP")}
             <span>円</span>
           </span>
         </div>
       </div>
 
       <Panel>
-        <div className="panel__actions">
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            disabled={sending}
-            onClick={() => void sendReminder()}
-          >
-            {sending ? "送っています…" : "参加者へリマインド"}
-          </button>
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            disabled={copyingText}
-            onClick={() => void copyReminderText()}
-          >
-            {copyingText ? "準備しています…" : "文面をコピー"}
-          </button>
-          <Link
-            href={`/events/${params.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn--outline btn--sm"
-          >
-            ページを見る
-          </Link>
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            onClick={() => void copyShareLink()}
-          >
-            {copiedLink ? "コピーしました" : "共有リンクをコピー"}
-          </button>
-          <Link href={`/organizer/events/${params.id}/revenue`} className="btn btn--ghost btn--sm">
-            売上の内訳
-          </Link>
-          <Link href={`/organizer/events/${params.id}/edit`} className="btn btn--ghost btn--sm">
-            編集へ戻る
-          </Link>
-        </div>
-        <p className="screen-note">
-          リマインドはアカウントのある参加者だけ。ほかは文面をコピーして送ってください。
-        </p>
-      </Panel>
-
-      <Panel>
-        <RevenueSummaryLedger summary={data.revenue} />
+        <RevenueSummaryLedger summary={data.revenue} omit={["collected", "difference"]} dense />
       </Panel>
 
       {data.revenue.unassignedPlanCount > 0 && (
@@ -283,6 +187,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         </Alert>
       )}
       <ParticipantListTable
+        eventId={params.id}
         rows={data.participants}
         schedules={data.event.schedules}
         pricePlans={data.event.pricePlans}
@@ -291,25 +196,8 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         waitlistedCount={data.stats.waitlistedCount}
         onSave={saveRow}
         onDelete={deleteRow}
-        onIssueReceipt={(row) => {
-          if (row.receipt) {
-            router.push(`/organizer/events/${params.id}/receipts/${row.id}`);
-            return;
-          }
-          setIssuing(row);
-        }}
+        onCollectionChange={reloadAfterCollection}
       />
-      {issuing && (
-        <ReceiptIssueModal
-          participantName={issuing.name}
-          suggestedDescription={issuing.pricePlanLabel ?? "イベント参加費"}
-          suggestedAmount={issuing.unitPayableAmount}
-          reissue={Boolean(issuing.receipt)}
-          busy={issuingBusy}
-          onClose={() => setIssuing(null)}
-          onSubmit={issueReceipt}
-        />
-      )}
       {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}
     </div>
   );

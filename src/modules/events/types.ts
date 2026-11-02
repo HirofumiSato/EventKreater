@@ -282,14 +282,6 @@ export interface PublicEvent {
   organizers: PublicEventOrganizers;
   flyerAsset: FlyerAsset | null;
   myRsvp: MyRsvp | null;
-  myReceipt: {
-    id: string;
-    addressee: string;
-    amount: number;
-    description: string;
-    issuerName: string;
-    issuedAt: string;
-  } | null;
 }
 
 export interface MyRsvp {
@@ -397,7 +389,7 @@ export interface ParticipantRow {
   /** 選んだ全日程のラベル。1 件ならそのまま、複数なら ` / ` で並べる。 */
   scheduleLabel: string | null;
   pricePlanLabel: string | null;
-  /** 領収書の金額の初期値に使う。プラン未選択なら null。 */
+  /** 選んだプランの金額。名簿の支払額の計算に使う。プラン未選択なら null。 */
   pricePlanAmount: number | null;
   /** 申込時に選んだ割引。無ければ空配列。 */
   discounts: ParticipantDiscountSnapshot[];
@@ -405,7 +397,7 @@ export interface ParticipantRow {
   discountAmount: number;
   /** 割引を引いた支払額（人数ぶんの合計）。プラン未選択なら null。 */
   payableAmount: number | null;
-  /** 割引を引いた 1 人ぶんの支払額。領収書の既定額。プラン未選択なら null。 */
+  /** 割引を引いた 1 人ぶんの支払額。集金の目安。プラン未選択なら null。 */
   unitPayableAmount: number | null;
   createdAt: string;
   updatedAt: string;
@@ -413,18 +405,8 @@ export interface ParticipantRow {
   waitlistedAt: string | null;
   /** 参加要望の待ち順（1始まり）。要望でなければ null。 */
   waitlistPosition: number | null;
-  receipt: { id: string; issuedAt: string } | null;
-}
-
-export interface ReceiptView {
-  id: string;
-  eventId: string;
-  eventTitle: string;
-  addressee: string;
-  amount: number;
-  description: string;
-  issuerName: string;
-  issuedAt: string;
+  /** 参加費を受け取った日時。未集金なら null。 */
+  collectedAt: string | null;
 }
 
 export function createScheduleDraft(partial?: Partial<ScheduleDraft>): ScheduleDraft {

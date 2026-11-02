@@ -228,7 +228,7 @@ erDiagram
 ## ドキュメント
 
 - `docs/DBschema.md`: `organizer_profiles.header_image_id`、DDL、`image_assets.kind` の `PROFILE_HEADER`。
-- `docs/backend_api_implementation_spec.md`: 5.17.1（header の POST / DELETE）、5.12 と 5.14 の応答の `headerUrl`。
+- `docs/backend_api_implementation_spec.md`: 5.16.1（header の POST / DELETE）、5.11 と 5.13 の応答の `headerUrl`。
 - `docs/front_implementation_spec.md`: SCR-ORG-14 / SCR-PUB-14 の表と詳細、部品とテストの一覧。
 - `docs/testing/scope.rst`: `tests/unit/image-crop.test.ts` と `tests/integration/organizer-header.test.ts` の行。件数は `npm run docs:counts` で書き戻す。
 - `docs/issues/index.rst`: この issue。

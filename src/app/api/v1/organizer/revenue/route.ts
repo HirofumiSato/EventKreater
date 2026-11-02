@@ -88,9 +88,9 @@ export async function GET(req: NextRequest) {
                 scheduleId: true,
                 partySize: true,
                 discounts: { select: { amount: true } },
+                collectedAt: true,
               },
             },
-            receipts: { select: { amount: true } },
           },
         },
       },
@@ -116,11 +116,10 @@ export async function GET(req: NextRequest) {
     events.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
 
     const participants = events.flatMap((event) => event.participants);
-    const receipts = events.flatMap((event) => event.receipts);
 
     let totalMyShare = 0;
     const rows = events.map((event) => {
-      const summary = summarizeRevenue(event.participants, event.receipts);
+      const summary = summarizeRevenue(event.participants);
       const membership = seen.get(event.id);
       const allocation = allocateRevenue({
         mode: event.revenueSetting?.mode ?? "RATIO",
@@ -130,7 +129,7 @@ export async function GET(req: NextRequest) {
         })),
         shares: event.revenueShares,
         expectedRevenue: summary.expectedRevenue,
-        issuedRevenue: summary.issuedRevenue,
+        collectedRevenue: summary.collectedRevenue,
         attendingCount: summary.attendingCount,
       });
       const myRow = allocation.rows.find(
@@ -155,7 +154,7 @@ export async function GET(req: NextRequest) {
         to: to ? formatEventDate(to) : null,
         status,
       },
-      totals: summarizeRevenue(participants, receipts),
+      totals: summarizeRevenue(participants),
       myShare: { expectedRevenue: totalMyShare },
       events: rows,
     });

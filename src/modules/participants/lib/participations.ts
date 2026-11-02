@@ -86,7 +86,6 @@ export function serializeParticipation(row: {
   pricePlan: { name: string; audience: PriceAudience; amount: number; note: string | null } | null;
   /** 申込時に選んだ割引の写し。無ければ空配列。 */
   discounts?: { name: string; amount: number; note: string | null; sortOrder: number }[];
-  receipt: { id: string; issuedAt: Date } | null;
   event: Parameters<typeof serializeEvent>[0] & {
     organizers?: { role: string; userId: string | null }[];
   };
@@ -111,8 +110,6 @@ export function serializeParticipation(row: {
       partySize: row.partySize ?? 1,
     }),
     statusLabel: rsvpStatusLabel(row.status),
-    receiptId: row.receipt?.id ?? null,
-    receiptIssuedAt: row.receipt?.issuedAt.toISOString() ?? null,
     answeredAt: row.updatedAt.toISOString(),
     event: {
       id: event.id,
@@ -139,7 +136,6 @@ export const participationInclude = {
   },
   pricePlan: true,
   discounts: { orderBy: { sortOrder: "asc" } },
-  receipt: { select: { id: true, issuedAt: true } },
   event: {
     include: {
       flyerAsset: true,

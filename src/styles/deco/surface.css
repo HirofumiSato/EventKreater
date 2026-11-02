@@ -776,7 +776,7 @@
   padding: 1rem 1rem 0;
 }
 
-/* 本文の末尾に置く、履歴と領収書への細い導線。 */
+/* 本文の末尾に置く、参加履歴への細い導線。 */
 .event-page__foot {
   text-align: center;
 }
@@ -1145,77 +1145,6 @@
   }
 }
 
-/* 領収書。紙として読ませる。画面の用途（導入・管理）に関わらず白。 */
-.receipt-sheet {
-  padding: 1.25rem 1.125rem;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background: #fff;
-}
-
-.receipt-sheet__title {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-align: center;
-}
-
-.receipt-sheet__no {
-  margin-top: 0.25rem;
-  color: var(--color-text-subtle);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.receipt-sheet__to {
-  margin-top: 1.25rem;
-  padding-bottom: 0.375rem;
-  border-bottom: 1px solid var(--color-text);
-  font-size: 1.0625rem;
-}
-
-.receipt-sheet__amount {
-  margin-top: 1rem;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  text-align: right;
-}
-
-.receipt-sheet__tax {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  text-align: right;
-}
-
-.receipt-sheet__lines {
-  margin-top: 1rem;
-  border-top: 1px solid var(--color-line);
-}
-
-.receipt-sheet__line {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--color-line);
-  font-size: 0.8125rem;
-}
-
-.receipt-sheet__foot {
-  margin-top: 1.25rem;
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-  line-height: 1.7;
-}
-
-.receipt-sheet .panel__actions {
-  margin-top: 1.25rem;
-}
-
 /* 帳票。売上のサマリは、表ではなく行で読ませる。 */
 .ledger {
   margin: 0;
@@ -1272,6 +1201,50 @@
   color: var(--color-text-subtle);
   font-size: 0.8125rem;
   line-height: 1.7;
+}
+
+/* 参加者名簿の売上サマリ。2 行だけを残すので、行の間隔と字を詰めて名簿を下へ押し下げない。
+   640px 以上は既定の大きさへ戻す。 */
+.ledger-block--compact .ledger__row {
+  padding: 0.5rem 0;
+}
+
+.ledger-block--compact .ledger__label {
+  font-size: 0.8125rem;
+}
+
+.ledger-block--compact .ledger__value {
+  font-size: 1.0625rem;
+}
+
+.ledger-block--compact .ledger__row--total .ledger__value {
+  font-size: 1.0625rem;
+}
+
+.ledger-block--compact .ledger__foot {
+  font-size: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .ledger-block--compact .ledger__row {
+    padding: 0.75rem 0;
+  }
+
+  .ledger-block--compact .ledger__label {
+    font-size: 0.875rem;
+  }
+
+  .ledger-block--compact .ledger__value {
+    font-size: 1.25rem;
+  }
+
+  .ledger-block--compact .ledger__row--total .ledger__value {
+    font-size: 1.5rem;
+  }
+
+  .ledger-block--compact .ledger__foot {
+    font-size: 0.8125rem;
+  }
 }
 
 /* 主催者への誘い。出欠と共有の邪魔をしないよう、本文の最後に 1 枚だけ置く。
@@ -1623,6 +1596,7 @@
    チラシは左の細い列に置き、本文をその右へ流す。スマホでも同じ組み方にして、
    縦に積んだときに催し名が 1 画面ぶん下がらないようにする。 */
 .event-card {
+  position: relative;
   display: grid;
   grid-template-columns: 4.5rem minmax(0, 1fr);
   align-items: start;
@@ -1704,6 +1678,25 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.375rem 0.5rem;
+  /* 右上のコピー印のぶんを空ける。空けないと、催し名が長いときに印の下へ潜る。 */
+  padding-right: 1.75rem;
+}
+
+/* URL をコピーする印。札の右上に置き、催し名の行とは重ねない。
+   文字を持たないので、押せる的は指の幅ではなく印に合わせて詰める（読み上げ名は aria-label）。 */
+.event-card__copy {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 0;
+  padding: 0;
+}
+
+.event-card__copy .icon {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .event-card__title {
@@ -1736,7 +1729,7 @@
   gap: 0.5rem;
 }
 
-/* カードの操作。常に出すのは「出欠」と「編集」の 2 つなので、幅が変わっても 2 列。
+/* カードの操作。常に出すのは「申込/出欠一覧」と「編集」の 2 つなので、幅が変わっても 2 列。
    390px（カード 358px・中身 318px）でも 1 マスは 155px あり、15px の文字が
    そのまま入る。段を増やして 1 行に詰める必要はない。
    `.event-card__actions` は行（`Rows` の aside）でも使うので、カード直下だけに効かせる。 */
@@ -1803,6 +1796,20 @@
   border-top: 1px dashed var(--color-border);
 }
 
+/* 折りたたみの中のボタンだけは 40px ではなく 32px・13px にする。
+   ここは開いたときだけ現れる場所で、40px のまま 5 つ並べると札 1 枚が画面を占め、
+   一覧として読めなくなる。常に目に入る操作（`.event-card__actions`）は 40px のまま。 */
+.event-card__more-body .btn {
+  min-height: var(--tap-target-quiet);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-action-quiet);
+}
+
+.event-card__more-body .btn .icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 /* 削除は折りたたみの中で赤を主張させない。塗らずに、危険色の枠と文字だけにする。 */
 .event-card__delete {
   grid-column: 1 / -1;
@@ -1825,6 +1832,57 @@
 @media (min-width: 640px) {
   .roster-summary {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* 参加者名簿の要約。スマホでも 5 列を 1 段に並べ、数だけを読ませる。
+   640px 以上では既定の余白と字へ戻す（他の画面の 4 つ組・--pairs は変えない）。 */
+.roster-summary--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.roster-summary--five .roster-summary__item {
+  padding: 0.5rem 0.375rem;
+  border-radius: var(--radius-lg);
+}
+
+.roster-summary--five .roster-summary__label {
+  font-size: 0.6875rem;
+  letter-spacing: 0;
+}
+
+.roster-summary--five .roster-summary__value {
+  font-size: 0.9375rem;
+}
+
+.roster-summary--five .roster-summary__value span {
+  margin-left: 0;
+  font-size: 0.625rem;
+}
+
+@media (min-width: 640px) {
+  .roster-summary--five {
+    gap: 0.5rem;
+  }
+
+  .roster-summary--five .roster-summary__item {
+    padding: 0.75rem 0.875rem;
+    border-radius: var(--radius-xl);
+  }
+
+  .roster-summary--five .roster-summary__label {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+  }
+
+  .roster-summary--five .roster-summary__value {
+    font-size: 1.25rem;
+  }
+
+  .roster-summary--five .roster-summary__value span {
+    margin-left: 0.125rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -1903,8 +1961,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 名簿の行は、スマホでは上下の余白をほぼ持たせない。行の区切りは `border-bottom` が
+   持っているので、余白を 0 に近づけても線は消えない。640px 以上は既定のゆとりへ戻す。 */
 .roster th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--color-border-strong);
   color: var(--color-text-subtle);
   font-size: 0.75rem;
@@ -1915,10 +1975,18 @@
 }
 
 .roster td {
-  padding: 0.625rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--color-line);
   font-size: 0.875rem;
   vertical-align: middle;
+  /* 折り返すと行が縦に伸び、1 画面に入る参加者が減る。横スクロールで読む。 */
+  white-space: nowrap;
+}
+
+/* 表示列から外した列は DOM に残したまま隠す（モックの操作再現も同じ DOM で行う）。 */
+.roster th[hidden],
+.roster td[hidden] {
+  display: none;
 }
 
 .roster th.is-num,
@@ -1932,27 +2000,64 @@
   white-space: nowrap;
 }
 
+/* 行を押して 1 枚を開く。指の当たりを広げるため、行そのものにも同じ動きを持たせる。
+   キーボードと読み上げの入口は、名前のセルの中のボタン（`.roster__open`）である。 */
+.roster__row--open {
+  cursor: pointer;
+}
+
+/* 押せる行は、名簿のボタンが 40px の的を持つ。セルの上下余白まで足すと行が 48px になり、
+   1 画面に入る人数が減るので、上下の余白はボタンに任せる。 */
+.roster__row--open td {
+  padding-block: 0;
+}
+
+.roster__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  /* 押せる的は 40px 以上。行の高さを保つため、縦の余白ではなく最低の高さで取る。 */
+  min-height: var(--tap-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roster__open:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 /* 名簿の費用プランの下に積む、申込時点の割引と支払額。
    列の幅は支払額の 1 行で決まるため、割引の条件名が 1 文字ずつ折れないよう下限を置く。 */
 .roster__discounts {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  margin-top: 0.15rem;
+  gap: 0;
+  margin-top: 0.05rem;
   min-width: 9rem;
 }
 
+/* 行を縦に伸ばさないよう、積んだ行の間は詰める。行間は 1.4 まで。
+   これ以上詰めると、12〜13px の字が上下で触れて読めなくなる。 */
 .roster__discount {
   color: var(--color-text-subtle);
   font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .roster__payable {
   display: block;
-  margin-top: 0.15rem;
+  margin-top: 0.05rem;
   color: var(--color-text-strong);
   font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
@@ -1977,14 +2082,39 @@
   font-size: 0.8125rem;
 }
 
+/* 表示列の選択。スマホでも 1 行 40px を割らずに押せるようにする。 */
+/* 表示列は 9 行あり、背の低い窓（横長のスマホや小さい PC）では層が画面に収まらない。
+   一覧だけを送り、題と「閉じる」は常に見える位置に残す。 */
+.column-picker {
+  display: grid;
+  gap: 0.25rem;
+  max-height: min(50vh, 20rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.column-picker .check {
+  align-items: center;
+  min-height: var(--tap-target);
+}
+
+.column-picker .check input {
+  margin-top: 0;
+}
+
 .roster tbody tr:last-child td {
   border-bottom: 0;
 }
 
-@media (max-width: 639px) {
-  .roster th,
+/* 広い画面では、行の上下に既定のゆとりを戻す。左右の余白もここで 1 か所にまとめる
+   （スマホ用の狭い左右は `.roster th` / `.roster td` の既定が持つ）。 */
+@media (min-width: 640px) {
+  .roster th {
+    padding: 0.5rem 0.75rem;
+  }
+
   .roster td {
-    padding-inline: 0.5rem;
+    padding: 0.625rem 0.75rem;
   }
 }
 
@@ -2072,6 +2202,6 @@
 }
 
 /* ==========================================================================
-   印刷。領収書は「紙に出す」ことが目的で、貼り紙の装飾は要らない。
+   印刷。紙に出すことを目的とした画面のために、貼り紙の装飾は要らない。
    影・角・地紋・傾きを落とし、ヘッダーとフッターと操作は出さない。
    ========================================================================== */

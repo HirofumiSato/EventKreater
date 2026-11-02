@@ -9,7 +9,7 @@
 | 対象 | 正 | 解説する文書 | 検証方法 |
 | --- | --- | --- | --- |
 | DB 物理設計 | `prisma/schema.prisma` | [DBschema.md](DBschema.md) | 33 テーブルの照合 |
-| API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 81 ルートの照合 |
+| API 契約（Next.js） | `src/app/api/**/route.ts` | [backend_api_implementation_spec.md](backend_api_implementation_spec.md) | 80 ルートの照合 |
 | 画面 | `src/app/**/page.tsx` | [front_implementation_spec.md](front_implementation_spec.md) | 37 ページの照合 |
 | チラシ描画 | `services/flyer/src/**` | [flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) | pytest 304 件 + `mypy`（src の strict） |
 | モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run check`（ソースの指紋と `mock-manifest.json` の一致）。生成は `npm run mock:sync` |
@@ -21,7 +21,7 @@
 
 | 種別 | 件数 | 内容 |
 | --- | --- | --- |
-| API | 6 | 仕様書に無い実装。`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`、`GET /api/v1/user/calendar`。一覧は [api-routes.md](api-routes.md) |
+| API | 5 | 仕様書に無い実装。`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`。一覧は [api-routes.md](api-routes.md) |
 | DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
 | 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
 

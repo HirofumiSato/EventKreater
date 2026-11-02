@@ -21,7 +21,7 @@ type AlertState =
 
 /**
  * 未登録のままイベントを公開した直後に出す案内。
- * イベントは公開されたまま残る。出欠の確認・リマインド・領収書・共同主催者の招待は
+ * イベントは公開されたまま残る。出欠の確認・集金の記録・共同主催者の招待は
  * 会員登録が要るので、まずこの端末で共有 URL を配れるようにする。
  */
 function RegisterRequiredScreen() {
@@ -212,13 +212,8 @@ function RegisterRequiredScreen() {
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
           <Row
-            title="リマインド"
-            meta="開催が近づいたら、参加者へ案内を送れます。"
-            aside={<><Badge tone="neutral" small>登録後</Badge></>}
-          />
-          <Row
-            title="領収書"
-            meta="参加費を受け取ったら、その場で発行できます。"
+            title="集金の記録"
+            meta="参加費を受け取ったら、名簿で 1 タップ。"
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
           <Row

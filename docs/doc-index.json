@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 利用枠・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2731,
+      "lineCount": 2715,
       "headings": [
         {
           "level": 2,
@@ -2132,7 +2132,7 @@
         },
         {
           "level": 3,
-          "text": "5.5. POST /api/v1/organizer/events/[id]/participants/[participantId]/receipt（参加費の領収書）"
+          "text": "5.5. PUT /api/v1/organizer/events/[id]/participants/[participantId]/collection（集金の記録）"
         },
         {
           "level": 3,
@@ -2144,15 +2144,11 @@
         },
         {
           "level": 3,
-          "text": "5.8. GET / POST /api/v1/organizer/events/[id]/reminders（参加者へのリマインド）"
+          "text": "5.8. GET /api/v1/organizer/revenue（主催イベント横断の売上）"
         },
         {
           "level": 3,
-          "text": "5.9. GET /api/v1/organizer/revenue（主催イベント横断の売上）"
-        },
-        {
-          "level": 3,
-          "text": "5.10. GET /api/v1/organizer/events/[id]/revenue（イベント1件の売上内訳）"
+          "text": "5.9. GET /api/v1/organizer/events/[id]/revenue（イベント1件の売上内訳）"
         },
         {
           "level": 4,
@@ -2160,43 +2156,43 @@
         },
         {
           "level": 3,
-          "text": "5.11. PUT /api/v1/organizer/events/[id]/revenue/allocation（按分の保存）"
+          "text": "5.10. PUT /api/v1/organizer/events/[id]/revenue/allocation（按分の保存）"
         },
         {
           "level": 3,
-          "text": "5.12. GET /api/v1/public/organizers/[userId]（主催者の公開プロフィール）"
+          "text": "5.11. GET /api/v1/public/organizers/[userId]（主催者の公開プロフィール）"
         },
         {
           "level": 3,
-          "text": "5.13. GET /api/v1/public/organizers/[userId]/events（主催者のページの催し）"
+          "text": "5.12. GET /api/v1/public/organizers/[userId]/events（主催者のページの催し）"
         },
         {
           "level": 3,
-          "text": "5.14. GET / PUT /api/v1/organizer/profile（公開プロフィールの編集）"
+          "text": "5.13. GET / PUT /api/v1/organizer/profile（公開プロフィールの編集）"
         },
         {
           "level": 3,
-          "text": "5.15. GET / DELETE /api/v1/venues（過去の会場の候補）"
+          "text": "5.14. GET / DELETE /api/v1/venues（過去の会場の候補）"
         },
         {
           "level": 3,
-          "text": "5.16. POST /api/v1/voice/transcriptions（音声を文字にする）"
+          "text": "5.15. POST /api/v1/voice/transcriptions（音声を文字にする）"
         },
         {
           "level": 3,
-          "text": "5.17. POST / DELETE /api/v1/organizer/profile/avatar（プロフィールのアイコン）"
+          "text": "5.16. POST / DELETE /api/v1/organizer/profile/avatar（プロフィールのアイコン）"
         },
         {
           "level": 3,
-          "text": "5.17.1. POST / DELETE /api/v1/organizer/profile/header（プロフィールのヘッダー画像）"
+          "text": "5.16.1. POST / DELETE /api/v1/organizer/profile/header（プロフィールのヘッダー画像）"
         },
         {
           "level": 3,
-          "text": "5.18. GET /api/v1/image-assets/[id]/image（会員が上げた画像の配信）"
+          "text": "5.17. GET /api/v1/image-assets/[id]/image（会員が上げた画像の配信）"
         },
         {
           "level": 3,
-          "text": "5.19. GET / PATCH /api/v1/notifications（主催者へのアプリ内通知）"
+          "text": "5.18. GET / PATCH /api/v1/notifications（主催者へのアプリ内通知）"
         },
         {
           "level": 2,
@@ -2863,7 +2859,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ 利用枠・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「利用枠（クォータ）管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1742,
+      "lineCount": 1750,
       "headings": [
         {
           "level": 2,
@@ -5549,7 +5545,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2005,
+      "lineCount": 1989,
       "headings": [
         {
           "level": 1,
@@ -6933,7 +6929,7 @@
           "exists": true
         },
         {
-          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts",
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts",
           "exists": true
         },
         {
@@ -7392,7 +7388,7 @@
           "exists": true
         },
         {
-          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts",
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts",
           "exists": true
         },
         {
@@ -8394,7 +8390,7 @@
       "title": "主催者に売上管理ダッシュボードを追加し、ホームで紹介する",
       "summary": "> GitHub Issue の下書き。gh 未導入の環境のため、このファイルを本文として起票する。 > タイトル案: 主催者に売上管理ダッシュボードを追加する（費用プラン×参加人数から自動集計）",
       "preImplementation": false,
-      "lineCount": 190,
+      "lineCount": 191,
       "headings": [
         {
           "level": 1,
@@ -9265,7 +9261,7 @@
           "exists": true
         },
         {
-          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts",
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts",
           "exists": true
         },
         {
@@ -9360,7 +9356,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 353,
+      "lineCount": 351,
       "headings": [
         {
           "level": 1,
@@ -9675,7 +9671,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1127,
+      "lineCount": 1108,
       "headings": [
         {
           "level": 2,
@@ -9775,11 +9771,11 @@
         },
         {
           "level": 4,
-          "text": "UC-09 参加者名簿を扱い、会員へ知らせる"
+          "text": "UC-09 参加者名簿を扱う"
         },
         {
           "level": 4,
-          "text": "UC-14 出席者へ参加費の領収書を発行する"
+          "text": "UC-14 出席者の集金を名簿で記録する"
         },
         {
           "level": 4,
@@ -10741,7 +10737,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 626,
+      "lineCount": 634,
       "headings": [
         {
           "level": 1,
@@ -10808,6 +10804,10 @@
         },
         {
           "path": "tests/integration/auth-attempts.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/collection.test.ts",
           "exists": true
         },
         {
@@ -11032,6 +11032,10 @@
         },
         {
           "path": "tests/unit/participant-calendar.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/participant-columns.test.ts",
           "exists": true
         },
         {

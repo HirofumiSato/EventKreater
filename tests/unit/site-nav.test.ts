@@ -148,7 +148,7 @@ describe("頭文字のメニューの並び", () => {
       "/organizer/events/new",
       "/organizer/events/abc/edit",
       "/organizer/events/abc/preview",
-      "/organizer/events/abc/receipts/xyz",
+      "/organizer/events/abc/new",
       "/invitations/abc",
     ]) {
       expect(userMenuConfig(pathname, organizer)).toEqual([

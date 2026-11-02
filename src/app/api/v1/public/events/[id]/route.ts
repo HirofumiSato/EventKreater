@@ -71,14 +71,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       discounts: ReturnType<typeof serializeParticipantDiscounts>;
       waitlistPosition: number | null;
     } | null = null;
-    let myReceipt: {
-      id: string;
-      addressee: string;
-      amount: number;
-      description: string;
-      issuerName: string;
-      issuedAt: string;
-    } | null = null;
 
     const rawToken = req.cookies.get(rsvpCookieName(event.id))?.value;
     const tokenHash = rawToken ? sha256(rawToken) : null;
@@ -127,7 +119,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             pricePlanId: true,
             discounts: { orderBy: { sortOrder: "asc" } },
             schedules: { select: { scheduleId: true, schedule: { select: { sortOrder: true } } } },
-            receipt: true,
           },
         })
       : null;
@@ -145,16 +136,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         discounts: serializeParticipantDiscounts(participant.discounts),
         waitlistPosition: waitlistPosition(waitlistRows, participant.id),
       };
-      if (participant.receipt) {
-        myReceipt = {
-          id: participant.receipt.id,
-          addressee: participant.receipt.addressee,
-          amount: participant.receipt.amount,
-          description: participant.receipt.description,
-          issuerName: participant.receipt.issuerName,
-          issuedAt: participant.receipt.issuedAt.toISOString(),
-        };
-      }
     }
 
     const serialized = serializeEvent(event);
@@ -194,7 +175,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       organizers: serializePublicOrganizerList(event.organizers),
       flyerAsset: serialized.flyerAsset,
       myRsvp,
-      myReceipt,
     });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/public/events/${params.id}`);

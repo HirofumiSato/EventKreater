@@ -384,8 +384,15 @@ describe("画面の目録", () => {
     const themeRows = screens.filter((row) => row.theme !== undefined);
     // テーマ未選択 1 枚 + 全テーマ 1 枚ずつ。
     expect(themeRows).toHaveLength(SEMANTIC_THEME_IDS.length + 1);
-    // テーマ以外の状態は 45 枚。画面そのものを足したときだけ、この数を直す。
-    expect(expectedFiles()).toHaveLength(45 + themeRows.length);
+    // テーマ以外の状態は 43 枚。画面そのものを足したときだけ、この数を直す。
+    expect(expectedFiles()).toHaveLength(43 + themeRows.length);
+  });
+
+  it("外した領収書の画面は目録に残らない", () => {
+    // 領収書は画面から外し、集金は名簿の列で持つ。目録へ戻さない。
+    const files = expectedFiles();
+    expect(files).not.toContain("mock-event-receipt.html");
+    expect(files).not.toContain("mock-receipt.html");
   });
 
   it("テーマの状態は、製品のすべてのテーマと未選択を 1 枚ずつ持つ", () => {
@@ -598,8 +605,8 @@ describe("リンクを URL の型で解決する", () => {
     { path: "/organizer/events/ev-main/edit", file: "mock-edit.html" },
     { path: "/organizer/events/ev-main/participants", file: "mock-roster.html" },
     { path: "/organizer/events/ev-full/participants", file: "mock-roster.html" },
+    { path: "/organizer/events/ev-main/revenue", file: "mock-revenue.html" },
     { path: "/events/ev-main", file: "mock-event.html" },
-    { path: "/events/ev-main/receipt", file: "mock-event-receipt.html" },
     { path: "/events/ev-main?invite=ev-main", file: "mock-event.html" },
   ];
 
@@ -607,8 +614,8 @@ describe("リンクを URL の型で解決する", () => {
     const targets = buildLinkTargets(rows, demo);
     expect(targets.get("/organizer/events/*/edit")).toBe("mock-edit.html");
     expect(targets.get("/organizer/events/*/participants")).toBe("mock-roster.html");
+    expect(targets.get("/organizer/events/*/revenue")).toBe("mock-revenue.html");
     expect(targets.get("/events/*")).toBe("mock-event.html");
-    expect(targets.get("/events/*/receipt")).toBe("mock-event-receipt.html");
   });
 
   it("デモデータが無ければ、完全一致の対応表のまま", () => {
@@ -622,16 +629,16 @@ describe("リンクを URL の型で解決する", () => {
     const html = [
       '<a href="/organizer/events/2026-abc/edit">編集</a>',
       '<a href="/organizer/events/2026-abc/participants">参加者を見る</a>',
+      '<a href="/organizer/events/2026-abc/revenue">売上</a>',
       '<a href="/events/2026-abc">公開ページ</a>',
-      '<a href="/events/2026-abc/receipt">領収書</a>',
       '<a href="/events/2026-abc/unknown">未知</a>',
     ].join("\n");
     const out = rewriteInternalLinks(html, targets);
 
     expect(out).toContain('<a href="mock-edit.html">編集</a>');
     expect(out).toContain('<a href="mock-roster.html">参加者を見る</a>');
+    expect(out).toContain('<a href="mock-revenue.html">売上</a>');
     expect(out).toContain('<a href="mock-event.html">公開ページ</a>');
-    expect(out).toContain('<a href="mock-event-receipt.html">領収書</a>');
     expect(out).toContain('<a href="#">未知</a>');
   });
 

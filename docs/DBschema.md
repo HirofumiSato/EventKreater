@@ -29,14 +29,14 @@
 * **User (認証済み会員):** 確認済み電話番号（E.164）で人物を一意にする会員。メールアドレスと Google の `sub` はログイン手段である。パスワードだけの会員は `passwordHash` を持ち `googleSub` は空。Google だけの会員は `googleSub` を持ち `passwordHash` は空。同じ確認済みメールの会員が後から Google で入ったときは、既存行へ `googleSub` を結ぶ。同じ確認済み電話番号の会員が別メールや別 Google で入ったときも、新しい行は作らずその会員へ手段を足す。パスワード登録は確認メールのあと、電話番号確認が終わるまで会員行を作らない。プラットフォーム全体の権限は `platformRole`（`MEMBER` / `ADMIN`）であり、イベント単位の幹事ロールとは別である。公開登録の初期値は `MEMBER` である。ログイン中のセッションは `auth_sessions`、確認メールのトークンハッシュは `email_verification_tokens`、登録意向は `signup_intents`、SMS 確認コードのハッシュは `phone_verification_codes`、ログイン確認番号のハッシュは `login_challenges`、試行回数とログインロックの開始時刻は `auth_attempts` に置く。確認番号の失敗が 10 回に達した会員は 15 分ロックする。
 * **SignupIntent (登録意向):** メール確認または Google 確認のあと、電話番号確認が終わるまでの一時行。会員行と利用枠はまだ無い。
 * **UserUsageQuota (利用枠クォータ):** 主催者のイベント作成可能枠（無料消化数、単発クレジット残数、サブスク状態、Stripe連携情報）を管理。
-* **BillingTransaction (課金決済履歴):** 利用枠の単発購入、月額の初回 Checkout、月額の更新請求、失敗、全額返金、異議申立の監査ログ。管理者の一覧は SCR-ADM-03。参加費の領収書とは別である。
+* **BillingTransaction (課金決済履歴):** 利用枠の単発購入、月額の初回 Checkout、月額の更新請求、失敗、全額返金、異議申立の監査ログ。管理者の一覧は SCR-ADM-03。参加費の集金記録とは別である。
 * **StripeWebhookEvent (Webhook冪等性ログ):** Stripeから受信・処理したWebhook Event IDを記録し、重複処理を防止。
 * **Event (イベント本体):** 主催者が告知・出欠を集めるイベントの実体（基本7項目＋ステータス＋掲載フラグ＋任意の申し込み期限）。`visibility` は将来のメディアサイト用の予約列であり、いまのアプリは一覧を持たないため常に `UNLISTED`（紹介制）。
-* **Receipt (参加費の領収書):** 幹事が出席者へ発行する文書。1参加者につき1件。金額は幹事が入力し、参加費の決済は持たない。
+* **Receipt (参加費の領収書・旧):** 旧画面で幹事が出席者へ発行した文書。1参加者につき1件。金額は幹事の入力で、参加費の決済は持たない。**画面からは外した**（参加者向け・主催者向けの領収書画面を廃止）。既存データの保護と `GET /api/v1/user/hydrate` の会員統合が参照するため残し、新しい書き込みはしない。今後は `participants.collected_at` で集金を記録する。
 * **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した A4 縦（1080×1528）の JPEG、または主催者がアップロードした完成済みの画像。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは生成なら `storage/flyers/{id}.jpg`、アップロードなら `storage/flyers/{id}.{jpg|png|webp}` に置く。アップロードは再エンコードせず、`aspectRatio` は `auto`、`externalFlyerId` は NULL になる。ダウンロード用の A4 PDF と告知ページの QR は保存せず、`GET /api/v1/flyer-assets/{id}/pdf` が要求のたびに作る。チラシなしのイベントも許容する。
 * **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（筆頭幹事。1イベント1行）とCO_HOST（共同主催者）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
 * **ImageAsset (会員が上げた画像):** プロフィールのアイコンやヘッダーなど、会員がアップロードした画像の実体。1行1画像で、バイト列は `storage/images/{id}.webp` に置き、`GET /api/v1/image-assets/{id}/image` で配る。参照する側（`organizer_profiles.avatar_image_id` / `organizer_profiles.header_image_id`、将来は `events.cover_image_id`）に外部キーを置く。用途（`kind`）は `AVATAR` / `EVENT_COVER` / `PROFILE_HEADER` の3つで、列挙型にせずアプリ側で検証する。
-* **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。
+* **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。集金は `collectedAt`（`collected_at`）で持ち、NULL は未集金。金額は `priceAmount` から割引を引いた額（0 円で止める）× `partySize` で、手入力はしない。
 * **EventLock (排他編集ロック):** 共同主催者間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
 * **EventInvitation (共同主催者の招待):** 既存幹事が他の会員を共同主催者として迎えるためのワンタイム招待実体。受諾は会員のみ。
 
@@ -628,6 +628,9 @@ model Participant {
   /// 自分を含む参加人数。定員は人数ぶん消費し、売上も人数ぶんで数える。
   /// 出席のときだけ持ち、欠席・参加要望は 1（要望は席を取らず、承認時に入れる）。
   partySize     Int        @default(1) @map("party_size") @db.Integer
+  /// 参加費を受け取った日時。NULL は未集金。金額は `priceAmount` から割引を引いた額
+  /// （0 円で止める）× `partySize` で、幹事が名簿で 1 人ずつ切り替える。
+  collectedAt   DateTime?  @map("collected_at") @db.Timestamptz
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
@@ -675,7 +678,9 @@ model ParticipantSchedule {
   @@map("participant_schedules")
 }
 
-// 参加費の領収書。決済は行わず、幹事が金額を入力して発行する。1参加者につき1件。
+// 旧・参加費の領収書。画面からは外した（新規の書き込みはしない）。
+// 既存データの保護と user/hydrate の会員統合が参照するため残す。
+// 集金は participants.collected_at で記録し、migration で issued_at を引き継ぐ。
 model Receipt {
   id            String   @id @default(uuid()) @db.Uuid
   participantId String   @unique @map("participant_id") @db.Uuid
@@ -1171,6 +1176,9 @@ CREATE TABLE participants (
     price_amount INTEGER NULL,
     price_plan_name VARCHAR(50) NULL,
     price_audience price_audience_enum NULL,
+    -- 参加費を受け取った日時。NULL は未集金。金額は price_amount から割引を引いた額
+    -- （0 円で止める）× party_size で、幹事が名簿で 1 人ずつ切り替える。
+    collected_at TIMESTAMPTZ NULL,
     ip_hash VARCHAR(64) NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1207,7 +1215,7 @@ CREATE TABLE participant_schedules (
 
 CREATE INDEX idx_participant_schedules_schedule ON participant_schedules(schedule_id);
 
--- 8b. 参加費の領収書（1参加者につき1件。決済は持たない）
+-- 8b. 旧・参加費の領収書（画面からは外した。既存データの保護のため残し、新規の書き込みはしない）
 CREATE TABLE receipts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     participant_id UUID NOT NULL UNIQUE REFERENCES participants(id) ON DELETE CASCADE,

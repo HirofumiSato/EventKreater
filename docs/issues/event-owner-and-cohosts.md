@@ -31,9 +31,9 @@
 
 ### 権限
 
-- 招待・削除は `OWNER`、編集・名簿・領収書は全幹事（`src/modules/auth/lib/guards.ts:140-191`、`src/app/api/v1/organizer/events/[id]/route.ts:130`）。
+- 招待・削除は `OWNER`、編集・名簿・集金は全幹事（`src/modules/auth/lib/guards.ts:140-191`、`src/app/api/v1/organizer/events/[id]/route.ts:130`）。
 - 複製は全幹事ができる（`src/app/api/v1/organizer/events/[id]/clone/route.ts:20-27`）。仕様の「共同幹事は複製権限を制限」（`docs/archive/event-page/specs/event_page_data_model_and_crud.md:613`）と食い違う。
-- 領収書の発行者は「発行した幹事」の名前になる（`src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts:66-73`）。オーナー固定かは未定義。
+- 集金は `collectedAt` を持つだけで、どの幹事が記録したかは持たない（`src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts`）。
 
 ## 今回の決定
 
@@ -62,7 +62,7 @@
 - オーナー譲渡、オーナー自身の脱退、オーナー退会時のイベント継承（別 issue。今回は「オーナーは1人」の保証まで）
 - 主催者のプロフィール（画像・自己紹介・連絡先）
 - 共同主催の追加・解除の通知メール
-- 領収書の発行者をオーナーに固定する変更（現状どおり「発行した幹事」）
+- 集金の記録者をオーナーに固定する変更（いまは記録者を持たない）
 - 複製権限の見直し（仕様との食い違いは本 issue に記録し、判断は別 issue）
 - 主催人数の上限
 - 売上の按分（`docs/issues/cohost-revenue-allocation.md`）
@@ -219,7 +219,7 @@ const capabilities = [
 - [ ] 解除 API は登録済み `OWNER` のみ実行でき、共同主催からは 403
 - [ ] `OWNER` 行は解除できず 409 `OWNER_NOT_REMOVABLE`
 - [ ] 解除された共同主催が `EventLock` を保持していた場合、ロックも解放される
-- [ ] 解除された共同主催は、名簿・領収書・編集・売上へアクセスできない
+- [ ] 解除された共同主催は、名簿・集金・編集・売上へアクセスできない
 - [ ] 管理コンソールでオーナーと共同主催を区別して確認できる
 - [ ] 売上画面のイベント別行に、自分の立場（`OWNER` / `CO_HOST`）が出る
 

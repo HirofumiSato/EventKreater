@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** 表示名の変更。参加者名（participants.name）や領収書の宛先は過去の記録なので変えない。 */
+/** 表示名の変更。参加者名（participants.name）は過去の記録なので変えない。 */
 export async function PATCH(req: NextRequest) {
   try {
     const userId = await requireUserId(req);

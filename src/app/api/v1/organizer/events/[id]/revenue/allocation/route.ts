@@ -107,9 +107,9 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
             scheduleId: true,
             partySize: true,
             discounts: { select: { amount: true } },
+            collectedAt: true,
           },
         },
-        receipts: { select: { amount: true } },
       },
     });
     if (!event) {
@@ -120,7 +120,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       });
     }
 
-    const summary = summarizeRevenue(event.participants, event.receipts);
+    const summary = summarizeRevenue(event.participants);
     const organizers = event.organizers.map((row) => ({
       organizerId: row.id,
       role: row.role,
@@ -175,7 +175,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       viewerUserId: ctx.userId,
       viewerRole: ctx.role ?? "OWNER",
       expectedRevenue: summary.expectedRevenue,
-      issuedRevenue: summary.issuedRevenue,
+      collectedRevenue: summary.collectedRevenue,
       attendingCount: summary.attendingCount,
     });
 

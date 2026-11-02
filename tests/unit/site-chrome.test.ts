@@ -36,11 +36,6 @@ describe("公開クロムの出し分け", () => {
   it("告知ページは共通ヘッダーを出さず、チラシを画面の上端から始める", () => {
     expect(siteChrome("/events/abc")).toEqual({ header: false, footer: true, flushTop: true });
     expect(siteChrome("/events")).toEqual({ header: false, footer: true, flushTop: false });
-    expect(siteChrome("/events/abc/receipt")).toEqual({
-      header: false,
-      footer: true,
-      flushTop: false,
-    });
   });
 
   it("告知ページの見本は共通ヘッダーを出さず、帯を画面の上端から始める", () => {
@@ -103,12 +98,11 @@ describe("主催者の節（OrganizerTabs）の出し分け", () => {
     expect(showOrganizerTabs("/organizer/events/abc/revenue")).toBe(true);
   });
 
-  it("作成・編集・プレビュー・領収書・登録案内では出さない", () => {
+  it("作成・編集・プレビュー・登録案内では出さない", () => {
     expect(showOrganizerTabs("/organizer/events/new")).toBe(false);
     expect(showOrganizerTabs("/organizer/events/abc")).toBe(false);
     expect(showOrganizerTabs("/organizer/events/abc/edit")).toBe(false);
     expect(showOrganizerTabs("/organizer/events/abc/preview")).toBe(false);
-    expect(showOrganizerTabs("/organizer/events/abc/receipts/xyz")).toBe(false);
     expect(showOrganizerTabs("/organizer/register-required")).toBe(false);
   });
 

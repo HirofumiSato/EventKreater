@@ -42,7 +42,10 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         revenueShares: { select: { organizerId: true, shareBps: true, headcount: true } },
         schedules: { orderBy: { sortOrder: "asc" } },
         participants: {
+          orderBy: { createdAt: "asc" },
           select: {
+            id: true,
+            name: true,
             status: true,
             priceAmount: true,
             pricePlanName: true,
@@ -50,9 +53,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             scheduleId: true,
             partySize: true,
             discounts: { select: { amount: true } },
+            collectedAt: true,
           },
         },
-        receipts: { select: { amount: true } },
       },
     });
     if (!event) {
@@ -82,7 +85,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       return a.label.localeCompare(b.label);
     });
 
-    const summary = summarizeRevenue(event.participants, event.receipts);
+    const summary = summarizeRevenue(event.participants);
     const allocation = buildAllocationView({
       organizers: event.organizers,
       setting: event.revenueSetting,
@@ -90,7 +93,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       viewerUserId: ctx.userId,
       viewerRole: ctx.role ?? "CO_HOST",
       expectedRevenue: summary.expectedRevenue,
-      issuedRevenue: summary.issuedRevenue,
+      collectedRevenue: summary.collectedRevenue,
       attendingCount: summary.attendingCount,
     });
 

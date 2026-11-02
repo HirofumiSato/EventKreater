@@ -17,7 +17,7 @@
 - 出欠は `Participant` の1行で、`status` は `RsvpStatus`（`ATTENDING` / `DECLINED`）の2値（`prisma/schema.prisma:77-80`）。
 - `@@unique([eventId, userId])` のため、1イベントにつき回答は1行だけ（`prisma/schema.prisma:719`）。会員と端末の名寄せは `chooseRsvpTarget` に閉じている（`src/modules/participants/lib/rsvp.ts:43-60`）。
 - 定員は `Event.capacity`（`Int?`）。`null` は無制限。
-- 売上・領収書は `status === "ATTENDING"` の行だけを見る（`src/modules/revenue/lib/revenue.ts`、`src/app/api/v1/organizer/events/[id]/participants/[participantId]/receipt/route.ts:58`）。
+- 売上・集金は `status === "ATTENDING"` の行だけを見る（`src/modules/revenue/lib/revenue.ts`、`src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts`）。
 
 ### 画面
 
@@ -29,7 +29,7 @@
 ### 方針との関係
 
 - 出欠に会員登録は要らない。要望も同じ扱いとし、端末 Cookie と会員 JWT の両方で受け付ける。
-- 参加費の集金と決済は行わない。要望は売上にも領収書にも入れない。
+- 参加費の集金と決済は行わない。要望は売上にも集金にも入れない。
 
 ## 今回の決定
 
@@ -55,7 +55,7 @@
 
 1. 定員に達した催しで、利用者が「参加要望」を出せる。
 2. 幹事が待ち順を確認し、承認・辞退できる。
-3. 要望が参加人数・売上・領収書に混ざらない。
+3. 要望が参加人数・売上・集金に混ざらない。
 4. 参加者・幹事の双方で、3つの状態が色とラベルで区別できる。
 5. 同時送信で定員を超えない。
 
@@ -235,7 +235,7 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 - 幹事が1人目を承認すると `ATTENDING` / `waitlistedAt = null` になり、2人目の位置が1へ繰り上がる。
 - 満員のまま承認すると 409。
 - 出席者が取り消しても要望は自動で出席にならない。
-- 要望は領収書を発行できない。
+- 要望は集金を記録できない。
 - 要望は名簿の `stats.waitlistedCount` に入り、売上に入らない。
 - 参加履歴が「参加要望中」で返り、`summary.waitlisted` が1。
 - 参加カレンダーに要望が出る。
@@ -244,7 +244,7 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 
 - `docs/overall_system_requirements_common.md` に参加要望の定義と状態遷移を追記する。
 - `docs/front_implementation_spec.md` の出欠・名簿の記述を3状態に更新し、受け入れ条件を追加する。
-- `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` と `reminders/route.ts`、`receipt/route.ts` に残る文字化け（`"?????????????"`）を、触る範囲で日本語に戻す。
+- `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` と `collection/route.ts` に残る文字化け（`"?????????????"`）を、触る範囲で日本語に戻す。
 
 ## 受け入れ条件
 
@@ -253,7 +253,7 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 - [ ] 定員に達した催しで、出欠フォームに「出席」が出ず「参加要望 / 欠席」になる
 - [ ] 「参加要望」では名前とコメントだけを送り、日時・費用プランは送らない（欄は残したまま押せない）
 - [ ] 送信後に「参加要望を受け付けました（N番目）」と出る
-- [ ] 要望は参加人数に数えられず、売上・領収書にも入らない
+- [ ] 要望は参加人数に数えられず、売上・集金にも入らない
 - [ ] 自分の要望を取り消せる
 - [ ] 既に出席している人は、満員になっても出席のまま変更・取消できる
 - [ ] 空きがある催しでは従来どおり「出席 / 欠席」で、要望は出ない
@@ -295,5 +295,5 @@ await tx.$queryRaw`SELECT id FROM "events" WHERE id = ${eventId}::uuid FOR UPDAT
 - `src/modules/attendance/components/DynamicRsvpBox.tsx` — 出欠フォーム
 - `src/modules/attendance/components/ParticipantListTable.tsx` — 名簿
 - `src/lib/serializers.ts` — `summarizeStatuses`、`serializeEvent`
-- `src/modules/revenue/lib/revenue.ts` — 売上の集計
+- `src/modules/revenue/lib/revenue.ts` — 売上と集金の集計
 - `src/styles/components.css` — `badge--tentative`、`choice--tentative`、`--color-warning-*`

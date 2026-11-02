@@ -112,7 +112,7 @@ export function isSessionExpired(body: { status?: number; error?: string }): boo
 
 /**
  * 未登録の幹事を登録案内ページへ送る。送ったら true。
- * 出欠の管理・リマインド・領収書・共同幹事の招待・24時間を過ぎた編集で返る。
+ * 出欠の管理・集金の記録・共同幹事の招待・24時間を過ぎた編集で返る。
  */
 export function sendToRegisterRequired(eventId: string): boolean {
   if (typeof window === "undefined") return false;

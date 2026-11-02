@@ -23,6 +23,8 @@ export interface RevenueParticipant {
    * 合計額をプラン金額から引き、支払額は 0 円で止める。
    */
   discounts?: readonly { amount: number }[];
+  /** 参加費を受け取った日時。NULL は未集金。 */
+  collectedAt?: Date | string | null;
 }
 
 /** 人数。0 以下や小数は 1 人に寄せ、売上と定員が負にならないようにする。 */
@@ -40,7 +42,7 @@ export function discountTotal(rows: readonly { amount: number }[] | undefined): 
 
 /**
  * 1 人ぶんの支払額。割引は引くが、人数は掛けない。0 円未満にはしない。
- * 領収書は 1 人ずつ切るので、発行画面の既定額はこの値を使う。
+ * 集金は 1 人ずつ記録するので、名簿の 1 枚や切り替えの既定額はこの値を使う。
  * 合計を人数で割るのではなく元の金額から引き直し、割り切れない端数を出さない。
  */
 export function unitPayableAmount(row: {
@@ -69,17 +71,18 @@ export function payableAmount(row: {
 export interface RevenueSummary {
   /** 見込み売上。出席かつプラン選択済みの金額の合計。 */
   expectedRevenue: number;
-  /** 領収書を発行した金額の合計。決済や入金の記録ではない。 */
-  issuedRevenue: number;
-  /** 見込みと発行済みの差。未回収ではなく「要確認」として出す。 */
-  unreconciled: number;
+  /** 集金済みの金額の合計。出席かつ `collectedAt` ありの支払額だけを数える。 */
+  collectedRevenue: number;
+  /** 見込みと集金済みの差。まだ受け取っていない額。 */
+  uncollected: number;
   attendingCount: number;
   /** 金額の分かる出席者。平均単価の分母。 */
   paidAttendingCount: number;
   /** 出席しているがプラン未選択。売上には加算しない。 */
   unassignedPlanCount: number;
   declinedCount: number;
-  receiptCount: number;
+  /** 集金済みの人数（人数ぶん数える）。件数ではなく人で数える。 */
+  collectedCount: number;
   /** 出席1人あたりの見込み売上。0 人のときは 0。 */
   averagePerAttendee: number;
 }
@@ -89,11 +92,10 @@ export function averageRevenue(expectedRevenue: number, paidAttendingCount: numb
   return Math.round(expectedRevenue / paidAttendingCount);
 }
 
-export function summarizeRevenue(
-  participants: readonly RevenueParticipant[],
-  receipts: readonly { amount: number }[] = [],
-): RevenueSummary {
+export function summarizeRevenue(participants: readonly RevenueParticipant[]): RevenueSummary {
   let expectedRevenue = 0;
+  let collectedRevenue = 0;
+  let collectedCount = 0;
   let attendingCount = 0;
   let paidAttendingCount = 0;
   let unassignedPlanCount = 0;
@@ -113,20 +115,24 @@ export function summarizeRevenue(
       continue;
     }
     paidAttendingCount += size;
-    expectedRevenue += payableAmount(row) ?? 0;
+    const amount = payableAmount(row) ?? 0;
+    expectedRevenue += amount;
+    // 集金は出席かつ日時が入っている行だけ。欠席・参加要望は数えない。
+    if (row.collectedAt) {
+      collectedRevenue += amount;
+      collectedCount += size;
+    }
   }
-
-  const issuedRevenue = receipts.reduce((total, receipt) => total + receipt.amount, 0);
 
   return {
     expectedRevenue,
-    issuedRevenue,
-    unreconciled: expectedRevenue - issuedRevenue,
+    collectedRevenue,
+    uncollected: expectedRevenue - collectedRevenue,
     attendingCount,
     paidAttendingCount,
     unassignedPlanCount,
     declinedCount,
-    receiptCount: receipts.length,
+    collectedCount,
     averagePerAttendee: averageRevenue(expectedRevenue, paidAttendingCount),
   };
 }

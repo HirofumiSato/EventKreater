@@ -44,18 +44,16 @@ flowchart TD
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
-| `/api/v1/public/events/[id]/receipt` | GET | SCR-PUB-04 | 出欠 Cookie または会員 | 自分の参加費領収書 |
 | `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済み・催しが0件は 404 |
 | `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 9 テーマのいずれか |
-| `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.17） |
-| `/api/v1/organizer/profile/avatar` | DELETE | SCR-ORG-14 | 同左 | アイコンの削除。以後は名前の頭文字に戻る（5.17） |
-| `/api/v1/organizer/profile/header` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | ヘッダー画像の登録・差し替え。3:1 を WebP 1920x640 に作り直して保存し、旧画像を退役させる（5.17.1） |
-| `/api/v1/organizer/profile/header` | DELETE | SCR-ORG-14 | 同左 | ヘッダーの削除。以後は画像無しの見た目に戻る（5.17.1） |
-| `/api/v1/image-assets/[id]/image` | GET | SCR-ORG-14、SCR-PUB-14 | 不要 | 会員が上げた画像の配信。WebP・1 年キャッシュ。論理削除済みは 404（5.18） |
-| `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | GET | SCR-ORG-09 | 幹事（会員のみ） | 発行済み領収書の取得。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/participants/[participantId]/receipt` | POST | SCR-ORG-06 | 幹事（会員のみ） | 出席者への領収書発行・再発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.16） |
+| `/api/v1/organizer/profile/avatar` | DELETE | SCR-ORG-14 | 同左 | アイコンの削除。以後は名前の頭文字に戻る（5.16） |
+| `/api/v1/organizer/profile/header` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | ヘッダー画像の登録・差し替え。3:1 を WebP 1920x640 に作り直して保存し、旧画像を退役させる（5.16.1） |
+| `/api/v1/organizer/profile/header` | DELETE | SCR-ORG-14 | 同左 | ヘッダーの削除。以後は画像無しの見た目に戻る（5.16.1） |
+| `/api/v1/image-assets/[id]/image` | GET | SCR-ORG-14、SCR-PUB-14 | 不要 | 会員が上げた画像の配信。WebP・1 年キャッシュ。論理削除済みは 404（5.17） |
+| `/api/v1/organizer/events/[id]/participants/[participantId]/collection` | PUT | SCR-ORG-06 | 幹事（会員のみ） | 出席者の集金を記録する（`collected_at`）。未登録の幹事は 403 `REGISTER_REQUIRED`。出席以外は 400 |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
 | `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点で枠を1つ消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
@@ -63,11 +61,9 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
 | `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・領収書発行額・差額・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・集金済み・未集金・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催幹事（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
-| `/api/v1/organizer/events/[id]/reminders` | GET | SCR-ORG-06 | 幹事（会員のみ） | リマインドの文面と宛先数を返す。アカウントのない参加者へ個別送信するときのコピー用。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/reminders` | POST | SCR-ORG-06 | 幹事（会員のみ） | 会員参加者へリマインドメールを送り、送信記録を残す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
 | `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、枠は消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
@@ -88,7 +84,7 @@ flowchart TD
 | `/api/v1/auth/google/callback` | GET | SCR-PUB-02 | Google 認可コード | ID トークン検証。同じ確認済みメールの会員へ `googleSub` を結ぶ。会員が無ければ電話番号確認へ進む |
 | `/api/v1/auth/logout` | POST | SCR-PUB-02 | 不要 | セッション行を失効させ、会員 Cookie を削除する |
 | `/api/v1/user/profile` | GET | SCR-PUB-03、SCR-PUB-08、SCR-PUB-11 | 会員必須 | 会員プロフィールと、主催者として使えるか（`isOrganizer` / `organizerCount`）、ヘッダーの出し分けに使う `platformRole`。参加履歴は含めない |
-| `/api/v1/user/profile` | PATCH | SCR-PUB-11 | 会員必須 | 表示名の変更。過去の参加者名と領収書の宛名は変えない |
+| `/api/v1/user/profile` | PATCH | SCR-PUB-11 | 会員必須 | 表示名の変更。過去の参加者名は変えない |
 | `/api/v1/user/reauth` | POST | SCR-PUB-11 | 会員必須 | アカウント操作の確認番号を、登録済みのSMSまたはメールへ送る。セッションは発行しない |
 | `/api/v1/user/password` | POST | SCR-PUB-11 | 会員必須 | パスワードの変更。Google のみの会員は最初の設定に使う。他の端末のログインを切る |
 | `/api/v1/user/email` | POST | SCR-PUB-11 | 会員必須 | メールアドレス変更の開始。確認番号を照合し、新しいアドレスへ確認リンクを送る |
@@ -98,7 +94,7 @@ flowchart TD
 | `/api/v1/user` | DELETE | SCR-PUB-11 | 会員必須 | 退会（論理削除）。筆頭幹事のイベントを閉じ、サブスクを即時解約し、確認済みの電話番号だけを残す |
 | `/api/v1/user/participations` | GET | SCR-PUB-09 | 会員必須 | 参加履歴の一覧。`status`（ATTENDING/DECLINED）、`scope`（all/upcoming/past）、`page`、`limit` |
 | `/api/v1/notifications` | GET | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
-| `/api/v1/notifications` | PATCH | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.19） |
+| `/api/v1/notifications` | PATCH | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.18） |
 | `/api/v1/admin/session` | GET | SCR-ADM-04 | 管理者必須 | 管理者セッションの確認。ログイン済みならホームへ進む判定にも使う |
 | `/api/v1/admin/session` | POST | SCR-ADM-00 | 不要 | 管理者ログイン。`ADMIN` かつパスワード一致かつ確認済み電話があるとき、確認番号チャレンジを始める。着地は SCR-ADM-04 |
 | `/api/v1/admin/session` | DELETE | SCR-ADM-04 | 不要 | 管理者セッション Cookie の削除 |
@@ -547,14 +543,15 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | :--- | :--- |
 | 参加者名簿 | `GET /api/v1/organizer/events/[id]/participants` |
 | 出欠の変更・削除 | `PATCH` / `DELETE /api/v1/organizer/events/[id]/participants/[participantId]` |
-| 領収書 | `GET` / `POST /api/v1/organizer/events/[id]/participants/[participantId]/receipt` |
-| リマインド | `GET` / `POST /api/v1/organizer/events/[id]/reminders` |
+| 集金の記録 | `PUT /api/v1/organizer/events/[id]/participants/[participantId]/collection` |
 | 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
 | 共同幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（オーナーのみ） |
 
-名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。領収書の発行画面が使う既定額（`pricePlanAmount`）も同じ値になる。
+名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。集金の記録が使う既定額（`unitPayableAmount`）も同じ値になる。
 
-割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計 × `partySize`）、`payableAmount`（`(pricePlanAmount − 割引の合計) × partySize` の支払額。0 円で止めてから人数を掛ける）、`unitPayableAmount`（`pricePlanAmount − 割引の合計`。人数を掛けない 1 人ぶん）を返す。`payableAmount` と `unitPayableAmount` が `null` なのはプラン未選択の行だけで、**領収書の発行画面の既定額は 1 人ずつ切る前提で `unitPayableAmount` を使う**（名簿には「1人 2,500円」と「3人 合計 7,500円」の 2 行で両方を出す）。名簿の変更（`PATCH`）は `discountIds` と `partySize`、`scheduleIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。出席でない行の `partySize` は 1 に戻し、参加要望は 1 人として並べて、承認したときに名簿で人数を入れる。
+割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計 × `partySize`）、`payableAmount`（`(pricePlanAmount − 割引の合計) × partySize` の支払額。0 円で止めてから人数を掛ける）、`unitPayableAmount`（`pricePlanAmount − 割引の合計`。人数を掛けない 1 人ぶん）を返す。`payableAmount` と `unitPayableAmount` が `null` なのはプラン未選択の行だけで、**集金は 1 人ずつ記録するので、集計にも名簿の 1 枚にも `unitPayableAmount` を使う**（名簿には「1人 2,500円」と「3人 合計 7,500円」の 2 行で両方を出す）。名簿の変更（`PATCH`）は `discountIds` と `partySize`、`scheduleIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。出席でない行の `partySize` は 1 に戻し、参加要望は 1 人として並べて、承認したときに名簿で人数を入れる。
+
+名簿（GET）の各参加者は、`receipt` ではなく `collectedAt`（ISO 8601 の文字列か `null`）を返す。`null` は未集金である。集金の切り替えは `PUT .../collection`（5.5）が持ち、出欠・割引・人数は変えない。
 
 横断の売上（`GET /api/v1/organizer/revenue`）は会員の幹事だけが使える。ゲスト幹事の Cookie では 403 `REGISTER_REQUIRED`、未ログインは 401 を返す（`requireOrganizerAccount`）。
 
@@ -943,15 +940,31 @@ export const SubmitRsvpSchema = z.object({
 
 ---
 
-### 5.5. POST `/api/v1/organizer/events/[id]/participants/[participantId]/receipt`（参加費の領収書）
+### 5.5. PUT `/api/v1/organizer/events/[id]/participants/[participantId]/collection`（集金の記録）
 
-出席の参加者に1件だけ発行する。再発行は同じ行の宛名、金額、但し書き、発行者、発行日を上書きする。欠席には HTTP 400。金額は 1 以上 9,999,999 以下の整数円。発行者名は操作した会員の名前、ゲスト幹事は「ゲスト幹事」。参加費の決済は行わない。
+出席者から参加費を受け取ったかどうかを、1 人ずつ記録する。`participants.collected_at` に日時を入れ、戻すときは `NULL` にする。金額は受け取らない。集計は見込みと同じ支払額（`payableAmount`）を使い、金額の二重管理を作らない。
 
-GET は発行済みを返す。未発行は HTTP 404。
+**リクエスト:**
+
+| 項目 | 型 | 必須 | 説明 |
+| :--- | :--- | :--- | :--- |
+| `collected` | boolean | 必須 | `true` で現在時刻を `collected_at` に入れる。`false` で `NULL` に戻す |
+
+```json
+{ "collected": true }
+```
+
+**応答:** 200。`collectedAt` は ISO 8601 の文字列か `null`。
+
+```json
+{ "participant": { "id": "7d1e...", "collectedAt": "2026-11-02T05:00:00.000Z" } }
+```
 
 **認可:** `assertRegisteredOrganizer`。未登録のゲスト幹事（Cookie の幹事トークンだけで本人と分かる状態）には 403 `REGISTER_REQUIRED` を返す。参加者名簿と同じ扱いである。
 
-参加者本人の取得は `GET /api/v1/public/events/[id]/receipt`。出欠 Cookie、またはログイン会員の参加履歴に領収書があるときだけ 200。それ以外は 404。
+**400:** 出席（`ATTENDING`）以外。参加要望には「参加要望中の参加者には集金を記録できません。先に参加を承認してください。」、欠席には「欠席の参加者には集金を記録できません。」を返す。**404:** 参加者かイベントが無い（削除済みを含む）。
+
+出欠・割引・人数は送らない。`PATCH /api/v1/organizer/events/[id]/participants/[participantId]` は出欠・割引・人数を丸ごと書き直すため、集金の 1 タップで参加者の選択を触らせないよう資源を分ける。
 
 ### 5.6. POST `/api/v1/organizer/events/[id]/lock`（排他ロック取得・延長・引き継ぎ）
 
@@ -996,20 +1009,18 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
       const hashes = cookies.rsvpTokens.map((t) => sha256(t));
       const anonymousRows = await tx.participant.findMany({
         where: { rsvpTokenHash: { in: hashes }, userId: null },
-        include: { receipt: { select: { id: true } } },
       });
       for (const row of anonymousRows) {
         const already = await tx.participant.findFirst({
           where: { eventId: row.eventId, userId },
-          include: { receipt: { select: { id: true } } },
         });
         if (!already) {
           await tx.participant.update({ where: { id: row.id }, data: { userId } });
           migratedParticipants += 1;
           continue;
         }
-        // 同じイベントに会員の行と端末だけの行がある。領収書を持つ方を残す。
-        if (row.receipt && !already.receipt) {
+        // 同じイベントに会員の行と端末だけの行がある。集金の記録を持つ方を残す。
+        if (row.collectedAt && !already.collectedAt) {
           await tx.participant.update({ where: { id: row.id }, data: { userId } });
           await tx.participant.delete({ where: { id: already.id } });
           migratedParticipants += 1;
@@ -1049,38 +1060,11 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 `participants` の `(event_id, user_id)` は一意なので、端末の匿名行をそのまま `userId` で更新すると、同じ会員の既存行と衝突する。統合は 1 行ずつ次の順で決める。
 
 1. 会員の行が無ければ、匿名行をそのまま会員へ付け替える。
-2. 会員の行がある場合、領収書を持つ方を残す。
-3. どちらも領収書を持たない、または両方持つ場合は会員の行を残す。匿名行の `updatedAt` が新しければ、内容だけ会員の行へ写す。
+2. 会員の行がある場合、集金の記録（`collected_at`）を持つ方を残す。
+3. どちらも集金の記録を持たない、または両方持つ場合は会員の行を残す。匿名行の `updatedAt` が新しければ、内容だけ会員の行へ写す。
 4. 残さなかった行を削除し、一意制約の衝突を避ける。
 
-### 5.8. GET / POST `/api/v1/organizer/events/[id]/reminders`（参加者へのリマインド）
-
-**認可:** `assertRegisteredOrganizer`。未登録のゲスト幹事には 403 `REGISTER_REQUIRED`。受け取った名簿が無い状態で宛先を作れないため、名簿と同じ入口で止める。
-
-幹事権限が必要である。リマインドは標準機能であり、プランや利用枠に関係なく使える。
-
-- **GET:** 文面と宛先数を返す。画面の「文面をコピー」はこの応答をそのままクリップボードへ入れる。アカウントを持たない参加者には、この文面を LINE や DM に貼って送る。
-
-```json
-{
-  "subject": "〇〇 のリマインド",
-  "body": "〇〇 の開催が近づいています。\n2026-12-01 18:00\n標準 ¥3,000\n東京都…\n告知ページ: http://localhost:3012/events/<id>\nマイページ: http://localhost:3012/mypage",
-  "recipientCount": 2,
-  "skippedGuests": 5
-}
-```
-
-- **POST:** `recipientCount` の宛先（`participants.user_id` がある会員のメール）へ送る。本文は GET と同じ組み立てで、告知URL とマイページのリンクを含む。
-  - 配送先 `MAIL_WEBHOOK_URL` が空のときは送信せず、`status = "RECORDED"` として `reminder_deliveries` に残す。
-  - 会員の参加者がいないときも 200 を返し、`sent = 0`、`recorded = 0`、`skippedGuests = 参加者数` とする。画面は文面コピーへ誘導する。
-  - 応答は `{ sent, recorded, skippedGuests, subject, body }`。
-
-```text
-POST /api/v1/organizer/events/[id]/reminders
-→ 200 { "sent": 2, "recorded": 0, "skippedGuests": 5, "subject": "...", "body": "..." }
-```
-
-### 5.9. GET `/api/v1/organizer/revenue`（主催イベント横断の売上）
+### 5.8. GET `/api/v1/organizer/revenue`（主催イベント横断の売上）
 
 対象画面は SCR-ORG-11。認可は `requireOrganizerAccount`。会員の幹事だけが使える。未ログインは 401、未登録のゲスト幹事（Cookie の幹事トークンだけで本人と分かる状態）は 403 `REGISTER_REQUIRED` を返す。ゲスト幹事には、複数のイベントをまたいだ金額を出さない。
 
@@ -1092,7 +1076,7 @@ POST /api/v1/organizer/events/[id]/reminders
 | `to` | 指定なし | `events.sort_date` の上限（`YYYY-MM-DD`、含む） |
 | `status` | 指定なし | `DRAFT` / `PUBLISHED` / `CLOSED` のいずれか |
 
-絞り込みの基準は開催日であり、回答日時や領収書の発行日ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
+絞り込みの基準は開催日であり、回答日時や集金の日時ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
 
 レスポンスは `period`、`totals`、`myShare`、`events` の 4 つである。
 
@@ -1102,13 +1086,13 @@ POST /api/v1/organizer/events/[id]/reminders
   "myShare": { "expectedRevenue": 4000 },
   "totals": {
     "expectedRevenue": 8000,
-    "issuedRevenue": 3000,
-    "unreconciled": 5000,
+    "collectedRevenue": 3000,
+    "uncollected": 5000,
     "attendingCount": 4,
     "paidAttendingCount": 3,
     "unassignedPlanCount": 1,
     "declinedCount": 1,
-    "receiptCount": 1,
+    "collectedCount": 2,
     "averagePerAttendee": 2667
   },
   "events": [
@@ -1118,13 +1102,13 @@ POST /api/v1/organizer/events/[id]/reminders
       "sortDate": "2026-11-14",
       "status": "PUBLISHED",
       "expectedRevenue": 8000,
-      "issuedRevenue": 3000,
-      "unreconciled": 5000,
+      "collectedRevenue": 3000,
+      "uncollected": 5000,
       "attendingCount": 4,
       "paidAttendingCount": 3,
       "unassignedPlanCount": 1,
       "declinedCount": 1,
-      "receiptCount": 1,
+      "collectedCount": 2,
       "averagePerAttendee": 2667,
       "myShare": { "expectedRevenue": 4000 }
     }
@@ -1135,23 +1119,23 @@ POST /api/v1/organizer/events/[id]/reminders
 - `period` は受け取った絞り込みをそのまま返す。`from` と `to` は `YYYY-MM-DD`、`status` は受け取った値か `null`。
 - `totals` は、返した `events` の参加者をまとめて集計した値である。合計は `events` の各行の単純和と一致する。
 - 金額は `participants.price_amount`（出欠確定時点のスナップショット）から、申込時に選んだ割引の合計を引いた額に、参加人数（`party_size`）を掛けた合計である（0 円で止めてから人数を掛ける）。`price_amount` が `NULL` の出席者は `unassignedPlanCount` に入れ、売上にも平均単価の分母にも入れない。`attendingCount` は出席の人数の合計（`Σ party_size`）であり、`averagePerAttendee` は 1 人あたりの額になる。割引は 4 つの売上 API（`/organizer/revenue`、`/organizer/events/[id]/revenue`、`allocation`、`participants`）で同じように効く。
-- `issuedRevenue` は `receipts.amount` の合計であり、決済や入金の記録ではない。`unreconciled` は `expectedRevenue − issuedRevenue` で、負にもなる。未回収額ではない。
+- `collectedRevenue` は、出席かつ `collected_at` のある参加者の支払額（見込みと同じ計算）の合計であり、決済や入金の記録ではない。`collectedCount` はその行の `party_size` の合計（人数であって件数ではない）。`uncollected` は `expectedRevenue − collectedRevenue` で、負にもなる。未回収ではない（まだ受け取っていないだけ）。
 - `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
 - 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
 - 並び順は `sort_date` の昇順（開催日が近い順）。過去の催しは後ろへ送る。
 - `events[].sortDate` は `YYYY-MM-DD` の文字列である。
-- `myShare.expectedRevenue` は、各イベントの按分（5.11）で閲覧者自身の行になった見込み売上の合算である。未割当は含めない。`events[].myShare` と同じ値の合計になる。按分の設定が無いイベントは均等割で計算する。
+- `myShare.expectedRevenue` は、各イベントの按分（5.10）で閲覧者自身の行になった見込み売上の合算である。未割当は含めない。`events[].myShare` と同じ値の合計になる。按分の設定が無いイベントは均等割で計算する。
 
-### 5.10. GET `/api/v1/organizer/events/[id]/revenue`（イベント1件の売上内訳）
+### 5.9. GET `/api/v1/organizer/events/[id]/revenue`（イベント1件の売上内訳）
 
 対象画面は SCR-ORG-12。認可は `assertRegisteredOrganizer`。未登録のゲスト幹事には 403 `REGISTER_REQUIRED`（名簿と同じ扱い）。
 
-レスポンスは `event`、`summary`、`byPlan`、`bySchedule`、`allocation` の 5 つである。`summary` の形は 5.9 の `totals` と同じ。`allocation` は 5.11 で説明する。
+レスポンスは `event`、`summary`、`byPlan`、`bySchedule`、`allocation` の 5 つである。`summary` の形は 5.8 の `totals` と同じ。`allocation` は 5.10 で説明する。
 
 ```json
 {
   "event": { "id": "20ccffe6-...", "title": "秋の音楽会", "sortDate": "2026-11-14", "status": "PUBLISHED" },
-  "summary": { "expectedRevenue": 8000, "issuedRevenue": 3000, "unreconciled": 5000, "attendingCount": 4, "paidAttendingCount": 3, "unassignedPlanCount": 1, "declinedCount": 1, "receiptCount": 1, "averagePerAttendee": 2667 },
+  "summary": { "expectedRevenue": 8000, "collectedRevenue": 3000, "uncollected": 5000, "attendingCount": 4, "paidAttendingCount": 3, "unassignedPlanCount": 1, "declinedCount": 1, "collectedCount": 2, "averagePerAttendee": 2667 },
   "byPlan": [
     { "name": "一般", "audience": "ANY", "amount": 3000, "attendingCount": 2, "discountSubtotal": 500, "subtotal": 5500 },
     { "name": "学生", "audience": "MALE", "amount": 2000, "attendingCount": 1, "discountSubtotal": 0, "subtotal": 2000 }
@@ -1161,6 +1145,8 @@ POST /api/v1/organizer/events/[id]/reminders
   ]
 }
 ```
+
+- `summary.uncollected` が 0 より大きいとき、画面（SCR-ORG-12）は「未集金の出席者が N 人います。名簿で記録できます。」の案内と名簿へのリンクを出す。集金の記録そのものは `PUT .../collection`（5.5）で行うので、この API は書き込まない。
 
 - `event.sortDate` は `YYYY-MM-DD` の文字列である。
 - `byPlan` は対象（`audience`）・プラン名・金額の 3 つと、選んだ割引の合計をキーにまとめる。名前も金額もスナップショットなので、同じ名前で金額が違う行が並ぶことがある（出欠の途中でプラン金額や割引を変えた場合）。その差は隠さずに別行で見せる。`discountSubtotal` はその行の割引の合計、`subtotal` は割引を引いた額に人数を掛けた小計である。`attendingCount` は人数の合計で、同じ行に 2 人来たときは 2 になる。並びは対象のアルファベット順、小計の降順、名前の五十音順。
@@ -1187,10 +1173,10 @@ POST /api/v1/organizer/events/[id]/reminders
       "shareBps": 3334,
       "headcount": null,
       "expectedRevenue": 2667,
-      "issuedRevenue": 1000
+      "collectedRevenue": 1000
     }
   ],
-  "unallocated": { "headcount": 0, "expectedRevenue": 0, "issuedRevenue": 0 },
+  "unallocated": { "headcount": 0, "expectedRevenue": 0, "collectedRevenue": 0 },
   "hiddenRows": 2
 }
 ```
@@ -1202,7 +1188,7 @@ POST /api/v1/organizer/events/[id]/reminders
 - メールアドレスと `userId` は返さない。
 - `unallocated` は人数方式で配り切れなかった人数と金額。割合方式は常に 0。
 
-### 5.11. PUT `/api/v1/organizer/events/[id]/revenue/allocation`（按分の保存）
+### 5.10. PUT `/api/v1/organizer/events/[id]/revenue/allocation`（按分の保存）
 
 対象画面は SCR-ORG-12。認可は `assertRegisteredOwner`。主催者以外は 403、未登録のゲスト幹事は 403 `REGISTER_REQUIRED`。
 
@@ -1226,7 +1212,7 @@ POST /api/v1/organizer/events/[id]/reminders
 - 人数方式で合計が出席者数を超える場合は 409 `HEADCOUNT_EXCEEDS_ATTENDING`。不足は許し、未割当として残す。
 - 負数・非整数は 400 `INVALID_ALLOCATION_VALUE`。
 - 保存は1トランザクション。設定行を upsert し、配分行を upsert、主催者から外れた行を delete する。
-- 成功時は `{ "allocation": ... }` を返す。形は 5.10 の `allocation` と同じ。
+- 成功時は `{ "allocation": ... }` を返す。形は 5.9 の `allocation` と同じ。
 
 | コード | HTTP | 意味 |
 | :---- | :--- | :---- |
@@ -1240,7 +1226,7 @@ POST /api/v1/organizer/events/[id]/reminders
 
 ---
 
-### 5.12. GET `/api/v1/public/organizers/[userId]`（主催者の公開プロフィール）
+### 5.11. GET `/api/v1/public/organizers/[userId]`（主催者の公開プロフィール）
 
 対象画面は SCR-PUB-14（プロフィール部分）。認証は要らない。`userId` が UUID でない場合は DB を触らず 404。
 
@@ -1272,7 +1258,7 @@ POST /api/v1/organizer/events/[id]/reminders
 }
 ```
 
-### 5.13. GET `/api/v1/public/organizers/[userId]/events`（主催者のページの催し）
+### 5.12. GET `/api/v1/public/organizers/[userId]/events`（主催者のページの催し）
 
 対象画面は SCR-PUB-14（カレンダーと一覧の部分）。`resolveOptionalUserId` で Cookie を見る。Cookie が壊れていても 401 にはせず、未ログインとして 403 `LOGIN_REQUIRED` を返す。
 
@@ -1282,7 +1268,7 @@ POST /api/v1/organizer/events/[id]/reminders
 - 並びは次に開催される日が近い順、同日は催し名の五十音順、最後は `id`。
 - 会員が無い・退会済みは 404。詳細な項目は 5.2 のイベント表現に準ずる。
 
-### 5.14. GET / PUT `/api/v1/organizer/profile`（公開プロフィールの編集）
+### 5.13. GET / PUT `/api/v1/organizer/profile`（公開プロフィールの編集）
 
 対象画面は SCR-ORG-14。認可は `requireOrganizerAccount`（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`）と `assertOrganizerMember`（主催イベント0件は 403 `NOT_ORGANIZER`）。
 
@@ -1326,9 +1312,9 @@ PUT のボディは GET の `profile` と同じ形。`src/lib/schemas.ts` の `O
 | `isPublished` / `showStats` | 真偽値。既定は false |
 | `themeId` | `modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` / `washi` / `sage` / `candy` / `dusk` のいずれか、または null（標準）。未知の値は 400 |
 
-URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.17 の `avatar` と 5.17.1 の `header` で別に保存する。
+URL にユーザー名・パスワードを含むものは 400。違反は RFC 7807 の 400 で、`errors[].path` に項目名を返す。保存は `userId` を主キーにした upsert で、初回に1行作り、以後は同じ行を更新する。応答は GET と同じ形（保存後の値）。画像は `PUT` では扱わず、5.16 の `avatar` と 5.16.1 の `header` で別に保存する。
 
-### 5.15. GET / DELETE `/api/v1/venues`（過去の会場の候補）
+### 5.14. GET / DELETE `/api/v1/venues`（過去の会場の候補）
 
 対象画面は SCR-ORG-02 / SCR-ORG-05 の「過去の会場から選ぶ」。認証は不要で、次の 2 つを単位に候補を絞る。他人の会場は返さない。
 
@@ -1364,7 +1350,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 候補の記録は、イベントの作成（`POST /api/v1/public/events`）、下書きの保存（`POST .../draft`）、公開（`POST .../publish`）、編集の保存（`PUT .../organizer/events/[id]`）で行う。同じ会場は行を増やさず `lastUsedAt` だけを更新する。記録の失敗はイベントの作成・保存を止めない（ログだけに残す）。実装は `src/modules/events/lib/venue-suggestions.ts`。
 
-### 5.16. POST `/api/v1/voice/transcriptions`（音声を文字にする）
+### 5.15. POST `/api/v1/voice/transcriptions`（音声を文字にする）
 
 イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`Cache-Control: no-store`。
 
@@ -1384,9 +1370,9 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 文字をフォームの値へ変える規則はサーバーではなく画面側に置く（`src/modules/events/lib/voice/parse.ts`）。欄が決まっていれば LLM を使わず、日付・時刻・金額・人数を決定的に読めるため、同じ発話が常に同じ値になり、テストで仕様を固定できる。導入手順と画面の動きは `docs/voice-input.rst`。
 
-### 5.17. POST / DELETE `/api/v1/organizer/profile/avatar`（プロフィールのアイコン）
+### 5.16. POST / DELETE `/api/v1/organizer/profile/avatar`（プロフィールのアイコン）
 
-対象画面は SCR-ORG-14。認可は 5.14 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
+対象画面は SCR-ORG-14。認可は 5.13 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
 
 本文の保存（`PUT /api/v1/organizer/profile`）とは分ける。画像は選んだ時点で保存し、本文の保存に失敗してもアイコンだけ巻き戻る事故を作らない。
 
@@ -1406,11 +1392,11 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 422 | `INVALID_IMAGE` | JPEG / PNG / WebP でない、または画像として読めない |
 | 429 | - | 短時間のアップロードが多すぎる |
 
-### 5.17.1. POST / DELETE `/api/v1/organizer/profile/header`（プロフィールのヘッダー画像）
+### 5.16.1. POST / DELETE `/api/v1/organizer/profile/header`（プロフィールのヘッダー画像）
 
-対象画面は SCR-ORG-14。認可は 5.17 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
+対象画面は SCR-ORG-14。認可は 5.16 と同じ（未ログイン 401、ゲスト幹事 403 `REGISTER_REQUIRED`、主催イベント0件は 403 `NOT_ORGANIZER`）。
 
-公開ページの先頭に敷く横長（3:1）の画像を扱う。アイコンと同じく**選んだ時点で保存**し、本文の `PUT`（5.14）からは分ける。画面側で 3:1 に切り抜いてから送るが、比のずれた画像でも崩れないよう、サーバーでも中央で切り抜き直す。
+公開ページの先頭に敷く横長（3:1）の画像を扱う。アイコンと同じく**選んだ時点で保存**し、本文の `PUT`（5.13）からは分ける。画面側で 3:1 に切り抜いてから送るが、比のずれた画像でも崩れないよう、サーバーでも中央で切り抜き直す。
 
 - `multipart/form-data` の `file` を 1 つ受け取る。
 - 受け付けるのは JPEG / PNG / WebP。判定は先頭バイトだけで行う（`src/lib/image-upload.ts` の `detectImageKind`）。
@@ -1431,7 +1417,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 422 | `IMAGE_TOO_SMALL` | 横 800px・縦 267px に満たない |
 | 429 | - | 短時間のアップロードが多すぎる |
 
-### 5.18. GET `/api/v1/image-assets/[id]/image`（会員が上げた画像の配信）
+### 5.17. GET `/api/v1/image-assets/[id]/image`（会員が上げた画像の配信）
 
 アイコンなど、`image_assets` に保存した画像を返す。認証は不要（推測できない UUID を URL に持つ公開画像）。
 
@@ -1440,7 +1426,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 - ID は差し替えのたびに新しくなるため、内容は変わらない。長期キャッシュで安全。
 - 将来のイベント表紙（`kind = EVENT_COVER`）も同じ URL の形で配る。
 
-### 5.19. GET / PATCH `/api/v1/notifications`（主催者へのアプリ内通知）
+### 5.18. GET / PATCH `/api/v1/notifications`（主催者へのアプリ内通知）
 
 対象画面は SCR-PUB-03（主催者マイページの新着。4 件まで）、SCR-PUB-15（通知一覧。50 件まで）と、共通ヘッダーの頭文字の札に出す未読数のバッジ。認可は `requireUserId(req)`（未ログインは 401）。**自分の行しか読めない・既読にできない。**
 
@@ -2076,7 +2062,7 @@ export interface ProblemDetails {
 | **401** | `probs/unauthorized` | 有効な認証情報（JWT/トークン）の欠落 |
 | **402** | `probs/quota-exceeded` | 無料作成枠消化（2回）に伴う課金誘導（単発299円/月額で8件まで公開980円/公開し放題2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
 | **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料枠消費（`PHONE_REQUIRED`） |
-| **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・リマインド・領収書・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
+| **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・集金・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
 | **409** | `probs/lock-conflict` | 他幹事による排他ロック保持中（編集中） |
 | **409** | `probs/conflict` | 別の Google アカウントに結び付いたメールアドレス、または別の会員が使う確認済み電話番号 |
@@ -2158,8 +2144,6 @@ export interface ProblemDetails {
       "scheduleLabel": "2026年11月3日 10:00〜12:00",
       "pricePlanLabel": "一般 1,500円",
       "statusLabel": "出席",
-      "receiptId": "rcp_1",
-      "receiptIssuedAt": "2026-10-05T02:00:00.000Z",
       "answeredAt": "2026-10-02T03:00:00.000Z",
       "event": {
         "id": "evt_1",
@@ -2181,7 +2165,7 @@ export interface ProblemDetails {
 }
 ```
 
-`summary` は `status` と `scope` の絞り込みに関係なく、その会員の全参加を数える。`receiptId` は領収書が発行済みのときだけ入り、画面は `/events/{eventId}/receipt` へリンクする。`scheduleLabel` は選んだ日時をすべて ` / ` でつなぎ、`payableAmount` は人数分の支払額になる。参加者カレンダー（`GET /api/v1/user/calendar`）は、複数日を選んだ回答を選んだ日ごとに 1 件返す。
+`summary` は `status` と `scope` の絞り込みに関係なく、その会員の全参加を数える。`scheduleLabel` は選んだ日時をすべて ` / ` でつなぎ、`payableAmount` は人数分の支払額になる。参加者カレンダー（`GET /api/v1/user/calendar`）は、複数日を選んだ回答を選んだ日ごとに 1 件返す。
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
@@ -2250,7 +2234,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 対象画面は SCR-PUB-11。ボディは `{ "name": "新しい表示名" }`。前後の空白を除いて 1〜50 文字とする。成功時は `{ "user": { "id", "email", "name" } }`。
 
-`users.name` だけを変える。過去の `participants.name` と領収書の宛名は、回答時点の記録なので変えない。変更は `account_change_logs` に `NAME` として、変更前と変更後をそのまま残す。セッションは切らない。
+`users.name` だけを変える。過去の `participants.name` は、回答時点の記録なので変えない。変更は `account_change_logs` に `NAME` として、変更前と変更後をそのまま残す。セッションは切らない。
 
 ### 8.10. POST `/api/v1/user/reauth`（アカウント操作の確認番号）
 

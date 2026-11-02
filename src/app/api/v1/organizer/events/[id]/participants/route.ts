@@ -41,7 +41,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           include: {
             schedule: true,
             pricePlan: true,
-            receipt: true,
             discounts: { orderBy: { sortOrder: "asc" } },
             schedules: {
               select: {
@@ -75,10 +74,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       },
       stats: summarizeStatuses(participants),
       // 名簿を開いたついでに売上サマリも出す。内訳は /revenue で見る。
-      revenue: summarizeRevenue(
-        participants,
-        participants.flatMap((row) => (row.receipt ? [row.receipt] : [])),
-      ),
+      revenue: summarizeRevenue(participants),
       participants: participants.map((row) => {
         const price = participantPriceDisplay(row);
         const scheduleIds = participantScheduleIds(row.schedules, row.scheduleId);
@@ -108,7 +104,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             discounts: row.discounts,
             partySize: row.partySize,
           }),
-          // 領収書は 1 人ずつ切る。既定額は人数を掛けない 1 人ぶんにする。
+          // 集金は 1 人ずつ記録する。目安は人数を掛けない 1 人ぶんにする。
           unitPayableAmount: unitPayableAmount({
             priceAmount: price.amount,
             discounts: row.discounts,
@@ -117,7 +113,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           updatedAt: row.updatedAt.toISOString(),
           waitlistedAt: row.waitlistedAt ? row.waitlistedAt.toISOString() : null,
           waitlistPosition: waitlistPosition(waitlistRows, row.id),
-          receipt: row.receipt ? { id: row.receipt.id, issuedAt: row.receipt.issuedAt.toISOString() } : null,
+          collectedAt: row.collectedAt ? row.collectedAt.toISOString() : null,
         };
       }),
     });

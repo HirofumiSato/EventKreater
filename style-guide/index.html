@@ -147,7 +147,7 @@
               <h3 id="scope-onboard-title">影だけ</h3>
               <p>初めて触る人の画面です。印象を作り、装飾を判断の材料にします。</p>
               <ul class="sg-patterns">
-                <li><strong>対象</strong><span>ホーム、サービスと料金、利用規約、告知ページ、参加費の領収書、主催者のプロフィール、認証、参加者ホーム、アカウント、新規イベント作成。</span></li>
+                <li><strong>対象</strong><span>ホーム、サービスと料金、利用規約、告知ページ、主催者のプロフィール、認証、参加者ホーム、アカウント、新規イベント作成。</span></li>
                 <li><strong>面</strong><span>縁を消し、硬い影 3px で浮かす。角は 14px。</span></li>
                 <li><strong>傾き</strong><span>0.5 度まで。数字とイベントの札だけ。</span></li>
                 <li><strong>地紋</strong><span>16px の方眼を敷く。</span></li>
@@ -161,7 +161,7 @@
               <h3 id="scope-admin-title">静かめ</h3>
               <p>同じ人が毎週開く画面です。数字と行を走査するので、装飾は 2 回目から邪魔になります。</p>
               <ul class="sg-patterns">
-                <li><strong>対象</strong><span>主催一覧、カレンダー、売上と内訳、イベント編集、下書き、参加者名簿、幹事向け領収書、公開直後の案内、プロフィール編集、マイページ。</span></li>
+                <li><strong>対象</strong><span>主催一覧、カレンダー、売上と内訳、イベント編集、下書き、参加者名簿、公開直後の案内、プロフィール編集、マイページ。</span></li>
                 <li><strong>面</strong><span>罫線 1px と、ごく弱い影。輪郭は走査に要るので消さない。</span></li>
                 <li><strong>傾き</strong><span>なし。全行を同じ軸に乗せる。</span></li>
                 <li><strong>地紋</strong><span>無地。数字の後ろで点が動いて見えるため。</span></li>
@@ -467,7 +467,7 @@
                     <p class="hero__eyebrow">ご飯会、ライブ、一日店長、撮影会、合コン、マルシェ etc.. <span class="hero__eyebrow-tail">主催者様へ</span></p>
                     <h3 class="hero__title"><span class="hero__title-line">イベントのチラシと</span><span class="hero__title-line">告知&amp;申込ウェブページ、</span><span class="hero__title-row"><span class="hero__title-line">5分で簡単作成。</span><span class="hero__callout">カレンダー共有もできる</span></span></h3>
                     <p class="hero__lead">
-                      イベント名・日時・場所・費用を入れるだけ。縦長のチラシと告知ページが同時にでき、あとはURLを送るだけで、参加者は登録なしで出欠を答えられます。集計も自動で揃います。
+                      イベント名・日時・場所・費用を入れるだけ。チラシと告知ページができ、URLを送るだけで出欠が揃います。
                     </p>
                     <div class="hero__actions">
                       <a class="btn btn--primary btn--lg" href="#buttons">無料でイベント告知ページを作る</a>
@@ -1119,6 +1119,51 @@
             </div>
           </figure>
 
+          <figure class="sg-specimen sg-specimen--fill">
+            <figcaption class="sg-caption"><code>.event-card</code> <code>.event-card__copy</code> <code>.btn--icon</code> <code>.event-card__actions</code> <code>.event-card__more</code> <code>.event-card__more-summary</code> <code>.event-card__more-body</code> <code>.event-card__delete</code> — 「その他の操作」を開いた札。常設は 2 つ、残りは畳む</figcaption>
+            <div class="sg-stage">
+              <article class="event-card">
+                <button class="btn btn--outline btn--icon event-card__copy" type="button" aria-label="URLをコピー" title="URLをコピー">
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                </button>
+                <div class="event-card__thumb">9:16</div>
+                <div>
+                  <div class="event-card__head">
+                    <h3 class="event-card__title">秋の芋煮会</h3>
+                    <span class="badge badge--attending badge--sm">公開中</span>
+                    <span class="badge badge--neutral badge--sm">主催</span>
+                  </div>
+                  <p class="event-card__meta">11月8日（日）11:00–15:00 / 河川敷公園 第2広場</p>
+                  <p class="event-card__meter-label"><span>回答 34 / 定員 40</span><span>85%</span></p>
+                  <div class="meter"><span style="width: 85%"></span></div>
+                </div>
+                <div class="event-card__actions">
+                  <button class="btn btn--outline btn--sm" type="button">申込/出欠一覧</button>
+                  <button class="btn btn--accent btn--sm" type="button">編集</button>
+                </div>
+                <details class="event-card__more" open>
+                  <summary class="event-card__more-summary">
+                    その他の操作
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+                  </summary>
+                  <div class="event-card__more-body">
+                    <a class="event-card__public-link btn btn--outline btn--sm" href="#" target="_blank" rel="noopener noreferrer">
+                      公開ページ
+                      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+                    </a>
+                    <button class="btn btn--outline btn--sm" type="button">LINEで共有</button>
+                    <button class="btn btn--outline btn--sm" type="button">
+                      コピー作成
+                      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><line x1="15" x2="15" y1="12" y2="18"></line><line x1="12" x2="18" y1="15" y2="15"></line><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                    </button>
+                    <button class="btn btn--outline btn--sm" type="button">公開一時停止</button>
+                    <button class="btn btn--danger btn--sm event-card__delete" type="button">削除</button>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </figure>
+
           <figure class="sg-specimen">
             <figcaption class="sg-caption">同じ札を <code>.scope-admin</code> で。罫線と弱い影、傾きなし</figcaption>
             <div class="sg-stage scope-admin">
@@ -1249,7 +1294,7 @@
                     <tr><td>山田 花子 さんが「冬の焚き火会」の参加を希望しています。定員に達しているため、名簿から承認できます。</td><td>山田 花子さんが「冬の焚き火会」に参加を希望。定員のため名簿から承認できます。</td></tr>
                     <tr><td>参加表明と参加要望を新しい順に並べています。</td><td>新しい順に表示。</td></tr>
                     <tr><td>まだ参加表明はありません。参加者が答えると、ここに出ます。</td><td>まだありません。参加者が答えると、ここに出ます。</td></tr>
-                    <tr><td>月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。</td><td>公開中のイベントが8件に達しました。終了したイベントを削除・停止するか、公開し放題（2,980円）へ変更してください。</td></tr>
+                    <tr><td>月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題（2,980円）へ変更してください。</td><td>公開中のイベントが8件に達しました。終わったものは削除するか「公開一時停止」を使ってください。</td></tr>
                   </tbody>
                 </table>
               </div>

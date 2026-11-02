@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Copy, CopyPlus, ExternalLink } from "lucide-react";
 import { scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
@@ -46,6 +46,21 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
 
   return (
     <article className={`event-card${event.flyerThumbnailUrl ? "" : " event-card--no-thumb"}`}>
+      {/* URL のコピーは、折りたたみを開かなくても届くよう札の右上へ出す。文字を置くと
+          催し名を押しのけるので、印だけにして読み上げ名で補う（結果は既存の aria-live）。
+          公開ページの無い下書きには出さない。 */}
+      {event.status !== "DRAFT" && (
+        <button
+          type="button"
+          className="btn btn--outline btn--icon event-card__copy"
+          aria-label="URLをコピー"
+          title="URLをコピー"
+          onClick={() => void copyPublicUrl()}
+        >
+          {copied ? <Check className="icon" aria-hidden="true" /> : <Copy className="icon" aria-hidden="true" />}
+        </button>
+      )}
+
       {thumb !== null &&
         (event.status === "DRAFT" ? (
           thumb
@@ -99,11 +114,11 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
         )}
       </div>
 
-      {/* 札の上に常に出すのは「出欠」と「編集」の 2 つだけ。幅が変わっても 2 列のまま
+      {/* 札の上に常に出すのは「申込/出欠一覧」と「編集」の 2 つだけ。幅が変わっても 2 列のまま
           （段数は CSS の格子が決める）。編集は一覧でいちばん使うので、塗りで主の操作にする。 */}
       <div className="event-card__actions">
         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--outline btn--sm">
-          出欠
+          申込/出欠一覧
         </Link>
         <Link href={`/organizer/events/${event.id}/edit`} className="btn btn--accent btn--sm">
           編集
@@ -118,7 +133,8 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
           <ChevronDown className="icon" aria-hidden="true" />
         </summary>
         <div className="event-card__more-body">
-          {/* 告知ページは、チラシが無くても必ず辿れるようにする。下書きには公開ページが無い。 */}
+          {/* 告知ページは、チラシが無くても必ず辿れるようにする。下書きには公開ページが無い。
+              別の窓で開くことが押す前に分かるよう、印を添える。 */}
           {event.status !== "DRAFT" && (
             <a
               href={publicPath}
@@ -127,6 +143,7 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
               className="event-card__public-link btn btn--outline btn--sm"
             >
               公開ページ
+              <ExternalLink className="icon" aria-hidden="true" />
             </a>
           )}
           {/* 下書きは配る先が無い。告知ページのある催しだけ、その場で LINE へ渡せるようにする。 */}
@@ -139,28 +156,20 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
               className="btn btn--outline btn--sm"
             />
           )}
-          {/* 押した結果はボタンの文字と、下の読み上げ用の 1 行で伝える。 */}
-          {event.status !== "DRAFT" && (
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              onClick={() => void copyPublicUrl()}
-            >
-              {copied ? "コピーしました" : "URLをコピー"}
-            </button>
-          )}
+          {/* URL のコピーは札の右上の印が受ける。ここには置かない（同じ行き先を重ねない）。 */}
           <button type="button" onClick={onClone} disabled={busy} className="btn btn--outline btn--sm">
             コピー作成
+            <CopyPlus className="icon" aria-hidden="true" />
           </button>
           {event.role === "OWNER" && (
             <>
               {event.status === "CLOSED" ? (
                 <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onResume}>
-                  再開
+                  公開再開
                 </button>
               ) : (
                 <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={onStop}>
-                  停止
+                  公開一時停止
                 </button>
               )}
               <button

@@ -107,7 +107,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
     <>
       <Panel>
         <h2 className="panel__title">表示名</h2>
-        <p className="panel__note">名簿と領収書に、この名前が入ります。</p>
+        <p className="panel__note">名簿に、この名前が入ります。</p>
         <form className="stack" onSubmit={(event) => void saveName(event)}>
           <Field label="表示名" htmlFor="account-name">
             <input
@@ -118,7 +118,7 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
               onChange={(event) => setName(event.target.value)}
               disabled={savingName}
             />
-            <p className="help">1〜50文字。領収書の発行者名など、これから作る書類に使われます。</p>
+            <p className="help">1〜50文字。主催者としても、この名前で表示されます。</p>
           </Field>
           {nameError && <Alert tone="error">{nameError}</Alert>}
           {nameStatus && <Alert tone="success">{nameStatus}</Alert>}

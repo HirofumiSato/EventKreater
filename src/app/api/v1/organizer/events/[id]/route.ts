@@ -95,7 +95,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 400,
         title: "Validation Error",
-        detail: "公開状態を変えられるのは、下書きを公開するときだけです。受付を止めるときは主催一覧の「削除・停止」から行います。",
+        detail: "公開状態を変えられるのは、下書きを公開するときだけです。受付を止めるときは主催一覧の「公開一時停止」から行います。",
         error: "STATUS_CHANGE_NOT_ALLOWED",
       });
     }

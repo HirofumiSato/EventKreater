@@ -335,7 +335,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 ## ドキュメント
 
 - `docs/DBschema.md`: `image_assets`、`organizer_profiles` の追加列、DDL。
-- `docs/backend_api_implementation_spec.md`: 5.12 / 5.14 / 5.17 / 5.18（avatar の POST / DELETE、image-assets、公開プロフィールの応答）。
+- `docs/backend_api_implementation_spec.md`: 5.11 / 5.13 / 5.16 / 5.17（avatar の POST / DELETE、image-assets、公開プロフィールの応答）。
 - `docs/front_implementation_spec.md`: SCR-ORG-14 / SCR-PUB-14。
 - `docs/overall_system_requirements_common.md`: 画面一覧の 2 行。
 - `docs/deploy.rst`: `storage/images` と単一インスタンス前提。

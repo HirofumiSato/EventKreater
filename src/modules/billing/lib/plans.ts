@@ -82,7 +82,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
     [
       `無料の ${FREE_EVENT_LIMIT}回を使い切ったあとに`,
       "買った回数に期限なし",
-      "領収書の発行も含む",
+      "集金の記録も含む",
     ],
   ),
   planFrom(

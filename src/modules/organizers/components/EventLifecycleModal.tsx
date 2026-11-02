@@ -14,7 +14,7 @@ interface EventLifecycleModalProps {
  * 削除の確認。
  *
  * 受付停止（公開の一時停止）は元に戻せる操作なので確認を挟まず、カードの
- * 「共有と設定」から直接実行する。ここは元に戻せない削除だけを持つ。
+ * 「その他の操作」から直接実行する。ここは元に戻せない削除だけを持つ。
  * 下書きに受付停止は無い（告知ページも出欠もまだ無い）。片付ける手段は削除だけ。
  */
 export function EventLifecycleModal({ title, status, busy, onClose, onDelete }: EventLifecycleModalProps) {
@@ -34,8 +34,8 @@ export function EventLifecycleModal({ title, status, busy, onClose, onDelete }: 
     >
       <p className="dialog__body">
         {isDraft
-          ? `${title}。下書きを削除します。元に戻せません。利用枠は減りません。`
-          : `${title}。一覧と告知URLから外れます。出欠の記録は残りますが、元に戻せません。止めるだけなら「停止」を使います。`}
+          ? `${title}。元に戻せません。利用枠は減りません。`
+          : `${title}。一覧と告知URLから外れます。出欠の記録は残ります。元に戻せません。`}
       </p>
     </Dialog>
   );

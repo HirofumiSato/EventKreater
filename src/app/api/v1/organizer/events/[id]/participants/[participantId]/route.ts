@@ -175,7 +175,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           discounts: updated.discounts,
           partySize: updated.partySize,
         }),
-        // 領収書は 1 人ずつ切る。既定額は人数を掛けない 1 人ぶんにする。
+        // 集金は 1 人ずつ記録する。目安は人数を掛けない 1 人ぶんにする。
         unitPayableAmount: unitPayableAmount({
           priceAmount: price.amount,
           discounts: updated.discounts,
@@ -184,6 +184,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         updatedAt: updated.updatedAt.toISOString(),
         waitlistedAt: updated.waitlistedAt ? updated.waitlistedAt.toISOString() : null,
         waitlistPosition: waitlistPosition(waitlistRows, updated.id),
+        collectedAt: updated.collectedAt ? updated.collectedAt.toISOString() : null,
       },
     });
   } catch (error) {

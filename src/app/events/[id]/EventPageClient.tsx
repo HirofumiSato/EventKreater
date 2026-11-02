@@ -93,13 +93,6 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           }
         />
         <OrganizerInviteCard eventId={event.id} viewer={event.viewer} />
-        {event.myReceipt && (
-          <p className="page-lead event-page__foot">
-            <Link href={`/events/${event.id}/receipt`} className="text-link">
-              領収書を見る
-            </Link>
-          </p>
-        )}
         {/* 履歴はログイン中の共通ヘッダーが受ける。未ログインのときだけ、戻り先を履歴にして 1 本置く。 */}
         {!event.loggedIn && (
           <p className="page-lead event-page__foot">

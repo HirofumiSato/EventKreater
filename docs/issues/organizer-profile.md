@@ -150,7 +150,7 @@
 
 - `docs/overall_system_requirements_common.md`: ルートツリー、画面一覧（SCR-PUB-14 / SCR-ORG-14）、画面遷移図。
 - `docs/front_implementation_spec.md`: ルート表、画面一覧、第14節。
-- `docs/backend_api_implementation_spec.md`: エンドポイント一覧、5.12〜5.14。
+- `docs/backend_api_implementation_spec.md`: エンドポイント一覧、5.11〜5.13。
 - `docs/DBschema.md`: `organizer_profiles`。
 - `docs/issues/public-organizer-page.md`: URL の移動。
 
