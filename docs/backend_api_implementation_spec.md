@@ -93,7 +93,7 @@ flowchart TD
 | `/api/v1/user/phone/confirm` | POST | SCR-PUB-11 | 会員必須 | 新しい電話番号の確認コードを照合する。他の端末のログインを切る |
 | `/api/v1/user` | DELETE | SCR-PUB-11 | 会員必須 | 退会（論理削除）。筆頭幹事のイベントを閉じ、サブスクを即時解約し、確認済みの電話番号だけを残す |
 | `/api/v1/user/participations` | GET | SCR-PUB-09 | 会員必須 | 参加履歴の一覧。`status`（ATTENDING/DECLINED）、`scope`（all/upcoming/past）、`page`、`limit` |
-| `/api/v1/notifications` | GET | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
+| `/api/v1/notifications` | GET | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 主催者へのアプリ内通知（参加表明・参加要望・紹介でのチケット付与）を新しい順に返す。`limit`（1〜50、既定 20）。`unreadCount` を添える。自分の行だけ |
 | `/api/v1/notifications` | PATCH | SCR-PUB-03 / SCR-PUB-15 | 会員必須 | 通知を既読にする。`{ all: true }` か `{ ids: [...] }`。自分の行だけが変わり、`{ unreadCount }` を返す（5.18） |
 | `/api/v1/admin/session` | GET | SCR-ADM-04 | 管理者必須 | 管理者セッションの確認。ログイン済みならホームへ進む判定にも使う |
 | `/api/v1/admin/session` | POST | SCR-ADM-00 | 不要 | 管理者ログイン。`ADMIN` かつパスワード一致かつ確認済み電話があるとき、確認番号チャレンジを始める。着地は SCR-ADM-04 |
@@ -1432,9 +1432,12 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 参加者が出席または参加要望を送ると、その催しの会員主催者（`OWNER` / `CO_HOST`）へ `notifications` の行が作られる。ゲスト主催者（`user_id IS NULL`）と、自分自身の出欠は宛先にしない。作るのは `src/modules/notifications/lib/notify.ts` の `notifyRsvpSubmitted()` で、出欠のトランザクションがコミットした後に呼ぶ。**通知の作成に失敗しても出欠の送信は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
 
-- 通知する変化は「出席の新規表明」「参加要望の新規発生」「欠席・要望からの出席」「要望からの出席」だけ。同じ状態の再送信、出席から要望・欠席への変更、取り消し、幹事の承認操作では作らない。
+紹介された人がはじめて公開し、紹介者へチケットが配られたときは、紹介者へ `REFERRAL_GRANTED` の行を作る。作るのは同じ `notify.ts` の `notifyReferralGranted()` で、公開のトランザクションがコミットした後に呼ぶ。扱いは出欠の通知と同じで、**失敗しても公開は成功させる**。この通知は催しに紐づかないため `event_id` は `NULL` である（`notifications.event_id` は NULL 可）。
+
+- 出欠の通知で作るのは「出席の新規表明」「参加要望の新規発生」「欠席・要望からの出席」「要望からの出席」だけ。同じ状態の再送信、出席から要望・欠席への変更、取り消し、幹事の承認操作では作らない。
 - 文面は作成時点の催し名・参加者名を焼き付ける（`title` 100 文字、`body` 300 文字）。後から名前を変えても過去の通知は変わらない。
 - 同じ出欠行の同じ変化は `dedupe_key`（sha256）の一意制約で 1 行に抑える。同時送信・リトライで増えない。
+- 紹介の通知は 1 件の付与につき 1 行で、`dedupe_key` は紹介された人の `userId` から作る。同じ人が二度公開しても増えない。文面（題「紹介でチケットが届きました」、本文「〇〇さんがはじめて公開しました。チケット2枚（YYYY/MM/DD まで）。」）は `src/modules/notifications/lib/referral-notification.ts` が作る。枚数は生涯上限の端数で 1 枚になることがある。
 
 **GET `/api/v1/notifications?limit=20`**
 
@@ -1459,7 +1462,23 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`kind` は `RSVP_ATTENDING` または `RSVP_WAITLISTED`。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る）。`href` は名簿の画面で、サーバーが組み立てる。
+`kind` は `RSVP_ATTENDING`、`RSVP_WAITLISTED`、`REFERRAL_GRANTED` のいずれか。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る）。`href` は種別で分かれ、出欠は名簿（`/organizer/events/<eventId>/participants`）、紹介はマイページ（`/mypage`）。どちらもサーバーが組み立てる。
+
+紹介の通知は催しを持たないため、`eventId` は `null` になる。
+
+```json
+{
+  "id": "…",
+  "kind": "REFERRAL_GRANTED",
+  "title": "紹介でチケットが届きました",
+  "body": "田中 はる さんがはじめて公開しました。チケット2枚（2027/02/03 まで）。",
+  "eventId": null,
+  "participantId": null,
+  "href": "/mypage",
+  "readAt": null,
+  "createdAt": "2026-11-03T09:00:00.000Z"
+}
+```
 
 **PATCH `/api/v1/notifications`**
 
@@ -2356,14 +2375,17 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 対象画面は SCR-PUB-03（主催者マイページ）の「紹介」の紙。認証は会員 Cookie。
 
-応答は `{ "code": "x7Kd2mQp", "url": "https://.../auth/register?ref=x7Kd2mQp", "invited": 2, "granted": 4, "limit": 10 }`。
+応答は `{ "code": "x7Kd2mQp", "url": "https://.../invite/x7Kd2mQp", "invited": 2, "granted": 4, "limit": 10 }`。
 
 - `code` は `users.referral_code`。**まだ無ければこの呼び出しで作る**（8 文字の英数。`0`・`O`・`1`・`l` は使わない）。既にあるコードは変えない。
 - `invited` は `users.referred_by_user_id` が自分で、退会していない会員の数。
 - `granted` は `free_tickets` のうち `user_id` が自分・`source = REFERRAL` の枚数。生涯上限 `limit` と同じ数え方をする。
-- `url` は登録の入口を指す絶対 URL。紹介コードは 8.6 の登録で Cookie（`ref_code`、30 日）から `signup_intents.referral_code` へ入り、会員になった時点で `users.referred_by_user_id` に確定する。存在しないコードと退会者は紹介者にしない。
+- `url` は紹介の着地ページ（SCR-PUB-19、`/invite/<code>`）を指す絶対 URL。配るのはこの形だけで、`/auth/register?ref=<code>` は互換のために受け続ける。
+- 着地ページは紹介者の名前を出し、主操作で `/auth/register?ref=<code>` へ送る（`&mode=login` のときはログインを開く）。紹介コードは 8.6 の登録で Cookie（`ref_code`、30 日）から `signup_intents.referral_code` へ入り、会員になった時点で `users.referred_by_user_id` に確定する。存在しないコードと退会者は紹介者にしない。
+- Cookie `ref_code` は `httpOnly` にしない。登録画面がサーバーの応答より前にクライアントで書く必要があり、サーバー側に書く場所が無いためである。値は `src/modules/auth/lib/referral-cookie.ts` の `readReferralCookie` が形（英数 8 文字）だけに削り、`src/modules/billing/lib/referral.ts` の `resolveReferrer` がサーバー側で引き当てる（存在しないコード・退会者はここで落ちる）。クライアントから来た値をそのまま紹介者にしない。
+- 書き込んだあと、登録画面は `window.history.replaceState` で URL から `ref` を落とす。`router.replace` は使わない（再取得と着地判定を動かさず、表示中の紹介者名も消さないため）。
 
-紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。
+紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。付与は公開のトランザクションの中で行い、コミット後に紹介者へ `REFERRAL_GRANTED` の通知を作る（5.18）。通知の失敗で公開は失敗させない。
 
 ---
 

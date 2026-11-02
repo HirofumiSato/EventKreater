@@ -74,6 +74,8 @@ const VERIFY_USER = {
 };
 
 const INVITE_CODE = "ui-demo-cohost-invite-code";
+/** デモ主催者の紹介コード。`/invite/<code>` の着地ページを撮るために固定する（英数 8 文字）。 */
+const REFERRAL_CODE = "DEMOINVT";
 const EMAIL_VERIFY_TOKEN = "ui-demo-email-verify-token";
 const EMAIL_CHANGE_TOKENS = {
   "390": "ui-demo-email-change-token-390",
@@ -353,6 +355,13 @@ try {
       upsertUser(ORGANIZER_UNLIMITED),
       upsertUser(ORGANIZER_FREE),
     ]);
+
+  // 紹介リンクの着地ページ（`/invite/<code>`）を撮るためのコード。
+  // 撮り直しても URL が変わらないよう固定する。
+  await prisma.user.update({
+    where: { id: organizer.id },
+    data: { referralCode: REFERRAL_CODE },
+  });
 
   // スクリーンショット用の加入状態。月額で8件まで公開プランの途中にして、
   // 「月額プランで公開中のイベント N / 8 件」のバナーを撮る。
@@ -1388,6 +1397,19 @@ try {
         readAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
         createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 - 45 * 60 * 1000),
       },
+      // 紹介の通知は催しに紐づかない（`event_id` は NULL）。種別の札「紹介」を撮るために 1 件置く。
+      // 既読にしておき、札の未読バッジは出席の 1 件のままにする。
+      {
+        userId: organizer.id,
+        eventId: null,
+        participantId: null,
+        kind: "REFERRAL_GRANTED",
+        title: "紹介でチケットが届きました",
+        body: `${PARTICIPANT.name} さんがはじめて公開しました。チケット2枚（${addDays(today, 90).replace(/-/g, "/")} まで）。`,
+        dedupeKey: sha256("ui-demo-notification-referral-granted"),
+        readAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
     ],
   });
 
@@ -1439,6 +1461,7 @@ try {
     organizerId: organizer.id,
     coHostId: coHost.id,
     inviteCode: INVITE_CODE,
+    referralCode: REFERRAL_CODE,
     emailVerifyToken: EMAIL_VERIFY_TOKEN,
     emailChangeTokens: EMAIL_CHANGE_TOKENS,
     // 確認後に表示されるアドレス。同期のたびにトークンを発行し直すので、

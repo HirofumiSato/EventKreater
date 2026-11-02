@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2788,
+      "lineCount": 2810,
       "headings": [
         {
           "level": 2,
@@ -2482,6 +2482,14 @@
           "exists": true
         },
         {
+          "path": "src/modules/auth/lib/referral-cookie.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/referral.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/venue-suggestions.ts",
           "exists": true
         },
@@ -2502,6 +2510,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/notifications/lib/referral-notification.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/revenue/lib/allocation.ts",
           "exists": true
         }
@@ -2517,7 +2529,7 @@
       "title": "機能別企画要件定義書",
       "summary": "本ドキュメントは、イベント告知ページ生成機能における「無料体験を通じた主催者の獲得」と「単発購入・月額サブスクリプションによる収益化」を両立するための目的関数と業務境界を定義する。",
       "preImplementation": false,
-      "lineCount": 237,
+      "lineCount": 242,
       "headings": [
         {
           "level": 1,
@@ -2863,7 +2875,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1783,
+      "lineCount": 1881,
       "headings": [
         {
           "level": 2,
@@ -2938,6 +2950,22 @@
           "text": "列の意味"
         },
         {
+          "level": 3,
+          "text": "4.5. 無料チケットと紹介（追加マイグレーション）"
+        },
+        {
+          "level": 4,
+          "text": "追加テーブル（free_tickets）"
+        },
+        {
+          "level": 4,
+          "text": "追加カラム"
+        },
+        {
+          "level": 4,
+          "text": "列の意味"
+        },
+        {
           "level": 2,
           "text": "5. CRUD操作詳細仕様（トランザクション＆アトミック処理）"
         },
@@ -2974,6 +3002,14 @@
         },
         {
           "path": "prisma/migrations/20261102180000_first_month_free_trial/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261102190000_free_tickets/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261103090000_referral_notifications/migration.sql",
           "exists": true
         },
         {
@@ -5565,7 +5601,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2006,
+      "lineCount": 2009,
       "headings": [
         {
           "level": 1,
@@ -7515,7 +7551,7 @@
       "title": "無料チケット（紹介・動画視聴）の実装計画",
       "summary": "> 決定日: 2026-11-02。実装するのは 紹介（P4）を先、動画（P3）は後。 > 動画は広告事業者の SSV に直結する方針で、事業者と契約が決まるまでコードを書かない。 > > この文書は計画なので、新規に作るファイルは （新規） と添え、置き場所を本文で示す。 > 実装が入った PR で、実在するパスへ書き換える（npm run docs:links が原稿中のパスを見るため）。 > > Sphinx の目次へ載せるには docs/issues/index.rst の toctree へ1行足し、npm run docs:gen で > docs/doc-index.json を作り直す。どちらも P5 で行う（この文書を先にコミットすると docs ジョブは赤になる）。",
       "preImplementation": false,
-      "lineCount": 395,
+      "lineCount": 397,
       "headings": [
         {
           "level": 1,
@@ -7603,19 +7639,19 @@
         },
         {
           "level": 3,
-          "text": "P1: 台帳（1.5日）"
+          "text": "P1: 台帳（1.5日）— 実装済み"
         },
         {
           "level": 3,
-          "text": "P2: 消費順（1.0日）"
+          "text": "P2: 消費順（1.0日）— 実装済み"
         },
         {
           "level": 3,
-          "text": "P4: 紹介（2.5日）"
+          "text": "P4: 紹介（2.5日）— 実装済み"
         },
         {
           "level": 3,
-          "text": "P5: 文書と規約（1.0日）"
+          "text": "P5: 文書と規約（1.0日）— 実装済み"
         },
         {
           "level": 2,
@@ -7717,11 +7753,11 @@
           "exists": true
         },
         {
-          "path": "src/modules/auth/lib/cookies.ts",
+          "path": "src/modules/auth/lib/phone.ts",
           "exists": true
         },
         {
-          "path": "src/modules/auth/lib/phone.ts",
+          "path": "src/modules/auth/lib/referral-cookie.ts",
           "exists": true
         },
         {
@@ -11039,7 +11075,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 662,
+      "lineCount": 674,
       "headings": [
         {
           "level": 1,
@@ -11162,6 +11198,14 @@
         },
         {
           "path": "tests/integration/public-organizer-page.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/referral-invite.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/referral-notification.test.ts",
           "exists": true
         },
         {
@@ -11386,6 +11430,10 @@
         },
         {
           "path": "tests/unit/referral-code.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/referral-notification.test.ts",
           "exists": true
         },
         {
@@ -12153,7 +12201,7 @@
         },
         {
           "level": 1,
-          "text": "2. 全 53 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる"
+          "text": "2. 全 55 画面を本番ビルド（.next-ui-prod）で撮り、最後に mock:check で確かめる"
         },
         {
           "level": 1,

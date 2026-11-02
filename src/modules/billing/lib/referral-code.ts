@@ -40,7 +40,12 @@ export function referralReasonKey(newUserId: string, index: number): string {
   return `referral:${newUserId}:${index}`;
 }
 
-/** 紹介 URL。配るのは登録の入口だけなので、必ず `/auth/register` を指す。 */
+/**
+ * 紹介 URL。配るのは紹介の着地ページ（`/invite/<code>`）だけ。
+ *
+ * 着地ページが Cookie にコードを移してから登録へ送る。過去に配った
+ * `/auth/register?ref=<code>` も、互換のためそのまま受け付ける。
+ */
 export function referralUrl(baseUrl: string, code: string): string {
-  return `${baseUrl.replace(/\/+$/, "")}/auth/register?ref=${encodeURIComponent(code)}`;
+  return `${baseUrl.replace(/\/+$/, "")}/invite/${encodeURIComponent(code)}`;
 }

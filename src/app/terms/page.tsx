@@ -9,6 +9,11 @@ import {
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
 } from "@/modules/billing/lib/plans";
+import {
+  REFERRAL_TICKET_GRANT,
+  REFERRAL_TICKET_LIMIT,
+  REFERRAL_TICKET_MONTHS,
+} from "@/modules/billing/lib/tickets";
 import { PageHeader, Panel } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -24,15 +29,16 @@ const sections = [
   ["第3条（料金プラン）", "plans"],
   ["第4条（価格キャンペーン）", "campaigns"],
   ["第5条（0円の単発チケット）", "free-ticket"],
-  ["第6条（初月無料と自動更新）", "free-subscription"],
-  ["第7条（終了前の通知）", "notices"],
-  ["第8条（解約）", "cancellation"],
-  ["第9条（支払いと返金）", "payment"],
-  ["第10条（禁止事項）", "prohibited"],
-  ["第11条（サービスの変更・停止）", "changes"],
-  ["第12条（免責）", "disclaimer"],
-  ["第13条（規約の変更）", "revision"],
-  ["第14条（準拠法・管轄）", "law"],
+  ["第6条（紹介チケット）", "referral"],
+  ["第7条（初月無料と自動更新）", "free-subscription"],
+  ["第8条（終了前の通知）", "notices"],
+  ["第9条（解約）", "cancellation"],
+  ["第10条（支払いと返金）", "payment"],
+  ["第11条（禁止事項）", "prohibited"],
+  ["第12条（サービスの変更・停止）", "changes"],
+  ["第13条（免責）", "disclaimer"],
+  ["第14条（規約の変更）", "revision"],
+  ["第15条（準拠法・管轄）", "law"],
 ] as const;
 
 /* 条文の組版。目次は目次で独立させ、本文だけを行間の広い 1 段にする。
@@ -121,7 +127,7 @@ export default function TermsPage() {
         </p>
         <p>
           はじめて月額プランに加入する方は、初月の月額料金を無料とします。対象のプランと適用の条件は、
-          第6条に定めます。
+          第7条に定めます。
         </p>
         <p>
           料金は、為替、決済事業者の手数料、社会情勢その他の事情により改定することがあります。改定する場合は、
@@ -147,7 +153,7 @@ export default function TermsPage() {
           </li>
           <li>
             複数のキャンペーンが重なった場合は、優先度が最も高いものを1つだけ適用します。優先度が同じ場合は、
-            より新しく作成されたものを適用します。複数の割引を重ねることはありません。初月無料（第6条）を
+            より新しく作成されたものを適用します。複数の割引を重ねることはありません。初月無料（第7条）を
             使える利用者には、初月無料を優先し、キャンペーンを重ねません。
           </li>
           <li>
@@ -186,8 +192,33 @@ export default function TermsPage() {
         </ul>
       </section>
 
+      <section className="legal" id="referral">
+        <h2>第6条（紹介チケット）</h2>
+        <p>
+          本サービスでは、紹介リンクから登録した人がはじめてイベントを公開したときに、
+          紹介した利用者へ{REFERRAL_TICKET_GRANT}枚のチケット（以下「紹介チケット」）を付与します。
+          紹介された人へは付与しません。
+        </p>
+        <ul>
+          <li>
+            紹介チケットの有効期限は、発行から{REFERRAL_TICKET_MONTHS}か月です。1枚でイベントを1回公開できます。
+            紹介で受け取れる枚数は、生涯で{REFERRAL_TICKET_LIMIT}枚までです。
+          </li>
+          <li>
+            紹介チケットは、ほかの利用者へ譲渡できません。現金へ換えたり、ほかの特典へ交換したりすることもできません。
+          </li>
+          <li>
+            自分自身を紹介する行為、アカウントの量産その他の不正が認められた場合、運営者は紹介チケットを取り消し、
+            またはアカウントを停止することがあります。
+          </li>
+          <li>
+            運営者は、紹介チケットの条件を予告なく変更し、または付与を終了することがあります。
+          </li>
+        </ul>
+      </section>
+
       <section className="legal" id="free-subscription">
-        <h2>第6条（初月無料と自動更新）</h2>
+        <h2>第7条（初月無料と自動更新）</h2>
         <p>
           はじめて月額プランに加入する方は、加入から1か月の月額料金を無料とします（以下「初月無料」）。
           対象は、月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランと公開し放題です。単発チケットは対象外です。
@@ -208,7 +239,7 @@ export default function TermsPage() {
           </li>
           <li>
             <strong>終了前の通知</strong>: 無料期間の終了日の3日前と1日前に、登録されたメールアドレスへ
-            お知らせします（第7条）。
+            お知らせします（第8条）。
           </li>
           <li>
             <strong>カード登録の維持</strong>: 無料期間中も支払い方法の登録が必要です。カードの有効期限切れなどで
@@ -223,7 +254,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="notices">
-        <h2>第7条（終了前の通知）</h2>
+        <h2>第8条（終了前の通知）</h2>
         <p>
           運営者は、初月無料および0円の月額プラン（割引率100%のキャンペーンを含みます）について、
           無料期間の終了前に、登録されたメールアドレスへ次の通知を送ります。
@@ -235,7 +266,7 @@ export default function TermsPage() {
         <p>
           通知には、無料期間の終了日時、終了後に請求する金額、解約の方法を記載します。通知は、本サービス上の
           マイページおよび利用規約の表示とあわせて、利用者が終了日時を確認できるようにするために送るものです。
-          メールの不到達その他の事情により通知が届かなかった場合でも、第6条の自動課金は行われます。
+          メールの不到達その他の事情により通知が届かなかった場合でも、第7条の自動課金は行われます。
         </p>
         <p>
           割引率が100%未満のキャンペーンについても、割引期間が終了する前に、同じ日程で通知することがあります。
@@ -243,7 +274,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="cancellation">
-        <h2>第8条（解約）</h2>
+        <h2>第9条（解約）</h2>
         <p>
           月額プランの解約は、マイページの「お支払い管理」から行えます。解約の手続きが完了した時点で、
           次回以降の自動更新を停止します。無料期間中に解約した場合も、無料期間の終了日までは利用できます。
@@ -255,7 +286,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="payment">
-        <h2>第9条（支払いと返金）</h2>
+        <h2>第10条（支払いと返金）</h2>
         <p>
           決済は、決済事業者を通じてクレジットカードで行います。支払いに関する情報は決済事業者が管理し、
           運営者はカード番号を保持しません。
@@ -275,7 +306,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="prohibited">
-        <h2>第10条（禁止事項）</h2>
+        <h2>第11条（禁止事項）</h2>
         <p>
           利用者は、次の行為を行ってはなりません。
         </p>
@@ -289,7 +320,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="changes">
-        <h2>第11条（サービスの変更・停止）</h2>
+        <h2>第12条（サービスの変更・停止）</h2>
         <p>
           運営者は、利用者へ事前に通知することにより、本サービスの内容を変更し、または提供を終了することがあります。
           緊急やむを得ない場合は、事前の通知を省略することがあります。この場合、運営者は、
@@ -298,7 +329,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="disclaimer">
-        <h2>第12条（免責）</h2>
+        <h2>第13条（免責）</h2>
         <p>
           運営者は、本サービスが利用者の特定の目的に適合すること、期待する結果が得られること、
           および中断なく動作することを保証しません。通信環境、決済事業者、外部サービスに起因する障害について、
@@ -307,7 +338,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="revision">
-        <h2>第13条（規約の変更）</h2>
+        <h2>第14条（規約の変更）</h2>
         <p>
           運営者は、必要と判断した場合に本規約を変更することがあります。変更後の規約は、本サービス上に掲載した
           時点から効力を生じます。料金や自動更新に関する重要な変更は、適用開始日の前に本サービス上でお知らせします。
@@ -315,7 +346,7 @@ export default function TermsPage() {
       </section>
 
       <section className="legal" id="law">
-        <h2>第14条（準拠法・管轄）</h2>
+        <h2>第15条（準拠法・管轄）</h2>
         <p>
           本規約は日本法に準拠します。本サービスに関して紛争が生じた場合、運営者の所在地を管轄する裁判所を
           第一審の専属的合意管轄裁判所とします。

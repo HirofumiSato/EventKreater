@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { isUniqueViolation } from "@/lib/exceptions";
 import type { RsvpStatus } from "@/modules/events/types";
+import { ticketExpiresAt } from "@/modules/billing/lib/tickets";
+import {
+  buildReferralNotification,
+  referralNoticeDedupeKey,
+} from "@/modules/notifications/lib/referral-notification";
 import {
   buildRsvpNotification,
   dedupeKeyFor,
@@ -9,10 +14,11 @@ import {
 } from "@/modules/notifications/lib/rsvp-notification";
 
 /**
- * 参加表明を主催者のアプリ内通知として残す。
+ * アプリ内通知を残す。参加表明（`notifyRsvpSubmitted`）と、紹介のチケット付与
+ * （`notifyReferralGranted`）の 2 種類を持つ。
  *
- * 出欠のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
- * **ここで失敗しても出欠そのものは成功させる**（呼び出し側が握りつぶす）。
+ * どちらも元になる操作のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * **ここで失敗しても本来の操作は成功させる**（呼び出し側が握りつぶす）。
  *
  * 通知はメールを送らない。DB の行を増やすだけなので、件数が増えても費用は掛からない。
  * メールを足すときは `deliver()` の中だけを差し替える。
@@ -111,5 +117,59 @@ export async function notifyRsvpSubmitted(input: RsvpSubmittedInput): Promise<nu
 
   // アプリ内の行を作った分だけ、配信（いまは何もしない）へ渡す。
   await deliver(rows.map((row) => ({ userId: row.userId, title: row.title, body: row.body })));
+  return created;
+}
+
+export interface ReferralGrantedInput {
+  /** チケットを受け取る紹介者。通知の宛先。 */
+  referrerId: string;
+  /** 紹介リンクから登録し、はじめて公開した会員。指紋に使い、二重に作らない。 */
+  newUserId: string;
+  /** 今回配った枚数。 */
+  granted: number;
+}
+
+/**
+ * 紹介でチケットが配られたことを紹介者へ知らせる。
+ *
+ * 公開のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * **ここで失敗しても公開そのものは成功させる**（呼び出し側が握りつぶす）。
+ * 紹介の通知は催しに紐づかないため `eventId` は null で作る。
+ */
+export async function notifyReferralGranted(input: ReferralGrantedInput): Promise<number> {
+  const newUser = await prisma.user.findUnique({
+    where: { id: input.newUserId },
+    select: { name: true },
+  });
+  const content = buildReferralNotification({
+    name: newUser?.name ?? "",
+    count: input.granted,
+    // 付与と同じ規則で期限を出す（紹介券は3か月）。付与の直後に呼ぶので日付は同じになる。
+    expiresAt: ticketExpiresAt("REFERRAL", new Date()),
+  });
+
+  const row = {
+    userId: input.referrerId,
+    eventId: null,
+    participantId: null,
+    kind: content.kind,
+    title: content.title,
+    body: content.body,
+    dedupeKey: referralNoticeDedupeKey(input.newUserId),
+  };
+
+  let created = 0;
+  try {
+    const result = await prisma.notification.createMany({ data: [row], skipDuplicates: true });
+    created = result.count;
+  } catch (error) {
+    // 一意制約は「同じ人の付与を先に知らせた別のリクエストがある」だけなので、成功として扱う。
+    if (!isUniqueViolation(error)) throw error;
+    return 0;
+  }
+
+  if (created > 0) {
+    await deliver([{ userId: row.userId, title: row.title, body: row.body }]);
+  }
   return created;
 }

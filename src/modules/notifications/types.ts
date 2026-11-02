@@ -6,19 +6,26 @@
  * 過去の通知の意味が変わらないようにするため。
  */
 
-/** 通知の種別。出席と参加要望だけを持つ（欠席・取り消しは知らせない）。 */
-export type RsvpNotificationKind = "RSVP_ATTENDING" | "RSVP_WAITLISTED";
+/**
+ * 通知の種別。出席・参加要望と、紹介でのチケット付与を持つ
+ * （欠席・取り消しは知らせない）。
+ */
+export type NotificationKind = "RSVP_ATTENDING" | "RSVP_WAITLISTED" | "REFERRAL_GRANTED";
+
+/** 旧名。出席・参加要望だけを指していた頃の呼び出しを壊さないための別名。 */
+export type RsvpNotificationKind = NotificationKind;
 
 export interface RsvpNotification {
   id: string;
-  kind: RsvpNotificationKind;
-  /** 「参加表明がありました」「参加要望が届きました」。 */
+  kind: NotificationKind;
+  /** 「参加表明がありました」「参加要望が届きました」「紹介でチケットが届きました」。 */
   title: string;
-  /** 誰が・どのイベントに・どう応えたか。 */
+  /** 誰が・どの催しに・どう応えたか。紹介は誰がはじめて公開したか。 */
   body: string;
-  eventId: string;
+  /** 催し。紹介の通知は催しに紐づかないため null。 */
+  eventId: string | null;
   participantId: string | null;
-  /** 押した先（名簿）。サーバーが組み立てる。 */
+  /** 押した先。出欠は名簿、紹介はマイページ。サーバーが組み立てる。 */
   href: string;
   /** 読んだ日時。null は未読。 */
   readAt: string | null;

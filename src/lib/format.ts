@@ -54,6 +54,22 @@ export function formatDateTimeMinuteJa(value: Date | string): string {
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
+/**
+ * 日付だけ。「2027/02/03」。
+ *
+ * 通知の本文のように、期限を 1 文へ収める場所で使う。時刻まで出すと文が長くなり、
+ * 390px の通知行で折り返して読めなくなる。日本時間に固定するのは、文面をサーバーで
+ * 作ってそのまま保存するため（端末のタイムゾーンで日付が変わってはいけない）。
+ */
+export function formatDateSlashJa(value: Date | string): string {
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
 /** 保存形式の日付 → 見出し用。「2026-10-22」→「10月22日（木）」。壊れた値はそのまま返す。 */
 export function formatDateJa(date: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);

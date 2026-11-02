@@ -212,6 +212,19 @@ export function buildScreens(demo) {
       ],
     },
     {
+      no: "06d",
+      group: "public",
+      slug: "invite",
+      name: "紹介リンクの着地",
+      path: `/invite/${demo.referralCode}`,
+      auth: null,
+      note: "紹介者の名前と、登録すると何が起きるか。無効なコードでも 404 にせず、登録の入口だけを残す。",
+      states: [
+        { key: "default", label: "有効なコード", path: `/invite/${demo.referralCode}`, auth: null },
+        { key: "invalid", label: "無効なコード", path: "/invite/ZZZZZZZZ", auth: null },
+      ],
+    },
+    {
       no: "07",
       group: "auth",
       slug: "register",
@@ -553,6 +566,7 @@ function demoIds(demo) {
   const values = [
     demo.organizerId,
     demo.inviteCode,
+    demo.referralCode,
     ...Object.values(demo.events ?? {}),
   ].filter((value) => typeof value === "string" && value.length > 0);
   return [...new Set(values)].sort((left, right) => right.length - left.length);
@@ -572,6 +586,7 @@ const PLACEHOLDER_DEMO = {
   },
   organizerId: "user-organizer",
   inviteCode: "code-invite",
+  referralCode: "code-referral",
   emailVerifyToken: "token-verify",
   emailChangeTokens: { "390": "token-390", "1280": "token-1280" },
 };
@@ -597,6 +612,9 @@ const DYNAMIC_SEGMENTS = {
   "event-draft": "[id]",
   "user-organizer": "[userId]",
   "code-invite": "[code]",
+  "code-referral": "[code]",
+  // 紹介リンクの無効なコード。8 文字の英数なら何でも同じ画面になる。
+  ZZZZZZZZ: "[code]",
   // 見本の詳細（`/sample/dj` など）。slug は `src/app/sample/samples.ts` が持つ。
   dj: "[slug]",
   // 見本の主催者プロフィール（`/sample/profile/day` など）。

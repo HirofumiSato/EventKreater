@@ -39,7 +39,7 @@ export default function MyPage() {
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [ownProfile, setOwnProfile] = useState<OrganizerProfileDraftResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 新着（参加表明・参加要望）。主催者だけが持つ。
+  // 新着（参加表明・参加要望・紹介でのチケット付与）。主催者だけが持つ。
   const [notifications, setNotifications] = useState<RsvpNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [marking, setMarking] = useState(false);

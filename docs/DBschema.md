@@ -123,7 +123,8 @@ erDiagram
 | **DiscountKind** | `PERCENT`, `FREE` | 割引の種類。`FREE` は `percent = 100` の別名 |
 | **BillingNoticeKind** | `FREE_PERIOD_ENDING_3D`, `FREE_PERIOD_ENDING_1D` | 0 円月額の終了前に送る案内の種別 |
 | **RsvpStatus** | `ATTENDING`, `DECLINED` | 出欠意思表示（参加 / 不参加） |
-| **NotificationKind** | `RSVP_ATTENDING`, `RSVP_WAITLISTED` | 主催者へ届けるアプリ内通知の種別（出席の表明 / 参加要望）。欠席と取り消しは通知しない |
+| **NotificationKind** | `RSVP_ATTENDING`, `RSVP_WAITLISTED`, `REFERRAL_GRANTED` | 主催者へ届けるアプリ内通知の種別（出席の表明 / 参加要望 / 紹介でのチケット付与）。欠席と取り消しは通知しない。`REFERRAL_GRANTED` は催しに紐づかない |
+| **FreeTicketSource** | `AD`, `REFERRAL`, `MANUAL` | 期限つきの無料チケットの発行元（動画の視聴 / 紹介 / 運営の付与）。動画（`AD`）は未実装 |
 | **AccountChangeKind** | `NAME`, `EMAIL`, `PHONE`, `PASSWORD`, `WITHDRAW`, `REACTIVATE` | 会員が自分の情報を変えた種別。`WITHDRAW` は退会、`REACTIVATE` は退会済み行の復帰 |
 
 ---
@@ -1465,6 +1466,103 @@ ALTER TABLE billing_transactions
 
 - `trial_ends_at` は `trialing` から `active` へ移った時点で NULL に戻す（`syncSubscription` / `recordSubscriptionInvoice`）。`trial_used_at` は残す。
 - 再加入の可否は `trial_used_at IS NULL` かつ有効な定額契約がないことで判定し、`trial_ends_at` では判定しない。
+
+---
+
+### 4.5. 無料チケットと紹介（追加マイグレーション）
+
+`prisma/migrations/20261102190000_free_tickets/migration.sql` と `prisma/migrations/20261103090000_referral_notifications/migration.sql` で追加する。仕様は [無料チケット（紹介・動画視聴）の実装計画](issues/free-ticket-and-referral.md) と [バックエンド API §8.17](backend_api_implementation_spec.md)、[§5.18](backend_api_implementation_spec.md) を正とする。
+
+#### 追加テーブル（`free_tickets`）
+
+```sql
+CREATE TYPE "FreeTicketSource" AS ENUM ('AD', 'REFERRAL', 'MANUAL');
+
+CREATE TABLE "free_tickets" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "source" "FreeTicketSource" NOT NULL,
+    "granted_by_user_id" UUID,
+    "reason_key" VARCHAR(255),
+    "provider" VARCHAR(50),
+    "issued_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expires_at" TIMESTAMPTZ NOT NULL,
+    "used_at" TIMESTAMPTZ,
+    "event_id" UUID,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "free_tickets_pkey" PRIMARY KEY ("id")
+);
+
+-- 二重付与を止める。同じ理由（例: referral:<新規userId>:0）で2枚目を作らせない。
+CREATE UNIQUE INDEX "free_tickets_reason_key_key" ON "free_tickets"("reason_key");
+
+-- 残数の数え上げと、期限が近い券の選択。
+CREATE INDEX "free_tickets_user_id_used_at_expires_at_idx" ON "free_tickets"("user_id", "used_at", "expires_at");
+
+-- 紹介の生涯上限（紹介者ごと・種別ごとの件数）。
+CREATE INDEX "free_tickets_granted_by_user_id_source_idx" ON "free_tickets"("granted_by_user_id", "source");
+
+-- 期限切れの掃除と、配布の監視。
+CREATE INDEX "free_tickets_expires_at_idx" ON "free_tickets"("expires_at");
+
+ALTER TABLE "free_tickets"
+    ADD CONSTRAINT "free_tickets_user_id_fkey"
+    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "free_tickets"
+    ADD CONSTRAINT "free_tickets_granted_by_user_id_fkey"
+    FOREIGN KEY ("granted_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+```
+
+残数を列に持たず、**1枚1行**で持つ。使うときは `used_at` を立て、残数は「`used_at IS NULL` かつ `expires_at` が未来」の行を数える。`user_usage_quotas.paid_credits` と混ぜない。あの列は期限を持てないため、7日の券と3か月の券を同じ残高に入れると、どちらが先に消えるかを表せない。
+
+#### 追加カラム
+
+```sql
+-- 紹介のコードと、誰の紹介で登録したか。既存行は NULL のままで、
+-- コードは初めて紹介画面を開いたときに作る（バックフィルしない）。
+ALTER TABLE "users"
+  ADD COLUMN "referral_code" VARCHAR(12),
+  ADD COLUMN "referred_by_user_id" UUID;
+
+CREATE UNIQUE INDEX "users_referral_code_key" ON "users"("referral_code");
+
+-- 登録意向にもコードを持たせる。`beginSignupIntent` は毎回作り直すので、
+-- 呼び出し側が登録のたびに渡し直す。
+ALTER TABLE "signup_intents"
+  ADD COLUMN "referral_code" VARCHAR(12);
+
+-- 紹介でチケットが配られたことを知らせる通知の種別。
+ALTER TYPE "NotificationKind" ADD VALUE 'REFERRAL_GRANTED';
+
+-- 紹介の通知は催しを持たない。外部キーはそのままで、NULL を許すだけ。
+ALTER TABLE "notifications" ALTER COLUMN "event_id" DROP NOT NULL;
+```
+
+#### 列の意味
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `free_tickets` | `id` | UUID PK | 券1枚の識別子 |
+| `free_tickets` | `user_id` | UUID NOT NULL（`users` へ ON DELETE CASCADE） | 券を持つ会員 |
+| `free_tickets` | `source` | `FreeTicketSource` NOT NULL | 発行元。`REFERRAL` は紹介、`AD` は動画（未実装）、`MANUAL` は運営の付与 |
+| `free_tickets` | `granted_by_user_id` | UUID NULL（`users` へ ON DELETE SET NULL） | 紹介で券を配った相手（紹介されて登録した会員）。生涯上限の数え上げと自己紹介の検出に使う |
+| `free_tickets` | `reason_key` | VARCHAR(255) NULL UNIQUE | 二重付与を止めるキー。紹介は `referral:<新規userId>:<0\|1>` |
+| `free_tickets` | `provider` | VARCHAR(50) NULL | 動画券の広告事業者。事業者と繋いだときだけ入り、いまは NULL |
+| `free_tickets` | `issued_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | 発行日時。期限はここから数える |
+| `free_tickets` | `expires_at` | TIMESTAMPTZ NOT NULL | 有効期限。紹介券は発行から3か月 |
+| `free_tickets` | `used_at` | TIMESTAMPTZ NULL | 消費した日時。NULL は未使用 |
+| `free_tickets` | `event_id` | UUID NULL | どのイベントの公開で使ったか（分析用）。外部キーは張らず、イベントを消しても行を残す |
+| `free_tickets` | `created_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | 行を作った日時 |
+| `users` | `referral_code` | VARCHAR(12) NULL UNIQUE | 紹介URLに載せる8文字のコード。既存行は NULL で、初めて紹介を開いたときに作る。退会後も残す |
+| `users` | `referred_by_user_id` | UUID NULL | 誰の紹介で登録したか。会員になった時点で確定し、後から変えない。自己紹介は入れない |
+| `signup_intents` | `referral_code` | VARCHAR(12) NULL | 登録の途中で持つ紹介コード。会員になった時点で `users.referred_by_user_id` へ確定する |
+| `notifications` | `event_id` | UUID NULL（既存の列を NULL 可へ） | 通知の元になった催し。`REFERRAL_GRANTED` は催しに紐づかないため NULL |
+
+- `users.referral_code` の UNIQUE が、コードの重複を DB で止める。作るのは `ensureReferralCode` で、衝突したら作り直す。
+- `free_tickets.reason_key` の UNIQUE が、同じ人の同じ付与を1回に抑える。付与は `FOR UPDATE` で紹介者の行を押さえてから枚数を数え、生涯 10 枚を超えない。
+- 消費する順は 定額 → チケット（`expires_at` の昇順）→ 単発クレジット → 無料枠。期限切れの券は選ばない。
 
 ---
 

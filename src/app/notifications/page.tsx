@@ -125,7 +125,7 @@ export default function NotificationsPage() {
 
       {!loading && !error && notifications.length === 0 && (
         <EmptyState>
-          まだありません。参加者が答えると、ここに出ます。
+          まだありません。参加者が答えるか、紹介から登録した人が公開すると、ここに出ます。
         </EmptyState>
       )}
 
