@@ -15,7 +15,7 @@ primary_region = "nrt"
   target = "runner"
 
   [build.args]
-    NEXT_PUBLIC_APP_URL = "https://staging.example.com"
+    NEXT_PUBLIC_APP_URL = "https://staging.eventkreater.com"
     # staging では計測しない。
     NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
     # noindex（robots.ts / next.config.mjs の headers()）をビルド時に効かせる。
@@ -25,7 +25,7 @@ primary_region = "nrt"
   NODE_ENV = "production"
   PORT = "3012"
   FLYER_API_URL = "http://event-creater-flyer-stg.internal:8000"
-  NEXT_PUBLIC_APP_URL = "https://staging.example.com"
+  NEXT_PUBLIC_APP_URL = "https://staging.eventkreater.com"
   # robots.ts は実行時に読むため、ビルド引数と同じ値をここにも置きます。
   APP_ENV = "staging"
 
