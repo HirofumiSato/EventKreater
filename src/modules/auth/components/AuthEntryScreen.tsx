@@ -93,6 +93,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
   const [error, setError] = useState<string | null>(googleError);
   const [notice, setNotice] = useState<string | null>(null);
   const [unverified, setUnverified] = useState(false);
+  // 登録の送信が終わり、確認メールの案内を出す状態。ログインのフォームへは切り替えない。
+  const [sent, setSent] = useState(false);
   const [adminConsoleRequired, setAdminConsoleRequired] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // 電話番号の確認画面も、確認済みかどうかをここで受け取る（画面側の二重取得をやめる）。
@@ -153,6 +155,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    // 応答を待つ間にラジオが動いても、送ったフォームの種類で分岐する。
+    const submittedMode = mode;
     setSubmitting(true);
     setError(null);
     setNotice(null);
@@ -163,7 +167,7 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          mode === "register"
+          submittedMode === "register"
             ? { action: "register", name, email, password, audience }
             : { action: "login", email, password, audience },
         ),
@@ -187,7 +191,7 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         void savePasswordCredential({
           email,
           password,
-          ...(mode === "register" ? { name } : {}),
+          ...(submittedMode === "register" ? { name } : {}),
         });
       }
       if (body.signupPending) {
@@ -200,10 +204,16 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         return;
       }
       if (body.verificationRequired) {
-        // 登録途中のメールが未確認だった。確認メールを送り直したので、再送ボタンも出す。
-        if (body.unverifiedEmail) setUnverified(true);
-        setNotice(body.detail || "確認メールを送信しました。メールのリンクを開いてください。");
-        setMode("login");
+        if (body.unverifiedEmail) {
+          // ログインで未確認だった。フォームはログインのまま、再送ボタンを出す（FE-AUTH-17）。
+          setUnverified(true);
+          setNotice(body.detail || "確認メールを送信しました。メールのリンクを開いてください。");
+          setPassword("");
+          return;
+        }
+        // 新規登録と既登録メールのどちらも同じ。登録のフォームのまま案内だけを出す（FE-AUTH-01）。
+        // 案内は確認パネルの見出しと注記が持つ。detail をそのまま出すと同じ文面が重なる。
+        setSent(true);
         setPassword("");
         return;
       }
@@ -221,6 +231,16 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
     }
   };
 
+  /** 登録とログインを切り替える。前の応答の案内を持ち越さない。 */
+  const changeMode = (next: AuthMode) => {
+    setMode(next);
+    setSent(false);
+    setNotice(null);
+    setError(null);
+    setUnverified(false);
+    setAdminConsoleRequired(false);
+  };
+
   const resend = async () => {
     setSubmitting(true);
     setError(null);
@@ -231,8 +251,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error(await readProblem(res));
-      const body = (await res.json()) as { detail?: string };
-      setNotice(body.detail || "確認メールを送信しました。");
+      // 再送では、送り直した事実だけを出す。案内の本文はパネルかフォームが持つ。
+      setNotice("確認メールを送り直しました。");
       setUnverified(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "確認メールを再送できませんでした");
@@ -305,89 +325,125 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       />
       <div className="segment">
         <label className="segment__item">
-          <input type="radio" name="auth-mode" checked={mode === "register"} onChange={() => setMode("register")} />
+          <input type="radio" name="auth-mode" checked={mode === "register"} onChange={() => changeMode("register")} />
           新規登録
         </label>
         <label className="segment__item">
-          <input type="radio" name="auth-mode" checked={mode === "login"} onChange={() => setMode("login")} />
+          <input type="radio" name="auth-mode" checked={mode === "login"} onChange={() => changeMode("login")} />
           ログイン
         </label>
       </div>
       <div className="auth-card">
-        <h2 className="auth-card__title">
-          {mode === "register" ? "はじめての方（新規登録）" : "メールアドレスで入る"}
-        </h2>
-        <p className="auth-card__note">
-          {mode === "register"
-            ? "確認メールが届きます。その後、電話番号を確認して登録が終わります。"
-            : "パスワードを忘れたときは、確認番号で入れます。"}
-        </p>
-        {/* mode ごとに作り直す。同じ要素の autocomplete を書き換えるだけでは、
-            Chrome が新しい用途（新規パスワード／既存パスワード）として解析し直さない。 */}
-        <form key={mode} onSubmit={submit} className="auth-card__body">
-          {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
-          {mode === "register" && inviteName && (
-            <Alert tone="success">
-              {`${inviteName}さんの紹介です。はじめて公開すると、紹介した方にチケット${REFERRAL_TICKET_GRANT}枚が届きます。`}
-            </Alert>
-          )}
-          {mode === "register" && (
-            <Field label="名前" htmlFor="register-name">
-              <input
-                id="register-name"
-                name="name"
-                autoComplete="name"
-                required
-                maxLength={50}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="input"
-              />
-            </Field>
-          )}
-          <Field label="メールアドレス" htmlFor="register-email">
-            <input
-              id="register-email"
-              name="email"
-              // パスワードマネージャのユーザー名としてメールアドレスを対応付ける。
-              autoComplete="username"
-              required
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="input"
-            />
-          </Field>
-          <Field label="パスワード" htmlFor="register-password">
-            <input
-              id="register-password"
-              name="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              required
-              type="password"
-              minLength={mode === "register" ? 8 : 1}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="input"
-            />
-            {mode === "register" && <p className="help">8文字以上。流出が確認されたパスワードは使えません。</p>}
-          </Field>
-          {notice && <Alert tone="success">{notice}</Alert>}
-          {error && <Alert tone="error">{error}</Alert>}
-          {adminConsoleRequired && (
-            <a className="btn btn--outline btn--block" href="/console/login">
-              管理者ログインへ
-            </a>
-          )}
-          {unverified && (
-            <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
-              確認メールを再送する
-            </button>
-          )}
-          <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-            {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
-          </button>
-        </form>
+        {sent && mode === "register" ? (
+          <>
+            <h2 className="auth-card__title">確認メールを送信しました</h2>
+            <p className="auth-card__note">メールのリンクを開いてください。迷惑メールも見てください。</p>
+            <div className="auth-card__body">
+              <p>{`${email} 宛に送りました。`}</p>
+              {notice && <Alert tone="success">{notice}</Alert>}
+              {error && <Alert tone="error">{error}</Alert>}
+            </div>
+            <div className="panel__actions">
+              <button
+                type="button"
+                className="btn btn--outline btn--block"
+                disabled={submitting || !email}
+                onClick={() => void resend()}
+              >
+                確認メールを再送する
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                disabled={submitting}
+                onClick={() => {
+                  setSent(false);
+                  setNotice(null);
+                  setError(null);
+                }}
+              >
+                メールアドレスを直す
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="auth-card__title">
+              {mode === "register" ? "はじめての方（新規登録）" : "メールアドレスで入る"}
+            </h2>
+            <p className="auth-card__note">
+              {mode === "register"
+                ? "確認メールが届きます。その後、電話番号を確認して登録が終わります。"
+                : "パスワードを忘れたときは、確認番号で入れます。"}
+            </p>
+            {/* mode ごとに作り直す。同じ要素の autocomplete を書き換えるだけでは、
+                Chrome が新しい用途（新規パスワード／既存パスワード）として解析し直さない。 */}
+            <form key={mode} onSubmit={submit} className="auth-card__body">
+              {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
+              {mode === "register" && inviteName && (
+                <Alert tone="success">
+                  {`${inviteName}さんの紹介です。はじめて公開すると、紹介した方にチケット${REFERRAL_TICKET_GRANT}枚が届きます。`}
+                </Alert>
+              )}
+              {mode === "register" && (
+                <Field label="名前" htmlFor="register-name">
+                  <input
+                    id="register-name"
+                    name="name"
+                    autoComplete="name"
+                    required
+                    maxLength={50}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    className="input"
+                  />
+                </Field>
+              )}
+              <Field label="メールアドレス" htmlFor="register-email">
+                <input
+                  id="register-email"
+                  name="email"
+                  // パスワードマネージャのユーザー名としてメールアドレスを対応付ける。
+                  autoComplete="username"
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label="パスワード" htmlFor="register-password">
+                <input
+                  id="register-password"
+                  name="password"
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  required
+                  type="password"
+                  minLength={mode === "register" ? 8 : 1}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="input"
+                />
+                {mode === "register" && <p className="help">8文字以上。流出が確認されたパスワードは使えません。</p>}
+              </Field>
+              {notice && <Alert tone="success">{notice}</Alert>}
+              {error && <Alert tone="error">{error}</Alert>}
+              {adminConsoleRequired && (
+                <a className="btn btn--outline btn--block" href="/console/login">
+                  管理者ログインへ
+                </a>
+              )}
+              {unverified && (
+                <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
+                  確認メールを再送する
+                </button>
+              )}
+              <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
+                {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
+              </button>
+            </form>
+          </>
+        )}
         {SHOW_GOOGLE_ENTRY && (
           <div className="panel__actions">
             <a

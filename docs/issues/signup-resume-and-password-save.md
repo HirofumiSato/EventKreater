@@ -91,7 +91,9 @@ export async function resumeSignupIntent(input: {
 
 - 応答型に `signupPending`、`unverifiedEmail`、`audience` を足した。
 - `signupPending` なら `body.audience` に合わせて `/auth/register?step=phone` か `/participant/login?step=phone` へ `router.push` する。入口が変わるときは `next` を付けない。
-- `unverifiedEmail` なら `setUnverified(true)` で再送ボタンを出す。あわせて「確認メールを送信しました…」の案内を出し、ログインのフォームへ切り替えてパスワード欄を空にする。
+- `unverifiedEmail` なら `setUnverified(true)` で再送ボタンを出す。あわせて「確認メールを送信しました…」の案内を出し、パスワード欄を空にする。ログインのフォームのまま留まる（FE-AUTH-17）。
+- それ以外の `verificationRequired`（新規登録と既登録メール）は `setSent(true)` で確認メールの案内を出し、パスワード欄を空にする。登録のフォームからログインのフォームへは切り替えない（FE-AUTH-01）。「確認メールを再送する」と「メールアドレスを直す」を出し、後者で `setSent(false)` にして登録のフォームへ戻す。
+- mode を切り替えたときは、`sent`・`notice`・`error`・`unverified`・`adminConsoleRequired` を消す。前の応答の案内を持ち越さない。
 
 ### 5. 電話番号の確認画面
 
@@ -103,6 +105,7 @@ export async function resumeSignupIntent(input: {
 
 - `tests/integration/signup-resume.test.ts`（`TEST_DATABASE_URL` があるときだけ）— 確認済みの意向はパスワード一致で `phone_pending`、未確認の意向は `email_pending` を返して会員行を作らない、期限切れの意向は期限だけ 24 時間へ延ばし `emailVerifiedAt` を保つ、不一致・意向なし・パスワードを持つ会員がいる・パスワードを持たない意向は `none`。
 - `tests/unit/password-credential.test.ts` — 非セキュアコンテキストでは保存せず `false`、`PasswordCredential` が無ければ保存しない、`store` が失敗しても例外を投げず `false`、保存できたらメールアドレス・パスワード・名前を 1 回だけ渡す。
+- `tests/components/auth-entry-screen.test.tsx` — 登録の成功は登録のフォームのまま確認メールの案内と再送を出し、ログインの見出し・送信ボタン・パスワード欄を出さない。確認パネルの見出しと API の案内を重ねない。未確認のままログインしたときはログインフォームのまま再送を出す。`メールアドレスを直す` で登録のフォームへ戻る。再送の成功は「確認メールを送り直しました。」だけを出し、本文を重ねない。
 - 既存の `tests/integration/auth-attempts.test.ts` と `tests/unit/auth-mode.test.ts` が通ること。
 
 ## 受け入れ条件

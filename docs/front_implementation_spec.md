@@ -1368,7 +1368,7 @@ export interface PricingOption {
 | **FE-PUB-13** | **参加カレンダーの日付** | 複数の日程を持つ催しに出欠し、選んだ日程と別の日に `/participant/calendar` を開く | 出欠で選んだ日程のセルにだけ催し名の帯が出て、選んでいない日程には出ないこと。日程を選ばずに答えた催しは代表日のセルに出ること。セルは3件までを出し、4件以上は2件＋`+N` の3行に収めること。出席と欠席の両方が一覧に出て、欠席は控えめな色の帯になること。帯をタップすると催し名の全文と「イベント告知ページへ」のリンクを持つモーダルが開くこと |
 | **FE-PUB-19** | **出欠の回数上限** | 告知ページで同じ端末から出欠を送り続ける（IP は 1 分に 30 回、端末は 10 分に 10 回） | 上限に達すると HTTP 429 になり、「この催しへの出欠の回答は1分に30回までです。HH:MMごろに再度お試しください。」が出ること。時刻は応答の `retryAt` のローカル時刻であること。案内は `readProblem` の共通処理が出し、画面ごとの文言を持たないこと |
 | **FE-PUB-20** | **招待ページの noindex** | `/invitations/[code]` の HTML と応答ヘッダを取得する | `robots` が `noindex, nofollow` であること。応答ヘッダに `X-Robots-Tag: noindex, nofollow` が付くこと。`robots.txt` の `disallow` に `/invitations/` が入っていること |
-| **FE-AUTH-01** | **確認メール待ち** | 新しいメールとパスワードで会員登録する | ログインせず、確認メールを送った旨だけを表示すること。同じメールでも既登録とは表示しないこと |
+| **FE-AUTH-01** | **確認メール待ち** | 新しいメールとパスワードで会員登録する | ログインせず、確認メールを送った旨だけを表示すること。登録のフォームのまま案内と再送を出し、ログインのフォームへ切り替えないこと。同じメールでも既登録とは表示しないこと |
 | **FE-AUTH-02** | **メール確認** | 確認リンクを開き、確認を完了する | 新規は `/auth/register?step=phone` へ進むこと。未確認のパスワードではログインできないこと |
 | **FE-AUTH-03** | **電話番号確認** | 確認コードを送り、正しい 6 桁を入力する | 会員セッションができ、許可した `next` へ進むこと。同じ番号の既存会員なら新しい行を作らないこと |
 | **FE-AUTH-04** | **無料チケットの電話必須** | 電話未確認の会員が無料チケットだけで公開する | HTTP 403 を検知し、電話番号確認へ進むこと。料金モーダルは開かないこと |
@@ -1411,7 +1411,7 @@ export interface PricingOption {
 
 ## 9. 会員登録（SCR-PUB-02 / SCR-PUB-05）
 
-`src/app/auth/register/page.tsx` は登録とログインを同じページに置く。パスワード登録の成功ではセッションを作らず、確認メールを送った旨だけを出す。既に登録済みのメールでも同じ文面にする。未確認のままログインしたときは、確認メールの再送を出せる。再送 API は `POST /api/v1/auth/verification` で、メールの有無にかかわらず同じ文面を返す。パスワードまたは Google のログイン成功では `?step=login-code` を開き、`LoginChallengeForm` で確認番号を入れる。確認 API は `POST /api/v1/auth/login-challenge/confirm` である。初期モードは `?mode=register` / `?mode=login` を優先し、指定が無ければ `next` の有無で決める（12.5）。SCR-ORG-10 からは `mode=register` と `next=/organizer/events?registered=1` を付けて開く。
+`src/app/auth/register/page.tsx` は登録とログインを同じページに置く。パスワード登録の成功ではセッションを作らず、登録のフォームのまま確認メールの案内と再送だけを出す（ログインのフォームへ切り替えない）。既に登録済みのメールでも同じ文面にする。未確認のままログインしたときだけ、ログインフォームのまま確認メールの再送を出せる（FE-AUTH-17）。再送 API は `POST /api/v1/auth/verification` で、メールの有無にかかわらず同じ文面を返す。画面では再送の成功に「確認メールを送り直しました。」だけを出し、案内の本文を重ねない。パスワードまたは Google のログイン成功では `?step=login-code` を開き、`LoginChallengeForm` で確認番号を入れる。確認 API は `POST /api/v1/auth/login-challenge/confirm` である。初期モードは `?mode=register` / `?mode=login` を優先し、指定が無ければ `next` の有無で決める（12.5）。SCR-ORG-10 からは `mode=register` と `next=/organizer/events?registered=1` を付けて開く。
 
 **ログイン済みのセッションがある入口**（`/auth/register`、`/participant/login`）は、フォームを出さずに着地へ送る。判定は `GET /api/v1/auth/session` で、Cookie の有無ではなく DB のセッションまで見る。判定中と移動中は「ログイン状態を確認しています」だけを出す。着地は `src/modules/auth/lib/auth-landing.ts` の `resolveSessionDestination` が決める。戻り先の指定があればそのパス、無ければ主催者の入口の管理者は `/console`、それ以外は入口ごとの既定（`/mypage` または `/participant`）である。電話番号が未確認なら、ログインは済んでいるので `?step=phone` だけを出す。`?switch=1` を付けたときは、共用端末で別の会員として入り直す意図とみなし、既存セッションで飛ばさない。確認番号の入力待ちのチャレンジが残っているとき（`GET /api/v1/auth/session` の `pendingChallenge` が真）も飛ばさない。
 

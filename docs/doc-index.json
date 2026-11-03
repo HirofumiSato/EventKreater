@@ -9576,7 +9576,7 @@
       "title": "登録途中のパスワードを保存し、ログインフォームから登録を再開できるようにする",
       "summary": "1. Chrome のパスワード生成と保存が効かない。 登録フォームの名前欄とパスワード欄に name と autocomplete が無いため、Chrome が「新規パスワードの作成」と判定できず、生成サジェストを出さない。加えて送信が preventDefault と fetch で、画面遷移が起きない。Chrome はフォームの送信（遷移）を合図に保存を出すので、保存の合図も無い。同じリポジトリの PasswordPanel.tsx と console/login/page.tsx には正しく付いている。 2. 登録途中でパスワードが未保存のまま詰む。 パスワードは signup_intents.password_hash にだけ入り、users の行は電話番号の確認まで作られない。そのため signup_intent Cookie を失う・24 時間を過ぎる・別端末で確認メールを開く、のいずれかで phone/start が 401 で止まる。ログインも会員行が無いので同じく 401 になる。登録し直すと beginSignupIntent が同じメールアドレスの意向を消して作り直すため、前回の続きには戻れない。",
       "preImplementation": false,
-      "lineCount": 150,
+      "lineCount": 153,
       "headings": [
         {
           "level": 1,
@@ -9683,6 +9683,10 @@
         },
         {
           "path": "src/modules/auth/lib/signup-resume.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/components/auth-entry-screen.test.tsx",
           "exists": true
         },
         {
@@ -11525,7 +11529,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 702,
+      "lineCount": 706,
       "headings": [
         {
           "level": 1,
@@ -11576,6 +11580,10 @@
         },
         {
           "path": "tests/components/app-error.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/auth-entry-screen.test.tsx",
           "exists": true
         },
         {
