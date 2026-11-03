@@ -22,7 +22,7 @@ LLM の失敗は捕捉して背景にすり替えません。:class:`src.domain.
 
 システムプロンプトは :data:`src.adapters.prompt_engine.openai_prompt_engine.SYSTEM_PROMPT` にあり、実装仕様書 2.2 の文言と一致させています。利用者の入力はシステムメッセージへ混ぜず、ユーザーメッセージの JSON として渡します。
 
-ユーザーメッセージへ載せる項目は :mod:`src.domain.prompt_payload` の ``_CONTEXT_KEYS`` で決めます。``count`` のような操作パラメータや未入力の項目は渡しません。画面項目との対応は :doc:`specs/context_contract` にまとめています。``composition_hint``（配置の余白指示と、A4 への切り抜きで上下が落ちる前提）も同じ JSON に足し、LLM が構図を先に考えられるようにします。
+ユーザーメッセージへ載せる項目は :mod:`src.domain.prompt_payload` の ``_CONTEXT_KEYS`` で決めます。``count`` のような操作パラメータや未入力の項目は渡しません。画面項目との対応は :doc:`specs/context_contract` にまとめています。``composition_hint`` （配置の余白指示と、A4 への切り抜きで上下が落ちる前提）も同じ JSON に足し、LLM が構図を先に考えられるようにします。
 
 画像プロンプトには、文字・数字・ロゴを描かないことと、テンプレートごとの余白（コピー用の暗い面、柔らかい背景、文字を載せられる低周波の領域）を要求します。DALL-E 3 には独立したネガティブプロンプト欄がないため、除外語は本文の末尾へ連結します。
 

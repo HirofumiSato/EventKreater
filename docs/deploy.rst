@@ -256,7 +256,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
 
 .. note::
 
-   本番の ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` は ``G-BS6RHPS9J3``（プロパティ「EventKreater 本番」/ ストリーム「EventKreater 本番 Web」）です。staging は空のままで、計測しません。
+   本番の ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` は ``G-BS6RHPS9J3`` （プロパティ「EventKreater 本番」/ ストリーム「EventKreater 本番 Web」）です。staging は空のままで、計測しません。
 
 .. note::
 
@@ -481,6 +481,8 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 
 どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。
 
+``workflow_run`` は ``paths`` で絞れないため、``docs/`` だけの変更でも連鎖は動きます。CI の対象判定（``scripts/ci-scope.mjs``）はデプロイには効きません。ビルドは走りますが、当てるマイグレーションが無ければ ``migrate`` は何もせずに通ります。
+
 ``main`` の CI から流れたとき、production は GitHub Environment ``production`` の **Required reviewers** で止まるまで進みません。staging は承認なしで先に上がるので、staging を見てから承認できます。承認は環境を指すジョブごとに求められるため、``deploy-env.yml`` の 3 ジョブぶんまとめて 1 回承認してください（GitHub の **Review pending deployments** でまとめられます）。
 
 このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
@@ -497,10 +499,13 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    デプロイの成否は **Actions の ``Deploy``** で見てください（``fly deploy`` を手で叩いたときと違い、承認待ちのあいだは job が止まります）。
 
    ``main`` の CI から staging → production の順に流す形は、同じ 2026-11-03 に後から入れました。
-   そのため上の確認は「1 環境だけを流す形」で取った記録で、連鎖そのものの実行はまだ通していません。
-   ``workflow_dispatch`` は 1 環境しか流さないので、連鎖は ``main`` へマージしたときの ``Deploy`` で確かめてください。
-   見るところは 2 つです。``Deploy`` に ``staging`` と ``production`` の 2 ジョブが並び、``staging`` が緑で終わること。
-   そのあと ``production`` が **Review pending deployments** で止まり、承認すると ``migrate`` → ``flyer`` → ``web`` が流れること。
+   その日のうちに、``main`` の CI 成功から 1 本の ``Deploy`` で
+   ``staging / migrate`` → ``staging / flyer`` → ``staging / web`` が success で終わり、続いて
+   ``production / migrate`` が承認待ちで止まることを確かめています（commit ``4ad8cef``）。
+   承認は 1 回で、``production`` の 3 ジョブすべてに効きました。
+
+   承認をしないまま次のマージが来ると、承認待ちの実行が積み上がります（``cancel-in-progress: false`` のため）。
+   古い実行を誤って承認しないよう、出さないと決めた実行は Actions から止めてください。
 
 ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
 
@@ -598,9 +603,11 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 6. 更新と切り戻し
 -----------------
 
+ふだんの更新は、作業ブランチを ``main`` へマージするだけです。CI が緑で終わると ``Deploy`` が staging → production の順に流れます（2.4）。承認を待たずに切り分けたいときだけ、下の手作業を使います。
+
 .. code-block:: powershell
 
-   # 更新。マイグレーションを先に流す
+   # 手で出すとき。マイグレーションを先に流す
    $env:DATABASE_URL = "postgresql://...direct..."
    npx prisma migrate deploy
    fly deploy --app event-creater-web
