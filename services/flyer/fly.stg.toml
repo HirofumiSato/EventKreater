@@ -1,0 +1,35 @@
+# event-creater-flyer-stg（検証）の Fly.io 構成。
+#
+# 骨格は fly.toml と同じです。差分はアプリ名だけです。
+# 公開ポートを持たず（[http_service] を書かない）、web から 6PN の
+# event-creater-flyer-stg.internal:8000 でだけ呼びます。
+
+app = "event-creater-flyer-stg"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "runtime"
+
+[env]
+  STORAGE_DIR = "/data/tmp"
+  CANDIDATE_DIR = "/data/candidates"
+  FALLBACK_DIR = "/data/backgrounds"
+
+[checks.health]
+  type = "http"
+  port = 8000
+  path = "/health"
+  interval = "15s"
+  timeout = "2s"
+  grace_period = "10s"
+
+[[mounts]]
+  # ボリューム名はアプリごとの名前空間なので、本番と同じ "flyer_data" で構いません。
+  # 本体（event-creater-flyer）のボリュームとは別物として作られます。
+  source = "flyer_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
