@@ -10844,7 +10844,7 @@
       "title": "検証環境（staging）",
       "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
       "preImplementation": false,
-      "lineCount": 289,
+      "lineCount": 370,
       "headings": [
         {
           "level": 1,
@@ -10868,7 +10868,11 @@
         },
         {
           "level": 3,
-          "text": "2.3 Tunnel に staging のホスト名を足す"
+          "text": "2.3 メール送信（Resend と Worker）"
+        },
+        {
+          "level": 3,
+          "text": "2.4 Tunnel に staging のホスト名を足す"
         },
         {
           "level": 2,
@@ -10903,6 +10907,10 @@
         },
         {
           "path": "src/app/robots.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/mail.ts",
           "exists": true
         },
         {
@@ -11371,7 +11379,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 690,
+      "lineCount": 694,
       "headings": [
         {
           "level": 1,
@@ -11678,6 +11686,10 @@
         },
         {
           "path": "tests/unit/line-share.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mail-webhook.test.mjs",
           "exists": true
         },
         {

@@ -32,3 +32,6 @@ docs/*/_build/
 
 logs/
 .neon
+# staging のメール中継 Worker。ローカルの秘密と wrangler の残骸。
+infra/mail-webhook/.dev.vars
+infra/mail-webhook/.wrangler/

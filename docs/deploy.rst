@@ -332,7 +332,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      - 両方そろったときだけ Google ログインが出ます
    * - ``MAIL_WEBHOOK_URL`` / ``SMS_WEBHOOK_URL``
      - 任意
-     - 未設定なら送信はログだけになります（ローカルと同じ）
+     - 未設定なら送信はログだけになります（ローカルと同じ）。staging は ``MAIL_WEBHOOK_URL`` に Cloudflare Worker を入れて実際にメールを送り、``SMS_WEBHOOK_URL`` は空のままです（:doc:`staging`）
    * - ``POSTAL_CODE_API_URL``
      - 任意
      - 既定は zipcloud。変えるときだけ
@@ -457,7 +457,7 @@ Cloudflare 側で Tunnel を作ります。
 
 検証環境（staging）は、同じ骨格を ``-stg`` のアプリ名で並べます。web は ``event-creater-web-stg``、flyer は ``event-creater-flyer-stg`` で、Neon も Stripe も本番とは別に用意します。差分だけを :doc:`staging` にまとめてあります。
 
-tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.eventkreater.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.3）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
+tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.eventkreater.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.4）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
 
 staging のホスト名は Cloudflare Access で守ります。組織の **Access → Applications** に self-hosted アプリを 1 つ作り、ドメインを ``staging.eventkreater.com``、ポリシーを「許可したメールアドレスだけ」にします。Access は IdP が 1 つも無いと「ログイン方法がありません」で止まるので、**Settings → Authentication** で One-time PIN を有効にしてからアプリの ``allowed_idps`` に入れます。
 

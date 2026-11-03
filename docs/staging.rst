@@ -156,7 +156,83 @@ web と flyer を、本番とは別のアプリとして ``nrt`` に作ります
 ``OPENAI_API_KEY`` は本番と同じ鍵でも動きます。原価を環境ごとに見分けたいときだけ、別のプロジェクトの鍵にします。
 未設定でも起動しますが、そのときはモックのアダプターに切り替わり、本物ではない候補が静かに返ります。
 
-2.3 Tunnel に staging のホスト名を足す
+2.3 メール送信（Resend と Worker）
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+staging では、会員登録の確認メールを実際に送ります。``src/lib/mail.ts`` の ``deliverMail()`` は
+``MAIL_WEBHOOK_URL`` へ認証ヘッダを付けずに ``{ to, subject, body }`` を POST するだけです。
+その受け口を Cloudflare Worker に置き、Worker から Resend で送ります。アプリ側は変えません。
+
+Worker のコードは ``infra/mail-webhook`` に置きます（``infra/mail-webhook/wrangler.toml`` と ``infra/mail-webhook/src/index.mjs``）。
+
+.. code-block:: text
+
+   event-creater-web-stg（deliverMail）
+     ↓ POST { to, subject, body } を認証ヘッダなしで送る
+   mail-hook-stg.eventkreater.com（Worker）
+     ↓ POST /emails を Bearer で送る
+   Resend（送信ドメイン send-stg.eventkreater.com）
+     ↓
+   運用者のメール
+
+ホスト名は 2 つに分けます。同じ名前にすると、Worker の custom domain と Resend の DKIM が DNS で衝突します。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 76
+
+   * - 用途
+     - ホスト名
+   * - Worker の受け口
+     - ``mail-hook-stg.eventkreater.com``。アプリは ``https://mail-hook-stg.eventkreater.com/<token>`` へ POST します
+   * - Resend の送信ドメイン
+     - ``send-stg.eventkreater.com``。``from`` は ``no-reply@send-stg.eventkreater.com`` です
+
+Resend のダッシュボードで ``send-stg.eventkreater.com`` を追加し、SPF・DKIM・MX を Cloudflare DNS に
+**DNS only** で置いて認証を通します。
+
+Worker の秘密は 4 つです。``infra\mail-webhook`` で 1 つずつ入れてからデプロイします。
+
+.. code-block:: powershell
+
+   cd infra\mail-webhook
+   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put WEBHOOK_TOKEN
+   npx wrangler secret put MAIL_FROM
+   npx wrangler secret put ALLOWED_RECIPIENTS
+   npx wrangler deploy
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - 名前
+     - 値
+   * - ``RESEND_API_KEY``
+     - Resend の API キー
+   * - ``WEBHOOK_TOKEN``
+     - アプリが URL のパスに載せる合言葉。一致しないパスは 404 になります
+   * - ``MAIL_FROM``
+     - ``no-reply@send-stg.eventkreater.com``
+   * - ``ALLOWED_RECIPIENTS``
+     - 送ってよい宛先。ここに無い宛先は 403 で止めます
+
+Worker は受け取った件名の頭に ``[stg]`` を付け、本文はプレーンテキストのまま Resend へ渡します。
+
+.. warning::
+
+   ``mail-hook-stg.eventkreater.com`` に Cloudflare Access を付けないでください。
+   Access はブラウザのログインを要求します。``deliverMail`` は認証ヘッダを付けられないため、
+   Worker の手前で 302 に止められ、メールが届きません。Access を付けるのは ``staging.eventkreater.com`` だけです。
+
+最後に、アプリの宛先を Worker に切り替えます。``MAIL_WEBHOOK_URL`` は実行時の env なので再ビルドは要りません
+（``fly secrets set`` で Machine は再起動します）。
+
+.. code-block:: powershell
+
+   fly secrets set MAIL_WEBHOOK_URL="https://mail-hook-stg.eventkreater.com/<token>" --app event-creater-web-stg
+
+2.4 Tunnel に staging のホスト名を足す
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 staging 用のトンネルアプリは作りません。本番の ``event-creater-tunnel`` の Public Hostname に 1 行足します。
@@ -252,6 +328,8 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 
 * ``[ ]`` ``GET /api/v1/public/pricing`` が 200 を返す
 * ``[ ]`` 会員登録 → 電話確認 → ``/mypage`` まで進める。Cookie が ``__Host-`` で始まる
+* ``[ ]`` 登録すると ``[stg] メールアドレスの確認`` が届く
+* ``[ ]`` ``fly logs -a event-creater-web-stg`` に ``[mail]`` が出ない（出たら未送信。``deliverMail`` は失敗を呼び出し元に返さないので、気づく手段はこのログだけ）
 * ``[ ]`` 無料チケットを 2 枚作り、3 件目で料金モーダルが出る。``4242 4242 4242 4242`` で払い、``verify`` と Webhook の両方が 200 で、二重付与しない
 * ``[ ]`` Test Clock で初月無料 → 3 日前 / 1 日前の通知 → 定価の請求、まで進み、``trial_ends_at`` が NULL になる
 * ``[ ]`` ``4000 0000 0000 0002`` で ``PAST_DUE`` になり、イベント作成が 402 を返す
@@ -266,6 +344,9 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 
 staging 用のデータを初期化する手順は**まだ決めていません**。決まったらこの節に追記します。
 決まるまでは、画面から必要な会員と催しを作ってください。
+
+SMS は送りません。``SMS_WEBHOOK_URL`` は空のままで、電話番号の確認の 6 桁コードは
+``fly logs -a event-creater-web-stg`` の ``[sms]`` から拾います。
 
 .. warning::
 
