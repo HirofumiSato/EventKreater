@@ -20,7 +20,7 @@ primary_region = "nrt"
 
   [build.args]
     # NEXT_PUBLIC_* はビルド時に焼き込まれます。値を変えたら fly deploy し直してください。
-    NEXT_PUBLIC_APP_URL = "https://example.com"
+    NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
     # 任意。GA4 の測定 ID。空なら計測しない。
     NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
     # APP_ENV（staging の noindex 判定）もビルド時に評価されるため、ここで渡します。
@@ -31,7 +31,7 @@ primary_region = "nrt"
   PORT = "3012"
   FLYER_API_URL = "http://event-creater-flyer.internal:8000"
   # ビルド引数と同じ値。実行時の絶対 URL にも使う。
-  NEXT_PUBLIC_APP_URL = "https://example.com"
+  NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
   # ビルド引数と同じ値を実行時にも渡します。robots.ts は force-dynamic で
   # 実行時に APP_ENV を読むため、ビルド側だけでは足りません。
   APP_ENV = "production"
