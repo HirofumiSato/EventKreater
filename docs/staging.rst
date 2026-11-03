@@ -256,7 +256,9 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 * ``[ ]`` Test Clock で初月無料 → 3 日前 / 1 日前の通知 → 定価の請求、まで進み、``trial_ends_at`` が NULL になる
 * ``[ ]`` ``4000 0000 0000 0002`` で ``PAST_DUE`` になり、イベント作成が 402 を返す
 * ``[ ]`` チラシ候補が出て画像が返る（500 なら flyer の ``OPENAI_API_KEY`` とフォント、web の ``chown`` を疑う）
-* ``[ ]`` ``*.fly.dev`` が引けないこと、``staging.eventkreater.com`` が 302 で Access に止められ、ログイン後に ``X-Robots-Tag: noindex`` が返ること
+* ``[ ]`` ``*.fly.dev`` が引けないこと、``staging.eventkreater.com`` が 302 で Access に止められ、ログイン後に ``X-Robots-Tag: noindex, nofollow`` が返ること
+* ``[ ]`` ``curl -I https://staging.eventkreater.com/`` の応答に ``X-Content-Type-Options: nosniff``、``Referrer-Policy: strict-origin-when-cross-origin``、``X-Frame-Options: DENY``、``Permissions-Policy``、``Content-Security-Policy``（``frame-ancestors 'none'`` を含む）が付く。``Strict-Transport-Security`` は付かない
+* ``[ ]`` ``/invitations/{code}`` の応答に ``X-Robots-Tag: noindex, nofollow`` が付き、HTML の ``robots`` も ``noindex, nofollow`` になる
 * ``[ ]`` 390px の実機で ``/events/{id}`` の出欠が片手で完結する
 
 7. staging のデータを作り直す

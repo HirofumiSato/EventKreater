@@ -1,5 +1,5 @@
 /**
- * 認証まわりの試行回数の定義。上限は 1 か所に集約する。
+ * 認証と出欠まわりの試行回数の定義。上限は 1 か所に集約する。
  *
  * 上限を足すときは `RateLimitRule.label`（画面と detail に出す対象名）が型で必須になるため、
  * 表示文言の無い上限を追加できない。値は環境変数で上書きでき、不正値は既定値へ落とす。
@@ -41,6 +41,10 @@ export interface RateLimitRules {
   phoneChangeIp: RateLimitRule;
   phoneConfirmIp: RateLimitRule;
   phoneChangeConfirmIp: RateLimitRule;
+  /** 出欠の回答と取消。イベントごとの接続元（IP）単位。 */
+  rsvpIp: RateLimitRule;
+  /** 出欠の回答。イベントごとの端末（Cookie）単位。 */
+  rsvpToken: RateLimitRule;
 }
 
 export interface AuthRateLimits {
@@ -82,6 +86,10 @@ export function createRateLimits(env: NodeJS.ProcessEnv): AuthRateLimits {
   const confirmIpLimit = readInt(env, "AUTH_CONFIRM_IP_LIMIT", 20);
   const codeMaxAttempts = readInt(env, "AUTH_CODE_MAX_ATTEMPTS", 10);
   const lockMs = readInt(env, "AUTH_LOCK_MINUTES", 15) * MINUTE_MS;
+  const rsvpIpLimit = readInt(env, "RSVP_IP_LIMIT", 30);
+  const rsvpIpWindowMs = readInt(env, "RSVP_IP_WINDOW_MINUTES", 1) * MINUTE_MS;
+  const rsvpTokenLimit = readInt(env, "RSVP_TOKEN_LIMIT", 10);
+  const rsvpTokenWindowMs = readInt(env, "RSVP_TOKEN_WINDOW_MINUTES", 10) * MINUTE_MS;
 
   return {
     codeMaxAttempts,
@@ -206,6 +214,18 @@ export function createRateLimits(env: NodeJS.ProcessEnv): AuthRateLimits {
         label: "確認コードの照合",
         limit: confirmIpLimit,
         windowMs: HOUR_MS,
+      },
+      rsvpIp: {
+        keyPrefix: "rsvp:ip:",
+        label: "この催しへの出欠の回答",
+        limit: rsvpIpLimit,
+        windowMs: rsvpIpWindowMs,
+      },
+      rsvpToken: {
+        keyPrefix: "rsvp:token:",
+        label: "この端末からの出欠の回答",
+        limit: rsvpTokenLimit,
+        windowMs: rsvpTokenWindowMs,
       },
     },
   };

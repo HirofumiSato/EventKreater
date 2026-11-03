@@ -42,7 +42,7 @@ flowchart TD
 | :---- | :---- | :---- | :---- | :---- |
 | `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・チケット消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する。未登録の幹事は作れない |
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
-| `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す |
+| `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行。IP と端末の回数制限あり） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す。上限は 429（5.3） |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済み・催しが0件は 404 |
 | `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
@@ -898,6 +898,13 @@ export const SubmitRsvpSchema = z.object({
   9. 日程は `scheduleIds`（無ければ `scheduleId` 1 件）をイベントの `sort_order` 順に正規化し、`participant_schedules` を `deleteMany` → `create` で差し替える。`participants.schedule_id` には先頭を代表として入れ、欠席・参加要望のときは join 行を空にして `schedule_id` も `NULL` にする。イベントに属さない `scheduleIds` が混ざっていれば 400 `VALIDATION_ERROR`。
   10. 参加人数は `partySize`（既定 1、1〜20 の外は 400）。出席のときだけ持ち、欠席・参加要望は 1 に戻す（要望は席を取らない）。定員は人数の合計 `Σ attending.party_size` で判定し、更新時は自分が使っていた人数を差し引いてから比べる。超えるときは `ATTENDING` を `WAITLISTED` に読み替える（更新の場合は 409 `CAPACITY_REACHED` で拒否）。
 - **取消（DELETE）:** 申し込み期限後も取り消せる。対象行の決め方は POST と同じで、Cookie と `userId` の両方を受け付ける。削除後は Cookie を消す。
+- **回数制限:** 未認証で送れるため、`auth_attempts` と同じ仕組みでイベント単位に数える（`src/modules/auth/lib/rate-limits.ts`）。
+  - `rsvpIp`: `rsvp:ip:<eventId>:<sha256(ip)>`。既定 30 回 / 1 分（`RSVP_IP_LIMIT` / `RSVP_IP_WINDOW_MINUTES`）。
+  - `rsvpToken`: `rsvp:token:<eventId>:<sha256(Cookie の rsvp_token_<id>)>`。既定 10 回 / 10 分（`RSVP_TOKEN_LIMIT` / `RSVP_TOKEN_WINDOW_MINUTES`）。
+  - 成功した送信も 1 回に含める。`assertWithinAttemptLimit` は `SubmitRsvpSchema.parse` より前に呼び、壊れた本文では出欠行を作らない。`recordAuthAttempt` は parse の後・トランザクションの前に呼ぶ。Cookie が無い送信では `rsvpToken` を数えない。
+  - イベントが違えば独立して数える。会場の共有 Wi-Fi では全員が同じ IP になるため、100 人規模が数分に集中する催しでは `RSVP_IP_LIMIT` を上げる。
+- **取消の回数:** DELETE は `rsvpIp` だけを消費する（POST と同じバケットを共有し、端末の枠は使わない）。
+- **429 の応答:** `Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` を付け、本文に `limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。画面は `readProblem` 経由で「この催しへの出欠の回答は1分に30回までです。HH:MMごろに再度お試しください。」を出す。
 
 ---
 
@@ -2135,6 +2142,7 @@ export interface ProblemDetails {
 | **409** | `probs/conflict` | 別の Google アカウントに結び付いたメールアドレス、または別の会員が使う確認済み電話番号 |
 | **429** | `probs/rate-limited` | チラシ生成サービスの呼び出し上限 |
 | **429** | `probs/rate-limit` | 認証の試行回数の上限（`error: "RATE_LIMITED"`）。`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返し、`Retry-After`、`X-RateLimit-Limit`、`X-RateLimit-Remaining`、`X-RateLimit-Reset` を付ける |
+| **429** | `probs/rate-limit` | 公開の出欠（POST / DELETE）の回数上限（`error: "RATE_LIMITED"`）。IP 単位 30 回 / 1 分、端末単位 10 回 / 10 分。本文と応答ヘッダの項目は認証と同じで、DELETE は IP のバケットだけを消費する |
 | **502** | `probs/flyer-unavailable` | チラシ生成サービスへの接続失敗、不正応答、JPEG 以外の画像 |
 | **500** | `probs/internal-error` | DB接続断などのサーバー内部障害 |
 

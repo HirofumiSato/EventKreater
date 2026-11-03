@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 118,
+    "docs": 119,
     "preImplementation": 15,
-    "markdown": 52,
+    "markdown": 53,
     "rst": 66,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2812,
+      "lineCount": 2820,
       "headings": [
         {
           "level": 2,
@@ -5613,7 +5613,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2084,
+      "lineCount": 2086,
       "headings": [
         {
           "level": 1,
@@ -6458,6 +6458,147 @@
         }
       ],
       "includedBy": []
+    },
+    {
+      "path": "docs/issues/abuse-and-crawler-hardening.md",
+      "sphinxDoc": "issues/abuse-and-crawler-hardening",
+      "format": "markdown",
+      "title": "出欠の回数制限・セキュリティヘッダ・秘匿URLの noindex",
+      "summary": "前回の棚卸しで、告知ページまわりに 3 つの穴が残っていた。どれも DB スキーマを変えずに塞げるため、独立した 3 本の PR として実装する。",
+      "preImplementation": false,
+      "lineCount": 149,
+      "headings": [
+        {
+          "level": 1,
+          "text": "出欠の回数制限・セキュリティヘッダ・秘匿URLの noindex"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "現状"
+        },
+        {
+          "level": 2,
+          "text": "今回の決定"
+        },
+        {
+          "level": 2,
+          "text": "数値の根拠"
+        },
+        {
+          "level": 3,
+          "text": "出欠の回数制限"
+        },
+        {
+          "level": 3,
+          "text": "セキュリティヘッダ"
+        },
+        {
+          "level": 3,
+          "text": "秘匿 URL の noindex"
+        },
+        {
+          "level": 2,
+          "text": "やらないこと"
+        },
+        {
+          "level": 2,
+          "text": "実装方針"
+        },
+        {
+          "level": 3,
+          "text": "1. 出欠の回数制限"
+        },
+        {
+          "level": 3,
+          "text": "2. セキュリティヘッダ"
+        },
+        {
+          "level": 3,
+          "text": "3. 秘匿 URL の noindex"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/issues/auth-attempt-limits.md",
+          "exists": true
+        },
+        {
+          "path": "docs/overall_system_requirements_common.md",
+          "exists": true
+        },
+        {
+          "path": "docs/staging.rst",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/public/events/[id]/rsvp/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/console/layout.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/invitations/[code]/layout.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/invitations/[code]/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/register-required/layout.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/robots.ts",
+          "exists": true
+        },
+        {
+          "path": "src/components/common/GoogleAnalytics.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/http.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/problem.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limit.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limits.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
     },
     {
       "path": "docs/issues/auth-attempt-limits.md",
@@ -7885,7 +8026,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 28,
+      "lineCount": 29,
       "headings": [
         {
           "level": 1,
@@ -7910,7 +8051,8 @@
         "docs/issues/auth-attempt-limits.md",
         "docs/issues/auth-session-skip-and-challenge-resend.md",
         "docs/issues/venue-suggestions.md",
-        "docs/issues/free-ticket-and-referral.md"
+        "docs/issues/free-ticket-and-referral.md",
+        "docs/issues/abuse-and-crawler-hardening.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -10066,7 +10208,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1108,
+      "lineCount": 1127,
       "headings": [
         {
           "level": 2,
@@ -10275,6 +10417,10 @@
         {
           "level": 3,
           "text": "7.3. 共通エラーハンドリング（RFC 7807 準拠）"
+        },
+        {
+          "level": 3,
+          "text": "7.4. セキュリティヘッダ"
         }
       ],
       "toctree": [],
@@ -10694,7 +10840,7 @@
       "title": "検証環境（staging）",
       "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
       "preImplementation": false,
-      "lineCount": 287,
+      "lineCount": 289,
       "headings": [
         {
           "level": 1,
@@ -11221,7 +11367,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 678,
+      "lineCount": 690,
       "headings": [
         {
           "level": 1,
@@ -11360,6 +11506,10 @@
         },
         {
           "path": "tests/integration/rsvp-notifications.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/rsvp-rate-limit.test.ts",
           "exists": true
         },
         {
@@ -11599,6 +11749,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/robots.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/rsvp-form.test.ts",
           "exists": true
         },
@@ -11620,6 +11774,10 @@
         },
         {
           "path": "tests/unit/sample-profiles.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/security-headers.test.mjs",
           "exists": true
         },
         {
