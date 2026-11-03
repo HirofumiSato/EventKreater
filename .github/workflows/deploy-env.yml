@@ -260,3 +260,69 @@ jobs:
               exit 1
               ;;
           esac
+
+  # SMS 中継（Cloudflare Worker）を上げる。mail と同じく needs は書かない。
+  # Worker は DB を読まず、デプロイは原子的に切り替わって失敗しても旧版が残るため、
+  # mail や web と並行で成立する。直列にすると、どちらかの失敗がもう一方を
+  # 巻き込むだけで、順序を入れる理由が無い。
+  sms:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    env:
+      # デプロイ step の if で使う。secrets は step の if から直接読めないため、
+      # ジョブの環境変数へ写してから空かどうかを見る（CF_ACCESS_* と同じ理由）。
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # config とホストは環境で変わる。本番用は wrangler.prod.toml で
+      # アプリ名 event-creater-sms、staging 用は wrangler.toml で
+      # event-creater-sms-stg。ホストは疎通確認にだけ使う。
+      SMS_CONFIG: ${{ inputs.environment == 'production' && 'wrangler.prod.toml' || 'wrangler.toml' }}
+      SMS_HOST: ${{ inputs.environment == 'production' && 'sms-hook.eventkreater.com' || 'sms-hook-stg.eventkreater.com' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      # wrangler は Node で動く。このジョブは npm ci をしないので、
+      # Node は入っているだけでよい（依存は npx がその場で取る）。
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # 版を固定するのは、その日の最新 4.x が入って手元と構成がずれるのを
+      # 避けるため（migrate が `npx --yes prisma@5.22.0` で版を固定しているのと
+      # 同じ方針）。
+      #
+      # Worker の秘密（TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / SMS_FROM /
+      # WEBHOOK_TOKEN / ALLOWED_RECIPIENTS）はここでは扱わない。初回だけ手元の
+      # `wrangler secret put` で入れ、以後は Worker 側に残る。
+      - name: SMS 中継をデプロイする
+        working-directory: infra/sms-webhook
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx --yes wrangler@4 deploy --config "$SMS_CONFIG"
+
+      - name: SMS 中継をデプロイする（API Token が無いので飛ばす）
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "CLOUDFLARE_API_TOKEN が未設定のため、SMS 中継のデプロイは飛ばします"
+
+      # デプロイは新しい版が routes に反映されたことまで見ない。GET /health が
+      # {"ok":true} を返すかで、ホスト・証明書・Worker の 3 つが揃ったことを見る。
+      # 200 でも別物（プロキシのページなど）が返ることがあるので中身まで確かめる。
+      - name: 疎通を見る
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          # -f を付けるので、HTTP が 4xx/5xx なら curl が非 0 で終わる。
+          if ! body=$(curl -fsS "https://$SMS_HOST/health"); then
+            echo "https://$SMS_HOST/health に到達できませんでした"
+            exit 1
+          fi
+          case "$body" in
+            *'"ok":true'*)
+              echo "https://$SMS_HOST/health が {\"ok\":true} を返しました"
+              ;;
+            *)
+              echo "https://$SMS_HOST/health が想定外の応答を返しました: $body"
+              exit 1
+              ;;
+          esac

@@ -1,0 +1,18 @@
+# staging の SMS 中継。アプリは SMS_WEBHOOK_URL に { to, body } を
+# 認証ヘッダなしで POST するだけ。
+name = "event-creater-sms-stg"
+main = "src/index.mjs"
+compatibility_date = "2026-11-01"
+
+# メール中継（mail-hook-stg.eventkreater.com）とは別のホストにする。
+# 同じ名前にすると custom domain の DNS が衝突する。
+routes = [{ pattern = "sms-hook-stg.eventkreater.com", custom_domain = true }]
+
+# Cloudflare Access は付けない。Access はブラウザのログインを要求し、
+# アプリは認証ヘッダを付けられないので Worker まで届かなくなる。
+# 代わりに URL のパスへ WEBHOOK_TOKEN を埋め、一致しない要求は 404 で捨てる。
+#
+# 秘密は wrangler secret put で入れる（TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN /
+# SMS_FROM / WEBHOOK_TOKEN / ALLOWED_RECIPIENTS）。staging の
+# ALLOWED_RECIPIENTS は運用者自分の番号だけにする。手元の .dev.vars は
+# .gitignore 済みで、コミットしない。
