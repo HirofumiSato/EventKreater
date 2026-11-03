@@ -36,11 +36,33 @@
       WEB --> STRIPE["Stripe"]
       STRIPE -->|"Webhook"| WEB
 
-.. warning::
+.. note::
 
-   この構成はまだ本番で通していません。ローカルで ``docker compose -f docker-compose.prod.yml`` の相当構成（standalone イメージ + Flyer + PostgreSQL）は通していますが、Cloudflare Tunnel・Fly.io・Neon を組み合わせた状態では未検証です。
-   このページは Cloudflare Tunnel を使う版へ更新した時点で、``fly.toml`` と同時に書き直したものです。公開経路が Tunnel に変わったぶん、実際に通すときは手順 5 の確認を上から順にやり直してください。
-   ``fly.toml`` の値は Fly.io の設定リファレンスに合わせて書いたもので、``fly config validate`` での確認を前提にします。
+   2026-11-03 に、この構成を ``eventkreater.com`` で実際に通しました。Fly.io（``nrt``）の 4 アプリと tunnel、
+   Cloudflare Tunnel 経由の公開、Neon への接続、GitHub Actions の自動デプロイまで動いています。
+   確認したことは次のとおりです。
+
+   .. list-table::
+      :header-rows: 1
+      :widths: 44 56
+
+      * - 確かめたこと
+        - 結果
+      * - ``https://eventkreater.com/``
+        - 200。``CF-RAY`` が付くので Cloudflare を経由している
+      * - ``https://eventkreater.com/api/v1/public/pricing``
+        - 200。Neon への接続とマイグレーションが効いている
+      * - ``https://staging.eventkreater.com/``
+        - 302。Cloudflare Access のログイン画面へ送る
+      * - ``POST /api/v1/voice/transcriptions``
+        - 実際の音声で 200。``model`` が ``gpt-4o-mini-transcribe`` ならモックではない
+      * - 5 アプリの ``fly checks list``
+        - すべて ``passing``
+      * - GitHub Actions の ``Deploy``
+        - staging / production とも ``migrate`` → ``flyer`` → ``web`` が success
+
+   まだ通していないのは Stripe です（手順 4）。鍵を入れるまで、契約・Portal・Webhook は動きません。
+   無料の範囲だけが使え、手順 5 のうち Stripe の行は確かめられません。
 
 0. 前提
 -------
@@ -198,7 +220,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      dockerfile = "Dockerfile"
      target = "runner"
      [build.args]
-       NEXT_PUBLIC_APP_URL = "https://example.com"
+       NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
        # 任意。GA4 の測定 ID。空なら計測しない。
        NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
        # APP_ENV（staging の noindex 判定）もビルド時に評価されるため、ここで渡します。
@@ -209,7 +231,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      PORT = "3012"
      FLYER_API_URL = "http://event-creater-flyer.internal:8000"
      # ビルド引数と同じ値。実行時の絶対 URL にも使う。
-     NEXT_PUBLIC_APP_URL = "https://example.com"
+     NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
      # ビルド引数と同じ値を実行時にも渡します。robots.ts は force-dynamic で
      # 実行時に APP_ENV を読むため、ビルド側だけでは足りません。
      APP_ENV = "production"
@@ -243,13 +265,13 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
 
 .. warning::
 
-   web と flyer は **IPv4 と IPv6 の両方で待ち受ける**ようにしてください。片方だけだと、届かない経路ができます。
+   web と flyer は IPv4 と IPv6 の両方で待ち受けてください。片方だけだと、届かない経路ができます。
 
    - web は ``Dockerfile`` の ``HOSTNAME=::`` で両方受けます（Node は ``IPV6_V6ONLY=0`` を明示するため dual-stack になります）。
-   - flyer は ``services/flyer/entrypoint.py`` が ``IPV6_V6ONLY=0`` を立てたソケットを作り、uvicorn へ ``--fd`` で渡します。``uvicorn --host ::`` だけだと、このイメージでは **IPv6 専用**になり、Fly のヘルスチェック（``127.0.0.1`` への IPv4）が ``connection refused`` になります。``--host 0.0.0.0`` にすると逆に 6PN から届きません。
+   - flyer は ``services/flyer/entrypoint.py`` が ``IPV6_V6ONLY=0`` を立てたソケットを作り、uvicorn へ ``--fd`` で渡します。``uvicorn --host ::`` だけだと、このイメージでは IPv6 専用になり、Fly のヘルスチェック（``127.0.0.1`` への IPv4）が ``connection refused`` になります。``--host 0.0.0.0`` にすると逆に 6PN から届きません。
 
    ``0.0.0.0`` は IPv4 だけの待ち受けになり、Fly のプロキシも Cloudflare Tunnel も 6PN（``fdaa:...`` の IPv6）で来るため、
-   外から 1 本も届きません。しかも Fly のヘルスチェックは機械の中から繋ぐので **通ってしまい、デプロイは成功に見えます**。
+   外から 1 本も届きません。しかも Fly のヘルスチェックは機械の中から繋ぐので通ってしまい、デプロイは成功に見えます。
    2026-11-03 の初回デプロイで実際に踏みました。``flyctl proxy`` や Tunnel 経由で確かめれば、その場で分かります。
    同じ日に flyer でも踏んでいます（ヘルスチェックだけが落ちる）。``fly checks list`` と ``flyctl proxy`` の両方で確かめてください。
 
@@ -387,9 +409,9 @@ Cloudflare Tunnel を受ける ``cloudflared`` を、Fly の 3 つ目のアプ�
 
 Cloudflare 側で Tunnel を作ります。
 
-1. Zero Trust のダッシュボードで **Networks → Tunnels** を開き、**Create a tunnel** を選びます。種類は **Cloudflared** です。
-2. トンネルに名前を付けます（例 ``event-creater``）。作成後に出るトークン（``eyJ...``）を控えます。トークンは ``fly secrets set`` にだけ使い、リポジトリには置きません。
-3. **Public Hostname** を 1 つ足します。サブドメインとドメインを選び、**Service** を ``HTTP``、URL を ``event-creater-web.internal:3012`` にします。
+1. Zero Trust のダッシュボードで **Networks → Tunnels** を開き、**Create a tunnel** を選びます。種類は **Cloudflared** です。Zero Trust の組織（team domain）がまだ無ければ、この時点で作ります（Access でも同じ組織を使います）。
+2. トンネルに名前を付けます（本番は ``event-creater-tunnel``）。作成後に出るトークン（``eyJ...``）を控えます。トークンは ``fly secrets set`` にだけ使い、リポジトリには置きません。
+3. **Public Hostname** を足します。サブドメインを空、ドメインを ``eventkreater.com``、**Service** を ``HTTP``、URL を ``event-creater-web.internal:3012`` にします。保存すると、同じ名前の ``CNAME``（``<tunnel-id>.cfargotunnel.com``）も自動で作られます。
 4. 控えたトークンを Fly の秘密に入れてデプロイします。
 
 .. code-block:: powershell
@@ -407,12 +429,33 @@ Cloudflare 側で Tunnel を作ります。
 
 .. important::
 
+   Public Hostname を足しただけでは 503 が返ることがあります。そのときは **Ingress（Public Hostname の一覧）が本当に保存されているか** を先に見てください。
+   ダッシュボードで「追加したつもり」のまま保存されていないと、tunnel 自体は ``connected`` なのに振り分け先が無く、``http_status:404`` ではなく 503 になります。
+   API で直すなら ``PUT /accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations`` に次の形を送ります（最後の 1 行が必須です）。
+
+   .. code-block:: json
+
+      {
+        "config": {
+          "ingress": [
+            { "hostname": "eventkreater.com", "service": "http://event-creater-web.internal:3012" },
+            { "hostname": "staging.eventkreater.com", "service": "http://event-creater-web-stg.internal:3012" },
+            { "service": "http_status:404" }
+          ]
+        }
+      }
+
+   ``originRequest.connectTimeout`` などを足すときは数値（文字列ではない）で送ります。文字列だと Cloudflare 側で設定ごと弾かれます。
+   この API は Cloudflare の API トークンか、ダッシュボードのログインセッションで叩けます。``cloudflared tunnel login`` が置く ``cert.pem`` は Argo Tunnel 用のトークンで、API の mTLS 証明書ではないため使えません。
+
    このアプリは公開ポートもボリュームも持たず、載っているのは ``cloudflared`` だけです。
    Public Hostname の向き先は ``http://event-creater-web.internal:3012`` にします。6PN の中は TLS ではないので ``https`` にしないでください。``fly ips`` で IP を足す必要もありません。
 
 検証環境（staging）は、同じ骨格を ``-stg`` のアプリ名で並べます。web は ``event-creater-web-stg``、flyer は ``event-creater-flyer-stg`` で、Neon も Stripe も本番とは別に用意します。差分だけを :doc:`staging` にまとめてあります。
 
-tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.example.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.3）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
+tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.eventkreater.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.3）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
+
+staging のホスト名は Cloudflare Access で守ります。組織の **Access → Applications** に self-hosted アプリを 1 つ作り、ドメインを ``staging.eventkreater.com``、ポリシーを「許可したメールアドレスだけ」にします。Access は IdP が 1 つも無いと「ログイン方法がありません」で止まるので、**Settings → Authentication** で One-time PIN を有効にしてからアプリの ``allowed_idps`` に入れます。
 
 2.4 GitHub Actions のデプロイを有効にする
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -424,6 +467,12 @@ tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し�
 1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
 2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
 3. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。
+
+.. note::
+
+   このリポジトリでは 2026-11-03 に 3 つとも設定済みです。``production`` の承認者は 1 名で、
+   ``workflow_dispatch`` の staging と、``main`` の CI からの production の両方が success で終わることを確かめています。
+   デプロイの成否は **Actions の ``Deploy``** で見てください（``fly deploy`` を手で叩いたときと違い、承認待ちのあいだは job が止まります）。
 
 ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
 
@@ -442,13 +491,14 @@ tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し�
    * - 設定
      - 内容
    * - Cache Rules
-     - ``/api/*`` はキャッシュしない（``Cache eligibility: Bypass cache``）。出欠と決済が混ざります
-   * - Cache Rules
-     - ``/_next/static/*`` と画像はキャッシュする
+     - ``/api/*`` はキャッシュしない（``Cache eligibility: Bypass cache``）。出欠と決済が混ざります。``/_next/static/*`` はアプリが ``Cache-Control: public, max-age=31536000, immutable`` を返すので、追加のルールは要りません
    * - WAF
-     - 管理画面 ``/console/*`` にレート制限。必要なら IP 制限も足す
+     - 管理画面 ``/console/*`` にレート制限。無料枠は 10 秒の窓しか選べません。必要なら IP 制限も足す
 
 .. note::
+
+   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` のレート制限まで入れています。
+   実測では ``/api/v1/public/pricing`` が ``cf-cache-status: DYNAMIC``、``/_next/static/*.css`` が ``immutable`` でした。
 
    ``src/modules/auth/lib/cookies.ts`` の ``clientIp()`` は ``cf-connecting-ip`` → ``fly-client-ip`` → ``x-real-ip`` の順に見て、最後に ``x-forwarded-for`` の右端を使います。
    以前は **Cloudflare を迂回して ``*.fly.dev`` を直接叩かれるとこの前提が崩れる** ことが課題でしたが、Cloudflare Tunnel を別アプリ（``event-creater-tunnel``）で動かして web の公開ポートを消したため、オリジンへ到達する経路が無くなり解消しています。
@@ -458,7 +508,7 @@ tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し�
 ------------------------
 
 1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（月額で8件まで公開プラン 980 円、公開し放題 2,980 円、単発 299 円）。
-2. Webhook のエンドポイントを ``https://example.com/api/v1/webhooks/stripe`` にします。
+2. Webhook のエンドポイントを ``https://eventkreater.com/api/v1/webhooks/stripe`` にします。
 3. 受け取るイベントは、テストモードで使ったものと同じにします。署名シークレットを ``STRIPE_WEBHOOK_SECRET`` に入れます。
 4. 返金は Dashboard から行います。アプリに返金の口はありません。
 
@@ -481,10 +531,16 @@ tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し�
    fly logs --app event-creater-web
 
    # 3. Cloudflare 経由の公開エンドポイント
-   curl.exe -s https://example.com/api/v1/public/pricing
+   curl.exe -s https://eventkreater.com/api/v1/public/pricing
 
    # 4. ヘッダーが Cloudflare 由来か（cf-ray が付く）
-   curl.exe -sI https://example.com/
+   curl.exe -sI https://eventkreater.com/
+
+   # 5. 6PN の名前解決（web のコンテナの中から見る）
+   fly ssh console --app event-creater-web -C "getent hosts event-creater-flyer.internal"
+
+   # 6. staging は Access に止められているか（302 が正しい）
+   curl.exe -s -o NUL -w "%{http_code}`n" https://staging.eventkreater.com/
 
 .. list-table::
    :header-rows: 1
@@ -496,10 +552,16 @@ tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し�
      - 200 と価格の JSON。500 なら ``DATABASE_URL`` かマイグレーション漏れ
    * - ``fly logs`` の web
      - ``prisma`` の接続エラーが出ていない
+   * - ``getent hosts event-creater-flyer.internal``
+     - ``fdaa:...`` が返る。引けないなら同じ ``nrt`` に居るか、アプリ名を確かめる
+   * - ``https://staging.eventkreater.com/``
+     - 302 で Access のログインへ。200 が返るなら Access のアプリが外れている
    * - ログイン
      - ``/console/login`` から入れる。Cookie が ``__Host-`` で始まる
    * - チラシ生成
      - 候補が出て、画像が返る。500 なら flyer の ``OPENAI_API_KEY`` とフォント
+   * - 音声の文字起こし
+     - ``POST /api/v1/voice/transcriptions`` が 200。``model`` が ``gpt-4o-mini-transcribe`` ならモックではない
    * - Stripe
      - テストカードで 1 件通し、Webhook が 200 で返っている
 
