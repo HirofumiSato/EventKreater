@@ -10990,7 +10990,7 @@
       "title": "検証環境（staging）",
       "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
       "preImplementation": false,
-      "lineCount": 371,
+      "lineCount": 387,
       "headings": [
         {
           "level": 1,

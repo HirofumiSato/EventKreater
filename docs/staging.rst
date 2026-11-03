@@ -188,8 +188,24 @@ Worker のコードは ``infra/mail-webhook`` に置きます（``infra/mail-web
    * - Resend の送信ドメイン
      - ``send-stg.eventkreater.com``。``from`` は ``no-reply@send-stg.eventkreater.com`` です
 
-Resend のダッシュボードで ``send-stg.eventkreater.com`` を追加し、SPF・DKIM・MX を Cloudflare DNS に
-**DNS only** で置いて認証を通します。
+Resend のダッシュボードで ``send-stg.eventkreater.com`` を追加し、**表示される 3 行（CNAME 2 本と
+DKIM の TXT）をそのまま Cloudflare DNS に入れます**。すべて **DNS only**（灰色雲）にします。
+Proxy（オレンジ雲）にすると Resend の検証が通りません。SPF と MX を別に作る必要はありません。
+SPF は CNAME の先が返します。
+
+.. code-block:: text
+
+   send.send-stg.eventkreater.com               CNAME  send.forge.rmta.net
+   rsend.send-stg.eventkreater.com              CNAME  rsend-apne1.forge.rmta.net
+   resend._domainkey.send-stg.eventkreater.com  TXT    p=...
+
+DKIM のレコード名は ``resend._domainkey.send-stg`` で、親は ``send-stg.eventkreater.com`` です。
+DoH で引くと、``send.send-stg.*`` は ``v=spf1 ip4:... ~all``、``rsend.send-stg.*`` は
+``v=spf1 include:amazonses.com ~all`` を返します。``send-stg.eventkreater.com`` 自身の MX はありません。
+
+DMARC は本番と同じ ``_dmarc.eventkreater.com`` の TXT 1 本が両方をカバーします
+（``v=DMARC1; p=none; adkim=r; aspf=r``）。staging 用に別のレコードは作りません。
+本番との違いは :doc:`deploy` の「メール配送（Resend と Worker）」にあります。
 
 Worker の秘密は 4 つです。``infra\mail-webhook`` で 1 つずつ入れてからデプロイします。
 
