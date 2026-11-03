@@ -1,0 +1,172 @@
+# 本番（production）と検証（staging）へのデプロイ。
+#
+# ジョブは migrate → flyer → web の順に直列でつなぐ。web は flyer の 6PN
+# （<app>.internal:8000）を引くので、flyer を先に上げておく必要がある。
+# マイグレーションを先頭に置くのは、新しい列を読むコードが先に上がると
+# 起動直後だけ落ちるため。
+#
+# 公開経路は Cloudflare Tunnel。web は [http_service] を持たず、Tunnel アプリ
+# event-creater-tunnel が 6PN で event-creater-web.internal:3012 へ届ける。
+# Tunnel アプリはコードを含まないので、このワークフローではデプロイしない
+# （手作業で 1 回だけ作る）。web はチラシ画像・アイコンをローカルディスクに
+# 置いており R2 が未実装なので、1 台固定の前提でデプロイする。
+#
+# きっかけは 2 つ。
+# - workflow_run: main の CI が緑で終わったとき。production として扱う。
+# - workflow_dispatch: 手で流すとき。environment 入力を選ぶ（既定は staging）。
+#
+# staging は CI 成功後に自動で追従する。production も同じく CI 成功後に自動で
+# 走るが、GitHub Environment `production` の Required reviewers で承認を挟む。
+# CI が緑でもそのまま本番へ出さないための人手の 1 回で、シークレットの境目でもある。
+#
+# 自動デプロイは、リポジトリ変数 `DEPLOY_ENABLED` が `true` のときだけ動く。
+# これは「まだ Fly のアプリも environment secrets も無い」段階で main にこの
+# ファイルが入り、CI 成功のたびに赤い実行が積まれるのを避けるため。鍵を入れて
+# 初回のデプロイを流せる状態にしてから `true` にする（手順は docs/deploy.rst の 2.4）。
+# 変数が未設定のとき、ジョブは skipped で終わり、main は緑のままになる。
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "デプロイ先（production は承認が要る）"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+# 環境ごとに 1 本だけ流す。デプロイは途中で打ち切らない（cancel-in-progress: false）。
+# 同じ環境の実行が重なったら、前の 1 本が終わってから次を始める。
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+# デプロイはリポジトリへ書かない。flyctl 用の鍵は environment secrets から読む。
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    # workflow_run は production、workflow_dispatch は入力値。
+    # FLY_API_TOKEN と DATABASE_URL_DIRECT は environment secrets なので、
+    # この指定があるジョブでだけ読める。production には Required reviewers を
+    # 付けているので、承認が下りるまで先へ進まない（同じ実行でも、環境を指す
+    # ジョブごとに承認を求められることがある）。staging には付けない。
+    environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
+    # CI が赤のまま本番へ出さない。workflow_dispatch は人の判断で流す。
+    # DEPLOY_ENABLED は「アプリと秘密が揃っているか」の門番で、未設定なら skipped。
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    steps:
+      # CI が見た commit そのものを出す。workflow_run の既定の checkout は
+      # main の先頭を見るため、CI のあとに main が進むと別の commit を出してしまう。
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # prisma CLI だけを、package-lock.json と同じ 5.22.0 に固定して取る。
+      # `npm ci` は使わない。理由は 2 つ。
+      # - migrate deploy が読むのは prisma/schema.prisma と prisma/migrations/ だけで、
+      #   node_modules も Prisma Client も要らない（CLI は engine を自分で持つ）。
+      # - `npm ci` は postinstall で `prisma generate` を走らせるが、その成果物は
+      #   このジョブで使わない。20 秒前後を捨てることになる。
+      # 版を `prisma@5` のような範囲にしないのは、その日の最新 5.x が入って
+      # 手元や CI とマイグレーションの解釈がずれるのを避けるため。
+      #
+      # schema.prisma は directUrl を持たない（url = env("DATABASE_URL") だけ）ため、
+      # プール済みではなく Direct 接続文字列を DATABASE_URL に入れる。
+      # ビルドも generate もしないので、JWT_SECRET などのダミーは要らない。
+      - name: マイグレーションを当てる
+        run: npx --yes prisma@5.22.0 migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+
+      # 当て残しや失敗が無いかを確かめる。未適用が残っていれば非 0 で終わるので、
+      # ここで止まれば flyer / web は上がらない。
+      - name: 適用状況を確かめる
+        run: npx --yes prisma@5.22.0 migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+
+  flyer:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    needs: migrate
+    environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # チラシ生成 API の config と app は環境で変わる。production 用の
+      # fly.toml は services/flyer 直下、staging 用は fly.stg.toml。
+      FLYER_CONFIG: ${{ (github.event_name == 'workflow_run' || inputs.environment == 'production') && 'fly.toml' || 'fly.stg.toml' }}
+      FLYER_APP: ${{ (github.event_name == 'workflow_run' || inputs.environment == 'production') && 'event-creater-flyer' || 'event-creater-flyer-stg' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # master ではなく版を固定する。CI の actions/* と同じ方針で、
+      # 上流の破壊的変更が日によって混ざらないようにする。
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+
+      # flyctl は config の親ディレクトリをビルド文脈にする。flyer の Dockerfile は
+      # services/flyer にあるので、その中で fly.stg.toml を指して呼ぶ。
+      # --remote-only はビルドを Fly のビルダーで行う（ランナーに Docker を要らなくする）。
+      - name: チラシ生成 API をデプロイする
+        working-directory: services/flyer
+        run: flyctl deploy --remote-only --config "$FLYER_CONFIG"
+
+      # 起動して health（[checks.health] の /health）が通るかを見る。
+      - name: ヘルスチェックの状態を見る
+        run: flyctl checks list -a "$FLYER_APP"
+
+  web:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    needs: flyer
+    environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # web の config と app も環境で変わる（リポジトリ直下の fly.toml / fly.stg.toml）。
+      WEB_CONFIG: ${{ (github.event_name == 'workflow_run' || inputs.environment == 'production') && 'fly.toml' || 'fly.stg.toml' }}
+      WEB_APP: ${{ (github.event_name == 'workflow_run' || inputs.environment == 'production') && 'event-creater-web' || 'event-creater-web-stg' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+
+      # NEXT_PUBLIC_APP_URL と NEXT_PUBLIC_GA_MEASUREMENT_ID はビルド時に焼き込まれる。
+      # 値は各 fly*.toml の [build.args] が持っているので、ここからは渡さない
+      # （2 か所に書くと、片方だけ直したときに静かにずれる）。
+      # 環境変数の実体は `fly secrets` 側にあり、このワークフローは触らない。
+      - name: web をデプロイする
+        run: flyctl deploy --remote-only --config "$WEB_CONFIG"
+
+      - name: 状態を見る
+        run: flyctl status -a "$WEB_APP"
+
+      # 切り戻しは `flyctl deploy --image registry.fly.io/<app>:<tag>` で行う。
+      # 直前がどの版かをログに残しておくと、障害時に画面を遡らずに済む。
+      - name: 切り戻しの手がかりを残す
+        run: flyctl releases -a "$WEB_APP" | head -n 5

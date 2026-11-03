@@ -24,6 +24,7 @@
 
    local
    deploy
+   staging
    stripe
    database
 

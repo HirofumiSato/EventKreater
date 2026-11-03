@@ -12,6 +12,23 @@ const nextConfig = {
     // pako では伸長に失敗し、PDF に文字を描けない。Node の解決に任せて外部化する。
     serverComponentsExternalPackages: ["pdf-lib", "@pdf-lib/standard-fonts"],
   },
+  // staging はテスト決済とダミーデータが見えるため、全パスを検索から外す。
+  // robots.txt（src/app/robots.ts）だけでは HTML 内のリンクを辿られることがあるので、
+  // 応答ヘッダーでも noindex を付ける。
+  //
+  // 注意: headers() はビルド時に評価される。APP_ENV は Docker の build args
+  // （Dockerfile の ARG/ENV）で渡す前提で、実行時の環境変数では切り替わらない。
+  async headers() {
+    if (process.env.APP_ENV !== "staging") {
+      return [];
+    }
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

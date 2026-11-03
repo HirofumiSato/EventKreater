@@ -1,0 +1,58 @@
+# event-creater-web（本番）の Fly.io 構成。
+#
+# 公開経路は Cloudflare Tunnel です。cloudflared（event-creater-tunnel）が
+# 6PN の event-creater-web.internal:3012 へ届けるため、このアプリ自身は
+# 公開ポートを持ちません。そのため [http_service] は書きません。
+# 書くと *.fly.dev が直公開され、Cloudflare を迂回した経路ができてしまいます
+# （clientIp() が cf-connecting-ip を前提にしているため、迂回は許せません）。
+# ヘルスチェックも [http_service.checks] ではなく [checks.health] でアプリ単位に書きます。
+#
+# ビルドはリポジトリ直下の Dockerfile、実行は runner ステージです。
+# runner は USER nextjs（uid 1001）で動き、next.config.mjs の output: "standalone"
+# が前提です（CMD は node server.js、EXPOSE は 3012）。
+
+app = "event-creater-web"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "runner"
+
+  [build.args]
+    # NEXT_PUBLIC_* はビルド時に焼き込まれます。値を変えたら fly deploy し直してください。
+    NEXT_PUBLIC_APP_URL = "https://example.com"
+    # 任意。GA4 の測定 ID。空なら計測しない。
+    NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
+    # APP_ENV（staging の noindex 判定）もビルド時に評価されるため、ここで渡します。
+    APP_ENV = "production"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3012"
+  FLYER_API_URL = "http://event-creater-flyer.internal:8000"
+  # ビルド引数と同じ値。実行時の絶対 URL にも使う。
+  NEXT_PUBLIC_APP_URL = "https://example.com"
+  # ビルド引数と同じ値を実行時にも渡します。robots.ts は force-dynamic で
+  # 実行時に APP_ENV を読むため、ビルド側だけでは足りません。
+  APP_ENV = "production"
+
+# 公開サービスを持たないので、ヘルスチェックはアプリ単位で書く。
+[checks.health]
+  type = "http"
+  port = 3012
+  path = "/"
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "10s"
+
+[[mounts]]
+  # チラシ画像とアイコンはローカルディスクへ置く（R2 は未実装）。
+  # アプリは 1 台固定。水平スケールすると画像が機械ごとに分かれます。
+  # ボリュームのルートは root 所有で作られるため、初回だけ
+  # fly ssh console -C "chown -R 1001:1001 /app/storage" が要ります。
+  source = "web_storage"
+  destination = "/app/storage"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

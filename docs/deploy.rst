@@ -7,13 +7,17 @@
 
    利用者
      ↓
-   Cloudflare（DNS・プロキシ・SSL・WAF）
+   Cloudflare（DNS・WAF・Access）
      ↓
-   Fly.io nrt
-     ├─ event-creater-web    Next.js（standalone）
-     └─ event-creater-flyer  FastAPI + Pillow + OpenAI
-     ↓
-   Neon（PostgreSQL）／ Fly ボリューム（チラシ画像）
+   event-creater-tunnel（cloudflared / Fly.io nrt）
+     ↓ 6PN
+   event-creater-web（Next.js standalone / Fly.io nrt）
+     ├─ 6PN → event-creater-flyer（FastAPI + Pillow + OpenAI）
+     ├─ Neon（PostgreSQL）
+     ├─ Fly ボリューム web_storage（/app/storage）
+     └─ Stripe（Webhook は web が受ける）
+
+利用者が開くのは Cloudflare だけで、web は公開ポートを持ちません。アプリ名は prod が ``event-creater-web`` / ``event-creater-flyer`` / ``event-creater-tunnel``、staging が ``event-creater-web-stg`` / ``event-creater-flyer-stg`` です。
 
 ローカル起動は :doc:`local`、DB の操作は :doc:`database`、Stripe のテストは :doc:`stripe` を見てください。
 このページは「本番でだけ違うこと」だけを書きます。
@@ -21,18 +25,22 @@
 .. mermaid::
 
    flowchart TD
-      U["利用者"] --> CF["Cloudflare<br/>DNS / Proxy / SSL / WAF"]
-      CF --> WEB["Fly.io event-creater-web<br/>Next.js :3012"]
-      WEB -->|"6PN http://...internal:8000"| FLYER["Fly.io event-creater-flyer<br/>FastAPI :8000"]
-      WEB --> NEON["Neon PostgreSQL"]
-      WEB --> VOL1["Fly ボリューム /app/storage"]
-      FLYER --> VOL2["Fly ボリューム /data"]
+      U["利用者"] --> CF["Cloudflare<br/>DNS / WAF / Access"]
+      CF -->|"Tunnel"| TN["event-creater-tunnel<br/>cloudflared / Fly.io nrt"]
+      TN -->|"6PN http://event-creater-web.internal:3012"| WEB["event-creater-web<br/>Next.js standalone :3012"]
+      WEB -->|"6PN http://event-creater-flyer.internal:8000"| FLYER["event-creater-flyer<br/>FastAPI :8000"]
+      WEB --> NEON[("Neon PostgreSQL")]
+      WEB --> VOL1[("Fly ボリューム web_storage<br/>/app/storage")]
+      FLYER --> VOL2[("Fly ボリューム flyer_data<br/>/data")]
       FLYER --> OPENAI["OpenAI API"]
+      WEB --> STRIPE["Stripe"]
+      STRIPE -->|"Webhook"| WEB
 
 .. warning::
 
-   この手順はまだ本番で通していません。ローカルで ``docker compose -f docker-compose.prod.yml`` の相当構成（standalone イメージ + Flyer + PostgreSQL）は通していますが、Fly.io・Neon・Cloudflare の実環境では未検証です。
-   とくに ``fly.toml`` の値は Fly.io の設定リファレンスに合わせて書いたもので、``fly config validate`` での確認を前提にしてください。
+   この構成はまだ本番で通していません。ローカルで ``docker compose -f docker-compose.prod.yml`` の相当構成（standalone イメージ + Flyer + PostgreSQL）は通していますが、Cloudflare Tunnel・Fly.io・Neon を組み合わせた状態では未検証です。
+   このページは Cloudflare Tunnel を使う版へ更新した時点で、``fly.toml`` と同時に書き直したものです。公開経路が Tunnel に変わったぶん、実際に通すときは手順 5 の確認を上から順にやり直してください。
+   ``fly.toml`` の値は Fly.io の設定リファレンスに合わせて書いたもので、``fly config validate`` での確認を前提にします。
 
 0. 前提
 -------
@@ -98,10 +106,10 @@ Neon のコンソールでプロジェクトを作り、接続文字列を 2 つ
    ``prisma migrate deploy`` は既存のマイグレーションを順に適用するだけで、スキーマを差分から作り直しません。
    ``prisma db push`` は部分ユニーク索引（``event_organizers_one_owner`` など）や CHECK 制約を作らないので、本番では使いません。CI と同じ理由です。
 
-2. Fly.io にアプリを 2 つ作る
+2. Fly.io にアプリを 3 つ作る
 -----------------------------
 
-web と flyer は別アプリにします。flyer は公開ポートを持たず、web から 6PN（``<app>.internal``）でだけ呼びます。
+web・flyer・tunnel は別アプリにします。web も flyer も公開ポートを持たず、web へは tunnel が、flyer へは web が 6PN（``<app>.internal``）でだけ届きます。
 
 2.1 flyer を先に作る
 ^^^^^^^^^^^^^^^^^^^^
@@ -193,6 +201,8 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
        NEXT_PUBLIC_APP_URL = "https://example.com"
        # 任意。GA4 の測定 ID。空なら計測しない。
        NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
+       # APP_ENV（staging の noindex 判定）もビルド時に評価されるため、ここで渡します。
+       APP_ENV = "production"
 
    [env]
      NODE_ENV = "production"
@@ -200,20 +210,19 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      FLYER_API_URL = "http://event-creater-flyer.internal:8000"
      # ビルド引数と同じ値。実行時の絶対 URL にも使う。
      NEXT_PUBLIC_APP_URL = "https://example.com"
+     # ビルド引数と同じ値を実行時にも渡します。robots.ts は force-dynamic で
+     # 実行時に APP_ENV を読むため、ビルド側だけでは足りません。
+     APP_ENV = "production"
 
-   [http_service]
-     internal_port = 3012
-     force_https = true
-     auto_stop_machines = false
-     auto_start_machines = false
-     min_machines_running = 1
-
-     [[http_service.checks]]
-       method = "GET"
-       path = "/"
-       interval = "15s"
-       timeout = "5s"
-       grace_period = "10s"
+   # 公開ポートは持たない。外から届くのは Cloudflare Tunnel の 6PN だけなので、
+   # [http_service] を書かず（*.fly.dev も公開しない）、ヘルスチェックだけをアプリ単位で置く。
+   [checks.health]
+     type = "http"
+     port = 3012
+     path = "/"
+     interval = "15s"
+     timeout = "5s"
+     grace_period = "10s"
 
    [[mounts]]
      source = "web_storage"
@@ -222,6 +231,10 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    [[vm]]
      size = "shared-cpu-1x"
      memory = "1gb"
+
+.. note::
+
+   ``APP_ENV`` も ``[build.args]`` と ``[env]`` の両方に置きます。``next.config.mjs`` の ``headers()`` はビルド時に評価され、``APP_ENV`` が ``staging`` のときだけ ``X-Robots-Tag: noindex, nofollow`` を付けます。staging へ出すときは ``"staging"`` を渡してください（``robots.ts`` が実行時に読むぶんは ``[env]`` 側です）。理由は :doc:`staging` にまとめてあります。
 
 .. important::
 
@@ -307,6 +320,8 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
 
    fly deploy
 
+この時点では web に外から到達できません。公開は手順 2.3 の Tunnel で行います。先に ``fly checks list --app event-creater-web`` でヘルスチェックだけ確かめておくと切り分けが楽です。
+
 .. important::
 
    コンテナは ``nextjs`` で動きます（uid 1001）。マウントしたボリュームのルートは root 所有で作られるため、
@@ -319,12 +334,87 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
 
    ローカルの Docker で直したのと同じ問題です。詳細は :doc:`local` の「Docker で動かす」にあります。
 
+2.3 Cloudflare Tunnel アプリを作る
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Cloudflare Tunnel を受ける ``cloudflared`` を、Fly の 3 つ目のアプリとして動かします。コードを持たないので ``fly launch`` は使わず、``fly.toml`` を書いてデプロイします。``fly.toml`` はリポジトリに置かず、作業用のフォルダで作ります。
+
+.. code-block:: powershell
+
+   mkdir event-creater-tunnel
+   cd event-creater-tunnel
+   fly apps create event-creater-tunnel
+
+``fly.toml`` は次の内容にします。``[build] image`` で公式イメージをそのまま使い、``[processes]`` で ``tunnel`` サブコマンドを起動します。
+
+.. code-block:: toml
+
+   app = "event-creater-tunnel"
+   primary_region = "nrt"
+
+   [build]
+     image = "cloudflare/cloudflared:latest"
+
+   [processes]
+     app = "tunnel --no-autoupdate run"
+
+   [[vm]]
+     size = "shared-cpu-1x"
+     memory = "256mb"
+
+.. note::
+
+   ``image`` は ``cloudflare/cloudflare-docker/cloudflared`` ではなく ``cloudflare/cloudflared:latest`` です。前者の名前では Fly から引けないため、Docker Hub の公式イメージを使います。
+   ``--no-autoupdate`` は、コンテナの中で自分を更新しようとして再起動を繰り返すのを避けるためです。更新はイメージを差し替えて行います。
+
+Cloudflare 側で Tunnel を作ります。
+
+1. Zero Trust のダッシュボードで **Networks → Tunnels** を開き、**Create a tunnel** を選びます。種類は **Cloudflared** です。
+2. トンネルに名前を付けます（例 ``event-creater``）。作成後に出るトークン（``eyJ...``）を控えます。トークンは ``fly secrets set`` にだけ使い、リポジトリには置きません。
+3. **Public Hostname** を 1 つ足します。サブドメインとドメインを選び、**Service** を ``HTTP``、URL を ``event-creater-web.internal:3012`` にします。
+4. 控えたトークンを Fly の秘密に入れてデプロイします。
+
+.. code-block:: powershell
+
+   fly secrets set TUNNEL_TOKEN="eyJ..."
+   fly deploy
+
+   fly status --app event-creater-tunnel
+   fly logs --app event-creater-tunnel
+
+.. note::
+
+   ``cloudflared`` は ``TUNNEL_TOKEN`` という名前の環境変数を自分で読みます。引数で渡す必要はありません。
+   ``fly logs`` に認証エラーが出る場合は、Cloudflare 側でトンネルを消したか、トークンを発行し直したかです。作り直したら ``fly secrets set`` からやり直します。
+
+.. important::
+
+   このアプリは公開ポートもボリュームも持たず、載っているのは ``cloudflared`` だけです。
+   Public Hostname の向き先は ``http://event-creater-web.internal:3012`` にします。6PN の中は TLS ではないので ``https`` にしないでください。``fly ips`` で IP を足す必要もありません。
+
+検証環境（staging）は、同じ骨格を ``-stg`` のアプリ名で並べます。web は ``event-creater-web-stg``、flyer は ``event-creater-flyer-stg`` で、Neon も Stripe も本番とは別に用意します。差分だけを :doc:`staging` にまとめてあります。
+
+tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.example.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.3）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
+
+2.4 GitHub Actions のデプロイを有効にする
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+デプロイは ``.github/workflows/deploy.yml`` が行います。きっかけは 2 つで、``main`` の CI が緑で終わったとき（production）と、手で流すとき（``workflow_dispatch``。staging か production を選ぶ）です。``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。
+
+このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
+
+1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
+2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
+3. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。
+
+``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
+
 3. Cloudflare を向ける
 ----------------------
 
 1. ドメインのネームサーバーを Cloudflare に向けます。
-2. ``CNAME`` を ``event-creater-web.fly.dev`` に向け、**Proxy status を Proxied（オレンジ雲）** にします。ルート（``@``）でも Cloudflare の CNAME flattening で使えます。IP を固定したいときは ``fly ips list`` の値を ``A`` レコードにします。
-3. SSL/TLS の暗号化モードを **Full (strict)** にします。Fly.io 側は証明書を持っているので、これで通ります。
+2. 公開は **Tunnel の Public Hostname** で行います（手順 2.3）。``CNAME`` を ``event-creater-web.fly.dev`` に向ける Proxy（オレンジ雲）のレコードは作りません。web が公開ポートを持たないため、CNAME では届きません。
+3. SSL/TLS の暗号化モードを **Full (strict)** にします。Cloudflare から ``cloudflared`` までが TLS で、その先の 6PN は Fly の内部網です。
 4. 次のルールを入れます。
 
 .. list-table::
@@ -339,19 +429,12 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
      - ``/_next/static/*`` と画像はキャッシュする
    * - WAF
      - 管理画面 ``/console/*`` にレート制限。必要なら IP 制限も足す
-   * - Transform Rules
-     - オリジン検証ヘッダーを付ける（下の注意を読んでください）
 
-.. warning::
+.. note::
 
    ``src/modules/auth/lib/cookies.ts`` の ``clientIp()`` は ``cf-connecting-ip`` → ``fly-client-ip`` → ``x-real-ip`` の順に見て、最後に ``x-forwarded-for`` の右端を使います。
-   **Cloudflare を迂回して ``*.fly.dev`` に直接叩かれると、この前提が崩れます。**
-   今のコードはオリジン共有秘密を検証していないため、次のどちらかを必ず入れてください。
-
-   * Cloudflare Tunnel（``cloudflared``）を Fly の別アプリとして動かし、web の公開ポートを消す。オリジンに到達する経路が無くなります
-   * Cloudflare の Transform Rule で ``X-Origin-Secret`` を付け、Next.js の ``middleware.ts`` で照合する。**この検証は未実装です**
-
-   未実装のまま公開すると、レート制限のキーを詐称できます。Cloudflare を付けただけで安全にはなりません。
+   以前は **Cloudflare を迂回して ``*.fly.dev`` を直接叩かれるとこの前提が崩れる** ことが課題でしたが、Cloudflare Tunnel を別アプリ（``event-creater-tunnel``）で動かして web の公開ポートを消したため、オリジンへ到達する経路が無くなり解消しています。
+   ``cf-connecting-ip`` を最優先で見る前提はそのままです。Tunnel 以外の到達経路（``fly ips`` での IP 追加、``[http_service]`` の復活）を作らないでください。
 
 4. Stripe を本番に向ける
 ------------------------
@@ -448,7 +531,7 @@ web と flyer は別アプリにします。flyer は公開ポートを持たず
    * - プロフィールのアイコンもローカルディスク
      - ``src/lib/image-assets.ts`` は ``process.cwd()/storage/images`` に WebP を書きます。チラシと同じく単一インスタンス前提です（``Dockerfile`` の ``mkdir`` と ``.gitignore`` に追加済み）。移すときは保存と配信の 2 か所だけで、``image_assets`` の行はそのまま使えます
    * - R2 は未実装
-     - 構成図には入れていますが、コードはまだ R2 を読み書きしません。現状は Fly ボリュームです
+     - チラシ画像とアイコンは Fly ボリューム（``web_storage`` → ``/app/storage``）に置いています。コードはまだ R2 を読み書きしないため、構成図にも入れていません
    * - チラシ候補もローカルディスク
      - flyer 側の ``CANDIDATE_DIR`` はボリュームです。台数を増やすと候補の見え方がずれます
    * - ログイン試行の記録は DB

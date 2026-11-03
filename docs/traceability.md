@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 107（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 429
+- 対象文書: 108（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 430
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -26,7 +26,7 @@
 | `prisma/migrations/20261102190000_free_tickets/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261103090000_referral_notifications/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
-| `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/staging.rst](staging.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-bonfire.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-christmas.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -47,6 +47,7 @@
 | `scripts/lib/mock-index.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/mock-screens.mjs` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `scripts/lib/mock-variants.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `scripts/promote-admin.mjs` | [docs/staging.rst](staging.rst) |
 | `scripts/seed-ui-demo.mjs` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
@@ -170,7 +171,7 @@
 | `src/app/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/participant/history/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/app/participant/page.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
-| `src/app/robots.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/app/robots.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/staging.rst](staging.rst) |
 | `src/app/sample` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/page.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/app/sample/profile/[slug]/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -253,7 +254,7 @@
 | `src/modules/billing/lib/pricing.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/modules/billing/lib/referral.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
-| `src/modules/billing/lib/stripe.ts` | [docs/stripe.rst](stripe.rst) |
+| `src/modules/billing/lib/stripe.ts` | [docs/staging.rst](staging.rst) / [docs/stripe.rst](stripe.rst) |
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/modules/events/components/EventFormSections.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |

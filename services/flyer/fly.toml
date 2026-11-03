@@ -1,0 +1,41 @@
+# event-creater-flyer（本番）の Fly.io 構成。
+#
+# FastAPI のチラシ生成サービスです。公開ポートを持たず、web からだけ
+# 6PN（event-creater-flyer.internal:8000）で呼びます。
+# そのため [http_service] は書きません（書くと *.fly.dev が直公開されます）。
+# ヘルスチェックは [checks.health] でアプリ単位に書きます。
+#
+# ビルドは services/flyer/Dockerfile、実行は runtime ステージです。
+# runtime は EXPOSE 8000 で uvicorn を起動します。base ステージで /data 配下の
+# 3 ディレクトリを作り、同じパスを [env] で指定しています。
+
+app = "event-creater-flyer"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "runtime"
+
+[env]
+  # pydantic-settings は環境変数名の大文字小文字を区別しないので storage_dir に入ります。
+  STORAGE_DIR = "/data/tmp"
+  CANDIDATE_DIR = "/data/candidates"
+  FALLBACK_DIR = "/data/backgrounds"
+
+# 公開サービスを持たないので、ヘルスチェックはアプリ単位で書く。
+[checks.health]
+  type = "http"
+  port = 8000
+  path = "/health"
+  interval = "15s"
+  timeout = "2s"
+  grace_period = "10s"
+
+[[mounts]]
+  # 候補と下地画像の保存先。外すと再起動で候補が消えます。
+  source = "flyer_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

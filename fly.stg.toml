@@ -1,0 +1,48 @@
+# event-creater-web-stg（検証）の Fly.io 構成。
+#
+# 骨格は fly.toml と同じです。差分はアプリ名・APP_ENV・公開 URL・
+# 呼び先の flyer（-stg）だけです。
+#
+# 本番と同じく Cloudflare Tunnel で公開し、このアプリは公開ポートを持ちません。
+# そのため [http_service] は書きません（*.fly.dev を直公開させない）。
+# staging の防御は Cloudflare Access が主で、noindex は二重の保険です。
+
+app = "event-creater-web-stg"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "runner"
+
+  [build.args]
+    NEXT_PUBLIC_APP_URL = "https://staging.example.com"
+    # staging では計測しない。
+    NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
+    # noindex（robots.ts / next.config.mjs の headers()）をビルド時に効かせる。
+    APP_ENV = "staging"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3012"
+  FLYER_API_URL = "http://event-creater-flyer-stg.internal:8000"
+  NEXT_PUBLIC_APP_URL = "https://staging.example.com"
+  # robots.ts は実行時に読むため、ビルド引数と同じ値をここにも置きます。
+  APP_ENV = "staging"
+
+[checks.health]
+  type = "http"
+  port = 3012
+  path = "/"
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "10s"
+
+[[mounts]]
+  # ボリューム名はアプリごとの名前空間なので、本番と同じ "web_storage" で構いません。
+  # 初回だけ chown -R 1001:1001 /app/storage が要ります（runner は uid 1001）。
+  source = "web_storage"
+  destination = "/app/storage"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
