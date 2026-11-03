@@ -109,6 +109,16 @@ Worker まで届かないまま `RECORDED`（未送信）になる。代わり�
 本番の `mail-hook.eventkreater.com` にも同じ理由で付けません。付けると、確認メールも課金の
 事前通知もすべて未送信になります。
 
+## レート制限は 1 ゾーン 1 本まで
+
+Cloudflare の無料枠は、1 ゾーンにつきレート制限ルールを **1 本**しか持てません。
+`mail-hook.eventkreater.com` 用に 2 本目を足すと、API は
+`50001 exceeded the maximum number of rules in the phase http_ratelimit: 2 out of 1` を返します。
+そのため `/console/` の既存ルールに OR でメール中継のホストを足し、1 本にまとめています。
+
+- 式: `(starts_with(http.request.uri.path, "/console/")) or (http.host eq "mail-hook.eventkreater.com")`
+- しきい値: `20 requests / 10 seconds`、characteristics は `ip.src` と `cf.colo.id`、`mitigation_timeout` は 10 秒、action は `block`
+
 ## 疎通
 
 ```powershell
