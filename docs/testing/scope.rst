@@ -147,7 +147,7 @@
 
 .. count-start
 
-100 ファイル、``it`` は 1336 件です。内訳は ``tests/unit/`` が 74 ファイル 1130 件、``tests/integration/`` が 22 ファイル 160 件です。結合の 160 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+103 ファイル、``it`` は 1352 件です。内訳は ``tests/unit/`` が 76 ファイル 1142 件、``tests/integration/`` が 23 ファイル 164 件です。結合の 164 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -288,9 +288,9 @@
      - 割引の保存と並び順、定義を消しても参加者の写しが残ること、他イベントの割引 ID は 400、重複 ID を畳むこと、出席でないときは写しを作らないこと
      - SCR-ORG-02 / SCR-ORG-05 / SCR-PUB-01 / SCR-ORG-06
    * - ``tests/unit/auth-rate-limits.test.ts``
-     - 18
-     - 上限の既定値と環境変数の上書き、全ルールの対象名、バケット接頭辞の互換、上限の案内文、429 のヘッダ
-     - SCR-PUB-02 / ``/console/login``
+     - 22
+     - 上限の既定値と環境変数の上書き、全ルールの対象名、バケット接頭辞の互換、上限の案内文、429 のヘッダ。出欠の ``rsvpIp``（30 回 / 1 分）と ``rsvpToken``（10 回 / 10 分）の既定値・窓・接頭辞・``RSVP_*`` による上書きと不正値の既定値戻し
+     - SCR-PUB-02 / SCR-PUB-01 / ``/console/login``
    * - ``tests/integration/auth-attempts.test.ts``
      - 11
      - 窓の外を数えない、上限で 429、バケットの分離、成功時のリセット、厳しいほうの上限の選択、確認コードを使い切ったときの ``CODE_EXHAUSTED``。``?ref=`` 付きの登録は紹介者を ``referred_by_user_id`` に残し、存在しないコードでは残さない
@@ -327,6 +327,18 @@
      - 8
      - 接続元 IP の採り方。``cf-connecting-ip`` → ``fly-client-ip`` → ``x-forwarded-for`` の末尾、詐称の無視
      - 該当なし（共通処理）
+   * - ``tests/unit/robots.test.ts``
+     - 2
+     - ``robots.txt`` の ``disallow``。本番は ``/console``・``/organizers/``・``/invitations/`` を拒否し、staging は ``/`` で全パスを拒否する
+     - 該当なし（クローラ対策）
+   * - ``tests/unit/security-headers.test.mjs``
+     - 6
+     - ``next.config.mjs`` の ``headers()``。nosniff・Referrer-Policy・X-Frame-Options・Permissions-Policy・CSP（``frame-ancestors 'none'`` を含み ``script-src`` を持たない）を全環境に付け、HSTS は本番だけ、staging の ``X-Robots-Tag`` は 1 行だけ、本番の秘匿パスだけに ``noindex, nofollow`` を付けること
+     - 全画面の共通ヘッダ
+   * - ``tests/integration/rsvp-rate-limit.test.ts``
+     - 4
+     - 出欠の回数制限。上限で 429 と ``retryAt``・``Retry-After``、イベントが違えば独立、端末（Cookie）の枠は IP と別、DELETE は POST と同じ IP のバケットを消費する
+     - SCR-PUB-01
    * - ``tests/unit/draft-lifecycle.test.ts``
      - 4
      - 下書きは受付停止にできない（409 ``DRAFT_CANNOT_STOP``）。公開の再開は受付停止だけ（409 ``NOT_CLOSED``）
@@ -562,7 +574,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1130、``tests/integration/`` が 160 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1130 件を実行して 160 件を skip します。
+件数の内訳は ``tests/unit/`` が 1142、``tests/integration/`` が 164 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1142 件を実行して 164 件を skip します。
 
 .. breakdown-end
 

@@ -104,6 +104,50 @@ describe("createRateLimits", () => {
     expect(rules.phoneStartNumber.keyPrefix).toBe("phone:start:number:");
     expect(rules.phoneConfirmIp.keyPrefix).toBe("phone:confirm:ip:");
   });
+
+  it("出欠の既定値は IP が 30 回/1 分、端末が 10 回/10 分", () => {
+    const { rules } = createRateLimits(PROD);
+    expect(rules.rsvpIp.limit).toBe(30);
+    expect(rules.rsvpIp.windowMs).toBe(60 * 1000);
+    expect(rules.rsvpToken.limit).toBe(10);
+    expect(rules.rsvpToken.windowMs).toBe(10 * 60 * 1000);
+  });
+
+  it("出欠のキー接頭辞はイベント ID の前に付き、対象名を持つ", () => {
+    const { rules } = createRateLimits(PROD);
+    expect(rules.rsvpIp.keyPrefix).toBe("rsvp:ip:");
+    expect(rules.rsvpToken.keyPrefix).toBe("rsvp:token:");
+    expect(rules.rsvpIp.label).toBe("この催しへの出欠の回答");
+    expect(rules.rsvpToken.label).toBe("この端末からの出欠の回答");
+  });
+
+  it("出欠の上限と窓は env で上書きできる", () => {
+    const { rules } = createRateLimits({
+      ...PROD,
+      RSVP_IP_LIMIT: "60",
+      RSVP_IP_WINDOW_MINUTES: "2",
+      RSVP_TOKEN_LIMIT: "5",
+      RSVP_TOKEN_WINDOW_MINUTES: "30",
+    });
+    expect(rules.rsvpIp.limit).toBe(60);
+    expect(rules.rsvpIp.windowMs).toBe(2 * 60 * 1000);
+    expect(rules.rsvpToken.limit).toBe(5);
+    expect(rules.rsvpToken.windowMs).toBe(30 * 60 * 1000);
+  });
+
+  it("出欠の不正な env は既定値へ落とす", () => {
+    const { rules } = createRateLimits({
+      ...PROD,
+      RSVP_IP_LIMIT: "0",
+      RSVP_IP_WINDOW_MINUTES: "1.5",
+      RSVP_TOKEN_LIMIT: "-2",
+      RSVP_TOKEN_WINDOW_MINUTES: "x",
+    });
+    expect(rules.rsvpIp.limit).toBe(30);
+    expect(rules.rsvpIp.windowMs).toBe(60 * 1000);
+    expect(rules.rsvpToken.limit).toBe(10);
+    expect(rules.rsvpToken.windowMs).toBe(10 * 60 * 1000);
+  });
 });
 
 describe("limitNotice", () => {

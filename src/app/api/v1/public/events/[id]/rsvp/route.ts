@@ -18,6 +18,8 @@ import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import { serializeParticipantDiscounts } from "@/lib/serializers";
 import { RSVP_MAX_AGE, clearCookie, clientIp, rsvpCookieName, writeCookie } from "@/modules/auth/lib/cookies";
 import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
+import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
+import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { chooseRsvpTarget, findMyParticipant, participantScheduleIds } from "@/modules/participants/lib/rsvp";
 import { notifyRsvpSubmitted } from "@/modules/notifications/lib/notify";
 
@@ -76,15 +78,26 @@ function serializeRsvp(
 export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
     const event = await loadOpenEvent(params.id);
-    const input = SubmitRsvpSchema.parse(await req.json());
-    const userId = await resolveOptionalUserId(req);
     const cookieName = rsvpCookieName(event.id);
     const existingRaw = req.cookies.get(cookieName)?.value ?? null;
     const tokenHash = existingRaw ? sha256(existingRaw) : null;
-    const ipHash = (() => {
-      const ip = clientIp(req);
-      return ip ? sha256(ip) : null;
-    })();
+    const ip = clientIp(req);
+    const ipHash = ip ? sha256(ip) : null;
+
+    // キーにイベント ID を入れて、催しをまたいで数えない。
+    // 未認証で誰でも送れるため、本文を読む前に回数で絞る（壊れた本文の連投で DB を動かさない）。
+    // IP が取れないときは既存の認証と同じ "local" にまとめ、上限を素通りさせない。
+    const ipLimitKey = `${event.id}:${sha256(ip ?? "local")}`;
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.rsvpIp, ipLimitKey);
+    const tokenLimitKey = tokenHash ? `${event.id}:${tokenHash}` : null;
+    if (tokenLimitKey) await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.rsvpToken, tokenLimitKey);
+
+    const input = SubmitRsvpSchema.parse(await req.json());
+    const userId = await resolveOptionalUserId(req);
+
+    // 成功した送信も数える。失敗だけ数えると、成功し続ける連投を止められない。
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.rsvpIp, ipLimitKey);
+    if (tokenLimitKey) await recordAuthAttempt(AUTH_RATE_LIMITS.rules.rsvpToken, tokenLimitKey);
 
     const submit = () =>
       prisma.$transaction(async (tx) => {
@@ -270,6 +283,11 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       });
     }
 
+    // 取消も POST と同じ IP のバケットを共有する。端末の枠は使わない。
+    // IP が取れないときは既存の認証と同じ "local" にまとめ、上限を素通りさせない。
+    const ipLimitKey = `${event.id}:${sha256(clientIp(req) ?? "local")}`;
+    await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.rsvpIp, ipLimitKey);
+
     const cookieName = rsvpCookieName(event.id);
     const rawToken = req.cookies.get(cookieName)?.value ?? null;
     const userId = await resolveOptionalUserId(req);
@@ -293,6 +311,9 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
         detail: "取り消せる出欠回答が見つかりません。",
       });
     }
+    // 取り消せた回数を数える。ここまでの読み取りでは消費しない。
+    await recordAuthAttempt(AUTH_RATE_LIMITS.rules.rsvpIp, ipLimitKey);
+
     // POST と同じ行を消す（会員の行と端末の行が並んでいれば会員の行）。
     const { participant: target, stale } = await chooseRsvpTarget(prisma, found, userId);
     await prisma.participant.delete({ where: { id: target.id } });

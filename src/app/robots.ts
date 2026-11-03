@@ -15,7 +15,9 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      disallow: ["/console", "/organizers/"],
+      // /invitations/ は応答ヘッダーの noindex と同じ二重掛け。
+      // 索引させないことが目的なので、disallow と noindex は併用してよい。
+      disallow: ["/console", "/organizers/", "/invitations/"],
     },
   };
 }

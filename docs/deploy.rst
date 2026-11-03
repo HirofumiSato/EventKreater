@@ -256,7 +256,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
 
 .. note::
 
-   ``APP_ENV`` も ``[build.args]`` と ``[env]`` の両方に置きます。``next.config.mjs`` の ``headers()`` はビルド時に評価され、``APP_ENV`` が ``staging`` のときだけ ``X-Robots-Tag: noindex, nofollow`` を付けます。staging へ出すときは ``"staging"`` を渡してください（``robots.ts`` が実行時に読むぶんは ``[env]`` 側です）。理由は :doc:`staging` にまとめてあります。
+   ``APP_ENV`` も ``[build.args]`` と ``[env]`` の両方に置きます。``next.config.mjs`` の ``headers()`` はビルド時に評価され、環境ごとに付けるヘッダが変わります。全環境に ``X-Content-Type-Options``・``Referrer-Policy``・``X-Frame-Options``・``Permissions-Policy``・``Content-Security-Policy`` を付け、``production`` のときだけ ``Strict-Transport-Security``、``staging`` のときは全パスに ``X-Robots-Tag: noindex, nofollow`` を付けます。``staging`` 以外では秘匿パス（``/console``・``/invitations``・``/participant`` など）にだけ ``X-Robots-Tag`` を付けます。staging へ出すときは ``"staging"`` を渡してください（``robots.ts`` が実行時に読むぶんは ``[env]`` 側です）。理由は :doc:`staging` と :doc:`issues/abuse-and-crawler-hardening` にまとめてあります。
 
 .. important::
 
