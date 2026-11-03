@@ -416,8 +416,17 @@ Worker の custom domain と Resend の DKIM が DNS で衝突します。
      - なし
 
 1. Resend のダッシュボードで、本番の送信ドメイン ``send.eventkreater.com`` を追加します。
-2. 表示される DKIM・SPF・MX のレコードを、Cloudflare DNS に **DNS only** で入れます（灰色雲）。Proxy（オレンジ雲）にすると Resend の検証が通りません。
-3. DMARC は ``_dmarc.eventkreater.com`` に ``v=DMARC1; p=none; rua=mailto:...`` から始めます。DKIM と SPF が通るのを見るまで ``p=reject`` にしないでください。
+2. 表示される 3 行（CNAME 2 本と DKIM の TXT）を、そのまま Cloudflare DNS に入れます。すべて **DNS only** にします（灰色雲）。Proxy（オレンジ雲）にすると Resend の検証が通りません。SPF と MX を別に作る必要はありません。SPF は CNAME の先が返します。
+
+   .. code-block:: text
+
+      send.send.eventkreater.com            CNAME  send.forge.rmta.net
+      rsend.send.eventkreater.com           CNAME  rsend-apne1.forge.rmta.net
+      resend._domainkey.send.eventkreater.com  TXT  p=...
+
+   DoH で引くと、``send.send.*`` は ``v=spf1 ip4:... ~all``、``rsend.send.*`` は ``v=spf1 include:amazonses.com ~all`` を返します。SPF は CNAME の先が持っているので、このゾーンには SPF の TXT も ``feedback-smtp...`` の MX も作りません。
+
+3. DMARC は ``_dmarc.eventkreater.com`` の TXT に ``v=DMARC1; p=none; adkim=r; aspf=r`` を入れます。``rua`` は付けていません。このゾーンには MX が 1 つも無く、レポートの宛先にできる実在の受信箱を決められないためです。``rua`` を付けるときは、先に受信できる宛先を用意してください。DKIM と SPF が通るのを見るまで ``p=reject`` にしないでください。
 4. Worker をデプロイします。ふだんは CI（``.github/workflows/deploy-env.yml`` の ``mail`` ジョブ）が上げます。environment secrets の ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` が入っているときだけ動き、未設定ならジョブを飛ばします。初回だけ、手元で秘密を 4 つ入れてからデプロイします。
 
 .. code-block:: powershell
@@ -450,7 +459,12 @@ Worker の custom domain と Resend の DKIM が DNS で衝突します。
 
    fly secrets set MAIL_WEBHOOK_URL="https://mail-hook.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web
 
-6. Cloudflare の **Security → WAF → Rate limiting rules** で、``mail-hook.eventkreater.com/*`` にレート制限を 1 本置きます。無料枠は 10 秒の窓しか選べません。トークンを知らない相手の総当たりを減らすための保険です。
+6. Cloudflare の **Security → WAF → Rate limiting rules** で、既存の ``/console/`` のルールに OR でメール中継のホストを足します。無料枠は **1 ゾーンにつきルール 1 本まで** なので、``mail-hook.eventkreater.com`` 用に 2 本目は作れません。2 本目を足すと API は ``50001 exceeded the maximum number of rules in the phase http_ratelimit: 2 out of 1`` を返します。
+
+   - 式: ``(starts_with(http.request.uri.path, "/console/")) or (http.host eq "mail-hook.eventkreater.com")``
+   - しきい値: ``20 requests / 10 seconds``、characteristics は ``ip.src`` と ``cf.colo.id``、``mitigation_timeout`` は 10 秒、action は ``block``
+
+   無料枠は 10 秒の窓しか選べません。トークンを知らない相手の総当たりを減らすための保険です。
 
 .. warning::
 
@@ -627,11 +641,11 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - Cache Rules
      - ``/api/*`` はキャッシュしない（``Cache eligibility: Bypass cache``）。出欠と決済が混ざります。``/_next/static/*`` はアプリが ``Cache-Control: public, max-age=31536000, immutable`` を返すので、追加のルールは要りません
    * - WAF
-     - 管理画面 ``/console/*`` にレート制限。無料枠は 10 秒の窓しか選べません。必要なら IP 制限も足す
+     - 管理画面 ``/console/*`` とメール中継 ``mail-hook.eventkreater.com`` を、1 本のレート制限でまとめて見ます（無料枠は 1 ゾーン 1 本まで。式としきい値は手順 2.2 のメール配送にあります）。無料枠は 10 秒の窓しか選べません。必要なら IP 制限も足す
 
 .. note::
 
-   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` のレート制限まで入れています。
+   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` と ``mail-hook.eventkreater.com`` をまとめたレート制限まで入れています。
    実測では ``/api/v1/public/pricing`` が ``cf-cache-status: DYNAMIC``、``/_next/static/*.css`` が ``immutable`` でした。
 
    ``src/modules/auth/lib/cookies.ts`` の ``clientIp()`` は ``cf-connecting-ip`` → ``fly-client-ip`` → ``x-real-ip`` の順に見て、最後に ``x-forwarded-for`` の右端を使います。
