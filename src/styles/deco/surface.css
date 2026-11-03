@@ -291,10 +291,13 @@
   line-height: 1.7;
 }
 
+/* 確認メールの宛先は、区切りで折れない長い 1 語になりうる。
+   折り返せないとカードを押し広げるので、入るところで折る。 */
 .auth-card__body {
   display: grid;
   gap: 0.875rem;
   margin-top: 1rem;
+  overflow-wrap: anywhere;
 }
 
 /* フォームの外に続く操作（確認番号の再送・ログインからやり直す）は、上の欄と
