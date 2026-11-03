@@ -38,6 +38,9 @@ CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "::", "--port", "8000"
 
 # 本番相当。
 FROM base AS runtime
-# `0.0.0.0` は IPv4 だけの待ち受けになる。web も Cloudflare Tunnel も
-# 6PN（IPv6 の fdaa:...）で来るため、`::` にして両方で受ける。
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "::", "--port", "8000"]
+# `0.0.0.0` は IPv4 だけの待ち受けになり、web も Cloudflare Tunnel も
+# 6PN（IPv6 の fdaa:...）で来るため届かない。一方 uvicorn の `--host ::` は
+# このイメージで IPv6 専用になり、Fly のヘルスチェック（IPv4）が refused になる。
+# entrypoint.py が IPV6_V6ONLY=0 を明示した dual-stack のソケットを作り、
+# uvicorn に --fd で渡す（理由は entrypoint.py の冒頭）。
+CMD ["python", "entrypoint.py"]

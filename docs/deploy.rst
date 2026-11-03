@@ -243,10 +243,15 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
 
 .. warning::
 
-   web と flyer は **IPv6 でも待ち受ける**ようにしてください（``Dockerfile`` の ``HOSTNAME=::``、flyer の ``uvicorn --host ::``）。
+   web と flyer は **IPv4 と IPv6 の両方で待ち受ける**ようにしてください。片方だけだと、届かない経路ができます。
+
+   - web は ``Dockerfile`` の ``HOSTNAME=::`` で両方受けます（Node は ``IPV6_V6ONLY=0`` を明示するため dual-stack になります）。
+   - flyer は ``services/flyer/entrypoint.py`` が ``IPV6_V6ONLY=0`` を立てたソケットを作り、uvicorn へ ``--fd`` で渡します。``uvicorn --host ::`` だけだと、このイメージでは **IPv6 専用**になり、Fly のヘルスチェック（``127.0.0.1`` への IPv4）が ``connection refused`` になります。``--host 0.0.0.0`` にすると逆に 6PN から届きません。
+
    ``0.0.0.0`` は IPv4 だけの待ち受けになり、Fly のプロキシも Cloudflare Tunnel も 6PN（``fdaa:...`` の IPv6）で来るため、
-   外から 1 本も届きません。しかも Fly のヘルスチェックは機械の中から ``localhost`` へ繋ぐので **通ってしまい、デプロイは成功に見えます**。
+   外から 1 本も届きません。しかも Fly のヘルスチェックは機械の中から繋ぐので **通ってしまい、デプロイは成功に見えます**。
    2026-11-03 の初回デプロイで実際に踏みました。``flyctl proxy`` や Tunnel 経由で確かめれば、その場で分かります。
+   同じ日に flyer でも踏んでいます（ヘルスチェックだけが落ちる）。``fly checks list`` と ``flyctl proxy`` の両方で確かめてください。
 
 .. note::
 
