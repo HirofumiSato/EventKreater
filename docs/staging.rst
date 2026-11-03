@@ -183,7 +183,7 @@ cloudflared は同じ organization の 6PN で ``event-creater-web-stg.internal`
 Neon は本番と別のプロジェクトにします。本番のダンプやブランチを staging へ持ってきません。
 参加者の氏名・電話番号・メールが staging に流れ込むためです。
 
-1. Neon のコンソールでプロジェクトを新しく作ります（PostgreSQL 16）。
+1. Neon のコンソールでプロジェクトを新しく作ります（PostgreSQL 18。2026-11-03 に作成した 2 プロジェクトは 18 です）。
 2. 接続文字列は Direct connection（``-pooler`` が付かないホスト）に ``sslmode=require`` を付けます。web は 1 台なのでプールは要りません。
 3. マイグレーションは、手元から staging の Direct へ流します（:doc:`deploy` と同じです）。
 

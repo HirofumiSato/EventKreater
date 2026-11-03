@@ -34,8 +34,10 @@ EXPOSE 8000
 
 # 開発用。compose がソースを bind mount する。
 FROM base AS dev
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "::", "--port", "8000", "--reload"]
 
 # 本番相当。
 FROM base AS runtime
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# `0.0.0.0` は IPv4 だけの待ち受けになる。web も Cloudflare Tunnel も
+# 6PN（IPv6 の fdaa:...）で来るため、`::` にして両方で受ける。
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "::", "--port", "8000"]

@@ -55,7 +55,11 @@ RUN npx prisma generate && npm run build
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3012
-ENV HOSTNAME=0.0.0.0
+# `0.0.0.0` は IPv4 だけの待ち受けになる。Fly のプロキシも Cloudflare Tunnel も
+# 6PN（IPv6 の fdaa:...）で来るため、それだと外から 1 本も届かない（接続はリセット）。
+# Fly のヘルスチェックは機械の中から localhost へ繋ぐので通ってしまい、
+# デプロイは成功に見える。`::` にして IPv6 と IPv4 の両方で受ける。
+ENV HOSTNAME=::
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs
 # src/modules/flyers/lib/flyer.ts は process.cwd()/storage/flyers に、

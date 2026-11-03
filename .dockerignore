@@ -17,6 +17,12 @@ logs
 .dev-server.log
 dev-server.log
 tsconfig.tsbuildinfo
+# モック撮影の控え（本番ビルドの .next とモックの写し）。イメージには要らない。
+# これらが無いとビルドコンテキストが 470MB を超え、毎回のデプロイが遅くなる。
+.next-ui-prod
+.next-*
+.tmp-*
+mock-*.html
 
 # Python 側は services/flyer を別コンテキストでビルドする。
 services/flyer

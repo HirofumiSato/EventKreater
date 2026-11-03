@@ -241,6 +241,19 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
    ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` は **ビルド時に埋め込まれます**。値を変えたら ``fly deploy`` し直してください。
    シークレットとして ``fly secrets set`` しても、既にビルドされた JS は変わりません。
 
+.. warning::
+
+   web と flyer は **IPv6 でも待ち受ける**ようにしてください（``Dockerfile`` の ``HOSTNAME=::``、flyer の ``uvicorn --host ::``）。
+   ``0.0.0.0`` は IPv4 だけの待ち受けになり、Fly のプロキシも Cloudflare Tunnel も 6PN（``fdaa:...`` の IPv6）で来るため、
+   外から 1 本も届きません。しかも Fly のヘルスチェックは機械の中から ``localhost`` へ繋ぐので **通ってしまい、デプロイは成功に見えます**。
+   2026-11-03 の初回デプロイで実際に踏みました。``flyctl proxy`` や Tunnel 経由で確かめれば、その場で分かります。
+
+.. note::
+
+   Fly のトライアル（支払い方法の未登録）では、機械は **起動から 5 分で止められます**。
+   ログには ``Trial machine stopping. To run for longer than 5m0s, add a credit card`` と出ます。
+   構成の問題に見えるので、最初にログを読んでください。継続して動かすには https://fly.io/trial で支払い方法を登録します。
+
 環境変数は次のとおりです。``fly secrets set`` で入れるものと、``fly.toml`` の ``[build.args]`` で渡すものがあります。
 
 .. list-table::
