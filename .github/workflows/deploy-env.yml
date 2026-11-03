@@ -1,0 +1,189 @@
+# 1 つの環境（staging か production）へのデプロイ。
+#
+# deploy.yml から環境名と ref を受け取り、migrate → flyer → web の順に流す。
+# 中身は環境で変わらない（違うのは environment secrets と fly*.toml だけ）ので、
+# ジョブを 2 組に複製せず再利用ワークフローにしてある。staging が緑になって
+# から production へ進む順序は、呼ぶ側の deploy.yml が needs で決める。
+#
+# web は flyer の 6PN（<app>.internal:8000）を引くので、flyer を先に上げる。
+# マイグレーションを先頭に置くのは、新しい列を読むコードが先に上がると
+# 起動直後だけ落ちるため。
+#
+# environment を宣言したジョブだけが、その environment の secrets を読める。
+# 呼ぶ側（deploy.yml）は environment を書かず、secrets: inherit で渡す。
+# 環境 secret がリポジトリ secret と同じ名前なら環境側が優先される。
+# 呼ぶ側が渡し忘れると空文字になり、実行は赤にならずに静かに失敗するので、
+# 必須の 2 つは required: true にして、渡されていなければ実行を止める。
+name: Deploy env
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "デプロイ先（production は承認が要る）"
+        required: true
+        type: string
+      ref:
+        description: "デプロイする commit。workflow_run では CI が見た head_sha"
+        required: true
+        type: string
+    secrets:
+      FLY_API_TOKEN:
+        required: true
+      DATABASE_URL_DIRECT:
+        required: true
+      # staging の疎通確認に使う Cloudflare Access の Service Token。
+      # 未設定なら疎通確認の step を飛ばす（デプロイ自体は通す）。
+      CF_ACCESS_CLIENT_ID:
+        required: false
+      CF_ACCESS_CLIENT_SECRET:
+        required: false
+
+# デプロイはリポジトリへ書かない。flyctl 用の鍵は environment secrets から読む。
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    # この指定があるジョブでだけ環境 secrets を読める。production には
+    # Required reviewers を付けているので、承認が下りるまで先へ進まない。
+    environment: ${{ inputs.environment }}
+    steps:
+      # 対象は呼ぶ側が決める。workflow_run の既定の checkout は main の先頭を
+      # 見るため、CI のあとに main が進むと別の commit を出してしまう。
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # prisma CLI だけを、package-lock.json と同じ 5.22.0 に固定して取る。
+      # `npm ci` は使わない。理由は 2 つ。
+      # - migrate deploy が読むのは prisma/schema.prisma と prisma/migrations/ だけで、
+      #   node_modules も Prisma Client も要らない（CLI は engine を自分で持つ）。
+      # - `npm ci` は postinstall で `prisma generate` を走らせるが、その成果物は
+      #   このジョブで使わない。20 秒前後を捨てることになる。
+      # 版を `prisma@5` のような範囲にしないのは、その日の最新 5.x が入って
+      # 手元や CI とマイグレーションの解釈がずれるのを避けるため。
+      #
+      # schema.prisma は directUrl を持たない（url = env("DATABASE_URL") だけ）ため、
+      # プール済みではなく Direct 接続文字列を DATABASE_URL に入れる。
+      # ビルドも generate もしないので、JWT_SECRET などのダミーは要らない。
+      - name: マイグレーションを当てる
+        run: npx --yes prisma@5.22.0 migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+
+      # 当て残しや失敗が無いかを確かめる。未適用が残っていれば非 0 で終わるので、
+      # ここで止まれば flyer / web は上がらない。
+      - name: 適用状況を確かめる
+        run: npx --yes prisma@5.22.0 migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+
+  flyer:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    needs: migrate
+    environment: ${{ inputs.environment }}
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # チラシ生成 API の config と app は環境で変わる。production 用の
+      # fly.toml は services/flyer 直下、staging 用は fly.stg.toml。
+      FLYER_CONFIG: ${{ inputs.environment == 'production' && 'fly.toml' || 'fly.stg.toml' }}
+      FLYER_APP: ${{ inputs.environment == 'production' && 'event-creater-flyer' || 'event-creater-flyer-stg' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      # master ではなく版を固定する。CI の actions/* と同じ方針で、
+      # 上流の破壊的変更が日によって混ざらないようにする。
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+
+      # flyctl は config の親ディレクトリをビルド文脈にする。flyer の Dockerfile は
+      # services/flyer にあるので、その中で fly.stg.toml を指して呼ぶ。
+      # --remote-only はビルドを Fly のビルダーで行う（ランナーに Docker を要らなくする）。
+      # このコマンドは起動後のヘルスチェック（[checks.health] の /health）が通るまで
+      # 返らないので、起動しないデプロイはここで赤になる。
+      - name: チラシ生成 API をデプロイする
+        working-directory: services/flyer
+        run: flyctl deploy --remote-only --config "$FLYER_CONFIG"
+
+      # 起動して health が通るかを見る。判定は上の deploy が持っているので、
+      # ここは失敗したときに何が起きたかを人が読むためのもの。
+      - name: ヘルスチェックの状態を見る
+        run: flyctl checks list -a "$FLYER_APP"
+
+  web:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    needs: flyer
+    environment: ${{ inputs.environment }}
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # web の config と app も環境で変わる（リポジトリ直下の fly.toml / fly.stg.toml）。
+      WEB_CONFIG: ${{ inputs.environment == 'production' && 'fly.toml' || 'fly.stg.toml' }}
+      WEB_APP: ${{ inputs.environment == 'production' && 'event-creater-web' || 'event-creater-web-stg' }}
+      # 疎通確認の step で使う。secrets は step の if から直接読めないため、
+      # ジョブの環境変数へ写してから空かどうかを見る。
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+
+      # NEXT_PUBLIC_APP_URL と NEXT_PUBLIC_GA_MEASUREMENT_ID はビルド時に焼き込まれる。
+      # 値は各 fly*.toml の [build.args] が持っているので、ここからは渡さない
+      # （2 か所に書くと、片方だけ直したときに静かにずれる）。
+      # 環境変数の実体は `fly secrets` 側にあり、このワークフローは触らない。
+      - name: web をデプロイする
+        run: flyctl deploy --remote-only --config "$WEB_CONFIG"
+
+      - name: 状態を見る
+        run: flyctl status -a "$WEB_APP"
+
+      # staging だけ、外から 1 本叩いて DB まで通っているかを見る。
+      # flyctl deploy はヘルスチェック（/ の 200）が通るまで待つが、それは
+      # 「起動した」ことしか言わない。DB の接続やマイグレーション漏れは
+      # pricing のように DB を読む口でしか分からない。
+      #
+      # staging は Cloudflare Access で守っているので、Service Token を
+      # environment secrets に入れたときだけ効く。未設定なら飛ばす
+      # （Access を足していない環境で、本番の承認まで止めないため）。
+      - name: staging の疎通を見る
+        if: inputs.environment == 'staging' && env.CF_ACCESS_CLIENT_ID != ''
+        env:
+          URL: https://staging.eventkreater.com/api/v1/public/pricing
+        run: |
+          # 起動直後は 502 を返すことがあるので、少し待ちながら試す。
+          for i in $(seq 1 6); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+              "$URL")
+            if [ "$code" = "200" ]; then
+              echo "staging の $URL が 200 を返しました"
+              exit 0
+            fi
+            echo "試行 $i: $code"
+            sleep 10
+          done
+          echo "staging の $URL が 200 になりませんでした（最後は $code）"
+          exit 1
+
+      - name: staging の疎通を見る（Service Token が無いので飛ばす）
+        if: inputs.environment == 'staging' && env.CF_ACCESS_CLIENT_ID == ''
+        run: echo "CF_ACCESS_CLIENT_ID が未設定のため、疎通確認は飛ばします"
+
+      # 切り戻しは `flyctl deploy --image registry.fly.io/<app>:<tag>` で行う。
+      # 直前がどの版かをログに残しておくと、障害時に画面を遡らずに済む。
+      - name: 切り戻しの手がかりを残す
+        run: flyctl releases -a "$WEB_APP" | head -n 5
