@@ -633,6 +633,15 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
 2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
 3. 任意で、``staging`` の environment に ``CF_ACCESS_CLIENT_ID`` と ``CF_ACCESS_CLIENT_SECRET`` を足します。staging のホストは Cloudflare Access で守っているので、外から疎通を確かめるには Service Token が要ります。入れると、staging の web を上げたあとに ``/api/v1/public/pricing`` を 200 が返るまで試し、通らなければ production へ進みません。未設定ならこの確認は飛ばします（デプロイ自体は通ります）。同じく任意で、両方の environment に ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` を足すと、``mail`` ジョブがメール中継を CI から上げます。未設定ならジョブを飛ばします。
+
+   ``CLOUDFLARE_API_TOKEN`` は Cloudflare の **My Profile → API Tokens → Create Token** で Custom token として作り、次の権限を付けます。
+
+   - ``Account`` / ``Workers Scripts`` / ``Edit``（**Account スコープ**の権限です。Zone 側に付けても Worker を読めず、``deploy`` が ``No access to the specified resource.`` で落ちます）
+   - ``Zone`` / ``Workers Routes`` / ``Edit``
+   - ``Zone`` / ``Zone`` / ``Read``
+   - Account Resources は対象のアカウント、Zone Resources は ``eventkreater.com`` だけに絞ります
+
+   ``CLOUDFLARE_ACCOUNT_ID`` はダッシュボードの **Account ID** です。TTL は運用に合わせて延ばしてください（既定の 1 週間だと、切れた朝に ``mail`` ジョブが黙って落ちます）。
 4. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。2 回目以降は ``main`` の CI 成功から staging → production の順に流れます。
 
 .. note::
