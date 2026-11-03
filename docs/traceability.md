@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 108（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 430
+- 文書から参照されているコードパス: 431
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -51,6 +51,7 @@
 | `scripts/seed-ui-demo.mjs` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
+| `services/flyer/entrypoint.py` | [docs/deploy.rst](deploy.rst) |
 | `services/flyer/mypy.ini` | `services/flyer/AGENTS.md` |
 | `services/flyer/README.md` | [docs/README.md](README.md) |
 | `services/flyer/requirements.txt` | [docs/testing/ci.rst](testing/ci.rst) |
