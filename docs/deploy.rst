@@ -221,8 +221,8 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      target = "runner"
      [build.args]
        NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
-       # 任意。GA4 の測定 ID。空なら計測しない。
-       NEXT_PUBLIC_GA_MEASUREMENT_ID = ""
+       # GA4 の測定 ID（プロパティ「EventKreater 本番」/ ストリーム「EventKreater 本番 Web」）。staging は空のまま。
+       NEXT_PUBLIC_GA_MEASUREMENT_ID = "G-BS6RHPS9J3"
        # APP_ENV（staging の noindex 判定）もビルド時に評価されるため、ここで渡します。
        APP_ENV = "production"
 
@@ -253,6 +253,10 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
    [[vm]]
      size = "shared-cpu-1x"
      memory = "1gb"
+
+.. note::
+
+   本番の ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` は ``G-BS6RHPS9J3``（プロパティ「EventKreater 本番」/ ストリーム「EventKreater 本番 Web」）です。staging は空のままで、計測しません。
 
 .. note::
 
