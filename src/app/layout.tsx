@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@/components/common/GoogleAnalytics";
 import { SiteChrome } from "@/components/common/SiteChrome";
 import { SITE } from "@/lib/site";
 import { appBaseUrl } from "@/lib/http";
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           本文へ
         </a>
         <SiteChrome>{children}</SiteChrome>
+        <GoogleAnalytics />
       </body>
     </html>
   );

@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 107（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 425
+- 文書から参照されているコードパス: 429
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -151,6 +151,7 @@
 | `src/app/events/[id]/page.tsx` | [docs/archive/index.rst](archive/index.rst) / [docs/onboarding.md](onboarding.md) |
 | `src/app/global-error.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/invitations/[code]/page.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
+| `src/app/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/notifications/page.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
@@ -182,6 +183,7 @@
 | `src/components` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/components/common/CalendarEventModal.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/components/common/CalendarMonth.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
+| `src/components/common/GoogleAnalytics.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/components/common/Navbar.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/common/SiteChrome.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/ui` | `AGENTS.md` / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
@@ -190,6 +192,7 @@
 | `src/components/ui/Subnav.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/components/ui/ThemePicker.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/lib` | `AGENTS.md` / [docs/testing/design.rst](testing/design.rst) |
+| `src/lib/analytics.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/lib/auth-links.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/lib/calendar.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/crypto.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
@@ -367,6 +370,7 @@
 | `tests/setup/db.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/unit` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/practice.rst](testing/vitest/practice.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/unit/allocation.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/analytics.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-landing.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-links.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-mode.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

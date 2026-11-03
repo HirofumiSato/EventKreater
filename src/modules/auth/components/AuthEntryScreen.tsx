@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
 import { SITE } from "@/lib/site";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
@@ -186,6 +187,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         router.push(`${basePath}?step=login-code${nextQuery}${switchQuery}`);
         return;
       }
+      // パスワードでログインできた回数。確認番号待ちへ回る経路は、照合の成功で 1 回だけ数える。
+      trackEvent("login", { audience });
       await finish(Boolean(body.phoneVerified));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "認証に失敗しました");
@@ -214,9 +217,14 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
     }
   };
 
-  const completePhone = useCallback(() => {
-    void finish(true);
-  }, [finish]);
+  const completePhone = useCallback(
+    (info?: { created?: boolean }) => {
+      // 会員が実際にできたときだけ登録として数える。途中の再開・引き継ぎでは送らない。
+      if (info?.created === true) trackEvent("sign_up", { audience });
+      void finish(true);
+    },
+    [audience, finish],
+  );
 
   const holdForSession =
     existing.state === "checking" ||
@@ -236,7 +244,11 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       <div className="page--form stack">
         <LoginChallengeForm
           screenName={copy.title.login}
-          onConfirmed={({ phoneVerified, platformRole }) => void finish(phoneVerified, platformRole)}
+          onConfirmed={({ phoneVerified, platformRole }) => {
+            // 確認番号でログインできた回数。
+            trackEvent("login", { audience });
+            void finish(phoneVerified, platformRole);
+          }}
           onRestart={() =>
             router.push(
               `${basePath}${hasExplicitNext ? `?next=${encodeURIComponent(nextPath)}` : ""}${switchQuery}`,
@@ -380,7 +392,8 @@ function PhoneScreen({
   signedIn: boolean;
   /** そのセッションの電話番号が確認済み。 */
   phoneVerified: boolean;
-  onFinished: () => void;
+  /** 確認が終わったときに呼ぶ。新しい会員が作られたときだけ `created: true` が入る。 */
+  onFinished: (info?: { created?: boolean }) => void;
 }) {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -444,13 +457,13 @@ function PhoneScreen({
         setExhausted(problem.error === "CODE_EXHAUSTED");
         throw new Error(problemMessage(problem, "電話番号の確認に失敗しました"));
       }
-      const body = (await res.json()) as { attachedExisting?: boolean; reactivated?: boolean };
+      const body = (await res.json()) as { attachedExisting?: boolean; reactivated?: boolean; created?: boolean };
       if (body.reactivated) {
         setNotice("以前のアカウントを引き継ぎました。チケットは前回の続きからになります。");
       } else if (body.attachedExisting) {
         setNotice("同じ電話番号の会員へ結びつけました。");
       }
-      onFinished();
+      onFinished({ created: body.created === true });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "電話番号の確認に失敗しました");
     } finally {

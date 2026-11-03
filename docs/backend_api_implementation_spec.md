@@ -2250,6 +2250,8 @@ export interface ProblemDetails {
 6. 見つかった行が退会済み（`deleted_at` あり）なら、新しい行を作らずに復帰させる。メール、表示名、パスワード、Google の結び付けを今回の登録内容で上書きし、`deleted_at = NULL` にする。`user_usage_quotas` は引き継ぎ、無料チケットは戻さない。`account_change_logs` に `REACTIVATE` を残し、応答の `reactivated` を `true` にする。
 7. 登録意向を消し、`auth_token` を発行する。この経路は番号をいま証明しているので、ログイン第二段階は開かない。
 
+成功時の応答は `{ user, phoneVerified: true, attachedExisting, reactivated, created }` で、`created` は**この呼び出しで新しい会員行を作ったときだけ** `true` になる（決定順の 4 で既存会員へ手段を足したとき、6 で退会済みの行を復帰させたとき、ログイン済みの会員へ番号を結び付けたときは `false`）。画面はこの値が `true` のときだけ `sign_up` を送る（フロント仕様書 15.4）。
+
 ### 8.7. GET / POST `/api/v1/auth/login-challenge`（確認番号）
 
 GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、使用済みは 401。

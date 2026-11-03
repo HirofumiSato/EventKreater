@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
       attachedExisting: result.attachedExisting,
       // 退会済みの行を引き継いだときは true。画面で「以前のアカウントを引き継ぎました」と出す。
       reactivated: result.reactivated,
+      // この呼び出しで新しい会員行が作られたときだけ true。画面の sign_up の判定に使う。
+      // ログイン済みの紐づけ・既存会員への結びつけ・退会者の引き継ぎは「作った」に数えない。
+      created: !userId && !result.attachedExisting && !result.reactivated,
     });
     writeCookie(response, req, authCookieName(req), token, AUTH_MAX_AGE);
     clearCookie(response, req, SIGNUP_INTENT_COOKIE);

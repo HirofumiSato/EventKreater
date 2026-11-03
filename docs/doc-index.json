@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2810,
+      "lineCount": 2812,
       "headings": [
         {
           "level": 2,
@@ -3028,7 +3028,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 451,
+      "lineCount": 456,
       "headings": [
         {
           "level": 1,
@@ -5601,7 +5601,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2009,
+      "lineCount": 2084,
       "headings": [
         {
           "level": 1,
@@ -5846,10 +5846,50 @@
         {
           "level": 3,
           "text": "14.7. テスト"
+        },
+        {
+          "level": 2,
+          "text": "15. アクセス解析（Google Analytics 4）"
+        },
+        {
+          "level": 3,
+          "text": "15.1. 読み込み経路と測定 ID"
+        },
+        {
+          "level": 3,
+          "text": "15.2. ページビュー"
+        },
+        {
+          "level": 3,
+          "text": "15.3. パスの正規化"
+        },
+        {
+          "level": 3,
+          "text": "15.4. 送るイベント"
+        },
+        {
+          "level": 3,
+          "text": "15.5. 送信方法"
+        },
+        {
+          "level": 3,
+          "text": "15.6. 管理コンソールを除く理由"
+        },
+        {
+          "level": 3,
+          "text": "15.7. 運用（GA4 管理画面）"
+        },
+        {
+          "level": 3,
+          "text": "15.8. テスト"
         }
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "docs/deploy.rst",
+          "exists": true
+        },
         {
           "path": "docs/ui-review/theme-review.md",
           "exists": true
@@ -5919,6 +5959,10 @@
           "exists": true
         },
         {
+          "path": "src/app/layout.tsx",
+          "exists": true
+        },
+        {
           "path": "src/app/organizer/events/new/page.tsx",
           "exists": true
         },
@@ -5967,6 +6011,10 @@
           "exists": true
         },
         {
+          "path": "src/components/common/GoogleAnalytics.tsx",
+          "exists": true
+        },
+        {
           "path": "src/components/common/SiteChrome.tsx",
           "exists": true
         },
@@ -5976,6 +6024,10 @@
         },
         {
           "path": "src/components/ui/Subnav.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/analytics.ts",
           "exists": true
         },
         {
@@ -6180,6 +6232,10 @@
         },
         {
           "path": "tests/unit/allocation.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/analytics.test.ts",
           "exists": true
         },
         {
@@ -11075,7 +11131,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 674,
+      "lineCount": 678,
       "headings": [
         {
           "level": 1,
@@ -11238,6 +11294,10 @@
         },
         {
           "path": "tests/unit/allocation.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/analytics.test.ts",
           "exists": true
         },
         {
