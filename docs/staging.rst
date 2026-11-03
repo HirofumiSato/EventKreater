@@ -101,7 +101,7 @@ web と flyer を、本番とは別のアプリとして ``nrt`` に作ります
    * - ``APP_ENV``
      - ``staging``。``[build.args]`` と ``[env]`` の両方に置きます（後述）
    * - ``NEXT_PUBLIC_APP_URL``
-     - ``https://staging.example.com``。ビルド時に焼き込まれるので ``[build.args]`` にも同じ値
+     - ``https://staging.eventkreater.com``。ビルド時に焼き込まれるので ``[build.args]`` にも同じ値
    * - ``NEXT_PUBLIC_GA_MEASUREMENT_ID``
      - 空。staging では計測しない
    * - ``FLYER_API_URL``
@@ -156,7 +156,7 @@ web と flyer を、本番とは別のアプリとして ``nrt`` に作ります
 未設定でも起動しますが、そのときはモックのアダプターに切り替わり、本物ではない候補が静かに返ります。
 
 2.3 Tunnel に staging のホスト名を足す
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 staging 用のトンネルアプリは作りません。本番の ``event-creater-tunnel`` の Public Hostname に 1 行足します。
 
@@ -167,11 +167,15 @@ staging 用のトンネルアプリは作りません。本番の ``event-create
    * - 項目
      - 値
    * - ホスト名
-     - ``staging.example.com``
+     - ``staging.eventkreater.com``
    * - サービス
      - ``http://event-creater-web-stg.internal:3012``
    * - キャッシュ
-     - ``/api/*`` は Bypass cache、``/_next/static/*`` はキャッシュ（本番と同じ）
+     - ``/api/*`` は Bypass cache（本番と同じ）。``/_next/static/*`` はアプリが ``immutable`` を返すので追加のルールは要らない
+
+.. note::
+
+   ホスト名を足しただけでは 503 が返ることがあります。Public Hostname が保存されているか（ingress の一覧に出ているか）を確かめてください。詳しくは :doc:`deploy` の 2.3 にあります。
 
 web 側に ``[http_service]`` が無いので、``*.fly.dev`` は生まれません。
 ``fly ips list --app event-creater-web-stg`` が空であることで確かめられます。
@@ -214,7 +218,7 @@ staging は Stripe のテストモードだけを使います。
    * - Price
      - テストモードで作った Price。``STRIPE_PRICE_ID_MONTHLY_8`` / ``STRIPE_PRICE_ID_UNLIMITED`` / ``STRIPE_PRICE_ID_ONE_TIME`` と、既存契約の検証用 ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
    * - Webhook
-     - ``https://staging.example.com/api/v1/webhooks/stripe``。テストモードで作り、本番とは別の ``whsec_`` を ``STRIPE_WEBHOOK_SECRET`` に入れる
+     - ``https://staging.eventkreater.com/api/v1/webhooks/stripe``。テストモードで作り、本番とは別の ``whsec_`` を ``STRIPE_WEBHOOK_SECRET`` に入れる
    * - Customer Portal
      - テストモードで有効にする。返金は Dashboard から行う（本番と同じ）
 
@@ -230,7 +234,7 @@ Test Clock もテストモードでだけ使えます。受け入れ確認の 4 
 
 staging にはテスト決済とダミーデータが見えます。URL を知っている人が開ける状態にしないでください。
 
-- **Cloudflare Access を staging ホストに付けます。** Allow は運用者のメールなど、必要な人だけにします。これが主の防御です。
+- **Cloudflare Access を staging ホストに付けます。** 2026-11-03 時点では Zero Trust の組織を ``eventkreater.cloudflareaccess.com`` にし、self-hosted アプリを 1 つ、Allow を運用者のメール 1 件だけで作っています。ログイン方法は One-time PIN です。Access は IdP が 1 つも無いと「ログイン方法がありません」で止まるので、**Settings → Authentication** で One-time PIN を有効にしてからアプリの ``allowed_idps`` に入れます。メールを足すときは、この Allow ポリシーに足します。
 - ``APP_ENV=staging`` の noindex は**二重の保険**です。``src/app/robots.ts`` が全パスを disallow した robots.txt を返し、``next.config.mjs`` の ``headers()`` が全パスに ``X-Robots-Tag: noindex, nofollow`` を付けます。検索に出ないだけで、URL を開けば見えます。Access の代わりにはなりません。
 - ``APP_ENV`` は ``[build.args]`` と ``[env]`` の両方に置きます。``headers()`` はビルド時に評価され、``robots.ts`` は ``force-dynamic`` で実行時に読むためです。片方だけだと noindex が効きません。
 - ``*.fly.dev`` を生やしません。``[http_service]`` を書かなければ公開経路は Tunnel だけになり、Access も Tunnel も迂回できません。
@@ -240,13 +244,18 @@ staging にはテスト決済とダミーデータが見えます。URL を知�
 
 staging にデプロイしたあと、上から順に確かめます。失敗したらそこで止めます。
 
+.. note::
+
+   2026-11-03 時点で、``staging.eventkreater.com`` が 302 で Access へ送るところまでを確認しています。
+   以降の行は未実施です（Stripe のテスト鍵もまだ入れていません）。
+
 * ``[ ]`` ``GET /api/v1/public/pricing`` が 200 を返す
 * ``[ ]`` 会員登録 → 電話確認 → ``/mypage`` まで進める。Cookie が ``__Host-`` で始まる
 * ``[ ]`` 無料チケットを 2 枚作り、3 件目で料金モーダルが出る。``4242 4242 4242 4242`` で払い、``verify`` と Webhook の両方が 200 で、二重付与しない
 * ``[ ]`` Test Clock で初月無料 → 3 日前 / 1 日前の通知 → 定価の請求、まで進み、``trial_ends_at`` が NULL になる
 * ``[ ]`` ``4000 0000 0000 0002`` で ``PAST_DUE`` になり、イベント作成が 402 を返す
 * ``[ ]`` チラシ候補が出て画像が返る（500 なら flyer の ``OPENAI_API_KEY`` とフォント、web の ``chown`` を疑う）
-* ``[ ]`` ``*.fly.dev`` が引けないこと、``staging.example.com`` が ``X-Robots-Tag: noindex`` を返すこと
+* ``[ ]`` ``*.fly.dev`` が引けないこと、``staging.eventkreater.com`` が 302 で Access に止められ、ログイン後に ``X-Robots-Tag: noindex`` が返ること
 * ``[ ]`` 390px の実機で ``/events/{id}`` の出欠が片手で完結する
 
 7. staging のデータを作り直す
