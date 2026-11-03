@@ -493,6 +493,34 @@ Worker の custom domain と Resend の DKIM が DNS で衝突します。
    * - Resend の鍵を変えて POST する
      - 502
 
+``502`` が返るときは、Worker のログに上流の状態番号が出ます（``UPSTREAM_STATUS_...``）。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - 上流
+     - 原因と直し方
+   * - ``401``
+     - ``RESEND_API_KEY`` が無効。Resend で鍵を作り直し、``wrangler secret put`` で入れ直す
+   * - ``422``
+     - ほぼ ``RESEND_API_KEY`` の所属違い。Resend の鍵はチーム単位で、別チームの鍵では ``from`` のドメインが見えず 422 になる。宛先を変えても同じ結果になるので、まず鍵を疑う
+   * - ``429``
+     - 送信数の上限。Resend の Usage を見る
+
+``422`` を切り分けるときは、同じ鍵で ``GET https://api.resend.com/domains`` を叩き、``send.eventkreater.com`` が
+``verified`` で見えるか確かめます。見えなければ、その鍵は別のチームのものです。送信ドメインの検証そのものは
+Resend のダッシュボードで状態を確認できます。
+
+.. code-block:: powershell
+
+   # 送信ドメインがこの鍵で見えるか（見えなければ鍵の所属違い）
+   curl.exe https://api.resend.com/domains -H "Authorization: Bearer $env:RESEND_API_KEY"
+
+   # Worker のログを流したまま、別の端末から 1 通送る
+   cd infra\mail-webhook
+   npx wrangler tail --config wrangler.prod.toml
+
 2.3 Cloudflare Tunnel アプリを作る
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
