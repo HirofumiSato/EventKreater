@@ -71,7 +71,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
-| `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。登録の成否はメールの有無で変えない |
+| `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。会員行が無いときは、登録途中の意向（`signup_intents`）をパスワードで引き当てて再開する。メール未確認なら確認メールを再送して `unverifiedEmail`、メール確認済み・電話未確認なら `signupPending` を返す。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
 | `/api/v1/auth/login-challenge` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | SMSとメールの切り替え。同じチャネルを渡すと送り直しになる。前のチャレンジは無効にし、新しい番号を発行する |
 | `/api/v1/auth/login-challenge/confirm` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 確認番号の照合。成功時だけ JWT を発行する |
@@ -2152,6 +2152,13 @@ export interface ProblemDetails {
 
 ローカル登録とログインは `POST /api/v1/auth/local` である。登録時の `platformRole` は受け取らず、常に `MEMBER` を保存する。パスワードの新規登録は `signup_intents` を作り、確認メールを送ってセッションも会員行も発行しない。応答は、新規でも既登録でも「確認メールを送信しました」とする。ログインはメール確認済みの会員だけが第一段階を通る。成功時は JWT を出さず、`login_challenges` と Cookie を返す。電話番号が未確認でも確認番号（メール）は始められ、無料チケットの消費だけを拒否する。会員がいないときもパスワード照合と同じ時間をかける。登録は IP あたり 1 時間に 5 回、ログイン失敗はメールあたり 15 分に 10 回かつ IP あたり 15 分に 40 回までである。上限は `src/modules/auth/lib/rate-limits.ts` に集約し、環境変数（`AUTH_ATTEMPT_LIMIT` など）で調整できる。パスワード不一致の 401 には、厳しいほうの上限について `limitLabel`、`attemptLimit`、`remainingAttempts`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を載せる（画面が残り回数を出すため）。パスワードが一致したら、メールアドレス単位の失敗回数は消す。IP 単位は消さない。漏えい済みパスワードは Have I Been Pwned の範囲 API で拒否する。照合先が応答しないときは登録を止めない。
 
+ログインは、退会していない会員に `passwordHash` があるときはその照合だけを行う。無いとき（会員行がまだ作られていない登録途中を含む）は、`src/modules/auth/lib/signup-resume.ts` の `resumeSignupIntent` が `signup_intents` をメールアドレスの最新 1 件で引き、パスワードを照合する。照合はハッシュを持たない意向でもダミーハッシュで同じだけ時間をかけ、会員や意向の有無を応答時間から読ませない。一致したときだけ、次の 2 つの応答を返す。
+
+- メールが未確認: `200 { verificationRequired: true, unverifiedEmail: true, detail: VERIFICATION_NOTICE }`。送信の前に `verifyEmail`（メールあたり 1 時間に 5 回）と `verifyIp`（IP あたり 1 時間に 10 回）の上限を確かめて記録し、確認メールを再送する。
+- メール確認済み・電話未確認: `200 { signupPending: true, next: "phone", audience }`。`audience` は `organizer` か `participant` で、意向の `audience`（`ORGANIZER` / `PARTICIPANT`）を小文字にして返す。同時に `signup_intent` Cookie を httpOnly・SameSite=Lax・24 時間で付け直す。
+
+どちらもパスワードが一致しているので、メールアドレス単位の失敗回数は消す。IP 単位は消さない。一致しないときの応答は従来どおり 401 で、登録途中の意向の有無も明かさない。期限切れの意向は、パスワードが一致したときだけ期限を 24 時間へ延ばす。延ばすのは期限だけで、`emailVerifiedAt`（メール確認済みの事実）は保持する。
+
 この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 
 成功したログインの会員セッションは、HTTPS では Cookie `__Host-auth_token`、HTTP では `auth_token` である。中身は HS256 JWT で、`userId`、`email`、`jti` を持つ。`jti` は `auth_sessions` の行である。JWT には `platformRole` を載せない。ログアウトはその行の `revoked_at` を記録する。
@@ -2245,6 +2252,8 @@ export interface ProblemDetails {
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
 対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。**セッション Cookie が壊れていても 401 で止めず、未ログインとして登録意向で続ける**（`resolveOptionalUserId`）。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
+
+この画面は `signup_intent` Cookie の意向で続けるため、Cookie を失った・24 時間を過ぎた・別端末でメールを開いたときは 401 で止まる。本文は「登録の続きは、メールアドレスとパスワードで再開できます。」である。画面は朱の主操作を増やさず、補助リンク「続きから再開」を `${basePath}?mode=login` へ出す。再開はログインフォームで同じメールアドレスとパスワードを入れる経路で、8 章のとおり `signup_intent` を付け直して `?step=phone` へ戻る。このリンクは `next` を引き継がない。
 
 ### 8.6. POST `/api/v1/auth/phone/confirm`（電話番号確認）
 

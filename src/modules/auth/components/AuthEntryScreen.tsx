@@ -16,6 +16,7 @@ import {
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
+import { savePasswordCredential } from "@/modules/auth/lib/password-credential";
 import { REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
 import { REFERRAL_TICKET_GRANT } from "@/modules/billing/lib/tickets";
 import { Alert, Field, Loading, PageHeader } from "@/components/ui";
@@ -169,15 +170,38 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       });
       const body = (await res.json().catch(() => ({}))) as ProblemBody & {
         verificationRequired?: boolean;
+        unverifiedEmail?: boolean;
         challengeRequired?: boolean;
         phoneVerified?: boolean;
+        signupPending?: boolean;
+        audience?: AuthAudience;
       };
       if (!res.ok) {
         if (body.error === "EMAIL_UNVERIFIED") setUnverified(true);
         if (body.error === "ADMIN_CONSOLE_REQUIRED") setAdminConsoleRequired(true);
         throw new Error(problemMessage(body, "認証に失敗しました"));
       }
+      // パスワードマネージャへの保存を頼む。`fetch` 送信では保存の合図が出ないため、
+      // パスワードが一致したここで明示的に呼ぶ。失敗しても認証は止めない。
+      if (body.verificationRequired || body.challengeRequired || body.phoneVerified) {
+        void savePasswordCredential({
+          email,
+          password,
+          ...(mode === "register" ? { name } : {}),
+        });
+      }
+      if (body.signupPending) {
+        // 登録途中（メール確認済み・電話未確認）の意向にパスワードが一致した。
+        // 電話番号の確認から続ける。入口が変わるときは、別の入口の戻り先を持ち込まない。
+        const targetAudience: AuthAudience = body.audience === "participant" ? "participant" : "organizer";
+        const targetBase = targetAudience === "participant" ? "/participant/login" : "/auth/register";
+        const carryNext = targetAudience === audience ? nextQuery : "";
+        router.push(`${targetBase}?step=phone${carryNext}`);
+        return;
+      }
       if (body.verificationRequired) {
+        // 登録途中のメールが未確認だった。確認メールを送り直したので、再送ボタンも出す。
+        if (body.unverifiedEmail) setUnverified(true);
         setNotice(body.detail || "確認メールを送信しました。メールのリンクを開いてください。");
         setMode("login");
         setPassword("");
@@ -298,7 +322,9 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
             ? "確認メールが届きます。その後、電話番号を確認して登録が終わります。"
             : "パスワードを忘れたときは、確認番号で入れます。"}
         </p>
-        <form onSubmit={submit} className="auth-card__body">
+        {/* mode ごとに作り直す。同じ要素の autocomplete を書き換えるだけでは、
+            Chrome が新しい用途（新規パスワード／既存パスワード）として解析し直さない。 */}
+        <form key={mode} onSubmit={submit} className="auth-card__body">
           {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
           {mode === "register" && inviteName && (
             <Alert tone="success">
@@ -309,6 +335,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
             <Field label="名前" htmlFor="register-name">
               <input
                 id="register-name"
+                name="name"
+                autoComplete="name"
                 required
                 maxLength={50}
                 value={name}
@@ -320,6 +348,9 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
           <Field label="メールアドレス" htmlFor="register-email">
             <input
               id="register-email"
+              name="email"
+              // パスワードマネージャのユーザー名としてメールアドレスを対応付ける。
+              autoComplete="username"
               required
               type="email"
               value={email}
@@ -330,6 +361,8 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
           <Field label="パスワード" htmlFor="register-password">
             <input
               id="register-password"
+              name="password"
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
               required
               type="password"
               minLength={mode === "register" ? 8 : 1}
@@ -403,6 +436,8 @@ function PhoneScreen({
   const [submitting, setSubmitting] = useState(false);
   /** 確認コードの入力ミスを使い切った状態。再送を前に出す。 */
   const [exhausted, setExhausted] = useState(false);
+  /** 登録の意向を引けない状態（Cookie が無い・24 時間を過ぎた・別端末でメールを開いた）。 */
+  const [subjectMissing, setSubjectMissing] = useState(false);
 
   // 既に確認済みの会員は、この画面を出さずに着地へ送る。
   useEffect(() => {
@@ -414,6 +449,7 @@ function PhoneScreen({
     setSubmitting(true);
     setError(null);
     setNotice(null);
+    setSubjectMissing(false);
     try {
       const res = await fetch("/api/v1/auth/phone/start", {
         method: "POST",
@@ -421,7 +457,11 @@ function PhoneScreen({
         body: JSON.stringify({ phone }),
       });
       const body = (await res.json().catch(() => ({}))) as ProblemBody & { alreadyVerified?: boolean };
-      if (!res.ok) throw new Error(problemMessage(body, "確認コードを送れませんでした"));
+      if (!res.ok) {
+        // 401 は、意向 Cookie が無い・切れた・別端末でメールを開いた状態。行き止まりにしない。
+        if (res.status === 401) setSubjectMissing(true);
+        throw new Error(problemMessage(body, "確認コードを送れませんでした"));
+      }
       if (body.alreadyVerified) {
         onFinished();
         return;
@@ -453,6 +493,8 @@ function PhoneScreen({
         body: JSON.stringify({ phone, code }),
       });
       if (!res.ok) {
+        // 送ったあとに意向が切れた場合も、行き止まりにせず同じ再開の導線を出す。
+        if (res.status === 401) setSubjectMissing(true);
         const problem = await readProblemBody(res);
         setExhausted(problem.error === "CODE_EXHAUSTED");
         throw new Error(problemMessage(problem, "電話番号の確認に失敗しました"));
@@ -519,6 +561,14 @@ function PhoneScreen({
           )}
           {notice && <Alert tone="success">{notice}</Alert>}
           {error && <Alert tone="error">{error}</Alert>}
+          {/* 主操作（朱）は増やさない。続きはログインフォームの同じパスワードで再開する。 */}
+          {subjectMissing && (
+            <p className="help">
+              <Link href={`${basePath}?mode=login`} className="text-link">
+                続きから再開
+              </Link>
+            </p>
+          )}
           <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
             {submitting ? "処理中…" : sent ? "確認して続ける" : "確認コードを送る"}
           </button>

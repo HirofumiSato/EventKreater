@@ -99,7 +99,7 @@ function missingSubject(): ProblemDetailException {
   return new ProblemDetailException({
     status: 401,
     title: "Unauthorized",
-    detail: "電話番号の確認を始めるには、メールの確認かログインが必要です。",
+    detail: "登録の続きは、メールアドレスとパスワードで再開できます。",
   });
 }
 

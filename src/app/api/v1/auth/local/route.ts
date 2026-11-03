@@ -4,8 +4,14 @@ import { hashPassword, passwordMatches } from "@/modules/auth/lib/auth";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { AuthSchema } from "@/lib/schemas";
-import { clientIp } from "@/modules/auth/lib/cookies";
+import {
+  SIGNUP_INTENT_COOKIE,
+  SIGNUP_INTENT_MAX_AGE,
+  clientIp,
+  writeCookie,
+} from "@/modules/auth/lib/cookies";
 import { readReferralCookie } from "@/modules/auth/lib/referral-cookie";
+import { resumeSignupIntent } from "@/modules/auth/lib/signup-resume";
 import { challengeResponse, purposeForAudience, startLoginChallenge } from "@/modules/auth/lib/login-challenge";
 import { assertPasswordNotBreached } from "@/modules/auth/lib/pwned";
 import {
@@ -94,6 +100,34 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
     const passwordOk = await passwordMatches(input.password, user?.passwordHash ?? null);
     if (!user || !passwordOk) {
+      // 会員行は電話番号の確認まで作られない。登録途中で Cookie を失った人は、
+      // 意向のパスワードが一致したときだけ続きへ戻す（会員の有無は応答で明かさない）。
+      const resume = await resumeSignupIntent({ email, password: input.password });
+      if (resume.kind === "email_pending") {
+        await assertWithinAttemptLimit(rules.verifyEmail, email);
+        await assertWithinAttemptLimit(rules.verifyIp, ip);
+        await recordAuthAttempt(rules.verifyEmail, email);
+        await recordAuthAttempt(rules.verifyIp, ip);
+        // パスワードは一致しているので、メール単位の失敗は数え直す（IP 単位は残す）。
+        await clearRuleAttempts(rules.loginEmail, email);
+        await sendIntentVerification(resume.intent);
+        return NextResponse.json({
+          verificationRequired: true,
+          unverifiedEmail: true,
+          detail: VERIFICATION_NOTICE,
+        });
+      }
+      if (resume.kind === "phone_pending") {
+        await clearRuleAttempts(rules.loginEmail, email);
+        const response = NextResponse.json({
+          signupPending: true,
+          next: "phone",
+          audience: resume.audience === "PARTICIPANT" ? "participant" : "organizer",
+        });
+        // 電話番号の確認（phone/start・phone/confirm）は、この Cookie で意向を引く。
+        writeCookie(response, req, SIGNUP_INTENT_COOKIE, resume.intentId, SIGNUP_INTENT_MAX_AGE);
+        return response;
+      }
       await recordAuthAttempt(rules.loginEmail, email);
       await recordAuthAttempt(rules.loginIp, ip);
       throw await loginFailure(email, ip);

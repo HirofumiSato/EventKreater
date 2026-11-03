@@ -147,7 +147,7 @@
 
 .. count-start
 
-104 ファイル、``it`` は 1374 件です。内訳は ``tests/unit/`` が 77 ファイル 1164 件、``tests/integration/`` が 23 ファイル 164 件です。結合の 164 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+106 ファイル、``it`` は 1385 件です。内訳は ``tests/unit/`` が 78 ファイル 1168 件、``tests/integration/`` が 24 ファイル 171 件です。結合の 171 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -295,6 +295,10 @@
      - 11
      - 窓の外を数えない、上限で 429、バケットの分離、成功時のリセット、厳しいほうの上限の選択、確認コードを使い切ったときの ``CODE_EXHAUSTED``。``?ref=`` 付きの登録は紹介者を ``referred_by_user_id`` に残し、存在しないコードでは残さない
      - SCR-PUB-02
+   * - ``tests/integration/signup-resume.test.ts``
+     - 7
+     - 登録途中の再開。確認済みの意向はパスワード一致で ``phone_pending``、未確認は ``email_pending`` を返して会員を作らない。期限切れは 24 時間へ延ばしメール確認済みを保つ。不一致・意向なし・パスワードを持つ会員・パスワードなしの意向は ``none``
+     - SCR-PUB-02
    * - ``tests/unit/allocation.test.ts``
      - 26
      - 均等割と比率割の計算、端数の寄せ先、集金済み額の按分、未割当の扱い、割合と人数の検証
@@ -302,6 +306,10 @@
    * - ``tests/unit/auth-links.test.ts``
      - 5
      - 戻り先をエンコードして保つ。電話番号の確認へ進んでも戻り先を失わない
+     - SCR-PUB-02
+   * - ``tests/unit/password-credential.test.ts``
+     - 4
+     - 非セキュアコンテキストと ``PasswordCredential`` 非対応では保存しない。``credentials.store`` が失敗しても例外にしない。成功時はメールアドレス・パスワード・名前を渡して 1 回だけ頼む
      - SCR-PUB-02
    * - ``tests/unit/auth-landing.test.ts``
      - 8
@@ -578,7 +586,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1164、``tests/integration/`` が 164 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1164 件を実行して 164 件を skip します。
+件数の内訳は ``tests/unit/`` が 1168、``tests/integration/`` が 171 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1168 件を実行して 171 件を skip します。
 
 .. breakdown-end
 
