@@ -37,7 +37,7 @@
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
 | `scripts/check-mock-sync.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/check.mjs` | [docs/testing/vitest/index.rst](testing/vitest/index.rst) |
-| `scripts/ci-scope.mjs` | [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
+| `scripts/ci-scope.mjs` | [docs/deploy.rst](deploy.rst) / [docs/onboarding.md](onboarding.md) / [docs/testing/ci.rst](testing/ci.rst) |
 | `scripts/lib/capture-core.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/lib/docs-util.mjs` | [docs/README.md](README.md) |
 | `scripts/lib/mock-found.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
