@@ -103,7 +103,9 @@ jobs:
 
       # master ではなく版を固定する。CI の actions/* と同じ方針で、
       # 上流の破壊的変更が日によって混ざらないようにする。
-      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+      # 1.6 は `using: node24`。1.5 は node20 で、ランナーが Node 24 で
+      # 強制実行するため毎回 "Node.js 20 is deprecated" の注記が出る。
+      - uses: superfly/flyctl-actions/setup-flyctl@1.6
 
       # flyctl は config の親ディレクトリをビルド文脈にする。flyer の Dockerfile は
       # services/flyer にあるので、その中で fly.stg.toml を指して呼ぶ。
@@ -138,7 +140,7 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+      - uses: superfly/flyctl-actions/setup-flyctl@1.6
 
       # NEXT_PUBLIC_APP_URL と NEXT_PUBLIC_GA_MEASUREMENT_ID はビルド時に焼き込まれる。
       # 値は各 fly*.toml の [build.args] が持っているので、ここからは渡さない
