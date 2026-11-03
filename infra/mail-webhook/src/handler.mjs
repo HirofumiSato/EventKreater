@@ -51,6 +51,11 @@ async function sendWithResend({ apiKey, from, to, subject, text, signal }) {
     body: JSON.stringify({ from, to: [to], subject, text }),
     signal,
   });
+  if (!response.ok) {
+    // 原因を切り分けるため、上流のステータスだけを残す。宛先・件名・本文は出さない。
+    // 401 は鍵、403 は鍵の権限、422 は from / to かドメイン認証、429 は送信数の上限。
+    console.error(`[mail-webhook] UPSTREAM_STATUS_${response.status}`);
+  }
   return response.ok;
 }
 
