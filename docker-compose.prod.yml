@@ -18,6 +18,9 @@ services:
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3012}
         # 空なら計測しない。
         NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+        # staging の noindex は next.config.mjs の headers() がビルド時に見る。
+        # 空なら既定（本番扱い）に戻る。
+        APP_ENV: ${APP_ENV:-}
     environment:
       NODE_ENV: production
       WATCHPACK_POLLING: !reset null

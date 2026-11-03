@@ -41,6 +41,10 @@ ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 # 空なら計測しない。runner ステージには渡さない（焼き込み済みのため）。
 ARG NEXT_PUBLIC_GA_MEASUREMENT_ID=""
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
+# staging の noindex は next.config.mjs の headers() がビルド時に評価する。
+# 空なら既定（本番扱い）に戻る。runner ステージには渡さない（焼き込み済みのため）。
+ARG APP_ENV=""
+ENV APP_ENV=${APP_ENV}
 # ビルド中に route モジュールが評価され、PrismaClient が DATABASE_URL を
 # 検証する。接続はしないのでダミーで足りる。本物は実行時に渡す。
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
