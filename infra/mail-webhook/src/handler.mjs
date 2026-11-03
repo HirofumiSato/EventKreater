@@ -1,4 +1,5 @@
-// staging のメール中継（Cloudflare Worker）の中核。
+// メール中継（Cloudflare Worker）の中核。staging と本番で同じ実装を使い、
+// 違いは wrangler の設定（アプリ名・ホスト名・件名の接頭辞）だけにする。
 //
 // アプリの `src/lib/mail.ts` は MAIL_WEBHOOK_URL に { to, subject, body } を
 // 認証ヘッダなしで POST するだけなので、ここで受けて Resend へ転送する。
@@ -6,7 +7,6 @@
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const HEALTH_PATH = "/health";
-const SUBJECT_PREFIX = "[stg] ";
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_BODY_LENGTH = 10000;
 const SEND_TIMEOUT_MS = 5000;
@@ -24,6 +24,7 @@ function jsonResponse(status, payload) {
 /**
  * 許可リストを小文字の配列にする。
  * `@example.com` の形はドメイン全体、それ以外は完全一致で比べる。
+ * `*` は「全宛先を許可」の目印として、そのまま配列に残す。
  */
 function normalizeAllowedRecipients(value) {
   const entries = Array.isArray(value) ? value : String(value ?? "").split(",");
@@ -31,6 +32,8 @@ function normalizeAllowedRecipients(value) {
 }
 
 function isAllowedRecipient(to, allowedRecipients) {
+  // 空の許可リストは従来どおり全拒否。`*` を書いたときだけ全宛先を通す。
+  if (allowedRecipients.includes("*")) return true;
   const target = to.toLowerCase();
   return allowedRecipients.some((entry) =>
     entry.startsWith("@") ? target.endsWith(entry) : target === entry,
@@ -65,6 +68,9 @@ async function sendWithResend({ apiKey, from, to, subject, text, signal }) {
  * 判定順は「メソッド → パスのトークン → 本文 → 長さ → 許可リスト → 転送」。
  * `GET /health` だけはメソッドの判定より先に返す（監視用で、本文は ok だけ）。
  *
+ * `subjectPrefix` は件名の前に付ける接頭辞。staging は `[stg] `、本番は空。
+ * 文字列でない値は空として扱い、壊れた設定で落ちないようにする。
+ *
  * 失敗を返すのは意図的で、アプリは 2xx 以外を "RECORDED" に落として
  * `[mail]` ログを出す。ここで握りつぶすと未送信に気づけなくなる。
  */
@@ -73,9 +79,12 @@ export function createMailHandler({
   from,
   allowedRecipients,
   webhookToken,
+  subjectPrefix = "",
   send = sendWithResend,
 } = {}) {
   const allowed = normalizeAllowedRecipients(allowedRecipients);
+  // 文字列以外は空に落とす。設定の取り違えで中継そのものを落とさない。
+  const prefix = typeof subjectPrefix === "string" ? subjectPrefix : "";
   // 認証ヘッダを付けられないので、トークンはパスで受ける。
   const expectedPath = webhookToken ? `/${webhookToken}` : null;
 
@@ -126,7 +135,7 @@ export function createMailHandler({
         apiKey: resendApiKey,
         from,
         to,
-        subject: SUBJECT_PREFIX + subject,
+        subject: prefix + subject,
         text: body,
         // deliverMail にタイムアウトが無く登録リクエストが await で待つので、ここで打ち切る。
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),

@@ -1,4 +1,4 @@
-// staging のメール中継（Cloudflare Worker）の仕様。
+// メール中継（Cloudflare Worker）の仕様。staging と本番で同じ handler を使う。
 // infra/mail-webhook/src/handler.mjs を直接読み込み、Resend は `send` で差し替える。
 // ネットワークも DB も使わない。
 
@@ -16,13 +16,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** `send` を差し替えた handler を作る。既定は「送れた」を返す偽物。 */
+/**
+ * `send` を差し替えた handler を作る。既定は「送れた」を返す偽物で、
+ * 件名の接頭辞は staging の設定（環境ごとの違いはここで再現する）。
+ */
 function createHandler({ send = vi.fn().mockResolvedValue(true), ...overrides } = {}) {
   const handler = createMailHandler({
     resendApiKey: "re_test_key",
     from: FROM,
     allowedRecipients: "@example.com,ops@example.net",
     webhookToken: TOKEN,
+    subjectPrefix: "[stg] ",
     send,
     ...overrides,
   });
@@ -166,6 +170,21 @@ describe("許可リスト", () => {
     expect(response.status).toBe(403);
     expect(send).not.toHaveBeenCalled();
   });
+
+  it("`*` は任意の宛先を通す", async () => {
+    const { handler, send } = createHandler({ allowedRecipients: "*" });
+    const response = await handler(post(validMail({ to: "nobody@other.test" })));
+    expect(response.status).toBe(202);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][0].to).toBe("nobody@other.test");
+  });
+
+  it("`*` でも件名の検証は効く", async () => {
+    const { handler, send } = createHandler({ allowedRecipients: "*" });
+    const response = await handler(post(validMail({ subject: "" })));
+    expect(response.status).toBe(400);
+    expect(send).not.toHaveBeenCalled();
+  });
 });
 
 describe("Resend への転送", () => {
@@ -202,6 +221,33 @@ describe("Resend への転送", () => {
     });
     const response = await handler(post(validMail()));
     expect(response.status).toBe(502);
+  });
+});
+
+describe("件名の接頭辞", () => {
+  it("subjectPrefix を指定しなければ、件名に接頭辞が付かない（本番の既定）", async () => {
+    const send = vi.fn().mockResolvedValue(true);
+    const handler = createMailHandler({
+      resendApiKey: "re_test_key",
+      from: FROM,
+      allowedRecipients: "@example.com,ops@example.net",
+      webhookToken: TOKEN,
+      send,
+    });
+
+    const response = await handler(post(validMail()));
+
+    expect(response.status).toBe(202);
+    expect(send.mock.calls[0][0].subject).toBe("メールアドレスの確認");
+  });
+
+  it("subjectPrefix が文字列でなければ、接頭辞を付けない", async () => {
+    for (const subjectPrefix of [null, 123, ["[stg] "]]) {
+      const { handler, send } = createHandler({ subjectPrefix });
+      const response = await handler(post(validMail()));
+      expect(response.status).toBe(202);
+      expect(send.mock.calls[0][0].subject).toBe("メールアドレスの確認");
+    }
   });
 });
 

@@ -1,0 +1,25 @@
+# event-creater-mail（本番）の Cloudflare Worker 構成。
+#
+# 既定は本番、派生は別ファイル。`fly.toml` / `fly.stg.toml` と同じ方針で、
+# staging は wrangler.toml（event-creater-mail-stg）に置く。
+# staging との違いはアプリ名・ホスト名・件名の接頭辞だけ。
+name = "event-creater-mail"
+main = "src/index.mjs"
+compatibility_date = "2026-11-01"
+
+# Resend の送信ドメイン（send.eventkreater.com）とは別のホストにする。
+# 同じ名前にすると custom domain と DKIM の DNS が衝突する。
+routes = [{ pattern = "mail-hook.eventkreater.com", custom_domain = true }]
+
+# SUBJECT_PREFIX は書かない。本番の件名に接頭辞は付けず、既定の空を使う。
+
+# Cloudflare Access は付けない。Access はブラウザのログインを要求し、
+# アプリは認証ヘッダを付けられないので Worker まで届かなくなる。
+# 代わりに URL のパスへ WEBHOOK_TOKEN を埋め、一致しない要求は 404 で捨てる。
+#
+# 秘密は wrangler secret put で入れる（RESEND_API_KEY / WEBHOOK_TOKEN /
+# MAIL_FROM / ALLOWED_RECIPIENTS）。本番で任意の宛先へ送る場合は
+# ALLOWED_RECIPIENTS に `*` を入れる（未設定・空なら従来どおり全拒否）。
+# 手元の .dev.vars は .gitignore 済みで、コミットしない。
+#
+# 配備は `wrangler deploy --config wrangler.prod.toml`。

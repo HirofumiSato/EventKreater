@@ -8,6 +8,10 @@ compatibility_date = "2026-11-01"
 # 同じ名前にすると custom domain と DKIM の DNS が衝突する。
 routes = [{ pattern = "mail-hook-stg.eventkreater.com", custom_domain = true }]
 
+[vars]
+# staging のメールと分かるように件名へ付ける。本番（wrangler.prod.toml）は空。
+SUBJECT_PREFIX = "[stg] "
+
 # Cloudflare Access は付けない。Access はブラウザのログインを要求し、
 # アプリは認証ヘッダを付けられないので Worker まで届かなくなる。
 # 代わりに URL のパスへ WEBHOOK_TOKEN を埋め、一致しない要求は 404 で捨てる。
