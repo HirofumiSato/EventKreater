@@ -460,19 +460,43 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 2.4 GitHub Actions のデプロイを有効にする
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-デプロイは ``.github/workflows/deploy.yml`` が行います。きっかけは 2 つで、``main`` の CI が緑で終わったとき（production）と、手で流すとき（``workflow_dispatch``。staging か production を選ぶ）です。``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。
+デプロイは 2 本のワークフローで行います。``.github/workflows/deploy.yml`` が入口で、「どちらの環境へ、どの commit を、どの順で出すか」だけを決めます。中身（``migrate`` → ``flyer`` → ``web`` の 3 ジョブ）は ``.github/workflows/deploy-env.yml`` にあり、環境名と ref を受け取って 1 回だけ流します。staging と production で中身が同じ（違うのは environment secrets と ``fly*.toml`` だけ）なので、ジョブを 2 組に複製していません。
+
+きっかけは 2 つです。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 76
+
+   * - きっかけ
+     - 流れ
+   * - ``main`` の CI が緑で終わったとき（``workflow_run``）
+     - staging → production の順。staging が赤なら production は走らない
+   * - 手で流すとき（``workflow_dispatch``）
+     - 選んだ環境だけ。``staging`` を選べば staging だけ、``production`` を選べば production だけ
+
+どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。
+
+``main`` の CI から流れたとき、production は GitHub Environment ``production`` の **Required reviewers** で止まるまで進みません。staging は承認なしで先に上がるので、staging を見てから承認できます。承認は環境を指すジョブごとに求められるため、``deploy-env.yml`` の 3 ジョブぶんまとめて 1 回承認してください（GitHub の **Review pending deployments** でまとめられます）。
 
 このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
 
 1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
 2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
-3. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。
+3. 任意で、``staging`` の environment に ``CF_ACCESS_CLIENT_ID`` と ``CF_ACCESS_CLIENT_SECRET`` を足します。staging のホストは Cloudflare Access で守っているので、外から疎通を確かめるには Service Token が要ります。入れると、staging の web を上げたあとに ``/api/v1/public/pricing`` を 200 が返るまで試し、通らなければ production へ進みません。未設定ならこの確認は飛ばします（デプロイ自体は通ります）。
+4. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。2 回目以降は ``main`` の CI 成功から staging → production の順に流れます。
 
 .. note::
 
-   このリポジトリでは 2026-11-03 に 3 つとも設定済みです。``production`` の承認者は 1 名で、
+   このリポジトリでは 2026-11-03 に environments・secrets・``DEPLOY_ENABLED`` を設定済みです。``production`` の承認者は 1 名で、
    ``workflow_dispatch`` の staging と、``main`` の CI からの production の両方が success で終わることを確かめています。
    デプロイの成否は **Actions の ``Deploy``** で見てください（``fly deploy`` を手で叩いたときと違い、承認待ちのあいだは job が止まります）。
+
+   ``main`` の CI から staging → production の順に流す形は、同じ 2026-11-03 に後から入れました。
+   そのため上の確認は「1 環境だけを流す形」で取った記録で、連鎖そのものの実行はまだ通していません。
+   ``workflow_dispatch`` は 1 環境しか流さないので、連鎖は ``main`` へマージしたときの ``Deploy`` で確かめてください。
+   見るところは 2 つです。``Deploy`` に ``staging`` と ``production`` の 2 ジョブが並び、``staging`` が緑で終わること。
+   そのあと ``production`` が **Review pending deployments** で止まり、承認すると ``migrate`` → ``flyer`` → ``web`` が流れること。
 
 ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
 
