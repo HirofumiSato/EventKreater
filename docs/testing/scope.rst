@@ -147,7 +147,7 @@
 
 .. count-start
 
-106 ファイル、``it`` は 1385 件です。内訳は ``tests/unit/`` が 78 ファイル 1168 件、``tests/integration/`` が 24 ファイル 171 件です。結合の 171 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+106 ファイル、``it`` は 1389 件です。内訳は ``tests/unit/`` が 78 ファイル 1172 件、``tests/integration/`` が 24 ファイル 171 件です。結合の 171 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -516,8 +516,8 @@
      - 生成物を中身が変わったときだけ書くこと。ファイルが無ければ書いて true を返す、同じ中身なら書かずに false を返して mtime も動かさない、違えば書き換えて true を返す、同期版も生成スクリプトから同じ規則で使える
      - 該当なし（検査）
    * - ``tests/unit/mail-webhook.test.mjs``
-     - 22
-     - メール中継の Worker。``POST`` 以外は 405、``GET /health`` は 200、トークンが違うパスと未設定は 404、JSON が読めない・``to`` / ``subject`` / ``body`` の形違いや空は 400、上限（件名 200 文字・本文 10000 文字）を超えたら 413、許可リスト外の宛先は 403 で Resend も ``fetch`` も呼ばない（``@example.com`` はドメイン全体、完全一致、大小文字を区別しない、空なら全拒否）、成功は件名に ``[stg]`` を付けて ``text`` で渡し 202、Resend が失敗か例外なら 502、ログは理由コードだけで宛先・件名・本文を出さない
+     - 26
+     - メール中継の Worker。``POST`` 以外は 405、``GET /health`` は 200、トークンが違うパスと未設定は 404、JSON が読めない・``to`` / ``subject`` / ``body`` の形違いや空は 400、上限（件名 200 文字・本文 10000 文字）を超えたら 413、許可リスト外の宛先は 403 で Resend も ``fetch`` も呼ばない（``@example.com`` はドメイン全体、完全一致、大小文字を区別しない、``*`` は全宛先を許可、空なら全拒否）、成功は件名に接頭辞（``subjectPrefix``。staging は ``[stg]``、本番は既定で付けない）を付けて ``text`` で渡し 202、``subjectPrefix`` が文字列でなければ付けない、Resend が失敗か例外なら 502、ログは理由コードだけで宛先・件名・本文を出さない
      - 該当なし（検査）
    * - ``tests/unit/dev-stuck.test.mjs``
      - 10
@@ -586,7 +586,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1168、``tests/integration/`` が 171 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1168 件を実行して 171 件を skip します。
+件数の内訳は ``tests/unit/`` が 1172、``tests/integration/`` が 171 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1172 件を実行して 171 件を skip します。
 
 .. breakdown-end
 

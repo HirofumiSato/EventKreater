@@ -330,9 +330,12 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
    * - ``GOOGLE_CLIENT_ID`` / ``GOOGLE_CLIENT_SECRET``
      - 任意
      - 両方そろったときだけ Google ログインが出ます
-   * - ``MAIL_WEBHOOK_URL`` / ``SMS_WEBHOOK_URL``
+   * - ``MAIL_WEBHOOK_URL``
+     - 必須
+     - メール中継（Cloudflare Worker）の URL。未設定だと確認メールも課金の事前通知も届かず、会員登録が成立しません。同じホストの設定は下の「メール配送（Resend と Worker）」と :doc:`staging` にあります
+   * - ``SMS_WEBHOOK_URL``
      - 任意
-     - 未設定なら送信はログだけになります（ローカルと同じ）。staging は ``MAIL_WEBHOOK_URL`` に Cloudflare Worker を入れて実際にメールを送り、``SMS_WEBHOOK_URL`` は空のままです（:doc:`staging`）
+     - 未設定なら SMS はログだけになります（ローカルと同じ）。staging は空のままです
    * - ``POSTAL_CODE_API_URL``
      - 任意
      - 既定は zipcloud。変えるときだけ
@@ -359,7 +362,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      STRIPE_PRICE_ID_ONE_TIME="price_..." `
      GOOGLE_CLIENT_ID="..." `
      GOOGLE_CLIENT_SECRET="..." `
-     MAIL_WEBHOOK_URL="https://..." `
+     MAIL_WEBHOOK_URL="https://mail-hook.eventkreater.com/<WEBHOOK_TOKEN>" `
      BILLING_NOTICE_SECRET="..."
 
    fly deploy
@@ -377,6 +380,104 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
       fly ssh console -C "ls -ld /app/storage"
 
    ローカルの Docker で直したのと同じ問題です。詳細は :doc:`local` の「Docker で動かす」にあります。
+
+メール配送（Resend と Worker）
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+   この節は手順 2.3 の前に入ります。既存の節番号（2.3・2.4）を変えないため、番号は付けていません。
+
+本番のアプリは、確認メールと課金の事前通知を ``MAIL_WEBHOOK_URL`` へ POST するだけで、送信は自分では行いません。
+受け口の Cloudflare Worker（``infra/mail-webhook``）が Resend に渡します。仕組みと staging 側の手順は
+:doc:`staging` の 2.3 にあり、ここでは本番との差分だけを書きます。
+
+本番は staging と別の Worker・別のホスト・別の送信ドメインを使います。同じ名前にすると、
+Worker の custom domain と Resend の DKIM が DNS で衝突します。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 26 22 24 16
+
+   * - 環境
+     - config
+     - Worker 名
+     - ホスト名
+     - 件名の接頭辞
+   * - staging
+     - ``infra/mail-webhook/wrangler.toml``
+     - ``event-creater-mail-stg``
+     - ``mail-hook-stg.eventkreater.com``
+     - ``[stg]`` と半角スペース
+   * - production
+     - ``infra/mail-webhook/wrangler.prod.toml``
+     - ``event-creater-mail``
+     - ``mail-hook.eventkreater.com``
+     - なし
+
+1. Resend のダッシュボードで、本番の送信ドメイン ``send.eventkreater.com`` を追加します。
+2. 表示される DKIM・SPF・MX のレコードを、Cloudflare DNS に **DNS only** で入れます（灰色雲）。Proxy（オレンジ雲）にすると Resend の検証が通りません。
+3. DMARC は ``_dmarc.eventkreater.com`` に ``v=DMARC1; p=none; rua=mailto:...`` から始めます。DKIM と SPF が通るのを見るまで ``p=reject`` にしないでください。
+4. Worker をデプロイします。ふだんは CI（``.github/workflows/deploy-env.yml`` の ``mail`` ジョブ）が上げます。environment secrets の ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` が入っているときだけ動き、未設定ならジョブを飛ばします。初回だけ、手元で秘密を 4 つ入れてからデプロイします。
+
+.. code-block:: powershell
+
+   cd infra\mail-webhook
+   npx wrangler secret put RESEND_API_KEY        --config wrangler.prod.toml
+   npx wrangler secret put WEBHOOK_TOKEN         --config wrangler.prod.toml
+   npx wrangler secret put MAIL_FROM             --config wrangler.prod.toml
+   npx wrangler secret put ALLOWED_RECIPIENTS    --config wrangler.prod.toml
+   npx wrangler deploy --config wrangler.prod.toml
+
+秘密の値は次のとおりです。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - 名前
+     - 値
+   * - ``MAIL_FROM``
+     - ``no-reply@send.eventkreater.com``
+   * - ``ALLOWED_RECIPIENTS``
+     - ``*``。本番は参加者・主催者の任意の宛先へ送ります。空にすると全拒否です
+   * - ``SUBJECT_PREFIX``
+     - 空。``wrangler.prod.toml`` に書かず、既定の空を使います。秘密ではないので ``wrangler secret put`` では入れません
+
+5. アプリの宛先を Worker に切り替えます。``MAIL_WEBHOOK_URL`` は実行時の env なので再ビルドは要りません（``fly secrets set`` で Machine は再起動します）。
+
+.. code-block:: powershell
+
+   fly secrets set MAIL_WEBHOOK_URL="https://mail-hook.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web
+
+6. Cloudflare の **Security → WAF → Rate limiting rules** で、``mail-hook.eventkreater.com/*`` にレート制限を 1 本置きます。無料枠は 10 秒の窓しか選べません。トークンを知らない相手の総当たりを減らすための保険です。
+
+.. warning::
+
+   ``mail-hook.eventkreater.com`` に Cloudflare Access を付けないでください。Access はブラウザのログインを要求し、
+   ``deliverMail`` は認証ヘッダを付けられないため、Worker の手前で止められてメールが未送信になります。
+   Access を付けるのは利用者がブラウザで開くホストだけです。
+
+7. 最後に疎通を確かめます。
+
+.. code-block:: powershell
+
+   curl.exe https://mail-hook.eventkreater.com/health
+
+.. list-table::
+   :header-rows: 1
+   :widths: 46 54
+
+   * - 確かめること
+     - 期待
+   * - ``GET /health``
+     - ``{"ok":true}``。ホストと証明書と Worker がそろっている
+   * - 誤ったトークンのパスへ POST する
+     - 404
+   * - ``ALLOWED_RECIPIENTS`` に無い宛先へ POST する
+     - 403
+   * - Resend の鍵を変えて POST する
+     - 502
 
 2.3 Cloudflare Tunnel アプリを作る
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -464,7 +565,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 2.4 GitHub Actions のデプロイを有効にする
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-デプロイは 2 本のワークフローで行います。``.github/workflows/deploy.yml`` が入口で、「どちらの環境へ、どの commit を、どの順で出すか」だけを決めます。中身（``migrate`` → ``flyer`` → ``web`` の 3 ジョブ）は ``.github/workflows/deploy-env.yml`` にあり、環境名と ref を受け取って 1 回だけ流します。staging と production で中身が同じ（違うのは environment secrets と ``fly*.toml`` だけ）なので、ジョブを 2 組に複製していません。
+デプロイは 2 本のワークフローで行います。``.github/workflows/deploy.yml`` が入口で、「どちらの環境へ、どの commit を、どの順で出すか」だけを決めます。中身（``migrate`` → ``flyer`` → ``web`` と ``mail`` の 4 ジョブ）は ``.github/workflows/deploy-env.yml`` にあり、環境名と ref を受け取って 1 回だけ流します。staging と production で中身が同じ（違うのは environment secrets と ``fly*.toml`` だけ）なので、ジョブを 2 組に複製していません。
 
 きっかけは 2 つです。
 
@@ -479,17 +580,17 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - 手で流すとき（``workflow_dispatch``）
      - 選んだ環境だけ。``staging`` を選べば staging だけ、``production`` を選べば production だけ
 
-どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。
+どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。メール中継の ``mail`` は DB を読まないので、この列とは別に並行で流れます。
 
 ``workflow_run`` は ``paths`` で絞れないため、``docs/`` だけの変更でも連鎖は動きます。CI の対象判定（``scripts/ci-scope.mjs``）はデプロイには効きません。ビルドは走りますが、当てるマイグレーションが無ければ ``migrate`` は何もせずに通ります。
 
-``main`` の CI から流れたとき、production は GitHub Environment ``production`` の **Required reviewers** で止まるまで進みません。staging は承認なしで先に上がるので、staging を見てから承認できます。承認は環境を指すジョブごとに求められるため、``deploy-env.yml`` の 3 ジョブぶんまとめて 1 回承認してください（GitHub の **Review pending deployments** でまとめられます）。
+``main`` の CI から流れたとき、production は GitHub Environment ``production`` の **Required reviewers** で止まるまで進みません。staging は承認なしで先に上がるので、staging を見てから承認できます。承認は環境を指すジョブごとに求められるため、``deploy-env.yml`` の 4 ジョブぶんまとめて 1 回承認してください（GitHub の **Review pending deployments** でまとめられます）。
 
 このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
 
 1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
 2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
-3. 任意で、``staging`` の environment に ``CF_ACCESS_CLIENT_ID`` と ``CF_ACCESS_CLIENT_SECRET`` を足します。staging のホストは Cloudflare Access で守っているので、外から疎通を確かめるには Service Token が要ります。入れると、staging の web を上げたあとに ``/api/v1/public/pricing`` を 200 が返るまで試し、通らなければ production へ進みません。未設定ならこの確認は飛ばします（デプロイ自体は通ります）。
+3. 任意で、``staging`` の environment に ``CF_ACCESS_CLIENT_ID`` と ``CF_ACCESS_CLIENT_SECRET`` を足します。staging のホストは Cloudflare Access で守っているので、外から疎通を確かめるには Service Token が要ります。入れると、staging の web を上げたあとに ``/api/v1/public/pricing`` を 200 が返るまで試し、通らなければ production へ進みません。未設定ならこの確認は飛ばします（デプロイ自体は通ります）。同じく任意で、両方の environment に ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` を足すと、``mail`` ジョブがメール中継を CI から上げます。未設定ならジョブを飛ばします。
 4. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。2 回目以降は ``main`` の CI 成功から staging → production の順に流れます。
 
 .. note::

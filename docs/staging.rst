@@ -217,7 +217,8 @@ Worker の秘密は 4 つです。``infra\mail-webhook`` で 1 つずつ入れ�
    * - ``ALLOWED_RECIPIENTS``
      - 送ってよい宛先。ここに無い宛先は 403 で止めます
 
-Worker は受け取った件名の頭に ``[stg]`` を付け、本文はプレーンテキストのまま Resend へ渡します。
+``[stg]`` は ``wrangler.toml`` の ``[vars] SUBJECT_PREFIX`` で決まります（以前は ``handler.mjs`` の定数でした）。
+Worker は受け取った件名の頭にこれを付け、本文はプレーンテキストのまま Resend へ渡します。
 
 .. warning::
 
