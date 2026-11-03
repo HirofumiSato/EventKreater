@@ -334,8 +334,8 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      - 必須
      - メール中継（Cloudflare Worker）の URL。未設定だと確認メールも課金の事前通知も届かず、会員登録が成立しません。同じホストの設定は下の「メール配送（Resend と Worker）」と :doc:`staging` にあります
    * - ``SMS_WEBHOOK_URL``
-     - 任意
-     - 未設定なら SMS はログだけになります（ローカルと同じ）。staging は空のままです
+     - 必須
+     - SMS 中継（Cloudflare Worker）の URL。未設定だと電話番号確認のコードが届かず、新規登録が電話確認で止まります。同じホストの設定は下の「SMS 配送（Twilio と Worker）」と :doc:`staging` にあります
    * - ``POSTAL_CODE_API_URL``
      - 任意
      - 既定は zipcloud。変えるときだけ
@@ -363,6 +363,7 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      GOOGLE_CLIENT_ID="..." `
      GOOGLE_CLIENT_SECRET="..." `
      MAIL_WEBHOOK_URL="https://mail-hook.eventkreater.com/<WEBHOOK_TOKEN>" `
+     SMS_WEBHOOK_URL="https://sms-hook.eventkreater.com/<WEBHOOK_TOKEN>" `
      BILLING_NOTICE_SECRET="..."
 
    fly deploy
@@ -459,9 +460,9 @@ Worker の custom domain と Resend の DKIM が DNS で衝突します。
 
    fly secrets set MAIL_WEBHOOK_URL="https://mail-hook.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web
 
-6. Cloudflare の **Security → WAF → Rate limiting rules** で、既存の ``/console/`` のルールに OR でメール中継のホストを足します。無料枠は **1 ゾーンにつきルール 1 本まで** なので、``mail-hook.eventkreater.com`` 用に 2 本目は作れません。2 本目を足すと API は ``50001 exceeded the maximum number of rules in the phase http_ratelimit: 2 out of 1`` を返します。
+6. Cloudflare の **Security → WAF → Rate limiting rules** で、既存の ``/console/`` のルールに OR でメール中継と SMS 中継のホストを足します。無料枠は **1 ゾーンにつきルール 1 本まで** なので、``mail-hook.eventkreater.com`` や ``sms-hook.eventkreater.com`` 用に 2 本目は作れません。2 本目を足すと API は ``50001 exceeded the maximum number of rules in the phase http_ratelimit: 2 out of 1`` を返します。
 
-   - 式: ``(starts_with(http.request.uri.path, "/console/")) or (http.host eq "mail-hook.eventkreater.com")``
+   - 式: ``(starts_with(http.request.uri.path, "/console/")) or (http.host eq "mail-hook.eventkreater.com") or (http.host eq "sms-hook.eventkreater.com")``
    - しきい値: ``20 requests / 10 seconds``、characteristics は ``ip.src`` と ``cf.colo.id``、``mitigation_timeout`` は 10 秒、action は ``block``
 
    無料枠は 10 秒の窓しか選べません。トークンを知らない相手の総当たりを減らすための保険です。
@@ -520,6 +521,103 @@ Resend のダッシュボードで状態を確認できます。
    # Worker のログを流したまま、別の端末から 1 通送る
    cd infra\mail-webhook
    npx wrangler tail --config wrangler.prod.toml
+
+SMS 配送（Twilio と Worker）
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+   この節も手順 2.3 の前に入ります。番号は付けていません。
+
+電話番号の確認コードは、アプリが ``SMS_WEBHOOK_URL`` へ ``{ "to": "+819012345678", "body": "..." }`` を
+POST するだけで、Twilio は呼びません。受け口の Cloudflare Worker（``infra/sms-webhook``）が Twilio の
+Messages API へ転送します。メール中継と同じ形で、Twilio の鍵は Worker の秘密に閉じ、Fly には URL だけを置きます。
+
+.. code-block:: text
+
+   event-creater-web（deliverSms）
+     ↓ POST { to, body } を認証ヘッダなしで送る
+   sms-hook.eventkreater.com（Worker）
+     ↓ POST /Accounts/{SID}/Messages.json を Basic 認証で送る
+   Twilio（国際ゲートウェイ・送信元は英数字 Sender ID）
+     ↓
+   利用者の携帯
+
+staging は別の Worker と別のホスト（``sms-hook-stg.eventkreater.com``）を使います。差分は :doc:`staging` の 7 にあります。
+
+1. Twilio のアカウントを用意します。試用（Trial）のままでは英数字 Sender ID を使えないため、先に Upgrade（クレジットカードの登録）を済ませます。ダッシュボードの Account Info にある Account SID と Auth Token を控えます。
+2. 送信元は **英数字 Sender ID** にします。``SMS_FROM`` は 3〜11 文字で、英字を 1 文字以上含む ASCII です（例 ``EVENTKRTR``）。日本の番号を買う必要はなく、番号の維持費もかかりません。
+3. 国際ゲートウェイは登録不要で、すぐ使えます。代わりに片方向で、利用者からの返信は受け取れません。日本のガイドラインで国内ゲートウェイを使う場合は事業者ごとの登録が要り、審査に約 5 週間かかります。国内ゲートウェイは送信元 ID を保存しないため番号としては残らず、使うときは Twilio の営業へ問い合わせます。
+4. 宛先は E.164（``+819012345678``）です。アプリの ``toE164`` が国内形式をこの形へ直してから POST します。本文に電話番号を書かないでください（Twilio の日本向けガイドラインで禁止です）。オプトインとオプトアウトの案内は本文に残します。
+5. 料金は日本向けで 1 通 $0.089（セグメント単位）です。日本語は 70 文字で 1 セグメントなので、70 文字を超えると 2 通ぶん課金されます。いまの確認コードは 30 文字ほどで 1 セグメントに収まります。
+6. Worker の秘密を 5 つ入れます。初回だけ手元で入れてからデプロイします。ふだんのデプロイは CI（``.github/workflows/deploy-env.yml`` の ``sms`` ジョブ）が上げます。
+
+.. code-block:: powershell
+
+   cd infra\sms-webhook
+   npx wrangler secret put TWILIO_ACCOUNT_SID  --config wrangler.prod.toml
+   npx wrangler secret put TWILIO_AUTH_TOKEN   --config wrangler.prod.toml
+   npx wrangler secret put SMS_FROM            --config wrangler.prod.toml
+   npx wrangler secret put WEBHOOK_TOKEN       --config wrangler.prod.toml
+   npx wrangler secret put ALLOWED_RECIPIENTS  --config wrangler.prod.toml
+   npx wrangler deploy --config wrangler.prod.toml
+
+秘密の値は次のとおりです。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - 名前
+     - 値
+   * - ``TWILIO_ACCOUNT_SID``
+     - Twilio の Account SID。Basic 認証のユーザー名になる
+   * - ``TWILIO_AUTH_TOKEN``
+     - Twilio の Auth Token。Basic 認証のパスワードになる
+   * - ``SMS_FROM``
+     - 英数字 Sender ID（``EVENTKRTR``）。3〜11 文字、英字を 1 文字以上、ASCII のみ
+   * - ``WEBHOOK_TOKEN``
+     - アプリが URL のパスに載せる合言葉。一致しないパスは 404 です
+   * - ``ALLOWED_RECIPIENTS``
+     - ``*``。本番は参加者・主催者の任意の宛先へ送ります。空にすると全拒否です。staging は自分の番号だけにします
+
+7. アプリの宛先を Worker に切り替えます。``SMS_WEBHOOK_URL`` は実行時の env なので再ビルドは要りません（``fly secrets set`` で Machine は再起動します）。
+
+.. code-block:: powershell
+
+   fly secrets set SMS_WEBHOOK_URL="https://sms-hook.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web
+
+.. warning::
+
+   ``sms-hook.eventkreater.com`` に Cloudflare Access を付けないでください。Access はブラウザのログインを要求し、
+   ``deliverSms`` は認証ヘッダを付けられないため、Worker の手前で止められてコードが届きません。
+   Access を付けるのは利用者がブラウザで開くホストだけです。
+
+8. 最後に疎通を確かめます。
+
+.. code-block:: powershell
+
+   curl.exe https://sms-hook.eventkreater.com/health
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - 返る値
+     - 原因と直し方
+   * - ``401``
+     - Twilio の ``TWILIO_ACCOUNT_SID`` / ``TWILIO_AUTH_TOKEN`` が無効。アプリには ``502`` で返り、Worker のログは ``UPSTREAM_STATUS_401`` になる
+   * - ``403``
+     - ``ALLOWED_RECIPIENTS`` に無い宛先。staging は自分の番号だけを入れる
+   * - ``404``
+     - ``WEBHOOK_TOKEN`` の不一致。``SMS_WEBHOOK_URL`` のパスと Worker の秘密をそろえる
+   * - ``429``
+     - Twilio のレート上限。少し待ってから送り直す
+   * - ``502``
+     - Twilio が受け付けない。番号の形式（E.164）か ``SMS_FROM`` の値（英数字 3〜11 文字、英字を 1 文字以上）を疑う
+
+``502`` が返るときは、Worker のログに上流の状態番号と Twilio の ``code`` が出ます（``UPSTREAM_STATUS_...``）。
+宛先と本文はログに出ません。
 
 2.3 Cloudflare Tunnel アプリを作る
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -678,11 +776,11 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - Cache Rules
      - ``/api/*`` はキャッシュしない（``Cache eligibility: Bypass cache``）。出欠と決済が混ざります。``/_next/static/*`` はアプリが ``Cache-Control: public, max-age=31536000, immutable`` を返すので、追加のルールは要りません
    * - WAF
-     - 管理画面 ``/console/*`` とメール中継 ``mail-hook.eventkreater.com`` を、1 本のレート制限でまとめて見ます（無料枠は 1 ゾーン 1 本まで。式としきい値は手順 2.2 のメール配送にあります）。無料枠は 10 秒の窓しか選べません。必要なら IP 制限も足す
+     - 管理画面 ``/console/*`` とメール中継 ``mail-hook.eventkreater.com``、SMS 中継 ``sms-hook.eventkreater.com`` を、1 本のレート制限でまとめて見ます（無料枠は 1 ゾーン 1 本まで。2 本目は作れません。式としきい値は手順 2.2 のメール配送にあります）。無料枠は 10 秒の窓しか選べません。必要なら IP 制限も足す
 
 .. note::
 
-   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` と ``mail-hook.eventkreater.com`` をまとめたレート制限まで入れています。
+   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` と ``mail-hook.eventkreater.com`` をまとめたレート制限まで入れています。SMS 中継の ``sms-hook.eventkreater.com`` も、同じ 1 本の式に OR で足します（2 本目は作れません）。
    実測では ``/api/v1/public/pricing`` が ``cf-cache-status: DYNAMIC``、``/_next/static/*.css`` が ``immutable`` でした。
 
    ``src/modules/auth/lib/cookies.ts`` の ``clientIp()`` は ``cf-connecting-ip`` → ``fly-client-ip`` → ``x-real-ip`` の順に見て、最後に ``x-forwarded-for`` の右端を使います。

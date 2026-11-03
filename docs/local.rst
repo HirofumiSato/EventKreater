@@ -231,7 +231,7 @@ Node・Python・PostgreSQL をホストに入れずに起動できます。初�
    * - ``/auth/register``
      - 会員登録とログイン。パスワード登録は確認メールのあと電話番号を確認し、成功すると ``/mypage`` へ移動する
    * - ``/auth/register?step=login-code``
-     - ログイン確認番号。既定は登録済み電話へのSMS。SMSが届かないときはメール。コードは Webhook が空ならサーバログに出る
+     - ログイン確認番号。一般会員の既定はメール、管理者の入口は SMS。SMS はチャネルの切り替えで選べる。コードは Webhook が空ならサーバログに出る
    * - ``/auth/register?step=phone``
      - 電話番号の確認。確認コードは ``SMS_WEBHOOK_URL`` が空ならサーバログに出る
    * - ``/auth/verify``
@@ -303,8 +303,8 @@ npm scripts
 
    * - コマンド
      - 内容
-  * - ``npm run dev``
-    - チラシ API（8000）と Web（3012）を起動する。Web は Turbopack。ビルドが止まったままになったら Web を立て直す
+   * - ``npm run dev``
+     - チラシ API（8000）と Web（3012）を起動する。Web は Turbopack。ビルドが止まったままになったら Web を立て直す
    * - ``npm run dev:web``
      - Next.js だけをポート 3012 で起動する。Turbopack
    * - ``npm run dev:web:webpack``

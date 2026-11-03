@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 442
+- 文書から参照されているコードパス: 443
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -448,6 +448,7 @@
 | `tests/unit/site-chrome.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/unit/site-copy.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/unit/site-nav.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/sms-webhook.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/style-breakpoints.test.mjs` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |

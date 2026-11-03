@@ -3032,7 +3032,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 806,
+      "lineCount": 904,
       "headings": [
         {
           "level": 1,
@@ -3061,6 +3061,10 @@
         {
           "level": 3,
           "text": "メール配送（Resend と Worker）"
+        },
+        {
+          "level": 3,
+          "text": "SMS 配送（Twilio と Worker）"
         },
         {
           "level": 3,
@@ -10994,7 +10998,7 @@
       "title": "検証環境（staging）",
       "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
       "preImplementation": false,
-      "lineCount": 387,
+      "lineCount": 397,
       "headings": [
         {
           "level": 1,
@@ -11529,7 +11533,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 706,
+      "lineCount": 710,
       "headings": [
         {
           "level": 1,
@@ -11980,6 +11984,10 @@
         },
         {
           "path": "tests/unit/site-nav.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/sms-webhook.test.mjs",
           "exists": true
         },
         {

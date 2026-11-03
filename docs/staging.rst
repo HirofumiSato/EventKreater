@@ -362,8 +362,18 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 staging 用のデータを初期化する手順は**まだ決めていません**。決まったらこの節に追記します。
 決まるまでは、画面から必要な会員と催しを作ってください。
 
-SMS は送りません。``SMS_WEBHOOK_URL`` は空のままで、電話番号の確認の 6 桁コードは
-``fly logs -a event-creater-web-stg`` の ``[sms]`` から拾います。
+SMS も staging の Worker（``sms-hook-stg.eventkreater.com``）経由で送ります。秘密の名前は本番と同じ 5 つで、
+:doc:`deploy` の「SMS 配送（Twilio と Worker）」にあります。staging は設定ファイルが ``wrangler.toml`` です。
+``ALLOWED_RECIPIENTS`` は自分の番号だけにします。staging はデータを作り直す前提なので、
+参加者や主催者の番号へ誤って送らないための歯止めです。
+
+.. code-block:: powershell
+
+   cd infra\sms-webhook
+   npx wrangler secret put ALLOWED_RECIPIENTS --config wrangler.toml
+   npx wrangler deploy --config wrangler.toml
+
+   fly secrets set SMS_WEBHOOK_URL="https://sms-hook-stg.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web-stg
 
 .. warning::
 
