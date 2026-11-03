@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 109（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 436
+- 文書から参照されているコードパス: 437
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -206,7 +206,7 @@
 | `src/lib/ids.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/lib/image-assets.ts` | [docs/deploy.rst](deploy.rst) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
 | `src/lib/image-upload.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
-| `src/lib/mail.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/lib/mail.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/staging.rst](staging.rst) |
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/lib/problem.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/onboarding.md](onboarding.md) |
 | `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
@@ -410,6 +410,7 @@
 | `tests/unit/hydration-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/image-crop.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/line-share.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/mail-webhook.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/mock-sync.test.mjs` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `tests/unit/organizer-calendar.test.ts` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-invite.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
