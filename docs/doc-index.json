@@ -2,10 +2,10 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 117,
+    "docs": 118,
     "preImplementation": 15,
     "markdown": 52,
-    "rst": 65,
+    "rst": 66,
     "orphan": 1
   },
   "docs": [
@@ -3028,7 +3028,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 456,
+      "lineCount": 526,
       "headings": [
         {
           "level": 1,
@@ -3044,7 +3044,7 @@
         },
         {
           "level": 2,
-          "text": "2. Fly.io にアプリを 2 つ作る"
+          "text": "2. Fly.io にアプリを 3 つ作る"
         },
         {
           "level": 3,
@@ -3053,6 +3053,10 @@
         {
           "level": 3,
           "text": "2.2 web を作る"
+        },
+        {
+          "level": 3,
+          "text": "2.3 Cloudflare Tunnel アプリを作る"
         },
         {
           "level": 2,
@@ -6282,7 +6286,7 @@
       "title": "チケット管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 173,
+      "lineCount": 174,
       "headings": [
         {
           "level": 1,
@@ -6299,6 +6303,7 @@
         "docs/sitemap.rst",
         "docs/local.rst",
         "docs/deploy.rst",
+        "docs/staging.rst",
         "docs/stripe.rst",
         "docs/database.rst",
         "docs/testing/index.rst",
@@ -10592,7 +10597,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 311,
+      "lineCount": 314,
       "headings": [
         {
           "level": 1,
@@ -10667,6 +10672,83 @@
         },
         {
           "path": "src/app/api",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/staging.rst",
+      "sphinxDoc": "staging",
+      "format": "rst",
+      "title": "検証環境（staging）",
+      "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
+      "preImplementation": false,
+      "lineCount": 274,
+      "headings": [
+        {
+          "level": 1,
+          "text": "検証環境（staging）"
+        },
+        {
+          "level": 2,
+          "text": "1. 何が違うか"
+        },
+        {
+          "level": 2,
+          "text": "2. Fly アプリを作る"
+        },
+        {
+          "level": 3,
+          "text": "2.1 web を作る"
+        },
+        {
+          "level": 3,
+          "text": "2.2 flyer を作る"
+        },
+        {
+          "level": 3,
+          "text": "2.3 Tunnel に staging のホスト名を足す"
+        },
+        {
+          "level": 2,
+          "text": "3. Neon を分ける"
+        },
+        {
+          "level": 2,
+          "text": "4. Stripe をテストモードに固定する"
+        },
+        {
+          "level": 2,
+          "text": "5. staging を守る"
+        },
+        {
+          "level": 2,
+          "text": "6. 受け入れ確認"
+        },
+        {
+          "level": 2,
+          "text": "7. staging のデータを作り直す"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "public/samples",
+          "exists": true
+        },
+        {
+          "path": "scripts/promote-admin.mjs",
+          "exists": true
+        },
+        {
+          "path": "src/app/robots.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/stripe.ts",
           "exists": true
         }
       ],

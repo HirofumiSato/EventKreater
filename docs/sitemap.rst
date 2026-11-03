@@ -21,7 +21,7 @@
    * - 初めて起動する
      - :doc:`local` → :doc:`database`
    * - 本番へ出す
-     - :doc:`deploy` 。Cloudflare → Fly.io → Neon / R2 の順
+     - :doc:`deploy` 。Cloudflare → Fly.io → Neon / R2 の順。検証環境は :doc:`staging` に差分だけを置く
    * - 決済を手元で試す
      - :doc:`stripe` 。鍵は ``sk_test_`` だけ。管理画面からは返金しない
    * - 自動テストの範囲を知る
@@ -58,6 +58,7 @@
       Guide --> Map["sitemap このページ"]
       Guide --> Local["local 起動と画面"]
       Guide --> Deploy["deploy 本番デプロイ"]
+      Guide --> Stage["staging 検証環境"]
       Guide --> Stripe["stripe テスト決済"]
       Guide --> Db["database PostgreSQL"]
 
@@ -106,6 +107,8 @@
      - ローカル起動、環境変数、画面パス、チケットの優先順
    * - :doc:`deploy`
      - 本番デプロイ。Cloudflare、Fly.io、Neon、R2 の順に設定する。ローリング更新と切り戻し
+   * - :doc:`staging`
+     - 検証環境の差分。Fly の ``-stg`` アプリ、別 Neon、Stripe テスト固定、Access、受け入れ確認
    * - :doc:`stripe`
      - Stripe テストモード、課金の境界、Webhook、確認 SQL への案内
    * - :doc:`database`
