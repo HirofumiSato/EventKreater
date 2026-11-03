@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 109（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 437
+- 対象文書: 110（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 441
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -98,7 +98,7 @@
 | `src/app/api/v1/admin/pricing-campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/api/v1/admin/session/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/app/api/v1/auth/google/callback/route.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
-| `src/app/api/v1/auth/local/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/app/api/v1/auth/local/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/app/api/v1/auth/session/route.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/app/api/v1/auth/verification/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/app/api/v1/auth/verify/route.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
@@ -143,7 +143,7 @@
 | `src/app/auth/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/app/console/events/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/app/console/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
-| `src/app/console/login/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/app/console/login/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/app/console/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/console/payments/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/console/pricing/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
@@ -219,7 +219,7 @@
 | `src/modules` | `AGENTS.md` / [docs/testing/design.rst](testing/design.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/modules/account/components` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/account/components/AccountInfoPanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/account/components/PasswordPanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
+| `src/modules/account/components/PasswordPanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/modules/account/components/PhoneChangePanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/account/components/WithdrawPanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/account/lib/account.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
@@ -229,21 +229,23 @@
 | `src/modules/attendance/components/ParticipantListTable.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/modules/attendance/lib/rsvp-form.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/modules/auth` | [docs/archive/index.rst](archive/index.rst) |
-| `src/modules/auth/components/AuthEntryScreen.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/modules/auth/components/AuthEntryScreen.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/modules/auth/components/LoginChallengeForm.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/hooks/useExistingSession.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/auth-landing.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/auth-mode.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/modules/auth/lib/auth.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) |
+| `src/modules/auth/lib/auth.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
+| `src/modules/auth/lib/cookies.ts` | [docs/deploy.rst](deploy.rst) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/modules/auth/lib/guards.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/auth/lib/hydrate.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/modules/auth/lib/login-challenge.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
-| `src/modules/auth/lib/phone.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/modules/auth/lib/password-credential.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
+| `src/modules/auth/lib/phone.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/modules/auth/lib/rate-limit.ts` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
-| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/modules/auth/lib/rate-limits.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/auth/lib/referral-cookie.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/auth/lib/resend.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
+| `src/modules/auth/lib/signup-resume.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
 | `src/modules/auth/lib/verification.ts` | [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/billing` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/billing/components/PricingModal.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
@@ -348,7 +350,7 @@
 | `tests/components/publish-confirm-modal.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
-| `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/collection.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-publish.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-save-preview-publish.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -368,6 +370,7 @@
 | `tests/integration/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-notifications.test.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-rate-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/signup-resume.test.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/subscription-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/subscription-trial.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -378,7 +381,7 @@
 | `tests/unit/analytics.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-landing.test.ts` | [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-links.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
-| `tests/unit/auth-mode.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/auth-mode.test.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-rate-limits.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/button-rules.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -418,6 +421,7 @@
 | `tests/unit/organizer-profile.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/participant-calendar.test.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/participant-columns.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/password-credential.test.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/pending-form.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/postal-code-search.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/problem.test.ts` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |

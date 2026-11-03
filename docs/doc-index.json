@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 119,
+    "docs": 120,
     "preImplementation": 15,
-    "markdown": 53,
+    "markdown": 54,
     "rst": 66,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2820,
+      "lineCount": 2829,
       "headings": [
         {
           "level": 2,
@@ -2483,6 +2483,10 @@
         },
         {
           "path": "src/modules/auth/lib/referral-cookie.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/signup-resume.ts",
           "exists": true
         },
         {
@@ -5617,7 +5621,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2086,
+      "lineCount": 2088,
       "headings": [
         {
           "level": 1,
@@ -8030,7 +8034,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 29,
+      "lineCount": 30,
       "headings": [
         {
           "level": 1,
@@ -8054,6 +8058,7 @@
         "docs/issues/rsvp-notifications.md",
         "docs/issues/auth-attempt-limits.md",
         "docs/issues/auth-session-skip-and-challenge-resend.md",
+        "docs/issues/signup-resume-and-password-save.md",
         "docs/issues/venue-suggestions.md",
         "docs/issues/free-ticket-and-referral.md",
         "docs/issues/abuse-and-crawler-hardening.md"
@@ -9553,6 +9558,143 @@
         },
         {
           "path": "tests/unit/rsvp-notification.test.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/signup-resume-and-password-save.md",
+      "sphinxDoc": "issues/signup-resume-and-password-save",
+      "format": "markdown",
+      "title": "登録途中のパスワードを保存し、ログインフォームから登録を再開できるようにする",
+      "summary": "1. Chrome のパスワード生成と保存が効かない。 登録フォームの名前欄とパスワード欄に name と autocomplete が無いため、Chrome が「新規パスワードの作成」と判定できず、生成サジェストを出さない。加えて送信が preventDefault と fetch で、画面遷移が起きない。Chrome はフォームの送信（遷移）を合図に保存を出すので、保存の合図も無い。同じリポジトリの PasswordPanel.tsx と console/login/page.tsx には正しく付いている。 2. 登録途中でパスワードが未保存のまま詰む。 パスワードは signup_intents.password_hash にだけ入り、users の行は電話番号の確認まで作られない。そのため signup_intent Cookie を失う・24 時間を過ぎる・別端末で確認メールを開く、のいずれかで phone/start が 401 で止まる。ログインも会員行が無いので同じく 401 になる。登録し直すと beginSignupIntent が同じメールアドレスの意向を消して作り直すため、前回の続きには戻れない。",
+      "preImplementation": false,
+      "lineCount": 150,
+      "headings": [
+        {
+          "level": 1,
+          "text": "登録途中のパスワードを保存し、ログインフォームから登録を再開できるようにする"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "現状と根拠"
+        },
+        {
+          "level": 2,
+          "text": "今回の決定"
+        },
+        {
+          "level": 2,
+          "text": "実装"
+        },
+        {
+          "level": 3,
+          "text": "1. 登録・ログインフォームの属性"
+        },
+        {
+          "level": 3,
+          "text": "2. パスワードの保存"
+        },
+        {
+          "level": 3,
+          "text": "3. 登録途中の再開（サーバー）"
+        },
+        {
+          "level": 3,
+          "text": "4. 登録途中の再開（画面）"
+        },
+        {
+          "level": 3,
+          "text": "5. 電話番号の確認画面"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "セキュリティ上の判断"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/testing/scope.rst",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/auth/local/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/console/login/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/account/components/PasswordPanel.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/components/AuthEntryScreen.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/auth.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/cookies.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/password-credential.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/phone.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limits.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/signup-resume.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/auth-attempts.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/signup-resume.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/auth-mode.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/password-credential.test.ts",
           "exists": true
         }
       ],
@@ -11379,7 +11521,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 694,
+      "lineCount": 702,
       "headings": [
         {
           "level": 1,
@@ -11522,6 +11664,10 @@
         },
         {
           "path": "tests/integration/rsvp-rate-limit.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/signup-resume.test.ts",
           "exists": true
         },
         {
@@ -11718,6 +11864,10 @@
         },
         {
           "path": "tests/unit/participant-columns.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/password-credential.test.ts",
           "exists": true
         },
         {

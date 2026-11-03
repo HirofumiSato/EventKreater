@@ -23,6 +23,7 @@
    rsvp-notifications
    auth-attempt-limits
    auth-session-skip-and-challenge-resend
+   signup-resume-and-password-save
    venue-suggestions
    free-ticket-and-referral
    abuse-and-crawler-hardening

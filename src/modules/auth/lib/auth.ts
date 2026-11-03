@@ -26,6 +26,15 @@ export async function hashPassword(plain: string): Promise<string> {
 }
 
 export async function passwordMatches(plain: string, passwordHash: string | null): Promise<boolean> {
+  return passwordHashMatches(plain, passwordHash);
+}
+
+/**
+ * 保存済みのハッシュと照合する。ハッシュが無いときもダミーで同じだけ時間を使う。
+ * 「一致したかどうか」だけを見たい場所（登録途中の意向の照合など）はこれを使う。
+ * `passwordMatches` はハッシュが無いと常に false になるため、意向の照合には使えない。
+ */
+export async function passwordHashMatches(plain: string, passwordHash: string | null): Promise<boolean> {
   const hash = passwordHash ?? DUMMY_PASSWORD_HASH;
   const ok = await bcrypt.compare(plain, hash);
   return Boolean(passwordHash) && ok;
