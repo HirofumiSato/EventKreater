@@ -18,6 +18,12 @@
 # staging は CI 成功後に自動で追従する。production も同じく CI 成功後に自動で
 # 走るが、GitHub Environment `production` の Required reviewers で承認を挟む。
 # CI が緑でもそのまま本番へ出さないための人手の 1 回で、シークレットの境目でもある。
+#
+# 自動デプロイは、リポジトリ変数 `DEPLOY_ENABLED` が `true` のときだけ動く。
+# これは「まだ Fly のアプリも environment secrets も無い」段階で main にこの
+# ファイルが入り、CI 成功のたびに赤い実行が積まれるのを避けるため。鍵を入れて
+# 初回のデプロイを流せる状態にしてから `true` にする（手順は docs/deploy.rst の 2.4）。
+# 変数が未設定のとき、ジョブは skipped で終わり、main は緑のままになる。
 name: Deploy
 
 on:
@@ -54,9 +60,11 @@ jobs:
     # ジョブごとに承認を求められることがある）。staging には付けない。
     environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
     # CI が赤のまま本番へ出さない。workflow_dispatch は人の判断で流す。
+    # DEPLOY_ENABLED は「アプリと秘密が揃っているか」の門番で、未設定なら skipped。
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     steps:
       # CI が見た commit そのものを出す。workflow_run の既定の checkout は
       # main の先頭を見るため、CI のあとに main が進むと別の commit を出してしまう。
@@ -98,8 +106,9 @@ jobs:
     needs: migrate
     environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       # チラシ生成 API の config と app は環境で変わる。production 用の
@@ -132,8 +141,9 @@ jobs:
     needs: flyer
     environment: ${{ github.event_name == 'workflow_run' && 'production' || inputs.environment || 'staging' }}
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       # web の config と app も環境で変わる（リポジトリ直下の fly.toml / fly.stg.toml）。

@@ -396,6 +396,19 @@ Cloudflare 側で Tunnel を作ります。
 
 tunnel は本番と staging で ``event-creater-tunnel`` の 1 つを共用し、``staging.example.com`` → ``http://event-creater-web-stg.internal:3012`` の Public Hostname を足すだけで staging 用のアプリは作りません（:doc:`staging` の 2.3）。Cloudflare Tunnel は 1 つで複数の Public Hostname を持てますが、1 つの tunnel を共有すると、その tunnel の障害で本番と staging が同時に止まります。切り分けを優先するなら tunnel アプリを分ける選択肢もありますが、いまはアプリを増やさない方針です。
 
+2.4 GitHub Actions のデプロイを有効にする
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+デプロイは ``.github/workflows/deploy.yml`` が行います。きっかけは 2 つで、``main`` の CI が緑で終わったとき（production）と、手で流すとき（``workflow_dispatch``。staging か production を選ぶ）です。``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。
+
+このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
+
+1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
+2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
+3. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。
+
+``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
+
 3. Cloudflare を向ける
 ----------------------
 

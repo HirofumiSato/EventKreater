@@ -3028,7 +3028,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 526,
+      "lineCount": 539,
       "headings": [
         {
           "level": 1,
@@ -3057,6 +3057,10 @@
         {
           "level": 3,
           "text": "2.3 Cloudflare Tunnel アプリを作る"
+        },
+        {
+          "level": 3,
+          "text": "2.4 GitHub Actions のデプロイを有効にする"
         },
         {
           "level": 2,
@@ -10686,7 +10690,7 @@
       "title": "検証環境（staging）",
       "summary": "このページは、検証環境（staging）を作るときの差分だけを書きます。 Cloudflare・Fly.io・Neon の共通の手順は deploy を見てください。 ローカルの起動は local、DB の操作は database、Stripe のテストは stripe です。",
       "preImplementation": false,
-      "lineCount": 274,
+      "lineCount": 277,
       "headings": [
         {
           "level": 1,
