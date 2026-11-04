@@ -16,6 +16,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* 縦スクロールバーの有無で本文の幅を変えない。登録とログインを切り替えると本文の
+   高さが変わり、幅を取るスクロールバー（Windows）が出たり消えたりして、認証カードの
+   幅が 15px 跳ねていた。場所を空けるのは認証画面だけにして、他の画面の幅は変えない。 */
+html:has(.page--auth) {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

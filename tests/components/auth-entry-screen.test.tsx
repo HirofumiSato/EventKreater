@@ -4,11 +4,13 @@
 //
 // 新規登録の応答も `verificationRequired: true` を返すため、未確認ログインと
 // 区別しないと、登録の成功と同時にログインのフォームへ切り替わってしまう。
-// ここで見るのは 4 つ。
+// ここで見るのは 6 つ。
 //   1. 登録の成功は登録のフォームのまま、確認メールの案内と再送だけを出す
 //   2. 未確認のままログインしたときは、ログインフォームのまま再送を出す（FE-AUTH-17）
 //   3. 「メールアドレスを直す」で登録のフォームへ戻れる
 //   4. 再送の成功は、送り直した事実だけを出す（案内の本文を重ねない）
+//   5. 登録とログインはタブで切り替え、題（`h1`）と地の色は変えない
+//   6. 入力欄はタブの下の面にまとめ、タブと面を 1 枚の紙としてつなげる
 
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -85,7 +87,7 @@ describe("登録の成功", () => {
     expect(screen.getByRole("button", { name: "確認メールを再送する" })).toBeTruthy();
   });
 
-  it("ログインのフォーム・見出し・パスワード欄を出さない", async () => {
+  it("ログインのフォーム・パスワード欄を出さない", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
         verificationRequired: true,
@@ -97,7 +99,8 @@ describe("登録の成功", () => {
     await register("山田 太郎", "taro@example.com", "password123");
     await screen.findByRole("heading", { name: "確認メールを送信しました" });
 
-    expect(screen.queryByRole("heading", { name: "メールアドレスで入る" })).toBeNull();
+    // タブは登録のまま。ログインに切り替えると出る欄は無い。
+    expect((screen.getByRole("radio", { name: "ログイン" }) as HTMLInputElement).checked).toBe(false);
     expect(screen.queryByRole("button", { name: "ログイン" })).toBeNull();
     expect(screen.queryByLabelText("パスワード")).toBeNull();
   });
@@ -180,13 +183,58 @@ describe("未確認のままログインしたとき", () => {
     expect(
       await screen.findByText("確認メールを送信しました。メールのリンクを開いてください。"),
     ).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "メールアドレスで入る" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "主催者アカウント" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "ログイン" })).toBeTruthy();
     expect(screen.getByLabelText("パスワード")).toBeTruthy();
     expect(screen.getByRole("button", { name: "確認メールを再送する" })).toBeTruthy();
     expect(
       screen.queryByRole("heading", { name: "確認メールを送信しました" }),
     ).toBeNull();
+  });
+});
+
+describe("登録とログインの切り替え", () => {
+  it("タブで切り替えても、題と role の札は変えずにカードの中身だけを入れ替える", () => {
+    render(<AuthEntryScreen audience="participant" />);
+
+    expect(screen.getByRole("heading", { name: "参加者アカウント" })).toBeTruthy();
+    // 画面上部の役割の札（eyebrow）は、どの状態でも出す。
+    expect(screen.getByText("参加者", { selector: ".eyebrow" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "登録して参加履歴を残す" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("radio", { name: "ログイン" }));
+
+    expect(screen.getByRole("heading", { name: "参加者アカウント" })).toBeTruthy();
+    expect(screen.getByText("参加者", { selector: ".eyebrow" })).toBeTruthy();
+    expect(screen.queryByLabelText("名前")).toBeNull();
+    expect(screen.getByRole("button", { name: "ログイン" })).toBeTruthy();
+  });
+
+  it("入力欄はタブの下の面にまとめ、タブと面を 1 枚の紙としてつなげる", () => {
+    const { container } = render(<AuthEntryScreen audience="organizer" />);
+
+    const card = container.querySelector(".auth-card--tabs");
+    // タブと面は兄弟。面の中にタブを入れると、選んだタブの下辺で面の上辺を覆えない。
+    const tabs = card?.querySelector(":scope > .auth-tabs");
+    const panel = card?.querySelector(":scope > .auth-card__panel");
+    expect(tabs).toBeTruthy();
+    expect(panel).toBeTruthy();
+    expect(panel?.querySelector("form.auth-card__body")).toBeTruthy();
+    expect(panel?.querySelectorAll("input").length).toBeGreaterThan(0);
+    expect(panel?.querySelector(".auth-tabs")).toBeNull();
+  });
+});
+
+describe("地の色の役割分け", () => {
+  it("参加者の入口だけに、参加者の色を当てる目印を付ける", () => {
+    const participant = render(<AuthEntryScreen audience="participant" />);
+    expect(participant.container.querySelector(".page--auth--participant")).toBeTruthy();
+    expect(participant.container.querySelector(".page--auth--organizer")).toBeNull();
+    cleanup();
+
+    const organizer = render(<AuthEntryScreen audience="organizer" />);
+    expect(organizer.container.querySelector(".page--auth--organizer")).toBeTruthy();
+    expect(organizer.container.querySelector(".page--auth--participant")).toBeNull();
   });
 });
 
@@ -205,7 +253,7 @@ describe("メールアドレスの修正", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "メールアドレスを直す" }));
 
-    expect(screen.getByRole("heading", { name: "はじめての方（新規登録）" })).toBeTruthy();
+    expect((screen.getByRole("radio", { name: "新規登録" }) as HTMLInputElement).checked).toBe(true);
     expect(screen.getByLabelText("名前")).toBeTruthy();
     expect(screen.getByLabelText("メールアドレス")).toBeTruthy();
     expect(screen.getByLabelText("パスワード")).toBeTruthy();

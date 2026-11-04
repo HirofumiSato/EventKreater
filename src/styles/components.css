@@ -670,6 +670,14 @@
   color: var(--color-warning-deep);
 }
 
+/* 注記に添える条件（紹介の上限など）。文と混ぜず、1 行で読ませる。 */
+.panel__note--limit {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--color-text-faint);
+  font-size: 0.75rem;
+}
+
 /* 画面の下に置く操作の列。スマホでは主操作を幅いっぱいにして、親指で押す 1 つを
    決めやすくする。補助はその下に折り返す。640px 以上は中身の幅に戻す。 */
 .panel__actions {
@@ -2150,11 +2158,39 @@ html[data-scroll-lock] {
 }
 
 .dialog--line-share .dialog__warning {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
   margin-top: 1rem;
   line-height: 1.6;
 }
 
+/* 警告の印。文の頭に置き、折り返しても文と揃える。 */
+.dialog--line-share .dialog__warning-icon {
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+  color: var(--color-warning-deep);
+}
+
+.dialog--line-share .dialog__warning-icon svg {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* 取り返しのつかない語（アカウントのロック）だけ赤で目に留める。 */
+.dialog--line-share .dialog__warning-strong {
+  color: var(--color-danger-text);
+}
+
+/* 警告の下に置く、LINE 側の操作の説明。警告と同じ幅で、別の枠として読ませる。 */
+.dialog--line-share .dialog__hint {
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
 .dialog--line-share .dialog__note {
+  color: var(--color-danger-text);
   line-height: 1.5;
 }
 

@@ -188,6 +188,13 @@
   white-space: nowrap;
 }
 
+/* 一覧を途中で切ったときの断り。最後の行の罫線の下に、本文より小さく置く。 */
+.rows__omit {
+  margin-top: 0.75rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
 .rows a.rows__item,
 .rows__item--link {
   color: inherit;
@@ -270,10 +277,15 @@
 }
 
 /* 要約の帯。条文や料金の前に 3 行だけ置く。 */
-/* 認証。1 列。入力の幅は 100%。 */
+/* 認証。1 列。入力の幅は 100%。
+   枠の色は 1 か所（`--auth-line`）で決める。入口（タブ付き）と電話番号の画面で
+   枠の濃さが変わらないようにするため、どちらもこの値を読む。
+   強さは、他の貼り紙の枠（`--color-border-strong`）より一段濃く、墨より軽い所。
+   入口の画面は入力欄が主役なので、枠は黒で締めず、紙の上に引いた線の濃さに留める。 */
 .auth-card {
+  --auth-line: color-mix(in srgb, var(--color-text) 45%, var(--color-surface));
   padding: 1.25rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--auth-line);
   border-radius: var(--radius-xl);
   background: var(--color-surface);
 }
@@ -282,6 +294,117 @@
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.4;
+}
+
+/* タブ付きの認証カード。タブと下の面を 1 枚の紙として見せる。
+   枠と余白はカードではなく「選んだタブ＋面」が持つので、カード側は外す。
+   枠の色は `.auth-card` の `--auth-line` をそのまま使い、タブと面で同じ強さにそろえる。
+   片方だけ濃いと、つなぎ目のところで枠が途切れて見える。 */
+.auth-card--tabs {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* 登録とログインの切り替え。見出しの代わりに、いまどちらを選んでいるかを示す。
+   見た目はタブだが、意味は「2 つから 1 つを選ぶ」radio のまま（矢印キーで移れる）。
+   選んだタブの下辺で面の上辺（1px）を覆うため、面より手前に描く。 */
+.auth-tabs {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+/* 選んでいない側（非活性）は、押せる札として墨で塗る。
+   字を薄くする（白・薄い灰色）には、地を濃くする必要がある。淡い地に薄い字では
+   コントラストが足りず、かえって「押せない」ものに見えてしまう。
+   上辺と外側の辺は引かない（面の奥に折り込まれて見える）。隣と接する辺は残す。
+   消すときは太さを 0 にせず色を透明にする。太さを変えると、札の中の字が 1px ずれる。 */
+.auth-tabs__item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* 押せる的は 40px 以上。タブだからと詰めない。 */
+  min-height: var(--tap-target);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  /* 隣と重ねて、2 枚の境目の線を 1 本にまとめる。重ねないと 2px の帯になる。 */
+  margin-inline-start: -1px;
+  /* 墨 62% と罫線色（紙の地の暖色）の混色。白抜きの 15px が 4.5:1 を超える濃さ
+     （実測 6.0:1）。紙の色を混ぜるので、黒ではなく焦げ茶の札に見える。 */
+  background: color-mix(in srgb, var(--color-text) 62%, var(--color-border));
+  color: var(--color-surface);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* 外側の角だけを丸める。2 枚の継ぎ目まで丸めると、間に切れ込みが見える。 */
+.auth-tabs__item:first-child {
+  margin-inline-start: 0;
+  border-start-start-radius: var(--radius-xl);
+  border-start-end-radius: 0;
+}
+
+.auth-tabs__item:last-child {
+  border-start-start-radius: 0;
+  border-start-end-radius: var(--radius-xl);
+}
+
+/* 濃い地の札どうしが接すると、境目が地に溶けて 1 枚に見える。
+   接する辺だけ、紙を薄く混ぜた線で仕切る。 */
+.auth-tabs__item + .auth-tabs__item:not(:has(input:checked)) {
+  border-inline-start-color: color-mix(in srgb, var(--color-surface) 28%, transparent);
+}
+
+/* radio は見せない。押せる範囲と読み上げの名前は label が持つ。 */
+.auth-tabs__item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 押すと少し明るくなる。反応があることを、色でも返す。
+   明るくしても白抜きが読める濃さ（4.8:1）までに留める。 */
+.auth-tabs__item:hover:not(:has(input:checked)) {
+  background: color-mix(in srgb, var(--color-text) 54%, var(--color-border));
+}
+
+/* 選んだ側は面と同じ紙にして、下の面と 1 枚につなげる。枠は面と同じ強さ
+   （`--auth-line`）で、上辺と外側の辺も閉じる。選んだことは、地の明るさ・
+   字の太さ・字の濃さでも示す。
+   下辺は引かず、1px 下へ同じ地を塗って面の上辺を隠す（つなぎ目を消す）。 */
+.auth-tabs__item:has(input:checked) {
+  border-color: var(--auth-line);
+  border-bottom: 0;
+  background: var(--color-surface);
+  box-shadow: 0 1px 0 var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* radio を隠しているので、focus の輪は label に出す。 */
+.auth-tabs__item:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -3px;
+}
+
+/* 選んだタブの下に続く面。入力欄はすべてこの中に置く。
+   枠は選んだタブと同じ `--auth-line`。上辺は選んだタブの下辺で隠れる。 */
+.auth-card__panel {
+  padding: 1.25rem;
+  border: 1px solid var(--auth-line);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: var(--color-surface);
+}
+
+/* 面の最初に来る入力欄は、面の余白だけで置く（見出しを重ねないため）。 */
+.auth-card__panel > .auth-card__body:first-child {
+  margin-top: 0;
 }
 
 .auth-card__note {
@@ -302,8 +425,9 @@
 
 /* フォームの外に続く操作（確認番号の再送・ログインからやり直す）は、上の欄と
    接しないよう 1 段空ける。認証カードは `deco--tape-quiet` ではないので、
-   deco 側の余白は付かない。 */
-.auth-card > .panel__actions {
+   deco 側の余白は付かない。タブ付きの面では、操作は面の中の直下に来る。 */
+.auth-card > .panel__actions,
+.auth-card__panel > .panel__actions {
   margin-top: 1rem;
 }
 

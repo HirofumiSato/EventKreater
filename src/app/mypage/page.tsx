@@ -194,7 +194,7 @@ export default function MyPage() {
       )}
 
       <Section>
-        <SectionHead title="直近のイベント" note={<>{SUMMARY_LIMIT}件まで。続きは主催一覧で。</>} />
+        <SectionHead title="直近のイベント" />
         {events.length === 0 && (
           <EmptyState>
             まだ主催イベントはありません。{" "}
@@ -230,6 +230,12 @@ export default function MyPage() {
             ))}
           </Rows>
         )}
+        {/* 見出しに件数を書かず、一覧を切ったことが行の下で分かるようにする。 */}
+        {events.length > SUMMARY_LIMIT && (
+          <p className="rows__omit">
+            {SUMMARY_LIMIT + 1}件目からは省略しています。
+          </p>
+        )}
         <div className="panel__actions panel__actions--row">
           <Link href="/organizer/events" className="btn btn--outline btn--sm">
             すべて見る
@@ -253,7 +259,9 @@ export default function MyPage() {
               <dd>肩書き、自己紹介、活動エリア、ジャンル、リンク</dd>
             </div>
           </dl>
-          <div className="panel__actions">
+          {/* 編集と公開ページは、スマホでも 1 段に並べる（`--row`）。
+              縦に積むと紙が伸び、どちらが主か読みにくい。 */}
+          <div className="panel__actions panel__actions--row">
             <Link href="/organizer/profile" className="btn btn--primary btn--sm">
               編集する
             </Link>
