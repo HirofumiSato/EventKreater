@@ -121,6 +121,25 @@ describe("頭文字のメニューの並び", () => {
     ]);
   });
 
+  it("主催イベントを持たない会員でも、主催者画面では主催者のメニューになる", () => {
+    // 通知は主催者にしか作られないので、催し 0 件のあいだは出さない。
+    const links = userMenuConfig("/mypage", participant);
+
+    expect(links).toEqual([
+      SITE.nav.participantSwitch,
+      SITE.nav.organizerDrafts,
+      SITE.nav.account,
+    ]);
+    expect(links).not.toContainEqual(SITE.nav.notifications);
+    // 節を出さない作業画面では、マイページへの入口をメニューに残す。
+    expect(userMenuConfig("/organizer/events/new", participant)).toEqual([
+      SITE.nav.participantSwitch,
+      SITE.nav.mypage,
+      SITE.nav.organizerDrafts,
+      SITE.nav.account,
+    ]);
+  });
+
   it("節がある主催者画面では、マイページを重ねず下書きを受ける", () => {
     for (const pathname of [
       "/mypage",
@@ -184,6 +203,14 @@ describe("ログイン状態の札", () => {
   it("主催イベントを持たない会員は参加者として示す", () => {
     expect(viewerRole("/participant", participant)).toBe("participant");
     expect(viewerRole("/account", participant)).toBe("participant");
+  });
+
+  it("主催イベントを持たない会員でも、主催者画面では主催者として示す", () => {
+    // 登録直後の主催者は必ず催し 0 件になる。主催者エリアでは主催者として示す。
+    for (const pathname of ["/mypage", "/organizer/events", "/notifications", "/invitations/abc"]) {
+      expect(viewerRole(pathname, participant)).toBe("organizer");
+      expect(viewerRoleCaption(viewerRole(pathname, participant))).toBe("主催者アカウント");
+    }
   });
 
   it("ブランド名の下は、いま使っているアカウントの種類を出す", () => {
