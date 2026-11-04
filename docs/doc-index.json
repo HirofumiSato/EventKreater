@@ -5633,7 +5633,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2088,
+      "lineCount": 2089,
       "headings": [
         {
           "level": 1,
@@ -11537,7 +11537,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 710,
+      "lineCount": 714,
       "headings": [
         {
           "level": 1,
@@ -11578,6 +11578,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "src/app",
+          "exists": true
+        },
         {
           "path": "src/app/api",
           "exists": true
@@ -11976,6 +11980,10 @@
         },
         {
           "path": "tests/unit/semantic-theme.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/site-area-coverage.test.ts",
           "exists": true
         },
         {

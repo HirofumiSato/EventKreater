@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/site";
 import {
   type Viewer,
+  accountReturnTarget,
   siteNavConfig,
   userMenuConfig,
   viewerInitial,
@@ -227,5 +228,63 @@ describe("ログイン状態の札", () => {
     expect(viewerInitial("   ")).toBe("?");
     // 絵文字を 2 つに割らない。
     expect(viewerInitial("🎪 フェス")).toBe("🎪");
+  });
+});
+
+/**
+ * アカウント設定（`/account` 配下）は主催者と参加者が同じ画面を使う。
+ * 立場は会員の属性（`isOrganizer`）で決め、本文の戻り先も同じ材料から決める。
+ * 片方だけ別の規則にすると、主催者なのに「参加者アカウント」と出る。
+ */
+describe("アカウント設定のヘッダーの立場", () => {
+  it("主催者がアカウント設定を開いても主催者として示す", () => {
+    expect(viewerRole("/account", organizer)).toBe("organizer");
+    expect(viewerRoleCaption(viewerRole("/account", organizer))).toBe("主催者アカウント");
+  });
+
+  it("アカウント設定の配下（メール確認）も同じ立場で示す", () => {
+    expect(viewerRole("/account/email/verify", organizer)).toBe("organizer");
+    expect(viewerRoleCaption(viewerRole("/account/email/verify", organizer))).toBe(
+      "主催者アカウント",
+    );
+  });
+
+  it("参加者はアカウント設定でも参加者として示す", () => {
+    expect(viewerRole("/account", participant)).toBe("participant");
+    expect(viewerRoleCaption(viewerRole("/account", participant))).toBe("参加者アカウント");
+  });
+
+  it("アカウント設定の判定はパスの区切りまで見る", () => {
+    // `/accountlike` は共有画面ではない。参加者画面として扱う。
+    expect(viewerRole("/accountlike", participant)).toBe("participant");
+    expect(viewerRole("/accountlike", organizer)).toBe("participant");
+  });
+
+  it("アカウント設定の本文の戻り先は、ヘッダーの立場と一致する", () => {
+    // 主催者なら /mypage、参加者なら /participant。両方の会員で確かめる。
+    for (const viewer of [participant, organizer]) {
+      const role = viewerRole("/account", viewer);
+      const target = accountReturnTarget(viewer.isOrganizer);
+
+      expect(target.href).toBe(role === "organizer" ? "/mypage" : "/participant");
+      // 文言も `SITE` の既存のものを使う（本文だけ別の言い方にしない）。
+      expect(target).toEqual(role === "organizer" ? SITE.nav.mypage : SITE.nav.participantHome);
+    }
+  });
+
+  it("アカウント設定の配下でもバーのナビを持たない", () => {
+    const config = siteNavConfig("/account/email/verify", organizer);
+
+    // 行き先は本文と頭文字のメニューが持つ。バーには重ねない。
+    expect(config.links).toEqual([]);
+    expect(config.primary).toBeUndefined();
+    expect(config.action).toBeUndefined();
+  });
+
+  it("主催イベントを持たない会員は、アカウント設定でも参加者の札と参加者ホームへの戻り先になる", () => {
+    expect(viewerRole("/account", participant)).toBe("participant");
+    expect(viewerRoleCaption(viewerRole("/account", participant))).toBe("参加者アカウント");
+    expect(accountReturnTarget(false)).toEqual(SITE.nav.participantHome);
+    expect(accountReturnTarget(false).href).toBe("/participant");
   });
 });

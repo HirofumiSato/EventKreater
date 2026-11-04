@@ -27,7 +27,7 @@
  * ものなので、そこは今までどおり 1 本の切り替えリンクに留める。
  */
 import { SITE } from "@/lib/site";
-import { showOrganizerTabs } from "@/lib/site-chrome";
+import { showOrganizerTabs, siteChrome } from "@/lib/site-chrome";
 
 export interface Viewer {
   name: string;
@@ -58,24 +58,78 @@ export interface NavConfig {
 /** 主催者向けの画面。ここでは参加者の機能を並べず、切り替えリンク 1 本に留める。 */
 const ORGANIZER_AREA_PREFIXES = ["/mypage", "/organizer", "/invitations", "/notifications"] as const;
 
+/** 主催者と参加者が同じ画面を使う領域。立場は会員の属性（isOrganizer）で決める。 */
+const SHARED_AREA_PREFIXES = ["/account"] as const;
+
+/** 参加者向けの画面。 */
+const PARTICIPANT_AREA_PREFIXES = ["/participant"] as const;
+
+/** ヘッダーを出す公開画面。増やすときはここへ 1 行足す（勝手に増えないようテストで縛る）。 */
+const PUBLIC_HEADER_PATHS = ["/service", "/terms"] as const;
+const PUBLIC_HEADER_PREFIXES = ["/auth", "/invite"] as const;
+
 /** 前方一致はパスの区切りまで見る。`/organizerlike` を `/organizer` と誤認しないため。 */
-export function inOrganizerArea(pathname: string): boolean {
-  return ORGANIZER_AREA_PREFIXES.some(
+function inPrefixes(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+/** 主催者向けの画面か。 */
+export function inOrganizerArea(pathname: string): boolean {
+  return inPrefixes(pathname, ORGANIZER_AREA_PREFIXES);
 }
 
 /** いまの画面で誰として使っているか。ヘッダーの札（チップ）と並びの両方がこれを見る。 */
 export type ViewerRole = "participant" | "organizer" | "admin";
 
 /**
+ * いまの画面がどの領域に属するか。ヘッダーの並び・札・メニューはすべてここを読む。
+ *
+ * 同じ知識を `viewerRole()` / `siteNavConfig()` / `userMenuConfig()` に散らすと、
+ * `/account` のように複数の立場が使う画面で判定がずれる。領域の分類はここ 1 か所に置く。
+ * - `admin`       … 管理コンソール（管理者だけの領域）
+ * - `organizer`   … 主催者エリア
+ * - `shared`      … 主催者と参加者が同じ画面を使う領域（`/account` 配下）
+ * - `participant` … 参加者エリア
+ * - `public`      … ヘッダーを出す公開画面
+ * - `none`        … 共通ヘッダーを出さない画面
+ * - `unclassified`… どの領域にも当てはまらない画面（分類漏れ。テストで検出する）
+ */
+export type ViewerArea =
+  | "admin"
+  | "organizer"
+  | "shared"
+  | "participant"
+  | "public"
+  | "none"
+  | "unclassified";
+
+/** パスだけから画面の領域を決める純関数。 */
+export function viewerArea(pathname: string): ViewerArea {
+  if (pathname === "/console" || pathname.startsWith("/console/")) return "admin";
+  if (!siteChrome(pathname).header) return "none";
+  if (inOrganizerArea(pathname)) return "organizer";
+  if (inPrefixes(pathname, SHARED_AREA_PREFIXES)) return "shared";
+  if (inPrefixes(pathname, PARTICIPANT_AREA_PREFIXES)) return "participant";
+  if (PUBLIC_HEADER_PATHS.some((path) => path === pathname)) return "public";
+  if (inPrefixes(pathname, PUBLIC_HEADER_PREFIXES)) return "public";
+  return "unclassified";
+}
+
+/**
  * いまの画面で使っている立場。主催者エリアでは、まだ催しを持たない会員も
  * 主催者として扱う（登録直後は isOrganizer が false になるため）。
  * 参加者画面を見ているあいだは、主催イベントを持つ会員も参加者として並べる。
+ * 共有画面（`/account` 配下）だけは、本文の戻り先と同じ材料（isOrganizer）で決める。
  */
 export function viewerRole(pathname: string, viewer: Viewer): ViewerRole {
   if (viewer.platformRole === "ADMIN") return "admin";
-  return inOrganizerArea(pathname) ? "organizer" : "participant";
+  const area = viewerArea(pathname);
+  if (area === "organizer") return "organizer";
+  if (area === "shared") return viewer.isOrganizer ? "organizer" : "participant";
+  // 参加者画面・公開画面・ヘッダーなしは参加者として示す（仕様 §2.4.1）。
+  return "participant";
 }
 
 /** 札に出す 1 語。文言は `SITE` が持つ。 */
@@ -146,6 +200,15 @@ function accountConfig(): NavConfig {
   return { links: [] };
 }
 
+/**
+ * アカウント設定の本文に出す戻り先。ヘッダーの立場（`viewerRole` の共有領域）と
+ * 同じ材料（`isOrganizer`）から決める。片方だけ別の規則にすると、本文とヘッダーが
+ * 食い違う（主催者なのに「参加者アカウント」と出る）ため、規則をそろえる。
+ */
+export function accountReturnTarget(isOrganizer: boolean): NavLink {
+  return isOrganizer ? SITE.nav.mypage : SITE.nav.participantHome;
+}
+
 /** 未ログイン。サービス紹介と、主催者・参加者それぞれの入口。 */
 function anonymousConfig(): NavConfig {
   return {
@@ -162,8 +225,9 @@ function anonymousConfig(): NavConfig {
 export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfig {
   if (!viewer) return anonymousConfig();
   if (viewer.platformRole === "ADMIN") return adminConfig();
-  if (pathname === SITE.nav.account.href) return accountConfig();
-  return inOrganizerArea(pathname) ? organizerConfig() : participantConfig();
+  const area = viewerArea(pathname);
+  if (area === "shared") return accountConfig();
+  return area === "organizer" ? organizerConfig() : participantConfig();
 }
 
 /**
@@ -191,6 +255,8 @@ export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
     if (viewer.isOrganizer) links.push(SITE.nav.notifications);
     links.push(SITE.nav.organizerDrafts);
   } else if (viewer.isOrganizer) {
+    // 共有画面（/account 配下）もここに入る。参加者側の並びに主催者の行を足す現在の
+    // 挙動が正解で、ヘッダーの立場（viewerRole）が organizer になることと一致する。
     // 主催者でもある会員の入口。参加者画面から主催者マイページへ戻る道はここだけになる。
     links.push(SITE.nav.mypage);
     // 通知は主催者にしか作られない。参加者の端末には出さない。
