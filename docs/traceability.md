@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 442
+- 文書から参照されているコードパス: 444
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -215,6 +215,7 @@
 | `src/lib/site-chrome.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/lib/site-nav.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/lib/site.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/local.rst](local.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `src/lib/sms.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/lib/upload-limit.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/modules` | `AGENTS.md` / [docs/testing/design.rst](testing/design.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/modules/account/components` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
@@ -448,6 +449,7 @@
 | `tests/unit/site-chrome.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/unit/site-copy.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/unit/site-nav.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/sms-webhook.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/style-breakpoints.test.mjs` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |

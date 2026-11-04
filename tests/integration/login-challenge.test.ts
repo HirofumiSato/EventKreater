@@ -5,6 +5,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { bucketOf } from "@/modules/auth/lib/rate-limit";
 import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import {
+  startAccountChallenge,
   startLoginChallenge,
   switchLoginChallengeChannel,
   type ChallengeUser,
@@ -31,6 +32,8 @@ describeDb("ログイン確認番号の再送（結合）", () => {
   const userIds: string[] = [];
   const buckets: string[] = [];
 
+  // 一般会員の既定はメールなので、SMS の振る舞いを見るテストは
+  // startAccountChallenge に channel: "SMS" を渡して明示する。
   afterEach(async () => {
     if (userIds.length > 0) {
       await prisma.loginChallenge.deleteMany({ where: { userId: { in: userIds } } });
@@ -65,7 +68,7 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     const ip = key("resend-ip");
     trackSmsBuckets(user.id, ip);
 
-    const started = await startLoginChallenge({ user, purpose: "PARTICIPANT", ip });
+    const started = await startAccountChallenge({ user, ip, channel: "SMS" });
     expect(started.view.channel).toBe("SMS");
     expect(started.view.destinationMask).toContain("****");
 
@@ -93,7 +96,7 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     const ip = key("resend-limit-ip");
     trackSmsBuckets(user.id, ip);
 
-    let challenge = await startLoginChallenge({ user, purpose: "PARTICIPANT", ip });
+    let challenge = await startAccountChallenge({ user, ip, channel: "SMS" });
     // 初回の送信で 1 回使っているので、上限まであと limit - 1 回。
     for (let send = 1; send < rules.loginSmsUser.limit; send += 1) {
       challenge = await switchLoginChallengeChannel({
@@ -125,7 +128,7 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     trackSmsBuckets(user.id, ip);
     buckets.push(bucketOf(rules.loginEmailChallengeUser, user.id), bucketOf(rules.loginEmailChallengeIp, ip));
 
-    const started = await startLoginChallenge({ user, purpose: "PARTICIPANT", ip });
+    const started = await startAccountChallenge({ user, ip, channel: "SMS" });
     const switched = await switchLoginChallengeChannel({
       req: requestWith(started.id),
       channel: "EMAIL",
@@ -136,5 +139,19 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     expect(switched.view.destinationMask).toContain("@");
     expect(switched.view.canUseSms).toBe(true);
     expect(switched.view.canUseEmail).toBe(true);
+  });
+
+  it("一般会員が主催者の入口から入ると、既定はメールで SMS の試行を数えない", async () => {
+    const user = await seedUser("member-default");
+    const ip = key("member-default-ip");
+    const smsBuckets = [bucketOf(rules.loginSmsUser, user.id), bucketOf(rules.loginSmsIp, ip)];
+    buckets.push(bucketOf(rules.loginEmailChallengeUser, user.id), bucketOf(rules.loginEmailChallengeIp, ip));
+
+    const started = await startLoginChallenge({ user, purpose: "MEMBER", ip });
+
+    expect(started.view.channel).toBe("EMAIL");
+    expect(started.view.destinationMask).toContain("@");
+    // SMS のバケットは空のまま。メール既定にした分だけ従量が減る。
+    expect(await prisma.authAttempt.count({ where: { bucket: { in: smsBuckets } } })).toBe(0);
   });
 });

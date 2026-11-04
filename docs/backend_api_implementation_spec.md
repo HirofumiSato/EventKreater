@@ -2251,7 +2251,7 @@ export interface ProblemDetails {
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
-対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。**セッション Cookie が壊れていても 401 で止めず、未ログインとして登録意向で続ける**（`resolveOptionalUserId`）。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が無いときはサーバログに本文を残し、成功として返す。
+対象画面は SCR-PUB-02 の `?step=phone`。ボディは `{ "phone": "09012345678" }`。番号は E.164 に正規化する。日本の `0` 始まりは `+81` にする。会員セッションがあればその会員へ、無ければ Cookie `signup_intent` の登録意向へ付ける。意向はメール確認済みで、期限内であること。**セッション Cookie が壊れていても 401 で止めず、未ログインとして登録意向で続ける**（`resolveOptionalUserId`）。番号あたり 1 時間に 5 回、IP あたり 1 時間に 10 回まで。コードは 6 桁、有効期限は 10 分。ハッシュだけを保存する。`SMS_WEBHOOK_URL` が未設定・送信失敗のときも成功として返すが、本番（`NODE_ENV === "production"`）では本文を残さず、マスクした宛先だけを警告する。ローカルとテストでは本文をログに残す。
 
 この画面は `signup_intent` Cookie の意向で続けるため、Cookie を失った・24 時間を過ぎた・別端末でメールを開いたときは 401 で止まる。本文は「登録の続きは、メールアドレスとパスワードで再開できます。」である。画面は朱の主操作を増やさず、補助リンク「続きから再開」を `${basePath}?mode=login` へ出す。再開はログインフォームで同じメールアドレスとパスワードを入れる経路で、8 章のとおり `signup_intent` を付け直して `?step=phone` へ戻る。このリンクは `next` を引き継がない。
 
@@ -2276,8 +2276,8 @@ GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、
 ```json
 {
   "challengeRequired": true,
-  "channel": "SMS",
-  "destinationMask": "090****5678",
+  "channel": "EMAIL",
+  "destinationMask": "t***@example.com",
   "canUseSms": true,
   "canUseEmail": true,
   "purpose": "MEMBER",
@@ -2287,7 +2287,7 @@ GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、
 }
 ```
 
-POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。**進行中のチャネルと同じ値を渡すと送り直しになる**（前のチャレンジは使用済みにし、新しい行を作る）。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が無いときはコードをサーバログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
+POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。**進行中のチャネルと同じ値を渡すと送り直しになる**（前のチャレンジは使用済みにし、新しい行を作る）。既定のチャネルは、確認済み電話番号がある管理者（`purpose` が `ADMIN`）が SMS、一般会員（`MEMBER` / `PARTICIPANT`）が EMAIL である。SMS は画面のチャネル切り替え（「SMSで受け取る」）で選ぶ。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が未設定・送信失敗のときも発行は成功として返すが、本番（`NODE_ENV === "production"`）ではコードをサーバログに残さず、マスクした宛先だけを警告する。ローカルとテストではコードをログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
 
 画面は二重送信を防ぐため、送信から 60 秒は再送ボタンを押せない。このクールダウンはクライアントだけが持ち、サーバは上の回数で受ける。
 
@@ -2324,7 +2324,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ### 8.10. POST `/api/v1/user/reauth`（アカウント操作の確認番号）
 
-対象画面は SCR-PUB-11。メールアドレス変更、電話番号変更（パスワードを持たない会員）、パスワード設定、退会の前に使う。ボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。省略時は確認済みの電話があれば SMS、無ければメールである。
+対象画面は SCR-PUB-11。メールアドレス変更、電話番号変更（パスワードを持たない会員）、パスワード設定、退会の前に使う。ボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。省略時はメールである（一般会員と同じ既定）。SMS を使うときは `channel` を明示する。
 
 会員セッションを要求し、`deleted_at` の立った会員には発行しない。`login_challenges` に `purpose = PARTICIPANT` で1件だけ作り、以前の未使用チャレンジは使用済みにする。応答はログイン第二段階の GET と同じ形（`challengeRequired`、`channel`、`destinationMask`、`canUseSms`、`canUseEmail`、`purpose`、`attemptsRemaining`、`attemptLimit`、`lockMinutes`）で、チャレンジ Cookie を付ける。**照合してもセッションは発行しない。** 確認番号は各操作のボディの `code` に入れる。SMS は会員あたり1時間に5回、メールは5回までである。
 

@@ -147,7 +147,7 @@
 
 .. count-start
 
-107 ファイル、``it`` は 1396 件です。内訳は ``tests/unit/`` が 78 ファイル 1172 件、``tests/integration/`` が 24 ファイル 171 件です。結合の 171 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+108 ファイル、``it`` は 1418 件です。内訳は ``tests/unit/`` が 79 ファイル 1193 件、``tests/integration/`` が 24 ファイル 172 件です。結合の 172 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -320,8 +320,8 @@
      - 確認コードの再送を押せるまでの残り秒数。境界、送信前、端末の時計が戻ったとき
      - SCR-PUB-02
    * - ``tests/integration/login-challenge.test.ts``
-     - 3
-     - 同じ宛先への再送で前の確認番号が無効になる。送信上限で 429 と再試行時刻。メールへ切り替えたときの宛先
+     - 4
+     - 同じ宛先への再送で前の確認番号が無効になる。送信上限で 429 と再試行時刻。一般会員の既定はメールで SMS の試行を数えない。SMS はチャネルを明示して確かめ、メールへ切り替えると宛先のマスクが変わる
      - SCR-PUB-02 / ``/console/login``
    * - ``tests/unit/checkout-intent.test.ts``
      - 7
@@ -519,6 +519,10 @@
      - 26
      - メール中継の Worker。``POST`` 以外は 405、``GET /health`` は 200、トークンが違うパスと未設定は 404、JSON が読めない・``to`` / ``subject`` / ``body`` の形違いや空は 400、上限（件名 200 文字・本文 10000 文字）を超えたら 413、許可リスト外の宛先は 403 で Resend も ``fetch`` も呼ばない（``@example.com`` はドメイン全体、完全一致、大小文字を区別しない、``*`` は全宛先を許可、空なら全拒否）、成功は件名に接頭辞（``subjectPrefix``。staging は ``[stg]``、本番は既定で付けない）を付けて ``text`` で渡し 202、``subjectPrefix`` が文字列でなければ付けない、Resend が失敗か例外なら 502、ログは理由コードだけで宛先・件名・本文を出さない
      - 該当なし（検査）
+   * - ``tests/unit/sms-webhook.test.mjs``
+     - 21
+     - SMS 中継の Worker。``POST`` 以外は 405、``GET /health`` は 200 で ``ok`` だけ、トークンが違うパスと未設定は 404、JSON が読めないは 400 ``INVALID_JSON``、配列と ``null`` は 400 ``INVALID_PAYLOAD``、``to`` が E.164 でなければ 400 ``INVALID_RECIPIENT``、``body`` が空か空白だけなら 400 ``MISSING_FIELD``、``body`` が 1000 文字を超えたら 413 ``TOO_LARGE``（1000 文字ちょうどは通す）、許可リストは完全一致だけを通し、空なら全拒否、``*`` は任意の宛先を通すが電話番号の検証は効き、許可外の宛先は 403 ``RECIPIENT_NOT_ALLOWED`` で Twilio も ``fetch`` も呼ばない、成功は 202 で SID・トークン・From・宛先・本文と打ち切り用の ``signal`` を渡し、Twilio が失敗を返したら 502 ``UPSTREAM_REJECTED``、例外なら 502 ``UPSTREAM_ERROR``、拒否と失敗のログは理由コードだけで宛先と本文を出さない
+     - 該当なし（検査）
    * - ``tests/unit/dev-stuck.test.mjs``
      - 10
      - 開発サーバーが「ビルドに失敗したまま」固まったことを見つける判定。``EBUSY``・``Failed to read source code``・``os error 32`` を拾い、構文エラーやビルド成功の行は拾わない。立て直しの間隔（直前なら見送る）と、立て直した直後に前のプロセスの失敗を読み飛ばす時間の関係
@@ -590,7 +594,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1172、``tests/integration/`` が 171 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1172 件を実行して 171 件を skip します。
+件数の内訳は ``tests/unit/`` が 1193、``tests/integration/`` が 172 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1193 件を実行して 172 件を skip します。
 
 .. breakdown-end
 

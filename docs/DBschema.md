@@ -116,7 +116,7 @@ erDiagram
 | **RevenueSplitMode** | `RATIO`, `HEADCOUNT` | 売上の按分方式。割合（basis points）か、連れてきた人数か |
 | **RevenueShareVisibility** | `ALL`, `OWN_ONLY` | 按分の閲覧範囲。`OWN_ONLY` は共同主催者に自分の行だけを見せる |
 | **PlatformRole** | `MEMBER`, `ADMIN` | プラットフォーム権限。会員行に1つ。既定は `MEMBER` |
-| **LoginChallengeChannel** | `SMS`, `EMAIL` | ログイン確認番号の届け方。既定はSMS |
+| **LoginChallengeChannel** | `SMS`, `EMAIL` | ログイン確認番号の届け方。既定は一般会員が `EMAIL`、管理者の入口が `SMS` |
 | **LoginChallengePurpose** | `MEMBER`, `ADMIN`, `PARTICIPANT` | 主催者入口か管理者入口か参加者入口か。`PARTICIPANT` は管理者も通り抜けられる |
 | **SignupAudience** | `ORGANIZER`, `PARTICIPANT` | 登録を始めた入口。確認メール後の着地を分ける。既定は `ORGANIZER` |
 | **PricingTarget** | `ONE_TIME`, `SUBSCRIPTION`, `SUBSCRIPTION_8`, `SUBSCRIPTION_UNLIMITED`, `BOTH` | 価格キャンペーンの適用対象（`SUBSCRIPTION` は定額2階層の両方、`BOTH` は単発と定額すべて） |

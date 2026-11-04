@@ -183,8 +183,18 @@ function assertMemberPurposeAllowed(user: ChallengeUser, purpose: LoginChallenge
   if (purpose === "MEMBER" && user.platformRole === "ADMIN") throw adminConsoleRequired();
 }
 
-function defaultChannel(user: ChallengeUser): LoginChallengeChannel {
-  return user.phoneVerifiedAt && user.phoneE164 ? "SMS" : "EMAIL";
+/**
+ * 確認番号を送る既定のチャネル。
+ *
+ * 管理者の入口は電話確認が必須なので、確認済みの番号があれば SMS にする。
+ * 一般会員（MEMBER / PARTICIPANT）はメールを既定にして SMS の従量を抑える。
+ * SMS が要るときは画面の「SMSで受け取る」で切り替えられる。
+ * 電話番号が未確認なら、どちらの入口でもメールにする。
+ */
+function defaultChannel(user: ChallengeUser, purpose: LoginChallengePurpose): LoginChallengeChannel {
+  const verifiedPhone = Boolean(user.phoneVerifiedAt && user.phoneE164);
+  if (purpose === "ADMIN" && user.platformRole === "ADMIN" && verifiedPhone) return "SMS";
+  return "EMAIL";
 }
 
 function destinationMask(user: ChallengeUser, channel: LoginChallengeChannel): string {
@@ -261,7 +271,7 @@ export async function startLoginChallenge(input: {
       throw adminPhoneRequired();
     }
   }
-  const channel = defaultChannel(input.user);
+  const channel = defaultChannel(input.user, input.purpose);
   return issueChallenge({ user: input.user, purpose: input.purpose, channel, ip: input.ip });
 }
 
@@ -275,7 +285,7 @@ export async function startAccountChallenge(input: {
   ip: string;
 }): Promise<{ id: string; view: LoginChallengePublic }> {
   await assertNotLocked(input.user.id);
-  const channel = input.channel ?? defaultChannel(input.user);
+  const channel = input.channel ?? defaultChannel(input.user, "PARTICIPANT");
   if (channel === "SMS" && !(input.user.phoneVerifiedAt && input.user.phoneE164)) {
     throw new ProblemDetailException({
       status: 400,

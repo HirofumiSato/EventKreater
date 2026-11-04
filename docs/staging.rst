@@ -341,10 +341,14 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 .. note::
 
    2026-11-03 時点で、``staging.eventkreater.com`` が 302 で Access へ送るところまでを確認しています。
-   以降の行は未実施です（Stripe のテスト鍵もまだ入れていません）。
+   2026-11-04 に SMS 中継（``sms-hook-stg.eventkreater.com``）を配備し、``GET /health`` が 200 を返すことを確かめました。
+   Twilio の Trust Hub の一次コンプライアンスプロファイル（Individual）が ``twilio-approved`` になったあと、
+   Worker へ直接 POST して ``202`` と ``status: delivered``（``from: EVENTKRTR``）まで確認しています。
+   ここから下の画面からの確認は未実施です（Stripe のテスト鍵もまだ入れていません）。
 
 * ``[ ]`` ``GET /api/v1/public/pricing`` が 200 を返す
 * ``[ ]`` 会員登録 → 電話確認 → ``/mypage`` まで進める。Cookie が ``__Host-`` で始まる
+* ``[ ]`` 電話確認の SMS が届く（中継は Worker への直接 POST で ``delivered`` まで確認済み。ここは画面からの通しの確認）
 * ``[ ]`` 登録すると ``[stg] メールアドレスの確認`` が届く
 * ``[ ]`` ``fly logs -a event-creater-web-stg`` に ``[mail]`` が出ない（出たら未送信。``deliverMail`` は失敗を呼び出し元に返さないので、気づく手段はこのログだけ）
 * ``[ ]`` 無料チケットを 2 枚作り、3 件目で料金モーダルが出る。``4242 4242 4242 4242`` で払い、``verify`` と Webhook の両方が 200 で、二重付与しない
@@ -362,8 +366,19 @@ staging にデプロイしたあと、上から順に確かめます。失敗し
 staging 用のデータを初期化する手順は**まだ決めていません**。決まったらこの節に追記します。
 決まるまでは、画面から必要な会員と催しを作ってください。
 
-SMS は送りません。``SMS_WEBHOOK_URL`` は空のままで、電話番号の確認の 6 桁コードは
-``fly logs -a event-creater-web-stg`` の ``[sms]`` から拾います。
+SMS も staging の Worker（``sms-hook-stg.eventkreater.com``）経由で送ります。秘密の名前は本番と同じ 5 つで、
+:doc:`deploy` の「SMS 配送（Twilio と Worker）」にあります。staging は設定ファイルが ``wrangler.toml`` です。
+``ALLOWED_RECIPIENTS`` は自分の番号だけにします。staging はデータを作り直す前提なので、
+参加者や主催者の番号へ誤って送らないための歯止めです。``WEBHOOK_TOKEN`` は本番と別の値にしてあり、
+staging のトークンが漏れても本番の Worker は叩けません。
+
+.. code-block:: powershell
+
+   cd infra\sms-webhook
+   npx wrangler secret put ALLOWED_RECIPIENTS --config wrangler.toml
+   npx wrangler deploy --config wrangler.toml
+
+   fly secrets set SMS_WEBHOOK_URL="https://sms-hook-stg.eventkreater.com/<WEBHOOK_TOKEN>" --app event-creater-web-stg
 
 .. warning::
 
