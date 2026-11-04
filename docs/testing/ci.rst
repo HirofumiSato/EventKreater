@@ -6,7 +6,11 @@ CI への接続
 置き場所
 --------
 
-ワークフローはリポジトリ直下の ``.github/workflows/ci.yml`` に 1 本だけ置きます。トリガーは ``pull_request`` と ``main`` への ``push`` です。同じブランチの実行が重なったときは、前の実行を打ち切ります（``concurrency`` の ``cancel-in-progress``）。
+ワークフローはリポジトリ直下の ``.github/workflows/ci.yml`` に 1 本だけ置きます。トリガーは ``pull_request`` と ``main`` への ``push``、そして人が手で流す ``workflow_dispatch`` です。同じブランチの実行が重なったときは、前の実行を打ち切ります（``concurrency`` の ``cancel-in-progress``）。
+
+``workflow_dispatch`` は、``main`` への ``push`` で CI が起動しなかったときの流し直しと、ランナーや依存の版を上げたときの PR を伴わない確認に使います（``gh workflow run ci.yml --ref <ブランチ>``、または Actions の **Run workflow**）。``PR_NUMBER`` が空になるため、``scripts/ci-scope.mjs`` は ``code`` と ``flyer`` の両方を ``true`` に倒し、4 ジョブすべてを走らせます。
+
+手で流した CI は ``Deploy`` を起こしません。``deploy.yml`` は ``workflow_run`` の ``event`` が ``push`` のときだけデプロイするので、CI の流し直しとデプロイの指示が混ざりません。デプロイをやり直したいときは ``Deploy`` 側の ``workflow_dispatch`` を使います。
 
 権限は ``contents: read`` と ``pull-requests: read`` です。後者は変更ファイルの判定が PR の一覧を GitHub API から読むために要ります。CI からリポジトリへ書く操作はしません。
 

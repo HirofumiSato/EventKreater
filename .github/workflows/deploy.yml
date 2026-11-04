@@ -55,9 +55,14 @@ jobs:
   staging:
     # CI が赤のまま本番へ出さない。workflow_dispatch は人の判断で流す。
     # DEPLOY_ENABLED は「アプリと秘密が揃っているか」の門番で、未設定なら skipped。
+    # CI が手で流されたときは出さない（`event == 'push'`）。ci.yml の workflow_dispatch で
+    # CI を流し直しただけで本番が動くと、何を見て出したのか分からなくなる。デプロイを
+    # やり直したいときはこのファイルの workflow_dispatch を使う。
     if: >-
       vars.DEPLOY_ENABLED == 'true' &&
-      ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      ((github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'))
     concurrency:
       group: deploy-staging
@@ -79,7 +84,9 @@ jobs:
       !cancelled() &&
       vars.DEPLOY_ENABLED == 'true' &&
       (needs.staging.result == 'success' || needs.staging.result == 'skipped') &&
-      ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      ((github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'production'))
     concurrency:
       group: deploy-production
