@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
     branches: [main]
+  # 人は Actions から手で流せる。main への push で CI が起動しなかったときの
+  # 流し直しと、ランナーや依存の版を上げたときの PR を伴わない確認に使う。
+  # 手で流した実行は Deploy を起こさない（deploy.yml が event を見て外す）。
+  # 古い commit を本番へ出さないための線引きなので、消さないこと。
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

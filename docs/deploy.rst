@@ -727,9 +727,9 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 
    * - きっかけ
      - 流れ
-   * - ``main`` の CI が緑で終わったとき（``workflow_run``）
-     - staging → production の順。staging が赤なら production は走らない
-   * - 手で流すとき（``workflow_dispatch``）
+  * - ``main`` の CI が緑で終わったとき（``workflow_run``）
+     - staging → production の順。staging が赤なら production は走らない。``push`` で起動した CI だけが対象で、CI を手で流し直しても動かない
+  * - 手で流すとき（``workflow_dispatch``）
      - 選んだ環境だけ。``staging`` を選べば staging だけ、``production`` を選べば production だけ
 
 どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。メール中継の ``mail`` は DB を読まないので、この列とは別に並行で流れます。
