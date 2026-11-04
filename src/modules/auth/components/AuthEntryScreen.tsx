@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
-import { SITE } from "@/lib/site";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
 import {
   isSwitchingAccount,
@@ -46,29 +45,41 @@ async function hydrateSession(): Promise<void> {
 const COPY: Record<
   AuthAudience,
   {
-    title: { register: string; login: string };
-    lead: string;
+    /** 画面の題。新規登録とログインで変えない（今どちらかはカードのタブが示す）。 */
+    title: string;
+    /** 確認番号で入る画面の題。ログインの入口だと分かる語にする。 */
+    challenge: string;
     submit: { register: string; login: string };
     switchToOther: { href: string; label: string };
     otherLabel: string;
   }
 > = {
   organizer: {
-    title: { register: "主催者の会員登録", login: "主催者ログイン" },
-    lead: `${SITE.nav.createEvent.label}幹事の入口です。新規登録は、確認メールのリンクを開いたあと電話番号を確認します。同じ電話番号の会員が既にあるときは、新しいアカウントは作りません。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。`,
+    title: "主催者アカウント",
+    challenge: "主催者ログイン",
     submit: { register: "登録してはじめる", login: "ログイン" },
     switchToOther: { href: "/participant/login", label: "参加者としてログイン" },
     otherLabel: "出欠の履歴を残すなら、",
   },
   participant: {
-    title: { register: "参加者の会員登録", login: "参加者ログイン" },
-    lead:
-      "出欠の履歴を残すための参加者入口です。参加するだけならログインは要りません。登録すると、どの端末からでも自分の出欠を確認できます。ログインはパスワードのあと、登録済みの電話へSMSで確認番号を送ります。SMSが届かないときはメールでも受け取れます。",
-    submit: { register: "登録して履歴を残す", login: "ログイン" },
+    title: "参加者アカウント",
+    challenge: "参加者ログイン",
+    submit: { register: "登録して参加履歴を残す", login: "ログイン" },
     switchToOther: { href: "/auth/register", label: "主催者としてログイン" },
     otherLabel: "イベントを開く幹事なら、",
   },
 };
+
+/**
+ * 認証画面の地の色を、入口の役割で分ける。
+ * 主催者はログイン後の管理画面（薄い山吹）をそのまま使い、参加者は参加者の共通ヘッダーに
+ * 寄せた薄い緑にする。同じ部品なので、色はここ 1 か所で決める（`deco/pop.css`）。
+ */
+function authPageClass(audience: AuthAudience): string {
+  return audience === "participant"
+    ? "page--form page--auth page--auth--participant stack"
+    : "page--form page--auth page--auth--organizer stack";
+}
 
 function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteName: string | null }) {
   const router = useRouter();
@@ -285,9 +296,9 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
 
   if (loginCodeStep) {
     return (
-      <div className="page--form stack">
+      <div className={authPageClass(audience)}>
         <LoginChallengeForm
-          screenName={copy.title.login}
+          screenName={copy.challenge}
           onConfirmed={({ phoneVerified, platformRole }) => {
             // 確認番号でログインできた回数。
             trackEvent("login", { audience });
@@ -317,149 +328,150 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
   }
 
   return (
-    <div className="page--form stack">
+    <div className={authPageClass(audience)}>
       <PageHeader
-        eyebrow={<>{audience === "participant" ? "参加者" : "主催者"}</>}
-        title={<>{mode === "register" ? copy.title.register : copy.title.login}</>}
-        lead={<>{copy.lead}</>}
+        eyebrow={audience === "participant" ? "参加者" : "主催者"}
+        title={copy.title}
       />
-      <div className="segment">
-        <label className="segment__item">
-          <input type="radio" name="auth-mode" checked={mode === "register"} onChange={() => changeMode("register")} />
-          新規登録
-        </label>
-        <label className="segment__item">
-          <input type="radio" name="auth-mode" checked={mode === "login"} onChange={() => changeMode("login")} />
-          ログイン
-        </label>
-      </div>
-      <div className="auth-card">
-        {sent && mode === "register" ? (
-          <>
-            <h2 className="auth-card__title">確認メールを送信しました</h2>
-            <p className="auth-card__note">メールのリンクを開いてください。迷惑メールも見てください。</p>
-            <div className="auth-card__body">
-              <p>{`${email} 宛に送りました。`}</p>
-              {notice && <Alert tone="success">{notice}</Alert>}
-              {error && <Alert tone="error">{error}</Alert>}
-            </div>
-            <div className="panel__actions">
-              <button
-                type="button"
-                className="btn btn--outline btn--block"
-                disabled={submitting || !email}
-                onClick={() => void resend()}
-              >
-                確認メールを再送する
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--block"
-                disabled={submitting}
-                onClick={() => {
-                  setSent(false);
-                  setNotice(null);
-                  setError(null);
-                }}
-              >
-                メールアドレスを直す
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="auth-card__title">
-              {mode === "register" ? "はじめての方（新規登録）" : "メールアドレスで入る"}
-            </h2>
-            <p className="auth-card__note">
-              {mode === "register"
-                ? "確認メールが届きます。その後、電話番号を確認して登録が終わります。"
-                : "パスワードを忘れたときは、確認番号で入れます。"}
-            </p>
-            {/* mode ごとに作り直す。同じ要素の autocomplete を書き換えるだけでは、
-                Chrome が新しい用途（新規パスワード／既存パスワード）として解析し直さない。 */}
-            <form key={mode} onSubmit={submit} className="auth-card__body">
-              {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
-              {mode === "register" && inviteName && (
-                <Alert tone="success">
-                  {`${inviteName}さんの紹介です。はじめて公開すると、紹介した方にチケット${REFERRAL_TICKET_GRANT}枚が届きます。`}
-                </Alert>
-              )}
-              {mode === "register" && (
-                <Field label="名前" htmlFor="register-name">
+      <div className="auth-card auth-card--tabs">
+        {/* 登録とログインの切り替え。カードの上端に敷く帯にして、今どちらかをここで示す。
+            見た目はタブだが、意味は「2 つから 1 つを選ぶ」radio のまま（矢印キーで移れる）。 */}
+        <div className="auth-tabs" role="group" aria-label="新規登録かログインか">
+          <label className="auth-tabs__item">
+            <input
+              type="radio"
+              name="auth-mode"
+              checked={mode === "register"}
+              onChange={() => changeMode("register")}
+            />
+            新規登録
+          </label>
+          <label className="auth-tabs__item">
+            <input type="radio" name="auth-mode" checked={mode === "login"} onChange={() => changeMode("login")} />
+            ログイン
+          </label>
+        </div>
+        {/* 選んだタブが上辺でつながる面。入力欄はすべてこの中に置き、
+            タブと面を 1 枚の紙として見せる（`deco/surface.css` の `.auth-card--tabs`）。 */}
+        <div className="auth-card__panel">
+          {sent && mode === "register" ? (
+            <>
+              <h2 className="auth-card__title">確認メールを送信しました</h2>
+              <p className="auth-card__note">メールのリンクを開いてください。迷惑メールも見てください。</p>
+              <div className="auth-card__body">
+                <p>{`${email} 宛に送りました。`}</p>
+                {notice && <Alert tone="success">{notice}</Alert>}
+                {error && <Alert tone="error">{error}</Alert>}
+              </div>
+              <div className="panel__actions">
+                <button
+                  type="button"
+                  className="btn btn--outline btn--block"
+                  disabled={submitting || !email}
+                  onClick={() => void resend()}
+                >
+                  確認メールを再送する
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--block"
+                  disabled={submitting}
+                  onClick={() => {
+                    setSent(false);
+                    setNotice(null);
+                    setError(null);
+                  }}
+                >
+                  メールアドレスを直す
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* mode ごとに作り直す。同じ要素の autocomplete を書き換えるだけでは、
+                  Chrome が新しい用途（新規パスワード／既存パスワード）として解析し直さない。 */}
+              <form key={mode} onSubmit={submit} className="auth-card__body">
+                {/* 紹介の付与は新規登録のときだけ。ログインに切り替えたら出さない。 */}
+                {mode === "register" && inviteName && (
+                  <Alert tone="success">
+                    {`${inviteName}さんの紹介です。はじめて公開すると、紹介した方にチケット${REFERRAL_TICKET_GRANT}枚が届きます。`}
+                  </Alert>
+                )}
+                {mode === "register" && (
+                  <Field label="名前" htmlFor="register-name">
+                    <input
+                      id="register-name"
+                      name="name"
+                      autoComplete="name"
+                      required
+                      maxLength={50}
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className="input"
+                    />
+                  </Field>
+                )}
+                <Field label="メールアドレス" htmlFor="register-email">
                   <input
-                    id="register-name"
-                    name="name"
-                    autoComplete="name"
+                    id="register-email"
+                    name="email"
+                    // パスワードマネージャのユーザー名としてメールアドレスを対応付ける。
+                    autoComplete="username"
                     required
-                    maxLength={50}
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     className="input"
                   />
                 </Field>
-              )}
-              <Field label="メールアドレス" htmlFor="register-email">
-                <input
-                  id="register-email"
-                  name="email"
-                  // パスワードマネージャのユーザー名としてメールアドレスを対応付ける。
-                  autoComplete="username"
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="input"
-                />
-              </Field>
-              <Field label="パスワード" htmlFor="register-password">
-                <input
-                  id="register-password"
-                  name="password"
-                  autoComplete={mode === "register" ? "new-password" : "current-password"}
-                  required
-                  type="password"
-                  minLength={mode === "register" ? 8 : 1}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="input"
-                />
-                {mode === "register" && <p className="help">8文字以上。流出が確認されたパスワードは使えません。</p>}
-              </Field>
-              {notice && <Alert tone="success">{notice}</Alert>}
-              {error && <Alert tone="error">{error}</Alert>}
-              {adminConsoleRequired && (
-                <a className="btn btn--outline btn--block" href="/console/login">
-                  管理者ログインへ
-                </a>
-              )}
-              {unverified && (
-                <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
-                  確認メールを再送する
+                <Field label="パスワード" htmlFor="register-password">
+                  <input
+                    id="register-password"
+                    name="password"
+                    autoComplete={mode === "register" ? "new-password" : "current-password"}
+                    required
+                    type="password"
+                    minLength={mode === "register" ? 8 : 1}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="input"
+                  />
+                </Field>
+                {notice && <Alert tone="success">{notice}</Alert>}
+                {error && <Alert tone="error">{error}</Alert>}
+                {adminConsoleRequired && (
+                  <a className="btn btn--outline btn--block" href="/console/login">
+                    管理者ログインへ
+                  </a>
+                )}
+                {unverified && (
+                  <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
+                    確認メールを再送する
+                  </button>
+                )}
+                <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
+                  {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
                 </button>
-              )}
-              <button type="submit" disabled={submitting} className="btn btn--primary btn--block">
-                {submitting ? "処理中…" : mode === "register" ? copy.submit.register : copy.submit.login}
-              </button>
-            </form>
-          </>
-        )}
-        {SHOW_GOOGLE_ENTRY && (
-          <div className="panel__actions">
-            <a
-              href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
-              className="btn btn--outline btn--block"
-            >
-              Googleで続ける
-            </a>
+              </form>
+            </>
+          )}
+          {SHOW_GOOGLE_ENTRY && (
+            <div className="panel__actions">
+              <a
+                href={`/api/v1/auth/google?audience=${audience}${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
+                className="btn btn--outline btn--block"
+              >
+                Googleで続ける
+              </a>
+            </div>
+          )}
+          <div className="auth-alt">
+            {copy.otherLabel}
+            <Link href={copy.switchToOther.href} className="text-link">
+              {copy.switchToOther.label}
+            </Link>
+            へ。
           </div>
-        )}
-        <div className="auth-alt">
-          {copy.otherLabel}
-          <Link href={copy.switchToOther.href} className="text-link">
-            {copy.switchToOther.label}
-          </Link>
-          へ。
         </div>
       </div>
     </div>
@@ -570,7 +582,7 @@ function PhoneScreen({
   };
 
   return (
-    <div className="page--form stack">
+    <div className={authPageClass(audience)}>
       <PageHeader
         eyebrow={<>{audience === "participant" ? "参加者" : "主催者"}</>}
         title="電話番号の確認"

@@ -355,3 +355,20 @@
 .deco.deco--tape-shadow .form-final {
   box-shadow: 4px 4px 0 rgb(26 25 22 / 0.12);
 }
+
+/* 会員登録・ログインの入口は、入る役割で地の色を分ける。
+   参加者は参加者の共通ヘッダーと同じ緑（ヘッダーの 18% より薄い `--pop-cool-tint`）にして、
+   主催者はログイン後の管理画面が薄い山吹なので、貼り紙の既定の地のままにする。
+   入口から電話番号・確認番号の画面へ移っても色が跳ねないよう、一連の画面に掛ける。
+   `.page--auth--*` は AuthEntryScreen だけが付ける目印で、招待の受諾などは塗らない。 */
+.deco.deco--tape:has(.page--auth--participant) {
+  background-color: var(--pop-cool-tint);
+}
+
+/* 参加者の入口の札は、ログイン後の共通ヘッダーにある参加者ラベルと同じ緑にそろえる。
+   地を `--pop-cool`、字を白抜きにした小さな札で、どちらの役割の入口かを見出しの上で示す。
+   主催者の札は、主催者ラベル（山吹の地に墨）と同じなので既定のまま。 */
+.deco.deco--tape-shadow .page--auth--participant .eyebrow {
+  background: var(--pop-cool);
+  color: #fff;
+}
