@@ -1,6 +1,6 @@
 import { ProblemDetailException } from "@/lib/exceptions";
-import { voicePromptFor } from "@/modules/events/lib/voice/fields";
 import { isVoiceMockEnabled, mockTranscript } from "@/modules/events/lib/voice/mock";
+import { buildVoicePrompt } from "@/modules/events/lib/voice/prompt";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
 
 /**
@@ -16,6 +16,18 @@ export const DEFAULT_VOICE_MODEL = "gpt-4o-mini-transcribe";
 export function voiceModel(): string {
   const configured = process.env.VOICE_TRANSCRIBE_MODEL?.trim();
   return configured ? configured : DEFAULT_VOICE_MODEL;
+}
+
+/**
+ * 音声の言語。この画面は日本語の入力だけを扱うので固定にする。
+ * プロンプトの 1 行目とも重ねて、英語へ流れるのを抑える。
+ * 別の言語で試すときだけ `VOICE_TRANSCRIBE_LANGUAGE` で差し替える。
+ */
+export const VOICE_LANGUAGE = "ja";
+
+export function voiceLanguage(): string {
+  const configured = process.env.VOICE_TRANSCRIBE_LANGUAGE?.trim();
+  return configured ? configured : VOICE_LANGUAGE;
 }
 
 /** 鍵が無ければ音声入力は使えない。画面は手入力へ戻る。モックが有効なら鍵は要らない。 */
@@ -77,6 +89,12 @@ export async function transcribeWithOpenAi(input: {
   contentType: string;
   filename: string;
   field: VoiceFieldKey | null;
+  /** 対象の行。「2件目の開催日」「女性の金額」の言い方に使う。 */
+  row?: number;
+  /** 入力済みの催し名。当て字の手掛かりとしてだけ使う。 */
+  title?: string | null;
+  /** 入力済みの会場名。当て字の手掛かりとしてだけ使う。 */
+  venueName?: string | null;
 }): Promise<string> {
   // モックは鍵より先に見る。鍵が空でも画面の流れを試せるようにするため。
   if (isVoiceMockEnabled()) return mockTranscript(input.field);
@@ -99,8 +117,14 @@ export async function transcribeWithOpenAi(input: {
   form.append("model", voiceModel());
   // gpt-4o-mini-transcribe が受けるのは json と text だけ。verbose_json は送らない。
   form.append("response_format", "json");
-  form.append("language", "ja");
-  const prompt = voicePromptFor(input.field);
+  form.append("language", voiceLanguage());
+  // 欄・行・入力済みの値から、1 本の固定文を組み立てる。自由文はそのまま連結しない。
+  const prompt = buildVoicePrompt({
+    field: input.field,
+    row: input.row,
+    title: input.title,
+    venueName: input.venueName,
+  });
   if (prompt) form.append("prompt", prompt);
 
   let response: Response;

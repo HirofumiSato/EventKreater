@@ -253,27 +253,27 @@
   box-shadow: 3px 3px 0 rgb(26 25 22 / 0.12);
 }
 
-/* 音声入力。右下の丸い札は、紙に貼ったボタンとして置く。
-   押すと上に紙が開く。本体（attendance.css）の形は変えず、角と影だけ足す。 */
+/* 音声入力の丸は、他の札と違って縁も影も持たない（本体 organizer.css が決める）。
+   `.deco .btn` が角を丸め、貼り紙の影を足すので、ここで打ち消す。
+   小さなアイコンだけの面に線と影を足すと、札ではなく「罫線の付いた丸」に見えた。 */
 .deco .voice-fab {
   border-radius: 999px;
   padding: 0;
-  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.26);
+  border: 0;
+  box-shadow: none;
+  transform: none;
 }
 
 .deco .voice-fab:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.28);
+  box-shadow: none;
+  transform: none;
 }
 
 .deco .voice-fab--active,
 .deco .voice-fab--active:hover {
-  /* 覆いの上に残るので、墨ではなく山吹にする。暗い面でも札として読める。 */
-  border-color: var(--pop-warm);
-  background: var(--pop-warm);
-  color: var(--tape-ink);
+  /* 色は本体（organizer.css）が持つ。ここは装飾を足さないことだけを決める。 */
   transform: none;
-  box-shadow: 3px 3px 0 rgb(26 25 22 / 0.28);
+  box-shadow: none;
 }
 
 .deco .voice-panel {

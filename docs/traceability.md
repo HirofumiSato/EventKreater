@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 445
+- 文書から参照されているコードパス: 449
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -285,10 +285,12 @@
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/fields.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/guide.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/mock.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/normalize.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/openai.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/parse.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/prompt.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/rate-limit.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/spotlight.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/transcribe.ts` | [docs/voice-input.rst](voice-input.rst) |
@@ -455,8 +457,10 @@
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-guide.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-prompt.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-spotlight.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/write-if-changed.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 

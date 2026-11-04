@@ -143,7 +143,7 @@ export function FlyerGeneratePanel({
           onClick={openWizard}
           className="btn btn--outline btn--sm"
         >
-          {previewUrl ? "作り直す" : "チラシを作る"}
+          {previewUrl ? "作り直す" : "チラシを新規作成"}
         </button>
         {previewUrl && flyerAssetId && published && (
           <>

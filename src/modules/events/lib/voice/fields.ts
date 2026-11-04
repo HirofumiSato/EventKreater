@@ -23,19 +23,84 @@ import type {
   VoiceFieldKey,
   VoiceFieldScope,
   VoicePatch,
+  VoiceSlot,
+  VoiceSlotId,
 } from "@/modules/events/lib/voice/types";
-import type { EventFormValues } from "@/modules/events/types";
+import {
+  groupPricePlanPairs,
+  type EventFormValues,
+  type PriceAudience,
+} from "@/modules/events/types";
 
 const hasText = (value: string): boolean => value.trim().length > 0;
 
-/** 先頭の行の id を作る。行が無ければ null（その欄は飛ばす）。 */
-function rowDomId(value: EventFormValues, prefix: string, key: string | undefined): string | null {
+/** 行の入力欄の id を作る。行が無ければ null（その欄は飛ばす）。 */
+function rowDomId(prefix: string, key: string | undefined): string | null {
   return key ? `${prefix}-${key}` : null;
+}
+
+/**
+ * 行を付けた欄の名前。「2件目の開催日」「女性の金額」など。
+ *
+ * 費用プランの金額と補足は、画面の並び（男性用・女性用の順に組を作る）から
+ * 行の性別を決める。`audience` を渡せばそれを優先する（画面は値を持っているため）。
+ * `prompt.ts` は値を持たないので、この決め方だけを手掛かりにする。
+ */
+export function voiceFieldLabel(
+  key: VoiceFieldKey,
+  row: number,
+  audience?: PriceAudience,
+): string {
+  const nth = `${row + 1}件目`;
+  switch (key) {
+    case "scheduleDate":
+      return row <= 0 ? "開催日" : `${nth}の開催日`;
+    case "scheduleStart":
+      return row <= 0 ? "開始時刻" : `${nth}の開始時刻`;
+    case "scheduleEnd":
+      return row <= 0 ? "終了時刻" : `${nth}の終了時刻`;
+    case "planName":
+      return row <= 0 ? "費用プランの名前" : `${row + 1}組目のプラン名`;
+    case "planAmount":
+      return audience
+        ? planAudienceLabel("金額", audience, row)
+        : priceRowLabel("金額", row);
+    case "planNote":
+      return audience
+        ? planAudienceLabel("費用の補足", audience, row)
+        : priceRowLabel("費用の補足", row);
+    default:
+      return voiceFieldByKey(key)?.label ?? key;
+  }
+}
+
+/** 男女別の行の名前。共通（ANY）の行は行の番号で呼ぶ。 */
+function planAudienceLabel(
+  base: string,
+  audience: PriceAudience,
+  row: number,
+): string {
+  if (audience === "MALE") return `男性の${base}`;
+  if (audience === "FEMALE") return `女性の${base}`;
+  return row <= 0 ? base : `${row + 1}件目の${base}`;
+}
+
+/**
+ * 値を持たない側（`prompt.ts`）の呼び方。男女別の並びは男性用・女性用の順なので、
+ * 奇数行を女性用とみなす。共通の費用が 2 件以上あるときは言い方が変わるが、
+ * 欄の名前は当て字の手掛かりでしかないため、行の番号だけで十分とする。
+ */
+function priceRowLabel(base: string, row: number): string {
+  if (row <= 0) return base;
+  return row % 2 === 1 ? `女性の${base}` : `男性の${base}`;
 }
 
 /**
  * 巡回する順。画面の上から下、ステップの順に並べる。
  * 空欄だけを対象にするので、埋まっている欄は自動で飛ばされる。
+ *
+ * これは定義の一覧で、行の展開は `voiceFieldOrder` が行う。
+ * `label` は行を持たないときの名前である。
  */
 export const VOICE_FIELDS: readonly VoiceField[] = [
   {
@@ -65,8 +130,9 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "scheduleDate",
     label: "開催日",
     step: "basic",
-    domId: (value) => rowDomId(value, "schedule-date", value.schedules[0]?.key),
-    isEmpty: (value) => !hasText(value.schedules[0]?.eventDate ?? ""),
+    labelFor: (_value, row) => voiceFieldLabel("scheduleDate", row),
+    domId: (value, row) => rowDomId("schedule-date", value.schedules[row]?.key),
+    isEmpty: (value, row) => !hasText(value.schedules[row]?.eventDate ?? ""),
     prompt: "開催日は？",
     example: "12月5日",
     hint: "日付。例: 12月5日、2026年12月5日",
@@ -76,8 +142,9 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "scheduleStart",
     label: "開始時刻",
     step: "basic",
-    domId: (value) => rowDomId(value, "schedule-start", value.schedules[0]?.key),
-    isEmpty: (value) => !hasText(value.schedules[0]?.startTime ?? ""),
+    labelFor: (_value, row) => voiceFieldLabel("scheduleStart", row),
+    domId: (value, row) => rowDomId("schedule-start", value.schedules[row]?.key),
+    isEmpty: (value, row) => !hasText(value.schedules[row]?.startTime ?? ""),
     prompt: "何時に始まる？",
     example: "18時",
     hint: "時刻。例: 18時、18時30分、18時半",
@@ -87,8 +154,9 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "scheduleEnd",
     label: "終了時刻",
     step: "basic",
-    domId: (value) => rowDomId(value, "schedule-end", value.schedules[0]?.key),
-    isEmpty: (value) => !hasText(value.schedules[0]?.endTime ?? ""),
+    labelFor: (_value, row) => voiceFieldLabel("scheduleEnd", row),
+    domId: (value, row) => rowDomId("schedule-end", value.schedules[row]?.key),
+    isEmpty: (value, row) => !hasText(value.schedules[row]?.endTime ?? ""),
     prompt: "何時に終わる？",
     example: "20時",
     hint: "時刻。例: 20時、21時30分、20時半",
@@ -98,8 +166,12 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "planName",
     label: "費用プランの名前",
     step: "pricing",
-    domId: (value) => rowDomId(value, "plan-name", value.pricePlans[0]?.key),
-    isEmpty: (value) => !hasText(value.pricePlans[0]?.name ?? ""),
+    labelFor: (_value, row) => voiceFieldLabel("planName", row),
+    // 男女別は 1 組＝1 プランなので、名前の欄は組の先頭の行の id を返す。
+    domId: (value, row) =>
+      rowDomId("plan-name", groupPricePlanPairs(value.pricePlans)[row]?.[0]?.key),
+    isEmpty: (value, row) =>
+      !hasText(groupPricePlanPairs(value.pricePlans)[row]?.[0]?.name ?? ""),
     prompt: "プラン名は？",
     example: "一般",
     hint: "料金プラン名。例: 一般、学生、男性用",
@@ -109,8 +181,10 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "planAmount",
     label: "金額",
     step: "pricing",
-    domId: (value) => rowDomId(value, "plan-amount", value.pricePlans[0]?.key),
-    isEmpty: (value) => !hasText(value.pricePlans[0]?.amount ?? ""),
+    labelFor: (value, row) =>
+      voiceFieldLabel("planAmount", row, value.pricePlans[row]?.audience),
+    domId: (value, row) => rowDomId("plan-amount", value.pricePlans[row]?.key),
+    isEmpty: (value, row) => !hasText(value.pricePlans[row]?.amount ?? ""),
     prompt: "金額は？",
     example: "3000円",
     hint: "金額。例: 3000円、三千円、無料",
@@ -120,8 +194,10 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     key: "planNote",
     label: "費用の補足",
     step: "pricing",
-    domId: (value) => rowDomId(value, "plan-note", value.pricePlans[0]?.key),
-    isEmpty: (value) => !hasText(value.pricePlans[0]?.note ?? ""),
+    labelFor: (value, row) =>
+      voiceFieldLabel("planNote", row, value.pricePlans[row]?.audience),
+    domId: (value, row) => rowDomId("plan-note", value.pricePlans[row]?.key),
+    isEmpty: (value, row) => !hasText(value.pricePlans[row]?.note ?? ""),
     prompt: "補足は？",
     example: "1ドリンク付",
     hint: "料金の補足。例: 1ドリンク付、学生証が必要",
@@ -252,13 +328,74 @@ export function voiceFieldByKey(key: VoiceFieldKey): VoiceField | null {
   return VOICE_FIELDS.find((field) => field.key === key) ?? null;
 }
 
-/** この欄が今の条件で巡回の対象になるか。主催者名のように画面に無い欄を除く。 */
+/** 1 つの欄と行から、巡回する 1 マスを作る。その行の入力欄が無ければ null。 */
+function makeSlot(field: VoiceField, value: EventFormValues, row: number): VoiceSlot | null {
+  if (field.domId(value, row) === null) return null;
+  const label = field.labelFor?.(value, row) ?? field.label;
+  return {
+    id: `${field.key}:${row}` as VoiceSlotId,
+    key: field.key,
+    row,
+    label,
+    prompt: label === field.label ? field.prompt : `${label}は？`,
+    step: field.step,
+    field,
+    domId: (next) => field.domId(next, row),
+  };
+}
+
+/**
+ * 行を展開したすべてのマス。スコープでは絞らない。
+ * 並びは `title` → `organizerName` → 日時（行ごと）→ 費用（組ごとの名前、組の行ごとの金額・補足）
+ * → 場所 → 定員・期限（任意）。
+ */
+function allSlots(value: EventFormValues): VoiceSlot[] {
+  const slots: VoiceSlot[] = [];
+  const add = (key: VoiceFieldKey, row: number) => {
+    const field = voiceFieldByKey(key);
+    if (!field) return;
+    const slot = makeSlot(field, value, row);
+    if (slot) slots.push(slot);
+  };
+
+  add("title", 0);
+  add("organizerName", 0);
+  value.schedules.forEach((_row, index) => {
+    add("scheduleDate", index);
+    add("scheduleStart", index);
+    add("scheduleEnd", index);
+  });
+  // 名前は組に 1 つ、金額と補足は行ごとに 1 つ。男女別では 1 組が 2 行になる。
+  groupPricePlanPairs(value.pricePlans).forEach((group, groupIndex) => {
+    add("planName", groupIndex);
+    for (const row of group) {
+      const index = value.pricePlans.indexOf(row);
+      if (index < 0) continue;
+      add("planAmount", index);
+      add("planNote", index);
+    }
+  });
+  add("venueName", 0);
+  add("postalCode", 0);
+  add("prefecture", 0);
+  add("city", 0);
+  add("town", 0);
+  add("addressLine", 0);
+  add("building", 0);
+  add("rainPolicy", 0);
+  add("capacity", 0);
+  add("rsvpDeadline", 0);
+  return slots;
+}
+
+/** この欄・行が今の条件で巡回の対象になるか。主催者名のように画面に無い欄を除く。 */
 export function appliesToScope(
   field: VoiceField,
   value: EventFormValues,
   scope: VoiceFieldScope,
+  row = 0,
 ): boolean {
-  if (field.domId(value) === null) return false;
+  if (field.domId(value, row) === null) return false;
   return field.applies ? field.applies(value, scope) : true;
 }
 
@@ -267,29 +404,40 @@ export function isFieldNeeded(
   field: VoiceField,
   value: EventFormValues,
   scope: VoiceFieldScope,
+  row = 0,
 ): boolean {
-  if (!appliesToScope(field, value, scope)) return false;
+  if (!appliesToScope(field, value, scope, row)) return false;
   if (field.optional) return scope.includeOptional && !scope.touched.has(field.key);
-  return field.isEmpty(value);
+  return field.isEmpty(value, row);
 }
 
+/** マスが巡回の対象か。 */
+export function isSlotNeeded(
+  slot: VoiceSlot,
+  value: EventFormValues,
+  scope: VoiceFieldScope,
+): boolean {
+  return isFieldNeeded(slot.field, value, scope, slot.row);
+}
+
+/** 巡回するマスの並び。行とスコープで絞ったもの。 */
 export function voiceFieldOrder(
   value: EventFormValues,
   scope: VoiceFieldScope,
-): readonly VoiceField[] {
-  return VOICE_FIELDS.filter((field) => appliesToScope(field, value, scope));
+): readonly VoiceSlot[] {
+  return allSlots(value).filter((slot) => appliesToScope(slot.field, value, scope, slot.row));
 }
 
-/** 上から見て最初に埋めるべき欄。全部埋まっていれば null。 */
+/** 上から見て最初に埋めるべきマス。全部埋まっていれば null。 */
 export function firstNeededField(
   value: EventFormValues,
   scope: VoiceFieldScope,
-): VoiceField | null {
-  return voiceFieldOrder(value, scope).find((field) => isFieldNeeded(field, value, scope)) ?? null;
+): VoiceSlot | null {
+  return voiceFieldOrder(value, scope).find((slot) => isSlotNeeded(slot, value, scope)) ?? null;
 }
 
 /**
- * 音声モードを始める欄。
+ * 音声モードを始めるマス。
  * 直前に選んでいた入力欄があればそこから、無ければ上から見て最初の空欄から始める。
  * 手で押した欄は、既定で巡回しない任意の欄でも対象にする（`fieldForDomId` と同じ扱い）。
  */
@@ -297,33 +445,44 @@ export function startFieldFor(
   value: EventFormValues,
   scope: VoiceFieldScope,
   domId: string | null,
-): VoiceField | null {
+): VoiceSlot | null {
   const focused = domId ? fieldForDomId(domId, value, scope) : null;
   return focused ?? firstNeededField(value, scope);
 }
 
-/** `cursor` の次に埋めるべき欄。後ろに無ければ null（＝音声入力の完了）。 */
+/** `cursor` の次に埋めるべきマス。後ろに無ければ null（＝音声入力の完了）。 */
 export function nextNeededField(
   value: EventFormValues,
-  cursor: VoiceFieldKey | null,
+  cursor: VoiceSlotId | null,
   scope: VoiceFieldScope,
-): VoiceField | null {
+): VoiceSlot | null {
   const order = voiceFieldOrder(value, scope);
-  const index = cursor === null ? -1 : order.findIndex((field) => field.key === cursor);
+  const index = cursor === null ? -1 : order.findIndex((slot) => slot.id === cursor);
   const start = index < 0 ? 0 : index + 1;
-  return order.slice(start).find((field) => isFieldNeeded(field, value, scope)) ?? null;
+  return order.slice(start).find((slot) => isSlotNeeded(slot, value, scope)) ?? null;
 }
 
-/** ひとつ前の欄。値は消さず、言い直すために戻る。 */
+/** ひとつ前のマス。値は消さず、言い直すために戻る。行をまたいでも 1 つずつ戻る。 */
 export function previousField(
   value: EventFormValues,
-  cursor: VoiceFieldKey,
+  cursor: VoiceSlotId,
   scope: VoiceFieldScope,
-): VoiceField | null {
+): VoiceSlot | null {
   const order = voiceFieldOrder(value, scope);
-  const index = order.findIndex((field) => field.key === cursor);
+  const index = order.findIndex((slot) => slot.id === cursor);
   if (index <= 0) return null;
   return order[index - 1] ?? null;
+}
+
+/** カーソルの id からマスを引き直す。行が消えた・任意欄を外した場合も定義から戻す。 */
+export function voiceSlotById(
+  id: VoiceSlotId,
+  value: EventFormValues,
+  scope: VoiceFieldScope,
+): VoiceSlot | null {
+  const ordered = voiceFieldOrder(value, scope).find((slot) => slot.id === id);
+  if (ordered) return ordered;
+  return allSlots(value).find((slot) => slot.id === id) ?? null;
 }
 
 /** フォーカスされた入力欄から、音声の対象を逆引きする。手で直したらカーソルも移る。 */
@@ -331,14 +490,15 @@ export function fieldForDomId(
   domId: string,
   value: EventFormValues,
   scope: VoiceFieldScope,
-): VoiceField | null {
-  const targetable = VOICE_FIELDS.filter((field) => {
-    if (field.domId(value) === null) return false;
+): VoiceSlot | null {
+  for (const slot of allSlots(value)) {
+    if (slot.domId(value) !== domId) continue;
     // 手で押した欄は、既定で巡回しない任意の欄でも対象にする。
-    if (field.optional) return true;
-    return field.applies ? field.applies(value, scope) : true;
-  });
-  return targetable.find((field) => field.domId(value) === domId) ?? null;
+    if (slot.field.optional) return slot;
+    if (slot.field.applies && !slot.field.applies(value, scope)) continue;
+    return slot;
+  }
+  return null;
 }
 
 /** パッチをフォームへ当てる。行の配列はパッチ側が丸ごと持つ。 */
@@ -346,33 +506,31 @@ export function applyVoicePatch(value: EventFormValues, patch: VoicePatch): Even
   return { ...value, ...patch };
 }
 
-/** 認識モデルに渡す語彙のヒント。欄の文脈を絞る。 */
-export function voicePromptFor(key: VoiceFieldKey | null): string | null {
-  if (!key) return null;
-  const field = voiceFieldByKey(key);
-  if (!field) return null;
-  return `イベント作成フォームの「${field.label}」を1項目だけ話します。${field.hint}。`;
-}
-
 /** いま入っている値を、確認文に使える短い文字列にする。 */
-export function describeFieldValue(field: VoiceField, value: EventFormValues): string | null {
+export function describeFieldValue(
+  field: VoiceField,
+  value: EventFormValues,
+  row = 0,
+): string | null {
   switch (field.key) {
     case "title":
       return value.title || null;
     case "organizerName":
       return value.organizerDisplayName || null;
     case "scheduleDate":
-      return value.schedules[0]?.eventDate || null;
+      return value.schedules[row]?.eventDate || null;
     case "scheduleStart":
-      return value.schedules[0]?.startTime || null;
+      return value.schedules[row]?.startTime || null;
     case "scheduleEnd":
-      return value.schedules[0]?.endTime || null;
+      return value.schedules[row]?.endTime || null;
     case "planName":
-      return value.pricePlans[0]?.name || null;
-    case "planAmount":
-      return value.pricePlans[0]?.amount ? `${value.pricePlans[0].amount}円` : null;
+      return groupPricePlanPairs(value.pricePlans)[row]?.[0]?.name || null;
+    case "planAmount": {
+      const amount = value.pricePlans[row]?.amount;
+      return amount ? `${amount}円` : null;
+    }
     case "planNote":
-      return value.pricePlans[0]?.note || null;
+      return value.pricePlans[row]?.note || null;
     case "venueName":
       return value.venueName || null;
     case "postalCode":

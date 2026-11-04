@@ -16,29 +16,46 @@ import type { VoiceContext, VoicePatch } from "@/modules/events/lib/voice/types"
 import {
   createPricePlanDraft,
   createScheduleDraft,
+  groupPricePlanPairs,
+  withGroupName,
   type EventFormValues,
   type PricePlanDraft,
   type RainPolicy,
   type ScheduleDraft,
 } from "@/modules/events/types";
 
-/** 音声は先頭の行だけを埋める。2 行目以降は手で追加する。 */
-const ROW_INDEX = 0;
+/**
+ * パッチを当てる行。`context.row` は欄の種類で意味が変わる
+ * （日時は `schedules`、プラン名は組、金額・補足は `pricePlans` の index）。
+ * 整数でない値は先頭の行として扱う。
+ */
+function targetRow(context: VoiceContext): number {
+  const row = context.row ?? 0;
+  return Number.isInteger(row) && row >= 0 ? row : 0;
+}
 
+/** 指定した行だけを書き換える。行が無ければ null（別の行を勝手に埋めない）。 */
 function schedulePatch(
   value: EventFormValues,
   patch: Partial<ScheduleDraft>,
-): VoicePatch {
+  row: number,
+): VoicePatch | null {
   const rows = value.schedules.length > 0 ? value.schedules : [createScheduleDraft()];
+  if (row >= rows.length) return null;
   return {
-    schedules: rows.map((row, index) => (index === ROW_INDEX ? { ...row, ...patch } : row)),
+    schedules: rows.map((item, index) => (index === row ? { ...item, ...patch } : item)),
   };
 }
 
-function planPatch(value: EventFormValues, patch: Partial<PricePlanDraft>): VoicePatch {
+function planPatch(
+  value: EventFormValues,
+  patch: Partial<PricePlanDraft>,
+  row: number,
+): VoicePatch | null {
   const rows = value.pricePlans.length > 0 ? value.pricePlans : [createPricePlanDraft()];
+  if (row >= rows.length) return null;
   return {
-    pricePlans: rows.map((row, index) => (index === ROW_INDEX ? { ...row, ...patch } : row)),
+    pricePlans: rows.map((item, index) => (index === row ? { ...item, ...patch } : item)),
   };
 }
 
@@ -81,7 +98,11 @@ export function parseVoiceOrganizerName(text: string): VoicePatch | null {
 export function parseVoiceScheduleDate(text: string, context: VoiceContext): VoicePatch | null {
   const date = parseSpokenDate(text, context.now);
   if (!date) return null;
-  return schedulePatch(context.value, { eventDate: formatYmd(date.year, date.month, date.day) });
+  return schedulePatch(
+    context.value,
+    { eventDate: formatYmd(date.year, date.month, date.day) },
+    targetRow(context),
+  );
 }
 
 /**
@@ -89,53 +110,65 @@ export function parseVoiceScheduleDate(text: string, context: VoiceContext): Voi
  * 終了が開始と同時刻になる指定は受け付けない。
  */
 export function parseVoiceScheduleStart(text: string, context: VoiceContext): VoicePatch | null {
+  const row = targetRow(context);
   const range = splitTimeRange(text);
   if (range) {
     if (range.start === range.end) return null;
-    return schedulePatch(context.value, { startTime: range.start, endTime: range.end });
+    return schedulePatch(context.value, { startTime: range.start, endTime: range.end }, row);
   }
   const clock = parseSpokenClock(text);
   if (!clock) return null;
   const startTime = formatClock(clock.hour, clock.minute);
-  const current = context.value.schedules[ROW_INDEX];
+  const current = context.value.schedules[row];
   if (current?.endTime && current.endTime === startTime) return null;
-  return schedulePatch(context.value, { startTime });
+  return schedulePatch(context.value, { startTime }, row);
 }
 
 export function parseVoiceScheduleEnd(text: string, context: VoiceContext): VoicePatch | null {
+  const row = targetRow(context);
   const range = splitTimeRange(text);
   const clock = range ? null : parseSpokenClock(text);
   const endTime = range ? range.end : clock ? formatClock(clock.hour, clock.minute) : null;
   if (!endTime) return null;
-  const current = context.value.schedules[ROW_INDEX];
+  const current = context.value.schedules[row];
   if (current?.startTime && current.startTime === endTime) return null;
-  return schedulePatch(context.value, { endTime });
+  return schedulePatch(context.value, { endTime }, row);
 }
 
+/**
+ * プラン名。男女別は 1 組＝1 プランなので、組の全行へ同じ名前を入れる。
+ * `context.row` は組の index。
+ */
 export function parseVoicePlanName(text: string, context: VoiceContext): VoicePatch | null {
   const name = cleanName(text)
     .replace(/(料金|費用|プラン)$/u, "")
     .trim()
     .slice(0, 50);
-  return name ? planPatch(context.value, { name }) : null;
+  if (!name) return null;
+  const rows =
+    context.value.pricePlans.length > 0 ? context.value.pricePlans : [createPricePlanDraft()];
+  const group = groupPricePlanPairs(rows)[targetRow(context)];
+  if (!group) return null;
+  return { pricePlans: withGroupName(rows, group, name) };
 }
 
 /** 金額。円が付いていればその前を、無ければ数字として読める全体を見る。 */
 export function parseVoicePlanAmount(text: string, context: VoiceContext): VoicePatch | null {
+  const row = targetRow(context);
   const normalized = normalizeSpokenText(text);
   // 「0円」を部分一致で見ると「3000円」まで無料になる。全体が 0 円のときだけ 0 にする。
   if (/無料|フリー|ただ|タダ/u.test(normalized) || /^0\s*(?:円|えん)$/u.test(normalized)) {
-    return planPatch(context.value, { amount: "0" });
+    return planPatch(context.value, { amount: "0" }, row);
   }
   const withYen = new RegExp(`(${NUMBER_EXPRESSION})\\s*(?:円|えん)`).exec(normalized);
   const value = withYen ? parseJapaneseNumber(withYen[1]) : parseJapaneseNumber(normalized);
   if (value === null || !Number.isInteger(value) || value < 0 || value > MAX_AMOUNT) return null;
-  return planPatch(context.value, { amount: String(value) });
+  return planPatch(context.value, { amount: String(value) }, row);
 }
 
 export function parseVoicePlanNote(text: string, context: VoiceContext): VoicePatch | null {
   const note = cleanName(text).slice(0, 100);
-  return note ? planPatch(context.value, { note }) : null;
+  return note ? planPatch(context.value, { note }, targetRow(context)) : null;
 }
 
 export function parseVoiceVenueName(text: string): VoicePatch | null {
