@@ -54,8 +54,11 @@ export function ReferralPanel() {
 
   return (
     <Panel>
-      <PanelHead title="紹介" note={<>紹介した人が公開すると2枚もらえます</>} />
-      <p className="panel__body">このリンクから登録した人が、はじめて公開したときに2枚。</p>
+      <PanelHead title="紹介" />
+      <p className="panel__body">
+        このリンクから登録した人が初めてイベント公開すると、無料チケットを2枚もらえます。
+        <span className="panel__note--limit">※1アカウント当たり上限10枚</span>
+      </p>
       <div className="ticket-link">
         <input
           className="input"
@@ -65,7 +68,7 @@ export function ReferralPanel() {
           onFocus={(event) => event.currentTarget.select()}
         />
         <button type="button" className="btn btn--outline btn--sm" onClick={() => void copy()}>
-          {copied ? "コピーしました" : "リンクをコピー"}
+          {copied ? "コピーしました" : "紹介リンクをコピー"}
         </button>
       </div>
       <dl className="kv">
@@ -76,7 +79,7 @@ export function ReferralPanel() {
         <div className="kv__row">
           <dt>もらった枚数</dt>
           <dd>
-            {summary.granted} / {summary.limit}
+            {summary.granted}枚 / {summary.limit}枚
           </dd>
         </div>
       </dl>
@@ -86,10 +89,17 @@ export function ReferralPanel() {
           className="line-share btn btn--outline btn--sm"
           onClick={() => setShareHref(lineShareUrl(`紹介リンクです。\n${summary.url}`))}
         >
-          LINEで共有
+          招待リンクをLINEで送る
         </button>
       </div>
-      {shareHref !== null && <LineShareDialog href={shareHref} onClose={() => setShareHref(null)} />}
+      {shareHref !== null && (
+        <LineShareDialog
+          href={shareHref}
+          onClose={() => setShareHref(null)}
+          title="LINEで招待リンクを送る"
+          hint="LINE画面で「共有」を押すと、紹介リンクが送られます。確認モーダルは出ません。"
+        />
+      )}
     </Panel>
   );
 }

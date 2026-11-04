@@ -15,8 +15,8 @@ const TABS: readonly SubnavItem[] = [
   // 一覧の先頭は完全一致。配下の作成・編集・名簿で「主催一覧」を現在地にしない。
   { href: "/organizer/events", label: "主催一覧", match: "exact" },
   { href: "/organizer/calendar", label: "カレンダー" },
-  { href: "/organizer/revenue", label: "売上" },
-  { href: "/organizer/profile", label: "プロフィール" },
+  { href: "/organizer/revenue", label: "売上見込" },
+  { href: "/organizer/profile", label: "公開プロフ" },
 ];
 
 export function OrganizerTabs() {

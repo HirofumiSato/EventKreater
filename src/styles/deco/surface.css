@@ -188,6 +188,13 @@
   white-space: nowrap;
 }
 
+/* 一覧を途中で切ったときの断り。最後の行の罫線の下に、本文より小さく置く。 */
+.rows__omit {
+  margin-top: 0.75rem;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+}
+
 .rows a.rows__item,
 .rows__item--link {
   color: inherit;
