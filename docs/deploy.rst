@@ -545,7 +545,9 @@ Messages API へ転送します。メール中継と同じ形で、Twilio の鍵
 
 staging は別の Worker と別のホスト（``sms-hook-stg.eventkreater.com``）を使います。差分は :doc:`staging` の 7 にあります。
 
-1. Twilio のアカウントを用意します。試用（Trial）のままでは英数字 Sender ID を使えないため、先に Upgrade（クレジットカードの登録）を済ませます。ダッシュボードの Account Info にある Account SID と Auth Token を控えます。
+1. Twilio のアカウントを用意します。試用（Trial）のままでは英数字 Sender ID を使えないため、先に Upgrade（クレジットカードの登録）を済ませます。ダッシュボードの Account Info にある Account SID と Auth Token を控えます。**Upgrade だけでは足りません。** Trust Hub の一次コンプライアンスプロファイル（KYC）の承認も要ります。未承認のあいだは Messages API が ``401`` で ``{"code":20003,"message":"Primary compliance profile is not approved. ... complete the KYC process in Trust Hub"}`` を返し、アプリには ``502`` が返ります。審査は最大 48 時間で、政府発行の写真付き ID と自撮りが要ります（`Trust Hub のプロファイル <https://www.twilio.com/docs/trust-hub/profiles>`_ と `エラー 20003 <https://www.twilio.com/docs/api/errors/20003>`_）。
+
+   **Individual プロファイルでも日本向けの英数字 Sender ID は送れました。** 公式の一覧では英数字 Sender ID が Business プロファイルの機能として挙がっていますが、2026-11-04 に Individual（個人）の承認で ``SMS_FROM=EVENTKRTR`` が通り、``status: delivered`` まで到達しています。法人格や屋号が無くても、まず Individual で試して構いません。弾かれた場合の逃げ道は 2 つです。Business プロファイルを ``Company type: Sole Proprietorship`` と ``Business registration ID type: Other`` で作る（法人番号は要りません）か、Twilio の番号を買って ``SMS_FROM`` を数値に変える（日本では ``010`` が頭に付いて表示されます）。
 2. 送信元は **英数字 Sender ID** にします。``SMS_FROM`` は 3〜11 文字で、英字を 1 文字以上含む ASCII です（例 ``EVENTKRTR``）。日本の番号を買う必要はなく、番号の維持費もかかりません。
 3. 国際ゲートウェイは登録不要で、すぐ使えます。代わりに片方向で、利用者からの返信は受け取れません。日本のガイドラインで国内ゲートウェイを使う場合は事業者ごとの登録が要り、審査に約 5 週間かかります。国内ゲートウェイは送信元 ID を保存しないため番号としては残らず、使うときは Twilio の営業へ問い合わせます。
 4. 宛先は E.164（``+819012345678``）です。アプリの ``toE164`` が国内形式をこの形へ直してから POST します。本文に電話番号を書かないでください（Twilio の日本向けガイドラインで禁止です）。オプトインとオプトアウトの案内は本文に残します。
@@ -618,6 +620,16 @@ staging は別の Worker と別のホスト（``sms-hook-stg.eventkreater.com``�
 
 ``502`` が返るときは、Worker のログに上流の状態番号と Twilio の ``code`` が出ます（``UPSTREAM_STATUS_...``）。
 宛先と本文はログに出ません。
+
+.. note::
+
+   2026-11-04 時点の配備結果です。Cloudflare Worker は staging の ``event-creater-sms-stg``（設定は ``infra/sms-webhook/wrangler.toml``、custom domain は ``sms-hook-stg.eventkreater.com``）と、本番の ``event-creater-sms``（設定は ``infra/sms-webhook/wrangler.prod.toml``、custom domain は ``sms-hook.eventkreater.com``）を配備しました。秘密 5 つは ``wrangler secret bulk`` で投入し、どちらも ``GET /health`` が ``200`` で ``{"ok":true}`` を返しています。``WEBHOOK_TOKEN`` は本番と staging で別の値にしました（staging のトークンが漏れても本番の Worker は叩けません）。値はどちらもコミットせず、``.tmp-twilio.env`` / ``.tmp-twilio-prod.env`` の控えにだけ置いています。
+
+   Fly の ``event-creater-web-stg`` と ``event-creater-web`` には ``SMS_WEBHOOK_URL`` を投入済みです。``fly ssh console -C "printenv SMS_WEBHOOK_URL"`` で反映を、``fly checks list`` で passing を確認しています。これまで本番は ``SMS_WEBHOOK_URL`` が空で、``src/lib/sms.ts`` が ``NODE_ENV=production`` のとき本文をログに出さないため、電話番号の確認コードが誰にも届かず新規登録を完了できませんでした。
+
+   同日、Twilio の Trust Hub の一次コンプライアンスプロファイル（Individual）が ``twilio-approved`` になったあと、Worker の URL へ直接 POST して実送信を確かめました。staging と本番の両方が ``202`` を返し、``GET /2010-04-01/Accounts/{SID}/Messages.json`` で ``from: EVENTKRTR`` / ``status: delivered`` / ``num_segments: 1`` を確認しています（``$0.089`` が残高から引かれます）。承認前は Messages API が ``401`` と ``{"code":20003,"message":"Primary compliance profile is not approved. ..."}`` を返し、Worker は ``UPSTREAM_STATUS_401_CODE_20003`` → ``UPSTREAM_REJECTED``、アプリには ``502``、``fly logs`` には ``[sms] 送信に失敗しました (HTTP 502)`` を出していました。承認後はコード変更も秘密の入れ直しも要りません。
+
+   画面からの受け入れ確認は、本番の ``https://eventkreater.com/`` で 2026-11-04 に通しました。会員登録 → 電話番号の確認 → ログインまで到達し、``users`` テーブルに ``phone_e164 = +818073062345`` と ``phone_verified_at`` を持つ行が作られています（``fly logs`` に ``[sms]`` の警告は出ていません）。staging は Cloudflare Access の One-time PIN を通す必要があるため、運用者が手で行います。
 
 2.3 Cloudflare Tunnel アプリを作る
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -780,7 +792,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 
 .. note::
 
-   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` と ``mail-hook.eventkreater.com`` をまとめたレート制限まで入れています。SMS 中継の ``sms-hook.eventkreater.com`` も、同じ 1 本の式に OR で足します（2 本目は作れません）。
+   このゾーンでは、2026-11-03 時点で **Full (strict)**・``/api/*`` の Bypass・``/console/*`` と ``mail-hook.eventkreater.com`` をまとめたレート制限まで入れています。2026-11-04 に、同じ 1 本の式へ ``sms-hook.eventkreater.com`` と ``sms-hook-stg.eventkreater.com`` を OR で足しました。ルールは 1 本のままで、しきい値は ``20 requests / 10 seconds``、characteristics は ``ip.src`` と ``cf.colo.id``、``mitigation_timeout`` は 10 秒、action は ``block`` のまま変えていません（2 本目は作れません）。
    実測では ``/api/v1/public/pricing`` が ``cf-cache-status: DYNAMIC``、``/_next/static/*.css`` が ``immutable`` でした。
 
    ``src/modules/auth/lib/cookies.ts`` の ``clientIp()`` は ``cf-connecting-ip`` → ``fly-client-ip`` → ``x-real-ip`` の順に見て、最後に ``x-forwarded-for`` の右端を使います。
