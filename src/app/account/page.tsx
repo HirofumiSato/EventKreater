@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { readProblem } from "@/lib/problem";
+import { accountReturnTarget } from "@/lib/site-nav";
 import { AccountInfoPanel } from "@/modules/account/components/AccountInfoPanel";
 import { PasswordPanel } from "@/modules/account/components/PasswordPanel";
 import { PhoneChangePanel } from "@/modules/account/components/PhoneChangePanel";
@@ -73,19 +74,15 @@ export default function AccountPage() {
     );
   }
 
+  const returnTarget = accountReturnTarget(isOrganizer);
+
   return (
     <div className="page--form stack">
       <PageHeader eyebrow="設定" title="アカウント設定" lead="主催者と参加者で、同じ画面を使います。" />
       <div className="btn-row">
-        {isOrganizer ? (
-          <Link href="/mypage" className="btn btn--outline btn--sm">
-            主催者マイページへ
-          </Link>
-        ) : (
-          <Link href="/participant" className="btn btn--outline btn--sm">
-            参加者ホームへ
-          </Link>
-        )}
+        <Link href={returnTarget.href} className="btn btn--outline btn--sm">
+          {returnTarget.label}へ
+        </Link>
       </div>
 
       <AccountInfoPanel profile={profile} onChange={patchProfile} />
