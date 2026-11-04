@@ -15,23 +15,84 @@ import {
   nextNeededField,
   previousField,
   startFieldFor,
-  voiceFieldByKey,
+  voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import {
+  circleSpotlightClipPath,
   spotlightClipPath,
   spotlightFor,
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
 import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import { dismissVoiceGuide, isVoiceGuideDismissed } from "@/modules/events/lib/voice/guide";
 import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
+import { Dialog } from "@/components/ui/Dialog";
 import type {
-  VoiceField,
   VoiceFieldKey,
   VoiceFieldScope,
+  VoiceSlot,
+  VoiceSlotId,
 } from "@/modules/events/lib/voice/types";
-import type { EventFormValues } from "@/modules/events/types";
+import {
+  createScheduleDraft,
+  MAX_EVENT_OPTIONS,
+  pricingModeOf,
+  withGenderPricing,
+  type EventFormValues,
+} from "@/modules/events/types";
 
 type VoicePhase = "armed" | "listening" | "transcribing";
+
+/** 文字起こしを確定する前に置く確認。`slotId` は確認しているあいだに値が変わっても引き直せる。 */
+interface VoicePending {
+  slotId: VoiceSlotId;
+  text: string;
+}
+
+type VoiceBranchKind = "schedule" | "gender";
+
+/** 群から出る瞬間に出す分岐の質問。回答後に元のマスを引き直すため `slotId` を持つ。 */
+interface VoiceBranchQuestion {
+  kind: VoiceBranchKind;
+  slotId: VoiceSlotId;
+}
+
+/** 日時の群。この欄を最後に触ったとき、最終行が埋まっていれば「別の日時」を尋ねる。 */
+const SCHEDULE_KEYS: ReadonlySet<VoiceFieldKey> = new Set([
+  "scheduleDate",
+  "scheduleStart",
+  "scheduleEnd",
+]);
+
+/** 費用の群。この欄を最後に触ったとき、共通の費用が埋まっていれば男女別を尋ねる。 */
+const PRICE_KEYS: ReadonlySet<VoiceFieldKey> = new Set(["planName", "planAmount", "planNote"]);
+
+/**
+ * 分岐の質問を出すか。特定の欄ではなく「群から出る瞬間」で見る。
+ * 開始時刻の範囲発話のように 1 つの発話で終了時刻まで埋まることがあるため、
+ * 最後に触った欄の種類と、最終行の埋まり具合だけで決める。
+ */
+function branchAfter(
+  slot: VoiceSlot,
+  value: EventFormValues,
+  next: VoiceSlot | null,
+): VoiceBranchKind | null {
+  const nextKey = next?.key ?? null;
+
+  if (SCHEDULE_KEYS.has(slot.key) && !(nextKey && SCHEDULE_KEYS.has(nextKey))) {
+    const last = value.schedules[value.schedules.length - 1];
+    const filled = Boolean(last?.eventDate && last?.startTime && last?.endTime);
+    if (filled && value.schedules.length < MAX_EVENT_OPTIONS) return "schedule";
+  }
+
+  if (PRICE_KEYS.has(slot.key) && !(nextKey && PRICE_KEYS.has(nextKey))) {
+    const first = value.pricePlans[0];
+    const filled = Boolean(first?.name.trim() && first?.amount.trim());
+    if (filled && pricingModeOf(value.pricePlans) === "COMMON") return "gender";
+  }
+
+  return null;
+}
 
 interface VoiceInputDockProps {
   value: EventFormValues;
@@ -63,7 +124,7 @@ export function VoiceInputDock({
 }: VoiceInputDockProps) {
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState<VoicePhase>("armed");
-  const [cursor, setCursor] = useState<VoiceFieldKey | null>(null);
+  const [cursor, setCursor] = useState<VoiceSlotId | null>(null);
   const [touched, setTouched] = useState<ReadonlySet<VoiceFieldKey>>(new Set());
   // 既定で任意の欄も聞く。空欄でよい欄まで一度に埋めたい利用者が多いため。
   const [includeOptional, setIncludeOptional] = useState(true);
@@ -77,10 +138,18 @@ export function VoiceInputDock({
   const [transcript, setTranscript] = useState<string | null>(null);
   // 覆いからくり抜く位置。対象の欄が見つからないときは null で、覆いを出さない。
   const [spotlight, setSpotlight] = useState<VoiceSpotlight | null>(null);
+  // 文字起こしはすぐ確定せず、いったん確認に置く。読み取り違いを、話し直す前に見せる。
+  const [pending, setPending] = useState<VoicePending | null>(null);
+  // 群から出る瞬間の分岐。答えるまでカーソルは最後の欄に残す。
+  const [branch, setBranch] = useState<VoiceBranchQuestion | null>(null);
+  // 初回ガイド。開いたかどうかと「次回から表示しない」のチェックを持つ。
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideChecked, setGuideChecked] = useState(false);
+  const [guideClip, setGuideClip] = useState<string | null>(null);
 
   // 非同期のコールバック（録音停止・住所検索）から最新値を読むための控え。
   const valueRef = useRef(value);
-  const cursorRef = useRef<VoiceFieldKey | null>(null);
+  const cursorRef = useRef<VoiceSlotId | null>(null);
   const touchedRef = useRef<ReadonlySet<VoiceFieldKey>>(new Set());
   const includeOptionalRef = useRef(includeOptional);
   const autoAdvanceRef = useRef(autoAdvance);
@@ -97,6 +166,15 @@ export function VoiceInputDock({
   // 録音の開始は commit からも呼ぶ。互いを依存に持つと循環するので控えを挟む。
   const startRecordingRef = useRef<() => void>(() => {});
   const mountedRef = useRef(true);
+  // 初回ガイドを 1 回だけ出すための印（再描画で開き直さない）。
+  const guideShownRef = useRef(false);
+  // 閉じるときの判定は最新のチェックを読む。effect の依存を増やさないため控える。
+  const guideCheckedRef = useRef(false);
+  // ダイアログが開いているあいだは、音声モードの Esc を止める。
+  const dialogOpenRef = useRef(false);
+  // パネルの上端。切り抜きの下端をここより上へ収める。
+  const panelRef = useRef<HTMLElement | null>(null);
+  const fabRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     valueRef.current = value;
@@ -117,6 +195,14 @@ export function VoiceInputDock({
   useEffect(() => {
     autoAdvanceRef.current = autoAdvance;
   }, [autoAdvance]);
+
+  useEffect(() => {
+    guideCheckedRef.current = guideChecked;
+  }, [guideChecked]);
+
+  useEffect(() => {
+    dialogOpenRef.current = pending !== null || branch !== null;
+  }, [branch, pending]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -186,6 +272,8 @@ export function VoiceInputDock({
     setComplete(false);
     setMessage(null);
     setTranscript(null);
+    setPending(null);
+    setBranch(null);
     cursorRef.current = null;
     setCursor(null);
   }, [clearCompleteTimer, clearStatusTimer, clearTimer, releaseStream]);
@@ -232,13 +320,33 @@ export function VoiceInputDock({
     [onChange],
   );
 
+  /** 次の空欄へ移る。行の追加や分岐の「いいえ」からも同じ動きを使う。 */
+  const advanceFrom = useCallback(
+    (slot: VoiceSlot, spoken?: string) => {
+      const next = nextNeededField(valueRef.current, slot.id, scopeNow());
+      cursorRef.current = next?.id ?? null;
+      setCursor(next?.id ?? null);
+      if (!next) {
+        finishSession();
+        return;
+      }
+      setMessage(null);
+      const said = spoken ? `${spoken}次は${next.label}です。` : `次は${next.label}です。`;
+      api.announce(said);
+      // 次の欄へ移ったら、その瞬間から録音を始める。もう一度押させない。
+      startRecordingRef.current();
+    },
+    [api, finishSession, scopeNow],
+  );
+
   const commit = useCallback(
-    async (field: VoiceField, text: string) => {
-      const context = { now: new Date(), value: valueRef.current };
+    async (slot: VoiceSlot, text: string) => {
+      const field = slot.field;
+      const context = { now: new Date(), value: valueRef.current, row: slot.row };
       const patch = field.parse(text, context);
       if (!patch) {
         setMessage(
-          `「${text}」は${field.label}として読めませんでした。もう一度話すか、手で入力してください。`,
+          `「${text}」は${slot.label}として読めませんでした。もう一度話すか、手で入力してください。`,
         );
         return false;
       }
@@ -256,27 +364,29 @@ export function VoiceInputDock({
 
       // 自動遷移が外れているときは同じ欄に留める。録音は止めて、言い直しを待つ。
       if (!autoAdvanceRef.current) {
-        cursorRef.current = field.key;
-        setCursor(field.key);
+        cursorRef.current = slot.id;
+        setCursor(slot.id);
         setMessage(`「${text}」で入力しました。続けて直すときは「言い直す」を押してください。`);
-        api.announce(`${field.label}を「${text}」で入力しました。`);
+        api.announce(`${slot.label}を「${text}」で入力しました。`);
         return true;
       }
 
-      const next = nextNeededField(valueRef.current, field.key, scopeNow());
-      cursorRef.current = next?.key ?? null;
-      setCursor(next?.key ?? null);
-      if (!next) {
-        finishSession();
+      const next = nextNeededField(valueRef.current, slot.id, scopeNow());
+      const kind = branchAfter(slot, valueRef.current, next);
+      if (kind) {
+        // 質問に答えるまで、カーソルは最後の欄に残す。
+        cursorRef.current = slot.id;
+        setCursor(slot.id);
+        setMessage(null);
+        api.announce(`${slot.label}を「${text}」で入力しました。`);
+        setBranch({ kind, slotId: slot.id });
         return true;
       }
-      setMessage(null);
-      api.announce(`${field.label}を「${text}」で入力しました。次は${next.label}です。`);
-      // 次の欄へ移ったら、その瞬間から録音を始める。もう一度押させない。
-      startRecordingRef.current();
+
+      advanceFrom(slot, `${slot.label}を「${text}」で入力しました。`);
       return true;
     },
-    [api, fillAddressFromPostalCode, finishSession, markTouched, onChange, scopeNow],
+    [advanceFrom, api, fillAddressFromPostalCode, markTouched, onChange, scopeNow],
   );
 
   const finishRecording = useCallback(
@@ -294,18 +404,30 @@ export function VoiceInputDock({
       }
 
       const key = cursorRef.current;
-      const field = key ? voiceFieldByKey(key) : null;
-      if (!field) {
+      const slot = key ? voiceSlotById(key, valueRef.current, scopeNow()) : null;
+      if (!slot) {
         setPhase("armed");
         finishSession();
         return;
       }
 
       try {
-        const result = await transcribeVoiceClip({ blob, field: field.key });
+        // 行と入力済みの催し名・会場名を、当て字の手掛かりとして添える。
+        // 欄そのものの現在値は送らない（そのまま復唱され、言い直しが効かなくなる）。
+        const result = await transcribeVoiceClip({
+          blob,
+          field: slot.key,
+          context: {
+            row: slot.row,
+            title: valueRef.current.title,
+            venueName: valueRef.current.venueName,
+          },
+        });
         if (!mountedRef.current) return;
         setPhase("armed");
-        await commit(field, result.text);
+        // すぐ確定せず、聞き取った値を確認に置く。読み取り違いを話し直す前に見せる。
+        setTranscript(result.text);
+        setPending({ slotId: slot.id, text: result.text });
       } catch (error) {
         if (!mountedRef.current) return;
         setPhase("armed");
@@ -314,7 +436,7 @@ export function VoiceInputDock({
         );
       }
     },
-    [commit, finishSession, releaseStream],
+    [finishSession, releaseStream, scopeNow],
   );
 
   const stopRecording = useCallback(() => {
@@ -428,8 +550,8 @@ export function VoiceInputDock({
     clearStatusTimer();
     setStatusStopping(false);
     setTranscript(null);
-    cursorRef.current = first?.key ?? null;
-    setCursor(first?.key ?? null);
+    cursorRef.current = first?.id ?? null;
+    setCursor(first?.id ?? null);
     setMessage(
       first
         ? null
@@ -443,13 +565,15 @@ export function VoiceInputDock({
     api.openStep(first?.step ?? "basic");
   }, [api, clearCompleteTimer, clearStatusTimer, disabled, showOrganizerName, startRecording]);
 
-  // 対象の欄を強調し、画面内へ寄せる。DOM フォーカスは動かさない。
+  // 対象の欄を強調し、パネルより上の使える領域の中央へ寄せる。DOM フォーカスは動かさない。
+  // 画面全体の中央へ寄せる `scrollIntoView` は使わない。下にパネルがあるぶん、
+  // 欄がパネルの下へ潜り込むためである。
   useEffect(() => {
     if (!active) return;
-    const field = cursor ? voiceFieldByKey(cursor) : null;
-    if (!field) return;
-    api.openStep(field.step);
-    const id = field.domId(valueRef.current);
+    const slot = cursor ? voiceSlotById(cursor, valueRef.current, scopeNow()) : null;
+    if (!slot) return;
+    api.openStep(slot.step);
+    const id = slot.domId(valueRef.current);
     if (!id) return;
 
     let cancelled = false;
@@ -471,7 +595,14 @@ export function VoiceInputDock({
       const reduced =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      found.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+      // パネルの上端までを使える領域とみなし、欄の中心をその中央へ置く。
+      const panelTop = panelRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+      const usable = Math.max(0, panelTop);
+      const rect = found.getBoundingClientRect();
+      const delta = rect.top + rect.height / 2 - usable / 2;
+      if (Math.abs(delta) > 1) {
+        window.scrollBy({ top: delta, behavior: reduced ? "auto" : "smooth" });
+      }
     };
     apply();
 
@@ -479,7 +610,7 @@ export function VoiceInputDock({
       cancelled = true;
       element?.removeAttribute("data-voice-target");
     };
-  }, [active, api, cursor]);
+  }, [active, api, cursor, scopeNow]);
 
   // 音声モードの間、いま聞いている欄だけを残して画面全体を覆う。
   // 覆いはそのまま操作を止めるので、スクロールやステップの開閉に合わせて穴を追いかける。
@@ -528,8 +659,10 @@ export function VoiceInputDock({
         resizeObserver?.observe(target);
       }
       const rect = target.getBoundingClientRect();
-      // 高さは固定。欄の中央がビューポートの中央に来るよう穴を置く（画面端ではクランプ）。
-      const next = spotlightFor(rect, window.innerHeight);
+      // 高さは固定。欄の中央が使える領域の中央に来るよう穴を置く（画面端ではクランプ）。
+      // パネルの上端を渡し、穴の下端がパネルと重ならないようにする。
+      const panelTop = panelRef.current?.getBoundingClientRect().top;
+      const next = spotlightFor(rect, window.innerHeight, panelTop);
       const key = `${next.top}:${next.left}:${next.width}:${next.height}`;
       if (key !== previous) {
         previous = key;
@@ -565,6 +698,9 @@ export function VoiceInputDock({
 
     measure();
     resizeObserver?.observe(document.body);
+    // パネルは position: fixed なので、文言が増えても body の大きさは変わらない。
+    // パネル自身の高さの変化も拾い、穴の下端がパネルに重ならないよう測り直す。
+    if (panelRef.current) resizeObserver?.observe(panelRef.current);
     mutationObserver?.observe(document.body, {
       attributes: true,
       attributeFilter: ["data-voice-target"],
@@ -596,21 +732,22 @@ export function VoiceInputDock({
       const target = event.target as HTMLElement | null;
       const id = target?.id;
       if (!id) return;
-      const field = fieldForDomId(id, valueRef.current, scopeNow());
-      if (!field || field.key === cursorRef.current) return;
-      cursorRef.current = field.key;
-      setCursor(field.key);
+      const slot = fieldForDomId(id, valueRef.current, scopeNow());
+      if (!slot || slot.id === cursorRef.current) return;
+      cursorRef.current = slot.id;
+      setCursor(slot.id);
       setMessage(null);
     };
     document.addEventListener("focusin", handler);
     return () => document.removeEventListener("focusin", handler);
   }, [active, scopeNow]);
 
-  // Esc でいつでも抜けられる。
+  // Esc でいつでも抜けられる。確認・分岐のダイアログが開いているあいだは、
+  // ダイアログ自身が Esc を受けるので、こちらは止める（1 回で両方が閉じないように）。
   useEffect(() => {
     if (!active) return;
     const handler = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || dialogOpenRef.current) return;
       event.stopPropagation();
       stopSession();
     };
@@ -618,20 +755,23 @@ export function VoiceInputDock({
     return () => document.removeEventListener("keydown", handler);
   }, [active, stopSession]);
 
-  const field = cursor ? voiceFieldByKey(cursor) : null;
   const scope = useMemo<VoiceFieldScope>(
     () => ({ showOrganizerName, includeOptional, touched }),
     [showOrganizerName, includeOptional, touched],
   );
-  const previous = cursor ? previousField(value, cursor, scope) : null;
-  const currentValue = field ? describeFieldValue(field, value) : null;
+  const slot = cursor ? voiceSlotById(cursor, value, scope) : null;
+  const field = slot?.field ?? null;
+  const previous = slot ? previousField(value, slot.id, scope) : null;
+  const currentValue = slot ? describeFieldValue(slot.field, value, slot.row) : null;
+  // 確認中に行が消えたときは、欄の名前だけ諦めて値を見せる。
+  const pendingSlot = pending ? voiceSlotById(pending.slotId, value, scope) : null;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
   const promptText = complete
     ? "入力完了！"
     : transcribing
       ? "文字にする"
-      : (field?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
+      : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
   const showStatus = listening || statusStopping;
   const talkLabel = listening
     ? "録音を停止"
@@ -670,8 +810,8 @@ export function VoiceInputDock({
 
   const goPrevious = () => {
     if (!previous) return;
-    cursorRef.current = previous.key;
-    setCursor(previous.key);
+    cursorRef.current = previous.id;
+    setCursor(previous.id);
     setMessage(null);
     setTranscript(null);
     api.announce(`${previous.label}に戻りました。${previous.prompt}`);
@@ -680,8 +820,8 @@ export function VoiceInputDock({
   const skip = () => {
     if (!cursor) return;
     const next = nextNeededField(valueRef.current, cursor, scopeNow());
-    cursorRef.current = next?.key ?? null;
-    setCursor(next?.key ?? null);
+    cursorRef.current = next?.id ?? null;
+    setCursor(next?.id ?? null);
     if (next) {
       setMessage(null);
       api.announce(`次は${next.label}です。`);
@@ -698,6 +838,181 @@ export function VoiceInputDock({
     api.announce("音声モード中です。終了するには、右上の閉じるボタンかエスケープキーを押してください。");
   };
 
+  /** 確認のモーダルを閉じる。カーソルは動かさず、同じ欄に留まる。 */
+  const closePending = useCallback(() => {
+    setPending(null);
+  }, []);
+
+  /** 聞き取った値で確定する。読めなければ閉じてから既存の「読めませんでした」を出す。 */
+  const confirmPending = useCallback(() => {
+    const item = pending;
+    if (!item) return;
+    setPending(null);
+    const target = voiceSlotById(item.slotId, valueRef.current, scopeNow());
+    if (!target) {
+      finishSession();
+      return;
+    }
+    cursorRef.current = target.id;
+    setCursor(target.id);
+    void commit(target, item.text);
+  }, [commit, finishSession, pending, scopeNow]);
+
+  /** 同じ欄で録り直す。モーダルを閉じて、そのまま録音を始める。 */
+  const reRecordPending = useCallback(() => {
+    const item = pending;
+    if (!item) return;
+    setPending(null);
+    cursorRef.current = item.slotId;
+    setCursor(item.slotId);
+    setMessage(null);
+    setTranscript(null);
+    void startRecording();
+  }, [pending, startRecording]);
+
+  /** 追加した行の欄へカーソルを移し、その場で録音を始める。 */
+  const moveTo = useCallback(
+    (target: VoiceSlot) => {
+      cursorRef.current = target.id;
+      setCursor(target.id);
+      setMessage(null);
+      setTranscript(null);
+      api.announce(`${target.label}を話してください。`);
+      void startRecording();
+    },
+    [api, startRecording],
+  );
+
+  /** 分岐の質問に答える。追加するときだけ行を増やし、それ以外は通常の遷移と同じ。 */
+  const answerBranch = useCallback(
+    (add: boolean) => {
+      const question = branch;
+      if (!question) return;
+      setBranch(null);
+
+      const source = voiceSlotById(question.slotId, valueRef.current, scopeNow());
+      if (!source) return;
+      if (!add) {
+        advanceFrom(source);
+        return;
+      }
+
+      if (question.kind === "schedule") {
+        const schedules = [...valueRef.current.schedules, createScheduleDraft()];
+        const nextValue: EventFormValues = { ...valueRef.current, schedules };
+        valueRef.current = nextValue;
+        onChange(nextValue);
+        const id = `scheduleDate:${schedules.length - 1}` as VoiceSlotId;
+        const target = voiceSlotById(id, nextValue, scopeNow());
+        if (!target) {
+          advanceFrom(source);
+          return;
+        }
+        moveTo(target);
+        return;
+      }
+
+      const pricePlans = withGenderPricing(valueRef.current.pricePlans);
+      const nextValue: EventFormValues = { ...valueRef.current, pricePlans };
+      valueRef.current = nextValue;
+      onChange(nextValue);
+      // 共通の金額を引き継いだ女性用の行を、そのまま言い直せるようにする。
+      const row = pricePlans.findIndex((plan) => plan.audience === "FEMALE");
+      const target =
+        row >= 0 ? voiceSlotById(`planAmount:${row}` as VoiceSlotId, nextValue, scopeNow()) : null;
+      if (!target) {
+        advanceFrom(source);
+        return;
+      }
+      moveTo(target);
+    },
+    [advanceFrom, branch, moveTo, onChange, scopeNow],
+  );
+
+  /** ガイドを閉じる。チェックが入っていれば次回から出さない。 */
+  const closeGuide = useCallback(() => {
+    if (guideCheckedRef.current) dismissVoiceGuide(true);
+    setGuideOpen(false);
+  }, []);
+
+  // 操作できる状態になり、音声モードでなく、まだ閉じていないときだけ 1 回出す。
+  useEffect(() => {
+    if (guideShownRef.current || disabled || active) return;
+    if (isVoiceGuideDismissed()) return;
+    guideShownRef.current = true;
+    setGuideOpen(true);
+  }, [active, disabled]);
+
+  // FAB の矩形を測って、その丸のぶんだけ黒い面をくり抜く。スクロール・リサイズで測り直す。
+  // FAB は position: fixed だが、画面下に固定する帯の高さ（`--final-bar-h`）が
+  // ログイン状態の読み込みで変わると上へずれる。スクロールもリサイズも起きないため、
+  // 大きさと属性の変化（body のクラス）も合図に加える。
+  useEffect(() => {
+    if (!guideOpen) {
+      setGuideClip(null);
+      return;
+    }
+    let previous = "";
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const fab = fabRef.current;
+      if (!fab) return;
+      const rect = fab.getBoundingClientRect();
+      // ボタンは丸（角丸 999px の正方形）なので、穴も同じ丸にする。
+      // 縁の 1px が黒い面の縁取りで暗くならないよう、2px だけ外へ広げる。
+      const pad = 2;
+      const next = circleSpotlightClipPath({
+        top: rect.top - pad,
+        left: rect.left - pad,
+        width: rect.width + pad * 2,
+        height: rect.height + pad * 2,
+      });
+      if (next === previous) return;
+      previous = next;
+      setGuideClip(next);
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    const resizeObserver =
+      typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
+    // クラスの付け替えで帯の高さが変わっても、リサイズの合図は出ない。
+    const mutationObserver =
+      typeof MutationObserver === "function" ? new MutationObserver(schedule) : null;
+
+    measure();
+    resizeObserver?.observe(document.body);
+    if (fabRef.current) resizeObserver?.observe(fabRef.current);
+    mutationObserver?.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [guideOpen]);
+
+  // ガイドも Esc で閉じる。音声モードの Esc と取り合わないよう、こちらで止める。
+  useEffect(() => {
+    if (!guideOpen) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      closeGuide();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [closeGuide, guideOpen]);
+
   return (
     <>
       {active && spotlight && (
@@ -708,14 +1023,57 @@ export function VoiceInputDock({
           onClick={explainScrim}
         />
       )}
+      {/* 初回ガイド。FAB だけを切り抜いた黒い面と、使い方を添える吹き出し。
+          吹き出しは面の子にしない（clip-path で一緒に切り抜かれてしまうため）。 */}
+      {guideOpen && !active && (
+        <>
+          <div
+            className="voice-guide"
+            aria-hidden="true"
+            style={guideClip ? { clipPath: guideClip } : undefined}
+            onClick={closeGuide}
+          />
+          <div className="voice-guide__bubble" onClick={closeGuide}>
+            {/* ガイドは focus を奪わないので、出たことを読み上げで知らせる。 */}
+            <p className="voice-guide__title" role="status">
+              自動音声入力で簡単操作
+            </p>
+            <label
+              className="check voice-guide__check"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={guideChecked}
+                onChange={(event) => {
+                  // チェックした直後に閉じても取りこぼさないよう、控えも同時に更新する。
+                  guideCheckedRef.current = event.target.checked;
+                  setGuideChecked(event.target.checked);
+                }}
+              />
+              次回から表示しない
+            </label>
+          </div>
+        </>
+      )}
       <button
+        ref={fabRef}
         type="button"
         className={`voice-fab${active ? " voice-fab--active" : ""}`}
         aria-label={active ? "音声入力を終了" : "音声入力を開始"}
         title={active ? "音声入力を終了" : "音声入力を開始"}
         aria-pressed={active}
         disabled={disabled}
-        onClick={() => (active ? stopSession() : startSession())}
+        onClick={() => {
+          // ガイドの切り抜きから直接始められる。押したらガイドを閉じてから入る。
+          if (guideOpen) {
+            closeGuide();
+            startSession();
+            return;
+          }
+          if (active) stopSession();
+          else startSession();
+        }}
       >
         {active ? (
           <X className="icon" aria-hidden="true" size={22} />
@@ -726,6 +1084,7 @@ export function VoiceInputDock({
 
       {active && (
         <section
+          ref={panelRef}
           className={[
             "voice-panel",
             listening ? "is-listening" : "",
@@ -779,6 +1138,9 @@ export function VoiceInputDock({
           )}
 
           <div className="voice-panel__actions">
+            {/* 録音中だけ、止め方を主ボタンの左に添える。丸い停止の印だけでは、
+                話し終えたあとに何を押すかが分かりにくいため。 */}
+            {listening && <p className="voice-panel__talk">話し終わったらタップ</p>}
             {/* 文字ではなくアイコンで置き、意味は aria-label と title で補う。 */}
             <button
               type="button"
@@ -839,6 +1201,100 @@ export function VoiceInputDock({
             </label>
           </div>
         </section>
+      )}
+
+      {/* 録音のあとは、聞き取った値をそのまま入れず、一度見せる。
+          読み取り違いを話し直す前に気づけるようにするため。 */}
+      {pending && (
+        <Dialog
+          title="入力を確定しますか"
+          titleId="voice-confirm-title"
+          onClose={closePending}
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={confirmPending}
+              >
+                入力を確定する
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                onClick={reRecordPending}
+              >
+                再録音する
+              </button>
+            </>
+          }
+        >
+          <p className="dialog__body">
+            {pendingSlot?.label ?? "入力欄"}として
+            <strong>{`「${pending.text}」`}</strong>
+            を入れます。
+          </p>
+        </Dialog>
+      )}
+
+      {/* 日時の群を出る瞬間と、費用の群を出る瞬間にだけ尋ねる。
+          背景・×・Esc は「追加しない」と同じ扱いにする。 */}
+      {branch?.kind === "schedule" && (
+        <Dialog
+          title="別の日時も追加しますか"
+          titleId="voice-branch-schedule-title"
+          onClose={() => answerBranch(false)}
+          closeLabel="追加しない"
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={() => answerBranch(true)}
+              >
+                追加する
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                onClick={() => answerBranch(false)}
+              >
+                追加しない
+              </button>
+            </>
+          }
+        >
+          <p className="dialog__body">日程を増やすと、参加者は都合のよい日を選べます。</p>
+        </Dialog>
+      )}
+
+      {branch?.kind === "gender" && (
+        <Dialog
+          title="男女別の費用を設定しますか"
+          titleId="voice-branch-gender-title"
+          onClose={() => answerBranch(false)}
+          closeLabel="共通のまま"
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={() => answerBranch(true)}
+              >
+                男女別にする
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                onClick={() => answerBranch(false)}
+              >
+                共通のまま
+              </button>
+            </>
+          }
+        >
+          <p className="dialog__body">男性と女性で金額を分けられます。いまの金額は引き継ぎます。</p>
+        </Dialog>
       )}
     </>
   );

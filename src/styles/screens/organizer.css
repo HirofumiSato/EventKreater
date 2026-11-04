@@ -576,7 +576,12 @@
 
 /* 音声入力。右下に固定し、押すと音声モードに入る。
    「次へ」「プレビュー」と並ぶので、文字を持たせずアイコンだけの丸にする。
-   色も主ボタンの朱ではなく墨にして、送信の操作と見分けられるようにする。 */
+   地はリンクで見慣れた青（`--link-blue`）。この画面の地は生成りで、朱（主操作）と
+   山吹（注意）と青緑（参加者の共通ヘッダー）だけで組んであるため、青はまだ空いている。
+   同じ青を淡くすると地の生成りに沈むので、地は濃いまま置き、マイクだけを
+   地の青を白で薄めた淡い青にする。塗りと線の明度差で図形が読める。
+   縁と影は置かない。他の操作（.btn）は枠と影で浮かせているが、この丸は
+   アイコンだけの小さな面なので、線を足すと札ではなく「罫線の付いた丸」に見えた。 */
 .voice-fab {
   position: fixed;
   right: 1rem;
@@ -588,17 +593,18 @@
   width: 3.25rem;
   height: 3.25rem;
   padding: 0;
-  border: 1px solid var(--color-hero);
+  border: 0;
   border-radius: 999px;
-  background: var(--color-hero);
-  color: #fff;
+  background: var(--color-link-blue);
+  /* 地の青を白で 80% 薄めた淡い青。地との差は 4.9:1。 */
+  color: color-mix(in srgb, var(--color-link-blue) 20%, #fff);
   font: inherit;
   cursor: pointer;
 }
 
 .voice-fab:hover {
-  background: var(--color-hero-hover);
-  border-color: var(--color-hero-hover);
+  /* 押せることが分かる程度に、地を一段だけ濃くする。マイクの淡い青は変えない。 */
+  background: color-mix(in srgb, var(--color-link-blue) 88%, #000);
 }
 
 .voice-fab:disabled {
@@ -606,12 +612,13 @@
   cursor: not-allowed;
 }
 
-/* 音声中は山吹。覆いの上に残るので、暗い面でも札として読める。 */
+/* 録音中は朱に変える。淡い青緑のままでは「押せる」と「録っている」の区別が付かず、
+   パネルの赤い印（REC）とも色がつながらない。録音中は覆いが主ボタンを隠すので、
+   朱が主操作と競うこともない。ここも縁は置かない（地の色だけで状態を示す）。 */
 .voice-fab--active,
 .voice-fab--active:hover {
-  background: var(--pop-warm);
-  border-color: var(--pop-warm);
-  color: var(--tape-ink);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .voice-fab .icon {
@@ -624,10 +631,12 @@
   display: none;
 }
 
+/* パネルは FAB の左下へ寄せる。下端を FAB とそろえ、右は FAB 1 つぶんと余白を空ける。
+   帯（.form-final）があるときは components.css で帯の高さぶん上へ逃がす。 */
 .voice-panel {
   position: fixed;
-  right: 1rem;
-  bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
+  right: 4.75rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   z-index: 45;
   display: flex;
   flex-direction: column;
@@ -777,12 +786,41 @@
   line-height: 1.5;
 }
 
-/* 音声パネルの操作はアイコンだけ。文字が入らないぶん、押せる大きさを確保する。 */
+/* 音声パネルの操作はアイコンだけ。文字が入らないぶん、押せる大きさを確保する。
+   吹き出しが入っても、操作の並びはパネルの中央に置く。 */
 .voice-panel__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+}
+
+/* 録音中だけ、停止の主ボタンの左に出す吹き出し。右向きの尾でボタンを指す。
+   話し終えたあとに何を押すかを、文字で 1 度だけ添える。 */
+.voice-panel__talk {
+  position: relative;
+  margin: 0;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.voice-panel__talk::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -0.375rem;
+  width: 0;
+  height: 0;
+  border-block: 0.375rem solid transparent;
+  border-left: 0.375rem solid var(--color-bg);
+  transform: translateY(-50%);
 }
 
 .voice-icon-btn {
@@ -899,6 +937,88 @@
   background: rgb(26 25 22 / 0.6);
 }
 
+/* 初回のコーチマーク。FAB だけをくり抜いた黒い面と、使い方を添える吹き出し。
+   面は clip-path が当たり判定にも効くので、くり抜いた FAB はそのまま押せる。
+   吹き出しは面の子にしない。子にすると黒い面の clip-path で一緒に切り抜かれる。 */
+.voice-guide {
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  background: rgb(26 25 22 / 0.6);
+}
+
+/* 吹き出しは貼り紙。太い墨の縁と硬い影で、黒い面の上に紙を 1 枚置いたように見せる。
+   地は山吹の淡色。黒い面の上でも埋もれず、字は墨で読ませる。
+   ここだけは傾けない。丸くくり抜いたボタンを尾で指すので、傾けると尾の先が
+   ボタンの中心から外れる（傾きの角度ぶん、尾が左右へ振れる）。
+   位置は FAB の左上へ 0.75rem / 0.25rem ずらす。ボタンに重ならず、
+   尾もボタンの真上へ届く範囲に収まる。 */
+.voice-guide__bubble {
+  position: fixed;
+  right: calc(1rem + 0.75rem);
+  bottom: calc(8.75rem + 0.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 47;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: min(17rem, calc(100vw - 2rem));
+  padding: 0.875rem 1rem 0.75rem;
+  border: 2px solid var(--tape-ink);
+  border-radius: var(--radius-xl);
+  background: var(--pop-warm-tint);
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.85);
+  cursor: pointer;
+}
+
+/* FAB を指す尾。縁の太さぶん、墨の三角の上に淡い三角を重ねて輪郭をそろえる。
+   細い 1 枚だけだと尾の縁が消え、吹き出しから切り離されて見える。
+   横位置はボタンの中心に合わせる。ボタンの中心は右端から 1.625rem（幅の半分）。
+   吹き出しはボタンより 0.75rem 左へ寄せてあるので、尾の中心は右端から 0.875rem。
+   そこから三角の半分を引いた値を右に置く。
+   縦は、吹き出しを 0.25rem 上げたぶん尾を 0.75rem に伸ばし、先端をボタンの上端へ着ける。 */
+.voice-guide__bubble::before,
+.voice-guide__bubble::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.voice-guide__bubble::before {
+  right: calc(0.875rem - 0.5625rem);
+  bottom: -0.75rem;
+  border-inline: 0.5625rem solid transparent;
+  border-top: 0.75rem solid var(--tape-ink);
+}
+
+.voice-guide__bubble::after {
+  right: calc(0.875rem - 0.4375rem);
+  bottom: -0.625rem;
+  border-inline: 0.4375rem solid transparent;
+  border-top: 0.625rem solid var(--pop-warm-tint);
+}
+
+/* 見出しには蛍光ペンのように山吹を敷く。札の地と同系色なので、帯ではなく線に見える。 */
+.voice-guide__title {
+  align-self: flex-start;
+  margin: 0;
+  padding-inline: 0.125rem;
+  background: linear-gradient(transparent 58%, var(--pop-warm) 58%);
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* チェックは破線で切り離し、本文と混ぜない。 */
+.voice-guide__check {
+  padding-top: 0.4375rem;
+  border-top: 1px dashed rgb(26 25 22 / 0.28);
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+}
+
 /* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
 [data-voice-target="true"] {
   position: relative;
@@ -920,6 +1040,23 @@
 
     to {
       opacity: 1;
+    }
+  }
+
+  /* 吹き出しは置いた瞬間に少し弾む。傾けないので scale だけでよい。 */
+  .voice-guide__bubble {
+    animation: voice-guide-pop 260ms cubic-bezier(0.2, 1.35, 0.45, 1) both;
+  }
+
+  @keyframes voice-guide-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.88);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
     }
   }
 
@@ -1002,16 +1139,48 @@
     bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 
+  /* 狭い幅では左端まで使い、右は FAB 1 つぶんと余白を空ける。
+     パネルの幅を固定すると横スクロールが出るので、左右の指定で幅を決める。 */
   .voice-panel {
-    right: 0.5rem;
+    right: 4.25rem;
     left: 0.5rem;
-    bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
     width: auto;
+  }
+
+  /* 操作の列に収まらないので、吹き出しは 1 段上へ折り返す。
+     尾は下向きに変え、下の停止ボタンを指す。 */
+  .voice-panel__talk {
+    flex-basis: 100%;
+  }
+
+  .voice-panel__talk::after {
+    top: auto;
+    right: 1.25rem;
+    bottom: -0.375rem;
+    border-block: 0;
+    border-inline: 0.375rem solid transparent;
+    border-top: 0.375rem solid var(--color-bg);
+    transform: none;
+  }
+
+  .voice-guide__bubble {
+    right: calc(0.5rem + 0.75rem);
+    bottom: calc(8.25rem + 0.25rem + env(safe-area-inset-bottom, 0px));
+    width: min(17rem, calc(100vw - 1rem));
   }
 
   /* 幅が狭いと券が 2 段になる。折り返しても行間が詰まらないように。 */
   .trial-ticket {
     gap: 0.125rem 0.5rem;
+  }
+}
+
+/* スマホで保存の帯があるときは、FAB も吹き出しも帯の上へ逃がす。
+   帯の高さは components.css が `--final-bar-h` で持っている。 */
+@media (max-width: 639px) {
+  .page--form:has(.form-final) .voice-guide__bubble {
+    bottom: calc(var(--final-bar-h) + 3.75rem + 0.25rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

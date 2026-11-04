@@ -144,6 +144,10 @@ export function ThemePicker({
           className={`theme-preview__frame${value ? " semantic-theme" : ""}`}
           data-semantic-theme={value ?? undefined}
         >
+          {/* 見本であることの札。選んだ見た目そのものではないので読み上げには出さない。 */}
+          <span className="theme-preview__badge" aria-hidden="true">
+            サンプル
+          </span>
           <div className="theme-preview__card">
             <p className="theme-preview__eyebrow">{preview.eyebrow}</p>
             <p className="theme-preview__title">{preview.title}</p>

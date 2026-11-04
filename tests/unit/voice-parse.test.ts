@@ -13,6 +13,7 @@ import {
   parseVoiceAddressLine,
   parseVoiceCapacity,
   parseVoicePlanAmount,
+  parseVoicePlanName,
   parseVoicePrefecture,
   parseVoicePostalCode,
   parseVoiceRainPolicy,
@@ -166,6 +167,63 @@ describe("開催日時", () => {
     const patch = parseVoiceScheduleDate("12月10日", { now: NOW, value });
     expect(patch?.schedules).toHaveLength(2);
     expect(patch?.schedules?.[1].eventDate).toBe("2026-12-06");
+  });
+});
+
+describe("行の指定", () => {
+  it("row を渡すと 2 行目だけが変わる", () => {
+    const value = withRows({
+      schedules: [
+        createScheduleDraft({ eventDate: "2026-12-05" }),
+        createScheduleDraft({ eventDate: "2026-12-06" }),
+      ],
+    });
+    const patch = parseVoiceScheduleDate("12月10日", { now: NOW, value, row: 1 });
+    expect(patch?.schedules?.[0].eventDate).toBe("2026-12-05");
+    expect(patch?.schedules?.[1].eventDate).toBe("2026-12-10");
+  });
+
+  it("費用プランの金額も行ごとに入れ替える", () => {
+    const value = withRows({
+      pricePlans: [
+        createPricePlanDraft({ key: "m-1", name: "一般", amount: "3000", audience: "MALE" }),
+        createPricePlanDraft({ key: "f-1", name: "一般", amount: "2000", audience: "FEMALE" }),
+      ],
+    });
+    const patch = parseVoicePlanAmount("2500円", { now: NOW, value, row: 1 });
+    expect(patch?.pricePlans?.[0].amount).toBe("3000");
+    expect(patch?.pricePlans?.[1].amount).toBe("2500");
+  });
+
+  it("行が無ければ別の行を埋めずに null を返す", () => {
+    expect(parseVoiceScheduleDate("12月10日", { now: NOW, value: withRows(), row: 3 })).toBeNull();
+    expect(parseVoicePlanAmount("3000円", { now: NOW, value: withRows(), row: 3 })).toBeNull();
+  });
+});
+
+describe("男女別のプラン名", () => {
+  it("組名をその組の両方の行へ入れる", () => {
+    const value = withRows({
+      pricePlans: [
+        createPricePlanDraft({ key: "m-1", name: "", audience: "MALE" }),
+        createPricePlanDraft({ key: "f-1", name: "", audience: "FEMALE" }),
+      ],
+    });
+    const patch = parseVoicePlanName("一般", { now: NOW, value, row: 0 });
+    expect(patch?.pricePlans?.map((plan) => plan.name)).toEqual(["一般", "一般"]);
+  });
+
+  it("2 組目を指定すると 2 組目だけが変わる", () => {
+    const value = withRows({
+      pricePlans: [
+        createPricePlanDraft({ key: "m-1", name: "一般", audience: "MALE" }),
+        createPricePlanDraft({ key: "f-1", name: "一般", audience: "FEMALE" }),
+        createPricePlanDraft({ key: "m-2", name: "", audience: "MALE" }),
+        createPricePlanDraft({ key: "f-2", name: "", audience: "FEMALE" }),
+      ],
+    });
+    const patch = parseVoicePlanName("学生", { now: NOW, value, row: 1 });
+    expect(patch?.pricePlans?.map((plan) => plan.name)).toEqual(["一般", "一般", "学生", "学生"]);
   });
 });
 

@@ -10,6 +10,7 @@ import {
   startFieldFor,
   voiceFieldByKey,
   voiceFieldOrder,
+  voiceSlotById,
   VOICE_FIELDS,
 } from "@/modules/events/lib/voice/fields";
 import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
@@ -50,7 +51,49 @@ function filledForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
   };
 }
 
-describe("音声で埋める欄の並び", () => {
+/** 開催日時 2 行・費用 2 組。行の id を固定して domId を確かめられるようにする。 */
+function multiRowForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
+  return {
+    ...EMPTY_EVENT_FORM,
+    title: "忘年会",
+    schedules: [
+      createScheduleDraft({
+        key: "row-1",
+        eventDate: "2026-12-05",
+        startTime: "18:00",
+        endTime: "20:00",
+      }),
+      createScheduleDraft({
+        key: "row-2",
+        eventDate: "2026-12-06",
+        startTime: "18:00",
+        endTime: "20:00",
+      }),
+    ],
+    pricePlans: [
+      createPricePlanDraft({ key: "plan-1", name: "一般", amount: "3000", note: "1ドリンク付" }),
+      createPricePlanDraft({ key: "plan-2", name: "学生", amount: "2000", note: "" }),
+    ],
+    ...overrides,
+  };
+}
+
+/** 男女別の 2 組（男性用・女性用の順）。 */
+function genderForm(): EventFormValues {
+  return {
+    ...EMPTY_EVENT_FORM,
+    title: "忘年会",
+    schedules: [createScheduleDraft({ key: "row-1" })],
+    pricePlans: [
+      createPricePlanDraft({ key: "m-1", name: "一般", audience: "MALE", amount: "5000" }),
+      createPricePlanDraft({ key: "f-1", name: "一般", audience: "FEMALE", amount: "4000" }),
+      createPricePlanDraft({ key: "m-2", name: "学生", audience: "MALE", amount: "3000" }),
+      createPricePlanDraft({ key: "f-2", name: "学生", audience: "FEMALE", amount: "2500" }),
+    ],
+  };
+}
+
+describe("音声で埋める欄の定義", () => {
   it("画面の上から順に並んでいる", () => {
     const keys = VOICE_FIELDS.map((field) => field.key);
     expect(keys.slice(0, 3)).toEqual(["title", "organizerName", "scheduleDate"]);
@@ -64,39 +107,85 @@ describe("音声で埋める欄の並び", () => {
   });
 });
 
+describe("音声で埋めるマスの並び", () => {
+  it("開催日時は行ごとに、費用は組ごとに並ぶ", () => {
+    const ids = voiceFieldOrder(multiRowForm(), scope()).map((slot) => slot.id);
+    expect(ids.slice(0, 7)).toEqual([
+      "title:0",
+      "scheduleDate:0",
+      "scheduleStart:0",
+      "scheduleEnd:0",
+      "scheduleDate:1",
+      "scheduleStart:1",
+      "scheduleEnd:1",
+    ]);
+    expect(ids.slice(7, 13)).toEqual([
+      "planName:0",
+      "planAmount:0",
+      "planNote:0",
+      "planName:1",
+      "planAmount:1",
+      "planNote:1",
+    ]);
+    expect(ids).toContain("venueName:0");
+  });
+
+  it("男女別は組ごとにプラン名を 1 つ、金額と補足を行ごとに持つ", () => {
+    const ids = voiceFieldOrder(genderForm(), scope()).map((slot) => slot.id);
+    expect(ids.filter((id) => id.startsWith("planName"))).toEqual(["planName:0", "planName:1"]);
+    expect(ids.filter((id) => id.startsWith("planAmount"))).toEqual([
+      "planAmount:0",
+      "planAmount:1",
+      "planAmount:2",
+      "planAmount:3",
+    ]);
+  });
+});
+
 describe("次に埋める欄の決め方", () => {
   it("空のフォームでは催しの名前から始まる", () => {
-    expect(firstNeededField(EMPTY_EVENT_FORM, scope())?.key).toBe("title");
+    expect(firstNeededField(EMPTY_EVENT_FORM, scope())?.id).toBe("title:0");
   });
 
   it("未登録の幹事では主催者名を聞かない", () => {
     const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
-    expect(firstNeededField(value, scope({ showOrganizerName: false }))?.key).toBe("scheduleDate");
+    expect(firstNeededField(value, scope({ showOrganizerName: false }))?.id).toBe("scheduleDate:0");
   });
 
   it("未登録の幹事では主催者名を聞く", () => {
     const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
-    expect(firstNeededField(value, scope({ showOrganizerName: true }))?.key).toBe("organizerName");
+    expect(firstNeededField(value, scope({ showOrganizerName: true }))?.id).toBe(
+      "organizerName:0",
+    );
   });
 
-  it("埋まっている欄は飛ばす", () => {
-    const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
-    expect(nextNeededField(value, "title", scope())?.key).toBe("scheduleDate");
+  it("埋まっている欄は飛ばして 2 行目の日付へ進む", () => {
+    const value = multiRowForm({
+      schedules: [
+        createScheduleDraft({
+          key: "row-1",
+          eventDate: "2026-12-05",
+          startTime: "18:00",
+          endTime: "20:00",
+        }),
+        createScheduleDraft({ key: "row-2" }),
+      ],
+    });
+    expect(nextNeededField(value, "scheduleEnd:0", scope())?.id).toBe("scheduleDate:1");
   });
 
   it("郵便番号で住所が埋まっていれば都道府県を聞かない", () => {
-    const value = filledForm();
-    expect(firstNeededField(value, scope())).toBeNull();
+    expect(firstNeededField(filledForm(), scope())).toBeNull();
   });
 
   it("後ろに空欄が無ければ null を返す", () => {
-    expect(nextNeededField(filledForm(), "building", scope())).toBeNull();
+    expect(nextNeededField(filledForm(), "building:0", scope())).toBeNull();
   });
 });
 
 describe("任意の欄", () => {
   it("既定では雨天時の方針・定員・期限を聞かない", () => {
-    const keys = voiceFieldOrder(filledForm(), scope()).map((field) => field.key);
+    const keys = voiceFieldOrder(filledForm(), scope()).map((slot) => slot.key);
     expect(keys).not.toContain("rainPolicy");
     expect(keys).not.toContain("capacity");
     expect(keys).not.toContain("rsvpDeadline");
@@ -104,7 +193,7 @@ describe("任意の欄", () => {
 
   it("任意の欄も聞くと、埋まっていても候補に残る", () => {
     const keys = voiceFieldOrder(filledForm(), scope({ includeOptional: true })).map(
-      (field) => field.key,
+      (slot) => slot.key,
     );
     expect(keys).toContain("rainPolicy");
     expect(keys).toContain("capacity");
@@ -114,7 +203,7 @@ describe("任意の欄", () => {
   it("一度入れた任意の欄は聞き直さない", () => {
     const touched = new Set(["rainPolicy"] as const);
     const keys = voiceFieldOrder(filledForm(), scope({ includeOptional: true, touched })).map(
-      (field) => field.key,
+      (slot) => slot.key,
     );
     expect(keys).toContain("capacity");
     const field = voiceFieldByKey("rainPolicy");
@@ -132,38 +221,73 @@ describe("音声を始める欄", () => {
 
   it("選んでいた欄が無ければ最初の空欄から始まる", () => {
     const value = { ...EMPTY_EVENT_FORM, title: "忘年会" };
-    expect(startFieldFor(value, scope(), null)?.key).toBe("scheduleDate");
+    expect(startFieldFor(value, scope(), null)?.id).toBe("scheduleDate:0");
   });
 
   it("選んでいた欄が画面に無ければ最初の空欄から始まる", () => {
-    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "something-else")?.key).toBe("title");
+    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "something-else")?.id).toBe("title:0");
   });
 
   it("既定で巡回しない任意の欄も、選んでいればそこから始まる", () => {
-    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "event-capacity")?.key).toBe("capacity");
+    expect(startFieldFor(EMPTY_EVENT_FORM, scope(), "event-capacity")?.id).toBe("capacity:0");
+  });
+
+  it("2 行目の入力欄から始めると、その行のマスになる", () => {
+    expect(startFieldFor(multiRowForm(), scope(), "schedule-date-row-2")?.id).toBe(
+      "scheduleDate:1",
+    );
   });
 });
 
 describe("戻る", () => {
   it("ひとつ前の欄へ戻る", () => {
-    expect(previousField(EMPTY_EVENT_FORM, "scheduleStart", scope())?.key).toBe("scheduleDate");
+    expect(previousField(EMPTY_EVENT_FORM, "scheduleStart:0", scope())?.id).toBe(
+      "scheduleDate:0",
+    );
+  });
+
+  it("行をまたぐときも、日時が終わってから次の行の日付へ進む", () => {
+    expect(previousField(multiRowForm(), "scheduleDate:1", scope())?.id).toBe("scheduleEnd:0");
+    expect(previousField(multiRowForm(), "planName:1", scope())?.id).toBe("planNote:0");
   });
 
   it("先頭より前には戻らない", () => {
-    expect(previousField(EMPTY_EVENT_FORM, "title", scope())).toBeNull();
+    expect(previousField(EMPTY_EVENT_FORM, "title:0", scope())).toBeNull();
   });
 });
 
 describe("入力欄からの逆引き", () => {
   it("催しの名前の id から欄を引ける", () => {
-    expect(fieldForDomId("event-title", EMPTY_EVENT_FORM, scope())?.key).toBe("title");
+    expect(fieldForDomId("event-title", EMPTY_EVENT_FORM, scope())?.id).toBe("title:0");
   });
 
   it("先頭の行の開催日を引ける", () => {
-    const value = withKey();
-    expect(fieldForDomId(`schedule-date-${value.schedules[0].key}`, value, scope())?.key).toBe(
-      "scheduleDate",
-    );
+    const value = multiRowForm();
+    expect(fieldForDomId("schedule-date-row-1", value, scope())?.id).toBe("scheduleDate:0");
+  });
+
+  it("2 行目の開催日時を引ける", () => {
+    const value = multiRowForm();
+    expect(fieldForDomId("schedule-date-row-2", value, scope())?.id).toBe("scheduleDate:1");
+    expect(fieldForDomId("schedule-start-row-2", value, scope())?.id).toBe("scheduleStart:1");
+    expect(fieldForDomId("schedule-end-row-2", value, scope())?.id).toBe("scheduleEnd:1");
+  });
+
+  it("2 組目のプラン名は組の先頭の行の id で引ける", () => {
+    const value = genderForm();
+    expect(fieldForDomId("plan-name-m-2", value, scope())?.id).toBe("planName:1");
+  });
+
+  it("女性の金額のスロットを引ける", () => {
+    const value = genderForm();
+    const slot = fieldForDomId("plan-amount-f-1", value, scope());
+    expect(slot?.id).toBe("planAmount:1");
+    expect(slot?.label).toBe("女性の金額");
+    expect(slot?.prompt).toBe("女性の金額は？");
+  });
+
+  it("男性の金額は行の番号ではなく性別で呼ぶ", () => {
+    expect(fieldForDomId("plan-amount-m-2", genderForm(), scope())?.label).toBe("男性の金額");
   });
 
   it("関係のない id では null を返す", () => {
@@ -171,16 +295,21 @@ describe("入力欄からの逆引き", () => {
   });
 
   it("既定で巡回しない任意の欄も、手で押せば対象になる", () => {
-    expect(fieldForDomId("event-rain-policy", EMPTY_EVENT_FORM, scope())?.key).toBe("rainPolicy");
+    expect(fieldForDomId("event-rain-policy", EMPTY_EVENT_FORM, scope())?.id).toBe("rainPolicy:0");
   });
 });
 
-function withKey(): EventFormValues {
-  return {
-    ...EMPTY_EVENT_FORM,
-    schedules: [createScheduleDraft({ key: "row-1" })],
-  };
-}
+describe("カーソルの id からの引き直し", () => {
+  it("2 行目の開催日は「2件目の開催日」になる", () => {
+    const slot = voiceSlotById("scheduleDate:1", multiRowForm(), scope());
+    expect(slot?.label).toBe("2件目の開催日");
+    expect(slot?.prompt).toBe("2件目の開催日は？");
+  });
+
+  it("巡回から外れた任意の欄でも定義から引き直せる", () => {
+    expect(voiceSlotById("capacity:0", EMPTY_EVENT_FORM, scope())?.key).toBe("capacity");
+  });
+});
 
 describe("パッチの適用", () => {
   it("配列は差し替え、ほかの値は残す", () => {
@@ -203,5 +332,15 @@ describe("いまの値の言い換え", () => {
     const field = voiceFieldByKey("planAmount");
     const value = { ...EMPTY_EVENT_FORM, pricePlans: [createPricePlanDraft({ amount: "3000" })] };
     expect(field && describeFieldValue(field, value)).toBe("3000円");
+  });
+
+  it("行を渡すとその行の値を返す", () => {
+    const value = genderForm();
+    const amount = voiceFieldByKey("planAmount");
+    const name = voiceFieldByKey("planName");
+    const date = voiceFieldByKey("scheduleDate");
+    expect(amount && describeFieldValue(amount, value, 1)).toBe("4000円");
+    expect(name && describeFieldValue(name, value, 1)).toBe("学生");
+    expect(date && describeFieldValue(date, multiRowForm(), 1)).toBe("2026-12-06");
   });
 });

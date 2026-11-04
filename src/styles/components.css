@@ -753,6 +753,8 @@
   font-size: var(--font-action);
   font-weight: 500;
   line-height: 1.4;
+  /* 文言が長く 2 行になっても、行の中心がそろって見えるようにする。 */
+  text-align: center;
   text-decoration: none;
   touch-action: manipulation;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -1133,12 +1135,19 @@ fieldset.field {
     flex-direction: column;
   }
 
+  /* 操作は 2 つを同じ幅で並べる。flex の `flex: 1` は基準幅が 0 になり、
+     折り返す容器では行の高さが「文字が折り返す前提」の値（60px 前後）まで伸びる。
+     grid の 1fr なら幅だけを等分し、高さは文字と余白のまま（41px）で収まる。
+     1 つだけのとき（未ログイン）も 1 列が幅いっぱいになる。 */
   .form-final__actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     margin-inline-start: 0;
   }
 
   .form-final__actions .btn {
-    flex: 1;
+    min-width: 0;
   }
 }
 
@@ -1164,9 +1173,10 @@ fieldset.field {
   }
 
   /* 帯はページ（main）の中にあり、フッターはその外にある。地の側でも同じだけ空ける。
-     未ログインの帯は注記が 1 文増えて 2 段に折れるので、少し高く持つ。 */
+     未ログインの帯は注記が 1 文増えて 2 段に折れるので、少し高く持つ。
+     ログイン後の帯は注記 1 行 + 操作 1 段（約 40px）で 100px。 */
   body:has(.form-final) {
-    --final-bar-h: 7.5rem;
+    --final-bar-h: 6.5rem;
   }
 
   body:has(.form-final--guest) {
@@ -1178,13 +1188,14 @@ fieldset.field {
     padding-bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
-  /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。 */
+  /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。
+     パネルは FAB と同じ下端に置く（右は organizer.css が FAB を避けた値を持つ）。 */
   .page--form:has(.form-final) .voice-fab {
     bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   .page--form:has(.form-final) .voice-panel {
-    bottom: calc(var(--final-bar-h) + 4rem + env(safe-area-inset-bottom));
+    bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 }
 
@@ -2519,11 +2530,13 @@ html[data-scroll-lock] {
   gap: 0.5rem;
 }
 
-/* 見本の面。テーマが無いときは --st-* が未定義なので、必ずフォールバックを書く。 */
+/* 見本の面。テーマが無いときは --st-* が未定義なので、必ずフォールバックを書く。
+   上は「サンプル」の札が入る分だけ広く取り、札が下の紙面に重ならないようにする。 */
 .theme-preview__frame {
+  position: relative;
   display: grid;
   gap: 0.5rem;
-  padding: 0.875rem;
+  padding: 1.75rem 0.875rem 0.875rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background-color: var(--color-bg);
@@ -2531,6 +2544,24 @@ html[data-scroll-lock] {
   background-repeat: var(--st-surface-image-repeat, repeat);
   background-size: var(--st-surface-image-size, auto);
   color: var(--color-text);
+}
+
+/* 見本であることの札。枠の内側の右上へ置き、狭い幅でもはみ出さない大きさにする。
+   色はテーマの紙面に混ぜず、画面のトークンだけで作る（新しい色を足さない）。 */
+.theme-preview__badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.625rem;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  pointer-events: none;
 }
 
 .theme-preview__card {

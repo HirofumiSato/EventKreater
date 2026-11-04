@@ -8,6 +8,7 @@ import { isVoiceMockEnabled, warnVoiceConfigurationOnce } from "@/modules/events
 import { transcribeWithOpenAi, voiceModel } from "@/modules/events/lib/voice/openai";
 import { consumeVoiceRateLimit } from "@/modules/events/lib/voice/rate-limit";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
+import { MAX_EVENT_OPTIONS } from "@/modules/events/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,34 @@ if (process.env.NODE_ENV !== "test") warnVoiceConfigurationOnce();
 
 function isVoiceFieldKey(value: string): value is VoiceFieldKey {
   return (VOICE_FIELD_KEYS as readonly string[]).includes(value);
+}
+
+/** 当て字の手掛かりとして受け取る長さの上限。 */
+const MAX_CLUE_LENGTH = 60;
+
+/**
+ * 行の番号。範囲内の整数だけを受け、それ以外は null（文脈なし）にする。
+ * 文脈は補助なので、検証に落ちても認識は続ける。
+ */
+function parseRow(raw: FormDataEntryValue | null): number | null {
+  if (typeof raw !== "string" || !/^\d{1,2}$/u.test(raw)) return null;
+  const row = Number(raw);
+  return row < MAX_EVENT_OPTIONS ? row : null;
+}
+
+/**
+ * 入力済みの催し名・会場名。改行と制御文字は空白へ潰し、60 文字で切る。
+ * プロンプトへは固定文の一部として差し込むだけで、そのまま連結しない。
+ */
+function parseClue(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_CLUE_LENGTH)
+    .trim();
+  return text ? text : null;
 }
 
 /** 音声の形式から拡張子を決める。OpenAI は拡張子で形式を見る。 */
@@ -87,6 +116,10 @@ export async function POST(req: NextRequest) {
     const rawField = form.get("field");
     const field =
       typeof rawField === "string" && isVoiceFieldKey(rawField) ? rawField : null;
+    // 欄の文脈。検証を通らない値は捨て、認識そのものは続ける。
+    const row = parseRow(form.get("row"));
+    const title = parseClue(form.get("title"));
+    const venueName = parseClue(form.get("venueName"));
 
     // 課金を守るため、認識を呼ぶ前に 1 回ぶん消費する。
     // モックは外部を呼ばないので数えない（開発中に 429 で止まらないようにする）。
@@ -100,6 +133,9 @@ export async function POST(req: NextRequest) {
       contentType: audioType,
       filename: filenameFor(audioType),
       field,
+      row: row ?? undefined,
+      title,
+      venueName,
     });
 
     return NextResponse.json(

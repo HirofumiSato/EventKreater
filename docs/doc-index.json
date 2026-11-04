@@ -11537,7 +11537,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 714,
+      "lineCount": 722,
       "headings": [
         {
           "level": 1,
@@ -12019,11 +12019,19 @@
           "exists": true
         },
         {
+          "path": "tests/unit/voice-guide.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/voice-mock.test.ts",
           "exists": true
         },
         {
           "path": "tests/unit/voice-parse.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-prompt.test.ts",
           "exists": true
         },
         {
@@ -12969,7 +12977,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 400,
+      "lineCount": 442,
       "headings": [
         {
           "level": 1,
@@ -13071,6 +13079,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/guide.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/voice/mock.ts",
           "exists": true
         },
@@ -13084,6 +13096,10 @@
         },
         {
           "path": "src/modules/events/lib/voice/parse.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/prompt.ts",
           "exists": true
         },
         {
@@ -13107,11 +13123,19 @@
           "exists": true
         },
         {
+          "path": "tests/unit/voice-guide.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/voice-mock.test.ts",
           "exists": true
         },
         {
           "path": "tests/unit/voice-parse.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-prompt.test.ts",
           "exists": true
         },
         {
