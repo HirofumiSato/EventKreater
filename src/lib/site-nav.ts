@@ -68,10 +68,13 @@ export function inOrganizerArea(pathname: string): boolean {
 /** いまの画面で誰として使っているか。ヘッダーの札（チップ）と並びの両方がこれを見る。 */
 export type ViewerRole = "participant" | "organizer" | "admin";
 
+/**
+ * いまの画面で使っている立場。主催者エリアでは、まだ催しを持たない会員も
+ * 主催者として扱う（登録直後は isOrganizer が false になるため）。
+ * 参加者画面を見ているあいだは、主催イベントを持つ会員も参加者として並べる。
+ */
 export function viewerRole(pathname: string, viewer: Viewer): ViewerRole {
   if (viewer.platformRole === "ADMIN") return "admin";
-  if (!viewer.isOrganizer) return "participant";
-  // 主催者でも、参加者画面を見ているあいだは参加者として並べる。
   return inOrganizerArea(pathname) ? "organizer" : "participant";
 }
 
@@ -118,8 +121,9 @@ function participantConfig(): NavConfig {
  * 下帯、マイページ（SCR-PUB-03）と売上（SCR-ORG-11）・カレンダー（SCR-ORG-13）
  * は本文が受ける。
  *
- * `action` は主催者以外（主催イベントを持たない会員）が主催者エリアを開いた
- * ときだけ出る戻り道である。主催者には `Navbar` が出さない（`organizerView`）。
+ * `action` は主催者エリアの戻り道として持つが、主催者エリアでは `viewerRole()` が
+ * 常に `organizer` になるため `Navbar` は出さない（`organizerView`）。催し 0 件の
+ * 会員も同じ扱いで、戻る道は頭文字のメニューの「参加者ログイン」が受ける。
  */
 function organizerConfig(): NavConfig {
   return {
@@ -179,10 +183,12 @@ export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
   // 管理者は管理コンソールしか持たない。会員向けの行き先を出さない。
   if (viewer.platformRole === "ADMIN") return [];
   const links: NavLink[] = [];
-  if (viewerRole(pathname, viewer) === "organizer") {
+  if (inOrganizerArea(pathname)) {
+    // 主催者エリアでは、まだ催しを持たない会員も主催者として扱う（viewerRole と同じ理由）。
     links.push(SITE.nav.participantSwitch);
     if (!showOrganizerTabs(pathname)) links.push(SITE.nav.mypage);
-    links.push(SITE.nav.notifications);
+    // 通知は主催者にしか作られない。催し 0 件のあいだは端末にも出さない。
+    if (viewer.isOrganizer) links.push(SITE.nav.notifications);
     links.push(SITE.nav.organizerDrafts);
   } else if (viewer.isOrganizer) {
     // 主催者でもある会員の入口。参加者画面から主催者マイページへ戻る道はここだけになる。
