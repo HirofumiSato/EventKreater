@@ -37,7 +37,7 @@ function campaign(target: CampaignDefinition["target"]): CampaignDefinition {
 }
 
 describe("定額プランの価格", () => {
-  it("月額で8件まで公開プランは980円、公開し放題は2980円", () => {
+  it("8件まで公開プランは980円、公開し放題プランは2980円", () => {
     expect(SUBSCRIPTION_8_PRICE_JPY).toBe(980);
     expect(SUBSCRIPTION_UNLIMITED_PRICE_JPY).toBe(2980);
     expect(listPriceFor("SUBSCRIPTION_8")).toBe(980);
@@ -45,7 +45,7 @@ describe("定額プランの価格", () => {
     expect(listPriceFor("ONE_TIME")).toBe(299);
   });
 
-  it("料金ページの札は4枚で、公開し放題を勧める", () => {
+  it("料金ページの札は4枚で、公開し放題プランを勧める", () => {
     const plans = buildServicePlans(quoteAll([], new Date()));
     expect(plans).toHaveLength(4);
     expect(plans.map((plan) => plan.id)).toEqual([
@@ -59,11 +59,11 @@ describe("定額プランの価格", () => {
     expect(SERVICE_PLANS.map((plan) => plan.id)).toEqual(plans.map((plan) => plan.id));
   });
 
-  it("公開し放題の札は「公開し放題」で、公開中のイベント数が無制限だと分かる", () => {
+  it("公開し放題プランの札は「公開し放題プラン」で、公開中のイベント数が無制限だと分かる", () => {
     const unlimited = buildServicePlans(quoteAll([], new Date())).find(
       (plan) => plan.id === "subscription-unlimited",
     );
-    expect(unlimited?.name).toBe("公開し放題");
+    expect(unlimited?.name).toBe("公開し放題プラン");
     expect(unlimited?.priceYen).toBe(2980);
     expect(unlimited?.highlights).toContain("公開中のイベント数が無制限");
   });
@@ -72,7 +72,7 @@ describe("定額プランの価格", () => {
     const eight = buildServicePlans(quoteAll([], new Date())).find(
       (plan) => plan.id === "subscription-8",
     );
-    expect(eight?.name).toBe("月額で8件まで公開プラン");
+    expect(eight?.name).toBe("8件まで公開プラン");
     expect(eight?.body).toContain("公開中のイベント");
     expect(eight?.body).toContain("終わったものは数えません");
   });
@@ -193,7 +193,7 @@ describe("Stripe の Price と加入プランの対応", () => {
     expect(planForPriceId(null)).toBeNull();
   });
 
-  it("旧980円の Price は公開し放題として引き継ぐ", async () => {
+  it("旧980円の Price は公開し放題プランとして引き継ぐ", async () => {
     process.env.STRIPE_PRICE_ID_MONTHLY_8 = "price_eight";
     process.env.STRIPE_PRICE_ID_UNLIMITED = "price_unlimited";
     process.env.STRIPE_PRICE_ID_MONTHLY_980 = "price_legacy";

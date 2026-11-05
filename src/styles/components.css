@@ -76,57 +76,94 @@
   white-space: nowrap;
 }
 
-/* 2 行目「告知&申込ウェブページ、」が 13 文字で最も長い（約 11.8em）。
-   360px の端末でも 1 行に収まる 1.5rem から始め、幅が広がるほど上げる。
-   3 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。
+/* 1 行目「イベント告知&申込のウェブページ、」が 17 文字で最も長い（約 17.2em）。
+   360px の端末でも 1 行に収まる 1.15rem から始め、幅が広がるほど上げる。
+   2 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。
 
-   最後の行の右には吹き出し（`.hero__callout`）を添える。見出しの 3 行は
+   最後の行の右には吹き出し（`.hero__callout`）を 2 枚横に添える。見出しの 2 行は
    崩さずに横へ並べるため、最後の行だけを行（`.hero__title-row`）にする。
-   狭い端末では吹き出しの側が細くなり、中の文だけが折れる。 */
+   狭い端末で 2 枚が入りきらないときは、吹き出しの束だけを次の行へ落とす。 */
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 5.2vw, 1.5rem);
   line-height: 1.35;
   letter-spacing: 0.01em;
 }
 
-/* 折り返しの位置は文言の一部。幅で行数を変えず、どの幅も 3 行にする。
-   PC で 1・2 行目をつなげると 21 文字になり、折り返さない大きさまで落とすと
+/* 折り返しの位置は文言の一部。幅で行数を変えず、どの幅も 2 行にする。
+   2 行をつなげると 25 文字になり、折り返さない大きさまで落とすと
    ヒーローの見出しとして小さすぎるため、行は分けたまま大きさだけを上げる。 */
 .hero--stage .hero__title-line {
   display: block;
 }
 
-/* 最後の行と吹き出しを 1 段に並べる。折り返すと吹き出しが次の行の左端へ落ち、
-   「見出しの右」に見えなくなるので、行の中では折り返さない。
-   見出しの側は縮めず、余った幅だけを吹き出しに渡す。 */
+/* 最後の行と吹き出しを 1 段に並べる。入りきらないときは吹き出しの束だけを
+   次の行へ落とし、見出しの 2 行は崩さない。 */
 .hero--stage .hero__title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   column-gap: 0.625rem;
+  row-gap: 0.5rem;
 }
 
 .hero--stage .hero__title-row .hero__title-line {
   flex: none;
 }
 
-/* 見出しの最後の行に添える吹き出し（11 文字）。主役ではないので字は小さく、
-   見出しの 3 行は崩さない。幅が足りない端末では吹き出しの側が細くなり、
-   中の文だけが 2 行に折れる（見出しの文字サイズは変えない）。
-   塗りと傾きは deco 層（`deco/base.css`）が持つ。 */
+/* 吹き出し 2 枚を横に並べる束。上は「作れるもの」、下は「そのあとも使えるもの」の順。
+   見出しの行に収まるときは右、収まらないときは見出しの次の行の左端に置く。 */
+.hero--stage .hero__callouts {
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+/* 見出しの最後の行に添える吹き出し（各 2 行）。主役ではないので字は小さく、
+   見出しの 2 行は崩さない。丸いポップにして、2 枚で少しだけ傾きを変える。
+   塗りと影は deco 層（`deco/base.css`）が持つ。 */
 .hero--stage .hero__callout {
   position: relative;
-  flex: 0 1 auto;
-  min-width: 5.5rem;
+  flex: none;
+  min-width: 5rem;
   max-width: 10rem;
-  padding: 0.1875rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 1.25rem;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.hero--stage .hero__callout:nth-child(1) {
+  transform: rotate(-2deg);
+}
+
+.hero--stage .hero__callout:nth-child(2) {
+  transform: rotate(1.5deg);
+}
+
+/* 尾は左端の 1 枚だけに付ける。左上へ向けるため、45 度回した同色の四角を
+   上辺から少しだけ出す。色は吹き出しの塗りをそのまま受け取る（deco 層が持つ）。 */
+.hero--stage .hero__callout:first-child::before {
+  content: "";
+  position: absolute;
+  top: -0.3rem;
+  left: 0.9rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  background-color: inherit;
+  transform: rotate(45deg);
+}
+
+/* 意味の切れ目で 2 行に折る。幅で折り返すと語の途中で切れて読みにくい。 */
+.hero--stage .hero__callout-line {
+  display: block;
 }
 
 .hero--stage .hero__lead {
@@ -170,9 +207,15 @@
   min-height: var(--tap-target);
 }
 
+/* ログイン導線の「登録/ログイン」だけを一回り小さくする。押せる的（40px）は
+   リンク全体が持つので、字を下げても押しやすさは変わらない。 */
+.hero__link-suffix {
+  font-size: 0.85em;
+}
+
 /* 主操作の直下に置く条件の注記。ボタンと同じ幅の流れに置き、字は小さくする。
    ボタンとの間を 2px だけ空け、条件ではなく添え書きとして読ませる。
-   米印は画面だけに出す（読み上げでは「まずは2枚まで無料。月額プランは初月0円。」と読む）。 */
+   文は画面が持ち（ホーム専用の定数）、ここは見た目だけを持つ。 */
 .hero__note {
   margin: 2px 0 0;
   color: var(--color-ink-soft);
@@ -240,15 +283,18 @@
 }
 
 @media (min-width: 640px) {
+  /* 1 行目（約 17.1em）は 2rem で約 546px。34rem（544px）では 2px 足りず
+     折り返すため、640〜899px のコピー列に収まる 36rem まで広げる。 */
   .hero--stage .hero__title {
+    max-width: 36rem;
     font-size: 2rem;
   }
 
   /* 見出しと同じ割合で、吹き出しも少しだけ大きくする。
-     11 文字が 1 行に収まる幅を渡し、折り返して見えないようにする。 */
+     文言は 2 行に折ってあるので、幅は max-width と中の文で決める。 */
   .hero--stage .hero__callout {
     max-width: 12rem;
-    padding: 0.25rem 0.625rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.8125rem;
   }
 }
@@ -265,10 +311,11 @@
     gap: 3rem;
   }
 
-  /* 900〜1023px はコピーが約 28rem まで細る。見出しは 3.4vw で追い、
-     2 行目が折り返さない 2.5rem で止める。 */
+  /* 900〜1023px はチラシ列が入り、コピーが約 28rem まで細る。1 行目（約 17.1em）は
+     1.65rem だと約 451px でコピー列に 1px 足りず折り返すため、1.6rem に留める。
+     1024px からは列が広がるので上げ直す。 */
   .hero--stage .hero__title {
-    font-size: clamp(2rem, 3.4vw, 2.5rem);
+    font-size: 1.6rem;
   }
 
   /* 広い画面ではコピーの右に、札として置く。 */
@@ -281,7 +328,7 @@
 }
 
 /* 1024px 以上は PC。札（19rem 固定）を除いた幅をコピーに渡す。
-   見出しは 3 行のまま。2 行目（約 11.8em）が収まる 2.5rem まで上げる。 */
+   見出しは 2 行のまま。1 行目（約 17.2em）が収まる 2.25rem まで上げる。 */
 @media (min-width: 1024px) {
   .hero__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
@@ -289,7 +336,7 @@
 
   .hero--stage .hero__title {
     max-width: 40rem;
-    font-size: 2.5rem;
+    font-size: 2.25rem;
   }
 
   .hero--stage .hero__callout {
@@ -700,6 +747,13 @@
   flex: 0 1 auto;
 }
 
+/* 見出しの下の一覧に続けて置く 1 つのリンク（ホームの「料金の詳細を見る」）。
+   一覧の幅いっぱいに広がらず、右端へ寄せる。一覧との間を 1 行ぶん空ける。 */
+.panel__actions--end {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
 /* 定義リストの下に置く操作。行の最後の罫線にボタンを接して置かない。
    公開プロフィールの副ボタンは、この余白にテープの飾り（`.btn--peek`）を重ねる。 */
 .kv + .panel__actions {
@@ -1067,6 +1121,21 @@ fieldset.field {
   border-top: 1px solid var(--color-border);
 }
 
+/* ステップの中のまとまり。ステップ 5 はテーマとチラシで 2 つに分かれ、
+   罫線 1 本と余白で「別の欄」だと一目で分かるようにする。
+   中の並びは `event-step__body` と同じ縦の流れにそろえる。 */
+.event-step__block {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.event-step__block + .event-step__block {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--color-border-strong);
+}
+
 .event-step__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1188,14 +1257,30 @@ fieldset.field {
     padding-bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
-  /* 右下の音声ボタンとパネルが帯に重ならないよう、帯の高さぶん上へ逃がす。
-     パネルは FAB と同じ下端に置く（右は organizer.css が FAB を避けた値を持つ）。 */
+  /* 右下の音声ボタンが帯に重ならないよう、帯の高さぶん上へ逃がす。
+     パネルは欄の直下に置くので、位置ではなく下端の余白（max-height）で帯を避ける。 */
   .page--form:has(.form-final) .voice-fab {
     bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
   .page--form:has(.form-final) .voice-panel {
-    bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
+    /* `dvh` を知らない環境では先の `vh` の行がそのまま効く。 */
+    max-height: min(
+      70vh,
+      30rem,
+      calc(
+        100vh - var(--voice-panel-top, 0px) - var(--final-bar-h) - 1rem -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    max-height: min(
+      70dvh,
+      30rem,
+      calc(
+        100dvh - var(--voice-panel-top, 0px) - var(--final-bar-h) - 1rem -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
   }
 }
 

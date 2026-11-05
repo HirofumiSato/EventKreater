@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const isSubActive = isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now);
     const remainingFree = Math.max(0, FREE_EVENT_LIMIT - quota.freeEventCount);
     const phoneVerified = Boolean(user?.phoneVerifiedAt);
-    // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
+    // 公開中の件数は、どのプランの帯にも出す。8件まで公開プランだけは、
     // 残りの計算と食い違わないよう、件数の上限の判定と同じ数え方（定額から公開したものだけ）にする。
     const countedPlan = isSubActive && quota.subscriptionPlan === "MONTHLY_8";
     const publishedCount = countedPlan

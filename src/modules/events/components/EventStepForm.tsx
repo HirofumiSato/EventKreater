@@ -38,7 +38,7 @@ interface EventStepFormProps {
   showOrganizerName?: boolean;
   /**
    * 会員だけが下書きを保存できる。true のとき、最終ステップに
-   * 「下書き保存」と「プレビューを見る」を並べる。false は未登録として
+   * 「下書き保存」と「プレビューに進む」を並べる。false は未登録として
    * 「ログインして公開/下書き保存」の 1 つを出す。
    */
   canSaveDraft?: boolean;
@@ -269,7 +269,7 @@ export function EventStepForm({
     typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
 
   /**
-   * 最終操作の「プレビューを見る」。
+   * 最終操作の「プレビューに進む」。
    * スマホはその場のモーダルで確かめ、広い画面は従来どおり SCR-ORG-16 へ進む。
    */
   const preview = () => {
@@ -420,13 +420,16 @@ export function EventStepForm({
                   )}
                   {step.key === "flyer" && (
                     <>
-                      <ThemeSection
-                        value={value}
-                        onChange={onChange}
-                        disabled={locked}
-                        onPreview={() => setPreviewOpen(true)}
-                      />
-                      {flyerSlot}
+                      {/* テーマとチラシは別の欄。罫線と余白で分ける（components.css）。 */}
+                      <div className="event-step__block event-step__block--theme">
+                        <ThemeSection
+                          value={value}
+                          onChange={onChange}
+                          disabled={locked}
+                          onPreview={() => setPreviewOpen(true)}
+                        />
+                      </div>
+                      <div className="event-step__block event-step__block--flyer">{flyerSlot}</div>
                     </>
                   )}
                   <div className="event-step__actions">
@@ -482,7 +485,7 @@ export function EventStepForm({
                 {savingDraft ? "保存しています…" : "下書き保存"}
               </button>
               <button type="button" className="btn btn--primary" disabled={locked} onClick={preview}>
-                {submitting ? "移動しています…" : "プレビューを見る"}
+                {submitting ? "移動しています…" : "プレビューに進む"}
               </button>
             </>
           ) : (

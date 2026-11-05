@@ -23,7 +23,7 @@
 
 * 無料チケットは 2 枚（``FREE_EVENT_LIMIT``）
 * 上限到達は HTTP 402、``error`` は ``QUOTA_EXCEEDED``
-* 単発は 299 円、月額で8件まで公開プランは 980 円、公開し放題は 2,980 円（``SUBSCRIPTION_8_PRICE_JPY`` / ``SUBSCRIPTION_UNLIMITED_PRICE_JPY``）
+* 単発は 299 円、8件まで公開プランは 980 円、公開し放題プランは 2,980 円（``SUBSCRIPTION_8_PRICE_JPY`` / ``SUBSCRIPTION_UNLIMITED_PRICE_JPY``）
 * 排他編集ロックは期限を持たない
 * 会員登録のパスワードは 8 文字以上
 * Webhook は、署名が無い、または検証に失敗すると 400。同じイベント ID の再送は本体処理をしない

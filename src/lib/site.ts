@@ -13,10 +13,10 @@ const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知
 /**
  * ホームの h1。スマホの 360px でも折り返しが意図どおりになるよう、行ごとに分けて持つ。
  * 各要素の末尾に読点・句点を置き、つなげて 1 行にしても文として通るようにしてある。
- * 改行の位置は幅で変えない（どの幅も 3 行）。2 行目が 13 文字で最も長く、
+ * 改行の位置は幅で変えない（どの幅も 2 行）。1 行目が 17 文字で最も長く、
  * 折り返さない文字サイズを `components.css` が幅ごとに持つ。
  */
-const TAGLINE_LINES = ["イベントのチラシと", "告知&申込ウェブページ、", "5分で簡単作成。"] as const;
+const TAGLINE_LINES = ["イベント告知&申込のウェブページ、", "5分で簡単作成。"] as const;
 
 export const SITE = {
   name: "EventKreater",

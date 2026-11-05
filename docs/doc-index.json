@@ -2064,7 +2064,7 @@
         },
         {
           "level": 3,
-          "text": "3.3. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス"
+          "text": "3.3. 定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）ライフサイクルシーケンス"
         },
         {
           "level": 3,
@@ -2569,7 +2569,7 @@
         },
         {
           "level": 5,
-          "text": "公開し放題の定義"
+          "text": "公開し放題プランの定義"
         },
         {
           "level": 4,
@@ -2597,7 +2597,7 @@
         },
         {
           "level": 4,
-          "text": "批判1: 単発299円の存在によるサブスクリプション（月額で8件まで公開プラン 980円）の共食い（Cannibalization）"
+          "text": "批判1: 単発299円の存在によるサブスクリプション（8件まで公開プラン 980円）の共食い（Cannibalization）"
         },
         {
           "level": 4,
@@ -2673,7 +2673,7 @@
         },
         {
           "level": 4,
-          "text": "3.2. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス"
+          "text": "3.2. 定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）ライフサイクルシーケンス"
         },
         {
           "level": 4,
@@ -2729,7 +2729,7 @@
         },
         {
           "level": 4,
-          "text": "6.2. 定額プラン加入セッション作成（月額で8件まで公開 / 公開し放題）"
+          "text": "6.2. 定額プラン加入セッション作成（8件まで公開プラン / 公開し放題プラン）"
         },
         {
           "level": 4,
@@ -2753,7 +2753,7 @@
         },
         {
           "level": 1,
-          "text": "旧・980円の公開し放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）"
+          "text": "旧・980円の公開し放題プランの Price（既存加入者のみ。新規の申込には使わない。空でもよい）"
         },
         {
           "level": 1,
@@ -10370,7 +10370,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
       "preImplementation": false,
-      "lineCount": 1127,
+      "lineCount": 1128,
       "headings": [
         {
           "level": 2,
@@ -10621,7 +10621,7 @@
       "sphinxDoc": "pricing_campaign_requirements",
       "format": "markdown",
       "title": "イベント主催者向け 販売価格の期間制御・0円販売・無料期間の自動課金",
-      "summary": "本ドキュメントは、管理コンソールから単発チケット（定価 299 円）と2つの定額プラン（月額で8件まで公開 980 円 / 公開し放題 2,980 円）の販売価格を期間限定で制御する機能の要件と実装方針を定める。あわせて、0 円販売時の課金・通知・利用規約の扱いを定義する。",
+      "summary": "本ドキュメントは、管理コンソールから単発チケット（定価 299 円）と2つの定額プラン（8件まで公開プラン 980 円 / 公開し放題プラン 2,980 円）の販売価格を期間限定で制御する機能の要件と実装方針を定める。あわせて、0 円販売時の課金・通知・利用規約の扱いを定義する。",
       "preImplementation": false,
       "lineCount": 307,
       "headings": [
@@ -10667,7 +10667,7 @@
         },
         {
           "level": 2,
-          "text": "4. 0 円の定額プラン（月額で8件まで公開 / 公開し放題）"
+          "text": "4. 0 円の定額プラン（8件まで公開プラン / 公開し放題プラン）"
         },
         {
           "level": 3,
@@ -11537,7 +11537,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 726,
+      "lineCount": 730,
       "headings": [
         {
           "level": 1,
@@ -12028,6 +12028,10 @@
         },
         {
           "path": "tests/unit/voice-mock.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-panel.test.ts",
           "exists": true
         },
         {
@@ -12981,7 +12985,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 450,
+      "lineCount": 459,
       "headings": [
         {
           "level": 1,
@@ -13099,6 +13103,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/panel.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/voice/parse.ts",
           "exists": true
         },
@@ -13136,6 +13144,10 @@
         },
         {
           "path": "tests/unit/voice-mock.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-panel.test.ts",
           "exists": true
         },
         {

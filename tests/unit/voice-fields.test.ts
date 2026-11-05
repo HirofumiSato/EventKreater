@@ -174,6 +174,23 @@ describe("次に埋める欄の決め方", () => {
     expect(nextNeededField(value, "scheduleEnd:0", scope())?.id).toBe("scheduleDate:1");
   });
 
+  it("最後の金額のあとは、補足を飛ばして会場名・郵便番号へ進む", () => {
+    const value = {
+      ...EMPTY_EVENT_FORM,
+      title: "忘年会",
+      schedules: [
+        createScheduleDraft({ eventDate: "2026-12-05", startTime: "18:00", endTime: "20:00" }),
+      ],
+      pricePlans: [createPricePlanDraft({ name: "一般", amount: "3000", note: "" })],
+    };
+    // 補足を聞かない設定でも、補足をスキップしたあと（既定の「任意の項目も聞く」）でも、
+    // 最後の金額の次は会場名、その次は郵便番号へ進む。
+    expect(nextNeededField(value, "planAmount:0", scope())?.id).toBe("venueName:0");
+    const skippedNote = scope({ includeOptional: true, touched: new Set(["planNote"] as const) });
+    expect(nextNeededField(value, "planAmount:0", skippedNote)?.id).toBe("venueName:0");
+    expect(nextNeededField(value, "venueName:0", skippedNote)?.id).toBe("postalCode:0");
+  });
+
   it("郵便番号で住所が埋まっていれば都道府県を聞かない", () => {
     expect(firstNeededField(filledForm(), scope())).toBeNull();
   });
@@ -184,6 +201,17 @@ describe("次に埋める欄の決め方", () => {
 });
 
 describe("任意の欄", () => {
+  it("費用の補足は任意で、既定では空でも埋める対象にしない", () => {
+    const field = voiceFieldByKey("planNote");
+    const value = {
+      ...EMPTY_EVENT_FORM,
+      pricePlans: [createPricePlanDraft({ name: "一般", amount: "3000", note: "" })],
+    };
+    expect(field?.optional).toBe(true);
+    expect(field && isFieldNeeded(field, value, scope())).toBe(false);
+    expect(field && isFieldNeeded(field, value, scope({ includeOptional: true }))).toBe(true);
+  });
+
   it("既定では雨天時の方針・定員・期限を聞かない", () => {
     const keys = voiceFieldOrder(filledForm(), scope()).map((slot) => slot.key);
     expect(keys).not.toContain("rainPolicy");

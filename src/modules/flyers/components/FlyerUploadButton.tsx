@@ -63,7 +63,15 @@ export function FlyerUploadButton({
         disabled={disabled || uploading}
         onClick={() => inputRef.current?.click()}
       >
-        {uploading ? "読み込んでいます…" : "手元の画像をアップしてチラシとして表示する"}
+        {uploading ? (
+          "読み込んでいます…"
+        ) : (
+          <>
+            手元の画像をアップ
+            <br />
+            チラシとして表示
+          </>
+        )}
       </button>
       <input
         ref={inputRef}

@@ -631,22 +631,42 @@
   display: none;
 }
 
-/* パネルは FAB の左下へ寄せる。下端を FAB とそろえ、右は FAB 1 つぶんと余白を空ける。
-   帯（.form-final）があるときは components.css で帯の高さぶん上へ逃がす。 */
+/* パネルは強調中の入力欄のすぐ下へ置く。欄に重ねないので、話しながら値が見える。
+   位置は VoiceInputDock が inline の CSS 変数（top / left / width）で渡す。
+   右は幅の側で FAB の手前までに止めてあるので、ここでは持たない。
+   帯（.form-final）があるときは components.css が max-height をさらに詰める。 */
 .voice-panel {
   position: fixed;
-  right: 4.75rem;
-  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  top: var(--voice-panel-top, 5rem);
+  left: var(--voice-panel-left, 0.5rem);
+  right: auto;
+  bottom: auto;
   z-index: 45;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: min(22rem, calc(100vw - 2rem));
-  max-height: min(70vh, 30rem);
+  width: var(--voice-panel-width, min(22rem, calc(100vw - 2rem)));
+  /* 下端は画面の内側に収める。`dvh` を知らない環境では先の `vh` の行がそのまま効く。 */
+  max-height: min(
+    70vh,
+    30rem,
+    calc(100vh - var(--voice-panel-top, 0px) - 1rem - env(safe-area-inset-bottom, 0px))
+  );
+  max-height: min(
+    70dvh,
+    30rem,
+    calc(100dvh - var(--voice-panel-top, 0px) - 1rem - env(safe-area-inset-bottom, 0px))
+  );
   overflow-y: auto;
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   padding: 0.9rem;
+}
+
+/* 欄の位置を測る前の 1 フレームは隠す。既定の位置で一度描いてから動くと、
+   パネルが画面の端から飛んでくるように見える。 */
+.voice-panel.is-placing {
+  visibility: hidden;
 }
 
 /* 音声パネルは、録音中だけ枠を危険色へ寄せる。印と同じ色にして、
@@ -664,6 +684,15 @@
   align-items: stretch;
   gap: 0.375rem;
   padding-inline-end: 2.5rem;
+}
+
+/* 質問と「例: …」は 1 行に並べる。質問が長いときは質問だけが縮み、
+   例は末尾を省略する。「いまの値」は下の別の行へ置くので、ここには入れない。 */
+.voice-panel__ask {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 /* 閉じるはアイコン。文字の「終了」は指示と同じ行で幅を食う。 */
@@ -761,6 +790,9 @@
   /* 1 行に固定し、はみ出す分だけ JS（fitPrompt）が字を詰める。
      折り返すと読み口が増え、いま何を話すのかがぼやける。 */
   margin: 0;
+  /* 1 行の中で質問が先に幅を取り、例は残りに収まる。 */
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   font-size: 30px;
@@ -768,8 +800,21 @@
   line-height: 1.25;
 }
 
-.voice-panel__hint,
-.voice-panel__transcript {
+/* 例は質問と同じ行の右に添える。幅が足りないときは末尾を切って、
+   質問の字を小さくする原因にしない。 */
+.voice-panel__hint {
+  flex: 0 1 auto;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-subtle);
+}
+
+/* 確定済みの「いまの値」は、質問の行に詰めず下の別の行へ置く。 */
+.voice-panel__current {
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.5;
@@ -787,40 +832,38 @@
 }
 
 /* 音声パネルの操作はアイコンだけ。文字が入らないぶん、押せる大きさを確保する。
-   吹き出しが入っても、操作の並びはパネルの中央に置く。 */
+   並びは左から詰める。主ボタンの下に吹き出しが下がるので、上端でそろえる。 */
 .voice-panel__actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 0.5rem;
 }
 
-/* 録音中だけ、停止の主ボタンの左に出す吹き出し。右向きの尾でボタンを指す。
-   話し終えたあとに何を押すかを、文字で 1 度だけ添える。 */
-.voice-panel__talk {
-  position: relative;
-  margin: 0;
-  padding: 0.375rem 0.625rem;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg);
-  color: var(--color-text-strong);
-  font-size: 0.8rem;
-  line-height: 1.4;
-  white-space: nowrap;
+/* 主ボタンと、その真下の吹き出しを 1 組にする。横に並べると吹き出しが
+   隣のボタンを押し出し、どれが止めるボタンか分からなくなる。 */
+.voice-panel__talk-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.voice-panel__talk::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -0.375rem;
-  width: 0;
-  height: 0;
-  border-block: 0.375rem solid transparent;
-  border-left: 0.375rem solid var(--color-bg);
-  transform: translateY(-50%);
+/* 録音中だけ、停止の主ボタンの真下に出す案内。話し終えたあとに
+   何を押すかを、文字で 1 度だけ添える。主ボタンより弱く見えるよう、
+   枠・塗り・角丸は持たせず、灰色の小さな文字だけをボタンの下へ貼る。 */
+.voice-panel__talk {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: center;
+  white-space: normal;
 }
 
 .voice-icon-btn {
@@ -912,10 +955,6 @@
   }
 }
 
-.voice-panel.is-transcribing .voice-panel__prompt::after {
-  content: "…";
-}
-
 .voice-panel__optional {
   font-size: 0.8rem;
 }
@@ -926,6 +965,38 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* 音声の確認は題を 1 文で組む。値を大きく出し、問いをそのまま後ろへ続ける。
+   短い値は 1 行に収まり、長い値は値の途中で折り返して問いが次の行へ落ちる
+   （問いは `white-space: nowrap` なので語の途中では切れない）。
+   本文（`.dialog__body`）は置かず、題だけで「何を入れるか」と「入れてよいか」を言う。 */
+.voice-confirm {
+  display: block;
+}
+
+.voice-confirm__value {
+  display: inline;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.voice-confirm__ask {
+  display: inline;
+  margin-left: 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* 操作は 1 段に 2 つ。`.dialog__actions` は縦積みなので、ここで 2 列に組み直す。
+   `btn--block` の幅いっぱい指定は列の中でそのまま効く。 */
+.voice-confirm__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+  width: 100%;
 }
 
 /* 音声モードの覆い。いま聞いている欄だけをくり抜き、それ以外の操作を止める。
@@ -1137,31 +1208,6 @@
   .voice-fab {
     right: 0.5rem;
     bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* 狭い幅では左端まで使い、右は FAB 1 つぶんと余白を空ける。
-     パネルの幅を固定すると横スクロールが出るので、左右の指定で幅を決める。 */
-  .voice-panel {
-    right: 4.25rem;
-    left: 0.5rem;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-    width: auto;
-  }
-
-  /* 操作の列に収まらないので、吹き出しは 1 段上へ折り返す。
-     尾は下向きに変え、下の停止ボタンを指す。 */
-  .voice-panel__talk {
-    flex-basis: 100%;
-  }
-
-  .voice-panel__talk::after {
-    top: auto;
-    right: 1.25rem;
-    bottom: -0.375rem;
-    border-block: 0;
-    border-inline: 0.375rem solid transparent;
-    border-top: 0.375rem solid var(--color-bg);
-    transform: none;
   }
 
   .voice-guide__bubble {

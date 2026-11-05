@@ -10,8 +10,17 @@ import { FIRST_MONTH_FREE_LABEL, type ServicePlan } from "@/modules/billing/lib/
  *
  * `Rows` と同じく、一覧の 1 要素として `<li>` を返す。呼び出し側は
  * `<ul className="plan-list">` で並べる。
+ *
+ * `showBody` を false にすると、札の説明文（`screen-note`）を出さない。
+ * ホームは金額と初月0円だけを見せ、比較は /service に任せる。
  */
-export function PlanCard({ plan }: { plan: ServicePlan }) {
+export function PlanCard({
+  plan,
+  showBody = true,
+}: {
+  plan: ServicePlan;
+  showBody?: boolean;
+}) {
   const trial = plan.trialMonths > 0;
   const discounted = !trial && plan.discountPercent > 0 && plan.listPriceYen !== plan.priceYen;
 
@@ -32,7 +41,9 @@ export function PlanCard({ plan }: { plan: ServicePlan }) {
         <p className="plan-card__price">
           {yenDigits(0)}
           <small>円 / 初月</small>
-          <span className="plan-card__list-price">2か月目から {yen(plan.listPriceYen)} / 月</span>
+          <span className="plan-card__list-price plan-card__list-price--trial">
+            2か月目から {yen(plan.listPriceYen)} / 月
+          </span>
         </p>
       ) : (
         <p className="plan-card__price">
@@ -41,7 +52,7 @@ export function PlanCard({ plan }: { plan: ServicePlan }) {
           {discounted && <s className="plan-card__list-price">定価 {yen(plan.listPriceYen)}</s>}
         </p>
       )}
-      <p className="screen-note">{plan.body}</p>
+      {showBody && <p className="screen-note">{plan.body}</p>}
       <ul className="plan-card__list">
         {plan.highlights.map((line) => (
           <li key={line}>{line}</li>

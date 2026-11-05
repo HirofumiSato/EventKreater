@@ -432,3 +432,23 @@ a.card,
   padding-block: 0.5rem;
 }
 
+/* ==========================================================================
+   ホームの料金節。月額の札の前に、単発で足りる人の金額を `Rows` で置く。
+   見出しの波線（`.section__head`）と rows の上線が接しないよう上を 1rem、
+   月額の札との間を 1.5rem 空ける。
+   ========================================================================== */
+
+.plan-single {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 何の行かは 1 語で足りる。行の題（無料チケット・単発チケット）より弱く置く。 */
+.plan-single__label {
+  margin-bottom: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+

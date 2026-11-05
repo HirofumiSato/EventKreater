@@ -115,7 +115,7 @@ export function FlyerGeneratePanel({
   return (
     <div className="card stack">
       <div>
-        <p className="label">チラシ生成</p>
+        <p className="label">チラシ生成orアップロード</p>
         <p className="help">
           背景と紙面の性格の 2 ステップで選んでから保存します。文字の配置・配色・題名色は、
           写真に合わせて自動で決まります。候補を作り直しても回数は減りません。チラシを

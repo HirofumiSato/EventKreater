@@ -30,7 +30,7 @@ export interface QuotaPricingOption {
   campaignName: string | null;
   currency: "JPY";
   interval?: "month";
-  /** 月額で8件まで公開プランだけが持つ、同時に公開できる上限。 */
+  /** 8件まで公開プランだけが持つ、同時に公開できる上限。 */
   eventLimit?: number;
 }
 
@@ -68,7 +68,7 @@ export function basePricingOptions(): QuotaPricingOption[] {
     }),
     toOption(
       "SUBSCRIPTION_8",
-      "月額で8件まで公開プラン",
+      "8件まで公開プラン",
       {
         chargedPrice: SUBSCRIPTION_8_PRICE_JPY,
         listPrice: SUBSCRIPTION_8_PRICE_JPY,
@@ -79,7 +79,7 @@ export function basePricingOptions(): QuotaPricingOption[] {
     ),
     toOption(
       "SUBSCRIPTION_UNLIMITED",
-      "公開し放題",
+      "公開し放題プラン",
       {
         chargedPrice: SUBSCRIPTION_UNLIMITED_PRICE_JPY,
         listPrice: SUBSCRIPTION_UNLIMITED_PRICE_JPY,
@@ -95,11 +95,11 @@ export async function loadPricingOptions(now = new Date()): Promise<QuotaPricing
   const quotes = quoteAll(await loadActiveCampaigns(now), now);
   return [
     toOption("SINGLE", "単発生成チケット", quotes.oneTime),
-    toOption("SUBSCRIPTION_8", "月額で8件まで公開プラン", quotes.subscription8, {
+    toOption("SUBSCRIPTION_8", "8件まで公開プラン", quotes.subscription8, {
       interval: "month",
       eventLimit: SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
     }),
-    toOption("SUBSCRIPTION_UNLIMITED", "公開し放題", quotes.subscriptionUnlimited, {
+    toOption("SUBSCRIPTION_UNLIMITED", "公開し放題プラン", quotes.subscriptionUnlimited, {
       interval: "month",
     }),
   ];
@@ -160,7 +160,7 @@ export function quotaSourceOf(type: QuotaPlanType): QuotaSource {
 }
 
 /**
- * 公開中のイベント数。月額で8件まで公開プランの上限は、この件数で判定する。
+ * 公開中のイベント数。8件まで公開プランの上限は、この件数で判定する。
  *
  * 数えるのは、公開済みで、削除されておらず、開催日が今日以降のもの。
  * 受付を一時停止（CLOSED）したものは、告知ページが残っていても数えない。
@@ -186,7 +186,7 @@ export async function countPublishedSubscriptionEvents(
  * 画面に出す「公開中のイベント」の件数。
  *
  * 件数の上限の判定（`countPublishedSubscriptionEvents`）と違い、どのチケットから公開したものも数える。
- * 公開し放題と未加入の帯にも件数を出すため。数える範囲は同じで、公開済み・未削除・
+ * 公開し放題プランと未加入の帯にも件数を出すため。数える範囲は同じで、公開済み・未削除・
  * 開催日が今日以降・自分の筆頭幹事のものだけ。
  */
 export async function countPublishedEvents(
@@ -221,13 +221,13 @@ export function quotaExceeded(
     type: "probs/quota-exceeded",
     detail:
       detail ??
-      `無料チケット${FREE_EVENT_LIMIT}枚を使い切りました。単発 ${yen(single)} ／ 月額8件 ${yen(monthly8)} ／ 放題 ${yen(unlimited)} から選べます。`,
+      `無料チケット${FREE_EVENT_LIMIT}枚を使い切りました。単発 ${yen(single)} ／ 8件まで公開プラン ${yen(monthly8)} ／ 公開し放題プラン ${yen(unlimited)} から選べます。`,
     error: "QUOTA_EXCEEDED",
     pricingOptions: pricing,
   });
 }
 
-/** 月額で8件まで公開プランの上限に達したときの 402。公開し放題への変更を促す。 */
+/** 8件まで公開プランの上限に達したときの 402。公開し放題プランへの変更を促す。 */
 export function publishedEventsFull(options?: QuotaPricingOption[]): ProblemDetailException {
   const pricing = options ?? PRICING_OPTIONS;
   const unlimited =
@@ -237,7 +237,7 @@ export function publishedEventsFull(options?: QuotaPricingOption[]): ProblemDeta
     status: 402,
     title: "Payment Required",
     type: "probs/quota-exceeded",
-    detail: `公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったものを削除するか止めてください。放題（${yen(unlimited)}）へ変えることもできます。`,
+    detail: `公開中のイベントが${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件に達しました。終わったものを削除するか止めてください。公開し放題プラン（${yen(unlimited)}）へ変えることもできます。`,
     error: "PUBLISHED_EVENTS_FULL",
     pricingOptions: pricing,
   });
@@ -307,9 +307,9 @@ async function claimFreeTicket(
  * チケットを1枚消費する。公開の直前に、イベントと同じトランザクションで呼ぶ。
  *
  * 消費順は「定額 → チケット（期限が近い順） → 単発クレジット → 無料チケット」。
- * 月額で8件まで公開プランは、公開中のイベントが上限未満なら通す。
+ * 8件まで公開プランは、公開中のイベントが上限未満なら通す。
  * 上限に達していても単発クレジットかチケットがあれば、そちらを1枚使って通す。
- * 公開し放題は件数を数えない。
+ * 公開し放題プランは件数を数えない。
  *
  * `eventId` はチケットにイベントを結ぶためだけに使う。まだイベント行が無い
  * 即公開の経路では null を渡し、作成できた時点で呼び出し側が結ぶ。
@@ -398,7 +398,7 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     quota.currentPeriodEnd,
     now,
   );
-  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+  // 公開中の件数を見るのは8件プランだけ。公開し放題プランは数えない。
   const capped =
     subscriptionActive &&
     quota.subscriptionPlan === "MONTHLY_8" &&
