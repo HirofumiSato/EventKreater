@@ -251,8 +251,6 @@ export default function HomePage() {
             <PlanCard key={plan.id} plan={plan} showBody={false} />
           ))}
         </ul>
-        {/* 請求日は加入日基準。日付を「1日」と書くと、実際の請求と食い違う。 */}
-        <p className="help">請求日は加入日を基準に、毎月同じ日です。</p>
         <div className="panel__actions panel__actions--end">
           <Link href={SITE.nav.service.href} className="btn btn--outline">
             料金の詳細を見る
