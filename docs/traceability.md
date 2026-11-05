@@ -14,7 +14,7 @@
 
 | コード | 参照する文書 |
 | --- | --- |
-| `prisma/migrations` | `AGENTS.md` / [docs/database.rst](database.rst) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / `llms.txt` |
+| `prisma/migrations` | `AGENTS.md` / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / `llms.txt` |
 | `prisma/migrations/20261020053000_visibility_flyers_reminders/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |

@@ -72,7 +72,7 @@ web と flyer を、本番とは別のアプリとして ``nrt`` に作ります
 ``fly.toml`` は本番用なので、staging の操作では必ず ``--config`` で stg 側を指してください。
 
 2 回目以降は手元から ``fly deploy`` しなくても、GitHub Actions の ``Deploy`` が staging へ追従します。
-``main`` の CI が緑で終わると staging が先に上がり、そのあと本番が承認を挟んで続きます（:doc:`deploy` の 2.4）。
+``main`` の CI が緑で終わると staging が先に上がり、そのあと本番が続きます（承認は挟みません。:doc:`deploy` の 2.4）。
 動かすには environment secrets とリポジトリ変数が要ります。
 
 2.1 web を作る

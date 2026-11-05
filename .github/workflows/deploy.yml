@@ -9,10 +9,10 @@
 #   staging を選べば staging だけ、production を選べば production だけを流す。
 #
 # 順序は needs で決める。staging が赤なら production は走らない（staging が
-# 本番のカナリアになる）。production は GitHub Environment `production` の
-# Required reviewers で承認を挟むので、CI と staging が緑でもそのままは出ない。
-# 承認は環境を指すジョブごとに求められるため、deploy-env.yml の 3 ジョブぶん
-# まとめて 1 回承認する（GitHub の Review pending deployments でまとめられる）。
+# 本番のカナリアになる）。GitHub Environment `production` の承認（Required
+# reviewers）は外してあるので、CI と staging が緑なら人手を挟まず production
+# まで流れる。承認を戻すときは Settings → Environments で付ける（このファイル
+# は変えなくてよい）。
 #
 # 自動デプロイは、リポジトリ変数 `DEPLOY_ENABLED` が `true` のときだけ動く。
 # これは「まだ Fly のアプリも environment secrets も無い」段階で main にこの
@@ -35,7 +35,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "デプロイ先（production は承認が要る）"
+        description: "デプロイ先（production は本番へ直接出る）"
         type: choice
         options: [staging, production]
         default: staging
@@ -47,8 +47,8 @@ permissions:
 # 環境ごとに 1 本だけ流す。デプロイは途中で打ち切らない（cancel-in-progress: false）。
 # 同じ環境の実行が重なったら、前の 1 本が終わってから次を始める。
 #
-# 環境ごとに分けるのは、staging を production の承認待ちに巻き込まないため。
-# 1 本の group にまとめると、production の承認が下りるまで次のマージの staging が
+# 環境ごとに分けるのは、staging を production の実行に巻き込まないため。
+# 1 本の group にまとめると、本番のデプロイが終わるまで次のマージの staging が
 # 始まらず、確認したい変更ほど後ろに詰まる。ここは呼ぶ側のジョブに置く。
 # 呼ばれる側（deploy-env.yml）には置かない（同じ group を二重に持たない）。
 jobs:
