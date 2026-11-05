@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { POST } from "@/app/api/v1/voice/transcriptions/route";
+import { POST, GET } from "@/app/api/v1/voice/transcriptions/route";
 import { VOICE_FIELDS } from "@/modules/events/lib/voice/fields";
 import { isVoiceMockEnabled, mockTranscript } from "@/modules/events/lib/voice/mock";
 import {
   isVoiceTranscriptionConfigured,
   transcribeWithOpenAi,
 } from "@/modules/events/lib/voice/openai";
+import { fetchVoiceMockEnabled } from "@/modules/events/lib/voice/transcribe";
 import type { VoiceContext } from "@/modules/events/lib/voice/types";
 import { EMPTY_EVENT_FORM } from "@/modules/events/types";
 
@@ -141,6 +142,66 @@ describe("モックのときの API", () => {
     );
     expect((await POST(request("title", "198.51.100.7"))).status).toBe(200);
     expect((await POST(request("title", "198.51.100.7"))).status).toBe(429);
+  });
+});
+
+describe("モックの可否を画面へ渡す", () => {
+  it("GET はモックの可否だけを返す", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    const response = await GET();
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ mock: true });
+  });
+
+  it("モックでなければ false を返す", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    await expect((await GET()).json()).resolves.toEqual({ mock: false });
+  });
+
+  it("画面は GET の返事を読む", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ mock: true })));
+    await expect(fetchVoiceMockEnabled()).resolves.toBe(true);
+  });
+
+  it("読めなければ false（実の録音）に倒す", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
+    await expect(fetchVoiceMockEnabled()).resolves.toBe(false);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("network");
+      }),
+    );
+    await expect(fetchVoiceMockEnabled()).resolves.toBe(false);
+  });
+
+  it("返事が遅ければ 1.5 秒で打ち切って false（実の録音）に倒す", async () => {
+    vi.useFakeTimers();
+    try {
+      // 返事を返さないまま待たせる。打ち切られたときだけ、中断として reject する。
+      const fetchMock = vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => {
+              reject(new DOMException("aborted", "AbortError"));
+            });
+          }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const pending = fetchVoiceMockEnabled();
+      expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+
+      // 打ち切りまでは待つ（録音の開始を、返事の速さに左右させない）。
+      await vi.advanceTimersByTimeAsync(1_000);
+      await expect(Promise.race([pending, Promise.resolve("waiting")])).resolves.toBe("waiting");
+
+      // 超えたら実の録音に倒れる。待ちが残らないよう、返事は false で返す。
+      await vi.advanceTimersByTimeAsync(600);
+      await expect(pending).resolves.toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

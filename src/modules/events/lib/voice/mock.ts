@@ -6,7 +6,8 @@ import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
  *
  * `VOICE_TRANSCRIBE_MOCK=1` のときだけ有効。本番で誤って有効にならないよう、
  * `NODE_ENV=production` では常に無効にする（`next build` と `next start` が該当する）。
- * 差し替えるのは認識の問い合わせだけなので、録音とマイクの許可はそのまま要る。
+ * 有効のとき、画面は録音を省いて欄の入力例を使い、サーバーは外部を呼ばずに入力例を返す。
+ * どちらも入力例（`fields.ts` の `example`）を使うので、画面と API で同じ文になる。
  */
 
 /** 欄が決まらないときの戻り値。`parse` が読める文字にしておく。 */
