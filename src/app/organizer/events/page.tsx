@@ -206,7 +206,8 @@ function OrganizerEventsScreen() {
 
       <QuotaStatusBanner
         quota={quotaState.quota}
-        onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/organizer/events" })}
+        onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/organizer/events" })}
+        onGranted={() => void quotaState.refreshQuota()}
       />
       <VerifyPaymentBanner
         onVerified={() => {

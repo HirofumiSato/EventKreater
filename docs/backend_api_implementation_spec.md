@@ -123,10 +123,10 @@ flowchart TD
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
-| `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
-| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
-| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
-| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 | 会員必須 | Stripe Checkout 完了後の即時同期検証・チケット反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
+| `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
+| `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
+| `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
+| `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | Stripe Checkout 完了後の即時同期検証・チケット反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
 | `/api/v1/billing/portal` | POST | SCR-ORG-01 | 会員必須 | Stripe Customer Portal（解約・カード変更）遷移URL発行 |
 | `/api/v1/webhooks/stripe` | POST | - | Stripe署名検証 | Stripe Webhook 受信ハンドラー（二重処理遮断） |
 
@@ -1631,7 +1631,7 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-- **`draftId` / `returnTo` の扱い (`CheckoutIntentSchema`):** `draftId` は UUID。渡されたら `assertOwnDraft(userId, draftId)` で、その会員が筆頭幹事である未公開の下書きだけを通す（他人の下書き 403、公開済み 409、無い 404）。`returnTo` は `isAllowedCheckoutReturnTo` を通し、許可外は `/organizer/events/new` に落とす。許可するのは `/mypage`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit`、`/organizer/events/<uuid>/preview` だけである。
+- **`draftId` / `returnTo` の扱い (`CheckoutIntentSchema`):** `draftId` は UUID。渡されたら `assertOwnDraft(userId, draftId)` で、その会員が筆頭幹事である未公開の下書きだけを通す（他人の下書き 403、公開済み 409、無い 404）。`returnTo` は `isAllowedCheckoutReturnTo` を通し、許可外は `/organizer/events/new` に落とす。許可するのは `/mypage`、`/organizer/plan`、`/organizer/events`、`/organizer/events/new`（`?ref=<uuid>` 付きを含む）、`/organizer/events/<uuid>/edit`、`/organizer/events/<uuid>/preview` だけである。
 - **成功・キャンセルの URL:** `checkoutReturnUrls(appUrl, returnTo, draftId)` が組み立てる。`session_id={CHECKOUT_SESSION_ID}` と `draftId` をクエリに足し、`{CHECKOUT_SESSION_ID}` はエンコードしない。`draftId` が無ければ `returnTo` のままである。
 - **`metadata`:** `userId`、`paymentType` に加え、`draftId` と `returnTo` を入れる（値があるときだけ）。`verify` はここから戻す。
 - **レスポンス (200 OK):**

@@ -129,6 +129,7 @@ describe("頭文字のメニューの並び", () => {
     expect(links).toEqual([
       SITE.nav.participantSwitch,
       SITE.nav.organizerDrafts,
+      SITE.nav.plan,
       SITE.nav.account,
     ]);
     expect(links).not.toContainEqual(SITE.nav.notifications);
@@ -137,6 +138,7 @@ describe("頭文字のメニューの並び", () => {
       SITE.nav.participantSwitch,
       SITE.nav.mypage,
       SITE.nav.organizerDrafts,
+      SITE.nav.plan,
       SITE.nav.account,
     ]);
   });
@@ -156,6 +158,7 @@ describe("頭文字のメニューの並び", () => {
         SITE.nav.participantSwitch,
         SITE.nav.notifications,
         SITE.nav.organizerDrafts,
+        SITE.nav.plan,
         SITE.nav.account,
       ]);
       // ホーム（`/mypage`）は節が持つ。メニューに同じ行き先を重ねない。
@@ -176,9 +179,25 @@ describe("頭文字のメニューの並び", () => {
         SITE.nav.mypage,
         SITE.nav.notifications,
         SITE.nav.organizerDrafts,
+        SITE.nav.plan,
         SITE.nav.account,
       ]);
     }
+  });
+
+  it("アカウント設定では、主催者のときだけプラン・カード管理を足す", () => {
+    // 共有画面でも、主催者として見ているあいだはプランの入口が要る。
+    expect(userMenuConfig("/account", organizer)).toEqual([
+      SITE.nav.mypage,
+      SITE.nav.notifications,
+      SITE.nav.plan,
+      SITE.nav.account,
+    ]);
+    // 参加者には主催者だけの設定を出さない。
+    expect(userMenuConfig("/account", participant)).toEqual([
+      SITE.nav.organizerSwitch,
+      SITE.nav.account,
+    ]);
   });
 
   it("管理者は会員向けの行き先を持たない", () => {

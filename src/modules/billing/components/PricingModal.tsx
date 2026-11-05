@@ -139,6 +139,9 @@ export function PricingModal({
   const isFree = oneTime?.chargedPrice === 0;
   const freeExhausted = isFree && (quota?.freeGrantRemaining ?? 0) === 0;
   const currentPlan = quota?.subscriptionPlan ?? "NONE";
+  // 加入中は月額の新規申込を受け付けない（API は 409 を返す）。変更はプラン画面へ案内する。
+  const subscribed =
+    quota?.subscriptionStatus === "ACTIVE" || quota?.subscriptionStatus === "PAST_DUE";
   const trialEligible = quota?.trialEligible ?? false;
   // 期限つきのチケットを持っているなら、それが一番安く早い。0円キャンペーン中は
   // そちらで1枚を受け取れるので、チケットの札は出さない（選ぶものが2つになる）。
@@ -252,22 +255,30 @@ export function PricingModal({
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
-            <button
-              type="button"
-              onClick={() => void handleSubscription("MONTHLY_8")}
-              disabled={loadingPlan !== null || currentPlan === "MONTHLY_8"}
-              className="btn btn--block"
-            >
-              {currentPlan === "MONTHLY_8"
-                ? "現在のプラン"
-                : loadingPlan === "MONTHLY_8"
+            {currentPlan === "MONTHLY_8" ? (
+              <button type="button" disabled className="btn btn--block">
+                現在のプラン
+              </button>
+            ) : subscribed ? (
+              <Link href="/organizer/plan" className="btn btn--block" onClick={onClose}>
+                プランを変える
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleSubscription("MONTHLY_8")}
+                disabled={loadingPlan !== null}
+                className="btn btn--block"
+              >
+                {loadingPlan === "MONTHLY_8"
                   ? "接続しています…"
                   : trialEligible
                     ? "初月0円で始める"
                     : subscription8?.chargedPrice === 0
                       ? "0円で定期購入を始める"
                       : "このプランを始める"}
-            </button>
+              </button>
+            )}
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
             {!trialEligible && <p className="eyebrow">公開中の件数を数えない</p>}
@@ -283,22 +294,38 @@ export function PricingModal({
                 ? " 無料期間の終了後は、登録したカードへ自動で請求します。"
                 : ""}
             </p>
-            <button
-              type="button"
-              onClick={() => void handleSubscription("UNLIMITED")}
-              disabled={loadingPlan !== null || currentPlan === "UNLIMITED"}
-              className={`btn btn--block${hasTicket ? "" : " btn--primary"}`}
-            >
-              {currentPlan === "UNLIMITED"
-                ? "現在のプラン"
-                : loadingPlan === "UNLIMITED"
+            {currentPlan === "UNLIMITED" ? (
+              <button
+                type="button"
+                disabled
+                className={`btn btn--block${hasTicket ? "" : " btn--primary"}`}
+              >
+                現在のプラン
+              </button>
+            ) : subscribed ? (
+              <Link
+                href="/organizer/plan"
+                className={`btn btn--block${hasTicket ? "" : " btn--primary"}`}
+                onClick={onClose}
+              >
+                プランを変える
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleSubscription("UNLIMITED")}
+                disabled={loadingPlan !== null}
+                className={`btn btn--block${hasTicket ? "" : " btn--primary"}`}
+              >
+                {loadingPlan === "UNLIMITED"
                   ? "接続しています…"
                   : trialEligible
                     ? "初月0円で始める"
                     : subscriptionUnlimited?.chargedPrice === 0
                       ? "0円で定期購入を始める"
                       : "定期購入で公開し放題プラン"}
-            </button>
+              </button>
+            )}
           </article>
         </div>
         {!trialEligible && (

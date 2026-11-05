@@ -17,6 +17,8 @@ describe("Checkout の戻り先", () => {
     expect(isAllowedCheckoutReturnTo("/organizer/events/new")).toBe(true);
     expect(isAllowedCheckoutReturnTo("/organizer/events")).toBe(true);
     expect(isAllowedCheckoutReturnTo("/mypage")).toBe(true);
+    // プラン・カード管理（SCR-ORG-17）から月額を申し込んだときの戻り先。
+    expect(isAllowedCheckoutReturnTo("/organizer/plan")).toBe(true);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/edit`)).toBe(true);
     expect(isAllowedCheckoutReturnTo(`/organizer/events/new?ref=${DRAFT_ID}`)).toBe(true);
     // 下書きのプレビューから公開して 402 になったとき、購入後にこの画面へ戻す。
@@ -34,6 +36,8 @@ describe("Checkout の戻り先", () => {
     expect(isAllowedCheckoutReturnTo(`/organizer/events/${DRAFT_ID}/previews`)).toBe(false);
     expect(isAllowedCheckoutReturnTo("/organizer/events/drafts")).toBe(false);
     expect(isAllowedCheckoutReturnTo("/organizer/revenue")).toBe(false);
+    // 戻り先に独自のクエリを許すと、購入後にどこへでも飛ばせてしまう。
+    expect(isAllowedCheckoutReturnTo("/organizer/plan?x=1")).toBe(false);
   });
 
   it("未指定・不正な値は作成画面へ戻す", () => {

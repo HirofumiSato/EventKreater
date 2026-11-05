@@ -136,15 +136,6 @@ export function useEventQuota() {
     [],
   );
 
-  const openCustomerPortal = useCallback(async () => {
-    const res = await fetch("/api/v1/billing/portal", { method: "POST" });
-    if (!res.ok) throw new Error("ポータルセッション作成に失敗しました");
-    const data = (await res.json()) as { portalUrl?: string };
-    if (data.portalUrl) {
-      window.location.href = data.portalUrl;
-    }
-  }, []);
-
   return {
     quota,
     isLoading,
@@ -154,6 +145,5 @@ export function useEventQuota() {
     refreshQuota: fetchQuota,
     startOneTimeCheckout,
     startSubscriptionCheckout,
-    openCustomerPortal,
   };
 }

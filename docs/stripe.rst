@@ -140,7 +140,7 @@ Test Clock での確認
 環境変数
 --------
 
-``.env`` の Stripe 関連です。値の置き場所は :doc:`local` と同じです。
+``.env`` の Stripe 関連です。値の置き場所は :doc:`local` と同じです。値は 1 行に 1 つ書きます。行末の ``"`` を落とすと次の行とつながり、Checkout が 500 になります（Stripe SDK は ``ERR_INVALID_CHAR`` を握りつぶすので、ログに理由が出ません）。
 
 .. list-table::
    :header-rows: 1
@@ -169,16 +169,18 @@ Test Clock での確認
 ----
 
 1. Stripe Dashboard を開き、右上を **テストデータ** にする。
-2. 商品と Price を作る。8件まで公開プランは 980 円、公開し放題プランは 2,980 円。どちらも通貨 JPY、請求は月次。その ID を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題プランは ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「8件まで公開プラン」「公開し放題プラン」）。請求書と領収書（チケットの支払いのもので、参加費の集金とは別）に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
-3. Customer Portal をテストモードで有効にする。マイページの「プラン・カード管理」がここを開きます。プラン変更（8 件プラン ↔ 公開し放題プラン）を選べるように設定します。ダウングレードしても既存の掲載は消さず、新規の公開だけを止めます。
+2. 商品と Price を作る。8件まで公開プランは 980 円、公開し放題プランは 2,980 円。どちらも通貨 JPY、請求は月次。料金の ``price_...`` を ``STRIPE_PRICE_ID_MONTHLY_8`` と ``STRIPE_PRICE_ID_UNLIMITED`` に入れる。値上げ前の 980 円の公開し放題プランは ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` に残す。Product の表示名はアプリの札と揃える（「8件まで公開プラン」「公開し放題プラン」）。請求書と領収書（チケットの支払いのもので、参加費の集金とは別）に出る名前は Dashboard の Product 名であり、アプリ側の定数ではない。
+
+   商品の URL に含まれる ``prod_...``（Product ID）を入れないでください。プランの判定は ``priceIdForPlan`` と ``planForPriceId`` が ``price_...`` の一致で行うため、Product ID を入れると決済は通っても契約の更新が反映されません。
+3. Customer Portal をテストモードで有効にする。プラン・カード管理（``/organizer/plan``）の「カードを変更・解約」がここを開きます。入口は共通ヘッダーの頭文字のメニューの「プラン・カード管理」です。プラン変更（8 件プラン ↔ 公開し放題プラン）を選べるように設定します。ダウングレードしても既存の掲載は消さず、新規の公開だけを止めます。
 4. ``NEXT_PUBLIC_APP_URL`` と開発サーバーのポートを揃える。``.env.example`` に合わせるときは ``npm run dev`` です。Web は 3012 です。
-5. アプリを起動したまま、別の端末で Stripe CLI を実行する。転送先のホストとポートは ``NEXT_PUBLIC_APP_URL`` に合わせます。
+5. アプリを起動したまま、別の端末で Stripe CLI を実行する。転送先のホストとポートは ``NEXT_PUBLIC_APP_URL`` に合わせます。転送するイベントは、Webhook が処理する 7 つを明示します（Stripe CLI 1.55 以降は ``--events`` か ``--all-snapshot`` が要ります）。
 
 .. code-block:: powershell
 
-   stripe listen --forward-to localhost:3012/api/v1/webhooks/stripe
+   stripe listen --forward-to localhost:3012/api/v1/webhooks/stripe --events checkout.session.completed,invoice.payment_succeeded,invoice.payment_failed,customer.subscription.updated,customer.subscription.deleted,charge.refunded,charge.dispute.created
 
-CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開発サーバーを再起動します。
+CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開発サーバーを再起動します。``stripe listen`` は起動するたびに署名鍵が変わるので、起動し直したら ``.env`` も書き換えます。
 
 画面での確認
 ------------
