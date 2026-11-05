@@ -147,7 +147,7 @@
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
 
-/* 見出しの中の「告知」「申込」。地は塗らず、文字色だけで 2 語を分ける。
+/* 見出しの中の「告知」「申込」「特設」。地は塗らず、文字色だけで 3 語を分ける。
    墨地に 4.5:1 以上を満たす明るさの差し色を tokens.css から読む。 */
 .deco .hero--stage .hero__mark {
   font-weight: 700;
@@ -161,6 +161,11 @@
 .deco .hero--stage .hero__mark--apply {
   background: none;
   color: var(--color-mark-apply);
+}
+
+.deco .hero--stage .hero__mark--special {
+  background: none;
+  color: var(--color-mark-special);
 }
 
 /* ヒーローのショーケース（実際に作った画面の見本）。紙の束として立てるが、
