@@ -3104,7 +3104,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 916,
+      "lineCount": 913,
       "headings": [
         {
           "level": 1,
@@ -3169,6 +3169,10 @@
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "prisma/migrations",
+          "exists": true
+        },
         {
           "path": "prisma/schema.prisma",
           "exists": true

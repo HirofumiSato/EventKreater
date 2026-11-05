@@ -736,11 +736,11 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 
 ``workflow_run`` は ``paths`` で絞れないため、``docs/`` だけの変更でも連鎖は動きます。CI の対象判定（``scripts/ci-scope.mjs``）はデプロイには効きません。ビルドは走りますが、当てるマイグレーションが無ければ ``migrate`` は何もせずに通ります。
 
-``main`` の CI から流れたとき、production は GitHub Environment ``production`` の **Required reviewers** で止まるまで進みません。staging は承認なしで先に上がるので、staging を見てから承認できます。承認は環境を指すジョブごとに求められるため、``deploy-env.yml`` の 4 ジョブぶんまとめて 1 回承認してください（GitHub の **Review pending deployments** でまとめられます）。
+``main`` の CI から流れたとき、production は人手の承認を挟まずに流れます。GitHub Environment ``production`` の **Required reviewers** は外してあります（2026-11-05）。staging が赤ければ production は走らないので、staging が実質のカナリアです。承認を戻したいときは **Settings → Environments → production** で付け直してください（``.github/workflows/deploy.yml`` は変わりません）。
 
 このワークフローは、リポジトリ変数 ``DEPLOY_ENABLED`` が ``true`` のときだけ動きます。Fly のアプリも environment secrets も無い段階で main に入っても、CI 成功のたびに赤い実行が積まれないようにするためです。未設定のときは skipped で終わり、main は緑のままです。
 
-1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` には **Required reviewers** を付けます（CI が緑でも、そのまま本番へ出さないための人手の 1 回です）。
+1. GitHub の **Settings → Environments** で ``staging`` と ``production`` を作ります。``production`` に **Required reviewers** を付けると、CI と staging が緑でも承認が下りるまで止まります。付けなければそのまま本番まで流れます（このリポジトリでは付けていません。下の note を参照）。
 2. 両方の environment に secrets を 2 つ入れます。``FLY_API_TOKEN`` は ``fly tokens create org`` で作ります。``DATABASE_URL_DIRECT`` は Neon の Direct 接続文字列です（プール済みではありません。``prisma/schema.prisma`` が ``directUrl`` を持たないためです）。
 3. 任意で、``staging`` の environment に ``CF_ACCESS_CLIENT_ID`` と ``CF_ACCESS_CLIENT_SECRET`` を足します。staging のホストは Cloudflare Access で守っているので、外から疎通を確かめるには Service Token が要ります。入れると、staging の web を上げたあとに ``/api/v1/public/pricing`` を 200 が返るまで試し、通らなければ production へ進みません。未設定ならこの確認は飛ばします（デプロイ自体は通ります）。同じく任意で、両方の environment に ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` を足すと、``mail`` ジョブがメール中継を CI から上げます。未設定ならジョブを飛ばします。
 
@@ -752,22 +752,19 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    - Account Resources は対象のアカウント、Zone Resources は ``eventkreater.com`` だけに絞ります
 
    ``CLOUDFLARE_ACCOUNT_ID`` はダッシュボードの **Account ID** です。TTL は運用に合わせて延ばしてください（既定の 1 週間だと、切れた朝に ``mail`` ジョブが黙って落ちます）。
-4. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を承認すると安全です。2 回目以降は ``main`` の CI 成功から staging → production の順に流れます。
+4. リポジトリの **Settings → Variables → Actions** で ``DEPLOY_ENABLED`` を ``true`` にします。最初の 1 回は ``workflow_dispatch`` で staging を選んで流し、通ってから production を流すと安全です。2 回目以降は ``main`` の CI 成功から staging → production の順に、承認なしで流れます。
 
 .. note::
 
-   このリポジトリでは 2026-11-03 に environments・secrets・``DEPLOY_ENABLED`` を設定済みです。``production`` の承認者は 1 名で、
+   このリポジトリでは 2026-11-03 に environments・secrets・``DEPLOY_ENABLED`` を設定済みです。
    ``workflow_dispatch`` の staging と、``main`` の CI からの production の両方が success で終わることを確かめています。
-   デプロイの成否は **Actions の ``Deploy``** で見てください（``fly deploy`` を手で叩いたときと違い、承認待ちのあいだは job が止まります）。
+   デプロイの成否は **Actions の ``Deploy``** で見てください。
 
    ``main`` の CI から staging → production の順に流す形は、同じ 2026-11-03 に後から入れました。
-   その日のうちに、``main`` の CI 成功から 1 本の ``Deploy`` で
-   ``staging / migrate`` → ``staging / flyer`` → ``staging / web`` が success で終わり、続いて
-   ``production / migrate`` が承認待ちで止まることを確かめています（commit ``4ad8cef``）。
-   承認は 1 回で、``production`` の 3 ジョブすべてに効きました。
-
-   承認をしないまま次のマージが来ると、承認待ちの実行が積み上がります（``cancel-in-progress: false`` のため）。
-   古い実行を誤って承認しないよう、出さないと決めた実行は Actions から止めてください。
+   当時は ``production`` の **Required reviewers** により ``production / migrate`` が承認待ちで止まることも確かめています（commit ``4ad8cef``）。
+   2026-11-05 にその承認を外したため、いまは ``main`` が緑になると staging に続いて production まで自動で流れます。
+   本番 DB への ``prisma migrate deploy`` も同じ流れで当たるので、``prisma/migrations/`` を含む変更は staging の結果を見てからマージしてください。
+   承認を戻したいときは **Settings → Environments → production** に **Required reviewers** を付け直します（ワークフロー側の変更は要りません）。
 
 ``NEXT_PUBLIC_APP_URL`` と ``NEXT_PUBLIC_GA_MEASUREMENT_ID`` はビルド時に焼き込まれるので、値は各 ``fly*.toml`` の ``[build.args]`` が持ちます。ワークフローからは渡しません（2 か所に書くと、片方だけ直したときに静かにずれます）。
 
@@ -865,7 +862,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 6. 更新と切り戻し
 -----------------
 
-ふだんの更新は、作業ブランチを ``main`` へマージするだけです。CI が緑で終わると ``Deploy`` が staging → production の順に流れます（2.4）。承認を待たずに切り分けたいときだけ、下の手作業を使います。
+ふだんの更新は、作業ブランチを ``main`` へマージするだけです。CI が緑で終わると ``Deploy`` が staging → production の順に流れます（2.4）。流れを待たずに切り分けたいときだけ、下の手作業を使います。
 
 .. code-block:: powershell
 

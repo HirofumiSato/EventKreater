@@ -20,7 +20,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: "デプロイ先（production は承認が要る）"
+        description: "デプロイ先（production は本番へ直接出る）"
         required: true
         type: string
       ref:
@@ -52,8 +52,8 @@ jobs:
   migrate:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
-    # この指定があるジョブでだけ環境 secrets を読める。production には
-    # Required reviewers を付けているので、承認が下りるまで先へ進まない。
+    # この指定があるジョブでだけ環境 secrets を読める。production の
+    # Required reviewers は外してあるので、承認待ちでは止まらない。
     environment: ${{ inputs.environment }}
     steps:
       # 対象は呼ぶ側が決める。workflow_run の既定の checkout は main の先頭を
@@ -164,7 +164,7 @@ jobs:
       #
       # staging は Cloudflare Access で守っているので、Service Token を
       # environment secrets に入れたときだけ効く。未設定なら飛ばす
-      # （Access を足していない環境で、本番の承認まで止めないため）。
+      # （Access を足していない環境で、staging の確認を理由に本番を止めないため）。
       - name: staging の疎通を見る
         if: inputs.environment == 'staging' && env.CF_ACCESS_CLIENT_ID != ''
         env:
