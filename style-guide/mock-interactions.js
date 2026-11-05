@@ -9,7 +9,7 @@
 //   1. ヘッダー … 会員メニューと（狭い画面の）ナビの開閉
 //   2. カレンダー … 日付の選択と日別一覧の差し替え、予定のモーダル
 //   3. 作成のステップ … 見出しの開閉と「次へ」「戻る」
-//   4. 音声入力 … 録音 → 文字化 → 入力欄へ反映、を疑似タイマーで
+//   4. 音声入力 … 録音 → 文字化 → 確認（または自動確定）→ 入力欄へ反映、まとめて話す一覧、を疑似タイマーで
 //   5. 共通 … URL のコピー、コピー作成・プレビュー・ログアウトの遷移、API 依存のトースト
 //   6. 一覧の絞り込み … 「絞り込む」のモーダルと、状態でのカードの出し分け
 //   7. 出欠の層 … 告知ページの層を開き、割引の支払額を計算し、送信の返事を出す
@@ -19,8 +19,8 @@
 //  11. 料金プラン … 帯から加入モーダルを開き、初月0円の札と 2 か月目からの金額を出す
 //  12. 公開の確認 … 「公開する」から確認の層を開き、公開後は「チケットを使いました」を出す
 //
-// 値や文言を作り直すのは、音声入力のサンプル、押したときにしか出ない
-// 絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
+// 値や文言を作り直すのは、音声入力のサンプルと確認（入力内容の確認・まとめて入力します）、
+// 押したときにしか出ない絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
 // 名簿の表示列ダイアログ、名簿の 1 枚の集金日時、料金プランの加入モーダル、
 // 公開の確認と公開後の「チケットを使いました」だけ。
 // 他の表示は製品の DOM のまま動かす。
@@ -312,6 +312,49 @@
   }
 
   /**
+   * 確認に出す「話した内容」。製品は文字起こしをそのまま置くので、
+   * モックも読み上げた形（「3000円」など）にして、欄の値と見分けられるようにする。
+   */
+  function spokenValue(id, value) {
+    if (id.startsWith("schedule-date-")) return "11月8日";
+    if (id.startsWith("schedule-start-")) return "11時から";
+    if (id.startsWith("schedule-end-")) return "15時まで";
+    if (id.startsWith("plan-amount-")) return value + "円";
+    if (id === "event-capacity" || id === "event-capacity-custom") return value + "人";
+    if (id === "event-postal-code") return "1 5 4 0 0 0 5";
+    return value;
+  }
+
+  /**
+   * 確認を挟まずに入れる欄。製品の `VoiceField.confirm === "auto"` と同じ顔ぶれで、
+   * 開催日・開始・終了・金額・定員・郵便番号・都道府県・雨天時の方針・申し込み期限。
+   */
+  const AUTO_CONFIRM_IDS = new Set([
+    "event-capacity",
+    "event-capacity-custom",
+    "event-postal-code",
+    "event-prefecture",
+    "event-rain-policy",
+    "rsvp-deadline",
+  ]);
+  const AUTO_CONFIRM_PREFIXES = [
+    "schedule-date-",
+    "schedule-start-",
+    "schedule-end-",
+    "plan-amount-",
+  ];
+
+  function isAutoConfirm(id) {
+    return (
+      AUTO_CONFIRM_IDS.has(id) ||
+      AUTO_CONFIRM_PREFIXES.some((prefix) => id.startsWith(prefix))
+    );
+  }
+
+  /** まとめて話したときに、どの欄にも当たらなかった節として見せる固定の 1 行。 */
+  const BATCH_UNASSIGNED = ["よろしくお願いします"];
+
+  /**
    * 郵便番号から入る住所。製品は API を呼ぶので、モックは見本の 1 件だけを持つ。
    * 郵便番号の見本（1540005）と同じ住所にして、音声で入れたときに 3 欄が埋まるようにする。
    */
@@ -462,8 +505,12 @@
     cursor: -1,
     fields: [],
     autoAdvance: true,
+    // まとめて話す。オンなら停止したあとに欄ごとの一覧を出す。
+    batchMode: false,
     panel: null,
     scrim: null,
+    // 押したときだけ出る確認（入力内容の確認・まとめて入力します）の層。
+    dialog: null,
     timers: [],
   };
 
@@ -493,11 +540,13 @@
       '<span class="voice-rec" aria-hidden="true"><span class="voice-rec__dot"></span>REC</span>' +
       '<span class="voice-panel__state"></span>' +
       "</p>" +
-      // 質問と例は 1 行に並べる（製品の `.voice-panel__ask`）。聞き取りの行は持たない。
+      // 質問と例は 1 行に並べる（製品の `.voice-panel__ask`）。
       '<div class="voice-panel__ask">' +
       '<p class="voice-panel__prompt" aria-live="polite"></p>' +
       '<p class="voice-panel__hint"></p>' +
       "</div>" +
+      // 聞き取りの途中経過は質問の下に 1 行だけ足す（製品と同じ位置）。
+      '<p class="voice-panel__interim" aria-live="polite" hidden></p>' +
       '<button type="button" class="voice-panel__close" aria-label="音声入力を終了" title="音声入力を終了">' +
       icon("close") +
       "</button></div>" +
@@ -531,6 +580,8 @@
       '<div class="voice-panel__options">' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional checked> 任意の項目も聞く</label>' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 自動遷移</label>' +
+      // 1 回の録音で複数の欄を埋める。止めると欄ごとの一覧を出す。
+      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-batch> まとめて話す</label>' +
       "</div>";
 
     document.body.append(scrim, panel);
@@ -632,6 +683,293 @@
       "px)";
   }
 
+  /** パネルの質問と例を差し替える。まとめて話すときは、巡回の欄名ではなく話す順を出す。 */
+  function renderPrompt(entry) {
+    if (!voice.panel) return;
+    const prompt = voice.panel.querySelector(".voice-panel__prompt");
+    const hint = voice.panel.querySelector(".voice-panel__hint");
+    if (voice.batchMode) {
+      prompt.textContent = "順番に話してください";
+      hint.textContent = "例: 12月5日、18時から20時、渋谷ホール、3000円、30人";
+    } else {
+      prompt.textContent = entry.prompt || entry.label + "は？";
+      hint.textContent = "例: " + (entry.hint || entry.value);
+    }
+    hint.hidden = false;
+  }
+
+  /** 聞き取りの途中経過。空文字を渡すと行ごと隠す。 */
+  function showInterim(text) {
+    if (!voice.panel) return;
+    const interim = voice.panel.querySelector(".voice-panel__interim");
+    if (!interim) return;
+    interim.textContent = text;
+    interim.hidden = !text;
+  }
+
+  /** まとめて話すの切り替え。状態とチェックをそろえ、質問もすぐ差し替える。 */
+  function setBatchMode(on) {
+    voice.batchMode = on;
+    if (!voice.panel) return;
+    const box = voice.panel.querySelector("[data-voice-batch]");
+    if (box) box.checked = on;
+    const entry = voice.fields[voice.cursor];
+    if (entry) renderPrompt(entry);
+  }
+
+  /**
+   * 押したときだけ出る音声の確認を 1 枚開く。
+   * 製品の `Dialog` と同じ骨格（`.modal` + `.dialog` + `.dialog__content`）にして、
+   * 本文だけを送り、題と操作は残す。
+   */
+  function openVoiceDialog({ titleId, title, body, actions }) {
+    const modal = document.createElement("div");
+    modal.className = "modal modal--open";
+    modal.innerHTML =
+      '<button type="button" class="modal__backdrop" aria-label="閉じる"></button>' +
+      '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="' +
+      titleId +
+      '" tabindex="-1">' +
+      '<button type="button" class="dialog__close" aria-label="閉じる">' +
+      icon("close") +
+      "</button>" +
+      '<h3 id="' +
+      titleId +
+      '" class="dialog__title">' +
+      title +
+      "</h3>" +
+      '<div class="dialog__content">' +
+      body +
+      "</div>" +
+      '<div class="dialog__actions">' +
+      actions +
+      "</div></div>";
+    document.body.append(modal);
+    document.body.classList.add("is-modal-open");
+    voice.dialog = modal;
+
+    const close = () => {
+      if (!voice.dialog) return;
+      modal.remove();
+      voice.dialog = null;
+      document.removeEventListener("keydown", onKey, true);
+      if (!document.querySelector(".modal.modal--open")) {
+        document.body.classList.remove("is-modal-open");
+      }
+    };
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      // 音声モードの Esc（パネルを閉じる）より先に、この 1 枚だけを閉じる。
+      event.stopPropagation();
+      close();
+    };
+    modal.querySelector(".modal__backdrop").addEventListener("click", close);
+    modal.querySelector(".dialog__close").addEventListener("click", close);
+    document.addEventListener("keydown", onKey, true);
+    modal.querySelector(".dialog").focus();
+    return { modal, close };
+  }
+
+  /** 録音の印を戻し、途中経過を消す。値の反映と確認の前に 1 度だけ呼ぶ。 */
+  function settleListening() {
+    if (!voice.panel) return;
+    const status = voice.panel.querySelector(".voice-panel__status");
+    if (status) status.hidden = true;
+    voice.busy = false;
+    setTalkIcon("mic");
+    showInterim("");
+  }
+
+  /** 1 欄に値を入れ、郵便番号なら住所の補完まで待つ。 */
+  async function commitEntry(entry, value) {
+    const field = entry.field;
+    if (!field) return;
+    field.value = value;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+    field.classList.add("voice-filled");
+    window.setTimeout(() => field.classList.remove("voice-filled"), 900);
+    // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
+    if (field.id === "event-postal-code") await fillAddressFromPostalCode(value);
+  }
+
+  /** 1 欄入れたあとの進み方。「自動遷移」がオフなら同じ欄に留める。 */
+  function advanceVoice() {
+    if (!voice.active || !voice.panel) return;
+    if (!voice.autoAdvance) {
+      pointAt(voice.cursor);
+      return;
+    }
+    if (voice.cursor + 1 >= voice.fields.length) {
+      finishVoice();
+      return;
+    }
+    pointAt(voice.cursor + 1);
+    startListening();
+  }
+
+  /**
+   * 自由文の欄の確認。題は「入力内容の確認」に固定し、本文の入力で直してから確定する。
+   * 値は編集後の文字で入れ、「再録音」は同じ欄を録り直す。
+   */
+  function openConfirmDialog(entry) {
+    const { modal, close } = openVoiceDialog({
+      titleId: "mock-voice-confirm-title",
+      title: "入力内容の確認",
+      body:
+        '<div class="voice-confirm">' +
+        '<p class="voice-confirm__ask"></p>' +
+        '<label class="voice-confirm__field">' +
+        '<span class="voice-confirm__label"></span>' +
+        '<input type="text" class="voice-confirm__input">' +
+        "</label>" +
+        '<p class="voice-confirm__raw"></p>' +
+        "</div>",
+      actions:
+        '<div class="voice-confirm__actions">' +
+        '<button type="button" class="btn btn--primary btn--block" data-voice-commit>確定</button>' +
+        '<button type="button" class="btn btn--ghost btn--block" data-voice-rerecord>再録音</button>' +
+        "</div>",
+    });
+
+    const spoken = spokenValue(entry.field.id, entry.value);
+    modal.querySelector(".voice-confirm__ask").textContent =
+      entry.label + "に入れる内容です。直してから確定できます。";
+    modal.querySelector(".voice-confirm__label").textContent = entry.label;
+    const input = modal.querySelector(".voice-confirm__input");
+    input.value = spoken;
+    modal.querySelector(".voice-confirm__raw").textContent =
+      "話した内容: 「" + spoken + "」";
+
+    modal.querySelector("[data-voice-commit]").addEventListener("click", () => {
+      const text = input.value.trim();
+      // 空にしたままでは確定しない（製品の「確定」を押せないのと同じ）。
+      if (!text) return;
+      close();
+      commitEntry(entry, text).then(advanceVoice);
+    });
+    modal.querySelector("[data-voice-rerecord]").addEventListener("click", () => {
+      close();
+      startListening();
+    });
+  }
+
+  /** 一括確認に並べる、まだ空の欄。住所は郵便番号の補完と重なるので外す。 */
+  function batchEntries() {
+    const rows = [];
+    for (const entry of voice.fields) {
+      if (entry.kind === "gender") continue;
+      const field = entry.field;
+      const id = field && field.id ? field.id : "";
+      if (!id) continue;
+      if (id === "event-postal-code" || ADDRESS_FIELDS.includes(id)) continue;
+      // 日付・時刻は表示が機械の値になる。モックは読み直せないので一覧から外す。
+      if (field.type === "time" || (field.type || "").indexOf("date") >= 0) continue;
+      if (field.value) continue;
+      rows.push(entry);
+      if (rows.length >= 5) break;
+    }
+    return rows;
+  }
+
+  /**
+   * まとめて話した内容の確認。モックは録音を持たないので、欄の入力例を固定の一覧として並べる。
+   * チェックを外した行は反映せず、読み取れなかった節は 1 行で残す。
+   */
+  function openBatchDialog() {
+    const entries = batchEntries();
+    if (entries.length === 0) {
+      finishVoice();
+      return;
+    }
+
+    const rows = entries.map((entry) => ({
+      entry,
+      label: entry.label,
+      value: entry.value,
+    }));
+
+    const { modal, close } = openVoiceDialog({
+      titleId: "mock-voice-batch-title",
+      title: "まとめて入力します",
+      body: '<div class="voice-batch"></div>',
+      actions:
+        '<button type="button" class="btn btn--primary btn--block" data-voice-apply>すべて入力</button>' +
+        '<button type="button" class="btn btn--ghost btn--block" data-voice-rerecord>再録音</button>',
+    });
+
+    const list = modal.querySelector(".voice-batch");
+    const controls = rows.map((row, index) => {
+      const line = document.createElement("div");
+      line.className = "voice-batch__row";
+
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.className = "voice-batch__include";
+      check.checked = true;
+      check.setAttribute("aria-label", row.label + "を取り込む");
+
+      const id = "mock-voice-batch-" + index;
+      const label = document.createElement("label");
+      label.className = "voice-batch__label";
+      label.htmlFor = id;
+      label.textContent = row.label;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.id = id;
+      input.className = "voice-batch__input";
+      input.value = row.value;
+
+      line.append(check, label, input);
+      list.append(line);
+      return { entry: row.entry, check, input };
+    });
+
+    const unassigned = document.createElement("p");
+    unassigned.className = "voice-batch__unassigned";
+    unassigned.textContent = "読み取れなかった部分: " + BATCH_UNASSIGNED.join("、");
+    list.append(unassigned);
+
+    modal.querySelector("[data-voice-apply]").addEventListener("click", () => {
+      const picked = controls.filter(
+        (control) => control.check.checked && control.input.value.trim(),
+      );
+      if (picked.length === 0) {
+        toast("入力できる行がありませんでした。", "error");
+        return;
+      }
+      close();
+
+      const done = new Set();
+      for (const control of picked) {
+        const field = control.entry.field;
+        field.value = control.input.value.trim();
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+        field.classList.add("voice-filled");
+        window.setTimeout(() => field.classList.remove("voice-filled"), 900);
+        done.add(control.entry);
+      }
+      voice.fields = voice.fields.filter((entry) => !done.has(entry));
+
+      // 製品は取り込んだあと「まとめて話す」を外して、1 欄ずつの録音に戻す。
+      setBatchMode(false);
+      const next = voice.fields.findIndex((entry) => entry.field && !entry.field.value);
+      if (next < 0) {
+        finishVoice();
+        return;
+      }
+      pointAt(next);
+      startListening();
+    });
+
+    modal.querySelector("[data-voice-rerecord]").addEventListener("click", () => {
+      close();
+      startListening();
+    });
+  }
+
   /** 対象のステップを開き、欄を見えるところへ出して、プロンプトを差し替える。 */
   function pointAt(index) {
     if (!voice.panel) return;
@@ -672,11 +1010,7 @@
     placePanel();
     window.setTimeout(measureSpotlight, 320);
 
-    voice.panel.querySelector(".voice-panel__prompt").textContent =
-      entry.prompt || entry.label + "は？";
-    const hint = voice.panel.querySelector(".voice-panel__hint");
-    hint.textContent = "例: " + (entry.hint || entry.value);
-    hint.hidden = false;
+    renderPrompt(entry);
     // 入力済みの欄では、質問の下に「いまの値: …」を小さく出す（製品と同じ）。
     // チェックボックスのターンは値を持たないので `current` で空を渡す。
     const current = voice.panel.querySelector(".voice-panel__current");
@@ -684,11 +1018,13 @@
       entry.current !== undefined ? entry.current : (entry.field.value || "").trim();
     current.textContent = value ? "いまの値: " + value : "";
     current.hidden = !value;
+    showInterim("");
     voice.panel.querySelector(".voice-panel__talk").hidden = true;
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = false;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = false;
+    voice.panel.querySelector("[data-voice-batch]").closest(".check").hidden = false;
     voice.panel.querySelector("[data-voice-prev]").disabled = index === 0;
     // 住所検索の写しが止めたボタンも、欄を指し直した時点で元へ戻す。
     // （検索中に別の欄を押すと `clearTimers` で待ちが消え、戻す機会が無くなるため）
@@ -703,6 +1039,7 @@
     voice.panel.querySelector(".voice-panel__state").textContent = "録音中";
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector(".voice-panel__talk").hidden = false;
+    showInterim("");
     voice.listening = true;
     setTalkIcon("stop");
     clearTimers();
@@ -716,7 +1053,15 @@
     voice.panel.querySelector(".voice-panel__talk").hidden = true;
     setTalkIcon("busy");
     voice.panel.querySelector(".voice-panel__state").textContent = "テキスト変換中";
-    later(applyListening, 700);
+    // 製品の `delta` を 2 回に分けて見せる。質問は消さず、その下に聞き取れた分を伸ばす。
+    const entry = voice.fields[voice.cursor];
+    if (entry && entry.kind !== "gender") {
+      const id = entry.field.id || "";
+      const spoken = spokenValue(id, entry.value || "");
+      showInterim(spoken.slice(0, Math.max(1, Math.ceil(spoken.length / 2))));
+      later(() => showInterim(spoken), 250);
+    }
+    later(applyListening, 800);
   }
 
   /**
@@ -751,40 +1096,31 @@
       return;
     }
 
+    settleListening();
+
+    // まとめて話す: 1 回の録音から、欄ごとの一覧を 1 枚で出す（製品と同じ）。
+    if (voice.batchMode) {
+      openBatchDialog();
+      return;
+    }
+
     if (entry.kind === "gender") {
       answerGender(entry);
-    } else {
-      const field = entry.field;
-      field.value = entry.value;
-      field.dispatchEvent(new Event("input", { bubbles: true }));
-      field.dispatchEvent(new Event("change", { bubbles: true }));
-
-      field.classList.add("voice-filled");
-      window.setTimeout(() => field.classList.remove("voice-filled"), 900);
-
-      // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
-      // 製品は検索を待ってから次の欄を決めるので、モックも検索の写しを待ってから進める。
-      if (field.id === "event-postal-code") await fillAddressFromPostalCode(entry.value);
-    }
-
-    // 検索を待つあいだに閉じられたら、パネルはもう無い。描き直さずに終わる。
-    if (!voice.active || !voice.panel) return;
-
-    const status = voice.panel.querySelector(".voice-panel__status");
-    if (status) status.hidden = true;
-    voice.busy = false;
-    setTalkIcon("mic");
-
-    if (!voice.autoAdvance) {
-      pointAt(voice.cursor);
+      advanceVoice();
       return;
     }
-    if (voice.cursor + 1 >= voice.fields.length) {
-      finishVoice();
+
+    // 形が閉じている欄は確認を挟まずに入れる（製品の `confirm: "auto"`）。
+    if (isAutoConfirm(entry.field.id)) {
+      await commitEntry(entry, entry.value);
+      // 検索を待つあいだに閉じられたら、パネルはもう無い。描き直さずに終わる。
+      if (!voice.active || !voice.panel) return;
+      advanceVoice();
       return;
     }
-    pointAt(voice.cursor + 1);
-    startListening();
+
+    // 自由文は、聞き取った文字を初期値にした編集できる確認を出す。
+    openConfirmDialog(entry);
   }
 
   function finishVoice() {
@@ -802,8 +1138,10 @@
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector(".voice-panel__talk").hidden = true;
     voice.panel.querySelector(".voice-panel__current").hidden = true;
+    showInterim("");
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
+    voice.panel.querySelector("[data-voice-batch]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-talk]").disabled = true;
     if (voice.scrim) voice.scrim.hidden = true;
     later(closeVoice, 3000);
@@ -821,6 +1159,8 @@
     }
     voice.active = true;
     voice.autoAdvance = true;
+    voice.batchMode = false;
+    voice.dialog = null;
     const built = buildVoicePanel();
     voice.panel = built.panel;
     voice.scrim = built.scrim;
@@ -856,6 +1196,10 @@
       // 任意の項目（空欄でよい欄）は今のモックでは区別しない。押せることが伝われば足りる。
       toast("任意の項目は、空欄のまま次へ進めます。");
     });
+    voice.panel.querySelector("[data-voice-batch]").addEventListener("change", (event) => {
+      // 切り替えると質問と例がすぐ変わる（録音中でも、止めたあとの送り先だけが変わる）。
+      setBatchMode(event.target.checked);
+    });
 
     // 入力欄を直接押したら、その欄に切り替える（製品と同じ）。
     for (const entry of voice.fields) {
@@ -884,9 +1228,18 @@
     voice.active = false;
     voice.listening = false;
     voice.busy = false;
+    voice.batchMode = false;
     voice.cursor = -1;
     for (const item of document.querySelectorAll("[data-voice-target]")) {
       item.removeAttribute("data-voice-target");
+    }
+    // 確認の層が開いたまま閉じられたときも、後ろに残さない。
+    if (voice.dialog) {
+      voice.dialog.remove();
+      voice.dialog = null;
+    }
+    if (!document.querySelector(".modal.modal--open")) {
+      document.body.classList.remove("is-modal-open");
     }
     if (voice.panel) voice.panel.remove();
     if (voice.scrim) voice.scrim.remove();
@@ -902,7 +1255,8 @@
     if (!fab) return;
     fab.addEventListener("click", startVoice);
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && voice.active) closeVoice();
+      // 確認の層が開いているときは、その層の Esc（1 枚だけ閉じる）に任せる。
+      if (event.key === "Escape" && voice.active && !voice.dialog) closeVoice();
     });
     window.addEventListener("scroll", measureSpotlight, { passive: true });
     window.addEventListener("resize", measureSpotlight);

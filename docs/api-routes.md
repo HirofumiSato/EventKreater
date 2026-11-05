@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 82
-- エンドポイント（メソッド × パス）: 100
-- 仕様書に記載: 100
+- ルートファイル: 83
+- エンドポイント（メソッド × パス）: 101
+- 仕様書に記載: 101
 - 実装のみ（仕様書に記載なし）: 0
 - 仕様書のみ（実装なし）: 0
 
@@ -114,6 +114,7 @@
 | DELETE | `/api/v1/venues/[id]` | なし | あり | `src/app/api/v1/venues/[id]/route.ts` |
 | GET | `/api/v1/voice/transcriptions` | なし | あり | `src/app/api/v1/voice/transcriptions/route.ts` |
 | POST | `/api/v1/voice/transcriptions` | なし | あり | `src/app/api/v1/voice/transcriptions/route.ts` |
+| POST | `/api/v1/voice/utterances` | なし | あり | `src/app/api/v1/voice/utterances/route.ts` |
 | POST | `/api/v1/webhooks/stripe` | なし | あり | `src/app/api/v1/webhooks/stripe/route.ts` |
 
 ## 実装にあって仕様書に無いもの

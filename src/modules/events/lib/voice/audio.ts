@@ -40,3 +40,64 @@ export function extensionForMimeType(mime: string): string {
   if (mime.includes("mpeg")) return "mp3";
   return "webm";
 }
+
+/**
+ * pre-roll の長さ。
+ *
+ * 録音の開始は「録音中の印」が出た瞬間だが、話し始めはその少し前になる。
+ * 押してから話し始めるまでの 400ms を捨てずに先頭へ足すため、常に直近 400ms を控えておく。
+ */
+export const PRE_ROLL_MS = 400;
+
+/** 送る PCM のサンプリング周波数。多くの ASR が内部で 16kHz へ落とすため、最初から合わせる。 */
+export const PCM_SAMPLE_RATE = 16_000;
+
+type AudioContextConstructor = new (options?: AudioContextOptions) => AudioContext;
+
+/**
+ * この環境の `AudioContext`。Safari の旧名（`webkitAudioContext`）も見る。
+ * 無ければ null（＝PCM では録れない）。
+ */
+export function audioContextConstructor(): AudioContextConstructor | null {
+  if (typeof window === "undefined") return null;
+  // `AudioContext` は Window のプロパティではなくグローバルの変数として宣言される。
+  if (typeof AudioContext !== "undefined") return AudioContext;
+  const scope = window as Window & { webkitAudioContext?: AudioContextConstructor };
+  return scope.webkitAudioContext ?? null;
+}
+
+/** 16kHz の PCM を AudioWorklet で拾えるか。だめなら MediaRecorder へ落とす。 */
+export function isPcmCaptureSupported(): boolean {
+  return audioContextConstructor() !== null && typeof AudioWorkletNode !== "undefined";
+}
+
+/** 連続した区間を 1 本の `Float32Array` へつなぐ。 */
+export function concatSamples(parts: readonly Float32Array[]): Float32Array {
+  let length = 0;
+  for (const part of parts) length += part.length;
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    merged.set(part, offset);
+    offset += part.length;
+  }
+  return merged;
+}
+
+/** 末尾から `count` サンプルだけを取り出す（pre-roll の切り出し）。 */
+export function tailSamples(parts: readonly Float32Array[], count: number): Float32Array {
+  if (count <= 0 || parts.length === 0) return new Float32Array(0);
+  let total = 0;
+  for (const part of parts) total += part.length;
+  if (total <= count) return concatSamples(parts);
+
+  const tail = new Float32Array(count);
+  let offset = count;
+  for (let index = parts.length - 1; index >= 0 && offset > 0; index -= 1) {
+    const part = parts[index];
+    const take = Math.min(part.length, offset);
+    offset -= take;
+    tail.set(part.subarray(part.length - take), offset);
+  }
+  return tail;
+}

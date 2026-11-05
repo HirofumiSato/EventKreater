@@ -55,7 +55,7 @@
       * - ``https://staging.eventkreater.com/``
         - 302。Cloudflare Access のログイン画面へ送る
       * - ``POST /api/v1/voice/transcriptions``
-        - 実際の音声で 200。``model`` が ``gpt-4o-mini-transcribe`` ならモックではない
+        - 実際の音声で 200。``model`` が ``gpt-transcribe`` （控えに落ちたときは ``gpt-4o-mini-transcribe`` ）ならモックではない
       * - 5 アプリの ``fly checks list``
         - すべて ``passing``
       * - GitHub Actions の ``Deploy``
@@ -853,7 +853,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - チラシ生成
      - 候補が出て、画像が返る。500 なら flyer の ``OPENAI_API_KEY`` とフォント
    * - 音声の文字起こし
-     - ``POST /api/v1/voice/transcriptions`` が 200。``model`` が ``gpt-4o-mini-transcribe`` ならモックではない
+     - ``POST /api/v1/voice/transcriptions`` が 200。``model`` が ``gpt-transcribe`` （控えに落ちたときは ``gpt-4o-mini-transcribe`` ）ならモックではない
    * - Stripe
      - テストカードで 1 件通し、Webhook が 200 で返っている
 

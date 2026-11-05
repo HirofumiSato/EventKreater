@@ -35,6 +35,62 @@ import {
 
 const hasText = (value: string): boolean => value.trim().length > 0;
 
+/**
+ * 都道府県の語彙。正式名と、接尾辞を落とした言い方の両方を持つ。
+ *
+ * `keywords` は送信時に 20 語へ絞るため、よく話される順に並べる。
+ * 47 の正式名と略称をすべて定義し、先頭から 20 語だけがモデルへ渡る。
+ */
+const PREFECTURE_KEYWORDS: readonly string[] = [
+  "東京都", "東京",
+  "大阪府", "大阪",
+  "神奈川県", "神奈川",
+  "愛知県", "愛知",
+  "埼玉県", "埼玉",
+  "千葉県", "千葉",
+  "兵庫県", "兵庫",
+  "北海道",
+  "福岡県", "福岡",
+  "京都府", "京都",
+  "沖縄県", "沖縄",
+  "新潟県", "新潟",
+  "静岡県", "静岡",
+  "広島県", "広島",
+  "宮城県", "宮城",
+  "長野県", "長野",
+  "岐阜県", "岐阜",
+  "栃木県", "栃木",
+  "群馬県", "群馬",
+  "茨城県", "茨城",
+  "三重県", "三重",
+  "滋賀県", "滋賀",
+  "奈良県", "奈良",
+  "和歌山県", "和歌山",
+  "岡山県", "岡山",
+  "山口県", "山口",
+  "徳島県", "徳島",
+  "香川県", "香川",
+  "愛媛県", "愛媛",
+  "高知県", "高知",
+  "佐賀県", "佐賀",
+  "長崎県", "長崎",
+  "熊本県", "熊本",
+  "大分県", "大分",
+  "宮崎県", "宮崎",
+  "鹿児島県", "鹿児島",
+  "青森県", "青森",
+  "岩手県", "岩手",
+  "秋田県", "秋田",
+  "山形県", "山形",
+  "福島県", "福島",
+  "富山県", "富山",
+  "石川県", "石川",
+  "福井県", "福井",
+  "山梨県", "山梨",
+  "鳥取県", "鳥取",
+  "島根県", "島根",
+];
+
 /** 行の入力欄の id を作る。行が無ければ null（その欄は飛ばす）。 */
 function rowDomId(prefix: string, key: string | undefined): string | null {
   return key ? `${prefix}-${key}` : null;
@@ -113,6 +169,28 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "イベント名は？",
     example: "忘年会",
     hint: "イベント名。例: 忘年会、勉強会、音楽ライブ",
+    keywords: [
+      "忘年会",
+      "新年会",
+      "歓迎会",
+      "送別会",
+      "同窓会",
+      "誕生日会",
+      "結婚式",
+      "勉強会",
+      "ライブ",
+      "演奏会",
+      "発表会",
+      "展示会",
+      "撮影会",
+      "タコパ",
+      "飯フェス",
+      "占い",
+      "オフ会",
+      "合コン",
+      "お祭り",
+      "マルシェ",
+    ],
     parse: (text) => parseVoiceTitle(text),
   },
   {
@@ -125,6 +203,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "公開ページに出す主催者名は？",
     example: "山田 太郎",
     hint: "人の名前。例: 山田太郎",
+    keywords: ["主催者", "主催", "幹事", "代表"],
     parse: (text) => parseVoiceOrganizerName(text),
   },
   {
@@ -137,6 +216,30 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "開催日は？",
     example: "12月5日",
     hint: "日付。例: 12月5日、2026年12月5日",
+    keywords: [
+      "今日",
+      "明日",
+      "明後日",
+      "今週",
+      "来週",
+      "今月",
+      "来月",
+      "再来月",
+      "月曜日",
+      "火曜日",
+      "水曜日",
+      "木曜日",
+      "金曜日",
+      "土曜日",
+      "日曜日",
+      "祝日",
+      "平日",
+      "週末",
+      "年末",
+      "年始",
+    ],
+    // 日付は形が閉じている。読めた時点で入れ、読み取り違いは「言い直す」で戻す。
+    confirm: "auto",
     parse: (text, context) => parseVoiceScheduleDate(text, context),
   },
   {
@@ -149,6 +252,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "何時に始まる？",
     example: "18時",
     hint: "時刻。例: 18時、18時30分、18時半",
+    keywords: ["朝", "午前", "昼", "正午", "午後", "夕方", "夜", "時", "分", "半"],
+    confirm: "auto",
     parse: (text, context) => parseVoiceScheduleStart(text, context),
   },
   {
@@ -161,6 +266,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "何時に終わる？",
     example: "20時",
     hint: "時刻。例: 20時、21時30分、20時半",
+    keywords: ["朝", "午前", "昼", "正午", "午後", "夕方", "夜", "時", "分", "半"],
+    confirm: "auto",
     parse: (text, context) => parseVoiceScheduleEnd(text, context),
   },
   {
@@ -176,6 +283,26 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "プラン名は？",
     example: "一般",
     hint: "料金プラン名。例: 一般、学生、男性用",
+    keywords: [
+      "一般",
+      "学生",
+      "男性",
+      "女性",
+      "大人",
+      "子ども",
+      "小学生",
+      "中学生",
+      "高校生",
+      "大学生",
+      "社会人",
+      "当日",
+      "前売り",
+      "早期割引",
+      "VIP",
+      "ペア",
+      "グループ",
+      "無料",
+    ],
     parse: (text, context) => parseVoicePlanName(text, context),
   },
   {
@@ -189,6 +316,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "金額は？",
     example: "3000円",
     hint: "金額。例: 3000円、三千円、無料",
+    keywords: ["円", "無料", "割引", "前売り", "当日", "税込", "税別"],
+    confirm: "auto",
     parse: (text, context) => parseVoicePlanAmount(text, context),
   },
   {
@@ -204,6 +333,19 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "補足は？",
     example: "1ドリンク付",
     hint: "料金の補足。例: 1ドリンク付、学生証が必要",
+    keywords: [
+      "ドリンク付",
+      "1ドリンク",
+      "2ドリンク",
+      "飲み放題",
+      "食べ放題",
+      "食事付",
+      "ケーキ",
+      "記念品",
+      "学生証",
+      "税込",
+      "税別",
+    ],
     parse: (text, context) => parseVoicePlanNote(text, context),
   },
   {
@@ -215,6 +357,28 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "会場は？",
     example: "渋谷ホール",
     hint: "会場名。例: 渋谷ホール、市民センター",
+    keywords: [
+      "ホール",
+      "会館",
+      "公民館",
+      "市民センター",
+      "文化会館",
+      "体育館",
+      "公園",
+      "カフェ",
+      "レストラン",
+      "居酒屋",
+      "スタジオ",
+      "ライブハウス",
+      "神社",
+      "お寺",
+      "大学",
+      "小学校",
+      "中学校",
+      "高校",
+      "駅",
+      "ビル",
+    ],
     parse: (text) => parseVoiceVenueName(text),
   },
   {
@@ -226,6 +390,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "郵便番号は？",
     example: "1500001",
     hint: "7桁の郵便番号。例: 1500001、150の0001",
+    keywords: ["郵便番号"],
+    confirm: "auto",
     parse: (text) => parseVoicePostalCode(text),
   },
   {
@@ -237,6 +403,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "都道府県は？",
     example: "東京都",
     hint: "都道府県。例: 東京都、大阪府、北海道",
+    keywords: PREFECTURE_KEYWORDS,
+    confirm: "auto",
     parse: (text) => parseVoicePrefecture(text),
   },
   {
@@ -248,6 +416,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "市区町村は？",
     example: "渋谷区",
     hint: "市区町村。例: 渋谷区、横浜市",
+    keywords: ["市", "区", "町", "村", "郡"],
     parse: (text) => parseVoiceCity(text),
   },
   {
@@ -259,6 +428,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "町名は？",
     example: "神宮前",
     hint: "町域。例: 神宮前、中央1丁目",
+    keywords: ["丁目", "番地", "番", "号", "町", "大字"],
     parse: (text) => parseVoiceTown(text),
   },
   {
@@ -270,6 +440,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "番地は？",
     example: "1-2-3",
     hint: "番地。例: 1-2-3、1の2の3",
+    keywords: ["番地", "番", "号", "丁目"],
     parse: (text) => parseVoiceAddressLine(text),
   },
   {
@@ -281,6 +452,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "建物名や階数は？",
     example: "○○ビル3階",
     hint: "建物名と階数。例: ○○ビル3階",
+    keywords: ["ビル", "マンション", "アパート", "会館", "タワー", "階", "地下", "号室"],
     parse: (text) => parseVoiceBuilding(text),
   },
   {
@@ -294,6 +466,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "雨ならどうする？",
     example: "雨天決行",
     hint: "雨天決行、雨天中止、雨天順延、屋内開催",
+    keywords: ["雨天決行", "雨天中止", "順延", "屋内開催", "決行", "中止"],
+    confirm: "auto",
     parse: (text) => parseVoiceRainPolicy(text),
   },
   {
@@ -307,6 +481,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "定員は？",
     example: "30人",
     hint: "人数。例: 30人、100人、無制限",
+    keywords: ["人", "名", "定員", "無制限", "まで"],
+    confirm: "auto",
     parse: (text) => parseVoiceCapacity(text),
   },
   {
@@ -320,6 +496,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
     prompt: "締め切りは？",
     example: "12月1日23時59分",
     hint: "日時。例: 12月1日23時59分、なし",
+    keywords: ["締め切り", "期限", "前日", "当日", "まで", "時", "分", "なし"],
+    confirm: "auto",
     parse: (text, context) => parseVoiceRsvpDeadline(text, context),
   },
 ];
@@ -518,6 +696,58 @@ export function fieldForDomId(
 /** パッチをフォームへ当てる。行の配列はパッチ側が丸ごと持つ。 */
 export function applyVoicePatch(value: EventFormValues, patch: VoicePatch): EventFormValues {
   return { ...value, ...patch };
+}
+
+/**
+ * 行の配列を `key` で突き合わせ、行単位で合成する。
+ *
+ * `parse` は毎回 `context.value` から配列を作り直すため、パッチの配列は
+ * 「その欄だけを変えた写し」になる。丸ごと差し替えると、別の欄の変更が消える。
+ * 空の値は「その欄には触れていない」の意味なので写さない（触っていない値を
+ * 空で上書きしない）。パッチに無い既存行はそのまま残し、パッチにだけある行は
+ * 足す（取りこぼさない）。
+ */
+function mergeRowPatches<T extends { key: string }>(
+  current: readonly T[],
+  patch: readonly T[],
+): T[] {
+  const remaining = new Map(patch.map((row) => [row.key, row]));
+  const merged = current.map((row) => {
+    const hit = remaining.get(row.key);
+    if (!hit) return row;
+    remaining.delete(row.key);
+    const changed = Object.fromEntries(
+      Object.entries(hit).filter(([key, cell]) => key !== "key" && cell !== ""),
+    ) as Partial<T>;
+    return { ...row, ...changed };
+  });
+  for (const row of remaining.values()) merged.push(row);
+  return merged;
+}
+
+/**
+ * 複数のパッチを 1 回の更新にまとめる（「まとめて話す」の反映）。
+ *
+ * `{ ...acc, ...patch }` を順に当てると、同じ `schedules` / `pricePlans` を持つ
+ * パッチ同士が巻き戻る（開催日のパッチのあとに開始時刻のパッチを当てると、開催日が消える）。
+ * 行の配列だけは `key` で行単位に合成し、それ以外のキーは後のパッチを優先する。
+ */
+export function applyVoicePatches(
+  value: EventFormValues,
+  patches: readonly VoicePatch[],
+): EventFormValues {
+  let next = value;
+  let schedules = value.schedules;
+  let pricePlans = value.pricePlans;
+
+  for (const patch of patches) {
+    const { schedules: schedulePatch, pricePlans: planPatch, ...rest } = patch;
+    next = { ...next, ...rest };
+    if (schedulePatch) schedules = mergeRowPatches(schedules, schedulePatch);
+    if (planPatch) pricePlans = mergeRowPatches(pricePlans, planPatch);
+  }
+
+  return { ...next, schedules, pricePlans };
 }
 
 /** いま入っている値を、確認文に使える短い文字列にする。 */

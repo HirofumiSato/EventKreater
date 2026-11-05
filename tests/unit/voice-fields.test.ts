@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyVoicePatch,
+  applyVoicePatches,
   describeFieldValue,
   fieldForDomId,
   firstNeededField,
@@ -362,6 +363,89 @@ describe("パッチの適用", () => {
     );
     expect(next.title).toBe("忘年会");
     expect(next.schedules[0].eventDate).toBe("2026-12-05");
+  });
+});
+
+describe("複数のパッチの適用", () => {
+  const now = new Date("2026-11-06T09:00:00+09:00");
+
+  it("開催日と開始時刻を順に当てても、両方の値が残る", () => {
+    const base = { ...EMPTY_EVENT_FORM, schedules: [createScheduleDraft({ key: "row-1" })] };
+    const date = voiceFieldByKey("scheduleDate");
+    const start = voiceFieldByKey("scheduleStart");
+    if (!date || !start) throw new Error("欄の定義がありません");
+
+    const context = { now, value: base, row: 0 };
+    const datePatch = date.parse("12月5日", context);
+    const startPatch = start.parse("18時", context);
+    if (!datePatch || !startPatch) throw new Error("パッチを作れませんでした");
+
+    // どちらのパッチも `base` の行を丸ごと持つ。行単位で合成しないと、
+    // 開始時刻のパッチが開催日を巻き戻す。
+    const next = applyVoicePatches(base, [datePatch, startPatch]);
+    expect(next.schedules).toHaveLength(1);
+    expect(next.schedules[0].key).toBe("row-1");
+    expect(next.schedules[0].eventDate).toBe("2026-12-05");
+    expect(next.schedules[0].startTime).toBe("18:00");
+  });
+
+  it("パッチに無い行と、行の中のほかの値は残す", () => {
+    const base = {
+      ...EMPTY_EVENT_FORM,
+      schedules: [
+        createScheduleDraft({
+          key: "row-1",
+          eventDate: "2026-12-05",
+          startTime: "18:00",
+          endTime: "20:00",
+        }),
+        createScheduleDraft({ key: "row-2", eventDate: "2026-12-06" }),
+      ],
+    };
+    const end = voiceFieldByKey("scheduleEnd");
+    if (!end) throw new Error("欄の定義がありません");
+    const patch = end.parse("21時", { now, value: base, row: 0 });
+    if (!patch) throw new Error("パッチを作れませんでした");
+
+    const next = applyVoicePatches(base, [patch]);
+    expect(next.schedules).toHaveLength(2);
+    expect(next.schedules[0].eventDate).toBe("2026-12-05");
+    expect(next.schedules[0].startTime).toBe("18:00");
+    expect(next.schedules[0].endTime).toBe("21:00");
+    expect(next.schedules[1].eventDate).toBe("2026-12-06");
+  });
+
+  it("費用の行も key で突き合わせて合成する", () => {
+    const base = {
+      ...EMPTY_EVENT_FORM,
+      pricePlans: [
+        createPricePlanDraft({ key: "plan-1", name: "一般" }),
+        createPricePlanDraft({ key: "plan-2", name: "学生" }),
+      ],
+    };
+    const name = voiceFieldByKey("planName");
+    const amount = voiceFieldByKey("planAmount");
+    if (!name || !amount) throw new Error("欄の定義がありません");
+
+    const context = { now, value: base, row: 0 };
+    const namePatch = name.parse("一般", context);
+    const amountPatch = amount.parse("3000円", context);
+    if (!namePatch || !amountPatch) throw new Error("パッチを作れませんでした");
+
+    const next = applyVoicePatches(base, [namePatch, amountPatch]);
+    expect(next.pricePlans).toHaveLength(2);
+    expect(next.pricePlans[0].name).toBe("一般");
+    expect(next.pricePlans[0].amount).toBe("3000");
+    expect(next.pricePlans[1].name).toBe("学生");
+  });
+
+  it("行の配列以外のキーは、後のパッチを優先する", () => {
+    const next = applyVoicePatches({ ...EMPTY_EVENT_FORM, title: "" }, [
+      { title: "忘年会" },
+      { title: "新年会", venueName: "渋谷ホール" },
+    ]);
+    expect(next.title).toBe("新年会");
+    expect(next.venueName).toBe("渋谷ホール");
   });
 });
 
