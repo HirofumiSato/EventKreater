@@ -357,17 +357,20 @@
 }
 
 /* カードは中身が読める幅を優先する。390px でも 1 枚半が見える幅にする。
-   札を縮めるほど中の文字が小さくなるので、画面幅に対する比率で決める。 */
+   札を縮めるほど中の文字が小さくなるので、画面幅に対する比率で決める。
+   スマホはファーストビューに収めるため 56vw まで詰める。 */
 .hero__showcase-item {
   flex: 0 0 auto;
-  width: clamp(12rem, 64vw, 24rem);
+  width: clamp(11rem, 56vw, 22rem);
   padding-right: 0.75rem;
 }
 
 .hero__showcase-frame {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 9 / 19;
+  /* URL バーが出ている状態の画面高の 55%。svh を知らない環境は vh で受ける。 */
+  height: 55vh;
+  height: 55svh;
   border: 2px solid #fff;
   border-radius: 0;
   background: var(--color-hero-hover);
@@ -478,6 +481,13 @@
      次の札が少し覗く大きさ。 */
   .hero__showcase-item {
     width: clamp(11.5rem, 25vw, 24rem);
+  }
+
+  /* 広い画面はスマホの 55svh をやめ、元の縦長（9:19）に戻す。
+     札の幅が決まっているので、高さは幅から決まる。 */
+  .hero__showcase-frame {
+    height: auto;
+    aspect-ratio: 9 / 19;
   }
 }
 
