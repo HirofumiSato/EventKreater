@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 454
+- 文書から参照されているコードパス: 458
 - API ルート: 80（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -26,6 +26,9 @@
 | `prisma/migrations/20261102190000_free_tickets/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261103090000_referral_notifications/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
+| `public/favicon.ico` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `public/icons` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `public/icons/app-icon-source.jpg` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `public/samples` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/staging.rst](staging.rst) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `public/samples/flyer-autumn.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-bonfire.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -34,6 +37,7 @@
 | `public/samples/flyer-dj.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-gohan.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-halloween.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `scripts/build-icons.mjs` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
 | `scripts/check-mock-sync.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/check.mjs` | [docs/testing/vitest/index.rst](testing/vitest/index.rst) |

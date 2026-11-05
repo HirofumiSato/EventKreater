@@ -13,6 +13,21 @@ export const metadata: Metadata = {
   metadataBase: new URL(appBaseUrl()),
   title: SITE.name,
   description: SITE.description,
+  /* アイコンは `npm run icons` が `public/icons/app-icon-source.jpg` から作る
+     （`scripts/build-icons.mjs`）。大きさごとに書き出すのは、192px の 1 枚を
+     ブラウザに縮めさせると 16px のタブで滲むため。`favicon.ico` は、アイコンの
+     リンクを読まない相手（RSS リーダーやブックマークの取り込み）向けに置く。 */
+  icons: {
+    icon: [
+      { url: "/icons/icon-16.png", type: "image/png", sizes: "16x16" },
+      { url: "/icons/icon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icons/icon-48.png", type: "image/png", sizes: "48x48" },
+      { url: "/icons/icon-96.png", type: "image/png", sizes: "96x96" },
+      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/icons/apple-icon-180.png", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
