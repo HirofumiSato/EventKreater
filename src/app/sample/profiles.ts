@@ -92,7 +92,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
       headline: "からだで遊ぶ、週末のワークショップ",
       bio: "踊りを教えるというより、動きながら自分の癖に気づく時間を作っています。経験は問いません。裸足になれる格好と、飲み物だけ持ってきてください。2 時間のうち、最後の 30 分は好きに動いて、そのまま終わります。",
       area: "東京都・渋谷区と目黒区のスタジオ",
-      tags: ["SPORTS", "LEARNING"],
+      tags: ["STAGE", "LEARNING"],
       links: [
         { kind: "X", label: "X", url: "https://x.com/sample_akari" },
         { kind: "INSTAGRAM", label: "Instagram", url: "https://www.instagram.com/sample_akari" },

@@ -5,54 +5,45 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid } from "@/components/common/CalendarMonth";
 import {
-  WEEKDAY_LABELS,
   buildMonthGrid,
   countMonthEntries,
   defaultSelectedDate,
   entriesForDate,
   formatDayHeading,
-  formatMonthTitle,
   isMonthKey,
-  monthRange,
   shiftMonth,
   todayInTokyo,
 } from "@/lib/calendar";
 import { formatDateWithWeekdayJa } from "@/lib/format";
 import { priceLabel } from "@/lib/serializers";
 import { readProblem } from "@/lib/problem";
-import { SITE } from "@/lib/site";
 import {
   clampMonth,
   groupOrganizerEventsByDate,
-  organizerProfilePath,
+  nextScheduleDate,
+  sortOrganizerEvents,
   toOrganizerCellItem,
   upcomingSchedules,
 } from "@/modules/organizers/lib/public-page";
 import type { PublicOrganizerEvent, PublicOrganizerPage } from "@/modules/events/types";
-import { Alert, EmptyState, Loading, Row, Rows, Section, SectionHead } from "@/components/ui";
+import { Alert, Badge, EmptyState, Loading, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
-type LoadState = "loading" | "ready" | "login" | "error";
+type LoadState = "loading" | "ready" | "error";
 
 interface OrganizerPageViewProps {
   userId: string;
-  /**
-   * プレビューでは、主催者本人が見ている前提で中身だけを出す。
-   * 未ログインの白塗り表示はプレビューに含めない。
-   */
-  preview?: boolean;
 }
 
 /**
  * 主催者の公開ページのイベント部分（SCR-PUB-14）。
  *
- * プロフィールの下に、カレンダーと一覧を縦に並べる。タブは持たない。
- * 未ログインではAPIが 403 を返すので、本物のイベントは描かない。
- * 代わりに飾りのカレンダーを置き、白塗りを重ねて案内する。
- * サーバー側でもイベントを返さないため、DOM を見ても内容は分からない。
+ * プロフィールの下に、次の催し、カレンダー、一覧を縦に並べる。タブは持たない。
+ * 誰でも読めるので、未ログイン用の骨組みは持たない。掲載条件は API と同じ
+ * `sortOrganizerEvents` を通し、下書き・過去日・締め切った催しを画面でも落とす。
  *
  * 月だけを URL のクエリ（`month`）と連動させる。
  */
-export function OrganizerPageView({ userId, preview = false }: OrganizerPageViewProps) {
+export function OrganizerPageView({ userId }: OrganizerPageViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryMonth = searchParams.get("month");
@@ -67,11 +58,6 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/v1/public/organizers/${userId}/events`, { cache: "no-store" });
-    if (res.status === 403) {
-      setState("login");
-      setData(null);
-      return;
-    }
     if (res.status === 404) {
       setState("error");
       setError("主催者が見つかりません。");
@@ -99,7 +85,14 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   }, [queryMonth, minMonth]);
 
   const events = useMemo(() => data?.events ?? [], [data]);
-  const grouped = useMemo(() => groupOrganizerEventsByDate(events, today), [events, today]);
+  // API は削除済みを返さない。掲載判定に要る `isDeleted` だけ足し、API と同じ関数へ通す。
+  const listedEvents = useMemo(
+    () => sortOrganizerEvents(events.map((event) => ({ ...event, isDeleted: false })), today),
+    [events, today],
+  );
+  const nextEvent = listedEvents[0] ?? null;
+  const nextDate = nextEvent ? nextScheduleDate(nextEvent, today) : null;
+  const grouped = useMemo(() => groupOrganizerEventsByDate(listedEvents, today), [listedEvents, today]);
   const cells = useMemo(() => buildMonthGrid(month), [month]);
   const monthEntryCount = useMemo(() => countMonthEntries(grouped, month), [grouped, month]);
   const dayEntries = entriesForDate(grouped, selectedDate);
@@ -110,15 +103,10 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
     if (next < minMonth) return;
     setMonth(next);
     setSelectedDate(defaultSelectedDate(next));
-    if (preview) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("month", next);
     router.replace(`?${params.toString()}`, { scroll: false });
   };
-
-  if (state === "login") {
-    return <LockedSkeleton nextPath={organizerProfilePath(userId)} preview={preview} />;
-  }
 
   if (state === "error") {
     return (
@@ -139,12 +127,38 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
     );
   }
 
-  if (events.length === 0) {
+  if (listedEvents.length === 0) {
     return <EmptyState>これから開催されるイベントはありません。</EmptyState>;
   }
 
   return (
     <div className="stack">
+      {nextEvent && (
+        <Section className="section--tight">
+          <SectionHead title="次の催し" />
+
+          <Panel>
+            <div className="stack">
+              <div>
+                <p className="panel__title">
+                  <Link href={`/events/${nextEvent.id}`}>{nextEvent.title}</Link>
+                </p>
+                <p className="panel__note">
+                  {nextDate ? formatDateWithWeekdayJa(nextDate) : "日付未定"}
+                  {nextEvent.location ? ` ／ ${nextEvent.location}` : ""}
+                </p>
+              </div>
+              <div className="btn-row">
+                <SeatBadges event={nextEvent} />
+                <Link href={`/events/${nextEvent.id}`} className="btn btn--primary">
+                  {nextEvent.isFull ? "参加要望を出す" : "申込 /出欠回答"}
+                </Link>
+              </div>
+            </div>
+          </Panel>
+        </Section>
+      )}
+
       <Section>
         <SectionHead title="カレンダー" note="イベントの開催日を月ごとに確かめられます。" />
 
@@ -215,10 +229,10 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
       </Section>
 
       <Section>
-        <SectionHead title="一覧" note={<>{events.length}件。満員のイベントは参加要望を受け付けます。
+        <SectionHead title="一覧" note={<>{listedEvents.length}件。満員のイベントは参加要望を受け付けます。
           </>} />
         <Rows>
-          {events.map((event) => (
+          {listedEvents.map((event) => (
             <OrganizerPublicEventRow key={event.id} event={event} today={today} />
           ))}
         </Rows>
@@ -227,95 +241,18 @@ export function OrganizerPageView({ userId, preview = false }: OrganizerPageView
   );
 }
 
-/**
- * 未ログインの案内。本物のイベントはAPIが返さないので、ここには飾りのカレンダーだけを置く。
- * 中身が読めないよう `aria-hidden` にして、案内だけを読み上げさせる。
- */
-function LockedSkeleton({ nextPath, preview }: { nextPath: string; preview: boolean }) {
-  if (preview) return null;
-  const loginHref = `${SITE.nav.participantLogin.href}?next=${encodeURIComponent(nextPath)}`;
-  const today = todayInTokyo();
-  return (
-    <section className="organizer-locked">
-      <div className="organizer-locked__ghost" aria-hidden="true">
-        <LockedCalendarGhost month={today.slice(0, 7)} today={today} />
-      </div>
-      <div className="organizer-locked__notice">
-        <div className="organizer-locked__panel">
-          <p className="panel__title">イベントの予定は参加者登録・ログイン後に閲覧できます</p>
-          <p className="help">
-            主催者が開くイベントをカレンダーと一覧で見るには、参加者として登録するかログインしてください。
-          </p>
-          <div className="btn-row">
-            <Link href={loginHref} className="btn btn--primary">
-              {SITE.nav.participantLogin.label}
-            </Link>
-            <Link href={loginHref} className="btn btn--outline">
-              参加者として登録する
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** ログイン後のカレンダーと同じ骨格。短冊は飾りで、イベント名は出さない。 */
-function LockedCalendarGhost({ month, today }: { month: string; today: string }) {
-  const cells = buildMonthGrid(month);
-  const { days } = monthRange(month);
-  const barDays = new Set(
-    [3, 8, 14, 21, 27]
-      .filter((day) => day <= days)
-      .map((day) => `${month}-${String(day).padStart(2, "0")}`),
-  );
-  const doubleBarDay = days >= 14 ? `${month}-14` : null;
-
-  return (
-    <div className="cal">
-      <div className="cal__head">
-        <p className="cal__month">{formatMonthTitle(month)}</p>
-        <div className="cal__nav">
-          <span>‹</span>
-          <span>›</span>
-        </div>
-      </div>
-      <div className="cal__weekday">
-        {WEEKDAY_LABELS.map((label, index) => (
-          <span key={label} className={index === 0 ? "is-sunday" : undefined}>
-            {label}
-          </span>
-        ))}
-      </div>
-      <div className="cal__grid">
-        {cells.map((cell) => {
-          const classes = ["cal__day"];
-          if (cell.isOutside) classes.push("is-outside");
-          if (cell.date === today) classes.push("is-today");
-          const barCount = cell.isOutside
-            ? 0
-            : cell.date === doubleBarDay
-              ? 2
-              : barDays.has(cell.date)
-                ? 1
-                : 0;
-          if (barCount > 0) classes.push("has-event");
-          return (
-            <div key={cell.date} className={classes.join(" ")}>
-              <span className="cal__day-number">{Number(cell.date.slice(8, 10))}</span>
-              {barCount > 0 ? (
-                <span className="cal__events">
-                  {Array.from({ length: barCount }, (_, index) => (
-                    <span key={index} className="cal__event" />
-                  ))}
-                </span>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+/** 残席の札。満員は参加要望の色にし、参加人数や名簿は出さない。 */
+function SeatBadges({ event, small = false }: { event: PublicOrganizerEvent; small?: boolean }) {
+  if (event.isFull && event.acceptsWaitlist) {
+    return <Badge tone="waitlist" small={small}>参加要望受付中</Badge>;
+  }
+  if (event.isFull) {
+    return <Badge tone="declined" small={small}>満員</Badge>;
+  }
+  if (event.remainingSeats !== null) {
+    return <Badge tone="neutral" small={small}>残り {event.remainingSeats}名</Badge>;
+  }
+  return <Badge tone="neutral" small={small}>定員なし</Badge>;
 }
 
 function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent; today: string }) {
@@ -336,25 +273,16 @@ function OrganizerPublicEventRow({ event, today }: { event: PublicOrganizerEvent
       aside={<><span className="rows__value">{event.isFull ? "満員" : "受付中"}</span></>}
     >
       <div className="btn-row">
-          {event.isFull && event.acceptsWaitlist && (
-            <span className="badge badge--sm badge--waitlist">参加要望受付中</span>
-          )}
-          {event.isFull && !event.acceptsWaitlist && (
-            <span className="badge badge--sm badge--declined">満員</span>
-          )}
-          {!event.isFull && event.remainingSeats !== null && (
-            <span className="badge badge--sm badge--neutral">残り {event.remainingSeats}名</span>
-          )}
-          {event.capacity === null && <span className="badge badge--sm badge--neutral">定員なし</span>}
-          <Link href={`/events/${event.id}`} className="text-link">
-            {event.isFull ? "参加要望を出す" : "申込 /出欠回答"}
-          </Link>
+        <SeatBadges event={event} small />
+        <Link href={`/events/${event.id}`} className="text-link">
+          {event.isFull ? "参加要望を出す" : "申込 /出欠回答"}
+        </Link>
+      </div>
+      {ratio !== null && (
+        <div className="meter" aria-hidden="true">
+          <span style={{ width: `${ratio}%` }} />
         </div>
-        {ratio !== null && (
-          <div className="meter" aria-hidden="true">
-            <span style={{ width: `${ratio}%` }} />
-          </div>
-        )}
+      )}
     </Row>
   );
 }

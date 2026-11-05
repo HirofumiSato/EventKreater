@@ -9,6 +9,7 @@ import type { SemanticThemeId } from "@/lib/semantic-themes";
 
 export const PROFILE_TAGS = [
   "MUSIC",
+  "STAGE",
   "FOOD",
   "LEARNING",
   "SPORTS",
@@ -21,6 +22,7 @@ export type ProfileTag = (typeof PROFILE_TAGS)[number];
 
 export const PROFILE_TAG_LABELS: Record<ProfileTag, string> = {
   MUSIC: "音楽",
+  STAGE: "舞台・ダンス",
   FOOD: "食",
   LEARNING: "学び",
   SPORTS: "スポーツ",

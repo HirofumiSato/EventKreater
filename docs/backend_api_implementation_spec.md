@@ -44,8 +44,8 @@ flowchart TD
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行。IP と端末の回数制限あり） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す。上限は 429（5.3） |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
-| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済み・催しが0件は 404 |
-| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 参加者（会員） | 主催者のページの催し部分。未ログインは 403 `LOGIN_REQUIRED` で催しを1件も返さない。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
+| `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済みは 404（催しが0件でも返す） |
+| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 不要 | 主催者のページの催し部分。未ログインでも返し、催しが0件でも 200 で空の一覧を返す。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 9 テーマのいずれか |
 | `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.16） |
@@ -65,8 +65,11 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催幹事（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意（要受諾） | 共同幹事招待コード検証＆幹事権限付与 |
-| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。`publicUrl` は `null` |
+| `/api/v1/organizer/events/[id]/organizers` | GET | SCR-ORG-05、SCR-ORG-07 | 幹事（会員/ゲスト） | 幹事の一覧。筆頭幹事と共同主催者に分け、閲覧者のロールと管理可否（`canManage`）を返す（5.19） |
+| `/api/v1/organizer/events/[id]/organizers/[organizerId]` | DELETE | SCR-ORG-05、SCR-ORG-07 | 筆頭幹事（OWNER・会員のみ） | 共同主催者を外す。筆頭幹事は 409 `OWNER_NOT_REMOVABLE`。外れる人が持つ編集ロックも同じトランザクションで解放する（5.20） |
+| `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意 | 共同幹事招待コードの検証。催しの概要と `loggedIn` を返す。権限は付与しない（5.21） |
+| `/api/v1/invitations/[code]` | POST | SCR-ORG-07 | 会員必須（未登録は 403 `REGISTER_REQUIRED`） | 招待コードを受諾して共同主催者になる。コードは受諾時に失効させる（5.21） |
+| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。開催日（`sort_date`）・各日程（`event_schedules.event_date`）・申込締切（`rsvp_deadline`）は1か月後へずらし、月末はその月の末日へ丸める（1月31日 → 2月28日、閏年は2月29日。申込締切の時刻は JST のまま保つ）。応答は適用した月を `shiftedMonths: 1` で返す。`publicUrl` は `null` |
 | `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
@@ -119,10 +122,12 @@ flowchart TD
 | `/api/v1/flyers/generate` | POST | SCR-ORG-03 | 不要 | 選んだ候補を確定し、JPEG と `flyer_assets` を保存 |
 | `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
 | `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
+| `/api/v1/flyer-assets/[id]` | DELETE | SCR-ORG-03 | 不要（所有者のみ） | 自分（会員または端末 Cookie）が作ったチラシを論理削除する。他人のものは 404（9.7） |
 | `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
 | `/api/v1/flyer-assets/[id]/pdf` | GET | SCR-ORG-05 / SCR-ORG-16 | 不要 | 公開済みイベントのチラシを A4 PDF で返す。`?eventId=` が公開済みで、そのチラシを掲載しているときだけ。告知ページの QR を右下に入れる |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
+| `/api/v1/geo/postal-codes/[code]` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要（IP 単位の回数制限） | 郵便番号から都道府県・市区町村・町名を引く。外部サービスへ中継し、24 時間キャッシュする（5.22） |
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
@@ -1243,7 +1248,7 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 - 会員が無い、`users.deleted_at` が立っている、`event_organizers` の先の催しがすべて削除済みのいずれかなら 404 `主催者が見つかりません。`
 - `organizer_profiles` の行が無い、または `is_published = false` のときも 200。ただし `profile` は `isPublished: false` と null・空配列だけにし、保存値は返さない。
 - `links` は X → Instagram → Webサイト → LINE の順。空文字の項目は飛ばす。
-- `tags` は固定リスト（`MUSIC` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）に無い値を落とす。
+- `tags` は固定リスト（`MUSIC` / `STAGE` / `FOOD` / `LEARNING` / `SPORTS` / `LOCAL` / `BUSINESS` / `OTHER`）に無い値を落とす。
 - `stats` は `show_stats = true` のときだけ。開催済み（`status != DRAFT`・未削除・今日以前の開催日がある）催しの件数と、その最も早い開催日の年。共同主催も1件として数える。
 - `themeId` は `is_published = true` のときだけ、既知の 9 テーマのいずれか。非公開・未知の値は `null`（標準の見た目）。
 - `avatarUrl` は `avatar_image_id` があれば `/api/v1/image-assets/{id}/image`。**非公開でも返す**（本文ではなく、その人を示す印のため）。
@@ -1270,13 +1275,13 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 
 ### 5.12. GET `/api/v1/public/organizers/[userId]/events`（主催者のページの催し）
 
-対象画面は SCR-PUB-14（カレンダーと一覧の部分）。`resolveOptionalUserId` で Cookie を見る。Cookie が壊れていても 401 にはせず、未ログインとして 403 `LOGIN_REQUIRED` を返す。
+対象画面は SCR-PUB-14（次の催し・カレンダー・一覧）。認証は要らない。Cookie の有無に関わらず同じ一覧を返し、Cookie が壊れていても 401・403 にはしない。
 
 - 筆頭幹事（`OWNER`）と共同主催（`CO_HOST`）の両方の催しを集める。
 - 掲載条件は `isDeleted = false`、`status = PUBLISHED`、申し込み期限内、今日以降の開催日があること。満員でも返す（参加要望を受け付けるため）。
 - `attendingCount` は `ATTENDING` だけ。`WAITLISTED` は人数・残席に数えない。
 - 並びは次に開催される日が近い順、同日は催し名の五十音順、最後は `id`。
-- 会員が無い・退会済みは 404。詳細な項目は 5.2 のイベント表現に準ずる。
+- 会員が無い・退会済みは 404。掲載条件を満たす催しが0件でも 200 で `events: []` を返す。詳細な項目は 5.2 のイベント表現に準ずる。
 
 ### 5.13. GET / PUT `/api/v1/organizer/profile`（公開プロフィールの編集）
 
@@ -1504,6 +1509,85 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | :---- | :---- | :---- |
 | 400 | - | 本文が JSON でない、`ids` が UUID でない、`all` も `ids` も無い |
 | 401 | - | 未ログイン、またはセッションが無効 |
+
+### 5.19. GET `/api/v1/organizer/events/[id]/organizers`（幹事の一覧）
+
+対象画面は SCR-ORG-05（編集画面の幹事パネル）と SCR-ORG-07。認可は `assertOrganizer(req, id)` で、幹事なら誰でも読める（会員・ゲストを問わない）。幹事でない人は 403、催しが無い・削除済みなら 404。
+
+```json
+{
+  "organizers": {
+    "owner": { "id": "…", "role": "OWNER", "name": "田中 はる", "isGuest": false, "userId": "…" },
+    "coHosts": [
+      { "id": "…", "role": "CO_HOST", "name": "佐藤 みのり", "isGuest": false, "userId": "…" }
+    ]
+  },
+  "role": "OWNER",
+  "canManage": true,
+  "registerRequired": false
+}
+```
+
+- 並びは筆頭幹事、そのあとに共同主催者を `created_at` の昇順で返す。`owner` が無い催しでは `null` になる。
+- `name` は会員なら `users.name`、ゲストなら `display_name`、どちらも空なら「主催者」「共同主催者」。`user_id` はゲストで `null`。
+- `role` は閲覧者のロール。`canManage` は `role = OWNER` かつ閲覧者が会員のときだけ `true`（招待と解除ができる）。`registerRequired` は `role = OWNER` かつ閲覧者が未登録のときだけ `true` で、画面は会員登録へ送る。
+
+### 5.20. DELETE `/api/v1/organizer/events/[id]/organizers/[organizerId]`（共同主催者を外す）
+
+対象画面は SCR-ORG-05 の幹事パネル。認可は `assertRegisteredOwner` で、会員の筆頭幹事だけが実行できる。未登録の幹事は 403 `REGISTER_REQUIRED`、共同主催者は 403。
+
+- `organizerId` がその催しの幹事行でなければ 404。`role = OWNER` の行は 409 `OWNER_NOT_REMOVABLE`（催しに筆頭幹事が居なくなるため）。
+- 外す行が編集ロックを持っていたら、同じトランザクションで `event_locks` の該当行（`locked_by_user_id` / `locked_by_token_hash`）を消す。権限だけ外すと、ロックを解放する手段が誰にも無くなるため。
+- 消すのは `event_organizers` の 1 行だけで、催し・名簿・集金には触れない。成功は `{ "success": true }`。
+
+### 5.21. GET / POST `/api/v1/invitations/[code]`（共同幹事の招待）
+
+対象画面は SCR-ORG-07（`/invitations/[code]`）。
+
+**GET** は招待コードの検証だけを行い、権限は付与しない。`resolveOptionalUserId` で Cookie を見て `loggedIn` を足す。
+
+```json
+{
+  "valid": true,
+  "invitation": { "expiresAt": "2026-11-12T09:00:00.000Z" },
+  "event": {
+    "id": "…",
+    "title": "秋の芋煮会",
+    "schedules": [],
+    "pricePlans": [],
+    "location": "…",
+    "rainPolicy": "…",
+    "organizer": { "ownerName": "田中 はる", "coHostCount": 1 }
+  },
+  "loggedIn": true
+}
+```
+
+**POST** は受諾。会員だけが実行でき、未登録は 403 `REGISTER_REQUIRED`（Cookie での幹事権限は発行しない）。コードが無効・失効済み・期限切れ・催しが削除済みなら GET と同じく 404。
+
+トランザクションで `event_organizers` に `CO_HOST` を足し（`@@unique([eventId, userId])` と `skipDuplicates` で重複行を作らない）、`event_invitations.is_revoked = true` にする。既に幹事（`OWNER` を含む）でも成功し、行は増えずコードだけが失効する。
+
+```json
+{ "success": true, "eventId": "…", "role": "CO_HOST", "manageUrl": "/organizer/events/…/edit" }
+```
+
+### 5.22. GET `/api/v1/geo/postal-codes/[code]`（郵便番号から住所）
+
+対象画面は SCR-ORG-02 / SCR-ORG-05 の住所入力。認証は不要。`normalizePostalCode` で正規化（ハイフン・空白を除く）し、7 桁の数字でなければ 400。
+
+- プロセス内に 24 時間・最大 1000 件のキャッシュを持つ。同じ端末の連続入力で外部を叩き直さない。
+- 1 分あたり 30 回を IP 単位で制限し、超えたら 429。
+- 上流は `POSTAL_CODE_API_URL`（既定 `https://zipcloud.ibsnet.co.jp/api/search`）。5 秒で打ち切り、接続できない・応答が契約と違う・ステータスが 200 以外なら 502。住所が無ければ 404。
+- 応答は `Cache-Control: public, max-age=604800`。
+
+```json
+{
+  "postalCode": "1500001",
+  "results": [{ "prefecture": "東京都", "city": "渋谷区", "town": "神宮前" }]
+}
+```
+
+画面は `results` が 1 件なら都道府県・市区町村・町名を埋め、複数件なら候補を出して選ばせる。0 件・502 のときは住所の手入力を促す（応答の `detail` をそのまま出す）。
 
 ---
 
@@ -2584,6 +2668,14 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 4. 行の作成に失敗したら、書いたファイルを削除する。
 
 同じ端末は 10 分に 5 回までとし、超えたら 429。未ログインでも作れる。8 MiB 超は 413、形式が JPEG / PNG / WebP でなければ 422 `INVALID_IMAGE`。
+
+### 9.7. DELETE `/api/v1/flyer-assets/[id]`（チラシの削除）
+
+対象画面は SCR-ORG-03（チラシ選択モーダル）。認証は不要で、所有者だけが消せる。所有者は `flyerOwnerFilter` が決める（Cookie `flyer_owner` の端末トークン、またはログイン中の会員 `userId`）。
+
+- `id` が UUID でない、行が無い、`is_deleted = true`、所有者でないときはすべて 404（他人のチラシの存在を漏らさない）。
+- `flyer_assets.is_deleted = true` にする論理削除で、`storage/flyers/` のファイルは消さない。すでに `flyer_assets` を指す催しの表示は変わらない（9.4 の画像取得は `is_deleted` を見ない）。
+- 成功は `{ "success": true }`。
 
 ---
 

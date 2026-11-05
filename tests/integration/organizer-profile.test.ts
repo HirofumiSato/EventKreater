@@ -222,13 +222,15 @@ describeDb("主催者の公開プロフィール（結合）", () => {
     expect(body.profile.themeId).toBeNull();
   });
 
-  it("催しが0件の会員のページは 404 にする", async () => {
+  it("催しが0件でもプロフィールは 200 で返す", async () => {
     const organizer = await createUser("催しの無い会員");
     userIds.push(organizer.id);
 
-    const { status } = await callPublic(organizer.id);
+    const { status, body } = await callPublic(organizer.id);
 
-    expect(status).toBe(404);
+    expect(status).toBe(200);
+    expect(body.userId).toBe(organizer.id);
+    expect(body.name).toBe("催しの無い会員");
   });
 
   it("退会した主催者のページは 404 にする", async () => {

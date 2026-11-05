@@ -1623,6 +1623,77 @@ CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
 
 ---
 
+### 4.7. リマインドメールの送信記録（追加マイグレーション・未実装）
+
+`prisma/migrations/20261020053000_visibility_flyers_reminders/migration.sql` で追加する。同じマイグレーションがチラシの `is_deleted` と催しの `rain_policy` / `capacity` / `is_deleted` も足すが、ここでは送信記録だけを扱う。
+
+> **未実装（pending）:** この表はモデルと表だけが先にあり、書き込みも読み出しもしません。リマインドの送信バッチ（`scripts/billing-notices.mjs` は別の通知を持つ）は pending です。`status` に入る値（`SENT` / `FAILED` など）と文面もまだ決めていません。実装するときに、この節へ値と文面を書き足してください。
+
+#### Prisma モデル（抜粋）
+
+```text
+// =============================================================
+// 9. リマインドメールの送信記録
+// =============================================================
+
+model ReminderDelivery {
+  id             String   @id @default(uuid()) @db.Uuid
+  eventId        String   @map("event_id") @db.Uuid
+  recipientEmail String   @map("recipient_email") @db.VarChar(255)
+  subject        String   @db.VarChar(200)
+  body           String   @db.Text
+  status         String   @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@map("reminder_deliveries")
+}
+```
+
+`Event` 側に `reminders ReminderDelivery[]` を足す。
+
+#### 追加テーブル（`reminder_deliveries`）
+
+```sql
+-- リマインドメールの送信記録。
+CREATE TABLE "reminder_deliveries" (
+    "id" UUID NOT NULL,
+    "event_id" UUID NOT NULL,
+    "recipient_email" VARCHAR(255) NOT NULL,
+    "subject" VARCHAR(200) NOT NULL,
+    "body" TEXT NOT NULL,
+    "status" VARCHAR(20) NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "reminder_deliveries_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX "reminder_deliveries_event_id_created_at_idx"
+  ON "reminder_deliveries"("event_id", "created_at");
+
+ALTER TABLE "reminder_deliveries" ADD CONSTRAINT "reminder_deliveries_event_id_fkey"
+  FOREIGN KEY ("event_id") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+```
+
+#### 列の意味
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `reminder_deliveries` | `id` | UUID PK | 送信1件の識別子 |
+| `reminder_deliveries` | `event_id` | UUID NOT NULL（`events` へ ON DELETE CASCADE） | どの催しのリマインドか。催しを消すと記録も消える |
+| `reminder_deliveries` | `recipient_email` | VARCHAR(255) NOT NULL | 宛先のメールアドレス。会員に紐づけず、送った時点の値を残す |
+| `reminder_deliveries` | `subject` | VARCHAR(200) NOT NULL | 件名 |
+| `reminder_deliveries` | `body` | TEXT NOT NULL | 本文。送った文面をそのまま残す |
+| `reminder_deliveries` | `status` | VARCHAR(20) NOT NULL | 送信の結果。値は未確定（列挙型にせず、実装時に決める） |
+| `reminder_deliveries` | `created_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | 送った日時 |
+
+- 同じ宛先へ二重に送らないための UNIQUE は無い。重複の抑制は実装側で持つ。
+- `recipient_email` は `users` を参照しない。退会やアドレス変更で、過去に送った記録が書き換わらないようにするため。
+
+---
+
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）
 
 ### 5.1. イベント新規作成（課金認可ゲート判定＆チケット消費）

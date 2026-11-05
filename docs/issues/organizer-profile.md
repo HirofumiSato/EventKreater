@@ -29,7 +29,7 @@
 | 実績 | 「主催 N回・YYYY年から」。`showStats` がオンのときだけ出す。既定はオフ |
 | 実績の数え方 | 未削除・`DRAFT` 以外・今日以前の開催日がある催しの件数。共同主催も1件として数える。最も早い開催日の年を活動開始年とする |
 | 未作成・非公開のとき | ページは 404 にせず、名前・モノグラム・「催しを見る」だけを出す。自己紹介・リンク・実績は出さない |
-| 404 の条件 | 会員が無い、退会済み（`users.deleted_at`）、催しが0件（未削除の主催イベントが無い） |
+| 404 の条件 | 会員が無い、退会済み（`users.deleted_at`）。催しが0件でも返す（初回公演の前に URL を貼れるように） |
 | 検索 | `noindex, nofollow`。メール・電話・売上・参加者数などの機微情報は API も画面も返さない |
 | 公開範囲 | プロフィールは個人単位。催しごとの公開範囲（`visibility`）とは独立に扱う。`UNLISTED` の催しはプロフィールからも一覧に出さない（#21 の掲載条件に従う） |
 | 保存単位 | `organizer_profiles` の1会員1行。初回保存で作り、以後は upsert |
@@ -59,6 +59,7 @@
 | 値 | ラベル |
 | :---- | :---- |
 | `MUSIC` | 音楽 |
+| `STAGE` | 舞台・ダンス |
 | `FOOD` | 食 |
 | `LEARNING` | 学び |
 | `SPORTS` | スポーツ |
@@ -97,7 +98,7 @@
 
 `src/modules/organizers/lib/profile-store.ts`
 
-- `loadPublicOrganizerProfile(userId)`: 会員・プロフィール・未削除の催しを1回で読み、`profileStats` を噛ませて返す。会員が無い・退会済み・催し0件は `null`（画面は 404）。
+- `loadPublicOrganizerProfile(userId)`: 会員・プロフィール・未削除の催しを1回で読み、`profileStats` を噛ませて返す。会員が無い・退会済みは `null`（画面は 404）。催しが0件でも返す。
 - `readOrganizerProfileDraft(userId)`: 行が無ければ既定値。
 - `readOrganizerProfileStats(userId)`: 編集画面のプレビュー用。
 - `upsertOrganizerProfile(userId, input)`: `userId` を主キーに upsert。
@@ -144,7 +145,7 @@
 ### 7. テスト
 
 - 単体 `tests/unit/organizer-profile.test.ts`（36件）: リンクの順序、URL の検査（http・別ホスト・似たドメイン・ユーザー情報）、実績の数え方（下書き・削除・未来日・今日・複数候補日）、下書きから表示への組み立て、ジャンルの正規化、自己紹介の省略、URL の組み立て、`OrganizerProfileSchema` の上限・URL・厳格さ。
-- 結合 `tests/integration/organizer-profile.test.ts`（12件）: 未設定でも名前だけ返す、保存の反映、非公開に戻すと隠す、upsert が1行にまとまる、催し0件・退会・不正 UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。`TEST_DATABASE_URL` があるときだけ走る。
+- 結合 `tests/integration/organizer-profile.test.ts`（12件）: 未設定でも名前だけ返す、保存の反映、非公開に戻すと隠す、upsert が1行にまとまる、催し0件でも 200・退会・不正 UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の応答。`TEST_DATABASE_URL` があるときだけ走る。
 
 ### 8. ドキュメント
 
@@ -158,7 +159,7 @@
 
 - [x] `/organizers/[userId]` が誰でも開け、名前とプロフィールが出る（`noindex, nofollow`）
 - [x] プロフィール未作成・非公開でも 404 にせず、名前と「催しを見る」だけを出す
-- [x] 会員が無い・退会済み・催し0件のときは 404
+- [x] 会員が無い・退会済みのときは 404（催しが0件でも 200 で返す）
 - [x] `/organizers/[userId]/events` が従来どおり催しを出し、プロフィールから遷移できる
 - [x] 告知ページの主催者名からプロフィールへ進める（名前だけがリンク）
 - [x] `/organizer/profile` で公開/非公開・肩書き・自己紹介・エリア・ジャンル・リンク・実績を保存できる

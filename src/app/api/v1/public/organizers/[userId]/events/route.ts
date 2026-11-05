@@ -11,7 +11,6 @@ import {
   serializeSchedules,
 } from "@/lib/serializers";
 import { todayInTokyo } from "@/lib/calendar";
-import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { isFull, remainingSeats } from "@/modules/events/lib/rsvp-status";
 import { sortOrganizerEvents } from "@/modules/organizers/lib/public-page";
 import type { PublicOrganizerEvent } from "@/modules/events/types";
@@ -26,22 +25,11 @@ interface RouteContext {
 /**
  * 主催者のイベント（`/organizers/[userId]/events` の元データ）。
  *
- * 中身はログイン済みの参加者にだけ返す。未ログインでもURLは開けるが、
- * 画面はぼかした骨組みを出し、このAPIはイベントを1件も返さない。
+ * 誰でも読める（SNS の固定リンクから開けるようにするため）。掲載条件を満たす
+ * 催しだけを返し、1件も無くても空の一覧を 200 で返す。
  */
-export async function GET(req: NextRequest, { params }: RouteContext) {
+export async function GET(_req: NextRequest, { params }: RouteContext) {
   try {
-    const viewerId = await resolveOptionalUserId(req);
-    if (!viewerId) {
-      throw new ProblemDetailException({
-        status: 403,
-        title: "Login Required",
-        type: "probs/login-required",
-        detail: "このページは参加者登録・ログイン後に閲覧できます。",
-        error: "LOGIN_REQUIRED",
-      });
-    }
-
     const organizer = await prisma.user.findFirst({
       where: { id: params.userId, deletedAt: null },
       select: { id: true, name: true },

@@ -428,7 +428,6 @@
 :where(.deco) .semantic-theme[data-semantic-theme] .card,
 :where(.deco) .semantic-theme[data-semantic-theme] .panel,
 :where(.deco) .semantic-theme[data-semantic-theme] .cal,
-:where(.deco) .semantic-theme[data-semantic-theme] .organizer-locked__panel,
 :where(.deco) .semantic-theme[data-semantic-theme] .alert {
   border: var(--st-border-width) solid var(--st-border-color);
   border-radius: var(--radius-xl);
@@ -601,16 +600,6 @@
 :where(.deco) .semantic-theme[data-semantic-theme] .cal__nav button {
   border-color: var(--st-border-color);
   color: var(--st-content-primary);
-}
-
-/* 未ログインの白塗り。地の色を透かして、案内の面だけを浮かせる。 */
-:where(.deco) .semantic-theme[data-semantic-theme] .organizer-locked__notice {
-  background: color-mix(in srgb, var(--st-surface-base) 64%, transparent);
-}
-
-/* 飾りのカレンダーの短冊は、実物より弱く見せる。 */
-:where(.deco) .semantic-theme[data-semantic-theme] .organizer-locked__ghost .cal__event {
-  background: color-mix(in srgb, var(--st-content-secondary) 45%, var(--st-surface-raised));
 }
 
 /* --------------------------------------------------------------------------

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT, jstToday } from "@/modules/billing/lib/quota";
 import { signLocalToken } from "@/modules/auth/lib/auth";
+import { formatEventDate } from "@/lib/serializers";
+import { shiftDateByMonths } from "@/modules/events/lib/clone";
 import { publishDraftEvent } from "@/modules/events/lib/events";
 import { POST as cloneEvent } from "@/app/api/v1/organizer/events/[id]/clone/route";
 import { POST as lifecycleEvent } from "@/app/api/v1/organizer/events/[id]/lifecycle/route";
@@ -230,9 +232,15 @@ describeDb("公開中のイベント数（結合）", () => {
     });
     const token = await signLocalToken({ userId: user.id, email: user.email });
 
+    const before = await prisma.event.findUniqueOrThrow({
+      where: { id: source.id },
+      include: { schedules: { orderBy: { sortOrder: "asc" } } },
+    });
+
     const cloned = await clone(source.id, token);
 
     expect(cloned.status).toBe(201);
+    expect(cloned.body.shiftedMonths).toBe(1);
     const created = await prisma.event.findUniqueOrThrow({
       where: { id: cloned.body.event.id },
       include: { schedules: true },
@@ -242,6 +250,13 @@ describeDb("公開中のイベント数（結合）", () => {
     expect(created.quotaChargedAt).toBeNull();
     expect(created.quotaSource).toBeNull();
     expect(created.schedules).toHaveLength(1);
+    // 開催日と並び日は1か月後へずれる（月末はその月の末日へ丸める）。
+    expect(formatEventDate(created.sortDate)).toBe(
+      shiftDateByMonths(formatEventDate(before.sortDate), 1),
+    );
+    expect(formatEventDate(created.schedules[0].eventDate)).toBe(
+      shiftDateByMonths(formatEventDate(before.schedules[0].eventDate), 1),
+    );
     expect((await quotaOf(user.id)).paidCredits).toBe(0);
   });
 });
