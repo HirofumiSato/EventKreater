@@ -38,7 +38,8 @@
     "mock:catchup": "node --env-file-if-exists=.env scripts/mock-catchup.mjs",
     "mock:check": "node scripts/check-mock-sync.mjs",
     "mock:serve": "node scripts/mock-serve.mjs",
-    "billing:notices": "node scripts/billing-notices.mjs"
+    "billing:notices": "node scripts/billing-notices.mjs",
+    "icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

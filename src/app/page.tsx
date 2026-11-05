@@ -4,6 +4,7 @@ import { yen } from "@/lib/format";
 import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SERVICE_PLANS } from "@/modules/billing/lib/plans";
 import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
 import { PlanCard, Row, Rows, Section, SectionHead } from "@/components/ui";
+import { HomeShowcase } from "./HomeShowcase";
 
 /*
  * ホームの役割は「初見の幹事が、自分のためのサービスだと理解し、1つ作り始めること」。
@@ -186,10 +187,7 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <figure className="hero__poster">
-            <img src="/samples/flyer-autumn.jpg" alt="実際に作ったチラシ（秋の芋煮会）" width={1080} height={1528} />
-            <figcaption>実際に作ったチラシ</figcaption>
-          </figure>
+          <HomeShowcase />
         </div>
       </section>
 

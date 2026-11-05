@@ -64,6 +64,7 @@ npm run docs:gen     # 索引 4 点を再生成（doc-index.json / api-routes.md
 npm run docs:counts  # テストの件数を docs/testing/scope.rst へ書き戻す（Vitest を回す）
 npm run docs:counts:last # 直前の check:full の結果から書き戻す（Vitest を回さない）
 npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの実在を確認
+npm run icons        # タブとホーム画面のアイコンを作り直す（public/icons と public/favicon.ico）
 cd services/flyer; python -m pytest -q
 cd services/flyer; python -m mypy   # src の型（mypy.ini が strict）
 ```
