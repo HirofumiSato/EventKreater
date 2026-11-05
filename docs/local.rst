@@ -347,4 +347,4 @@ Stripe をローカルで試す
 
 .. code-block:: powershell
 
-   stripe listen --forward-to localhost:3012/api/v1/webhooks/stripe
+   stripe listen --forward-to localhost:3012/api/v1/webhooks/stripe --events checkout.session.completed,invoice.payment_succeeded,invoice.payment_failed,customer.subscription.updated,customer.subscription.deleted,charge.refunded,charge.dispute.created
