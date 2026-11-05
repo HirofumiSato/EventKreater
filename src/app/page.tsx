@@ -14,12 +14,12 @@ import { HomeShowcase } from "./HomeShowcase";
 
 const HERO_EYEBROW = (
   <>
-    ご飯会、交流会、ライブ、一日店長、撮影会、合コン etc.{" "}
+    店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会 etc.{" "}
     <span className="hero__eyebrow-tail">主催者様へ</span>
   </>
 );
 const HERO_LEAD =
-  "イベント名・日時・場所・費用を入れるだけ。告知ページができ、URLを送るだけで出欠が揃います。";
+  "イベント名・日時・場所・費用を入れるだけ。告知ページができ、URLを送るだけで集客と予約管理が完結します。";
 /**
  * 見出しの最後の行の右に横に並べる吹き出し。見出しが主、これは添え書き。
  * 左から「作れるもの」「そのあとも使えるもの」の順に置く。
@@ -31,11 +31,6 @@ const HERO_CALLOUTS = [
   ["カレンダー共有も", "できる"],
 ] as const;
 /**
- * 主操作の直下に置く条件。`SITE.cta.freeNote` は /sample も読むため変えず、
- * ホームだけの言い方（初回の無料チケット2枚の付与）をここに持つ。
- */
-const HERO_NOTE = "初回、無料チケット2枚付与。";
-/**
  * ヒーローのログイン導線。`SITE.nav.*.label` はヘッダー・フッターも読むので変えず、
  * ホームだけ「登録」も選べる言い方に上書きする。
  */
@@ -45,27 +40,22 @@ const HERO_LOGIN_LINKS = [
 ] as const;
 
 /**
- * h1 の 1 つ目の文。その中の「告知」「申込」「ウェブ」だけを文字色で分ける。
- * 文言は `SITE.taglineLines` が持ち、ここは色分けのためだけに分割する。
+ * h1 の 1 つ目の文。見出しは白の 1 色にそろえ、冒頭の「イベント告知&申込」だけを
+ * 山吹のアンダーラインマーカーで受け止める。文言は `SITE.taglineLines` が持ち、
+ * ここはマーカーを引く範囲を示すためだけに分割する。
  */
-const HERO_MARKS = [
-  { word: "告知", className: "hero__mark--notice" },
-  { word: "申込", className: "hero__mark--apply" },
-  { word: "ウェブ", className: "hero__mark--web" },
-] as const;
+const HERO_MARKER = "イベント告知&申込";
 
 function renderTagline(line: string) {
-  return line.split(/(告知|申込|ウェブ)/).map((part, index) => {
-    const mark = HERO_MARKS.find((candidate) => candidate.word === part);
-    if (mark) {
-      return (
-        <span key={index} className={`hero__mark ${mark.className}`}>
-          {part}
-        </span>
-      );
-    }
-    return part;
-  });
+  const [before, after] = line.split(HERO_MARKER);
+  if (after === undefined) return line;
+  return (
+    <>
+      {before}
+      <span className="hero__marker">{HERO_MARKER}</span>
+      {after}
+    </>
+  );
 }
 
 /** 幹事に起きること。機能名ではなく、手間がどう減るかで書く。 */
@@ -174,8 +164,6 @@ export default function HomePage() {
                   {SITE.nav.sample.label}
                 </Link>
               </div>
-              {/* 無料の条件はボタンに詰めず、押す直前に 1 行だけ添える。 */}
-              <p className="hero__note">{HERO_NOTE}</p>
               {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
               <p className="hero__links">
                 {HERO_LOGIN_LINKS.map((link) => (
