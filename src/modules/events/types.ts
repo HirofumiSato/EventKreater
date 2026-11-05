@@ -89,13 +89,13 @@ export interface UserQuota {
   subscriptionPlan?: UserSubscriptionPlan;
   /**
    * いま公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のものだけ。
-   * 月額で8件まで公開プランでは件数の上限の判定と同じく定額から公開したものだけを数え、
-   * それ以外（公開し放題・未加入）は単発や無料チケットから公開したものも数える。
+   * 8件まで公開プランでは件数の上限の判定と同じく定額から公開したものだけを数え、
+   * それ以外（公開し放題プラン・未加入）は単発や無料チケットから公開したものも数える。
    */
   publishedEventCount?: number;
-  /** 月額で8件まで公開プランの上限（8）。 */
+  /** 8件まで公開プランの上限（8）。 */
   publishedEventLimit?: number;
-  /** あと何件公開できるか。公開し放題と未加入は null。 */
+  /** あと何件公開できるか。公開し放題プランと未加入は null。 */
   remainingPublished?: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
@@ -139,7 +139,7 @@ export interface PricingOption {
   campaignName?: string | null;
   currency: string;
   interval?: string;
-  /** 月額で8件まで公開プランだけが持つ上限。 */
+  /** 8件まで公開プランだけが持つ上限。 */
   eventLimit?: number;
 }
 

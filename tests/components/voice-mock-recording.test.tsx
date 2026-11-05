@@ -5,7 +5,7 @@
 // 見るのは 4 つ。
 //   1. モックなら、マイクを掴まずに開いた瞬間から「録音中」になる
 //   2. 少し待つと確認のモーダルが出る（実の経路と同じく、勝手に値を入れない）
-//   3. 「入力を確定する」で値が入り、次の欄の録音へ自動で進む
+//   3. 「確定」で値が入り、次の欄の録音へ自動で進む
 //   4. モックでなければ、これまでどおり録音を試みる（マイクが無ければ案内を出す）
 //
 // 入力欄はこの部品の外にあるので、値の受け渡しは `onChange` で見る。
@@ -125,10 +125,13 @@ describe("モックの疑似録音", () => {
 
     // 値はまだ入っていない。まず何を入れるかを見せる（実の経路と同じ）。
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "入力を確定しますか" })).toBeTruthy();
+    // 見出しは値と問いの 2 段。読み上げ名では 1 文につながる。
+    expect(
+      screen.getByRole("heading", { name: "「忘年会」を入力します" }),
+    ).toBeTruthy();
     expect(screen.getByText("「忘年会」")).toBeTruthy();
 
-    await press("入力を確定する");
+    await press("確定");
 
     // 1 欄目（イベント名）は入力例の「忘年会」で埋まる。
     expect(lastValue(onChange).title).toBe("忘年会");
@@ -136,14 +139,14 @@ describe("モックの疑似録音", () => {
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
   });
 
-  it("「再録音する」なら値を入れずに、同じ欄を録り直す", async () => {
+  it("「再録音」なら値を入れずに、同じ欄を録り直す", async () => {
     stubMockAnswer(true);
     const onChange = vi.fn();
 
     await mount(onChange);
     await press("音声入力を開始");
     await passMockWait();
-    await press("再録音する");
+    await press("再録音");
 
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
@@ -162,7 +165,7 @@ describe("モックの疑似録音", () => {
 
     // 押したときも確認は挟む。
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "入力を確定しますか" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "「忘年会」を入力します" })).toBeTruthy();
   });
 });
 

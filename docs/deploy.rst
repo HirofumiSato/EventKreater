@@ -317,13 +317,13 @@ web・flyer・tunnel は別アプリにします。web も flyer も公開ポー
      - Webhook の署名シークレット。違うと ``/api/v1/webhooks/stripe`` が 400 を返します
    * - ``STRIPE_PRICE_ID_MONTHLY_8``
      - 必須
-     - 月額で8件まで公開プランの Price ID
+     - 8件まで公開プランの Price ID
    * - ``STRIPE_PRICE_ID_UNLIMITED``
      - 必須
-     - 公開し放題の Price ID
+     - 公開し放題プランの Price ID
    * - ``STRIPE_PRICE_ID_MONTHLY_980_LEGACY``
      - 任意
-     - 値上げ前に加入した 980 円の公開し放題の Price ID。既存契約の検証だけに使います。名前を変える前の ``STRIPE_PRICE_ID_MONTHLY_980`` も同じ用途で読みます
+     - 値上げ前に加入した 980 円の公開し放題プランの Price ID。既存契約の検証だけに使います。名前を変える前の ``STRIPE_PRICE_ID_MONTHLY_980`` も同じ用途で読みます
    * - ``STRIPE_PRICE_ID_ONE_TIME``
      - 必須
      - 単発の Price ID
@@ -802,7 +802,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 4. Stripe を本番に向ける
 ------------------------
 
-1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（月額で8件まで公開プラン 980 円、公開し放題 2,980 円、単発 299 円）。
+1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（8件まで公開プラン 980 円、公開し放題プラン 2,980 円、単発 299 円）。
 2. Webhook のエンドポイントを ``https://eventkreater.com/api/v1/webhooks/stripe`` にします。
 3. 受け取るイベントは、テストモードで使ったものと同じにします。署名シークレットを ``STRIPE_WEBHOOK_SECRET`` に入れます。
 4. 返金は Dashboard から行います。アプリに返金の口はありません。

@@ -15,7 +15,7 @@
 3. **PostgreSQL固有のアトミック排他制御（Pessimistic Lease Lock）:**
    - 共同幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
 4. **マネタイズ基盤（課金クォータ・Stripe連携）の完全統合:**
-   - 主催者のチケット（累計2枚無料、単発299円クレジット、月額で8件まで公開980円・公開し放題2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の公開件数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
+   - 主催者のチケット（累計2枚無料、単発299円クレジット、8件まで公開プラン980円・公開し放題プラン2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の公開件数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
    - 決済監査ログ（`billing_transactions`）および Webhook冪等性制御（`stripe_webhook_events`）を統合し、二重課金・二重付与を物理遮断する。
 5. **筆頭作成者（オーナー）のみチケット消費ルール:**
    - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）のチケットは消費しない。
@@ -105,7 +105,7 @@ erDiagram
 | 列挙型名 | 定義値 | 概要 |
 | :---- | :---- | :---- |
 | **SubscriptionStatus** | `NONE`, `ACTIVE`, `PAST_DUE`, `CANCELED`, `INCOMPLETE` | サブスクリプション契約状態 |
-| **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（月額で8件まで公開980円 / 公開し放題2980円 / 未加入） |
+| **SubscriptionPlan** | `NONE`, `MONTHLY_8`, `UNLIMITED` | 加入中の定額プラン（8件まで公開プラン980円 / 公開し放題プラン2980円 / 未加入） |
 | **QuotaSource** | `FREE_TRIAL`, `PAID_CREDIT`, `SUBSCRIPTION` | イベントを公開したときのチケット。公開中の件数に数えるのは `SUBSCRIPTION` だけ |
 | **PaymentType** | `ONE_TIME`, `SUBSCRIPTION` | 決済種別（単発299円 / 月額） |
 | **PaymentStatus** | `PENDING`, `SUCCEEDED`, `FAILED`, `REFUNDED`, `DISPUTED` | 決済ステータス。`DISPUTED` は異議申立 |

@@ -47,7 +47,7 @@ export const EVENT_STEPS: readonly EventStep[] = [
   {
     key: "flyer",
     // 見出しは省略せずに書く。ここで何を決めるステップかを、開く前に分かるようにする。
-    title: "テーマとチラシ",
+    title: "イベントページのテーマとチラシ",
     hint: "テーマは告知ページとチラシの雰囲気を決めます。",
     mandatory: false,
   },

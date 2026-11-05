@@ -42,10 +42,10 @@ flowchart LR
 
 #### 2.1. クォータ判定・消費の優先順位
 
-1. **第1優先：定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）**
+1. **第1優先：定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）**
    - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`。初月無料の `trialing` も `ACTIVE` に写すので、無料期間中も同じように公開できる。
    - 処理: プランを見て分岐する。
-     - `subscription_plan = 'UNLIMITED'`（公開し放題）: 公開を即時認可。チケットは消費せず、公開中のイベント数も数えない。
+     - `subscription_plan = 'UNLIMITED'`（公開し放題プラン）: 公開を即時認可。チケットは消費せず、公開中のイベント数も数えない。
      - `subscription_plan = 'MONTHLY_8'`: 公開中のイベント数を数える。8 件未満なら認可（`quota_source = 'SUBSCRIPTION'`）。8 件に達していれば第2優先へ落ちる。
    - 「公開中」の定義: `status = 'PUBLISHED'`、`is_deleted = false`、`quota_source = 'SUBSCRIPTION'`、`EventOrganizer.role = 'OWNER'` が本人、かつ開催日（`EventSchedule.event_date`）の最大値が今日（JST）以降。開催日を過ぎたもの、`CLOSED`、削除済みは数えない。単発と無料チケットで公開したものは件数の外なので含めない。
 2. **第2優先：単発購入済みクレジット（299円/枚）**
@@ -58,9 +58,9 @@ flowchart LR
    - 加入中は無料チケットを使わない（8 件プランの上限に達した人が無料チケットで抜けないようにする）。
 4. **上限到達（未認可）**
    - 判定条件: 上記すべてに該当しない場合。
-   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。月額で8件まで公開プランで公開中が 8 件に達しただけなら `error = "PUBLISHED_EVENTS_FULL"` とし、公開し放題への変更を案内する。それ以外は `QUOTA_EXCEEDED`。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
+   - 処理: HTTP 402 Payment Required を返却し、フロントエンドに課金モーダルを表示。8件まで公開プランで公開中が 8 件に達しただけなら `error = "PUBLISHED_EVENTS_FULL"` とし、公開し放題への変更を案内する。それ以外は `QUOTA_EXCEEDED`。料金の説明そのものは公開ページ SCR-PUB-06（`/service`）に置く。そのページでは購入を始めない。
 
-加入中の会員は無料チケットへは戻らない。月額で8件まで公開プランで上限に達しているときは、単発クレジットがあればそれを使い、無ければ 402 で公開し放題を案内する。
+加入中の会員は無料チケットへは戻らない。8件まで公開プランで上限に達しているときは、単発クレジットがあればそれを使い、無ければ 402 で公開し放題を案内する。
 
 公開できる件数が空くのは「開催日を過ぎる」「公開を一時停止（`CLOSED`）」「削除（論理削除）」の3つだけ。使わなかった件数は翌月へ繰り越さない。解約後も既存の掲載は残し、新規の公開だけを止める。移行前に上限を超えている会員は、既存を消さず新規公開だけ止める（グランドファザー）。
 
@@ -121,7 +121,7 @@ sequenceDiagram
 
 ---
 
-#### 3.2. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス
+#### 3.2. 定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）ライフサイクルシーケンス
 
 初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout 作成時の `plan`（`MONTHLY_8` / `UNLIMITED`）で選び、Webhook では Price ID から `subscription_plan` を決める。Stripe Customer Portal で階層を変更したときも Price ID から判定し直す。
 
@@ -194,7 +194,7 @@ flowchart TD
 
 | テーブル名 | 論理名 | 役割・責務 |
 | :---- | :---- | :---- |
-| `user_usage_quotas` | ユーザーチケット情報 | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層を一元管理。月額で8件まで公開プランの上限は、チケットの枚数ではなく公開中のイベント数で判定する |
+| `user_usage_quotas` | ユーザーチケット情報 | 主催者ごとの無料作成数、単発クレジット残数、サブスク状態・加入階層を一元管理。8件まで公開プランの上限は、チケットの枚数ではなく公開中のイベント数で判定する |
 | `billing_transactions` | 課金決済トランザクション | Stripe決済（単発/定期）の監査ログ、金額、セッションID履歴 |
 | `stripe_webhook_events` | Webhook冪等性管理ログ | 処理済みStripe Event IDを記録し二重処理を物理遮断 |
 | `pricing_campaigns` | 価格キャンペーン | 期間・対象・割引率・優先度・停止日時。定価は変更しない |
@@ -225,8 +225,8 @@ CREATE TYPE quota_source_enum AS ENUM (
 
 CREATE TYPE subscription_plan_enum AS ENUM (
     'NONE',       -- 未加入
-    'MONTHLY_8',  -- 月額で8件まで公開プラン（980円/月）
-    'UNLIMITED'   -- 公開し放題（2,980円/月）
+    'MONTHLY_8',  -- 8件まで公開プラン（980円/月）
+    'UNLIMITED'   -- 公開し放題プラン（2,980円/月）
 );
 
 CREATE TABLE user_usage_quotas (
@@ -421,7 +421,7 @@ model StripeWebhookEvent {
 }
 ```
 
-#### 6.2. 定額プラン加入セッション作成（月額で8件まで公開 / 公開し放題）
+#### 6.2. 定額プラン加入セッション作成（8件まで公開プラン / 公開し放題プラン）
 
 - **URL:** `POST /api/v1/billing/checkout/subscription`
 - **認可:** 認証済み主催者（JWT セッション）
@@ -484,7 +484,7 @@ model StripeWebhookEvent {
 
 - **URL:** `GET /api/v1/billing/quota`
 - **認可:** 認証済み主催者（JWT セッション）
-- **補足:** `remainingPublished` は月額で8件まで公開プランのときだけ数値、公開し放題と未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、どのプランでも返す（未加入・公開し放題は単発や無料チケットから公開したものも数える）。
+- **補足:** `remainingPublished` は8件まで公開プランのときだけ数値、公開し放題プランと未加入は `null`。`publishedEventCount` は公開中のイベントを数えた値で、どのプランでも返す（未加入・公開し放題プランは単発や無料チケットから公開したものも数える）。
 - **レスポンス (200 OK):**
 
 ```json
@@ -548,14 +548,14 @@ export async function assertCanCreateEvent(userId: string) {
     quota.subscriptionStatus === 'ACTIVE' &&
     quota.currentPeriodEnd !== null &&
     quota.currentPeriodEnd > now;
-  // 公開中の件数を見るのは8件プランだけ。公開し放題は数えない。
+  // 公開中の件数を見るのは8件プランだけ。公開し放題プランは数えない。
   const capped =
     subscriptionActive &&
     quota.subscriptionPlan === 'MONTHLY_8' &&
     (await countPublishedSubscriptionEvents(prisma, userId, now)) >=
       SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
 
-  // 1. 定額プラン（公開し放題、または8件プランで件数が残っている）
+  // 1. 定額プラン（公開し放題プラン、または8件プランで件数が残っている）
   if (subscriptionActive && !capped) {
     return { type: 'SUBSCRIPTION', consume: async (tx) => tx.userUsageQuota.update(/* ... */) };
   }
@@ -574,7 +574,7 @@ export async function assertCanCreateEvent(userId: string) {
         status: 402,
         title: 'Payment Required',
         detail:
-          '無料チケット（2枚）が上限に達しています。単発チケット（299円）、月額で8件まで公開プラン（980円）、公開し放題（2,980円）のいずれかをご利用ください。',
+          '無料チケット2枚を使い切りました。単発 299円 ／ 8件まで公開プラン 980円 ／ 公開し放題プラン 2,980円 から選べます。',
         pricingOptions: {
           oneTimePrice: 299,
           subscription8MonthlyPrice: 980,
@@ -605,7 +605,7 @@ STRIPE_PUBLISHABLE_KEY="pk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 STRIPE_PRICE_ID_MONTHLY_8="price_..."
 STRIPE_PRICE_ID_UNLIMITED="price_..."
-# 旧・980円の公開し放題 Price（既存加入者のみ。新規の申込には使わない。空でもよい）
+# 旧・980円の公開し放題プランの Price（既存加入者のみ。新規の申込には使わない。空でもよい）
 STRIPE_PRICE_ID_MONTHLY_980_LEGACY=""
 STRIPE_PRICE_ID_ONE_TIME="price_..."
 # 0円月額の終了前案内（3日前・1日前）を送るバッチの合言葉
@@ -649,7 +649,7 @@ BILLING_NOTICE_SECRET="replace-with-a-long-random-string"
 - 申込時に作った `PENDING` の `billing_transactions.amount` と、Checkout Session / Invoice の金額を突き合わせる。`listAmount` にはその階層の定価を残す。
 - 0 円の初回請求は `payment_status = "no_payment_required"` を通す。
 - 定額の更新請求は、`amount_paid <= 階層の定価` かつ、定価未満ならクーポン（`invoice.discount` または `total_discount_amounts`）が付いていることを条件にする。
-- 旧 980 円の公開し放題 Price（`STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）で加入した契約は、`UNLIMITED` として扱い、公開中の件数を数えない。値上げ後も定価 980 円で検証する。
+- 旧 980 円の公開し放題プランの Price（`STRIPE_PRICE_ID_MONTHLY_980_LEGACY`）で加入した契約は、`UNLIMITED` として扱い、公開中の件数を数えない。値上げ後も定価 980 円で検証する。
 
 #### 8.5. 終了前通知
 

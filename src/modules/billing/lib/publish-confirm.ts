@@ -56,7 +56,7 @@ function confirmationOf(
  * 「公開する」を押したときに、消費するチケットの確認を出すかどうかを決める。
  *
  * 分岐の順は `consumeEventQuota` と同じ。定額が有効な間は消費しないので null だが、
- * 月額で8件まで公開プランが上限に達したときだけは、サーバーがチケット・単発へ
+ * 8件まで公開プランが上限に達したときだけは、サーバーがチケット・単発へ
  * 落とすので同じように落とす。チケット → 単発チケット → 無料チケットの順で、
  * どれも残っていなければ null（確認を出さず、そのまま公開か 402 の料金案内へ進む）。
  * クォータが分からないときも null。
@@ -73,7 +73,7 @@ export function publishConfirmation(
   const active = subscriptionActive(quota, now);
 
   if (active) {
-    // 公開し放題は件数を数えない。公開しても何も消費しない。
+    // 公開し放題プランは件数を数えない。公開しても何も消費しない。
     if (quota.subscriptionPlan !== "MONTHLY_8") return null;
 
     // 上限未満ならプランの件数に収まる。上限に達したときは下へ落とし、

@@ -304,7 +304,7 @@ function NewEventScreen() {
         context="create"
         onGranted={() => {
           setToastTone("success");
-          setToast("0円チケットを受け取りました。「プレビューを見る」から公開できます。");
+          setToast("0円チケットを受け取りました。「プレビューに進む」から公開できます。");
         }}
       />
       {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}

@@ -1,10 +1,10 @@
 export const FREE_EVENT_LIMIT = 2;
 export const ONE_TIME_PRICE_JPY = 299;
-/** 月額で8件まで公開プランの月額（税込）。 */
+/** 8件まで公開プランの月額（税込）。 */
 export const SUBSCRIPTION_8_PRICE_JPY = 980;
-/** 公開し放題の月額（税込）。 */
+/** 公開し放題プランの月額（税込）。 */
 export const SUBSCRIPTION_UNLIMITED_PRICE_JPY = 2980;
-/** 月額で8件まで公開プランで、同時に公開しておけるイベント数。 */
+/** 8件まで公開プランで、同時に公開しておけるイベント数。 */
 export const SUBSCRIPTION_PUBLISHED_EVENT_LIMIT = 8;
 /** 初回の月額加入だけ無料にする月数。1アカウント1回きり。 */
 export const FIRST_MONTH_FREE_MONTHS = 1;
@@ -96,7 +96,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
   ),
   planFrom(
     "subscription-8",
-    "月額で8件まで公開プラン",
+    "8件まで公開プラン",
     "月",
     `公開中のイベントを同時に${SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで掲載できます。終わったものは数えません。`,
     SUBSCRIPTION_8_PRICE_JPY,
@@ -110,7 +110,7 @@ export const SERVICE_PLANS: readonly ServicePlan[] = [
   ),
   planFrom(
     "subscription-unlimited",
-    "公開し放題",
+    "公開し放題プラン",
     "月",
     "公開中のイベント数を数えません。常設のイベントなど、同時に多く掲載する人向けです。",
     SUBSCRIPTION_UNLIMITED_PRICE_JPY,

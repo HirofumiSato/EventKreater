@@ -59,7 +59,7 @@ export default function TermsPage() {
       <div className="notice">
         <strong>要約</strong>　公開は累計 {FREE_EVENT_LIMIT} 枚まで無料。単発は {yen(ONE_TIME_PRICE_JPY)}、
         月額は公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで {yen(SUBSCRIPTION_8_PRICE_JPY)}、
-        公開し放題 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}（いずれも税込）。
+        公開し放題プラン {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}（いずれも税込）。
         月額プランは、はじめての加入に限り初月0円で、2か月目から定価を請求します。
         0円のキャンペーンは条件と終了日を明記し、初月無料とは併用しません。
         解約はいつでもでき、日割りの返金はしません。
@@ -109,15 +109,15 @@ export default function TermsPage() {
             <strong>単発チケット</strong>: 1枚 {yen(ONE_TIME_PRICE_JPY)}。イベントを1回公開するごとに1枚を消費します。
           </li>
           <li>
-            <strong>月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</strong>: 月額{" "}
+            <strong>{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</strong>: 月額{" "}
             {yen(SUBSCRIPTION_8_PRICE_JPY)}。公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}
             件まで掲載できます。「公開中」とは、公開の状態にあり、削除されておらず、開催日が当日以降である
             イベントをいいます。開催日を過ぎたイベント、公開を一時停止したイベント、削除したイベントは数えません。
             {SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}
-            件を超えて公開するときは、単発チケットを購入するか、公開し放題へ変更します。
+            件を超えて公開するときは、単発チケットを購入するか、公開し放題プランへ変更します。
           </li>
           <li>
-            <strong>公開し放題</strong>: 月額 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。
+            <strong>公開し放題プラン</strong>: 月額 {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。
             契約が有効なあいだ、公開中のイベント数を数えません。同時に公開する件数が著しく多いなど、
             本サービスの運営に支障が生じるおそれがある場合、運営者は個別に利用をお断りすることがあります。
           </li>
@@ -222,9 +222,9 @@ export default function TermsPage() {
         <h2>第7条（初月無料と自動更新）</h2>
         <p>
           はじめて月額プランに加入する方は、加入から1か月の月額料金を無料とします（以下「初月無料」）。
-          対象は、月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランと公開し放題です。単発チケットは対象外です。
+          対象は、{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランと公開し放題プランです。単発チケットは対象外です。
           初月無料の期間が終了すると、利用者による手続きを要さず、登録された支払い方法へ、加入したプランの月額
-          （月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランは {yen(SUBSCRIPTION_8_PRICE_JPY)}、公開し放題は
+          （{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プランは {yen(SUBSCRIPTION_8_PRICE_JPY)}、公開し放題プランは
           {yen(SUBSCRIPTION_UNLIMITED_PRICE_JPY)}。いずれも税込）を自動で請求します。
           利用者は、申込み時にクレジットカードを登録するものとします。
         </p>

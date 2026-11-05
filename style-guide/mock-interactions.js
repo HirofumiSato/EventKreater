@@ -370,6 +370,53 @@
     return fields;
   }
 
+  /** 男女別の費用のチェックボックス。`voiceFields()` はチェックボックスを拾わないので別に探す。 */
+  function genderCheckbox() {
+    const form = document.querySelector("form.event-steps") || document.querySelector(".page--form form");
+    if (!form) return null;
+    for (const box of form.querySelectorAll('input[type="checkbox"]')) {
+      const label = box.closest("label");
+      const text = label ? label.textContent || "" : "";
+      if (text.indexOf("男女別の費用") >= 0) return box;
+    }
+    return null;
+  }
+
+  /**
+   * 費用の最後の金額の直後に「男女別の費用を設定しますか」のターンを足す。
+   *
+   * 製品は最後の金額を入れた直後に尋ねる。モックはチェックボックスを巡回に含めないので、
+   * ここで 1 ターン補う。はいならチェックを入れ、女性用の金額を巡回へ足す（`answerGender`）。
+   * すでに男女別の画面なら、製品と同じく尋ねない。
+   */
+  function withGenderTurn(fields) {
+    const box = genderCheckbox();
+    if (!box || box.checked || box.disabled) return fields;
+    if (document.querySelector(".price-group")) return fields;
+
+    let at = -1;
+    fields.forEach((entry, index) => {
+      if (entry.field.id && entry.field.id.startsWith("plan-amount-")) at = index;
+    });
+    if (at < 0) return fields;
+
+    const label = box.closest("label") || box;
+    fields.splice(at + 1, 0, {
+      // 強調するのはチェックボックスではなく、その札ごと（文字まで読めるようにする）。
+      field: label,
+      control: box,
+      amount: fields[at],
+      kind: "gender",
+      label: "男女別の費用",
+      value: "はい",
+      prompt: "男女別の費用を設定しますか",
+      hint: "はい／いいえ",
+      // チェックボックスは値を持たないので、「いまの値」は出さない。
+      current: "",
+    });
+    return fields;
+  }
+
   const voice = {
     active: false,
     listening: false,
@@ -399,7 +446,8 @@
     scrim.hidden = true;
 
     const panel = document.createElement("section");
-    panel.className = "voice-panel";
+    // 位置は欄を測ってから決める。測れる前の 1 フレームは `is-placing` で隠す（製品と同じ）。
+    panel.className = "voice-panel is-placing";
     panel.setAttribute("aria-label", "音声入力");
     panel.innerHTML =
       '<div class="voice-panel__head">' +
@@ -407,13 +455,19 @@
       '<span class="voice-rec" aria-hidden="true"><span class="voice-rec__dot"></span>REC</span>' +
       '<span class="voice-panel__state"></span>' +
       "</p>" +
+      // 質問と例は 1 行に並べる（製品の `.voice-panel__ask`）。聞き取りの行は持たない。
+      '<div class="voice-panel__ask">' +
       '<p class="voice-panel__prompt" aria-live="polite"></p>' +
+      '<p class="voice-panel__hint"></p>' +
+      "</div>" +
       '<button type="button" class="voice-panel__close" aria-label="音声入力を終了" title="音声入力を終了">' +
       icon("close") +
       "</button></div>" +
-      '<p class="voice-panel__hint"></p>' +
+      '<p class="voice-panel__current" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
       '<div class="voice-panel__actions">' +
+      // 主ボタンを縦積みの入れ物で包み、録音中だけその下に止め方を出す（製品と同じ）。
+      '<div class="voice-panel__talk-wrap">' +
       '<button type="button" class="voice-icon-btn voice-icon-btn--primary" data-voice-talk aria-label="話す" title="話す">' +
       '<span data-icon="mic">' +
       icon("mic") +
@@ -424,6 +478,8 @@
       '<span data-icon="busy" hidden>' +
       icon("busy") +
       "</span></button>" +
+      '<p class="voice-panel__talk" hidden>話し終わったら<br>タップ</p>' +
+      "</div>" +
       '<button type="button" class="voice-icon-btn" data-voice-prev aria-label="戻る" title="戻る">' +
       icon("left") +
       "</button>" +
@@ -468,8 +524,31 @@
     if (talk) talk.dataset.state = state;
   }
 
+  /**
+   * パネルを強調中の欄のすぐ下へ置く。製品の `panelBoxFor` と同じ計算で、
+   * 上端は欄の下端 + 8px、左端は欄の左、右端は右下の FAB の左 - 8px で止める。
+   * モックは固定の CSS をそのまま使うため、3 つの変数を inline style で与えないと既定値の位置に出る。
+   */
+  function placePanel() {
+    if (!voice.active || !voice.panel) return;
+    const field = voice.fields[voice.cursor]?.field;
+    if (!field) return;
+    const rect = field.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+    const gap = 8;
+    const fab = voiceFab();
+    const fabRect = fab ? fab.getBoundingClientRect() : null;
+    const left = Math.max(0, rect.left);
+    const right = Math.min(rect.right, fabRect ? fabRect.left - gap : rect.right);
+    voice.panel.style.setProperty("--voice-panel-top", rect.bottom + gap + "px");
+    voice.panel.style.setProperty("--voice-panel-left", left + "px");
+    voice.panel.style.setProperty("--voice-panel-width", Math.max(0, right - left) + "px");
+    voice.panel.classList.remove("is-placing");
+  }
+
   /** 対象の欄を四角く残して、まわりを暗くする。 */
   function measureSpotlight() {
+    placePanel();
     if (!voice.active || !voice.scrim) return;
     const field = voice.fields[voice.cursor]?.field;
     if (!field) {
@@ -548,12 +627,22 @@
     }
 
     entry.field.scrollIntoView({ block: "center", behavior: "smooth" });
+    placePanel();
     window.setTimeout(measureSpotlight, 320);
 
-    voice.panel.querySelector(".voice-panel__prompt").textContent = entry.label + "は？";
+    voice.panel.querySelector(".voice-panel__prompt").textContent =
+      entry.prompt || entry.label + "は？";
     const hint = voice.panel.querySelector(".voice-panel__hint");
-    hint.textContent = "例: " + entry.value;
+    hint.textContent = "例: " + (entry.hint || entry.value);
     hint.hidden = false;
+    // 入力済みの欄では、質問の下に「いまの値: …」を小さく出す（製品と同じ）。
+    // チェックボックスのターンは値を持たないので `current` で空を渡す。
+    const current = voice.panel.querySelector(".voice-panel__current");
+    const value =
+      entry.current !== undefined ? entry.current : (entry.field.value || "").trim();
+    current.textContent = value ? "いまの値: " + value : "";
+    current.hidden = !value;
+    voice.panel.querySelector(".voice-panel__talk").hidden = true;
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = false;
@@ -567,6 +656,7 @@
     status.hidden = false;
     voice.panel.querySelector(".voice-panel__state").textContent = "録音中";
     voice.panel.querySelector(".voice-panel__message").hidden = true;
+    voice.panel.querySelector(".voice-panel__talk").hidden = false;
     voice.listening = true;
     setTalkIcon("stop");
     clearTimers();
@@ -577,9 +667,34 @@
     if (!voice.listening) return;
     voice.listening = false;
     voice.busy = true;
+    voice.panel.querySelector(".voice-panel__talk").hidden = true;
     setTalkIcon("busy");
-    voice.panel.querySelector(".voice-panel__state").textContent = "文字にする…";
+    voice.panel.querySelector(".voice-panel__state").textContent = "テキスト変換中";
     later(applyListening, 700);
+  }
+
+  /**
+   * 男女別の費用のターンに答える。
+   *
+   * モックは回答の UI を持たないので、製品で「はい」を選んだときと同じくチェックを入れ、
+   * 女性用の金額を巡回へ足す。すでに男女別なら何もせず次へ進む（＝「いいえ」と同じ）。
+   */
+  function answerGender(entry) {
+    const box = entry.control;
+    if (!box || box.checked || box.disabled) return;
+    box.checked = true;
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+    const label = box.closest("label");
+    if (label) {
+      label.classList.add("voice-filled");
+      window.setTimeout(() => label.classList.remove("voice-filled"), 900);
+    }
+    // モックの DOM は静的で女性用の行が増えないため、同じ金額の行を指すターンを巡回へ足す。
+    voice.fields.splice(voice.cursor + 1, 0, {
+      field: entry.amount.field,
+      label: "女性の金額",
+      value: entry.amount.value,
+    });
   }
 
   function applyListening() {
@@ -588,16 +703,21 @@
       finishVoice();
       return;
     }
-    const field = entry.field;
-    field.value = entry.value;
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-    field.dispatchEvent(new Event("change", { bubbles: true }));
 
-    field.classList.add("voice-filled");
-    window.setTimeout(() => field.classList.remove("voice-filled"), 900);
+    if (entry.kind === "gender") {
+      answerGender(entry);
+    } else {
+      const field = entry.field;
+      field.value = entry.value;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      field.dispatchEvent(new Event("change", { bubbles: true }));
 
-    // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
-    if (field.id === "event-postal-code") fillAddressFromPostalCode(entry.value);
+      field.classList.add("voice-filled");
+      window.setTimeout(() => field.classList.remove("voice-filled"), 900);
+
+      // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
+      if (field.id === "event-postal-code") fillAddressFromPostalCode(entry.value);
+    }
 
     const status = voice.panel.querySelector(".voice-panel__status");
     if (status) status.hidden = true;
@@ -629,6 +749,8 @@
     hint.textContent = "内容を確かめて、そのまま公開できます。";
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
+    voice.panel.querySelector(".voice-panel__talk").hidden = true;
+    voice.panel.querySelector(".voice-panel__current").hidden = true;
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-talk]").disabled = true;
@@ -641,7 +763,7 @@
       closeVoice();
       return;
     }
-    voice.fields = voiceFields();
+    voice.fields = withGenderTurn(voiceFields());
     if (voice.fields.length === 0) {
       toast("この画面には音声で入れる欄がありません。");
       return;
@@ -667,7 +789,10 @@
     });
     voice.panel.querySelector("[data-voice-skip]").addEventListener("click", () => {
       clearTimers();
-      pointAt(voice.cursor + 1);
+      const next = voice.cursor + 1;
+      pointAt(next);
+      // 製品と同じく、飛ばしたあとも次の欄の録音を続ける（止まって見えないように）。
+      if (next < voice.fields.length) startListening();
     });
     voice.panel.querySelector("[data-voice-auto]").addEventListener("change", (event) => {
       voice.autoAdvance = event.target.checked;

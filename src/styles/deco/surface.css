@@ -108,6 +108,15 @@
   font-weight: 400;
 }
 
+/* 初月無料の札の「2か月目から …」。すぐ上の「円 / 初月」と同じ大きさ・黒文字にして、
+   0 円の隣でも 2 か月目の金額として読めるようにする。定価の取り消し線（/service）は
+   この修飾を付けないので巻き込まない。 */
+.plan-card__list-price--trial {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
 .plan-card__list {
   margin: 0.75rem 0 0;
   padding: 0;

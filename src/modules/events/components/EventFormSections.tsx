@@ -847,7 +847,7 @@ export function ThemeSection({
   return (
     <>
       <fieldset className="field" disabled={disabled}>
-        <legend className="label">イベントページのテーマ</legend>
+        <legend className="label">イベントページのテーマ選択</legend>
         <ThemePicker
           name="event-theme"
           value={value.themeId}

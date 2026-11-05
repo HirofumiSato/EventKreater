@@ -26,7 +26,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** 申込の既定。料金ページの主ボタンは公開し放題なので、指定が無ければそちら。 */
+/** 申込の既定。料金ページの主ボタンは公開し放題プランなので、指定が無ければそちら。 */
 const DEFAULT_PLAN: SubscriptionProduct = "UNLIMITED";
 
 export async function POST(req: NextRequest) {

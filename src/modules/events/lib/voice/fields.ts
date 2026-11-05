@@ -198,6 +198,8 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
       voiceFieldLabel("planNote", row, value.pricePlans[row]?.audience),
     domId: (value, row) => rowDomId("plan-note", value.pricePlans[row]?.key),
     isEmpty: (value, row) => !hasText(value.pricePlans[row]?.note ?? ""),
+    // 画面でも「補足（任意）」。空欄のまま次へ進めるので、聞くのは 1 度だけにする。
+    optional: true,
     prompt: "補足は？",
     example: "1ドリンク付",
     hint: "料金の補足。例: 1ドリンク付、学生証が必要",

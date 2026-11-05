@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・無料2枚/単発299円/公開中8件まで980円/公開し放題2980円マネタイズ分離"]
+    A["【最上位：企画要件】<br>チラシFV・3秒出欠・排他ロック・無料2枚/単発299円/8件まで公開プラン980円/公開し放題プラン2980円マネタイズ分離"]
     B["【システム要件】<br>画面カタログ (SCR-PUB/ORG/MOD)・API境界・インプット7項目・Cookie再訪照会"]
     C["【DB物理設計（DBschema.md）】<br>PostgreSQL 16・Prismaスキーマ・アトミック排他クエリ・クォータ/決済テーブル"]
     D["【本設計書：バックエンドAPI実装仕様】<br>全エンドポイント定義・Mermaidシーケンス・Zod検証・Stripe Webhook冪等処理"]
@@ -234,7 +234,7 @@ sequenceDiagram
 
 ---
 
-### 3.3. 定額プラン（月額で8件まで公開 980円 / 公開し放題 2,980円）ライフサイクルシーケンス
+### 3.3. 定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）ライフサイクルシーケンス
 
 初回加入、月次自動更新、決済失敗、解約の一連のステート遷移を管理する。加入する階層は Checkout の `plan` で選び、Webhook では Price ID から `subscription_plan` を決める。
 
@@ -611,11 +611,11 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
     quota.currentPeriodEnd !== null &&
     quota.currentPeriodEnd > now;
 
-  // 1. 公開し放題（公開中の件数を数えない）
+  // 1. 公開し放題プラン（公開中の件数を数えない）
   if (subscriptionActive && quota.subscriptionPlan !== 'MONTHLY_8') {
     return 'SUBSCRIPTION_UNLIMITED';
   }
-  // 2. 月額で8件まで公開プラン（公開中のイベントを数える）
+  // 2. 8件まで公開プラン（公開中のイベントを数える）
   if (subscriptionActive) {
     const published = await countPublishedSubscriptionEvents(tx, userId, now);
     if (published < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT) return 'SUBSCRIPTION_MONTHLY_8';
@@ -646,19 +646,19 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 
 消費した種別は `quotaSourceOf(type)` で `Event.quota_source` に写す。公開の各入口（新規公開・下書きの公開・再開）は、この値を `quota_charged_at` と一緒に書く。複製は下書きを作るだけなので消費しない。
 
-402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「月額プランで公開中のイベントが8件に達しました。終わったイベントを削除するか、公開を一時停止するか、公開し放題へ変更してください」に変わる。
+402 の本文は、現在の販売価格（`price`）と定価（`listPrice`）、割引率、キャンペーン名を持つ配列を返す。8 件プランの上限が理由のときは `error` が `PUBLISHED_EVENTS_FULL` になり、本文も「公開中のイベントが8件に達しました。終わったものを削除するか止めてください。公開し放題プラン（2,980円）へ変えることもできます。」に変わる。
 
 ```json
 {
   "type": "probs/quota-exceeded",
   "title": "Payment Required",
   "status": 402,
-  "detail": "無料チケット2枚を使い切りました。単発 299円 ／ 月額8件 980円 ／ 放題 2,980円 から選べます。",
+  "detail": "無料チケット2枚を使い切りました。単発 299円 ／ 8件まで公開プラン 980円 ／ 公開し放題プラン 2,980円 から選べます。",
   "error": "QUOTA_EXCEEDED",
   "pricingOptions": [
     { "type": "SINGLE", "name": "単発生成チケット", "price": 299, "listPrice": 299, "currency": "JPY" },
-    { "type": "SUBSCRIPTION_8", "name": "月額で8件まで公開プラン", "price": 980, "listPrice": 980, "currency": "JPY", "interval": "month", "eventLimit": 8 },
-    { "type": "SUBSCRIPTION_UNLIMITED", "name": "公開し放題", "price": 2980, "listPrice": 2980, "currency": "JPY", "interval": "month" }
+    { "type": "SUBSCRIPTION_8", "name": "8件まで公開プラン", "price": 980, "listPrice": 980, "currency": "JPY", "interval": "month", "eventLimit": 8 },
+    { "type": "SUBSCRIPTION_UNLIMITED", "name": "公開し放題プラン", "price": 2980, "listPrice": 2980, "currency": "JPY", "interval": "month" }
   ]
 }
 ```
@@ -1534,7 +1534,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。月額で8件まで公開プランだけは件数の上限の判定と同じく定額から公開したものに限る。`remainingPublished` は月額で8件まで公開プランのときだけ数値で、公開し放題と未加入は `null`。
+`publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。8件まで公開プランだけは件数の上限の判定と同じく定額から公開したものに限る。`remainingPublished` は8件まで公開プランのときだけ数値で、公開し放題プランと未加入は `null`。
 
 `trial` は初月無料の無料期間中（`trial_ends_at > now`）だけ `{ "endsAt": "<ISO 8601>" }` を返し、終われば `null` に戻る。`trialEligible` は `resolveTrial` の結果で、`trial_used_at` が NULL、`stripe_subscription_id` が NULL、支払済み（`SUCCEEDED`）の月額取引が 0 件のときだけ `true` になる。加入中は新しい初月無料を使えないので `false` を返す。無料期間中はクーポンを使わないため `discount` は `null` のままである。
 
@@ -1569,7 +1569,7 @@ export async function GET(req: NextRequest) {
     select: { phoneVerifiedAt: true },
   });
   const phoneVerified = Boolean(user?.phoneVerifiedAt);
-  // 公開中の件数は、どのプランの帯にも出す。月額で8件まで公開プランだけは、
+  // 公開中の件数は、どのプランの帯にも出す。8件まで公開プランだけは、
   // 残りの計算と食い違わないよう、件数の上限の判定と同じ数え方（定額から公開したものだけ）にする。
   const countedPlan = isSubActive && quota.subscriptionPlan === 'MONTHLY_8';
   const publishedCount = countedPlan
@@ -1711,7 +1711,7 @@ export async function POST(req: NextRequest) {
 
 ### 6.3. POST `/api/v1/billing/checkout/subscription`（定額プラン加入セッション発行）
 
-主催者が月額で8件まで公開プラン（980円/月）または公開し放題（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
+主催者が8件まで公開プラン（980円/月）または公開し放題プラン（2,980円/月）に加入するための Stripe Hosted Checkout URL を発行する。
 
 - **認可:** 認証済み主催者（JWT セッション必須）
 - **リクエスト Body:** `SubscriptionCheckoutSchema` = `CheckoutIntentSchema` + `plan`（`"MONTHLY_8"` / `"UNLIMITED"`）。`plan` を省略したときは `UNLIMITED`。`draftId` は `assertOwnDraft` を通し、成功・キャンセルの URL と `metadata` に載せる。既に有効な定額契約があるときは 409 `ALREADY_SUBSCRIBED`（`trialing` も `ACTIVE` に写すので弾く）。
@@ -2137,7 +2137,7 @@ export interface ProblemDetails {
 | :---- | :---- | :---- |
 | **400** | `probs/validation-error` | 入力パラメータの Zod スキーマ検証違反、Stripe 署名不正 |
 | **401** | `probs/unauthorized` | 有効な認証情報（JWT/トークン）の欠落 |
-| **402** | `probs/quota-exceeded` | 無料チケット消化（2枚）に伴う課金誘導（単発299円/月額で8件まで公開980円/公開し放題2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
+| **402** | `probs/quota-exceeded` | 無料チケット消化（2枚）に伴う課金誘導（単発299円/8件まで公開プラン980円/公開し放題プラン2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
 | **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料チケット消費（`PHONE_REQUIRED`） |
 | **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・集金・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
@@ -2717,7 +2717,7 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 - `startsAt` / `endsAt` は JST の `datetime-local` 文字列として解釈する（`+09:00` を補う）。
 - `endsAt > startsAt`、期間は最大 12 か月。
 - `discountKind = "FREE"` は `percent = 100` に固定する。
-- 単発・月額で8件まで公開・公開し放題それぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
+- 単発・8件まで公開プラン・公開し放題プランそれぞれで `roundChargedPrice(定価, percent) < 定価` を満たさない場合は 400。
 - 成功時は 201 と `{ "campaign": { ... } }`。監査ログを 1 行作る。
 
 ### 11.3. PATCH `/api/v1/admin/pricing-campaigns/[id]`

@@ -240,7 +240,7 @@ export function PricingModal({
             {!trialEligible && (
               <p className="eyebrow">公開中のイベントを同時に{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで</p>
             )}
-            <h4 className="card__title">月額で{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
+            <h4 className="card__title">{SUBSCRIPTION_PUBLISHED_EVENT_LIMIT}件まで公開プラン</h4>
             {trialEligible ? (
               <TrialPriceBlock listPrice={subscription8?.listPrice ?? SUBSCRIPTION_8_PRICE_JPY} />
             ) : (
@@ -271,7 +271,7 @@ export function PricingModal({
           </article>
           <article className="card" style={{ borderTop: "3px solid var(--color-primary)" }}>
             {!trialEligible && <p className="eyebrow">公開中の件数を数えない</p>}
-            <h4 className="card__title">公開し放題</h4>
+            <h4 className="card__title">公開し放題プラン</h4>
             {trialEligible ? (
               <TrialPriceBlock listPrice={subscriptionUnlimited?.listPrice ?? SUBSCRIPTION_UNLIMITED_PRICE_JPY} />
             ) : (
@@ -297,7 +297,7 @@ export function PricingModal({
                     ? "初月0円で始める"
                     : subscriptionUnlimited?.chargedPrice === 0
                       ? "0円で定期購入を始める"
-                      : "定期購入で公開し放題"}
+                      : "定期購入で公開し放題プラン"}
             </button>
           </article>
         </div>

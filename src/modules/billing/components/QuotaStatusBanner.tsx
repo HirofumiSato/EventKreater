@@ -42,7 +42,7 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
     return detail ? `${head}。${detail}` : `${head}。`;
   }
   const count = quota.publishedEventCount ?? 0;
-  return `公開し放題に加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
+  return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
 export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
@@ -80,7 +80,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
           }`;
 
-  // 公開し放題は 402 が起きないので、プランを勧めるボタンを出さない。
+  // 公開し放題プランは 402 が起きないので、プランを勧めるボタンを出さない。
   const showUpgradeButton = !isSubscribed || quota.subscriptionPlan === "MONTHLY_8";
 
   return (

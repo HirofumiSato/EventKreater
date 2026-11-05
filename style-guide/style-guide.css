@@ -51,6 +51,11 @@
   --pop-peach: #ffe6d5;
   --pop-peach-deep: #a8452a;
   --tape-ink: #1a1916;
+  /* ホームの見出しで「告知」「申込」の 2 語だけを分ける差し色。墨地（#1a1916）に
+     対して 8:1 以上のコントラストがある明るさにし、地は塗らない（文字色だけ）。
+     ピンクは告知、青は申込。ほかの画面では使わない。 */
+  --color-mark-notice: #ff8fb8;
+  --color-mark-apply: #7cc0ff;
   /* 静かめ（管理）で使う罫線と地。 */
   --quiet-line: #e3d9c8;
   --quiet-line-strong: #c6bba7;
@@ -1717,40 +1722,83 @@ fieldset.field {
   white-space: nowrap;
 }
 
+/* 1 行目「イベント告知&申込のウェブページ、」が 17 文字で最も長い（約 15em）。
+   360px の端末でも 1 行に収まる 1.15rem から始め、幅が広がるほど上げる。
+   2 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。 */
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
-  font-size: 2.125rem;
+  font-size: clamp(1.15rem, 5.2vw, 1.5rem);
   line-height: 1.35;
 }
 
-/* 見出しは 3 行のまま。最後の行だけ、右に吹き出しを並べる。 */
+/* 見出しは 2 行のまま。最後の行だけ、右に吹き出しを 2 枚横に並べる。 */
 .hero--stage .hero__title-line {
   display: block;
 }
 
 .hero--stage .hero__title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   column-gap: 0.625rem;
+  row-gap: 0.5rem;
 }
 
 .hero--stage .hero__title-row .hero__title-line {
   flex: none;
 }
 
+/* 吹き出しは最後の行の右に横へ 2 枚並べる。入りきらないときは
+   吹き出しの束だけを次の行へ落とし、見出しの側は縮めない。 */
+.hero--stage .hero__callouts {
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+/* 丸いポップにして、2 枚で少しだけ傾きを変える。塗りと影は下の
+   `.hero__callout` の配色（山吹の地に墨の字）を使う。 */
 .hero--stage .hero__callout {
   position: relative;
-  flex: 0 1 auto;
-  min-width: 5.5rem;
-  max-width: 12rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  flex: none;
+  min-width: 5rem;
+  max-width: 10rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 1.25rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.hero--stage .hero__callout:nth-child(1) {
+  transform: rotate(-2deg);
+}
+
+.hero--stage .hero__callout:nth-child(2) {
+  transform: rotate(1.5deg);
+}
+
+/* 尾は左端の 1 枚だけに付け、左上へ向ける。45 度回した同色の四角を上辺から出す。 */
+.hero--stage .hero__callout:first-child::before {
+  content: "";
+  position: absolute;
+  top: -0.3rem;
+  left: 0.9rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  background-color: inherit;
+  transform: rotate(45deg);
+}
+
+/* 意味の切れ目で 2 行に折る。 */
+.hero--stage .hero__callout-line {
+  display: block;
 }
 
 .hero--stage .hero__lead {
@@ -1805,6 +1853,15 @@ fieldset.field {
   font-size: 0.75rem;
 }
 
+@media (min-width: 640px) {
+  /* 1 行目（17 文字、約 17.1em）は 2rem で約 546px。34rem（544px）では 2px 足りず
+     折り返すため、640〜899px のコピー列に収まる 36rem まで広げる。 */
+  .hero--stage .hero__title {
+    max-width: 36rem;
+    font-size: 2rem;
+  }
+}
+
 @media (min-width: 900px) {
   .hero--stage {
     padding: 4.5rem 1.5rem;
@@ -1817,8 +1874,11 @@ fieldset.field {
     gap: 3rem;
   }
 
+  /* 900〜1023px はチラシ列が入り、コピーが約 28rem まで細る。1 行目（17 文字、
+     約 17.1em）は 1.65rem だと約 451px でコピー列に 1px 足りず折り返すため、
+     収まる上限の 1.6rem に留める。1024px からは列が広がるので上げ直す。 */
   .hero--stage .hero__title {
-    font-size: 3rem;
+    font-size: 1.6rem;
   }
 
   .hero__poster {
@@ -1826,6 +1886,13 @@ fieldset.field {
     width: 100%;
     max-width: 18rem;
     justify-self: end;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero--stage .hero__title {
+    max-width: 40rem;
+    font-size: 2.25rem;
   }
 }
 
@@ -2848,23 +2915,26 @@ h3,
   box-shadow: 5px 5px 0 var(--pop-warm);
 }
 
-/* 見出しの最後の行に添える吹き出し。左辺の三角は見出しを受ける向き。 */
+/* 見出しの最後の行に添える吹き出し。地は山吹、字は墨で塗る。
+   傾きと左端の尾は components 側の定義（`.hero__callout:nth-child` / `:first-child::before`）が持つ。 */
 .hero--stage .hero__callout {
   background: var(--pop-warm);
   color: var(--tape-ink);
-  transform: rotate(-2deg);
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
 
-.hero--stage .hero__callout::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: -0.4375rem;
-  border-top: 0.3125rem solid transparent;
-  border-bottom: 0.3125rem solid transparent;
-  border-right: 0.4375rem solid var(--pop-warm);
-  transform: translateY(-50%);
+/* 見出しの「告知」「申込」だけを文字色で分ける。地は塗らず、墨地に 4.5:1 以上。
+   ピンクは告知、青は申込（製品の tokens.css / deco/base.css と同じ値）。 */
+.hero--stage .hero__mark {
+  font-weight: 700;
+}
+
+.hero--stage .hero__mark--notice {
+  color: var(--color-mark-notice);
+}
+
+.hero--stage .hero__mark--apply {
+  color: var(--color-mark-apply);
 }
 
 .hero__poster-placeholder {

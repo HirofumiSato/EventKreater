@@ -300,7 +300,7 @@ Prisma Studio
    SET paid_credits = paid_credits + 1
    WHERE user_id = (SELECT id FROM users WHERE email = 'you@example.com');
 
-月額で8件まで公開プランを、今から 30 日有効な状態にします。公開中のイベント数の数え方に専用の列はなく、 ``events`` の状態と開催日、 ``quota_source`` から数えます。
+8件まで公開プランを、今から 30 日有効な状態にします。公開中のイベント数の数え方に専用の列はなく、 ``events`` の状態と開催日、 ``quota_source`` から数えます。
 
 .. code-block:: sql
 
@@ -311,7 +311,7 @@ Prisma Studio
      current_period_end = NOW() + INTERVAL '30 days'
    WHERE user_id = (SELECT id FROM users WHERE email = 'you@example.com');
 
-公開し放題にするときは ``subscription_plan`` を ``'UNLIMITED'`` にします。公開中のイベント数は数えません。
+公開し放題プランにするときは ``subscription_plan`` を ``'UNLIMITED'`` にします。公開中のイベント数は数えません。
 
 支払い失敗で作成できない状態にします。
 
