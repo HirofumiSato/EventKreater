@@ -757,6 +757,17 @@
   color: var(--color-text-subtle);
 }
 
+/* 聞き取りの途中経過。質問は消さず、その下に 1 行ずつ伸ばす。
+   話している途中で増えるので折り返しを許し、行数が増えてもパネルは
+   `overflow-y` で送れる（高さは固定しない）。 */
+.voice-panel__interim {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-action);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .voice-panel__message {
   margin: 0;
   padding: 0.4rem 0.5rem;
@@ -895,7 +906,7 @@
   font-size: 0.8rem;
 }
 
-/* チェックは「任意の項目も聞く」と「自動遷移」の 2 つ。横に並べると
+/* チェックは「任意の項目も聞く」「自動遷移」「まとめて話す」の 3 つ。横に並べると
    狭い幅で折り返して読みにくいので、縦に積む。 */
 .voice-panel__options {
   display: flex;
@@ -903,27 +914,74 @@
   gap: 0.25rem;
 }
 
-/* 音声の確認は題を 1 文で組む。値を大きく出し、問いをそのまま後ろへ続ける。
-   短い値は 1 行に収まり、長い値は値の途中で折り返して問いが次の行へ落ちる
-   （問いは `white-space: nowrap` なので語の途中では切れない）。
-   本文（`.dialog__body`）は置かず、題だけで「何を入れるか」と「入れてよいか」を言う。 */
+/* 確認の本文。値は読み上げのまま置かず、欄の名前と入力欄にして、その場で直せるようにする。
+   題は常に「入力内容の確認」なので、何を入れるかは本文の欄の名前で示す。 */
 .voice-confirm {
-  display: block;
-}
-
-.voice-confirm__value {
-  display: inline;
-  font-size: 1.5rem;
-  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .voice-confirm__ask {
-  display: inline;
-  margin-left: 0.25rem;
+  margin: 0;
   font-size: 0.9375rem;
   font-weight: 500;
+  line-height: 1.5;
   color: var(--color-text-muted);
-  white-space: nowrap;
+}
+
+/* 欄の名前と入力を縦に組む。入力は他の欄と同じ見た目にそろえ、
+   スマホでは 16px にして、押したときに iOS が画面を拡大しないようにする。 */
+.voice-confirm__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.voice-confirm__label {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.voice-confirm__input {
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* 長い欄は textarea。3 行を初期値にし、必要なら下へ伸ばせる。 */
+textarea.voice-confirm__input {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.voice-confirm__input:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (min-width: 640px) {
+  .voice-confirm__input {
+    font-size: 0.875rem;
+  }
+}
+
+/* 話したままの文字は、直した値と見比べられるよう本文の下に控えめに残す。 */
+.voice-confirm__raw {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* 操作は 1 段に 2 つ。`.dialog__actions` は縦積みなので、ここで 2 列に組み直す。
@@ -933,6 +991,143 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
   width: 100%;
+}
+
+/* まとめて話した内容の確認。各行は「取り込む / 欄の名前 / 入力」の 3 列。
+   390px でも横に送らせないよう、欄の名前は詰め、入力は残りの幅いっぱいにする。
+   行が増えたときはこの箱の中だけで送り、題と操作（`.dialog__actions`）は動かさない。 */
+.voice-batch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  /* ダイアログ全体ではなく一覧だけを送る。`dvh` を知らない環境では先の `vh` が効く。 */
+  max-height: min(50vh, 22rem);
+  max-height: min(50dvh, 22rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: 0.25rem;
+}
+
+.voice-batch__row {
+  display: grid;
+  grid-template-columns: var(--tap-target) minmax(3.5rem, 6rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .voice-batch__row {
+    grid-template-columns: var(--tap-target) minmax(6rem, 9rem) minmax(0, 1fr);
+  }
+}
+
+/* 取り込むかのチェック。印そのものは小さく描き、押せる的だけ 40×40 に広げる。
+   ブラウザ既定の四角をそのまま 40px にすると、行の高さを奪って入力が見えなくなる。 */
+.voice-batch__include {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.voice-batch__include::before {
+  content: "";
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/* チェックの印は、白い線を回した疑似要素で描く。色は面の色（--color-surface）と
+   同じにして、地を塗り替えても印だけが浮かないようにする。 */
+.voice-batch__include::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3125rem;
+  height: 0.625rem;
+  border: solid var(--color-surface);
+  border-width: 0 0.125rem 0.125rem 0;
+  transform: translate(-50%, -60%) rotate(45deg) scale(0);
+}
+
+.voice-batch__include:checked::before {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.voice-batch__include:checked::after {
+  transform: translate(-50%, -60%) rotate(45deg) scale(1);
+}
+
+.voice-batch__include:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.voice-batch__label {
+  color: var(--color-text-strong);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.voice-batch__input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tap-target);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  /* スマホで欄を押したときに iOS が画面を拡大しない大きさ。 */
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.voice-batch__input:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (min-width: 640px) {
+  .voice-batch__input {
+    font-size: 0.875rem;
+  }
+}
+
+/* 取り込まない行は、押せないのではなく「今回は入れない」と分かる程度に落とす。 */
+.voice-batch__row:has(.voice-batch__include:not(:checked)) .voice-batch__label,
+.voice-batch__row:has(.voice-batch__include:not(:checked)) .voice-batch__input {
+  opacity: 0.55;
+}
+
+/* 読み取れなかった節は、行の一覧の下に 1 行だけ残す。一覧を送っても消えないよう
+   下端に貼り、行と同じ扱いに見えないよう破線で切り離す。 */
+.voice-batch__unassigned {
+  position: sticky;
+  bottom: 0;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* 音声モードの覆い。いま聞いている欄だけをくり抜き、それ以外の操作を止める。

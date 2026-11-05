@@ -5,18 +5,28 @@ import type { CSSProperties } from "react";
 import { ChevronLeft, ChevronsRight, Loader2, Mic, Square, X } from "lucide-react";
 import type { VoiceStepApi } from "@/modules/events/components/EventStepForm";
 import {
+  audioContextConstructor,
+  concatSamples,
+  isPcmCaptureSupported,
   isRecordingSupported,
   MAX_RECORDING_MS,
+  PCM_SAMPLE_RATE,
   pickRecorderMimeType,
+  PRE_ROLL_MS,
+  tailSamples,
 } from "@/modules/events/lib/voice/audio";
 import {
   applyVoicePatch,
+  applyVoicePatches,
   describeFieldValue,
   fieldForDomId,
+  firstNeededField,
+  isSlotNeeded,
   nextNeededField,
   previousField,
   shouldAskGenderBeforePricing,
   startFieldFor,
+  voiceFieldOrder,
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import { panelBoxFor, type VoicePanelBox } from "@/modules/events/lib/voice/panel";
@@ -27,12 +37,17 @@ import {
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
 import { fetchVoiceMockEnabled, transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import { transcribeVoiceUtterance } from "@/modules/events/lib/voice/utterance-client";
+import { isLongVoiceField, shouldAutoConfirm } from "@/modules/events/lib/voice/confirm";
+import { assignUtterance } from "@/modules/events/lib/voice/utterance";
 import { dismissVoiceGuide, isVoiceGuideDismissed } from "@/modules/events/lib/voice/guide";
 import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
+import { encodeWav, resampleLinear } from "@/modules/events/lib/voice/pcm";
 import { Dialog } from "@/components/ui/Dialog";
 import type {
   VoiceFieldKey,
   VoiceFieldScope,
+  VoicePatch,
   VoiceSlot,
   VoiceSlotId,
 } from "@/modules/events/lib/voice/types";
@@ -57,7 +72,38 @@ const MOCK_TRANSCRIBE_MS = 350;
 /** 文字起こしを確定する前に置く確認。`slotId` は確認しているあいだに値が変わっても引き直せる。 */
 interface VoicePending {
   slotId: VoiceSlotId;
+  /** 聞き取ったままの文字。確認の下に残して、編集した箇所と見比べられるようにする。 */
   text: string;
+  /** 確認で編集している途中の文字。確定はこの文字で `parse` する。 */
+  draft: string;
+}
+
+/** 「まとめて話す」の確認 1 行。 */
+interface VoiceBatchRow {
+  slotId: VoiceSlotId;
+  label: string;
+  /** 編集できる文字。確定時にこの文字で `parse` し直す。 */
+  text: string;
+  /** 取り込むか。既定はオン。 */
+  include: boolean;
+}
+
+interface VoiceBatchState {
+  rows: VoiceBatchRow[];
+  /** どの欄にも当たらなかった節。 */
+  unassigned: string[];
+}
+
+/** まとめて話すときの指示と例。例は 1 行に収まる長さにする。 */
+const BATCH_PROMPT = "順番に話してください";
+const BATCH_EXAMPLE = "12月5日、18時から20時、渋谷ホール、3000円、30人";
+
+/** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
+const AUTO_MESSAGE_MS = 1_500;
+
+/** 中止（`AbortController`）で止めた通信か。利用者がやめた操作は知らせない。 */
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 type VoiceBranchKind = "schedule" | "gender";
@@ -152,6 +198,11 @@ export function VoiceInputDock({
   const [spotlight, setSpotlight] = useState<VoiceSpotlight | null>(null);
   // 文字起こしはすぐ確定せず、いったん確認に置く。読み取り違いを、話し直す前に見せる。
   const [pending, setPending] = useState<VoicePending | null>(null);
+  // 文字起こしの途中経過。質問は消さず、その下に 1 行だけ足す。
+  const [interim, setInterim] = useState("");
+  // 「まとめて話す」の切り替えと、その確認に並べる行。
+  const [batchMode, setBatchMode] = useState(false);
+  const [batch, setBatch] = useState<VoiceBatchState | null>(null);
   // 群から出る瞬間の分岐。答えるまでカーソルは最後の欄に残す。
   const [branch, setBranch] = useState<VoiceBranchQuestion | null>(null);
   // 初回ガイド。開いたかどうかと「次回から表示しない」のチェックを持つ。
@@ -172,9 +223,24 @@ export function VoiceInputDock({
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  // PCM（16kHz WAV）で録るときのサンプル。pre-roll は録音の開始前に溜める直近 400ms。
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const preRollRef = useRef<Float32Array[]>([]);
+  const recordingRef = useRef(false);
+  const wavRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const workletRef = useRef<AudioWorkletNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const timerRef = useRef<number | null>(null);
   const completeTimerRef = useRef<number | null>(null);
   const statusTimerRef = useRef<number | null>(null);
+  // 自動確定の知らせだけを消すタイマー。録音・完了の待ちとは別に持つ。
+  const autoMessageTimerRef = useRef<number | null>(null);
+  // 途中経過の累積。`onDelta` は増分を返すので、呼ばれるたびに足す。
+  const interimRef = useRef("");
+  // いま走っている文字起こし。戻る・スキップ・終了・新しい録音で止める。
+  const abortRef = useRef<AbortController | null>(null);
+  const batchModeRef = useRef(false);
   // モックの疑似録音の待ち。実の録音の `timerRef` とは別に持つ（同時には片方しか使わない）。
   const mockTimerRef = useRef<number | null>(null);
   const mockRef = useRef(false);
@@ -231,6 +297,10 @@ export function VoiceInputDock({
     mockRef.current = mock;
   }, [mock]);
 
+  useEffect(() => {
+    batchModeRef.current = batchMode;
+  }, [batchMode]);
+
   // モックの可否はサーバーの環境変数が決める。画面が勝手に決めないよう、開いたときに 1 度だけ聞く。
   // 聞けなければ false に倒れるので、実の録音のままになる。
   // 返事は控えておき、届く前に押されても録音の直前で待てるようにする。
@@ -247,8 +317,8 @@ export function VoiceInputDock({
   }, []);
 
   useEffect(() => {
-    dialogOpenRef.current = pending !== null || branch !== null;
-  }, [branch, pending]);
+    dialogOpenRef.current = pending !== null || branch !== null || batch !== null;
+  }, [batch, branch, pending]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -266,9 +336,40 @@ export function VoiceInputDock({
     [showOrganizerName],
   );
 
-  const releaseStream = useCallback(() => {
+  /**
+   * マイクと PCM の取り込みを片付ける。音声モードを抜けるとき・画面の破棄・
+   * マイク取得の失敗のときだけ呼ぶ。
+   *
+   * 欄を移るとき（戻る・スキップ）は呼ばない。掴み直すと、許可の待ちと立ち上がりの
+   * 数十 ms が録音の頭に乗り、話し始めを落とすためである。
+   */
+  const releaseAudio = useCallback(() => {
+    recordingRef.current = false;
+    workletRef.current?.disconnect();
+    workletRef.current = null;
+    sourceNodeRef.current?.disconnect();
+    sourceNodeRef.current = null;
+    const context = audioContextRef.current;
+    audioContextRef.current = null;
+    if (context) {
+      // 閉じたあとの `close` は失敗する。片付けなので握りつぶす。
+      void context.close().catch(() => {});
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    wavRef.current = false;
+    pcmChunksRef.current = [];
+    preRollRef.current = [];
+  }, []);
+
+  /** 走っている文字起こしを止め、途中経過を消す。中止は利用者向けのエラーにしない。 */
+  const abortTranscription = useCallback(() => {
+    interimRef.current = "";
+    setInterim("");
+    const controller = abortRef.current;
+    if (!controller) return;
+    abortRef.current = null;
+    controller.abort();
   }, []);
 
   const clearTimer = useCallback(() => {
@@ -291,6 +392,26 @@ export function VoiceInputDock({
       statusTimerRef.current = null;
     }
   }, []);
+
+  const clearAutoMessageTimer = useCallback(() => {
+    if (autoMessageTimerRef.current !== null) {
+      window.clearTimeout(autoMessageTimerRef.current);
+      autoMessageTimerRef.current = null;
+    }
+  }, []);
+
+  /** 自動確定の知らせを 1.5 秒だけ出す。次の欄の録音が始まっても消さない。 */
+  const showAutoMessage = useCallback(
+    (text: string) => {
+      clearAutoMessageTimer();
+      setMessage(text);
+      autoMessageTimerRef.current = window.setTimeout(() => {
+        autoMessageTimerRef.current = null;
+        setMessage(null);
+      }, AUTO_MESSAGE_MS);
+    },
+    [clearAutoMessageTimer],
+  );
 
   const clearMockTimer = useCallback(() => {
     if (mockTimerRef.current !== null) {
@@ -321,6 +442,10 @@ export function VoiceInputDock({
     clearStatusTimer();
     clearMockTimer();
     setStatusStopping(false);
+    // 途中の認識も捨てる。止めたあとに古い結果が届いても、値は入れない。
+    abortTranscription();
+    recordingRef.current = false;
+    pcmChunksRef.current = [];
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
@@ -328,13 +453,22 @@ export function VoiceInputDock({
     }
     recorderRef.current = null;
     chunksRef.current = [];
-    releaseStream();
+    // マイクと AudioContext は残す（次に録るときに掴み直さない）。
     setPhase("armed");
-  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer, releaseStream]);
+  }, [
+    abortTranscription,
+    clearCompleteTimer,
+    clearMockTimer,
+    clearStatusTimer,
+    clearTimer,
+  ]);
 
   /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
   const stopSession = useCallback(() => {
     discardRecording();
+    // マイクは音声モードを抜けるまで保持した。ここが唯一の解放口になる。
+    releaseAudio();
+    clearAutoMessageTimer();
     // 次のセッションでは、もう一度だけ男女別を聞ける。
     genderAskedRef.current = false;
     setActive(false);
@@ -345,11 +479,12 @@ export function VoiceInputDock({
     setSearching(false);
     setPending(null);
     setBranch(null);
+    setBatch(null);
     cursorRef.current = null;
     setCursor(null);
     // 位置も捨てる。次に開いたとき、古い位置で 1 フレーム見せないため。
     setPanelBox(null);
-  }, [discardRecording]);
+  }, [clearAutoMessageTimer, discardRecording, releaseAudio]);
 
   /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
   const finishSession = useCallback(() => {
@@ -362,13 +497,14 @@ export function VoiceInputDock({
     setAddressNote(null);
     clearStatusTimer();
     clearMockTimer();
+    clearAutoMessageTimer();
     api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
     clearCompleteTimer();
     completeTimerRef.current = window.setTimeout(() => {
       completeTimerRef.current = null;
       stopSession();
     }, 3000);
-  }, [api, clearCompleteTimer, clearMockTimer, clearStatusTimer, stopSession]);
+  }, [api, clearAutoMessageTimer, clearCompleteTimer, clearMockTimer, clearStatusTimer, stopSession]);
 
   /**
    * 郵便番号が入ったら、既存の検索 API で住所を補完する。カーソルは動かさない。
@@ -503,56 +639,6 @@ export function VoiceInputDock({
     [advanceFrom, api, fillAddressFromPostalCode, markTouched, onChange, scopeNow],
   );
 
-  const finishRecording = useCallback(
-    async (mimeType: string) => {
-      const blob = new Blob(chunksRef.current, { type: mimeType });
-      chunksRef.current = [];
-      recorderRef.current = null;
-      releaseStream();
-
-      if (!mountedRef.current) return;
-      if (blob.size === 0) {
-        setPhase("armed");
-        setMessage("録音が空でした。マイクに向かって話してから、もう一度お試しください。");
-        return;
-      }
-
-      const key = cursorRef.current;
-      const slot = key ? voiceSlotById(key, valueRef.current, scopeNow()) : null;
-      if (!slot) {
-        setPhase("armed");
-        finishSession();
-        return;
-      }
-
-      try {
-        // 行と入力済みの催し名・会場名を、当て字の手掛かりとして添える。
-        // 欄そのものの現在値は送らない（そのまま復唱され、言い直しが効かなくなる）。
-        const result = await transcribeVoiceClip({
-          blob,
-          field: slot.key,
-          context: {
-            row: slot.row,
-            title: valueRef.current.title,
-            venueName: valueRef.current.venueName,
-          },
-        });
-        if (!mountedRef.current) return;
-        setPhase("armed");
-        // すぐ確定せず、聞き取った値を確認に置く。読み取り違いを話し直す前に見せる。
-        // モックの疑似録音もここを通るので、確認の流れはローカルでも同じように確かめられる。
-        setPending({ slotId: slot.id, text: result.text });
-      } catch (error) {
-        if (!mountedRef.current) return;
-        setPhase("armed");
-        setMessage(
-          error instanceof Error ? error.message : "音声を文字にできませんでした。手で入力してください。",
-        );
-      }
-    },
-    [finishSession, releaseStream, scopeNow],
-  );
-
   /** 録音の印を止めた瞬間だけ少し縮ませる。押した手応えを残すため。 */
   const flashStopping = useCallback(() => {
     clearStatusTimer();
@@ -564,11 +650,200 @@ export function VoiceInputDock({
   }, [clearStatusTimer]);
 
   /**
-   * モックの疑似録音を止め、その欄の入力例を確認に置く（ローカル専用）。
+   * 聞き取った文字を、確認するか、そのまま入れるかへ振り分ける。
+   *
+   * 形が閉じている欄（`confirm: "auto"`）は、`parse` が通った時点で入れる。
+   * 読めなかったときは自動にせず、生の文字を入れた確認を出す（直してから確定できる）。
+   */
+  const presentTranscript = useCallback(
+    (target: VoiceSlot, text: string) => {
+      const context = { now: new Date(), value: valueRef.current, row: target.row };
+      const patch = target.field.parse(text, context);
+      if (shouldAutoConfirm(target.field, patch)) {
+        void commit(target, text).then((ok) => {
+          if (!ok || !mountedRef.current) return;
+          showAutoMessage(`${target.label}を「${text}」で入力しました`);
+        });
+        return;
+      }
+      setPending({ slotId: target.id, text, draft: text });
+    },
+    [commit, showAutoMessage],
+  );
+
+  /** まとめて話すの割当を、確認の 1 枚に並べる。当たらなかった節も 1 行で残す。 */
+  const presentBatch = useCallback(
+    (result: {
+      assignments: readonly { slotId: VoiceSlotId; text: string }[];
+      unassigned: readonly string[];
+    }) => {
+      const rows: VoiceBatchRow[] = [];
+      for (const item of result.assignments) {
+        const target = voiceSlotById(item.slotId, valueRef.current, scopeNow());
+        if (!target) continue;
+        rows.push({ slotId: target.id, label: target.label, text: item.text, include: true });
+      }
+      if (rows.length === 0) {
+        setMessage("読み取れた欄がありませんでした。もう一度話すか、手で入力してください。");
+        return;
+      }
+      setMessage(null);
+      setBatch({ rows, unassigned: [...result.unassigned] });
+    },
+    [scopeNow],
+  );
+
+  /** 録音を送って文字にする。PCM の WAV と MediaRecorder の両方がここへ来る。 */
+  const sendRecording = useCallback(
+    async (blob: Blob) => {
+      recorderRef.current = null;
+      if (!mountedRef.current) return;
+      if (blob.size === 0) {
+        setPhase("armed");
+        setMessage("録音が空でした。マイクに向かって話してから、もう一度お試しください。");
+        return;
+      }
+
+      const key = cursorRef.current;
+      const slot = key ? voiceSlotById(key, valueRef.current, scopeNow()) : null;
+      if (!slot && !batchModeRef.current) {
+        setPhase("armed");
+        finishSession();
+        return;
+      }
+
+      // 途中経過はこの録音のものだけ。新しい録音・戻る・終了で止める。
+      const controller = new AbortController();
+      abortRef.current = controller;
+      interimRef.current = "";
+      setInterim("");
+
+      try {
+        if (batchModeRef.current) {
+          // まとめて話す: 1 回の録音をそのまま送り、欄ごとの割当を受ける。
+          const result = await transcribeVoiceUtterance({
+            blob,
+            value: valueRef.current,
+            scope: scopeNow(),
+            signal: controller.signal,
+          });
+          if (!mountedRef.current || controller.signal.aborted) return;
+          setPhase("armed");
+          presentBatch(result);
+          return;
+        }
+        if (!slot) {
+          setPhase("armed");
+          finishSession();
+          return;
+        }
+        // 行と入力済みの催し名・会場名を、当て字の手掛かりとして添える。
+        // 欄そのものの現在値は送らない（そのまま復唱され、言い直しが効かなくなる）。
+        const result = await transcribeVoiceClip({
+          blob,
+          field: slot.key,
+          context: {
+            row: slot.row,
+            title: valueRef.current.title,
+            venueName: valueRef.current.venueName,
+          },
+          // 増分を足して 1 行にする。質問は消さず、その下に出す。
+          onDelta: (text) => {
+            if (!mountedRef.current) return;
+            interimRef.current += text;
+            setInterim(interimRef.current);
+          },
+          signal: controller.signal,
+        });
+        if (!mountedRef.current || controller.signal.aborted) return;
+        setPhase("armed");
+        presentTranscript(slot, result.text);
+      } catch (error) {
+        // 戻る・スキップ・終了で止めたときは、利用者が自分でやめた操作なので知らせない。
+        if (isAbortError(error) || controller.signal.aborted) return;
+        if (!mountedRef.current) return;
+        setPhase("armed");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "音声を文字にできませんでした。手で入力してください。",
+        );
+      } finally {
+        if (abortRef.current === controller) abortRef.current = null;
+        interimRef.current = "";
+        if (mountedRef.current) setInterim("");
+      }
+    },
+    [finishSession, presentBatch, presentTranscript, scopeNow],
+  );
+
+  /** MediaRecorder 経路（webm/opus）の録音を送る。`onstop` から呼ぶ。 */
+  const finishRecording = useCallback(
+    async (mimeType: string) => {
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      chunksRef.current = [];
+      await sendRecording(blob);
+    },
+    [sendRecording],
+  );
+
+  /** PCM 経路の録音を、16kHz mono の WAV にして送る。 */
+  const finishWavRecording = useCallback(async () => {
+    recordingRef.current = false;
+    setPhase("transcribing");
+    flashStopping();
+
+    const chunks = pcmChunksRef.current;
+    pcmChunksRef.current = [];
+    const rate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+    // pre-roll: 録音の印が出る直前に溜めた直近 400ms を先頭へ足す。
+    // 押してから話し始めるまでの間隔を捨てず、話し始めの子音を落とさない。
+    const pre = tailSamples(preRollRef.current, Math.ceil((rate * PRE_ROLL_MS) / 1000));
+    const samples = concatSamples([pre, ...chunks]);
+    if (samples.length === 0) {
+      setPhase("armed");
+      setMessage("録音が空でした。マイクに向かって話してから、もう一度お試しください。");
+      return;
+    }
+    // 端末が 16kHz を返せないことがある（48kHz のまま等）。送る前に必ず 16kHz へ落とす。
+    const pcm = rate === PCM_SAMPLE_RATE ? samples : resampleLinear(samples, rate, PCM_SAMPLE_RATE);
+    const wav = encodeWav(pcm, PCM_SAMPLE_RATE);
+    // TypeScript の `Uint8Array<ArrayBufferLike>` は BlobPart に直接渡せない。
+    // 符号化結果は専用の ArrayBuffer を持つので、その範囲だけを切り出して渡す。
+    const wavBuffer = wav.buffer.slice(
+      wav.byteOffset,
+      wav.byteOffset + wav.byteLength,
+    ) as ArrayBuffer;
+    await sendRecording(new Blob([wavBuffer], { type: "audio/wav" }));
+  }, [flashStopping, sendRecording]);
+
+  /**
+   * モックの「まとめて話す」の 1 文。巡回する欄の入力例を `、` でつなぐ。
+   *
+   * サーバーの `mockBatchTranscript` と同じ作りにしてある。画面から外部へは送らず、
+   * 端末の中だけで割り当てる（マイクも外部も使わない方針）。
+   */
+  const mockBatchText = useCallback((): string => {
+    const currentValue = valueRef.current;
+    const currentScope = scopeNow();
+    const seen = new Set<string>();
+    const examples: string[] = [];
+    for (const target of voiceFieldOrder(currentValue, currentScope)) {
+      if (!isSlotNeeded(target, currentValue, currentScope)) continue;
+      const example = target.field.example;
+      if (seen.has(example)) continue;
+      seen.add(example);
+      examples.push(example);
+    }
+    return examples.join("、");
+  }, [scopeNow]);
+
+  /**
+   * モックの疑似録音を止め、入力例を実の経路と同じ振り分けへ渡す（ローカル専用）。
    *
    * マイクを使わないので、デバイスの無い PC でも「録音中 → 確認 → 次の欄」を
    * 最後まで追える。入れる文は認識結果と同じ扱い（`slot.field.example`）にして、
-   * 実の経路と分岐が変わらないようにしてある。確認を挟むのも実の経路と同じ。
+   * 自動確定する欄・確認を挟む欄の分かれ方も実の経路と変えない。
    */
   const applyMockRecording = useCallback(() => {
     clearTimer();
@@ -583,16 +858,118 @@ export function VoiceInputDock({
     mockTimerRef.current = window.setTimeout(() => {
       mockTimerRef.current = null;
       const slot = voiceSlotById(key, valueRef.current, scopeNow());
-      if (!slot) {
+      if (!slot && !batchModeRef.current) {
         setPhase("armed");
         finishSession();
         return;
       }
-      // 実の経路と同じく、確認を出す前に録音の印を戻す。
+      // 実の経路と同じく、値を入れる前に録音の印を戻す。
       setPhase("armed");
-      setPending({ slotId: slot.id, text: slot.field.example });
+      if (batchModeRef.current) {
+        const result = assignUtterance({
+          text: mockBatchText(),
+          value: valueRef.current,
+          now: new Date(),
+          scope: scopeNow(),
+        });
+        presentBatch(result);
+        return;
+      }
+      if (!slot) {
+        finishSession();
+        return;
+      }
+      presentTranscript(slot, slot.field.example);
     }, MOCK_TRANSCRIBE_MS);
-  }, [clearMockTimer, clearTimer, finishSession, flashStopping, scopeNow]);
+  }, [
+    clearMockTimer,
+    clearTimer,
+    finishSession,
+    flashStopping,
+    mockBatchText,
+    presentBatch,
+    presentTranscript,
+    scopeNow,
+  ]);
+
+  /**
+   * 録音の入り口を用意する。音声モードのあいだは掴んだままにする。
+   *
+   * 16kHz の PCM を AudioWorklet で拾えるなら WAV で送る。拾えない端末は
+   * 従来どおり MediaRecorder（webm/opus）に落とす。どちらの経路でも、停止時に
+   * pre-roll 400ms を足すため、マイクは最初の録音で 1 度だけ開く。
+   */
+  const ensureAudioPipeline = useCallback(async (): Promise<"wav" | "media"> => {
+    if (streamRef.current) return wavRef.current ? "wav" : "media";
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        // 通話向けの打ち消しは、短い数字・固有名詞を削ることがある。ASR 向けに切る。
+        echoCancellation: false,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+    streamRef.current = stream;
+
+    const AudioContextClass = audioContextConstructor();
+    if (!isPcmCaptureSupported() || !AudioContextClass) {
+      wavRef.current = false;
+      return "media";
+    }
+
+    let context: AudioContext | null = null;
+    try {
+      context = new AudioContextClass({ sampleRate: PCM_SAMPLE_RATE });
+      const audioContext = context;
+      await audioContext.audioWorklet.addModule("/voice/pcm-worklet.js");
+      const source = audioContext.createMediaStreamSource(stream);
+      const node = new AudioWorkletNode(audioContext, "pcm-capture");
+      // 音を鳴らさずに処理を回す。`destination` へ繋がないと worklet が動かない端末がある。
+      const mute = audioContext.createGain();
+      mute.gain.value = 0;
+      source.connect(node).connect(mute).connect(audioContext.destination);
+
+      // pre-roll: 録音の印（`listening`）が出る前から溜めつづけ、停止時に直近 400ms を足す。
+      // 録音中は pre-roll を更新しない（録音した区間と二重に重ならないようにする）。
+      const bufferRate = audioContext.sampleRate;
+      node.port.onmessage = (event: MessageEvent) => {
+        const data = event.data;
+        if (!(data instanceof Float32Array)) return;
+        if (recordingRef.current) {
+          pcmChunksRef.current.push(data);
+          return;
+        }
+        preRollRef.current.push(data);
+        const limit = Math.ceil((bufferRate * PRE_ROLL_MS) / 1000);
+        let total = 0;
+        for (const part of preRollRef.current) total += part.length;
+        while (total > limit && preRollRef.current.length > 0) {
+          const first = preRollRef.current[0];
+          const excess = total - limit;
+          if (first.length <= excess) {
+            preRollRef.current.shift();
+            total -= first.length;
+          } else {
+            preRollRef.current[0] = first.subarray(excess);
+            total -= excess;
+          }
+        }
+      };
+
+      audioContextRef.current = audioContext;
+      workletRef.current = node;
+      sourceNodeRef.current = source;
+      wavRef.current = true;
+      return "wav";
+    } catch {
+      // worklet を読み込めない環境は webm に落とす。開いた AudioContext はその場で閉じる。
+      if (context) void context.close().catch(() => {});
+      wavRef.current = false;
+      return "media";
+    }
+  }, []);
 
   const stopRecording = useCallback(() => {
     clearTimer();
@@ -601,12 +978,16 @@ export function VoiceInputDock({
       applyMockRecording();
       return;
     }
+    if (wavRef.current) {
+      void finishWavRecording();
+      return;
+    }
     const recorder = recorderRef.current;
     if (!recorder || recorder.state === "inactive") return;
     setPhase("transcribing");
     flashStopping();
     recorder.stop();
-  }, [applyMockRecording, clearTimer, flashStopping]);
+  }, [applyMockRecording, clearTimer, finishWavRecording, flashStopping]);
 
   const startRecording = useCallback(async () => {
     // 入力完了の待ちに入っていたら、もう録音しない。
@@ -617,6 +998,9 @@ export function VoiceInputDock({
     if (mockTimerRef.current !== null) return;
     const current = recorderRef.current;
     if (current && current.state !== "inactive") return;
+    if (recordingRef.current) return;
+    // 新しく録るなら、前の発話の途中経過と、走っている認識は捨てる。
+    abortTranscription();
     if (!cursorRef.current) {
       finishSession();
       return;
@@ -643,21 +1027,31 @@ export function VoiceInputDock({
         setMessage("このブラウザは録音に対応していません。手で入力してください。");
         return;
       }
-      setMessage(null);
+      // 自動確定の知らせは、次の録音が始まっても読み終えるまで残す。
+      if (autoMessageTimerRef.current === null) setMessage(null);
       clearStatusTimer();
       setStatusStopping(false);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-        });
+        const mode = await ensureAudioPipeline();
         // 待っている間に抜けた・別の開始に追い越されたなら、掴んだマイクをその場で離す。
         if (!mountedRef.current || attempt !== startAttemptRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
+          releaseAudio();
           return;
         }
-        streamRef.current = stream;
+        if (mode === "wav") {
+          pcmChunksRef.current = [];
+          recordingRef.current = true;
+          setPhase("listening");
+          timerRef.current = window.setTimeout(() => stopRecording(), MAX_RECORDING_MS);
+          return;
+        }
+
+        const stream = streamRef.current;
+        if (!stream) throw new Error("no microphone");
         const mimeType = pickRecorderMimeType() ?? "";
-        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        const options: MediaRecorderOptions = { audioBitsPerSecond: 128_000 };
+        if (mimeType) options.mimeType = mimeType;
+        const recorder = new MediaRecorder(stream, options);
         chunksRef.current = [];
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) chunksRef.current.push(event.data);
@@ -673,7 +1067,7 @@ export function VoiceInputDock({
       } catch {
         // 追い越された・抜けたあとの失敗は、いまの開始に触れない（新しい録音のマイクを離さない）。
         if (attempt !== startAttemptRef.current) return;
-        releaseStream();
+        releaseAudio();
         if (!mountedRef.current) return;
         setPhase("armed");
         setMessage(
@@ -685,12 +1079,14 @@ export function VoiceInputDock({
       if (attempt === startAttemptRef.current) startingRef.current = false;
     }
   }, [
+    abortTranscription,
     applyMockRecording,
     clearMockTimer,
     clearStatusTimer,
+    ensureAudioPipeline,
     finishRecording,
     finishSession,
-    releaseStream,
+    releaseAudio,
     stopRecording,
   ]);
 
@@ -718,13 +1114,26 @@ export function VoiceInputDock({
     clearCompleteTimer();
     clearStatusTimer();
     clearMockTimer();
+    clearAutoMessageTimer();
+    // 画面が消えるので、途中の認識は知らせずに止める（状態は更新しない）。
+    const controller = abortRef.current;
+    abortRef.current = null;
+    controller?.abort();
+    interimRef.current = "";
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
       recorder.stop();
     }
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer]);
+    releaseAudio();
+  }, [
+    clearAutoMessageTimer,
+    clearCompleteTimer,
+    clearMockTimer,
+    clearStatusTimer,
+    clearTimer,
+    releaseAudio,
+  ]);
 
   const startSession = useCallback(() => {
     if (disabled) return;
@@ -748,6 +1157,11 @@ export function VoiceInputDock({
     // 前のセッションの住所の知らせと待ちの印は引き継がない。
     setAddressNote(null);
     setSearching(false);
+    // 前のセッションの確認・途中経過・知らせも残さない。
+    setBatch(null);
+    setInterim("");
+    interimRef.current = "";
+    clearAutoMessageTimer();
     clearCompleteTimer();
     clearStatusTimer();
     setStatusStopping(false);
@@ -764,7 +1178,15 @@ export function VoiceInputDock({
       void startRecording();
     }
     api.openStep(first?.step ?? "basic");
-  }, [api, clearCompleteTimer, clearStatusTimer, disabled, showOrganizerName, startRecording]);
+  }, [
+    api,
+    clearAutoMessageTimer,
+    clearCompleteTimer,
+    clearStatusTimer,
+    disabled,
+    showOrganizerName,
+    startRecording,
+  ]);
 
   // 強調する欄を画面の中央へ寄せる。DOM フォーカスは動かさない。
   // 画面全体の中央へ寄せる `scrollIntoView` は使わない。パネルは欄のすぐ下に置くため、
@@ -982,6 +1404,9 @@ export function VoiceInputDock({
   const field = slot?.field ?? null;
   const previous = slot ? previousField(value, slot.id, scope) : null;
   const currentValue = slot ? describeFieldValue(slot.field, value, slot.row) : null;
+  // 確認のあいだも欄の名前を出せるよう、id から引き直す（行が消えていれば null）。
+  const pendingTarget = pending ? voiceSlotById(pending.slotId, value, scope) : null;
+  const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
   const promptText = complete
@@ -990,10 +1415,13 @@ export function VoiceInputDock({
       ? "テキスト変換中"
       : searching
         ? "住所を調べています"
-        : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
+        : batchMode
+          ? BATCH_PROMPT
+          : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
   const showStatus = listening || statusStopping;
-  // パネルに出す 1 行。いまの操作の知らせを優先し、無ければ住所の補完の知らせを出す。
-  const notice = message ?? addressNote;
+  // パネルに出す 1 行。住所の補完の失敗は、値が入った知らせより先に伝える
+  // （補完できていないのに「入りました」だけを見せない）。住所の知らせは次の値で消える。
+  const notice = addressNote ?? message;
   const talkLabel = listening
     ? "録音を停止"
     : transcribing
@@ -1044,6 +1472,9 @@ export function VoiceInputDock({
     if (!previous) return;
     // 録音中なら、いまの録音は捨てる。戻った欄でそのまま録り直す。
     if (listening) discardRecording();
+    // 走っている認識も止める（戻った先の欄に、前の欄の結果が入らないようにする）。
+    abortTranscription();
+    clearAutoMessageTimer();
     cursorRef.current = previous.id;
     setCursor(previous.id);
     setMessage(null);
@@ -1060,6 +1491,8 @@ export function VoiceInputDock({
   const skip = () => {
     if (!cursor) return;
     if (listening) discardRecording();
+    abortTranscription();
+    clearAutoMessageTimer();
     const current = voiceSlotById(cursor, valueRef.current, scopeNow());
     if (!current) {
       cursorRef.current = null;
@@ -1087,15 +1520,23 @@ export function VoiceInputDock({
     api.announce("音声モード中です。終了するには、右上の閉じるボタンかエスケープキーを押してください。");
   };
 
+  /** 確認で編集している文字を差し替える。確定はこの文字で `parse` する。 */
+  const updatePendingDraft = useCallback((draft: string) => {
+    setPending((current) => (current ? { ...current, draft } : current));
+  }, []);
+
   /** 確認のモーダルを閉じる。カーソルは動かさず、同じ欄に留まる。 */
   const closePending = useCallback(() => {
     setPending(null);
   }, []);
 
-  /** 聞き取った値で確定する。読めなければ閉じてから既存の「読めませんでした」を出す。 */
+  /** 編集後の文字で確定する。読めなければ閉じてから既存の「読めませんでした」を出す。 */
   const confirmPending = useCallback(() => {
     const item = pending;
     if (!item) return;
+    const text = item.draft.trim();
+    // 空にしたまま確定させない（消したいときは閉じるか、再録音する）。
+    if (!text) return;
     setPending(null);
     const target = voiceSlotById(item.slotId, valueRef.current, scopeNow());
     if (!target) {
@@ -1104,7 +1545,7 @@ export function VoiceInputDock({
     }
     cursorRef.current = target.id;
     setCursor(target.id);
-    void commit(target, item.text);
+    void commit(target, text);
   }, [commit, finishSession, pending, scopeNow]);
 
   /** 同じ欄で録り直す。モーダルを閉じて、そのまま録音を始める。 */
@@ -1117,6 +1558,116 @@ export function VoiceInputDock({
     setMessage(null);
     void startRecording();
   }, [pending, startRecording]);
+
+  /** まとめて話した内容の確認を閉じる。カーソルは動かさず、同じ欄に留まる。 */
+  const closeBatch = useCallback(() => {
+    setBatch(null);
+  }, []);
+
+  /** 確認の 1 行（値・取り込むか）を差し替える。 */
+  const updateBatchRow = useCallback(
+    (slotId: VoiceSlotId, patch: Partial<Omit<VoiceBatchRow, "slotId">>) => {
+      setBatch((current) =>
+        current
+          ? {
+              ...current,
+              rows: current.rows.map((row) =>
+                row.slotId === slotId ? { ...row, ...patch } : row,
+              ),
+            }
+          : current,
+      );
+    },
+    [],
+  );
+
+  /**
+   * チェックの入った行だけを、1 回の `onChange` にまとめて反映する。
+   *
+   * 編集された行は、いまの文字で `parse` し直す。読めない行は入れない（黙って別の値を入れない）。
+   * 郵便番号を入れたときは、1 欄ずつ入れたときと同じく住所を補ってから、まとめて反映する。
+   * 反映したら最初の未入力欄へ移り、その場で録音を始める。
+   */
+  const applyBatch = useCallback(async () => {
+    const state = batch;
+    if (!state) return;
+    const base = valueRef.current;
+    const now = new Date();
+    const patches: VoicePatch[] = [];
+    const keys = new Set<VoiceFieldKey>();
+
+    for (const row of state.rows) {
+      if (!row.include) continue;
+      const text = row.text.trim();
+      if (!text) continue;
+      const target = voiceSlotById(row.slotId, base, scopeNow());
+      if (!target) continue;
+      const patch = target.field.parse(text, { now, value: base, row: target.row });
+      if (!patch) continue;
+      patches.push(patch);
+      keys.add(target.key);
+    }
+
+    if (patches.length === 0) {
+      setMessage("入力できる行がありませんでした。値を見直してください。");
+      return;
+    }
+
+    // 確認は閉じ、住所の補完だけを待つ（次の録音はまだ始めない）。
+    setBatch(null);
+    setMessage(null);
+
+    let nextValue = applyVoicePatches(base, patches);
+    const postal = patches.find((patch) => patch.postalCode)?.postalCode;
+    if (postal) {
+      setSearching(true);
+      try {
+        const found = await lookupPostalCode(postal);
+        const first = found[0];
+        if (first) {
+          nextValue = {
+            ...nextValue,
+            prefecture: first.prefecture,
+            city: first.city,
+            town: first.town,
+          };
+        } else {
+          setAddressNote("住所を調べられませんでした。手で入力してください。");
+        }
+      } catch {
+        setAddressNote("住所を調べられませんでした。手で入力してください。");
+      } finally {
+        if (mountedRef.current) setSearching(false);
+      }
+      if (!mountedRef.current) return;
+    }
+
+    valueRef.current = nextValue;
+    onChange(nextValue);
+    for (const key of keys) markTouched(key);
+
+    const next = firstNeededField(nextValue, scopeNow());
+    if (!next) {
+      finishSession();
+      return;
+    }
+    cursorRef.current = next.id;
+    setCursor(next.id);
+    setMessage(null);
+    // まとめて入れたあとは、残った欄を 1 つずつ聞く。同じ文をもう一度
+    // まとめて話しても、入れた欄は飛ばされて同じ割当になるため。
+    batchModeRef.current = false;
+    setBatchMode(false);
+    api.announce(`${next.label}を話してください。`);
+    void startRecording();
+  }, [api, batch, finishSession, markTouched, onChange, scopeNow, startRecording]);
+
+  /** まとめて話した内容を録り直す。確認を閉じて、同じモードのまま録音を始める。 */
+  const reRecordBatch = useCallback(() => {
+    setBatch(null);
+    setMessage(null);
+    void startRecording();
+  }, [startRecording]);
 
   /** 追加した行の欄へカーソルを移し、その場で録音を始める。 */
   const moveTo = useCallback(
@@ -1356,10 +1907,20 @@ export function VoiceInputDock({
               <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
                 {promptText}
               </p>
-              {!complete && field && !searching && (
+              {!complete && !searching && batchMode && (
+                <p className="voice-panel__hint">例: {BATCH_EXAMPLE}</p>
+              )}
+              {!complete && !searching && !batchMode && field && (
                 <p className="voice-panel__hint">例: {field.example}</p>
               )}
             </div>
+            {/* 認識の途中経過は質問の下に 1 行だけ出す。質問は消さない
+                （何を話すかを目で追いながら、聞き取れた分を確かめられる）。 */}
+            {!complete && interim && (
+              <p className="voice-panel__interim" aria-live="polite">
+                {interim}
+              </p>
+            )}
             {!complete && field && currentValue && !searching && (
               <p className="voice-panel__current">いまの値: {currentValue}</p>
             )}
@@ -1458,20 +2019,31 @@ export function VoiceInputDock({
               />
               自動遷移
             </label>
+            {/* 1 回の録音で複数の欄を埋める。録音の途中でも切り替えられる
+                （録った音声は同じで、停止したあとの送り先だけが変わる）。 */}
+            <label className="check voice-panel__optional">
+              <input
+                type="checkbox"
+                checked={batchMode}
+                disabled={transcribing || searching}
+                onChange={(event) => {
+                  setBatchMode(event.target.checked);
+                  setMessage(null);
+                }}
+              />
+              まとめて話す
+            </label>
           </div>
         </section>
       )}
 
       {/* 録音のあとは、聞き取った値をそのまま入れず、一度見せる。
-          読み取り違いを話し直す前に気づけるようにするため。 */}
+          読み取り違いを話し直す前に気づけるようにするため。
+          値はその場で直せる。確定は編集後の文字で parse し直す
+          （空にしたままでは確定できない）。 */}
       {pending && (
         <Dialog
-          title={
-            <span className="voice-confirm">
-              <span className="voice-confirm__value">「{pending.text}」</span>
-              <span className="voice-confirm__ask">を入力します</span>
-            </span>
-          }
+          title="入力内容の確認"
           titleId="voice-confirm-title"
           onClose={closePending}
           actions={
@@ -1479,6 +2051,7 @@ export function VoiceInputDock({
               <button
                 type="button"
                 className="btn btn--primary btn--block"
+                disabled={pending.draft.trim().length === 0}
                 onClick={confirmPending}
               >
                 確定
@@ -1492,7 +2065,94 @@ export function VoiceInputDock({
               </button>
             </div>
           }
-        />
+        >
+          <div className="voice-confirm">
+            <p className="voice-confirm__ask">
+              {pendingTarget
+                ? `${pendingTarget.label}に入れる内容です。直してから確定できます。`
+                : "入れる内容です。直してから確定できます。"}
+            </p>
+            <label className="voice-confirm__field">
+              <span className="voice-confirm__label">
+                {pendingTarget?.label ?? "値"}
+              </span>
+              {pendingLong ? (
+                <textarea
+                  className="voice-confirm__input"
+                  rows={3}
+                  value={pending.draft}
+                  onChange={(event) => updatePendingDraft(event.target.value)}
+                />
+              ) : (
+                <input
+                  type="text"
+                  className="voice-confirm__input"
+                  value={pending.draft}
+                  onChange={(event) => updatePendingDraft(event.target.value)}
+                />
+              )}
+            </label>
+            <p className="voice-confirm__raw">話した内容: 「{pending.text}」</p>
+          </div>
+        </Dialog>
+      )}
+
+      {/* まとめて話した内容を、欄ごとの 1 行に並べる。
+          値はその場で直せ、取り込む行はチェックで外せる。
+          「すべて入力」で 1 回の更新にまとめて反映する。 */}
+      {batch && (
+        <Dialog
+          title="まとめて入力します"
+          titleId="voice-batch-title"
+          onClose={closeBatch}
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={() => void applyBatch()}
+              >
+                すべて入力
+              </button>
+              <button type="button" className="btn btn--ghost btn--block" onClick={reRecordBatch}>
+                再録音
+              </button>
+            </>
+          }
+        >
+          <div className="voice-batch">
+            {batch.rows.map((row) => (
+              <div className="voice-batch__row" key={row.slotId}>
+                <input
+                  type="checkbox"
+                  className="voice-batch__include"
+                  aria-label={`${row.label}を取り込む`}
+                  checked={row.include}
+                  onChange={(event) =>
+                    updateBatchRow(row.slotId, { include: event.target.checked })
+                  }
+                />
+                <label className="voice-batch__label" htmlFor={`voice-batch-${row.slotId}`}>
+                  {row.label}
+                </label>
+                <input
+                  id={`voice-batch-${row.slotId}`}
+                  type="text"
+                  className="voice-batch__input"
+                  value={row.text}
+                  onChange={(event) =>
+                    updateBatchRow(row.slotId, { text: event.target.value })
+                  }
+                />
+              </div>
+            ))}
+            {batch.unassigned.length > 0 && (
+              <p className="voice-batch__unassigned">
+                読み取れなかった部分: {batch.unassigned.join("、")}
+              </p>
+            )}
+          </div>
+        </Dialog>
       )}
 
       {/* 日時の群を出る瞬間と、費用の入口にだけ尋ねる。

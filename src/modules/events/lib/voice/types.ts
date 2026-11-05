@@ -77,6 +77,11 @@ export interface VoiceField {
   example: string;
   /** 認識モデルに渡す語彙のヒント。欄の文脈を絞るために使う。 */
   hint: string;
+  /**
+   * この欄で実際に話される語。`gpt-transcribe` の `keywords` にだけ渡す。
+   * 都道府県のように候補が多い欄は、よく話される順に並べる（送信時に 20 語へ絞るため）。
+   */
+  keywords?: readonly string[];
   /** この欄を巡回に含めるか。主催者名のように条件付きの欄だけが持つ。 */
   applies?: (value: EventFormValues, scope: VoiceFieldScope) => boolean;
   /**
@@ -84,6 +89,15 @@ export interface VoiceField {
    * まだ触っていない場合に巡回する。
    */
   optional?: boolean;
+  /**
+   * 聞き取った値を確認なしで入れてよいか。既定は `"always"`（必ず確認する）。
+   *
+   * `"auto"` は形が閉じている欄だけに付ける。日付・時刻・金額・人数・郵便番号のように
+   * `parse` が通れば値が一意に決まり、読み取り違いもその場で見て分かる欄が対象である。
+   * 自由文（催し名・会場名など）は、`parse` が通っても別の文字列を落としていることが
+   * あるため確認を挟む。
+   */
+  confirm?: "auto" | "always";
   /** 発話をパッチへ変える。読めなければ null（＝聞き直し）。 */
   parse: (text: string, context: VoiceContext) => VoicePatch | null;
 }

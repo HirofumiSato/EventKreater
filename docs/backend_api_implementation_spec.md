@@ -129,7 +129,8 @@ flowchart TD
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
 | `/api/v1/geo/postal-codes/[code]` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要（IP 単位の回数制限） | 郵便番号から都道府県・市区町村・町名を引く。外部サービスへ中継し、24 時間キャッシュする（5.22） |
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
-| `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
+| `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-transcribe` へ中継し、`text/event-stream` で `delta` / `done` / `error` を返す。`VOICE_TRANSCRIBE_MODEL` で差し替え、モデルが使えないときは `VOICE_TRANSCRIBE_FALLBACK_MODEL` で 1 度だけ再試行する。未設定なら 503 `TRANSCRIBE_DISABLED` |
+| `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。文字起こしは 1 回だけで、決定的に節を割り当て、未割当の節だけ `VOICE_BATCH_MODEL`（既定 `gpt-4.1-mini`）で割当を推定する。`{ text, assignments, unassigned, model }` を返す。`VOICE_BATCH_LLM=0` で LLM を使わない |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -1367,7 +1368,18 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ### 5.15. POST `/api/v1/voice/transcriptions`（音声を文字にする）
 
-イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`text` は前後の空白と末尾の句読点（`。、，．！？!?`）を落としてから返す（文の途中の記号は残す）。`Cache-Control: no-store`。
+イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）、`row` / `title` / `venueName`（任意、文脈と当て字の手掛かり）を受け取る。検証を通ると `text/event-stream` を返す。音声は保存せず、OpenAI の音声認識へ中継し、自前のイベントで文字を返す。`Cache-Control: no-store`。
+
+既定のモデルは `gpt-transcribe`（`VOICE_TRANSCRIBE_MODEL` で差し替え）。送るパラメータはモデルの系統で変える。
+
+- `gpt-transcribe` 系: `languages[]=ja` と `keywords[]` を送り、`language` は送らない（併用できないため）
+- `gpt-4o-transcribe*` / `whisper-1`: `language=ja` だけを送る
+
+`prompt` は指示文ではなく短い文脈（例: `イベント作成フォームの「開催日」を話しています。`）。語彙は `keywords` へ分ける。`keywords` は 1 語 1 行で、`<` `>` と改行を含む語があると上流がリクエスト全体を拒否するため、送る前に落とす。上限は欄ごとに 20 語・1 語 60 文字。
+
+上流がモデル未対応（400/404）を返したときは、`VOICE_TRANSCRIBE_FALLBACK_MODEL`（既定 `gpt-4o-mini-transcribe`）で 1 度だけ再試行する。控えは旧系統のことが多いため、語彙は渡さず `language` だけを送る。それでも通らなければ 422 `TRANSCRIBE_CONTEXT_INVALID`。
+
+ストリームの中身は `{ "text": string }` の `delta`（増分）、`{ "text": string, "model": string }` の `done`（全文と、実際に使ったモデル）、`{ "error": string, "detail": string }` の `error`（開始後の失敗。ステータスは 200 のまま）。全文は前後の空白と末尾の句読点（`。、，．！？!?`）を落としてから返す（文の途中の記号は残す）。最初の `delta` まで 10 秒、以降は `delta` の間隔が 15 秒を超えたら打ち切る。上流が `stream` を知らないときは、同じ内容を `stream` 無しで 1 度だけやり直す。画面が切れたら上流の読み取りも止める。応答をためるプロキシを通ると `delta` は届かず、最後にまとめて返る（画面は JSON か `done` の本文だけを受け取る）。
 
 同じパスの `GET` は設定だけを返す（`{ "mock": boolean }`、`Cache-Control: no-store`）。音声は受け取らない。画面は録音を省いてよいかを知るために、音声モードを開いたときに 1 度だけ聞く。`true` のとき画面はマイクを掴まず、疑似の録音のあと欄の入力例をその場で入れる（開発用）。
 
@@ -1377,15 +1389,41 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 413 | - | 5MB を超えた |
 | 415 | - | 音声以外の形式 |
 | 422 | `TRANSCRIBE_EMPTY` / `TRANSCRIBE_UNSUPPORTED` | 聞き取れない、句読点だけで空になった、または上流が形式を受け付けない |
+| 422 | `TRANSCRIBE_CONTEXT_INVALID` | モデルが使えない、または `prompt` / `keywords` を上流が受け付けない。モデルが使えないだけなら控えのモデルで 1 度だけ試す |
 | 429 | `RATE_LIMITED` / `TRANSCRIBE_BUSY` | 回数の上限、または上流が混雑（`Retry-After` 付き） |
 | 502 | `TRANSCRIBE_MISCONFIGURED` / `TRANSCRIBE_FAILED` | 鍵の設定不備、または上流に繋がらない |
 | 503 | `TRANSCRIBE_DISABLED` | `OPENAI_API_KEY` が未設定 |
 
-回数の上限は接続元（IP）ごとに、`VOICE_TRANSCRIBE_LIMIT`（既定 40）回 / `VOICE_TRANSCRIBE_WINDOW_MINUTES`（既定 60 分）で数える。プロセスのメモリ上に持つため、インスタンスを増やすと合計の上限も増える。認識を呼ぶ前に 1 回ぶん消費する（失敗しても課金されうるため）。
+回数の上限は接続元（IP）ごとに、`VOICE_TRANSCRIBE_LIMIT`（既定 40）回 / `VOICE_TRANSCRIBE_WINDOW_MINUTES`（既定 60 分）で数える。プロセスのメモリ上に持つため、インスタンスを増やすと合計の上限も増える。認識を呼ぶ前に 1 回ぶん消費する（失敗しても課金されうるため）。まとめて話す `/api/v1/voice/utterances` と共有し、1 回で 1 カウント。
 
 `VOICE_TRANSCRIBE_MOCK=1` のときは、OpenAI を呼ばずに欄の入力例（`src/modules/events/lib/voice/fields.ts` の `example`）を `text` として返す。`model` は `"mock"` になる。外部を呼ばないため回数の上限は数えず、`OPENAI_API_KEY` が空でも 503 にしない。`NODE_ENV=production` では常に無効。開発では、このルートを初めて読み込んだ時点でモックの有効・無効と鍵の有無を 1 度だけ `console.warn` に出す（設定の付け忘れと切り忘れに気づくため）。
 
 文字をフォームの値へ変える規則はサーバーではなく画面側に置く（`src/modules/events/lib/voice/parse.ts`）。欄が決まっていれば LLM を使わず、日付・時刻・金額・人数を決定的に読めるため、同じ発話が常に同じ値になり、テストで仕様を固定できる。導入手順と画面の動きは `docs/voice-input.rst`。
+
+### 5.15.1. POST `/api/v1/voice/utterances`（1 回の発話から複数の欄を埋める）
+
+イベント作成画面の「まとめて話す」。`multipart/form-data` で次を受け取る。
+
+| 項目 | 内容 |
+| :---- | :---- |
+| `audio` | 必須。音声。5MB まで |
+| `value` | 必須。いまのフォームの値（JSON）。`schedules` と `pricePlans` は 1 件以上 |
+| `scope` | 任意。巡回の指定（JSON）。`showOrganizerName` / `includeOptional` / `touched` |
+
+応答は `200 { "text": string, "assignments": [...], "unassigned": string[], "model": string }`。`assignments` の 1 件は `{ "slotId": string, "text": string, "value": string \| number \| null, "patch": object }`。`slotId` は `欄のキー:行`（`scheduleDate:0`、`planAmount:1`）。`value` は確認に出す読みやすい値（金額は数値、日付は `YYYY-MM-DD`）で、`patch` がフォームへ当てる差分。`Cache-Control: no-store`。
+
+文字起こしは 1 回だけ（`transcribeDetailed`、`field` は渡さない）。割当は `src/modules/events/lib/voice/utterance.ts` の決定的な手順で行う。
+
+1. 読点・句点・カンマ・終止点・話し言葉の「で」「と」「や」・空白で節に分ける
+2. 形の閉じた欄（日付・時刻・金額・定員・郵便番号・都道府県・雨天・期限）を巡回順に当て、一致した節を消費する。同じ節を 2 つの欄に使わない
+3. 自由文の欄は、その欄の `keywords` が節に現れるときだけ受け取る
+4. `scheduleStart` が範囲を返したら、同じ行の `scheduleEnd` は割当済みにする
+
+決定的に割り当てられなかった節だけを LLM（`VOICE_BATCH_MODEL`、既定 `gpt-4.1-mini`、`temperature: 0`）へ回す。LLM に返させるのは `{ "assignments": [{ "slotId": string, "clause": string }] }` だけで、値は作らせない。返ってきた節は必ずその欄の `parse` に通し、`null` なら捨てる。存在しない `slotId`、未割当でない節、重複した割当も捨てる。`json_schema` を返せないモデル（400）では `json_object` で 1 度だけ試す。LLM が失敗しても、決定的な割当だけは返る。
+
+`VOICE_BATCH_LLM=0` のときは LLM を呼ばない。モック（`VOICE_TRANSCRIBE_MOCK=1`）は巡回する欄の `example` を「、」でつないだ 1 文を返し、`model` は `"mock"`。回数の上限は 5.15 と共有する。音声は保存しない。
+
+エラーは `application/problem+json`（RFC 7807）。`audio` が無ければ 400、5MB を超えたら 413、`value` が読めなければ 400、回数の上限は 429、`OPENAI_API_KEY` が無ければ 503 `TRANSCRIBE_DISABLED`。
 
 ### 5.16. POST / DELETE `/api/v1/organizer/profile/avatar`（プロフィールのアイコン）
 

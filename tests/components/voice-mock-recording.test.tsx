@@ -13,7 +13,7 @@
 // 待ちは疑似録音のものだけを進める（`userEvent` はタイマーを掴んで止まるため使わない）。
 
 import { useState } from "react";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VoiceInputDock } from "@/modules/events/components/VoiceInputDock";
 import { VOICE_GUIDE_STORAGE_KEY } from "@/modules/events/lib/voice/guide";
@@ -31,24 +31,45 @@ function stubMockAnswer(mock: boolean) {
   );
 }
 
-function Harness({ onChange }: { onChange: (next: EventFormValues) => void }) {
-  const [value, setValue] = useState<EventFormValues>(EMPTY_EVENT_FORM);
+function Harness({
+  onChange,
+  initial,
+  focusId,
+}: {
+  onChange: (next: EventFormValues) => void;
+  initial?: EventFormValues;
+  focusId?: string;
+}) {
+  const [value, setValue] = useState<EventFormValues>(initial ?? EMPTY_EVENT_FORM);
   return (
-    <VoiceInputDock
-      value={value}
-      onChange={(next) => {
-        setValue(next);
-        onChange(next);
-      }}
-      api={{ openStep: () => {}, announce: () => {} }}
-    />
+    <>
+      {/* 音声モードの開始位置を決める入力欄。部品の外にある本物の欄の代わり。 */}
+      {focusId ? <input id={focusId} aria-label="音声の開始位置" /> : null}
+      <VoiceInputDock
+        value={value}
+        onChange={(next) => {
+          setValue(next);
+          onChange(next);
+        }}
+        api={{ openStep: () => {}, announce: () => {} }}
+      />
+    </>
   );
 }
 
 /** 部品を描き、開いたときの 1 度だけの問い合わせを済ませる。 */
-async function mount(onChange: (next: EventFormValues) => void) {
-  render(<Harness onChange={onChange} />);
+async function mount(
+  onChange: (next: EventFormValues) => void,
+  options: { initial?: EventFormValues; focusId?: string } = {},
+) {
+  render(<Harness onChange={onChange} initial={options.initial} focusId={options.focusId} />);
   await act(async () => {});
+  // 開始位置は focusin で控えられる。音声モードを開く前に当てておく。
+  if (options.focusId) {
+    await act(async () => {
+      document.getElementById(options.focusId ?? "")?.focus();
+    });
+  }
 }
 
 /** 押して、押した結果の描き直しを待つ。 */
@@ -126,11 +147,9 @@ describe("モックの疑似録音", () => {
 
     // 値はまだ入っていない。まず何を入れるかを見せる（実の経路と同じ）。
     expect(onChange).not.toHaveBeenCalled();
-    // 見出しは値と問いの 2 段。読み上げ名では 1 文につながる。
-    expect(
-      screen.getByRole("heading", { name: "「忘年会」を入力します" }),
-    ).toBeTruthy();
-    expect(screen.getByText("「忘年会」")).toBeTruthy();
+    // 題は固定の 1 文。値は本文の入力へ置く（題にフォーム要素を置かない）。
+    expect(screen.getByRole("heading", { name: "入力内容の確認" })).toBeTruthy();
+    expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("忘年会");
 
     await press("確定");
 
@@ -166,7 +185,7 @@ describe("モックの疑似録音", () => {
 
     // 押したときも確認は挟む。
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "「忘年会」を入力します" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "入力内容の確認" })).toBeTruthy();
   });
 });
 
@@ -248,5 +267,84 @@ describe("モックでないとき", () => {
 
     // 2 本目を掴むと、先に掴んだストリームが止まらないまま残る。
     expect(getUserMedia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("入力内容の確認を直す", () => {
+  it("編集した文字で確定する", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+    await passMockWait();
+
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { value: "新年会" } });
+    });
+    expect(input.value).toBe("新年会");
+    await press("確定");
+
+    // 確定は編集後の文字で parse する。
+    expect(lastValue(onChange).title).toBe("新年会");
+  });
+
+  it("空にすると確定できない", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+    await passMockWait();
+
+    await act(async () => {
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } });
+    });
+    const ok = screen.getByRole("button", { name: "確定" }) as HTMLButtonElement;
+    expect(ok.disabled).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("長い欄は複数行で直せる", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    // 会場名から始める（会場名は自由文なので必ず確認を挟む）。
+    await mount(onChange, { focusId: "event-venue-name" });
+    await press("音声入力を開始");
+    await passMockWait();
+
+    const box = within(screen.getByRole("dialog")).getByRole("textbox") as HTMLTextAreaElement;
+    expect(box.tagName).toBe("TEXTAREA");
+    expect(box.value).toBe("渋谷ホール");
+    await press("確定");
+    expect(lastValue(onChange).venueName).toBe("渋谷ホール");
+  });
+});
+
+describe("自動確定する欄", () => {
+  it("確認を出さずに入り、1.5 秒だけ知らせを出して次の欄へ進む", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    // 開催日から始める（開催日は形が閉じているので自動確定）。
+    await mount(onChange, { focusId: "schedule-date-schedule-initial" });
+    await press("音声入力を開始");
+    await passMockWait();
+
+    // 確認は出さず、その場で値が入る。
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(lastValue(onChange).schedules[0].eventDate).toMatch(/-12-05$/);
+    expect(screen.getByText("開催日を「12月5日」で入力しました")).toBeTruthy();
+    // 自動確定でも既存の流れ（次の欄へ進んで録音）はそのまま通る。
+    expect(screen.getByText("何時に始まる？")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
+
+    // 知らせは 1.5 秒で消える。
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(screen.queryByText("開催日を「12月5日」で入力しました")).toBeNull();
   });
 });

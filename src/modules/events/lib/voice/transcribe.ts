@@ -1,5 +1,6 @@
 import { readProblem } from "@/lib/problem";
 import { extensionForMimeType, MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
+import { parseVoiceStreamEvent, readSseStream } from "@/modules/events/lib/voice/sse";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
 
 const VOICE_ENDPOINT = "/api/v1/voice/transcriptions";
@@ -56,15 +57,65 @@ export interface VoiceTranscribeContext {
   venueName?: string;
 }
 
+const EMPTY_RESULT_MESSAGE = "音声を文字にできませんでした。もう一度話してください。";
+
+/**
+ * `text/event-stream` の応答を読む。`delta` をそのまま `onDelta` へ渡し、
+ * `done` の本文を返す。`error` は利用者向けの文言だけを `Error` にして投げる。
+ */
+async function readStreamedResult(
+  response: Response,
+  options: { onDelta?: (text: string) => void; signal?: AbortSignal },
+): Promise<TranscribeResult> {
+  if (!response.body) throw new Error(EMPTY_RESULT_MESSAGE);
+
+  const received: { done: string | null; streamed: string } = { done: null, streamed: "" };
+
+  await readSseStream(
+    response.body,
+    (event) => {
+      const parsed = parseVoiceStreamEvent(event);
+      if (!parsed) return;
+
+      if (parsed.type === "delta") {
+        received.streamed += parsed.text;
+        options.onDelta?.(parsed.text);
+        return;
+      }
+      if (parsed.type === "done") {
+        received.done = parsed.text;
+        return;
+      }
+      // 途中の失敗は本文に書かれる。本文はすでに流れているので、ここで投げる。
+      throw new Error(parsed.detail || EMPTY_RESULT_MESSAGE);
+    },
+    { signal: options.signal },
+  );
+
+  // 画面が切れたときは、本文が揃っていなくても成功にしない。
+  if (options.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+  const text = received.done ?? (received.streamed || null);
+  if (text === null) throw new Error(EMPTY_RESULT_MESSAGE);
+  return { text };
+}
+
 /**
  * 録音した音声をサーバーへ送り、文字にする。
  * 音声は保存せず、認識のためだけに OpenAI へ中継する。
+ *
+ * `onDelta` を渡すと、サーバーは `text/event-stream` で途中経過を返す。
+ * 渡さない（またはサーバーが JSON を返す）ときは、従来どおり 1 回で受ける。
  */
 export async function transcribeVoiceClip(input: {
   blob: Blob;
   field: VoiceFieldKey | null;
   /** 欄の文脈。当て字の手掛かりで、無くても認識は動く。 */
   context?: VoiceTranscribeContext;
+  /** 認識できた分から順に呼ばれる。増分で、最後の本文は戻り値で返す。 */
+  onDelta?: (text: string) => void;
+  /** キャンセル。渡すと通信と読み取りを止める。 */
+  signal?: AbortSignal;
 }): Promise<TranscribeResult> {
   if (input.blob.size === 0) {
     throw new Error("録音が空でした。もう一度話してください。");
@@ -88,13 +139,21 @@ export async function transcribeVoiceClip(input: {
   const response = await fetch(VOICE_ENDPOINT, {
     method: "POST",
     body: form,
+    signal: input.signal,
   });
   if (!response.ok) {
     throw new Error(await readProblem(response));
   }
+
+  // 古いサーバーや、応答をためるプロキシは JSON で返す。中身の種類で読み分ける。
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  if (contentType.includes("text/event-stream")) {
+    return readStreamedResult(response, { onDelta: input.onDelta, signal: input.signal });
+  }
+
   const body = (await response.json()) as { text?: unknown };
   if (typeof body.text !== "string") {
-    throw new Error("音声を文字にできませんでした。もう一度話してください。");
+    throw new Error(EMPTY_RESULT_MESSAGE);
   }
   return { text: body.text };
 }

@@ -6,8 +6,8 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 465
-- API ルート: 82（どの文書にも URL が無いもの 0）
+- 文書から参照されているコードパス: 479
+- API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
 ## コード → 文書
@@ -39,6 +39,7 @@
 | `public/samples/flyer-dj.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-gohan.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-halloween.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/voice/pcm-worklet.js` | [docs/voice-input.rst](voice-input.rst) |
 | `scripts/billing-notices.mjs` | [docs/DBschema.md](DBschema.md) |
 | `scripts/build-icons.mjs` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
@@ -145,6 +146,7 @@
 | `src/app/api/v1/venues/[id]/route.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/app/api/v1/venues/route.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/app/api/v1/voice/transcriptions/route.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/app/api/v1/voice/utterances/route.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/app/api/v1/webhooks/stripe/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/stripe.rst](stripe.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
 | `src/app/auth/register/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/auth/verify/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
@@ -291,6 +293,7 @@
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/batch.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/fields.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/guide.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/mock.ts` | [docs/voice-input.rst](voice-input.rst) |
@@ -298,11 +301,14 @@
 | `src/modules/events/lib/voice/openai.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/panel.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/parse.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/pcm.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/prompt.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/rate-limit.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/spotlight.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/sse.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/transcribe.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/types.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/utterance.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/types.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
@@ -365,6 +371,7 @@
 | `tests/components/quota-status-banner.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/voice-address-search.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/voice-batch.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/voice-mock-recording.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -471,13 +478,20 @@
 | `tests/unit/style-breakpoints.test.mjs` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/voice-batch.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-confirm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-guide.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-keywords.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-panel.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-pcm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-prompt.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-spotlight.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-sse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-transcribe.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-utterance.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/write-if-changed.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 
 ## 文書が指すが実在しないパス

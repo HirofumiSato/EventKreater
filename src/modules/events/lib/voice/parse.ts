@@ -1,16 +1,20 @@
 import {
+  addDays,
   cleanName,
   extractDigits,
   formatClock,
   formatYmd,
   normalizeSeparators,
   normalizeSpokenText,
-  normalizeTimeWords,
   parseJapaneseNumber,
+  parseRelativeDayOffset,
   parseSpokenClock,
   parseSpokenDate,
+  parseSpokenDuration,
+  parseYmd,
   splitTimeRange,
   toHalfWidth,
+  tokyoYmd,
 } from "@/modules/events/lib/voice/normalize";
 import type { VoiceContext, VoicePatch } from "@/modules/events/lib/voice/types";
 import {
@@ -72,6 +76,18 @@ const PREFECTURES = [
   "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
 ] as const;
 
+/**
+ * 接尾辞（都・府・県）を落とした言い方。正式名で一致しないときだけ使う。
+ * 「東京」→「東京都」、「京都」→「京都府」のように、話し言葉の略称を受ける。
+ * 長い名前から並べ、短い名前が別の都道府県の一部と取り違わないようにする。
+ * 北海道は接尾辞を持たないので、この一覧には入れない。
+ */
+const PREFECTURE_SHORT_NAMES: ReadonlyArray<readonly [string, string]> = PREFECTURES.filter(
+  (name) => name !== "北海道",
+)
+  .map((name) => [name.replace(/[都府県]$/u, ""), name] as const)
+  .sort((left, right) => right[0].length - left[0].length);
+
 /** 雨天時の方針。長い言い方から先に見る（「中止」が「雨天中止」を壊さないように）。 */
 const RAIN_POLICY_WORDS: ReadonlyArray<readonly [RainPolicy, readonly string[]]> = [
   ["CANCEL_ON_RAIN", ["雨天中止", "中止", "やめる", "やらない"]],
@@ -105,8 +121,33 @@ export function parseVoiceScheduleDate(text: string, context: VoiceContext): Voi
   );
 }
 
+/** 話された長さを分で返す。「2時間」「2時間半」「90分」など。読めなければ null。 */
+function spokenDurationMinutes(text: string): number | null {
+  const minutes = parseSpokenDuration(normalizeSpokenText(text));
+  return minutes !== null && minutes > 0 ? minutes : null;
+}
+
+/**
+ * 開始時刻に話された長さを足した終了時刻。
+ *
+ * フォームの時刻は `HH:mm` しか持てないため、24 時以上になる（0 時をまたぐ）場合は
+ * 翌日へ回さず、読めなかったものとして null を返す。23:59 に丸めると、
+ * 話した長さと違う値が黙って入るためである。
+ */
+function endTimeAfterDuration(startTime: string, durationMinutes: number): string | null {
+  const matched = /^(\d{1,2}):(\d{2})$/u.exec(startTime);
+  if (!matched) return null;
+  const startHour = Number(matched[1]);
+  const startMinute = Number(matched[2]);
+  if (startHour > 23 || startMinute > 59) return null;
+  const total = startHour * 60 + startMinute + durationMinutes;
+  if (total >= 24 * 60) return null;
+  return formatClock(Math.floor(total / 60), total % 60);
+}
+
 /**
  * 開始時刻。範囲で話されたら終了時刻も一緒に入れる（ひとつの発話で 2 欄を埋める）。
+ * 「18時から2時間」のように長さで話されたときも、同じ行の開始時刻から終了を計算する。
  * 終了が開始と同時刻になる指定は受け付けない。
  */
 export function parseVoiceScheduleStart(text: string, context: VoiceContext): VoicePatch | null {
@@ -119,17 +160,42 @@ export function parseVoiceScheduleStart(text: string, context: VoiceContext): Vo
   const clock = parseSpokenClock(text);
   if (!clock) return null;
   const startTime = formatClock(clock.hour, clock.minute);
+  const duration = spokenDurationMinutes(text);
+  if (duration !== null) {
+    const endTime = endTimeAfterDuration(startTime, duration);
+    if (!endTime || endTime === startTime) return null;
+    return schedulePatch(context.value, { startTime, endTime }, row);
+  }
   const current = context.value.schedules[row];
   if (current?.endTime && current.endTime === startTime) return null;
   return schedulePatch(context.value, { startTime }, row);
 }
 
+/**
+ * 終了時刻。「2時間半」のように長さだけを話されたら、同じ行の開始時刻から計算する。
+ * 「18時から2時間」のように開始も言われたら、その時刻を基準にする。
+ */
 export function parseVoiceScheduleEnd(text: string, context: VoiceContext): VoicePatch | null {
   const row = targetRow(context);
   const range = splitTimeRange(text);
-  const clock = range ? null : parseSpokenClock(text);
-  const endTime = range ? range.end : clock ? formatClock(clock.hour, clock.minute) : null;
-  if (!endTime) return null;
+  if (range) {
+    const current = context.value.schedules[row];
+    if (current?.startTime && current.startTime === range.end) return null;
+    return schedulePatch(context.value, { endTime: range.end }, row);
+  }
+  const duration = spokenDurationMinutes(text);
+  if (duration !== null) {
+    const current = context.value.schedules[row];
+    const clock = parseSpokenClock(text);
+    const startTime = clock ? formatClock(clock.hour, clock.minute) : (current?.startTime ?? "");
+    const endTime = endTimeAfterDuration(startTime, duration);
+    if (!endTime) return null;
+    if (current?.startTime && current.startTime === endTime) return null;
+    return schedulePatch(context.value, { endTime }, row);
+  }
+  const clock = parseSpokenClock(text);
+  if (!clock) return null;
+  const endTime = formatClock(clock.hour, clock.minute);
   const current = context.value.schedules[row];
   if (current?.startTime && current.startTime === endTime) return null;
   return schedulePatch(context.value, { endTime }, row);
@@ -152,7 +218,10 @@ export function parseVoicePlanName(text: string, context: VoiceContext): VoicePa
   return { pricePlans: withGroupName(rows, group, name) };
 }
 
-/** 金額。円が付いていればその前を、無ければ数字として読める全体を見る。 */
+/**
+ * 金額。「3000円」「三千円」「無料」を受ける。
+ * 「1人3000円」「3000円くらい」のように前後に言葉が付いても、円の直前の数字を読む。
+ */
 export function parseVoicePlanAmount(text: string, context: VoiceContext): VoicePatch | null {
   const row = targetRow(context);
   const normalized = normalizeSpokenText(text);
@@ -160,6 +229,7 @@ export function parseVoicePlanAmount(text: string, context: VoiceContext): Voice
   if (/無料|フリー|ただ|タダ/u.test(normalized) || /^0\s*(?:円|えん)$/u.test(normalized)) {
     return planPatch(context.value, { amount: "0" }, row);
   }
+  // 円の直前の数字を取る。「1人3000円」「3000円くらい」の「1人」「くらい」は読み飛ばす。
   const withYen = new RegExp(`(${NUMBER_EXPRESSION})\\s*(?:円|えん)`).exec(normalized);
   const value = withYen ? parseJapaneseNumber(withYen[1]) : parseJapaneseNumber(normalized);
   if (value === null || !Number.isInteger(value) || value < 0 || value > MAX_AMOUNT) return null;
@@ -183,8 +253,12 @@ export function parseVoicePostalCode(text: string): VoicePatch | null {
 
 export function parseVoicePrefecture(text: string): VoicePatch | null {
   const normalized = normalizeSpokenText(text);
-  const found = PREFECTURES.find((prefecture) => normalized.includes(prefecture));
-  return found ? { prefecture: found } : null;
+  // 正式名を先に見る。「東京都」は「京都」を含むため、略称より先に確定させる。
+  const full = PREFECTURES.find((prefecture) => normalized.includes(prefecture));
+  if (full) return { prefecture: full };
+  // 接尾辞の無い「東京」「大阪」「京都」「沖縄」などを受ける。
+  const short = PREFECTURE_SHORT_NAMES.find(([name]) => normalized.includes(name));
+  return short ? { prefecture: short[1] } : null;
 }
 
 export function parseVoiceCity(text: string): VoicePatch | null {
@@ -231,15 +305,28 @@ export function parseVoiceCapacity(text: string): VoicePatch | null {
   return { capacity: value };
 }
 
-/** 申し込み期限。時刻を言わなければ 23:59 にする。「なし」は空欄に戻す。 */
+/**
+ * 申し込み期限。時刻を言わなければ 23:59 にする。「なし」は空欄に戻す。
+ *
+ * 「前日」「当日」「3日前」「1週間前」は開催日から逆算する。
+ * 開催日（先頭の日程）がまだ無ければ、今日を基準にする。
+ */
 export function parseVoiceRsvpDeadline(text: string, context: VoiceContext): VoicePatch | null {
   const normalized = normalizeSpokenText(text);
   if (/なし|無し|ない|設定しない|決めない/u.test(normalized)) {
     return { rsvpDeadline: "" };
   }
+  const clock = parseSpokenClock(normalized) ?? { hour: 23, minute: 59 };
+  const offset = parseRelativeDayOffset(normalized);
+  if (offset !== null) {
+    const base = parseYmd(context.value.schedules[0]?.eventDate ?? "") ?? tokyoYmd(context.now);
+    const date = addDays(base, offset);
+    return {
+      rsvpDeadline: `${formatYmd(date.year, date.month, date.day)}T${formatClock(clock.hour, clock.minute)}`,
+    };
+  }
   const date = parseSpokenDate(normalized, context.now);
   if (!date) return null;
-  const clock = parseSpokenClock(normalizeTimeWords(normalized)) ?? { hour: 23, minute: 59 };
   return {
     rsvpDeadline: `${formatYmd(date.year, date.month, date.day)}T${formatClock(clock.hour, clock.minute)}`,
   };

@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2947,
+      "lineCount": 2985,
       "headings": [
         {
           "level": 2,
@@ -2177,6 +2177,10 @@
         {
           "level": 3,
           "text": "5.15. POST /api/v1/voice/transcriptions（音声を文字にする）"
+        },
+        {
+          "level": 3,
+          "text": "5.15.1. POST /api/v1/voice/utterances（1 回の発話から複数の欄を埋める）"
         },
         {
           "level": 3,
@@ -2531,6 +2535,10 @@
         },
         {
           "path": "src/modules/events/lib/voice/parse.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/utterance.ts",
           "exists": true
         },
         {
@@ -5709,7 +5717,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2143,
+      "lineCount": 2145,
       "headings": [
         {
           "level": 1,
@@ -10147,7 +10155,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 351,
+      "lineCount": 357,
       "headings": [
         {
           "level": 1,
@@ -11629,7 +11637,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 754,
+      "lineCount": 786,
       "headings": [
         {
           "level": 1,
@@ -11716,6 +11724,10 @@
         },
         {
           "path": "tests/components/voice-address-search.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/voice-batch.test.tsx",
           "exists": true
         },
         {
@@ -12135,11 +12147,23 @@
           "exists": true
         },
         {
+          "path": "tests/unit/voice-batch.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-confirm.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/voice-fields.test.ts",
           "exists": true
         },
         {
           "path": "tests/unit/voice-guide.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-keywords.test.ts",
           "exists": true
         },
         {
@@ -12155,11 +12179,27 @@
           "exists": true
         },
         {
+          "path": "tests/unit/voice-pcm.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/voice-prompt.test.ts",
           "exists": true
         },
         {
           "path": "tests/unit/voice-spotlight.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-sse.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-transcribe.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-utterance.test.ts",
           "exists": true
         },
         {
@@ -13101,7 +13141,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 462,
+      "lineCount": 674,
       "headings": [
         {
           "level": 1,
@@ -13110,6 +13150,10 @@
         {
           "level": 2,
           "text": "仕組み"
+        },
+        {
+          "level": 3,
+          "text": "値は文脈で読む"
         },
         {
           "level": 2,
@@ -13130,6 +13174,18 @@
         {
           "level": 2,
           "text": "API"
+        },
+        {
+          "level": 3,
+          "text": "POST /api/v1/voice/transcriptions"
+        },
+        {
+          "level": 3,
+          "text": "ストリーミング"
+        },
+        {
+          "level": 3,
+          "text": "まとめて話す（サーバー側）"
         },
         {
           "level": 2,
@@ -13160,6 +13216,10 @@
           "text": "モデルや提供元を変える"
         },
         {
+          "level": 3,
+          "text": "モデルで変わるパラメータ"
+        },
+        {
           "level": 2,
           "text": "音声入力を作っているファイル"
         },
@@ -13179,7 +13239,15 @@
       "toctree": [],
       "codePaths": [
         {
+          "path": "public/voice/pcm-worklet.js",
+          "exists": true
+        },
+        {
           "path": "src/app/api/v1/voice/transcriptions/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/voice/utterances/route.ts",
           "exists": true
         },
         {
@@ -13196,6 +13264,10 @@
         },
         {
           "path": "src/modules/events/lib/voice/audio.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/batch.ts",
           "exists": true
         },
         {
@@ -13227,6 +13299,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/pcm.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/voice/prompt.ts",
           "exists": true
         },
@@ -13239,6 +13315,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/sse.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/voice/transcribe.ts",
           "exists": true
         },
@@ -13247,7 +13327,15 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/voice/utterance.ts",
+          "exists": true
+        },
+        {
           "path": "tests/components/voice-mock-recording.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-batch.test.ts",
           "exists": true
         },
         {
@@ -13256,6 +13344,10 @@
         },
         {
           "path": "tests/unit/voice-guide.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-keywords.test.ts",
           "exists": true
         },
         {
@@ -13271,11 +13363,27 @@
           "exists": true
         },
         {
+          "path": "tests/unit/voice-pcm.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/voice-prompt.test.ts",
           "exists": true
         },
         {
           "path": "tests/unit/voice-spotlight.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-sse.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-transcribe.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-utterance.test.ts",
           "exists": true
         }
       ],

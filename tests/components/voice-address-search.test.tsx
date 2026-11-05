@@ -188,12 +188,7 @@ describe("郵便番号の住所検索", () => {
     await mount({ onChange });
     await press("音声入力を開始");
     await passMockWait();
-    // 郵便番号の入力例（1500001）を確認に置いている。
-    expect(screen.getByRole("heading", { name: "「1500001」を入力します" })).toBeTruthy();
-
-    await press("確定");
-
-    // 住所の検索が始まり、質問が待ちの 1 行に替わる。
+    // 郵便番号は形が閉じているので自動で入り、そのまま住所の検索が始まる。
     expect(screen.getByText("住所を調べています")).toBeTruthy();
     expect(stub.urls).toHaveLength(1);
     expect(stub.urls[0]).toContain("/api/v1/geo/postal-codes/1500001");
@@ -213,7 +208,6 @@ describe("郵便番号の住所検索", () => {
     await mount({ onChange });
     await press("音声入力を開始");
     await passMockWait();
-    await press("確定");
 
     await respondPostal(stub, [
       { prefecture: "東京都", city: "渋谷区", town: "神宮前" },
@@ -238,7 +232,6 @@ describe("郵便番号の住所検索", () => {
     await mount({ onChange });
     await press("音声入力を開始");
     await passMockWait();
-    await press("確定");
 
     await respondPostal(stub, []);
 
@@ -276,11 +269,7 @@ describe("日時追加のダイアログ", () => {
     await mount({ onChange, initial, focusId: "schedule-end-schedule-test" });
     await press("音声入力を開始");
     await passMockWait();
-    // 終了時刻の入力例（20時）を確認に置いている。
-    expect(screen.getByRole("heading", { name: "「20時」を入力します" })).toBeTruthy();
-
-    await press("確定");
-
+    // 終了時刻は形が閉じているので自動で入る。群を出る質問がそのまま出る。
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "別の日程も追加しますか？" })).toBeTruthy();
     // 題の id は変えない（読み上げの対応を保つ）。
@@ -306,10 +295,8 @@ describe("費用の入口の男女別の質問", () => {
     await mount({ onChange, initial, focusId: "schedule-end-schedule-test" });
     await press("音声入力を開始");
     await passMockWait();
-    expect(screen.getByRole("heading", { name: "「20時」を入力します" })).toBeTruthy();
-    await press("確定");
 
-    // まず日時の群を出る質問（別の日程）に答える。
+    // まず日時の群を出る質問（別の日程）に答える。終了時刻は自動で入っている。
     expect(
       within(screen.getByRole("dialog")).getByRole("heading", {
         name: "別の日程も追加しますか？",

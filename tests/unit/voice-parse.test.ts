@@ -318,4 +318,201 @@ describe("申し込み期限", () => {
   it("「なし」で期限を消す", () => {
     expect(parseVoiceRsvpDeadline("なし", context())).toEqual({ rsvpDeadline: "" });
   });
+
+  it("「前日」は開催日から 1 日前の 23:59 にする", () => {
+    const patch = parseVoiceRsvpDeadline("前日", context(withRows()));
+    expect(patch?.rsvpDeadline).toBe("2026-12-04T23:59");
+  });
+
+  it("「当日」は開催日の 23:59 にする", () => {
+    const patch = parseVoiceRsvpDeadline("当日", context(withRows()));
+    expect(patch?.rsvpDeadline).toBe("2026-12-05T23:59");
+  });
+
+  it("「3日前」「1週間前」を開催日から逆算する", () => {
+    expect(parseVoiceRsvpDeadline("3日前", context(withRows()))?.rsvpDeadline).toBe(
+      "2026-12-02T23:59",
+    );
+    expect(parseVoiceRsvpDeadline("1週間前", context(withRows()))?.rsvpDeadline).toBe(
+      "2026-11-28T23:59",
+    );
+  });
+
+  it("時刻を一緒に言えばその時刻にする", () => {
+    const patch = parseVoiceRsvpDeadline("前日20時", context(withRows()));
+    expect(patch?.rsvpDeadline).toBe("2026-12-04T20:00");
+  });
+
+  it("開催日が無ければ今日を基準にする", () => {
+    // EMPTY_EVENT_FORM の日程は開催日が空欄。
+    expect(parseVoiceRsvpDeadline("前日", context())?.rsvpDeadline).toBe("2026-10-23T23:59");
+  });
+});
+
+describe("月を言わない日付", () => {
+  it("月を言わない「5日」は、今日以降で最も近い月にする", () => {
+    // 今日は 10 月 24 日。10 月 5 日は過ぎているので 11 月 5 日。
+    expect(parseSpokenDate("5日", NOW)).toEqual({ year: 2026, month: 11, day: 5 });
+  });
+
+  it("今日と同じ日なら今日にする", () => {
+    expect(parseSpokenDate("24日", NOW)).toEqual({ year: 2026, month: 10, day: 24 });
+  });
+
+  it("今月にその日があれば今月にする", () => {
+    expect(parseSpokenDate("31日", NOW)).toEqual({ year: 2026, month: 10, day: 31 });
+  });
+
+  it("翌月に無い日は、その日がある月まで送る", () => {
+    // 11 月 31 日は無いので 12 月 31 日。
+    const november = new Date("2026-11-01T09:00:00+09:00");
+    expect(parseSpokenDate("31日", november)).toEqual({ year: 2026, month: 12, day: 31 });
+  });
+
+  it("年をまたぐ月は翌年にする", () => {
+    const december = new Date("2026-12-20T09:00:00+09:00");
+    expect(parseSpokenDate("5日", december)).toEqual({ year: 2027, month: 1, day: 5 });
+  });
+
+  it("日を数字で言えば、曜日より日を優先する", () => {
+    // 日を数字で言うほうが具体的なので、「5日の土曜」は 5 日を採る。
+    expect(parseSpokenDate("5日の土曜", NOW)).toEqual({ year: 2026, month: 11, day: 5 });
+  });
+
+  it("「3日前」のような相対表現は日付として読まない", () => {
+    expect(parseSpokenDate("3日前", NOW)).toBeNull();
+  });
+
+  it("「来月」「再来月」は月初にする", () => {
+    expect(parseSpokenDate("来月", NOW)).toEqual({ year: 2026, month: 11, day: 1 });
+    expect(parseSpokenDate("再来月", NOW)).toEqual({ year: 2026, month: 12, day: 1 });
+  });
+
+  it("「来月5日」は翌月のその日にする", () => {
+    expect(parseSpokenDate("来月5日", NOW)).toEqual({ year: 2026, month: 11, day: 5 });
+  });
+
+  it("「今月末」「来月末」はその月の末日にする", () => {
+    expect(parseSpokenDate("今月末", NOW)).toEqual({ year: 2026, month: 10, day: 31 });
+    expect(parseSpokenDate("来月末", NOW)).toEqual({ year: 2026, month: 11, day: 30 });
+  });
+});
+
+describe("曜日の日付", () => {
+  // 2026 年 10 月 24 日は土曜日。
+  it("「次の土曜」は今日より後で最も近い土曜にする", () => {
+    expect(parseSpokenDate("次の土曜", NOW)).toEqual({ year: 2026, month: 10, day: 31 });
+  });
+
+  it("「土曜」だけなら今日以降で最も近い土曜にする", () => {
+    expect(parseSpokenDate("土曜日", NOW)).toEqual({ year: 2026, month: 10, day: 24 });
+  });
+
+  it("「来週の金曜」は来週の金曜にする", () => {
+    // 今週は 10 月 18 日（日）始まり。来週の金曜は 10 月 30 日。
+    expect(parseSpokenDate("来週の金曜", NOW)).toEqual({ year: 2026, month: 10, day: 30 });
+  });
+
+  it("「今週」の日が過ぎていれば翌週へ送る", () => {
+    // 今週の月曜は 10 月 19 日で過ぎているため、10 月 26 日。
+    expect(parseSpokenDate("今週の月曜", NOW)).toEqual({ year: 2026, month: 10, day: 26 });
+  });
+
+  it("「再来週」は 2 週間後のその曜日にする", () => {
+    expect(parseSpokenDate("再来週の月曜", NOW)).toEqual({ year: 2026, month: 11, day: 2 });
+  });
+});
+
+describe("朝・昼・夜の時刻", () => {
+  it("「朝から」を 9:00 にする", () => {
+    expect(parseSpokenClock("朝から")).toEqual({ hour: 9, minute: 0 });
+  });
+
+  it("「昼から」を 12:00 にする", () => {
+    expect(parseSpokenClock("昼から")).toEqual({ hour: 12, minute: 0 });
+  });
+
+  it("「夜7時」を 19:00 にする", () => {
+    expect(parseSpokenClock("夜7時")).toEqual({ hour: 19, minute: 0 });
+    expect(parseSpokenClock("夜7時半")).toEqual({ hour: 19, minute: 30 });
+  });
+
+  it("「朝9時」のように時刻を言えば、その時刻をそのまま使う", () => {
+    expect(parseSpokenClock("朝9時")).toEqual({ hour: 9, minute: 0 });
+  });
+});
+
+describe("長さから終了時刻を決める", () => {
+  it("「18時から2時間」で開始と終了を同時に入れる", () => {
+    const patch = parseVoiceScheduleStart("18時から2時間", context());
+    expect(patch?.schedules?.[0].startTime).toBe("18:00");
+    expect(patch?.schedules?.[0].endTime).toBe("20:00");
+  });
+
+  it("「2時間半」を同じ行の開始時刻から計算する", () => {
+    const patch = parseVoiceScheduleEnd("2時間半", context(withRows()));
+    expect(patch?.schedules?.[0].endTime).toBe("20:30");
+  });
+
+  it("終了の欄で「18時から2時間」と言えば、言った開始を基準にする", () => {
+    const patch = parseVoiceScheduleEnd("18時から2時間", context(withRows()));
+    expect(patch?.schedules?.[0].endTime).toBe("20:00");
+  });
+
+  it("開始時刻が無ければ、長さだけでは終了を決めない", () => {
+    expect(parseVoiceScheduleEnd("2時間", context())).toBeNull();
+  });
+
+  it("0 時をまたぐ長さは受け付けない（翌日へは回さない）", () => {
+    expect(parseVoiceScheduleStart("23時から2時間", context())).toBeNull();
+    const value = withRows({
+      schedules: [createScheduleDraft({ eventDate: "2026-12-05", startTime: "23:00" })],
+    });
+    expect(parseVoiceScheduleEnd("2時間", { now: NOW, value })).toBeNull();
+  });
+});
+
+describe("都道府県の略称", () => {
+  it.each([
+    ["東京", "東京都"],
+    ["大阪", "大阪府"],
+    ["京都", "京都府"],
+    ["沖縄", "沖縄県"],
+    ["神奈川", "神奈川県"],
+    ["北海道", "北海道"],
+  ])("「%s」を %s にする", (input, expected) => {
+    expect(parseVoicePrefecture(input)).toEqual({ prefecture: expected });
+  });
+
+  it("正式名があればそちらを優先する", () => {
+    expect(parseVoicePrefecture("東京都")).toEqual({ prefecture: "東京都" });
+    expect(parseVoicePrefecture("京都府です")).toEqual({ prefecture: "京都府" });
+  });
+});
+
+describe("金額と定員の言い方", () => {
+  it("「1人3000円」から 3000 円を読む", () => {
+    const patch = parseVoicePlanAmount("1人3000円", context(withRows()));
+    expect(patch?.pricePlans?.[0].amount).toBe("3000");
+  });
+
+  it("「3000円くらい」から 3000 円を読む", () => {
+    const patch = parseVoicePlanAmount("3000円くらい", context(withRows()));
+    expect(patch?.pricePlans?.[0].amount).toBe("3000");
+  });
+
+  it("「3000円」を無料にしない", () => {
+    const patch = parseVoicePlanAmount("3000円", context(withRows()));
+    expect(patch?.pricePlans?.[0].amount).toBe("3000");
+  });
+
+  it("「30人くらい」を 30 人にする", () => {
+    expect(parseVoiceCapacity("30人くらい")).toEqual({ capacity: 30 });
+  });
+});
+
+describe("既存の抽出を変えない", () => {
+  it("「夜の部」のような催しの名前を時刻に変えない", () => {
+    expect(parseVoiceTitle("夜の部")).toEqual({ title: "夜の部" });
+  });
 });
