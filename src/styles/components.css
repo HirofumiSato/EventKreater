@@ -63,9 +63,9 @@
 
 .hero--stage .hero__eyebrow {
   display: inline-block;
-  /* 1 行を崩さない。長い題字なので、幅が足りないところでは字を小さくする
-     （スマホは deco/base.css が画面幅に合わせて縮める）。 */
-  white-space: nowrap;
+  /* 題字は 12px を下回らせない。収まらない幅では 1 行に押し込まず、2 行に折る
+     （字を小さくすると、札として読めなくなる）。折るときは行の長さをそろえる。 */
+  text-wrap: balance;
   padding: 0.3rem 0.65rem;
   background: var(--color-primary);
   color: #fff;
@@ -197,7 +197,7 @@
 }
 
 .hero--stage .hero__actions {
-  /* 主操作・注記・補助のリンクを、上から 1 段ずつ積む。
+  /* 主操作の段と補助のリンクの段を、上から 1 段ずつ積む。
      横に混ぜると、52px のボタンと 23px のリンクが同じ行で上下にずれる。 */
   display: grid;
   justify-items: start;
@@ -230,16 +230,6 @@
   align-items: center;
   min-height: var(--tap-target);
   font-size: 0.8125rem;
-}
-
-/* 主操作の直下に置く条件の注記。ボタンと同じ幅の流れに置き、字は小さくする。
-   ボタンとの間を 2px だけ空け、条件ではなく添え書きとして読ませる。
-   文は画面が持ち（ホーム専用の定数）、ここは見た目だけを持つ。 */
-.hero__note {
-  margin: 2px 0 0;
-  color: var(--color-ink-soft);
-  font-size: 0.75rem;
-  line-height: 1.6;
 }
 
 .hero--stage .text-link {

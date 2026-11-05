@@ -104,8 +104,10 @@
   background: var(--pop-warm);
   color: #1a1916;
   font-weight: 700;
-  /* 文言が長い（35 文字）。札が 900px の細いコピー列にも収まるよう、字間は詰める。 */
+  /* 文言が長い（44 文字）。収まらない幅では 2 行に折り、字は 12px から下げない。
+     字間は詰めて、札としてのまとまりを保つ。 */
   letter-spacing: 0.02em;
+  line-height: 1.45;
   transform: rotate(-2.5deg);
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
@@ -124,14 +126,15 @@
     /* ヒーローの左右の余白を打ち消して、画面の端まで通す。
        余白の値は幅ごとに変わるので、固定値ではなく 50% - 50vw で戻す。 */
     margin-inline: calc(50% - 50vw);
-    /* 1 行に収める。行数が増えると帯が厚くなり、ヒーローの頭が重くなる。
-       文字サイズは画面幅に合わせ、狭い端末でも折り返さない。
-       文言が長い（35 文字）ので、字間は詰め気味にして読み幅を稼ぐ。 */
+    /* 1 行に収めようと字を縮めない。題字は 44 文字あり、360px で 1 行に
+       収めるには 8px まで落とすことになる。読めなくなるので、幅が足りない
+       ところでは 2 行に折り、字は 12px（ヒーローの他の添え書きと同じ）で保つ。
+       折るときは行の長さをそろえ（components.css の text-wrap: balance）、
+       帯の厚みは行間と余白で抑える。 */
     padding: 0.4375rem 0.75rem;
-    font-size: clamp(0.5625rem, 2.6vw, 0.75rem);
+    font-size: 0.75rem;
     letter-spacing: 0.02em;
-    line-height: 1.5;
-    white-space: nowrap;
+    line-height: 1.45;
     text-align: center;
     border-radius: 0;
     transform: rotate(-2.5deg);
@@ -147,25 +150,15 @@
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
 
-/* 見出しの中の「告知」「申込」「ウェブ」。地は塗らず、文字色だけで 3 語を分ける。
-   墨地に 4.5:1 以上を満たす明るさの差し色を tokens.css から読む。 */
-.deco .hero--stage .hero__mark {
+/* 見出しは白の 1 色にそろえる。冒頭の「イベント告知&申込」だけ、
+   山吹のアンダーラインマーカーで受け止める。地は塗らず、字の下に太い線を敷く。
+   線は字に重ねず、下端から少し離して引く（下線の位置は em で持つ）。 */
+.deco .hero--stage .hero__marker {
   font-weight: 700;
-}
-
-.deco .hero--stage .hero__mark--notice {
-  background: none;
-  color: var(--color-mark-notice);
-}
-
-.deco .hero--stage .hero__mark--apply {
-  background: none;
-  color: var(--color-mark-apply);
-}
-
-.deco .hero--stage .hero__mark--web {
-  background: none;
-  color: var(--color-mark-web);
+  text-decoration-line: underline;
+  text-decoration-color: var(--pop-warm);
+  text-decoration-thickness: 0.22em;
+  text-underline-offset: 0.16em;
 }
 
 /* ヒーローのショーケース（実際に作った画面の見本）。紙の束として立てるが、
