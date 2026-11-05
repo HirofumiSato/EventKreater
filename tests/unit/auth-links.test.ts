@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
+import { loginEntryUrl, loginUrl, passwordResetUrl, phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
 
 describe("認証への導線", () => {
@@ -30,5 +30,24 @@ describe("認証への導線", () => {
   it("許可していないパスは既定の着地へ落とす", () => {
     expect(safeNextPath("/console")).toBe("/mypage");
     expect(safeNextPath("/organizersx")).toBe("/mypage");
+  });
+});
+
+describe("パスワード再設定の導線", () => {
+  it("依頼の画面は、主催者ならクエリを付けず参加者の役割だけを保つ", () => {
+    expect(passwordResetUrl("organizer")).toBe("/auth/password/reset");
+    expect(passwordResetUrl("participant")).toBe("/auth/password/reset?audience=participant");
+  });
+
+  it("メールのリンクは、token と役割を持つ", () => {
+    expect(passwordResetUrl("organizer", "abc123")).toBe("/auth/password/reset?token=abc123");
+    expect(passwordResetUrl("participant", "abc123")).toBe(
+      "/auth/password/reset?token=abc123&audience=participant",
+    );
+  });
+
+  it("再設定のあとは、入口ごとのログイン画面へ戻す", () => {
+    expect(loginEntryUrl("organizer")).toBe("/auth/register?mode=login");
+    expect(loginEntryUrl("participant")).toBe("/participant/login");
   });
 });

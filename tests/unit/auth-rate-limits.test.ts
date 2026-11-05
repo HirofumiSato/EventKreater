@@ -148,6 +148,38 @@ describe("createRateLimits", () => {
     expect(rules.rsvpToken.limit).toBe(10);
     expect(rules.rsvpToken.windowMs).toBe(10 * 60 * 1000);
   });
+
+  it("パスワード再設定の既定値はメール送信が 5 回、照合が 20 回（どちらも 1 時間）", () => {
+    const { rules } = createRateLimits(PROD);
+    expect(rules.resetEmail.limit).toBe(5);
+    expect(rules.resetEmail.windowMs).toBe(60 * 60 * 1000);
+    expect(rules.resetIp.limit).toBe(10);
+    expect(rules.resetIp.windowMs).toBe(60 * 60 * 1000);
+    expect(rules.resetConfirmIp.limit).toBe(20);
+    expect(rules.resetConfirmIp.windowMs).toBe(60 * 60 * 1000);
+  });
+
+  it("パスワード再設定のキー接頭辞と対象名は、積んだ回数を引き継ぐ形になっている", () => {
+    const { rules } = createRateLimits(PROD);
+    expect(rules.resetEmail.keyPrefix).toBe("reset:email:");
+    expect(rules.resetEmail.label).toBe("パスワード再設定のメール送信");
+    expect(rules.resetIp.keyPrefix).toBe("reset:ip:");
+    expect(rules.resetIp.label).toBe("この接続からのパスワード再設定のメール送信");
+    expect(rules.resetConfirmIp.keyPrefix).toBe("reset:confirm:ip:");
+    expect(rules.resetConfirmIp.label).toBe("パスワード再設定リンクの照合");
+  });
+
+  it("パスワード再設定の上限は送信・照合の既存 env を再利用する", () => {
+    const { rules } = createRateLimits({
+      ...PROD,
+      AUTH_SEND_LIMIT: "8",
+      AUTH_SEND_IP_LIMIT: "16",
+      AUTH_CONFIRM_IP_LIMIT: "30",
+    });
+    expect(rules.resetEmail.limit).toBe(8);
+    expect(rules.resetIp.limit).toBe(16);
+    expect(rules.resetConfirmIp.limit).toBe(30);
+  });
 });
 
 describe("limitNotice", () => {
