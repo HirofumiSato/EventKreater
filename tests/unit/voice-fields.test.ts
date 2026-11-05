@@ -7,6 +7,7 @@ import {
   isFieldNeeded,
   nextNeededField,
   previousField,
+  shouldAskGenderBeforePricing,
   startFieldFor,
   voiceFieldByKey,
   voiceFieldOrder,
@@ -197,6 +198,20 @@ describe("次に埋める欄の決め方", () => {
 
   it("後ろに空欄が無ければ null を返す", () => {
     expect(nextNeededField(filledForm(), "building:0", scope())).toBeNull();
+  });
+});
+
+describe("費用の入口で男女別を聞くか", () => {
+  it("共通の費用だけなら、プラン名の直前に聞く", () => {
+    expect(shouldAskGenderBeforePricing(EMPTY_EVENT_FORM)).toBe(true);
+  });
+
+  it("男女別の行が 1 つでもあれば聞かない", () => {
+    expect(shouldAskGenderBeforePricing(genderForm())).toBe(false);
+  });
+
+  it("費用の行が無ければ聞かない", () => {
+    expect(shouldAskGenderBeforePricing({ ...EMPTY_EVENT_FORM, pricePlans: [] })).toBe(false);
   });
 });
 

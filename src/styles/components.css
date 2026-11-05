@@ -113,7 +113,7 @@
 }
 
 /* 吹き出し 2 枚を横に並べる束。上は「作れるもの」、下は「そのあとも使えるもの」の順。
-   見出しの行に収まるときは右、収まらないときは見出しの次の行の左端に置く。 */
+   見出しの行に収まるときは右、収まらないときは折り返して束だけを右端へ寄せる。 */
 .hero--stage .hero__callouts {
   display: flex;
   flex: none;
@@ -121,22 +121,25 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.4rem;
+  /* 折り返した束を右へ寄せ、見出しの行の右端にそろえる。 */
+  margin-left: auto;
 }
 
 /* 見出しの最後の行に添える吹き出し（各 2 行）。主役ではないので字は小さく、
    見出しの 2 行は崩さない。丸いポップにして、2 枚で少しだけ傾きを変える。
-   塗りと影は deco 層（`deco/base.css`）が持つ。 */
+   塗りと影は deco 層（`deco/base.css`）が持つ。
+   縦は詰めて、2 行の吹き出しの高さを見出しの行の高さにそろえる。 */
 .hero--stage .hero__callout {
   position: relative;
   flex: none;
   min-width: 5rem;
   max-width: 10rem;
-  padding: 0.3rem 0.7rem;
+  padding: 0.1rem 0.7rem;
   border-radius: 1.25rem;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1.35;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
@@ -148,9 +151,9 @@
   transform: rotate(1.5deg);
 }
 
-/* 尾は左端の 1 枚だけに付ける。左上へ向けるため、45 度回した同色の四角を
+/* 尾は各吹き出しの左上に付ける。左上へ向けるため、45 度回した同色の四角を
    上辺から少しだけ出す。色は吹き出しの塗りをそのまま受け取る（deco 層が持つ）。 */
-.hero--stage .hero__callout:first-child::before {
+.hero--stage .hero__callout::before {
   content: "";
   position: absolute;
   top: -0.3rem;
@@ -192,7 +195,9 @@
 }
 
 /* 主操作の下に並べるテキストリンク。狭い幅では折り返す。
-   行の高さは押せる的（40px）を確保し、字の位置は中央に置く。 */
+   行の高さは押せる的（40px）を確保し、字の位置は中央に置く。
+   主操作（`--font-action` の 15px）より二段小さくする。費用の注記（12px）とは
+   分ける添え書きなので、その間の 13px にする。押せる的は下げない。 */
 .hero__links {
   display: flex;
   flex-wrap: wrap;
@@ -205,12 +210,7 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-target);
-}
-
-/* ログイン導線の「登録/ログイン」だけを一回り小さくする。押せる的（40px）は
-   リンク全体が持つので、字を下げても押しやすさは変わらない。 */
-.hero__link-suffix {
-  font-size: 0.85em;
+  font-size: 0.8125rem;
 }
 
 /* 主操作の直下に置く条件の注記。ボタンと同じ幅の流れに置き、字は小さくする。
@@ -290,12 +290,18 @@
     font-size: 2rem;
   }
 
+  /* 広い画面は見出しの行に並ぶので、右端へ寄せない。 */
+  .hero--stage .hero__callouts {
+    margin-left: 0;
+  }
+
   /* 見出しと同じ割合で、吹き出しも少しだけ大きくする。
      文言は 2 行に折ってあるので、幅は max-width と中の文で決める。 */
   .hero--stage .hero__callout {
     max-width: 12rem;
     padding: 0.35rem 0.75rem;
     font-size: 0.8125rem;
+    line-height: 1.35;
   }
 }
 
@@ -1134,6 +1140,18 @@ fieldset.field {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px dashed var(--color-border-strong);
+}
+
+/* チラシのまとまりはカードの枠を持たない。ステップの他の欄（テーマの legend など）と
+   文字の開始位置をそろえる。区切りは `.event-step__block + .event-step__block` が持つ。
+   塗り・影・角丸はテーマ（deco 層）が `.card` に付ける。テーマはこのファイルより後に
+   読まれるため、ステップの入れ子をたどって詳細度を上げ、テーマの指定も打ち消す。 */
+.event-step .event-step__body .event-step__block--flyer .card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .event-step__actions {

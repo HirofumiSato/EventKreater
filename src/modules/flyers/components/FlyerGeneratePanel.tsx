@@ -29,6 +29,13 @@ interface FlyerGeneratePanelProps {
   published?: boolean;
   onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
   onClear: () => void;
+  /**
+   * 未ログインで作っている最中か。真なら、チラシの作成は回数枠ではなく認証へ送る。
+   * 編集画面のように常に会員の画面は渡さない（既定の false で今までどおり）。
+   */
+  requireAuth?: boolean;
+  /** 未ログインで作成を押したとき。押した時点の入力を退避してから登録・ログインへ送る。 */
+  onRequireAuth?: () => void;
 }
 
 export function FlyerGeneratePanel({
@@ -41,6 +48,8 @@ export function FlyerGeneratePanel({
   published = false,
   onGenerated,
   onClear,
+  requireAuth = false,
+  onRequireAuth,
 }: FlyerGeneratePanelProps) {
   const [draftKey, setDraftKey] = useState<string | null>(null);
   const [quota, setQuota] = useState<FlyerQuota | null>(null);
@@ -112,6 +121,24 @@ export function FlyerGeneratePanel({
     setQuota(null);
   };
 
+  /**
+   * チラシの作成を始める。未ログインでは回数枠で止めず、認証へ送る。
+   * 入力を退避するのは呼び出し元（作成画面の `goAuth`）の仕事。
+   */
+  const startCreate = () => {
+    if (requireAuth) {
+      onRequireAuth?.();
+      return;
+    }
+    openWizard();
+  };
+
+  const createLabel = previewUrl
+    ? "作り直す"
+    : requireAuth
+      ? "新規登録/ログインしてチラシ作成"
+      : "チラシを新規作成";
+
   return (
     <div className="card stack">
       <div>
@@ -139,11 +166,12 @@ export function FlyerGeneratePanel({
       <div className="btn-row">
         <button
           type="button"
-          disabled={disabled || !draftKey || exhausted}
-          onClick={openWizard}
+          // 未ログインでは回数枠（`draftKey` / `exhausted`）ではなく認証で判断する。
+          disabled={requireAuth ? disabled : disabled || !draftKey || exhausted}
+          onClick={startCreate}
           className="btn btn--outline btn--sm"
         >
-          {previewUrl ? "作り直す" : "チラシを新規作成"}
+          {createLabel}
         </button>
         {previewUrl && flyerAssetId && published && (
           <>

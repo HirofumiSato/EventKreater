@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_EVENT_FORM, createPricePlanDraft, createScheduleDraft, type EventFormValues } from "@/modules/events/types";
 import {
+  cleanTranscript,
   normalizeSpokenText,
   normalizeTimeWords,
   parseJapaneseNumber,
@@ -69,6 +70,21 @@ describe("話し言葉の正規化", () => {
   it("「一般」のような漢字の語を数字に変えない", () => {
     expect(parseJapaneseNumber("一般")).toBeNull();
     expect(normalizeSpokenText("一般")).toBe("一般");
+  });
+});
+
+describe("認識結果の整え", () => {
+  it("末尾の 。！？ と空白だけを落とし、文の途中の記号は残す", () => {
+    expect(cleanTranscript("18時。")).toBe("18時");
+    expect(cleanTranscript("18時！？")).toBe("18時");
+    expect(cleanTranscript("  18時  ")).toBe("18時");
+    // 途中の記号は、話した言葉の区切りとして残す。
+    expect(cleanTranscript("18時、20時")).toBe("18時、20時");
+    expect(cleanTranscript("18時。次は会場名")).toBe("18時。次は会場名");
+  });
+
+  it("句読点だけなら空にする", () => {
+    expect(cleanTranscript("  。 ")).toBe("");
   });
 });
 

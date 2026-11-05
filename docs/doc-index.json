@@ -11537,7 +11537,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 730,
+      "lineCount": 738,
       "headings": [
         {
           "level": 1,
@@ -11599,6 +11599,10 @@
           "exists": true
         },
         {
+          "path": "tests/components/flyer-generate-panel-auth.test.tsx",
+          "exists": true
+        },
+        {
           "path": "tests/components/participant-list-table.test.tsx",
           "exists": true
         },
@@ -11608,6 +11612,10 @@
         },
         {
           "path": "tests/components/rsvp-modal.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/voice-address-search.test.tsx",
           "exists": true
         },
         {
@@ -12985,7 +12993,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 459,
+      "lineCount": 462,
       "headings": [
         {
           "level": 1,

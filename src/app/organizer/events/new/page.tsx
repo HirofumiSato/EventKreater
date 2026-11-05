@@ -266,6 +266,9 @@ function NewEventScreen() {
               previewUrl={flyerPreview}
               flyerAssetId={form.flyerAssetId}
               draftScope="new"
+              // 未ログインではチラシの作成も行き先が同じ認証。`goAuth` が入力を退避する。
+              requireAuth={!canSaveDraft}
+              onRequireAuth={goAuth}
               onGenerated={(asset) => {
                 setForm((current) => ({ ...current, flyerAssetId: asset.id }));
                 setFlyerPreview(asset.imageUrl);
