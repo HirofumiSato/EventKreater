@@ -15,15 +15,13 @@
 | モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run mock:check`（任意。ソースの指紋と `mock-manifest.json` の一致）。追いつきは `npm run mock:catchup` |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |
 
-## 既知の乖離（2026-10-22 時点）
+## 既知の乖離（2026-11-05 時点）
 
-コードにあって文書に無いもの、文書が指すが実在しないものです。直したらこの行を消してください。
+コードにあって文書に無いもの、文書が指すが実在しないものです。直したらこの行を消してください。未実装のまま残すと決めたものは「未実装（pending）」と書きます。
 
 | 種別 | 件数 | 内容 |
 | --- | --- | --- |
-| API | 5 | 仕様書に無い実装。`GET /api/v1/organizer/events/[id]/organizers`、`DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]`、`POST /api/v1/invitations/[code]`（仕様は GET のみ）、`DELETE /api/v1/flyer-assets/[id]`、`GET /api/v1/geo/postal-codes/[code]`。一覧は [api-routes.md](api-routes.md) |
-| DB | 1 | `reminder_deliveries`（`ReminderDelivery`） |
-| 手順 | 1 | `archive/user-management/local_environment.md` の URL が `localhost:3000` と `/api/v1/health`。現在は 3012 で、health のルートは無い。アーカイブ済みなので直さない |
+| DB | 1 | `reminder_deliveries` は表と Prisma モデルだけがあり、リマインドの送信は**未実装（pending）**。[DBschema.md](DBschema.md) §4.7 に注記 |
 
 テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。文書が指すパスの実在は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` で管理し、`npm run check:full` も見ます。空のまま保ち、増えたら仕様書か実装のどちらかを直してください。
 
