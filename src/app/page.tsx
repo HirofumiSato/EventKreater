@@ -68,16 +68,6 @@ function renderTagline(line: string) {
   });
 }
 
-/**
- * 見出しの 1 つ目の文を、幅ではなく文の切れ目で 2 段に折る。
- * 「イベント告知&申込の／ウェブページ、」と、「の」の直後で改行する。
- * 文言は `SITE.taglineLines` に置いたまま、ここは折る位置だけを持つ。
- */
-function splitTaglineHead(line: string): [string, string] {
-  const end = line.indexOf("の") + 1;
-  return [line.slice(0, end), line.slice(end)];
-}
-
 /** 幹事に起きること。機能名ではなく、手間がどう減るかで書く。 */
 const capabilities = [
   [
@@ -141,15 +131,11 @@ export default function HomePage() {
             {/*
               改行の位置は文言の一部。幅で行数も並びも変えず、文字サイズだけを
               幅に合わせて上げる（CSS の .hero__title が持つ）。幅で DOM を変えない。
-              1 つ目の文は「の」の直後で 2 段に折り、残りの句は 1 段に横へ並べる。
+              1 つ目の文は折らずに 1 段に置き、残りの句は 1 段に横へ並べる。
               最後の段に吹き出しを 2 枚添え、入りきらないときは束だけを次の行へ落とす。
             */}
             <h1 className="hero__title">
-              {splitTaglineHead(SITE.taglineLines[0]).map((part) => (
-                <span key={part} className="hero__title-line">
-                  {renderTagline(part)}
-                </span>
-              ))}
+              <span className="hero__title-line">{renderTagline(SITE.taglineLines[0])}</span>
               <span className="hero__title-row">
                 {SITE.taglineLines.slice(1).map((line) => (
                   <span key={line} className="hero__title-line">
