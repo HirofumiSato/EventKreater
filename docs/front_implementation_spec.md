@@ -39,7 +39,7 @@ flowchart TD
    - Stripe Hosted Checkout での支払い完了後、リダイレクトURL（`?session_id=...`）を検知してフロントエンドから同期的セッション検証（`POST /api/v1/billing/checkout/verify`）を直ちに実行。Webhookの非同期遅延を待たずに即時でイベント作成を再開できるUXを実現。  
 5. **Self-Service Billing Portal (自己解決型サブスク管理):**  
    - 支払いが発生するのは、筆頭幹事が公開または複製でチケットを使うときだけである。参加者の出欠では課金しない。会員かどうかは問わない。共同幹事もチケットを消費しない。  
-   - 「プラン・カード管理」は主催者ダッシュボードに置く。同じボタンをマイページにも置く。開く契約は、その会員が筆頭幹事として持つチケットであり、出欠の対価ではない。Stripe Customer Portal の完了後は、どちらの画面から開いても主催一覧へ戻る。
+   - 「プラン・カード管理」は共通ヘッダーの頭文字のメニューから `/organizer/plan`（SCR-ORG-17）を開く。契約の状態・残数・選べるプランを 1 画面にまとめ、カードの変更と解約だけを Stripe Customer Portal が受ける。開く契約は、その会員が筆頭幹事として持つチケットであり、出欠の対価ではない。Portal の完了後は SCR-ORG-17 へ戻る。
 
 ### 1.2. レスポンシブの基準（スマホが先）
 
@@ -106,6 +106,7 @@ flowchart TD
 | `/organizer/events/new` | SCR-ORG-02 | 主催幹事（会員） | 会員JWT必須（未ログインは入力内容を退避してログインへ） | 新規イベント作成（インプット7項目・申し込み期限・チラシ生成・Checkout戻り検知）。冒頭 `h1` は画面名。入力を5ステップのアコーディオンに分け、開いているステップの入力欄だけを出す（12.3）。最後の操作はステップの外側（`form-final`）に置き、必須の残り数を添える。スマホ（640px 未満）ではこの帯を画面下に固定し、帯の高さぶん本文とフッターの下に余白を残す（音声ボタンとパネルも帯の上へ逃がす）。会員は「下書き保存」と「プレビューに進む」の2つで、保存してから SCR-ORG-16 へ進む。スマホの「プレビューに進む」は保存の前に、ここまでの内容を告知ページと同じ部品・同じテーマのモーダルで確かめ、モーダルの「下書き保存してプレビューへ」で SCR-ORG-16 へ進む。広い画面は従来どおり直接 SCR-ORG-16 へ進む。未ログインのときは「ログインして続ける」（`btn--primary`）の 1 つだけを出し、必須の入力を確かめてから入力を `sessionStorage` に退避し、`registerUrl(next)` で `/auth/register?mode=register` へ送る（認証画面は新規登録とログインを1枚で扱い、既存会員は画面側でログインへ切り替える）。押した時点では公開と下書き保存のどちらも決まっていないため、ボタンは分けない。未ログインではチラシの「新規登録/ログインしてチラシ作成」（プレビューがあれば「作り直す」）からも同じ認証へ送り、押した時点の入力を退避して `registerUrl(next)` へ進む。戻ってきたら退避した内容を復元し、会員と同じ「下書き保存」「プレビューに進む」で続きを選ぶ。入力内容は公開の直前に告知ページのプレビューで確かめられるため、未ログインの間に公開まで進める経路は持たない（`visibility` は常に `UNLISTED`）。`?ref=<イベントID>` を読み、作成本文の `referrerEventId` に載せる。`?draftId=` で下書きを復元し、保存のたびに URL へ残す。右下にマイクボタンを固定し、押すと音声入力のパネル（強調中の入力欄のすぐ下で、右下のマイクボタンの手前まで）を出して、そのまま録音を始める。初めてのときは、マイクボタンを切り抜いた黒透過の案内に「音声入力でスムーズに操作」と「次回から表示しない」を出し、マイクボタンを押すと閉じてそのまま録音へ入る。録音中は主ボタンの真下に「話し終わったら／タップ」の 2 行を、スキップの下に「スキップ」を灰色の小さな文字だけで出す。戻る・スキップは録音中も押せ、いまの録音は捨てて移った欄で録り直す（止めるのは文字化・住所検索・完了の待ちの間だけ）。直前に入力欄を選んでいればその欄から、無ければ上から順に空欄を強調して 1 欄ずつ録音し、停止すると「「忘年会」を入力します」の形で値と問いを 1 行に並べた題の確認モーダルを挟む（本文は置かない。「確定」で確定、「再録音」で同じ欄を録り直し、背景・×・`Esc` は閉じて同じ欄に留まる）。確定したら「自動遷移」がオンなら次の空欄へ進んで録音を続け、オフなら同じ欄に留まる（既定はオン）。モック（`VOICE_TRANSCRIBE_MOCK=1`）でも録音だけを差し替え、この確認は同じように挟む。開催日時と費用は 2 件目以降の行も音声で埋められる。その行の開催日・開始・終了がそろうと「別の日時も追加しますか」と聞く。男女別は、費用の最初（プラン名）を聞く直前に 1 セッション 1 回だけ「男女別の費用を設定しますか」と聞き、「男女別にする」なら行を分けてから、「共通のまま」でもプラン名へ進む（女性の金額へ飛ばさない）。「任意の項目も聞く」は既定でオンで、雨天時の方針・定員・申し込み期限も巡回に含める。郵便番号を話すと 7 桁で住所を引き、都道府県・市区町村・町域を入れてから次（番地）へ進む。入力できる欄が尽きたら「入力完了！」を出し、3秒後に音声モードを終了する。強調は DOM フォーカスではなく `data-voice-target` で行い、日付・時刻の OS ピッカーを開かない。音声モードの間は、いま聞いている欄のまわりだけをくり抜いて画面全体を半透明の黒で覆い、それ以外の操作を止める。くり抜きの穴は欄の中心をビューポートの中央へ寄せる（`src/modules/events/components/VoiceInputDock.tsx`） |
 | `/organizer/events/drafts` | SCR-ORG-15 | 主催幹事 / 共同幹事 | 会員JWT | 下書き一覧。冒頭 `h1` は画面名。自分の `DRAFT` だけを出す（`GET /api/v1/organizer/events` を画面側で絞る）。各カードから SCR-ORG-16 のプレビュー、SCR-ORG-05 の編集、削除（SCR-MOD-03）へ進む。下書きの間はチケットを消費しない旨を書く。主催一覧へ戻る導線を置く |
 | `/organizer/events/[id]/preview` | SCR-ORG-16 | 主催幹事 / 共同幹事 | 幹事JWT（`GET /api/v1/organizer/events/[id]`）。公開は筆頭幹事の会員のみ | 下書きのプレビュー。`noindex`。公開操作は共通ヘッダー直下の全幅バー（パネルではない）から行う。チラシ以降は SCR-PUB-01 と同じ `PosterHero`・`EventMetaCard`・出欠の面と層で見た目を確かめ、出欠は操作できない。出欠の層は開ける（主催者が「どう出るか」を確かめる画面なので、開けないと用をなさない）が、入力と送信は止め、層の中に「この画面からは送信できません。」の 1 行を出す。選んだテーマ（`themeId`）と対象世代も反映する。参加履歴・主催者勧誘カードは出さない。「公開する」で `POST /api/v1/organizer/events/[id]/publish` を呼び、成功したら確認の層を閉じて「チケットを使いました」と減った後の残り枚数を出す層（`PublishUsedModal`）を開き、閉じると告知ページへ移る。チケット不足は 402 で SCR-MOD-01（戻り先はこの画面）。オーナー以外には公開ボタンを出さず、その旨を書く。公開済みの ID を開いたときは告知ページへのリンクを出す。「公開する」を押した直後は `GET /api/v1/billing/quota` を読み直し、無料チケット・単発チケットを1枚使うときだけ確認の層（`PublishConfirmModal`）を挿む（定額は挿まない。何を1枚使うかと、使う前の残りを出す） |
+| `/organizer/plan` | SCR-ORG-17 | 主催幹事（会員） | 会員JWT必須 | プランとカードの管理。冒頭 `h1` は画面名、リードは「いまのプランとチケットを確認できます。」、右上は「主催一覧へ」。先頭に `VerifyPaymentBanner` を置き、検証が通ったら残数を読み直す。「いまのプラン」の `Panel` + `Rows` に、現在のプラン（8件まで公開プラン / 公開し放題プラン / 月額プランなし）、公開中のイベント（`publishedEventCount / publishedEventLimit`、上限なしは件数だけ）、無料チケットの残り、単発チケット、期限つきチケット、0円チケット（残りが 1 以上のときだけ）、初月無料の終了、割引、次回更新を出す。`PAST_DUE` は「お支払いに問題があります。カードを更新してください。」の `Alert` を出す。`subscriptionStatus` が `NONE` 以外のときは「お支払いと解約」の `Panel` に「カードを変更・解約」（`StripePortalButton`）を置き、失敗は画面の `Alert` に出す。月額プランは `PlanCard` を 2 枚並べ、`NONE` / `CANCELED` / `INCOMPLETE` のときだけ「初月0円で始める」「このプランを始める」を出して `startSubscriptionCheckout(plan, { returnTo: "/organizer/plan" })` を呼ぶ。`ACTIVE` / `PAST_DUE` では新規申込を出さず、「加入中のプランを変えるときは『カードを変更・解約』から手続きしてください。」と案内する。単発チケットは `PlanCard` 1 枚と「単発チケットを買う」で `TicketPurchaseModal` を開く（`PAST_DUE` と公開し放題プラン加入中は節ごと出さない。0円で受け取り済みなら「受け取り済みです」を無効表示）。残数を読めないときはログインへの `Alert` を出す。画面下に自動更新・解約は Stripe の画面で行うことと、`/terms` へのリンクを置く。`showOrganizerTabs` は変えず、節には置かない設定画面としてヘッダーのメニューから開く |
 | `/organizer/register-required` | SCR-ORG-10 | 既存のゲスト幹事 | ゲスト幹事 Cookie、または未ログイン（`eventId` はクエリ） | 公開直後の案内。新規作成からは到達しない（作成は会員のみ）。以前に未登録で作ったイベントを持つ端末の受け皿として残す。共有 URL とコピー、`?mode=register` 付きの会員登録、ログイン。名簿・売上・招待は登録後であることを書く。登録済みの幹事は管理画面へ、第三者・不正な ID には案内を出さない。`noindex` |
 | `/organizer/events/[id]/edit` | SCR-ORG-05 | 幹事（排他ロック保持） | 幹事権限 ＋ 排他ロック所持。未登録の幹事は作成から24時間以内 | イベント編集。複製した下書きだけ `PUBLISHED` にできる。保存後はロックを解放して主催一覧へ戻る。冒頭 `h1` は画面名、催し名はリード。ロックを保持している本人の画面には、排他の状態や残り時間を出さない。403 `REGISTER_REQUIRED` は `/organizer/register-required` へ送る。冒頭に筆頭幹事だけ表示する幹事パネル（`CoHostPanel`）を置き、主催 / 共同主催の一覧、招待URLの発行、共同主催者の解除を行う。解除はその場で確認を出し、実行後に一覧を読み直す |
 | `/organizer/events/[id]/participants` | SCR-ORG-06 | 幹事（会員のみ） | 幹事権限 ＋ 会員登録 | 参加者名簿。冒頭 `h1` は催し名にし、その上に小さく「参加者名簿」を出す（`PageHeader` の `eyebrow`）。リードは置かない。出欠の集計（回答・参加・参加要望・欠席）と集金済みを 5 列 1 段（`roster-summary--five`）で出し、390px でも 1 段に収める。売上サマリは見込み売上と平均単価の 2 行だけに詰める（`RevenueSummaryLedger` の `omit` と `dense`）。CSV と表示列の選択を持つ。表は読み専門で、操作の列は置かない。行を押すと 1 枚（`ParticipantSheet`）が開き、出欠・性別・人数・日時・費用プラン・コメントを直し、集金を切り替え、名簿から削除する。表は折り返さずに 1 行で出し（`white-space: nowrap`）、入りきらない列は横スクロールで読む。「表示列」から出す列を選べ、既定は名前・出欠・人数・費用プランの 4 列である。集金の列は既定に入れず、選んだときに出す。選んだ列は端末に覚える。参加要望は待ち順に並べ、1 枚の出欠を「出席」にすると承認になる。費用プラン列の下に、適用中の割引と支払額を出す（2 人以上なら「1人 2,500円」と「3人 合計 7,500円」の 2 行）、CSV にも「割引」「支払額」「集金」列を足す。集金は 1 タップで切り替え、出欠・割引・人数は送らない。リマインド・参加者ページのプレビュー・共有リンクのコピーは持たない。未登録の幹事は 403 `REGISTER_REQUIRED` |
@@ -165,6 +166,7 @@ flowchart TD
 | 主催 | SCR-ORG-05 | イベント編集 | `/organizer/events/[id]/edit` | 排他ロック付きの編集。保存完了でロックを解放し、主催一覧へ戻る。下書きは公開状態を選べる（その場で公開も可）。「イベントページのテーマとチラシ」のステップでイベントページのテーマを選べる。「プレビュー」から SCR-ORG-16 を開ける。未登録の幹事は作成から24時間以内 |
 | 主催 | SCR-ORG-15 | 下書き一覧 | `/organizer/events/drafts` | 自分の下書きだけを並べ、プレビュー・編集・削除を行う。下書きの間はチケットを消費しない |
 | 主催 | SCR-ORG-16 | 下書きのプレビュー | `/organizer/events/[id]/preview` | 告知ページと同じ見た目で確認し、その場で公開する。公開操作はヘッダー直下の全幅バー。出欠の面と層の見た目は出すが、層は開けるだけで操作できない。`noindex` |
+| 主催 | SCR-ORG-17 | プランとカードの管理 | `/organizer/plan` | いまのプラン・公開中の件数・チケットの残数を出し、月額プランと単発チケットを選ぶ。加入中は新規申込を出さず、「カードを変更・解約」から Stripe Customer Portal へ案内する。単発チケットはその場で買える層を開く。節には置かず、共通ヘッダーの頭文字のメニューから開く |
 | 主催 | SCR-ORG-06 | 参加者名簿 | `/organizer/events/[id]/participants` | 催し名を `h1` にし、上に小さく「参加者名簿」を出す。出欠集計（回答・参加・参加要望・欠席・集金済み）を 5 列 1 段で出し、集計の「参加」は人数の合計を出す。売上サマリは見込み売上と平均単価の 2 行だけにし、プラン未選択の案内を続ける。表は読むためだけに使い、操作の列は置かない。行を押すと 1 枚が開き、出欠・性別・人数（1〜20）・日時・費用プラン・コメントを直して保存するか、集金を切り替え、名簿から削除する。費用プラン列は申込時点の金額を出し、割引がある行か 2 人以上の行にはその下に割引と支払額（1 人ぶんと人数ぶんの合計）を出す。参加要望は待ち順に並べ、1 枚の出欠で出席へ上げる。CSV にも人数と集金の列を含める。表は折り返さず、「表示列」から出す列を選べる（既定は名前・出欠・人数・費用プランの 4 列） |
 | 主催 | SCR-ORG-11 | 売上 | `/organizer/revenue` | 見込み売上・集金済み・未集金・平均単価。全期間が初期値で、開催日で絞り込む。イベント別の一覧 |
 | 主催 | SCR-ORG-12 | 売上の内訳 | `/organizer/events/[id]/revenue` | プラン別と開催回別の人数・小計。プラン未選択と未集金の案内。按分した集金済みを出す |
@@ -176,7 +178,7 @@ flowchart TD
 | モーダル | SCR-MOD-03 | 削除確認モーダル | SCR-ORG-01・SCR-ORG-15 上（筆頭幹事のみ） | 完全削除（`isDeleted`）の確認だけを持つ。出欠受付停止（`CLOSED`）と公開の再開（`reopen`）は確認を挟まずカードから実行する（戻せる操作のため） |
 | モーダル | SCR-MOD-01 | 課金プランモーダル | 作成・編集・プレビュー・主催一覧・マイページ上（HTTP 402） | 単発299円 / 8件まで公開プラン980円 / 公開し放題プラン2980円の選択と Checkout 起動。期限つきの無料チケットを持っているときは、先頭に「チケットで公開する」の札（残り枚数と期限）を置き、その札を主操作にして単発と公開し放題プランを補助へ落とす。押すと閉じて、呼び出した画面が公開をやり直す（作成中とマイページでは札を出さない）。公開し放題プランは公開中のイベント数を数えないことを本文で示す。加入中の札には「現在のプラン」を出して押せなくする。割引中は販売価格と定価、期限を出す。0円の単発は「無料で受け取る」でその場で付与する。月額の2札は `trialEligible` が真のとき「初月0円 / 初月」と「2か月目から定価」を出し、ボタンを「初月0円で始める」にする（偽なら定価と「初月無料は、はじめての月額プラン加入のみです。」）。作成時は `draftId` を Checkout に引き継ぐ。公開中のイベントが8件で 402（`PUBLISHED_EVENTS_FULL`）のときは公開し放題プランを先頭に出す |
 | 外部 | — | Stripe Hosted Checkout | Stripe ホスト画面 | カード決済とサブスク加入。成功時は `session_id` 付きで SCR-ORG-02 へ戻る |
-| 外部 | — | Stripe Customer Portal | Stripe ホスト画面 | 筆頭幹事の解約とカード変更。SCR-PUB-03 から開き、完了後は SCR-PUB-03 へ戻る。参加者の出欠では開かない |
+| 外部 | — | Stripe Customer Portal | Stripe ホスト画面 | 筆頭幹事の解約とカード変更。SCR-ORG-17 の「カードを変更・解約」から開き、完了後は SCR-ORG-17 へ戻る。参加者の出欠では開かない |
 | 管理者 | SCR-ADM-00 | 管理者ログイン | `/console/login` | 公開ナビに出さない。パスワードのあと確認番号。確認済み電話が必須 |
 | 管理者 | SCR-ADM-04 | 管理者ホーム | `/console` | ログイン後の着地。会員、イベント、決済への入口 |
 | 管理者 | SCR-ADM-01 | 会員検索・権限変更 | `/console/users` | 名前・メールで検索し、他会員を管理者または会員にする |
@@ -247,6 +249,7 @@ graph TD
         ORG12["SCR-ORG-12: 売上の内訳<br/>/organizer/events/[id]/revenue"]:::organizer
         ORG13["SCR-ORG-13: カレンダー<br/>/organizer/calendar"]:::organizer
         ORG14["SCR-ORG-14: 公開プロフィール編集<br/>/organizer/profile"]:::organizer
+        ORG17["SCR-ORG-17: プランとカードの管理<br/>/organizer/plan"]:::organizer
         ORG07["SCR-ORG-07: 共同幹事受諾<br/>/invitations/[code]"]:::organizer
         ORG10["SCR-ORG-10: 公開直後の会員登録案内<br/>/organizer/register-required"]:::organizer
         ORG08["SCR-ORG-08: チラシ生成<br/>(SCR-ORG-02 / SCR-ORG-05 上のパネル)"]:::organizer
@@ -289,7 +292,7 @@ graph TD
     S_MYPAGE -->|主催一覧| ORG01
     S_MYPAGE -->|編集| ORG05
     S_MYPAGE -->|プロフィール| ORG14
-    S_MYPAGE -->|契約管理| ST_PORTAL
+    S_MYPAGE -->|契約管理| ORG17
     S_ADM -->|ブックマーク、または渡されたURL| ADM00
 
     %% 公開画面・参加者
@@ -351,7 +354,7 @@ graph TD
     PUB03 -->|イベントを編集| ORG05
     PUB03 -->|プロフィールを編集| ORG14
     PUB03 -->|公開ページを開く| PUB14
-    PUB03 -->|契約管理| ST_PORTAL
+    PUB03 -->|契約管理（ヘッダーのメニュー）| ORG17
     PUB03 -->|チケット不足 HTTP 402| MOD01
     PUB03 -->|ログアウト| PUB00
     ORG01 -->|新規作成| ORG02
@@ -362,7 +365,7 @@ graph TD
     ORG01 -->|カレンダー| ORG13
     ORG01 -->|プロフィールを編集| ORG14
     ORG01 -->|公開ページを開く・プレビュー| PUB14
-    ORG01 -->|筆頭幹事の契約管理| ST_PORTAL
+    ORG01 -->|筆頭幹事の契約管理| ORG17
     ORG01 -->|削除・受付停止| MOD03
     ORG01 -->|複製: チケット不足 HTTP 402| MOD01
     MOD03 -->|確定| ORG01
@@ -417,7 +420,11 @@ graph TD
     MOD01 -->|閉じる（一覧・マイページから）| ORG01
     ST_CHECK -->|決済成功: redirect session_id| ORG02
     ST_CHECK -.->|決済キャンセル| ORG02
-    ST_PORTAL -->|完了後に復帰| ORG01
+    ORG17 -->|カードを変更・解約| ST_PORTAL
+    ORG17 -->|月額プランを申し込む| ST_CHECK
+    ORG17 -->|主催一覧へ| ORG01
+    ST_CHECK -.->|"決済成功・キャンセル（returnTo=/organizer/plan）"| ORG17
+    ST_PORTAL -->|完了後に復帰| ORG17
 
     %% 管理者
     ADM00 -->|ADMIN かつパスワード一致| ADM04
@@ -460,7 +467,7 @@ SCR-PUB-02 は会員（`MEMBER`）専用である。管理者（`ADMIN`）が資
 
 `/events` と `/organizer/events/[id]` は独立した画面ではない。前者は `/` へ、後者は `/organizer/events/[id]/edit`（SCR-ORG-05）へリダイレクトする。
 
-課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。作成時の 402 では、入力を `status=DRAFT` で保存して `draftId` を Checkout の `metadata` に載せる。戻り先は `/organizer/events/new` で、`draftId` をクエリに保つ。Checkout の成功とキャンセルのどちらでも同じ画面へ戻り、`draftId` があればフォームを復元する。復元したフォームからの公開は `POST /api/v1/organizer/events/[id]/publish` を呼び、チケットを1枚消費して `PUBLISHED` にする。会員の通常の流れでは、作成画面の「下書き保存」または「プレビューに進む」で `POST /api/v1/public/events`（1回目）／`POST /api/v1/organizer/events/[id]/draft`（2回目以降）に保存し、SCR-ORG-16 の「公開する」から publish を呼ぶ。プレビューからの 402 は、戻り先を `/organizer/events/<id>/preview` にして同じプレビューへ戻す。SCR-PUB-03 からポータルを開く線は、参加の支払いではなく、同じアカウントの主催者契約を開く。復帰先は SCR-ORG-01 である。複製の着地は編集画面であり、複製の時点でチケットを消費済みなので公開では二重に引かない。0円の単発は Stripe へ行かず、その場でチケットを付与して元の画面に留まる。
+課金の塊へ入るのは、筆頭幹事の公開要求（HTTP 402）と、その会員の契約管理だけである。作成時の 402 では、入力を `status=DRAFT` で保存して `draftId` を Checkout の `metadata` に載せる。戻り先は `/organizer/events/new` で、`draftId` をクエリに保つ。Checkout の成功とキャンセルのどちらでも同じ画面へ戻り、`draftId` があればフォームを復元する。復元したフォームからの公開は `POST /api/v1/organizer/events/[id]/publish` を呼び、チケットを1枚消費して `PUBLISHED` にする。会員の通常の流れでは、作成画面の「下書き保存」または「プレビューに進む」で `POST /api/v1/public/events`（1回目）／`POST /api/v1/organizer/events/[id]/draft`（2回目以降）に保存し、SCR-ORG-16 の「公開する」から publish を呼ぶ。プレビューからの 402 は、戻り先を `/organizer/events/<id>/preview` にして同じプレビューへ戻す。SCR-PUB-03 から契約管理（プラン・カード管理）を開く線は、参加の支払いではなく、同じアカウントの主催者契約を SCR-ORG-17 で見る。復帰先は SCR-ORG-17 である。複製の着地は編集画面であり、複製の時点でチケットを消費済みなので公開では二重に引かない。0円の単発は Stripe へ行かず、その場でチケットを付与して元の画面に留まる。
 
 主催者マイページ（SCR-PUB-03）・主催一覧（SCR-ORG-01）・カレンダー（SCR-ORG-13）・売上（SCR-ORG-11）・公開プロフィール編集（SCR-ORG-14）は、ヘッダー直下の `OrganizerTabs`（ホーム・主催一覧・カレンダー・売上見込・公開プロフ）で行き来する。下書き（SCR-ORG-15）は節に置かず、主催一覧の下帯とヘッダーのドロップダウンから開く。カレンダーの予定からは、下書きなら SCR-ORG-05、それ以外は SCR-ORG-06 へ進む。売上から SCR-ORG-12 を開き、SCR-ORG-12 から名簿・売上へ戻る。未登録の幹事が名簿・売上を開くと SCR-ORG-10 へ送る。削除は SCR-MOD-03 で確認する。受付停止と公開の再開は確認を挟まず、SCR-ORG-01 のカードから実行する。
 
@@ -499,7 +506,7 @@ src/
 │   │   └── events/page.tsx                   # 画面ではない。統合ページへ permanentRedirect する
 │   ├── organizer/
 │   │   ├── events/
-│   │   │   ├── page.tsx                      # SCR-ORG-01 (主催イベント一覧・チケット残数・ポータル)
+│   │   │   ├── page.tsx                      # SCR-ORG-01 (主催イベント一覧・チケット残数)
 │   │   │   ├── new/page.tsx                  # SCR-ORG-02 (新規作成・下書き保存・チラシ生成・Stripe戻り同期検知)
 │   │   │   ├── drafts/page.tsx               # SCR-ORG-15 (下書き一覧。プレビュー・編集・削除)
 │   │   │   └── [id]/
@@ -508,6 +515,7 @@ src/
 │   │   │       ├── preview/page.tsx          # SCR-ORG-16 (下書きのプレビューと公開。page は noindex の器)
 │   │   │       ├── participants/page.tsx     # SCR-ORG-06 (参加者名簿・売上サマリ、行を押して出欠を直す)
 │   │   │       └── revenue/page.tsx          # SCR-ORG-12 (売上の内訳。プラン別・開催回別)
+│   │   ├── plan/page.tsx                    # SCR-ORG-17 (プランとカードの管理。契約・残数・Portal)
 │   │   ├── revenue/page.tsx                  # SCR-ORG-11 (売上。見込み・集金済み・未集金・イベント別)
 │   │   ├── calendar/page.tsx                 # SCR-ORG-13 (カレンダー。月グリッドと今月の催し一覧)
 │   │   ├── profile/page.tsx                  # SCR-ORG-14 (公開プロフィール編集・保存前プレビュー)
@@ -551,7 +559,7 @@ src/
 │   ├── admin/                        # SCR-ADM-00〜05。AdminChrome と会員ディレクトリ
 │   ├── attendance/                   # SCR-PUB-01。DynamicRsvpBox・StickyRsvpBar・ParticipantListTable
 │   ├── auth/                         # SCR-PUB-02 / 05 / 07。AuthEntryScreen・LoginChallengeForm・Hydration
-│   ├── billing/                      # SCR-MOD-01。PricingModal・QuotaStatusBanner・StripePortalButton・plans/pricing/quota
+│   ├── billing/                      # SCR-MOD-01・SCR-ORG-17。PricingModal・TicketPurchaseModal・QuotaStatusBanner・StripePortalButton・plans/pricing/quota
 │   ├── events/                       # SCR-PUB-01 / SCR-ORG-01 / 02 / 05。EventCard・EventForm・EventMetaCard・OrganizerInviteCard・PosterHero
 │   ├── flyers/                       # SCR-ORG-08 / SCR-ORG-03。FlyerGeneratePanel・FlyerSelectModal・FlyerCandidateModal・FlyerUploadButton・lib/pdf（A4 PDF と QR）
 │   ├── organizers/                   # SCR-ORG-01 / 05 / 13 / 14 と SCR-PUB-14
@@ -600,7 +608,7 @@ src/
 * 画面領域は `src/lib/site-nav.ts` の `viewerArea()` が 1 か所で決め、`viewerRole()`・`siteNavConfig()`・`userMenuConfig()` はその結果だけを読む。領域は `/console`（管理者）、主催者領域（`/mypage`・`/organizer`・`/invitations`・`/notifications`）、共有領域（`/account` 配下）、参加者領域（`/participant` 配下）、ヘッダーを出す公開画面、ヘッダーなしの 6 種である。共有領域だけはパスではなく `isOrganizer` で立場を決め、本文の戻り先と同じ材料にして、ヘッダーと本文の食い違いを作らない。
 * いまどちらの画面にいるかは、ヘッダーの色と、頭文字の札の左の 1 語で示す。`Navbar` は `viewerRole()` の結果を `data-viewer-role`（`participant` / `organizer` / `admin`）に付け、`src/styles/base.css` が地の色・下辺（3px）・札の色を役割ごとに塗る（参加者は青緑 `--pop-cool`、主催者は山吹 `--pop-warm`、管理者は墨）。色だけに頼らないよう、頭文字の札の左に `viewerRoleCaption()`（「参加者アカウント」「主催者アカウント」「管理者アカウント」）を同じ色の札（`.site-role`）で置く。`viewerRole()` は画面領域を優先するので、催し 0 件の会員でも主催者画面では `organizer` になる。ブランド名の下には置かない（ブランドはサービス名だけの 1 行にし、バーの高さを変えない）。未ログインは `data-viewer-role` を付けず、色も札も出さない。ドロップダウンの中の役割の札（`.site-user__role`）も同じ色にそろえる。
 * ログイン中は、誰として入っているかを頭文字 1 文字の札（`.site-user__button`）で示す。札は全幅で常に出し、押すとドロップダウン（`.site-user-menu`）が開く。中に名前、役割の札（参加者／主催者／管理者）、行き先、ログアウトを収める。押す的は 40px を下回らせない。バーに名前を出さないので、390px でも 768〜1023px でもヘッダーが 1 段のまま収まる（スマホが先。広い画面向けの差分だけを `min-width` で足す）。
-* 主催者の札には、未読の通知があれば**数の丸バッジ**（`.site-user__badge`）を頭文字の右上に重ねる。バッジは絶対配置で、ヘッダーの幅も高さも変えない（390px で横スクロールを出さない）。数字は 1〜9 はそのまま、10 以上は `9+`（`formatUnreadCount()`）。0 件のときは要素ごと出さない。色だけで伝えないよう、ボタンの `aria-label` に「未読 N 件」を入れる。ドロップダウンには「通知」（`/notifications`）を足し、同じ数を小さく添える。主催者として見ているあいだは、あわせて「プラン・カード管理」（`POST /api/v1/billing/portal` で Customer Portal を開く操作）を置く。マイページの「チケットと契約」の節を畳んだため、契約の入口はここが受ける。未読数は `GET /api/v1/notifications?limit=1` を 60 秒ごと・タブ復帰時・画面移動時・`notifications:changed` で取り直す。参加者の札には出さない（通知は主催者にしか作られない）。主催者画面でも、`isOrganizer` が false のあいだは出さない。
+* 主催者の札には、未読の通知があれば**数の丸バッジ**（`.site-user__badge`）を頭文字の右上に重ねる。バッジは絶対配置で、ヘッダーの幅も高さも変えない（390px で横スクロールを出さない）。数字は 1〜9 はそのまま、10 以上は `9+`（`formatUnreadCount()`）。0 件のときは要素ごと出さない。色だけで伝えないよう、ボタンの `aria-label` に「未読 N 件」を入れる。ドロップダウンには「通知」（`/notifications`）を足し、同じ数を小さく添える。主催者として見ているあいだは、あわせて「プラン・カード管理」（`/organizer/plan` へのリンク）を「アカウント」の直前に置く。マイページの「チケットと契約」の節を畳んだため、契約の入口はここが受ける。未読数は `GET /api/v1/notifications?limit=1` を 60 秒ごと・タブ復帰時・画面移動時・`notifications:changed` で取り直す。参加者の札には出さない（通知は主催者にしか作られない）。主催者画面でも、`isOrganizer` が false のあいだは出さない。
 * 参加者画面と主催者画面では、バーのナビと開閉ボタンを出さない。参加者の画面の移動はヘッダー直下の `ParticipantTabs`（ホーム・カレンダー・参加履歴）が、主催者の画面は `OrganizerTabs`（ホーム・主催一覧・カレンダー・売上見込・公開プロフ）が持つ。主催者としての入口（「主催者マイページ」。主催イベントを持たない会員には「主催者として使う」）と、主催者画面の「参加者ログイン」はドロップダウンが持つ。同じ行き先を 3 か所に並べない。
 * 主催者画面のバーには「イベント告知ページを作る」を置かない（`organizerConfig()` は `primary` を持たない）。毎日見る画面の上端に常時あると、節の「主催一覧」「カレンダー」「売上見込」と同じ重さで並び、いまどこにいるのかが読みにくい。作る場所は画面の役割で決める。主催一覧（SCR-ORG-01）は下帯の「新規作成」、マイページ（SCR-PUB-03）は「イベント告知ページを作る」（`SITE.nav.createEvent.label`）の主ボタン、売上（SCR-ORG-11）は見出しの右の「新規作成」、カレンダー（SCR-ORG-13）と下書き（SCR-ORG-15）は 0 件のときの案内が受ける。先頭の「ホーム」は `/mypage`（SCR-PUB-03）で、節のどの画面からでも戻れる。下書き（SCR-ORG-15）は催しの一覧の一種なので節には置かず、ドロップダウンが受ける（件数は主催一覧の帯が持つ）。ドロップダウンの「主催者マイページ」は、節を出さない作業画面（作成・編集・プレビュー・招待）でだけ出し、節があるあいだは「ホーム」と重ねない。判定は `showOrganizerTabs()` を使う。
 * `OrganizerTabs` は 390px で 5 本が収まるよう、狭い画面を既定にして左右の余白を詰める（`min-width: 640px` で広い画面の余白に戻す）。「下書き」を節から外したのは、6 本にすると 390px で隠れるためである。参加者の節（`ParticipantTabs`）は 3 本（ホーム・カレンダー・参加履歴）で足りる。どちらも同じ帯（`src/components/ui/Subnav.tsx` と `.subnav`）を使い、文言は短い名前にそろえる（`SITE.nav` の「参加者ホーム」「参加カレンダー」は、画面をまたぐときの行き先の名前で、節の中では「ホーム」「カレンダー」と呼ぶ）。
@@ -969,7 +977,7 @@ export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVeri
 
 ### 4.3. StripePortalButton.tsx（Stripe Customer Portal 遷移ボタン）
 
-筆頭幹事のサブスクリプション解約とカード変更に使う。置き場所は共通ヘッダーの頭文字のメニューだけで、マイページの「チケットと契約」の節は持たない。開くのは同じ会員が持つ主催者契約であり、出欠の支払いではない。復帰先は主催一覧である。行き先ではなく操作なので `<button>` で出し、字と幅はメニューのリンク（`.site-user-menu__link`）にそろえる（`.site-user-menu__link--button`）。
+筆頭幹事のサブスクリプション解約とカード変更に使う。置き場所はプランとカードの管理画面（SCR-ORG-17）の「カードを変更・解約」だけで、共通ヘッダーのメニューは `/organizer/plan` へのリンクになった。開くのは同じ会員が持つ主催者契約であり、出欠の支払いではない。復帰先は SCR-ORG-17 である。行き先ではなく操作なので `<button>` で出し、失敗は画面の `Alert` にまとめたいので `onError` で受け取る（渡さない使い道のために、この中にも 1 行の受け皿を残す）。文言と幅は `label` / `className` で決め、既定は画面の幅いっぱいに置く枠線のボタン（`btn btn--outline btn--block`）にする。
 
 ```tsx
 "use client";
@@ -977,7 +985,19 @@ export const VerifyPaymentBanner: React.FC<VerifyPaymentBannerProps> = ({ onVeri
 import { useState } from "react";
 import { readProblem } from "@/lib/problem";
 
-export function StripePortalButton() {
+interface StripePortalButtonProps {
+  /** ボタンの文言。既定は「カードを変更・解約」。 */
+  label?: string;
+  /** 呼び出し元の Alert に出すための通知。 */
+  onError?: (message: string) => void;
+  className?: string;
+}
+
+export function StripePortalButton({
+  label = "カードを変更・解約",
+  onError,
+  className = "btn btn--outline btn--block",
+}: StripePortalButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -990,7 +1010,10 @@ export function StripePortalButton() {
       const data = (await res.json()) as { portalUrl?: string };
       if (data.portalUrl) window.location.href = data.portalUrl;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "カスタマーポータルを開けませんでした。");
+      const message =
+        cause instanceof Error ? cause.message : "プランとカードの管理を開けませんでした。";
+      if (onError) onError(message);
+      else setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -1000,11 +1023,11 @@ export function StripePortalButton() {
     <>
       <button
         type="button"
-        className="site-user-menu__link site-user-menu__link--button"
+        className={className}
         onClick={() => void handleOpenPortal()}
         disabled={isLoading}
       >
-        {isLoading ? "接続中..." : "プラン・カード管理"}
+        {isLoading ? "接続しています…" : label}
       </button>
       {error && (
         <p className="site-user-menu__note" role="alert">
@@ -1020,18 +1043,26 @@ export function StripePortalButton() {
 
 ### 4.4. QuotaStatusBanner.tsx（チケット残数＆プラン状態表示バー）
 
-主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（8件まで公開プラン / 公開し放題プラン）を出し、8件まで公開プランでは「月額プランで公開中のイベント 5 / 8 件」の形で、公開中の件数と上限を出す（残りは引いて読めるので書かない）。公開し放題プランでは「公開し放題プランに加入中です。公開中のイベント 5 件（上限はありません）。」と、件数だけを出す。未加入では「公開中のイベント 3 件。無料チケット 残り 1枚」の形で、公開中の件数を先に出す（0 件のときは出さない）。件数は開催日が今日以降で、自分が筆頭幹事のものだけを数える。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題プランへの変更と、公開の一時停止・削除を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。0円の単発チケットが受け取れるときは、その残り枚数と受取ボタンを出す。
+主催者一覧画面（SCR-ORG-01）のヘッダー直下に配置し、現在の利用可能状態を一目で提示する。加入中は階層（8件まで公開プラン / 公開し放題プラン）を出し、8件まで公開プランでは「月額プランで公開中のイベント 5 / 8 件」の形で、公開中の件数と上限を出す（残りは引いて読めるので書かない）。公開し放題プランでは「公開し放題プランに加入中です。公開中のイベント 5 件（上限はありません）。」と、件数だけを出す。未加入では「公開中のイベント 3 件。無料チケット 残り 1枚」の形で、公開中の件数を先に出す（0 件のときは出さない）。件数は開催日が今日以降で、自分が筆頭幹事のものだけを数える。自動更新・解約の条件は一覧の案内では繰り返さない（契約の画面が持つ）。上限に達したときは公開し放題プランへの変更と、公開の一時停止・削除を促す。適用中の割引があるときは、無料期間または割引率と終了日時、終了後は加入階層の定価（980 円 / 2,980 円）を自動で請求すること、終了の3日前と1日前にメールで知らせることを出す。
+
+導線は 2 つに分ける。月額は画面を開かずに選ばせないので、`/organizer/plan` への「月額プランを見る」リンクにする。単発チケットはその場で買えるので、押すと `TicketPurchaseModal` を開く「単発チケットを買う」ボタンにする。公開し放題プランに加入中は 402 が起きないので、どちらも出さない。支払いに問題がある間（`PAST_DUE`）は買う導線だけを止め、カードの更新へ進める月額のリンクは残す。0円の単発チケットが受け取れるときは、ボタンを「0円チケットを受け取る」にし、本文に残り枚数を添える。
 
 ```tsx
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
+import type { OneTimeCheckoutResult } from "@/modules/billing/hooks/useEventQuota";
 import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from "@/modules/billing/lib/plans";
+import { TicketPurchaseModal } from "@/modules/billing/components/TicketPurchaseModal";
 
-interface QuotaStatusBannerProps {
+export interface QuotaStatusBannerProps {
   quota: UserQuota | null;
-  onOpenPricing: () => void;
+  /** 単発チケットの購入。押すと帯が TicketPurchaseModal を開く。 */
+  onPurchaseTicket: () => Promise<OneTimeCheckoutResult>;
+  /** 0 円で付与されたときに呼ぶ。 */
+  onGranted?: () => void;
   nextPath?: string;
 }
 
@@ -1046,12 +1077,12 @@ function dateLabel(iso: string): string {
   }).format(new Date(iso));
 }
 
-function subscribedMessage(quota: UserQuota, discountLabel: string | null): string {
+function subscribedMessage(quota: UserQuota, periodLabel: string | null): string {
   const price = quota.subscriptionPlan === "MONTHLY_8" ? "980円" : "2,980円";
   // 日付入りの割引は、いつまで何円で使えるかが要るので残す。通常の自動更新は
   // 一覧の見出しでは繰り返さない（解約の条件は契約の画面が持つ）。
-  const detail = discountLabel
-    ? `${discountLabel}。終了後は月額${price}を自動で請求します（終了の3日前と1日前にメールでお知らせします）。`
+  const detail = periodLabel
+    ? `${periodLabel}。終了後は月額${price}を自動で請求します（3日前と1日前にメールでお知らせ）。`
     : "";
   if (quota.subscriptionPlan === "MONTHLY_8") {
     const count = quota.publishedEventCount ?? 0;
@@ -1059,15 +1090,21 @@ function subscribedMessage(quota: UserQuota, discountLabel: string | null): stri
     const remaining = Math.max(0, quota.remainingPublished ?? 0);
     const head =
       remaining === 0
-        ? `公開中のイベントが${limit}件に達しました。終わったものは削除するか「公開一時停止」を使ってください。`
+        ? `公開中のイベントが${limit}件に達しました。終わったものは削除するか「公開一時停止」を使ってください`
         : `月額プランで公開中のイベント ${count} / ${limit} 件`;
-    return `${head}${detail}`;
+    return detail ? `${head}。${detail}` : `${head}。`;
   }
   const count = quota.publishedEventCount ?? 0;
   return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
-export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
+export function QuotaStatusBanner({
+  quota,
+  onPurchaseTicket,
+  onGranted,
+  nextPath = "/organizer/events",
+}: QuotaStatusBannerProps) {
+  const [ticketOpen, setTicketOpen] = useState(false);
   if (!quota) return null;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
   const isSubscribed = quota.subscriptionStatus === "ACTIVE";
@@ -1075,6 +1112,10 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
   const discountLabel = discount
     ? `${discount.percent >= 100 ? "無料期間" : `${discount.percent}%割引`}（${dateLabel(discount.endsAt)} まで）`
     : null;
+  const trial = quota.trial ?? null;
+  const trialLabel = trial ? `初月無料（${dateLabel(trial.endsAt)} まで）` : null;
+  // 初月無料と価格キャンペーンは併用しない。両方立つことはないが、先に初月無料を見る。
+  const periodLabel = trialLabel ?? discountLabel;
   const freeTicketAvailable = (quota.freeGrantRemaining ?? 0) > 0 && quota.pricing?.oneTime.chargedPrice === 0;
 
   const tone =
@@ -1089,7 +1130,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
     : quota.subscriptionStatus === "PAST_DUE"
       ? "お支払いに問題があります。カードを更新してください。"
       : isSubscribed
-        ? subscribedMessage(quota, discountLabel)
+        ? subscribedMessage(quota, periodLabel)
         : `${
             quota.publishedEventCount
               ? `公開中のイベント ${quota.publishedEventCount} 件。`
@@ -1098,8 +1139,11 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
           }`;
 
-  // 公開し放題プランは 402 が起きないので、プランを勧めるボタンを出さない。
-  const showUpgradeButton = !isSubscribed || quota.subscriptionPlan === "MONTHLY_8";
+  // 公開し放題プランは 402 が起きないので、どちらの導線も出さない。
+  const unlimited = isSubscribed && quota.subscriptionPlan === "UNLIMITED";
+  const showPlanLink = !unlimited;
+  // 支払いに問題がある間は、買う導線だけを止める（カードの更新へは月額の画面から進める）。
+  const showTicketButton = quota.subscriptionStatus !== "PAST_DUE" && !unlimited;
 
   return (
     <div className={`alert ${tone} alert--compact`}>
@@ -1110,17 +1154,29 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             電話番号を確認する
           </Link>
         )}
-        {isSubscribed && discount && (
+        {isSubscribed && periodLabel && (
           <Link href="/terms" className="text-link">
             解約と自動更新の条件
           </Link>
         )}
       </p>
-      {showUpgradeButton && (
-        <button type="button" onClick={onOpenPricing} className="btn btn--primary btn--sm">
-          {freeTicketAvailable ? "0円チケットを受け取る" : "公開し放題プランを見る"}
+      {showPlanLink && (
+        <Link href="/organizer/plan" className="btn btn--outline btn--sm">
+          月額プランを見る
+        </Link>
+      )}
+      {showTicketButton && (
+        <button type="button" onClick={() => setTicketOpen(true)} className="btn btn--outline btn--sm">
+          {freeTicketAvailable ? "0円チケットを受け取る" : "単発チケットを買う"}
         </button>
       )}
+      <TicketPurchaseModal
+        isOpen={ticketOpen}
+        onClose={() => setTicketOpen(false)}
+        quota={quota}
+        onPurchase={onPurchaseTicket}
+        onGranted={onGranted}
+      />
     </div>
   );
 }
@@ -1130,7 +1186,7 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
 
 ## 5. 課金＆チケット統合カスタムフック (`useEventQuota.ts`)
 
-チケット情報の取得、Stripe Hosted Checkout の呼び出し、および Customer Portal へのリダイレクトを一元管理する。料金モーダルを開くたびに `GET /api/v1/billing/quota` を取り直し、最新の販売価格と0円チケットの残り枚数を反映する。0円の単発は付与結果を受けてチケットを読み直し、呼び出し元が公開を再試行できるようにする。
+チケット情報の取得と、Stripe Hosted Checkout の呼び出しを一元管理する。料金モーダルを開くたびに `GET /api/v1/billing/quota` を取り直し、最新の販売価格と0円チケットの残り枚数を反映する。0円の単発は付与結果を受けてチケットを読み直し、呼び出し元が公開を再試行できるようにする。Customer Portal はこのフックではなく、プランとカードの管理画面（SCR-ORG-17）の `StripePortalButton` が開く。
 
 課金を開いた画面の文脈は `CheckoutIntent` として持ち回る。`draftId` と `returnTo` を `openPricingModal(intent)` で預かり、`POST /api/v1/billing/checkout/one-time` と `POST /api/v1/billing/checkout/subscription` の本文に載せる。`returnTo` の既定は `/organizer/events/new` である。電話番号が要るときの戻り先も同じ値を使う。
 
@@ -1258,15 +1314,6 @@ export function useEventQuota() {
     }
   }, []);
 
-  const openCustomerPortal = useCallback(async () => {
-    const res = await fetch("/api/v1/billing/portal", { method: "POST" });
-    if (!res.ok) throw new Error("ポータルセッション作成に失敗しました");
-    const data = (await res.json()) as { portalUrl?: string };
-    if (data.portalUrl) {
-      window.location.href = data.portalUrl;
-    }
-  }, []);
-
   return {
     quota,
     isLoading,
@@ -1276,7 +1323,6 @@ export function useEventQuota() {
     refreshQuota: fetchQuota,
     startOneTimeCheckout,
     startSubscriptionCheckout,
-    openCustomerPortal,
   };
 }
 ```
@@ -1331,8 +1377,8 @@ export interface PricingOption {
 | **FE-BILL-03** | **定額プランCheckout遷移** | `PricingModal` で「8件まで公開プランを始める (980円/月)」または「定期購入で公開し放題プラン (2980円/月)」をクリック | Stripe Hosted Checkout（Subscriptionモード）へ、選んだ階層の Price で正常にリダイレクトされること。`metadata.plan` が `MONTHLY_8` / `UNLIMITED` であること |
 | **FE-BILL-03b** | **公開中の上限表示** | 8件まで公開プランで公開中が8件のときに主催一覧を開き、さらに公開しようとする | `QuotaStatusBanner` が「公開中のイベントが8件に達しました」を出し、`PricingModal` は公開し放題プランを先頭に出すこと。402 の `error` が `PUBLISHED_EVENTS_FULL` であること |
 | **FE-BILL-04** | **同期セッション検証** | Stripe決済完了後、`?session_id=...` 付きで新規作成画面へ復帰 | `VerifyPaymentBanner` が即座に `verify` API を叩き、チケットの加算を確認して作成が認可されること。応答の `draftId` が URL に残り、開いていた画面から動かないこと |
-| **FE-BILL-05** | **Customer Portal遷移** | 主催一覧、またはマイページで「プラン・カード管理」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
-| **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | マイページから開いた場合も `/organizer/events` へ戻り、最新の契約ステータスが再取得・反映されること |
+| **FE-BILL-05** | **Customer Portal遷移** | プラン・カード管理画面（`/organizer/plan`）で「カードを変更・解約」をクリック | Stripe Customer Portal へリダイレクトされ、筆頭幹事の解約・カード変更画面が表示されること。出欠画面からは開かない |
+| **FE-BILL-06** | **ポータルからの復帰** | Customer Portal で「戻る」を実行 | `/organizer/plan` へ戻り、最新の契約ステータスが再取得・反映されること |
 | **FE-BILL-07** | **チケット不足の下書き退避と復元** | 無料チケットを使い切った会員が新規作成で「公開」を押し、Checkout を完了して戻る | HTTP 402 の時点で `status=DRAFT` のイベントが1件だけできていること。`draftId` が Checkout に渡り、戻ると `/organizer/events/new?draftId=...` でフォームが復元されること。復元後に公開すると `PUBLISHED` になり、チケットが1枚だけ減ること |
 | **FE-BILL-08** | **複製下書きの二重課金防止** | 複製した下書きを編集画面から公開する | 公開時にはチケットが減らないこと（複製時に消費済み）。`POST /api/v1/organizer/events/[id]/publish` を二度呼んでもチケットが減らないこと |
 | **FE-BILL-09** | **未ログインでは作れない** | 未ログインで作成画面を埋め、「ログインして続ける」を押す | ボタンが 1 つだけであること。必須が埋まっていれば入力が `sessionStorage` に退避され、`/auth/register?mode=register&next=/organizer/events/new` へ送られること。ログイン後に戻ると入力とチラシが復元され、「下書き保存」「プレビューに進む」に変わっていること。`DRAFT` もイベントも作られないこと |
@@ -1440,7 +1486,7 @@ Google の同じ確認済みメールは、既存会員へ `googleSub` を結ぶ
 | :---- | :---- | :---- |
 | SCR-PUB-06 `/service` | サーバコンポーネントで `loadActiveCampaigns()` と `quoteAll()` を直接呼ぶ（`dynamic = "force-dynamic"`） | 札は `PlanCard` が描き、`trialMonths > 0` の月額2枚は「初月0円 / 初月」と「2か月目から定価 / 月」の2段にする。月額の札にはキャンペーン札を出さない（初月無料と併用しないため）。単発は割引中なら販売価格を大きく、定価を打ち消し線で併記し、期限とキャンペーン名を添える |
 | SCR-MOD-01 課金プランモーダル | `useEventQuota()` が `GET /api/v1/billing/quota` の `pricing` と `trialEligible` を保持し、`quotes`（`oneTime` / `subscription8` / `subscriptionUnlimited`）と `trialEligible` として渡す | 月額2枚は `trialEligible` が真なら「初月0円 / 初月」と「2か月目から定価（税込）」、偽なら販売価格と定価、期限を出す。0円の単発は「無料で受け取る」 |
-| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「月額プランで公開中のイベント 5 / 8 件」「公開し放題プランに加入中です。公開中のイベント 5 件（上限はありません）。」を出し、未加入は「公開中のイベント 3 件。無料チケット 残り 1枚」（0 件なら件数を出さない）を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す。初月無料の無料期間中は `quota.trial` を読み、「初月無料（〜日時 まで）」と同じ 1 文（終了後の自動請求・3日前と1日前の通知）を割引と同じ位置に出す |
+| SCR-ORG-01 / SCR-ORG-02 / SCR-PUB-03 | `QuotaStatusBanner` | 加入中は「月額プランで公開中のイベント 5 / 8 件」「公開し放題プランに加入中です。公開中のイベント 5 件（上限はありません）。」を出し、未加入は「公開中のイベント 3 件。無料チケット 残り 1枚」（0 件なら件数を出さない）を出す。適用中の割引があるときだけ「無料期間（〜日時）」「終了後は加入階層の定価（980円 / 2,980円）を自動で請求」「終了の3日前と1日前にメールでお知らせ」を足す。初月無料の無料期間中は `quota.trial` を読み、「初月無料（〜日時 まで）」と同じ 1 文（終了後の自動請求・3日前と1日前の通知）を割引と同じ位置に出す。未加入・8件まで公開プランでは「月額プランを見る」（`/organizer/plan`）を出し、公開し放題プランに加入中は出さない。単発チケットは「単発チケットを買う」（0円が受け取れるときは「0円チケットを受け取る」）で `TicketPurchaseModal` を開き、`PAST_DUE` と公開し放題プランに加入中は出さない |
 | SCR-ADM-05 `/console/pricing` | `GET /api/v1/admin/pricing-campaigns` | 一覧に成立件数、売上、割引総額を出す。フォームは入力中の割引率から販売価格を即時計算する |
 
 ### 10.2. `PricingModal` の props

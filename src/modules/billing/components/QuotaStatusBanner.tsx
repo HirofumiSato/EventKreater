@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { UserQuota } from "@/modules/events/types";
+import type { OneTimeCheckoutResult } from "@/modules/billing/hooks/useEventQuota";
 import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from "@/modules/billing/lib/plans";
+import { TicketPurchaseModal } from "@/modules/billing/components/TicketPurchaseModal";
 
-interface QuotaStatusBannerProps {
+export interface QuotaStatusBannerProps {
   quota: UserQuota | null;
-  onOpenPricing: () => void;
+  /** 単発チケットの購入。押すと帯が TicketPurchaseModal を開く。 */
+  onPurchaseTicket: () => Promise<OneTimeCheckoutResult>;
+  /** 0 円で付与されたときに呼ぶ。 */
+  onGranted?: () => void;
   nextPath?: string;
 }
 
@@ -45,7 +51,8 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
   return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
-export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
+export function QuotaStatusBanner({ quota, onPurchaseTicket, onGranted, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
+  const [ticketOpen, setTicketOpen] = useState(false);
   if (!quota) return null;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
   const isSubscribed = quota.subscriptionStatus === "ACTIVE";
@@ -80,8 +87,11 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
             freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
           }`;
 
-  // 公開し放題プランは 402 が起きないので、プランを勧めるボタンを出さない。
-  const showUpgradeButton = !isSubscribed || quota.subscriptionPlan === "MONTHLY_8";
+  // 公開し放題プランは 402 が起きないので、どちらの導線も出さない。
+  const unlimited = isSubscribed && quota.subscriptionPlan === "UNLIMITED";
+  const showPlanLink = !unlimited;
+  // 支払いに問題がある間は、買う導線だけを止める（カードの更新へは月額の画面から進める）。
+  const showTicketButton = quota.subscriptionStatus !== "PAST_DUE" && !unlimited;
 
   return (
     <div className={`alert ${tone} alert--compact`}>
@@ -98,11 +108,23 @@ export function QuotaStatusBanner({ quota, onOpenPricing, nextPath = "/organizer
           </Link>
         )}
       </p>
-      {showUpgradeButton && (
-        <button type="button" onClick={onOpenPricing} className="btn btn--primary btn--sm">
-          {freeTicketAvailable ? "0円チケットを受け取る" : "公開し放題プランを見る"}
+      {showPlanLink && (
+        <Link href="/organizer/plan" className="btn btn--outline btn--sm">
+          月額プランを見る
+        </Link>
+      )}
+      {showTicketButton && (
+        <button type="button" onClick={() => setTicketOpen(true)} className="btn btn--outline btn--sm">
+          {freeTicketAvailable ? "0円チケットを受け取る" : "単発チケットを買う"}
         </button>
       )}
+      <TicketPurchaseModal
+        isOpen={ticketOpen}
+        onClose={() => setTicketOpen(false)}
+        quota={quota}
+        onPurchase={onPurchaseTicket}
+        onGranted={onGranted}
+      />
     </div>
   );
 }

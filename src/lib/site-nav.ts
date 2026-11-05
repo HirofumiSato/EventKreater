@@ -242,6 +242,10 @@ export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfi
  * ただし節を出さない作業画面（作成・編集・プレビュー・招待）では
  * マイページへの入口が消えるため、そのときだけ「主催者マイページ」をここに残す。
  * 下書き（SCR-ORG-15）はイベントの一覧の一種で、節からは外してここが受ける。
+ *
+ * プランとカードの管理（SCR-ORG-17）は主催者だけの設定なので、主催者として見ている
+ * あいだだけ「アカウント」の直前に置く（`/account` を主催者が開いたときも organizer に
+ * なるため、そこで出るのが正しい）。参加者画面と管理者には出さない。
  */
 export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
   // 管理者は管理コンソールしか持たない。会員向けの行き先を出さない。
@@ -265,6 +269,9 @@ export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
     // 主催イベントを持たない会員にも、主催者として使えることを 1 本だけ示す。
     links.push(SITE.nav.organizerSwitch);
   }
+  // プラン画面は主催者だけの設定。参加者画面と管理者には出さない。
+  // 主催者が `/account` を開いたときも organizer になるので、そこで出るのが正しい。
+  if (viewerRole(pathname, viewer) === "organizer") links.push(SITE.nav.plan);
   links.push(SITE.nav.account);
   return links;
 }

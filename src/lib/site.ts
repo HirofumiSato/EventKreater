@@ -61,6 +61,12 @@ export const SITE = {
      * マイページの「新着」は 4 件までに留める。
      */
     notifications: { href: "/notifications", label: "通知" },
+    /**
+     * プランとカードの管理（SCR-ORG-17）。契約の状態・残数・選べるプランを 1 画面にまとめ、
+     * Stripe の Portal（カードの変更・解約）はその画面の中の操作が開く。
+     * 入口は主催者として見ているあいだの頭文字のメニューだけが持つ。
+     */
+    plan: { href: "/organizer/plan", label: "プラン・カード管理" },
     account: { href: "/account", label: "アカウント" },
     terms: { href: "/terms", label: "利用規約" },
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。

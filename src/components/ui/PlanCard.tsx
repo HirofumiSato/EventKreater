@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { yen, yenDigits } from "@/lib/format";
 import { FIRST_MONTH_FREE_LABEL, type ServicePlan } from "@/modules/billing/lib/plans";
 
@@ -13,13 +14,19 @@ import { FIRST_MONTH_FREE_LABEL, type ServicePlan } from "@/modules/billing/lib/
  *
  * `showBody` を false にすると、札の説明文（`screen-note`）を出さない。
  * ホームは金額と初月0円だけを見せ、比較は /service に任せる。
+ *
+ * `children` は札の中の操作（プラン画面の「このプランを始める」など）。価格と
+ * 特典を読んだあとに押すものなので、一覧の下に置く。渡さなければ何も出さない。
  */
 export function PlanCard({
   plan,
   showBody = true,
+  children,
 }: {
   plan: ServicePlan;
   showBody?: boolean;
+  /** 札の中に置く操作。ホームと /service は渡さない。 */
+  children?: ReactNode;
 }) {
   const trial = plan.trialMonths > 0;
   const discounted = !trial && plan.discountPercent > 0 && plan.listPriceYen !== plan.priceYen;
@@ -61,6 +68,7 @@ export function PlanCard({
       {discounted && plan.campaignEndsAt && (
         <p className="help">{endsAtLabel(plan.campaignEndsAt)} までの販売価格です。</p>
       )}
+      {children ? <div className="plan-card__action">{children}</div> : null}
     </li>
   );
 }

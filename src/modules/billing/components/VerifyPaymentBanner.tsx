@@ -23,6 +23,8 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
   const draftIdParam = searchParams.get("draftId");
   const [status, setStatus] = useState<"IDLE" | "VERIFYING" | "SUCCESS" | "ERROR">("IDLE");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 完了文を分けるための支払い種別。月額は「プラン」、単発は「チケット」として伝える。
+  const [paymentType, setPaymentType] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!sessionId || status !== "IDLE") return;
@@ -39,6 +41,7 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
           throw new Error(errData.detail || "決済の確認に失敗しました。");
         }
         const data = (await res.json()) as VerifyPaymentResult;
+        setPaymentType(data.paymentType);
         setStatus("SUCCESS");
         onVerified?.(data);
         window.setTimeout(() => {
@@ -64,7 +67,13 @@ export function VerifyPaymentBanner({ onVerified }: VerifyPaymentBannerProps) {
     );
   }
   if (status === "SUCCESS") {
-    return <Alert tone="success">お支払いを確認しました。チケットを追加しました。</Alert>;
+    return (
+      <Alert tone="success">
+        {paymentType === "SUBSCRIPTION"
+          ? "お手続きを確認しました。プランを開始しました。"
+          : "お支払いを確認しました。チケットを追加しました。"}
+      </Alert>
+    );
   }
   return <Alert tone="error">{errorMessage || "決済の確認が完了できませんでした。"}</Alert>;
 }

@@ -147,10 +147,6 @@ function NewEventScreen() {
     setFlyerPreview(flyer.imageUrl);
   };
 
-  const openPricing = (id: string | null) => {
-    quotaState.openPricingModal({ ...(id ? { draftId: id } : {}), returnTo: nextPath });
-  };
-
   /** 下書き ID を URL に残す。再読み込みや購入後の戻りでも同じ下書きを開けるようにする。 */
   const draftPath = (id: string) =>
     `${nextPath}${nextPath.includes("?") ? "&" : "?"}draftId=${encodeURIComponent(id)}`;
@@ -242,7 +238,14 @@ function NewEventScreen() {
           下書きを復元しました。最後のステップからプレビューを開いて公開してください。
         </Alert>
       )}
-      <QuotaStatusBanner quota={quotaState.quota} onOpenPricing={() => openPricing(draftId)} nextPath={nextPath} />
+      <QuotaStatusBanner
+        quota={quotaState.quota}
+        onPurchaseTicket={() =>
+          quotaState.startOneTimeCheckout({ ...(draftId ? { draftId } : {}), returnTo: nextPath })
+        }
+        onGranted={() => void quotaState.refreshQuota()}
+        nextPath={nextPath}
+      />
       <EventStepForm
         value={form}
         onChange={setForm}

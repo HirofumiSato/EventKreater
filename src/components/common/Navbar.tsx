@@ -15,7 +15,6 @@ import {
 } from "@/lib/site-nav";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/useNotifications";
 import { formatUnreadCount } from "@/modules/notifications/lib/unread";
-import { StripePortalButton } from "@/modules/billing/components/StripePortalButton";
 
 /**
  * 共通ヘッダー。
@@ -268,9 +267,6 @@ export function Navbar() {
                       ))}
                     </nav>
                   ) : null}
-                  {/* 契約の入口。マイページの「チケットと契約」の節を畳んだので、ここが受ける。
-                      主催者として見ているあいだだけ出す（参加者画面では契約を持たない）。 */}
-                  {role === "organizer" ? <StripePortalButton /> : null}
                   <button
                     type="button"
                     className="site-user-menu__logout"

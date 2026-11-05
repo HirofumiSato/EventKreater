@@ -6,7 +6,6 @@ import { ExternalLink } from "lucide-react";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { ReferralPanel } from "@/modules/account/components/ReferralPanel";
-import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { NotificationList } from "@/modules/notifications/components/NotificationList";
 import { announceNotificationsChanged } from "@/modules/notifications/hooks/useNotifications";
@@ -172,7 +171,8 @@ export default function MyPage() {
 
       <QuotaStatusBanner
         quota={quotaState.quota}
-        onOpenPricing={() => quotaState.openPricingModal({ returnTo: "/mypage" })}
+        onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/mypage" })}
+        onGranted={() => void quotaState.refreshQuota()}
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
@@ -279,16 +279,6 @@ export default function MyPage() {
           </div>
         </Section>
       )}
-
-      <PricingModal
-        isOpen={quotaState.isPricingModalOpen}
-        onClose={quotaState.closePricingModal}
-        onSelectOneTime={quotaState.startOneTimeCheckout}
-        onSelectSubscription={quotaState.startSubscriptionCheckout}
-        quota={quotaState.quota}
-        context="mypage"
-        onGranted={() => void quotaState.refreshQuota()}
-      />
     </div>
   );
 }

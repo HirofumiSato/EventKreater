@@ -200,7 +200,8 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       {form.status === "DRAFT" && (
         <QuotaStatusBanner
           quota={quotaState.quota}
-          onOpenPricing={() => quotaState.openPricingModal({ draftId: params.id, returnTo })}
+          onPurchaseTicket={() => quotaState.startOneTimeCheckout({ draftId: params.id, returnTo })}
+          onGranted={() => void quotaState.refreshQuota()}
           nextPath={returnTo}
         />
       )}

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       throw new ProblemDetailException({
         status: 409,
         title: "Conflict",
-        detail: "すでに月額プランに加入しています。プランの変更はマイページから行えます。",
+        detail: "すでに月額プランに加入しています。プランの変更は『プラン・カード管理』から行えます。",
         error: "ALREADY_SUBSCRIBED",
       });
     }
