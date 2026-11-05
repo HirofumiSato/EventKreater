@@ -367,6 +367,7 @@ export async function withdrawAccount(input: {
     await tx.emailChangeRequest.deleteMany({ where: { userId: input.userId } });
     await tx.phoneVerificationCode.deleteMany({ where: { userId: input.userId } });
     await tx.emailVerificationToken.deleteMany({ where: { userId: input.userId } });
+    await tx.passwordResetToken.deleteMany({ where: { userId: input.userId } });
     await tx.loginChallenge.deleteMany({ where: { userId: input.userId, usedAt: null } });
     await recordAccountChange(tx, {
       userId: input.userId,

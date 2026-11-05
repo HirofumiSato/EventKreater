@@ -1566,6 +1566,63 @@ ALTER TABLE "notifications" ALTER COLUMN "event_id" DROP NOT NULL;
 
 ---
 
+### 4.6. パスワード再設定（追加マイグレーション）
+
+`prisma/migrations/20261105120000_password_reset_tokens/migration.sql` で追加する。仕様は [バックエンド API §8.18](backend_api_implementation_spec.md) を正とする。形は `email_change_requests` と同じで、会員に紐づく 1 回限りのトークンを持つ。
+
+#### Prisma モデル（抜粋）
+
+```text
+/// パスワード再設定の保留中。メールのリンクを開くと確定する。
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+```
+
+`User` 側に `passwordResetTokens PasswordResetToken[]` を足す。
+
+#### 追加テーブル（`password_reset_tokens`）
+
+```sql
+-- パスワード再設定の保留中。メールのリンクを開くと確定する。
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) UNIQUE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
+```
+
+#### 列の意味
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `password_reset_tokens` | `id` | UUID PK | トークン1件の識別子 |
+| `password_reset_tokens` | `user_id` | UUID NOT NULL（`users` へ ON DELETE CASCADE） | 再設定する会員。退会時にこの行も消える |
+| `password_reset_tokens` | `token_hash` | VARCHAR(64) UNIQUE NOT NULL | 平文トークンの SHA-256。平文は保存しない |
+| `password_reset_tokens` | `expires_at` | TIMESTAMPTZ NOT NULL | 有効期限。発行から30分 |
+| `password_reset_tokens` | `used_at` | TIMESTAMPTZ NULL | 確定した日時。NULL は未使用で、1回限り |
+| `password_reset_tokens` | `created_at` | TIMESTAMPTZ NOT NULL DEFAULT NOW() | 行を作った日時 |
+
+- `token_hash` の UNIQUE が、同じ URL の二重利用を DB でも止める。確定は `used_at IS NULL` の行だけを更新し、0 件なら 400 `RESET_TOKEN_INVALID`。
+- 発行し直すときは、その会員の未使用行を消してから新しい行を作る。前のリンクは無効になる。
+
+---
+
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）
 
 ### 5.1. イベント新規作成（課金認可ゲート判定＆チケット消費）

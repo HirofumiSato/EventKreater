@@ -35,6 +35,12 @@ export interface RateLimitRules {
   verifyEmail: RateLimitRule;
   verifyIp: RateLimitRule;
   verifyTokenIp: RateLimitRule;
+  /** パスワード再設定のメール送信。メールアドレス単位。 */
+  resetEmail: RateLimitRule;
+  /** パスワード再設定のメール送信。接続元（IP）単位。 */
+  resetIp: RateLimitRule;
+  /** パスワード再設定リンクの照合。接続元（IP）単位。 */
+  resetConfirmIp: RateLimitRule;
   phoneStartNumber: RateLimitRule;
   phoneStartIp: RateLimitRule;
   phoneChangeNumber: RateLimitRule;
@@ -177,6 +183,24 @@ export function createRateLimits(env: NodeJS.ProcessEnv): AuthRateLimits {
         keyPrefix: "verify-token:ip:",
         label: "確認リンクの照合",
         limit: sendIpLimit,
+        windowMs: HOUR_MS,
+      },
+      resetEmail: {
+        keyPrefix: "reset:email:",
+        label: "パスワード再設定のメール送信",
+        limit: sendLimit,
+        windowMs: HOUR_MS,
+      },
+      resetIp: {
+        keyPrefix: "reset:ip:",
+        label: "この接続からのパスワード再設定のメール送信",
+        limit: sendIpLimit,
+        windowMs: HOUR_MS,
+      },
+      resetConfirmIp: {
+        keyPrefix: "reset:confirm:ip:",
+        label: "パスワード再設定リンクの照合",
+        limit: confirmIpLimit,
         windowMs: HOUR_MS,
       },
       phoneStartNumber: {

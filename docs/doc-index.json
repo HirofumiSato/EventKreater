@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2832,
+      "lineCount": 2855,
       "headings": [
         {
           "level": 2,
@@ -2307,6 +2307,10 @@
           "text": "8.17. GET /api/v1/user/referral（紹介リンクと実績）"
         },
         {
+          "level": 3,
+          "text": "8.18. POST /api/v1/auth/password/reset / /api/v1/auth/password/reset/confirm（パスワード再設定）"
+        },
+        {
           "level": 2,
           "text": "9. チラシ生成 API と生成処理"
         },
@@ -2423,6 +2427,10 @@
         },
         {
           "path": "docs/voice-input.rst",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
           "exists": true
         },
         {
@@ -2879,7 +2887,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 1881,
+      "lineCount": 1938,
       "headings": [
         {
           "level": 2,
@@ -2970,6 +2978,22 @@
           "text": "列の意味"
         },
         {
+          "level": 3,
+          "text": "4.6. パスワード再設定（追加マイグレーション）"
+        },
+        {
+          "level": 4,
+          "text": "Prisma モデル（抜粋）"
+        },
+        {
+          "level": 4,
+          "text": "追加テーブル（password_reset_tokens）"
+        },
+        {
+          "level": 4,
+          "text": "列の意味"
+        },
+        {
           "level": 2,
           "text": "5. CRUD操作詳細仕様（トランザクション＆アトミック処理）"
         },
@@ -3014,6 +3038,10 @@
         },
         {
           "path": "prisma/migrations/20261103090000_referral_notifications/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261105120000_password_reset_tokens/migration.sql",
           "exists": true
         },
         {
@@ -5633,7 +5661,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2137,
+      "lineCount": 2142,
       "headings": [
         {
           "level": 1,
@@ -11553,7 +11581,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 742,
+      "lineCount": 750,
       "headings": [
         {
           "level": 1,
@@ -11620,6 +11648,10 @@
         },
         {
           "path": "tests/components/participant-list-table.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/password-reset-screen.test.tsx",
           "exists": true
         },
         {
@@ -11696,6 +11728,10 @@
         },
         {
           "path": "tests/integration/participant-party-size.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/password-reset.test.ts",
           "exists": true
         },
         {

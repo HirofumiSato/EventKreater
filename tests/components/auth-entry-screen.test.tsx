@@ -15,6 +15,7 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { passwordResetUrl } from "@/lib/auth-links";
 import { AuthEntryScreen } from "@/modules/auth/components/AuthEntryScreen";
 
 const router = vi.hoisted(() => ({
@@ -260,5 +261,35 @@ describe("メールアドレスの修正", () => {
     expect(
       screen.queryByRole("heading", { name: "確認メールを送信しました" }),
     ).toBeNull();
+  });
+});
+
+describe("パスワードを忘れたとき", () => {
+  it("ログインのときだけ、パスワード欄の下にリンクを出す", () => {
+    const { container } = render(<AuthEntryScreen audience="participant" />);
+
+    // 新規登録では出さない（まだパスワードを決めていない）。
+    expect(screen.queryByRole("link", { name: "パスワードを忘れた" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: "ログイン" }));
+
+    const link = screen.getByRole("link", { name: "パスワードを忘れた" });
+    expect(link.getAttribute("href")).toBe(passwordResetUrl("participant"));
+    // パスワード欄のすぐ下に置く。
+    const password = screen.getByLabelText("パスワード");
+    expect(password.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // 主操作（朱）はログインの 1 つだけ。行き先はボタンにしない。
+    expect(screen.queryByRole("button", { name: "パスワードを忘れた" })).toBeNull();
+    expect(container.querySelectorAll(".btn--primary")).toHaveLength(1);
+  });
+
+  it("主催者のログインでも、主催者の依頼の画面へ送る", () => {
+    navigation.search = new URLSearchParams("mode=login");
+
+    render(<AuthEntryScreen audience="organizer" />);
+
+    expect(screen.getByRole("link", { name: "パスワードを忘れた" }).getAttribute("href")).toBe(
+      passwordResetUrl("organizer"),
+    );
   });
 });

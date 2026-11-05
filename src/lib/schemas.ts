@@ -529,6 +529,18 @@ export const PasswordChangeSchema = z.object({
   code: z.string().trim().regex(/^\d{6}$/, "確認番号は6桁です").optional(),
 });
 
+/** パスワード再設定の依頼。会員の有無で応答は変えないので、入力だけを検証する。 */
+export const PasswordResetRequestSchema = z.object({
+  email: z.string().trim().email("メールアドレスの形式が不正です").max(255),
+  audience: AuthAudienceSchema.optional(),
+});
+
+/** パスワード再設定の確定。メールのリンクから受け取ったトークンと、新しいパスワード。 */
+export const PasswordResetConfirmSchema = z.object({
+  token: z.string().trim().min(10, "確認リンクが不正です").max(200),
+  newPassword: z.string().min(8, "パスワードは8文字以上にしてください").max(128),
+});
+
 /** 退会。パスワード（または確認番号）と、確認のための「退会」入力を求める。 */
 export const WithdrawSchema = z.object({
   password: z.string().max(128).optional(),

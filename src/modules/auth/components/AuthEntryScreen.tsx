@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState, type FormEvent } from "reac
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { passwordResetUrl } from "@/lib/auth-links";
 import { problemMessage, readProblem, readProblemBody, type ProblemBody } from "@/lib/problem";
 import { resolveInitialAuthMode, type AuthMode } from "@/modules/auth/lib/auth-mode";
 import {
@@ -437,6 +438,15 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
                     className="input"
                   />
                 </Field>
+                {/* パスワードが分からないときの逃げ道。ログインのときだけ出す。
+                    主操作（朱）は増やさず、欄の下の小さなリンクに留める。 */}
+                {mode === "login" && (
+                  <p className="help">
+                    <Link href={passwordResetUrl(audience)} className="text-link">
+                      パスワードを忘れた
+                    </Link>
+                  </p>
+                )}
                 {notice && <Alert tone="success">{notice}</Alert>}
                 {error && <Alert tone="error">{error}</Alert>}
                 {adminConsoleRequired && (

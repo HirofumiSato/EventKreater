@@ -78,6 +78,8 @@ flowchart TD
 | `/api/v1/auth/session` | GET | SCR-PUB-02、SCR-PUB-07 | 不要 | 入口ページのセッション確認。有効な会員セッションがあれば `authenticated: true` と `user`（`phoneVerified` / `platformRole`）、確認番号の入力待ちなら `pendingChallenge: true` を返す。無ければ 401 |
 | `/api/v1/auth/verification` | POST | SCR-PUB-02 | 不要 | 未確認の登録意向またはレガシー未確認会員へ確認メールを再送する。応答はメールの有無で変えない |
 | `/api/v1/auth/verify` | POST | SCR-PUB-05 | 不要 | 確認トークンを検証する。新規は電話番号確認へ進み、既存会員はログインへ戻す |
+| `/api/v1/auth/password/reset` | POST | SCR-PUB-02 | 不要 | パスワード再設定のリンクをメールで送る。会員（主催者・参加者）だけが対象で、管理者・退会済み・該当なしでも同じ応答を返す。上限は 429（8.18） |
+| `/api/v1/auth/password/reset/confirm` | POST | SCR-PUB-02 | 不要（再設定トークン） | リンクのトークンと新しいパスワードで確定する。成功でパスワードを入れ替え、全セッションを失効させる。失敗は 400 `RESET_TOKEN_INVALID`（8.18） |
 | `/api/v1/auth/phone/start` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | 確認コードを SMS 送信する。番号と IP で回数を制限する |
 | `/api/v1/auth/phone/confirm` | POST | SCR-PUB-02 | 登録意向 Cookie または会員 | コードを検証し、電話番号で既存会員へ手段を足すか、会員とチケット情報を作る |
 | `/api/v1/auth/google` | GET | SCR-PUB-02 | 不要 | Google 認可画面へリダイレクト（state と nonce を Cookie に保存）。`next` は許可した相対パスだけ |
@@ -2408,6 +2410,27 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 - 書き込んだあと、登録画面は `window.history.replaceState` で URL から `ref` を落とす。`router.replace` は使わない（再取得と着地判定を動かさず、表示中の紹介者名も消さないため）。
 
 紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。付与は公開のトランザクションの中で行い、コミット後に紹介者へ `REFERRAL_GRANTED` の通知を作る（5.18）。通知の失敗で公開は失敗させない。
+
+### 8.18. POST `/api/v1/auth/password/reset` / `/api/v1/auth/password/reset/confirm`（パスワード再設定）
+
+対象画面は SCR-PUB-02 の `/auth/password/reset`。メールのワンタイムリンクで、忘れたパスワードを入れ替える。対象は会員（主催者・参加者）だけである。`platformRole = ADMIN` の会員、退会済み（`deleted_at` あり）、該当なしには送らない。ただし応答も所要時間帯も変えず、どれも `200 { "sent": true, "detail": RESET_NOTICE }` とする。会員の有無・退会・管理者を応答から読ませない。
+
+発行のボディは `{ "email": "user@example.com", "audience": "participant" }`。`audience` は省略でき、`organizer` か `participant` である。上限は `resetEmail`（メールあたり 1 時間に 5 回）と `resetIp`（IP あたり 1 時間に 10 回）で、超えたら 429 を返す。上限は `src/modules/auth/lib/rate-limits.ts` に置く。順序は次のとおり。
+
+1. メールアドレスを正規化し、`email` と `deleted_at IS NULL` で会員を 1 件引く。
+2. `platformRole = ADMIN` または該当なしなら、何も作らず共通の応答を返す。
+3. その会員の未使用の `password_reset_tokens` を消し、新しい行を 1 件作る。トークンは `randomBytes(32)` の base64url で、平文は保存せず SHA-256 だけを `token_hash` に入れる。有効期限は 30 分で、1 回限りである。
+4. `{APP_BASE_URL}/auth/password/reset?token=...&audience=...` をメールで送る。`MAIL_WEBHOOK_URL` が無いときは送信記録だけを残し、URL をサーバログに出す。
+
+確定のボディは `{ "token": "...", "newPassword": "..." }`。`newPassword` は 8 文字以上 128 文字以下で、漏えい済みパスワードは拒否する。上限は `resetConfirmIp`（IP あたり 1 時間に 20 回）である。順序は次のとおり。
+
+1. `sha256(token)` で `token_hash` を引き、未使用かつ有効期限内で、会員が退会していないことを確かめる。悪ければ 400 `RESET_TOKEN_INVALID`。
+2. 1 つのトランザクションで、`used_at` が NULL の行だけを `used_at` で更新する。更新が 0 件なら 400 `RESET_TOKEN_INVALID`（二重送信を弾く）。
+3. 同じトランザクションで `users.password_hash` を新しい値にする。`email_verified_at` が NULL なら同時に埋める（リンクを開けたことを、メール所有の証明として扱う）。
+4. その会員の `auth_sessions` を全件失効させる。確定後の端末は自動ログインせず、ログイン画面へ戻す。
+5. `account_change_logs` に `PASSWORD` を残す。値は入れない。
+
+成功は `{ "success": true }`。無効・期限切れ・使用済み・退会済みは 400 `RESET_TOKEN_INVALID`。テーブルは `prisma/schema.prisma` の `PasswordResetToken`（`@@map("password_reset_tokens")`）が正である。列は `id`、`userId`、`tokenHash`（SHA-256、UNIQUE）、`expiresAt`、`usedAt`、`createdAt` を持つ。
 
 ---
 

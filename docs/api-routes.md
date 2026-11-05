@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 80
-- エンドポイント（メソッド × パス）: 98
-- 仕様書に記載: 93
+- ルートファイル: 82
+- エンドポイント（メソッド × パス）: 100
+- 仕様書に記載: 95
 - 実装のみ（仕様書に記載なし）: 5
 - 仕様書のみ（実装なし）: 0
 
@@ -34,6 +34,8 @@
 | POST | `/api/v1/auth/login-challenge` | なし | あり | `src/app/api/v1/auth/login-challenge/route.ts` |
 | POST | `/api/v1/auth/login-challenge/confirm` | なし | あり | `src/app/api/v1/auth/login-challenge/confirm/route.ts` |
 | POST | `/api/v1/auth/logout` | なし | あり | `src/app/api/v1/auth/logout/route.ts` |
+| POST | `/api/v1/auth/password/reset` | なし | あり | `src/app/api/v1/auth/password/reset/route.ts` |
+| POST | `/api/v1/auth/password/reset/confirm` | なし | あり | `src/app/api/v1/auth/password/reset/confirm/route.ts` |
 | POST | `/api/v1/auth/phone/confirm` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/auth/phone/confirm/route.ts` |
 | POST | `/api/v1/auth/phone/start` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/auth/phone/start/route.ts` |
 | GET | `/api/v1/auth/session` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/auth/session/route.ts` |
