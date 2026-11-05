@@ -17,7 +17,7 @@ interface RouteContext {
  *
  * 誰でも読める。ただし非公開の会員は名前と `isPublished: false` だけを返し、
  * 自己紹介・リンク・実績はDBから読んでもここを通さない。
- * 会員が無い・退会済み・イベントが0件なら 404。
+ * 会員が無い・退会済みなら 404。催しが0件でも返す（初回公演の前に URL を貼れるように）。
  */
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   try {

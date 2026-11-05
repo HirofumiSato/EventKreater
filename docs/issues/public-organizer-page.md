@@ -93,8 +93,8 @@
 
 `src/app/organizers/[userId]/events/page.tsx`（サーバー）→ `OrganizerPageView`（クライアント）。プロフィール（`/organizers/[userId]`）から遷移する。
 
-- 未ログイン（401/403）: 見出しだけ出し、本文は `aria-hidden` の骨組みをぼかす。案内文と参加者ログインへのボタンを重ねる。中身のAPIは呼ばない。
-- ログイン済み: 主催者名、タブ、カレンダーまたは一覧。
+- 誰でも読める（SNS の固定リンクから開ける）。API は掲載条件を満たす催しだけを返し、0件でも空の一覧を 200 で返す。
+- 本文: 先頭に「次の催し」を1件、その下にカレンダー、その下に一覧。プロフィールから遷移する。
 - カレンダー: 既存の `CalendarMonthGrid` / `CalendarToolbar` を使う。前月ボタンは今月で止める。短冊を押すと `CalendarEventModal` から催しページへ進める。
 - 一覧: カードにチラシ、催し名、全開催日、場所、費用、定員と参加人数、満員なら「参加要望受付中」を出す。
 - 空: 「これから開催される催しはありません。」
@@ -104,7 +104,7 @@
 
 - `GET /api/v1/organizer/events` の応答に `viewer.userId` を足す。
 - 主催イベント一覧の冒頭に「プロフィール」ボタン（新しいタブ）、「プロフィールを編集」、「催しページを開く」「プレビュー」「URLをコピー」を置く。コピーする URL はプロフィール（`/organizers/[userId]`）である。
-- `OrganizerPagePreviewModal` を作り、`OrganizerPageView` を `preview` モードで描く。プレビューはログイン済みの見え方だけを出し、未ログインのぼかしは出さない。
+- `OrganizerPagePreviewModal` を作り、`OrganizerPageView` をプレビューに使う。プレビューは公開後と同じ見え方にする。
 - 各 `EventCard` の「公開ページ」の隣に「主催者のページ」を足す（その催しの筆頭幹事の `userId` を使う。`ownerUserId` を `OrganizerEvent` に足す）。
 
 ### 5. 参加者側

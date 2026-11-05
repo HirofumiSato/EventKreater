@@ -147,7 +147,7 @@
 
 .. count-start
 
-118 ファイル、``it`` は 1538 件です。内訳は ``tests/unit/`` が 83 ファイル 1269 件、``tests/integration/`` が 25 ファイル 180 件です。結合の 180 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+119 ファイル、``it`` は 1545 件です。内訳は ``tests/unit/`` が 84 ファイル 1275 件、``tests/integration/`` が 25 ファイル 181 件です。結合の 181 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -249,7 +249,7 @@
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/integration/subscription-quota.test.ts``
      - 8
-     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題プランは件数を数えない。公開の再開はチケットを再消費する。複製は下書きの時点では消費しない
+     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題プランは件数を数えない。公開の再開はチケットを再消費する。複製は下書きの時点では消費せず、開催日と候補日と申込締切を1か月後にずらす
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
    * - ``tests/integration/subscription-trial.test.ts``
      - 6
@@ -351,7 +351,11 @@
      - 4
      - 出欠の回数制限。上限で 429 と ``retryAt``・``Retry-After``、イベントが違えば独立、端末（Cookie）の枠は IP と別、DELETE は POST と同じ IP のバケットを消費する
      - SCR-PUB-01
-   * - ``tests/unit/draft-lifecycle.test.ts``
+   * - ``tests/unit/clone-shift.test.ts``
+     - 6
+     - 複製でずらす日付。1か月後へ送り、月末はその月の末日に丸め（1月31日→2月28日・閏年は2月29日）、年をまたぎ（12月15日→1月15日）、0か月は同じ日を返し、形の違う値はそのまま返す
+     - SCR-ORG-01
+  * - ``tests/unit/draft-lifecycle.test.ts``
      - 4
      - 下書きは受付停止にできない（409 ``DRAFT_CANNOT_STOP``）。公開の再開は受付停止だけ（409 ``NOT_CLOSED``）
      - SCR-ORG-02 / SCR-ORG-01
@@ -616,8 +620,8 @@
      - プレビューの主催者名と共同主催の人数、ゲストの表示名、招待の使い切り
      - SCR-ORG-01
    * - ``tests/integration/public-organizer-page.test.ts``
-     - 8
-     - 主催者ページの API。未ログインは 403、対象の絞り込み、候補日の並び、満員の扱い
+     - 9
+     - 主催者ページの API。未ログインでも催しを返し、下書き・過去日・削除済みを混ぜず、0件でも 200 の空一覧にする
      - SCR-PUB-03
    * - ``tests/integration/waitlist.test.ts``
      - 7
@@ -634,7 +638,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1269、``tests/integration/`` が 180 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1269 件を実行して 180 件を skip します。
+件数の内訳は ``tests/unit/`` が 1275、``tests/integration/`` が 181 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1275 件を実行して 181 件を skip します。
 
 .. breakdown-end
 

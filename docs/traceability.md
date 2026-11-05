@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 462
+- 文書から参照されているコードパス: 465
 - API ルート: 82（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -15,6 +15,7 @@
 | コード | 参照する文書 |
 | --- | --- |
 | `prisma/migrations` | `AGENTS.md` / [docs/database.rst](database.rst) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / `llms.txt` |
+| `prisma/migrations/20261020053000_visibility_flyers_reminders/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `prisma/migrations/20261022140000_participant_waitlist/migration.sql` | [docs/issues/waitlist.md](issues/waitlist.md) |
@@ -38,6 +39,7 @@
 | `public/samples/flyer-dj.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-gohan.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-halloween.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `scripts/billing-notices.mjs` | [docs/DBschema.md](DBschema.md) |
 | `scripts/build-icons.mjs` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `scripts/check-doc-links.mjs` | [docs/README.md](README.md) / [docs/index.rst](index.rst) |
 | `scripts/check-mock-sync.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
@@ -403,6 +405,7 @@
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/ci-scope.test.mjs` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/client-ip.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/clone-shift.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/design-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/dev-stuck.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-lifecycle.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |

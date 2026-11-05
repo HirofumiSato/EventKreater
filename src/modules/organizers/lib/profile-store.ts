@@ -155,7 +155,8 @@ function toStatSource(row: EventStatRow): ProfileStatSource {
 }
 
 /**
- * 公開プロフィールを読む。会員が無い・退会済み・イベントが0件なら null（画面は 404）。
+ * 公開プロフィールを読む。会員が無い・退会済みなら null（画面は 404）。
+ * 催しが0件でも返す（初回公演の前にプロフィールURLを貼れるように）。
  * 非公開でも名前は返す（ホーム自体は開ける）。
  */
 export async function loadPublicOrganizerProfile(userId: string): Promise<LoadedOrganizerProfile | null> {
@@ -171,7 +172,7 @@ export async function loadPublicOrganizerProfile(userId: string): Promise<Loaded
       },
     },
   });
-  if (!user || user.organizers.length === 0) return null;
+  if (!user) return null;
 
   const stats = profileStats(
     user.organizers.map((row) => toStatSource(row.event)),

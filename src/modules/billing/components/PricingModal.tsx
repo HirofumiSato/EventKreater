@@ -220,7 +220,7 @@ export function PricingModal({
             <h4 className="card__title">単発チケット</h4>
             <PriceBlock quote={oneTime} fallback={ONE_TIME_PRICE_JPY} />
             <p className="card__body">
-              1枚。スポット開催に。
+              1枚。次のライブや次の会に。
               {isFree && ` おひとり${oneTime?.freePerUserLimit ?? 1}枚まで無料です。`}
             </p>
             <button

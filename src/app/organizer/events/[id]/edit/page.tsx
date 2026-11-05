@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EventForm } from "@/modules/events/components/EventForm";
 import { FlyerGeneratePanel } from "@/modules/flyers/components/FlyerGeneratePanel";
 import { FlyerSelectModal, type SelectableFlyer } from "@/modules/flyers/components/FlyerSelectModal";
@@ -59,8 +59,12 @@ interface DetailResponse {
   role: "OWNER" | "CO_HOST";
 }
 
-export default function EditEventPage({ params }: { params: { id: string } }) {
+/** 複製の直後に出す案内。印は URL から消して、再読み込みで繰り返さない。 */
+const CLONE_NOTICE = "開催日を1か月後にずらしました。日付を確かめてください。";
+
+function EditEventScreen({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const quotaState = useEventQuota();
   const returnTo = `/organizer/events/${params.id}/edit`;
   const [form, setForm] = useState<EventFormValues>(EMPTY_EVENT_FORM);
@@ -132,6 +136,14 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       active = false;
     };
   }, [params.id]);
+
+  // 複製から来たときの案内。日付を1か月ずらしたことを、編集に入る前に伝える。
+  // URL からは印を消して、再読み込みや戻るで同じ案内を繰り返さない。
+  useEffect(() => {
+    if (searchParams.get("cloned") !== "1") return;
+    setToast(CLONE_NOTICE);
+    router.replace(`/organizer/events/${params.id}/edit`);
+  }, [searchParams, router, params.id]);
 
   const save = async () => {
     setSaving(true);
@@ -274,7 +286,28 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           setToast("0円チケットを受け取りました。もう一度保存してください。");
         }}
       />
-      {toast && <Toast message={toast} tone={toast === "保存しました" ? "success" : "error"} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast}
+          tone={toast === "保存しました" || toast === CLONE_NOTICE ? "success" : "error"}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function EditEventPage({ params }: { params: { id: string } }) {
+  // 複製の案内（`?cloned=1`）を読むため、`useSearchParams` を使う層は Suspense で包む。
+  return (
+    <Suspense
+      fallback={
+        <Loading>
+          編集画面を準備しています
+        </Loading>
+      }
+    >
+      <EditEventScreen params={params} />
+    </Suspense>
   );
 }

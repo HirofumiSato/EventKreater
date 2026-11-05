@@ -11,6 +11,7 @@ import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentB
 import { PricingModal } from "@/modules/billing/components/PricingModal";
 import { Toast } from "@/components/common/Toast";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { trackEvent } from "@/lib/analytics";
 import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
@@ -133,8 +134,11 @@ function OrganizerEventsScreen() {
         throw new Error(problem.detail || "複製に失敗しました");
       }
       if (!res.ok) throw new Error(await readProblem(res));
-      const data = (await res.json()) as { event: { id: string } };
-      router.push(`/organizer/events/${data.event.id}/edit`);
+      const data = (await res.json()) as { event: { id: string }; shiftedMonths?: number };
+      // 複製の実行回数。日付をずらした月数も載せ、複製から公開へ進んだかを追えるようにする。
+      trackEvent("event_clone", { shiftedMonths: data.shiftedMonths ?? 1 });
+      // 編集画面で「日付をずらした」と案内する。印は遷移先で消す。
+      router.push(`/organizer/events/${data.event.id}/edit?cloned=1`);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : "複製に失敗しました");
     } finally {

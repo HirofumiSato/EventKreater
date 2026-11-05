@@ -4,7 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
-import { serializeEvent } from "@/lib/serializers";
+import {
+  formatEventDate,
+  formatRsvpDeadlineInput,
+  parseEventDate,
+  parseRsvpDeadline,
+  serializeEvent,
+} from "@/lib/serializers";
+import { shiftDateByMonths } from "@/modules/events/lib/clone";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 
 export const runtime = "nodejs";
@@ -12,6 +19,25 @@ export const dynamic = "force-dynamic";
 
 interface RouteContext {
   params: { id: string };
+}
+
+/** 複製でずらす月数。開催日・申込締切・並び日をそろえて動かす。 */
+const CLONE_SHIFT_MONTHS = 1;
+
+/**
+ * 申込締切を月単位でずらす。
+ *
+ * `DateTime`（Timestamptz）のままでは月の計算ができないので、JST の
+ * `YYYY-MM-DDTHH:mm` に落として日付の部分だけをずらし、元の時刻のまま戻す。
+ * 変換に失敗したときは、元の値のままにする（複製を止めない）。
+ */
+function shiftRsvpDeadline(value: Date | null, months: number): Date | null {
+  if (!value) return null;
+  const local = formatRsvpDeadlineInput(value);
+  const shifted = parseRsvpDeadline(
+    `${shiftDateByMonths(local.slice(0, 10), months)}${local.slice(10)}`,
+  );
+  return shifted ?? value;
 }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
@@ -55,7 +81,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         const created = await tx.event.create({
           data: {
             title,
-            sortDate: source.sortDate,
+            // 複製は次の回を作るためのもの。開催日と並び日を1か月後へずらす。
+            sortDate: parseEventDate(
+              shiftDateByMonths(formatEventDate(source.sortDate), CLONE_SHIFT_MONTHS),
+            ),
             location: source.location,
             postalCode: source.postalCode,
             prefecture: source.prefecture,
@@ -69,13 +98,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             flyerAssetId: source.flyerAssetId,
             // 一覧を持たないため、複製も常に紹介制で保存する。
             visibility: "UNLISTED",
-            rsvpDeadline: source.rsvpDeadline,
+            // 申込締切も同じ月数だけずらす。時刻は JST のまま保つ。
+            rsvpDeadline: shiftRsvpDeadline(source.rsvpDeadline, CLONE_SHIFT_MONTHS),
             status: "DRAFT",
             // 複製は下書き。チケットは公開のときに消費する。
             quotaChargedAt: null,
             schedules: {
               create: source.schedules.map((row) => ({
-                eventDate: row.eventDate,
+                eventDate: parseEventDate(
+                  shiftDateByMonths(formatEventDate(row.eventDate), CLONE_SHIFT_MONTHS),
+                ),
                 startTime: row.startTime,
                 endTime: row.endTime,
                 eventTime: row.eventTime,
@@ -119,6 +151,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           // 複製は下書きなので告知ページはまだ無い。
           publicUrl: null,
           manageUrl: `/organizer/events/${event.id}/edit`,
+          // 画面が「1か月後へずらした」と案内するために返す。
+          shiftedMonths: CLONE_SHIFT_MONTHS,
         },
         { status: 201 },
       );

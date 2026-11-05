@@ -17,7 +17,7 @@ import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
 import { safeNextPath } from "@/modules/auth/lib/google-auth";
 import { savePasswordCredential } from "@/modules/auth/lib/password-credential";
-import { REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
+import { REFERRAL_CODE_LENGTH, REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
 import { REFERRAL_TICKET_GRANT } from "@/modules/billing/lib/tickets";
 import { Alert, Field, Loading, PageHeader } from "@/components/ui";
 
@@ -80,6 +80,35 @@ function authPageClass(audience: AuthAudience): string {
   return audience === "participant"
     ? "page--form page--auth page--auth--participant stack"
     : "page--form page--auth page--auth--organizer stack";
+}
+
+/**
+ * 登録の入口。紹介リンク・告知ページ・直接の 3 つに分ける。
+ *
+ * 告知ページ（`/events/<id>`）から来た参加者は、戻り先（`next`）にその URL を持つ。
+ * 紹介コードは `?ref=` か、それを覚えた Cookie のどちらかで判定する。
+ */
+function resolveSignUpSource(input: {
+  hasReferral: boolean;
+  nextPath: string;
+}): "referral" | "event_page" | "direct" {
+  if (input.hasReferral) return "referral";
+  return input.nextPath.startsWith("/events/") ? "event_page" : "direct";
+}
+
+/** 紹介コードを覚えた Cookie があるか。`document` を読むので、押したときにだけ呼ぶ。 */
+function hasReferralCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  const prefix = `${REFERRAL_COOKIE}=`;
+  return document.cookie
+    .split(";")
+    .map((entry) => entry.trim())
+    .some((entry) => {
+      if (!entry.startsWith(prefix)) return false;
+      // コードの形（英数8桁）だけを紹介として数える。催し ID の `?ref=` を紹介と混ぜない。
+      const code = entry.slice(prefix.length).replace(/[^0-9A-Za-z]/g, "");
+      return code.length === REFERRAL_CODE_LENGTH;
+    });
 }
 
 function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteName: string | null }) {
@@ -276,10 +305,19 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
   const completePhone = useCallback(
     (info?: { created?: boolean }) => {
       // 会員が実際にできたときだけ登録として数える。途中の再開・引き継ぎでは送らない。
-      if (info?.created === true) trackEvent("sign_up", { audience });
+      if (info?.created === true) {
+        trackEvent("sign_up", {
+          audience,
+          // 紹介リンク・告知ページ・直接のどれから来たか。参加者から主催者へ回ったかを追う。
+          source: resolveSignUpSource({
+            hasReferral: inviteName !== null || hasReferralCookie(),
+            nextPath,
+          }),
+        });
+      }
       void finish(true);
     },
-    [audience, finish],
+    [audience, finish, inviteName, nextPath],
   );
 
   const holdForSession =

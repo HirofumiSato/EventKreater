@@ -12,8 +12,8 @@ import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-sto
  * 主催者の公開ページ（SCR-PUB-14）。プロフィールとイベントを1画面に置く。
  *
  * 参加者が告知ページの主催者名から開くページ。検索結果には出さない。
- * プロフィールは誰でも読めるが、カレンダーと一覧は参加者のログインが要る。
- * 会員が無い・退会済み・イベントが0件のときだけ 404。
+ * プロフィールは誰でも読め、催しも未ログインで見られる。
+ * 会員が無い・退会済みのときだけ 404。
  */
 
 export const dynamic = "force-dynamic";

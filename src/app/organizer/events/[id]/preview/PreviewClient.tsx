@@ -139,13 +139,20 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         return;
       }
       if (!res.ok) throw new Error(await readProblem(res));
-      // 公開が完了した回数。402（枠不足）・403（電話番号未確認など）・409・失敗では送らない。
-      trackEvent("event_publish");
+      // 公開が完了した回数。何件目の公開かは、公開直後のクォータの公開中件数から読む。
+      // 402（枠不足）・403（電話番号未確認など）・409・失敗では送らない。
+      const latest = await quotaState.refreshQuota();
+      const publishedCount = latest?.publishedEventCount ?? quotaState.quota?.publishedEventCount;
+      if (publishedCount === undefined) {
+        // 件数が取れないときは、数を載せずに公開だけを数える。
+        trackEvent("event_publish");
+      } else {
+        trackEvent("event_publish", { count: publishedCount });
+      }
 
       if (confirmation) {
         // 使ったあとの残りは、取り直した最新のクォータから読む。
         // 取り直せないときは、確認のときに計算した値で代用する。
-        const latest = await quotaState.refreshQuota();
         setConfirm(null);
         setUsed({
           remaining: latest ? remainingFor(latest, confirmation.kind) : confirmation.remainingAfter,
@@ -153,7 +160,6 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         return;
       }
 
-      void quotaState.refreshQuota();
       router.replace(`/events/${params.id}`);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : "公開に失敗しました");

@@ -7,8 +7,8 @@
 
 - ルートファイル: 82
 - エンドポイント（メソッド × パス）: 100
-- 仕様書に記載: 95
-- 実装のみ（仕様書に記載なし）: 5
+- 仕様書に記載: 100
+- 実装のみ（仕様書に記載なし）: 0
 - 仕様書のみ（実装なし）: 0
 
 ## 一覧
@@ -48,7 +48,7 @@
 | GET | `/api/v1/billing/quota` | 必須（requireUserId） | あり | `src/app/api/v1/billing/quota/route.ts` |
 | GET | `/api/v1/flyer-assets` | なし | あり | `src/app/api/v1/flyer-assets/route.ts` |
 | POST | `/api/v1/flyer-assets` | なし | あり | `src/app/api/v1/flyer-assets/route.ts` |
-| DELETE | `/api/v1/flyer-assets/[id]` | なし | なし | `src/app/api/v1/flyer-assets/[id]/route.ts` |
+| DELETE | `/api/v1/flyer-assets/[id]` | なし | あり | `src/app/api/v1/flyer-assets/[id]/route.ts` |
 | GET | `/api/v1/flyer-assets/[id]/image` | なし | あり | `src/app/api/v1/flyer-assets/[id]/image/route.ts` |
 | GET | `/api/v1/flyer-assets/[id]/pdf` | なし | あり | `src/app/api/v1/flyer-assets/[id]/pdf/route.ts` |
 | POST | `/api/v1/flyers/candidates` | なし | あり | `src/app/api/v1/flyers/candidates/route.ts` |
@@ -57,11 +57,11 @@
 | POST | `/api/v1/flyers/generate` | なし | あり | `src/app/api/v1/flyers/generate/route.ts` |
 | GET | `/api/v1/flyers/quota` | なし | あり | `src/app/api/v1/flyers/quota/route.ts` |
 | POST | `/api/v1/flyers/uploads` | なし | あり | `src/app/api/v1/flyers/uploads/route.ts` |
-| GET | `/api/v1/geo/postal-codes/[code]` | なし | なし | `src/app/api/v1/geo/postal-codes/[code]/route.ts` |
+| GET | `/api/v1/geo/postal-codes/[code]` | なし | あり | `src/app/api/v1/geo/postal-codes/[code]/route.ts` |
 | GET | `/api/v1/image-assets/[id]/image` | なし | あり | `src/app/api/v1/image-assets/[id]/image/route.ts` |
 | POST | `/api/v1/internal/billing/notices` | なし | あり | `src/app/api/v1/internal/billing/notices/route.ts` |
 | GET | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | あり | `src/app/api/v1/invitations/[code]/route.ts` |
-| POST | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | なし | `src/app/api/v1/invitations/[code]/route.ts` |
+| POST | `/api/v1/invitations/[code]` | 条件付き（resolveAuthContext, resolveOptionalUserId） | あり | `src/app/api/v1/invitations/[code]/route.ts` |
 | GET | `/api/v1/notifications` | 必須（requireUserId） | あり | `src/app/api/v1/notifications/route.ts` |
 | PATCH | `/api/v1/notifications` | 必須（requireUserId） | あり | `src/app/api/v1/notifications/route.ts` |
 | GET | `/api/v1/organizer/events` | 条件付き（collectGuestTokenHashes, resolveUserId） | あり | `src/app/api/v1/organizer/events/route.ts` |
@@ -74,8 +74,8 @@
 | POST | `/api/v1/organizer/events/[id]/lifecycle` | 条件付き（assertOwner） | あり | `src/app/api/v1/organizer/events/[id]/lifecycle/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/lock` | 条件付き（assertGuestEditWindow, assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/lock/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/lock` | 条件付き（assertGuestEditWindow, assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/lock/route.ts` |
-| GET | `/api/v1/organizer/events/[id]/organizers` | 条件付き（assertOrganizer） | なし | `src/app/api/v1/organizer/events/[id]/organizers/route.ts` |
-| DELETE | `/api/v1/organizer/events/[id]/organizers/[organizerId]` | 条件付き（assertRegisteredOwner） | なし | `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts` |
+| GET | `/api/v1/organizer/events/[id]/organizers` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/organizers/route.ts` |
+| DELETE | `/api/v1/organizer/events/[id]/organizers/[organizerId]` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts` |
 | GET | `/api/v1/organizer/events/[id]/participants` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/route.ts` |
 | PATCH | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
@@ -95,7 +95,7 @@
 | POST | `/api/v1/public/events/[id]/rsvp` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/rsvp/route.ts` |
 | DELETE | `/api/v1/public/events/[id]/rsvp` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/events/[id]/rsvp/route.ts` |
 | GET | `/api/v1/public/organizers/[userId]` | なし | あり | `src/app/api/v1/public/organizers/[userId]/route.ts` |
-| GET | `/api/v1/public/organizers/[userId]/events` | 条件付き（resolveOptionalUserId） | あり | `src/app/api/v1/public/organizers/[userId]/events/route.ts` |
+| GET | `/api/v1/public/organizers/[userId]/events` | なし | あり | `src/app/api/v1/public/organizers/[userId]/events/route.ts` |
 | GET | `/api/v1/public/pricing` | なし | あり | `src/app/api/v1/public/pricing/route.ts` |
 | DELETE | `/api/v1/user` | 必須（requireUserId） | あり | `src/app/api/v1/user/route.ts` |
 | GET | `/api/v1/user/calendar` | 必須（requireUserId） | あり | `src/app/api/v1/user/calendar/route.ts` |
@@ -118,13 +118,7 @@
 
 ## 実装にあって仕様書に無いもの
 
-- `DELETE /api/v1/flyer-assets/[id]` — `src/app/api/v1/flyer-assets/[id]/route.ts`
-- `GET /api/v1/geo/postal-codes/[code]` — `src/app/api/v1/geo/postal-codes/[code]/route.ts`
-- `POST /api/v1/invitations/[code]` — `src/app/api/v1/invitations/[code]/route.ts`
-- `GET /api/v1/organizer/events/[id]/organizers` — `src/app/api/v1/organizer/events/[id]/organizers/route.ts`
-- `DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]` — `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts`
-
-仕様書側に追記するか、実装が不要なら削除します。`docs/README.md` の既知の乖離にも同じ内容を書きます。
+なし。
 
 ## 仕様書にあって実装が無いもの
 

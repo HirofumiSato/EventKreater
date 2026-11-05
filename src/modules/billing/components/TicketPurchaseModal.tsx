@@ -105,7 +105,7 @@ export function TicketPurchaseModal({
         </p>
         {charged > 0 && <p className="help">（税込）</p>}
         <p>
-          1枚。スポット開催に。
+          1枚。次のライブや次の会に。
           {isFree && ` おひとり${perUser}枚まで無料です。 残り${remaining}枚。`}
         </p>
       </div>
