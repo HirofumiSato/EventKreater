@@ -1360,7 +1360,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ### 5.15. POST `/api/v1/voice/transcriptions`（音声を文字にする）
 
-イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`Cache-Control: no-store`。
+イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`text` は前後の空白と末尾の句読点（`。、，．！？!?`）を落としてから返す（文の途中の記号は残す）。`Cache-Control: no-store`。
 
 同じパスの `GET` は設定だけを返す（`{ "mock": boolean }`、`Cache-Control: no-store`）。音声は受け取らない。画面は録音を省いてよいかを知るために、音声モードを開いたときに 1 度だけ聞く。`true` のとき画面はマイクを掴まず、疑似の録音のあと欄の入力例をその場で入れる（開発用）。
 
@@ -1369,7 +1369,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 400 | - | 音声が空、または本文を読めない |
 | 413 | - | 5MB を超えた |
 | 415 | - | 音声以外の形式 |
-| 422 | `TRANSCRIBE_EMPTY` / `TRANSCRIBE_UNSUPPORTED` | 聞き取れない、または上流が形式を受け付けない |
+| 422 | `TRANSCRIBE_EMPTY` / `TRANSCRIBE_UNSUPPORTED` | 聞き取れない、句読点だけで空になった、または上流が形式を受け付けない |
 | 429 | `RATE_LIMITED` / `TRANSCRIBE_BUSY` | 回数の上限、または上流が混雑（`Retry-After` 付き） |
 | 502 | `TRANSCRIBE_MISCONFIGURED` / `TRANSCRIBE_FAILED` | 鍵の設定不備、または上流に繋がらない |
 | 503 | `TRANSCRIBE_DISABLED` | `OPENAI_API_KEY` が未設定 |
