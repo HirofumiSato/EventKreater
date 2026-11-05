@@ -51,11 +51,12 @@
   --pop-peach: #ffe6d5;
   --pop-peach-deep: #a8452a;
   --tape-ink: #1a1916;
-  /* ホームの見出しで「告知」「申込」の 2 語だけを分ける差し色。墨地（#1a1916）に
+  /* ホームの見出しで「告知」「申込」「特設」の 3 語だけを分ける差し色。墨地（#1a1916）に
      対して 8:1 以上のコントラストがある明るさにし、地は塗らない（文字色だけ）。
-     ピンクは告知、青は申込。ほかの画面では使わない。 */
+     ピンクは告知、青は申込、緑は特設。ほかの画面では使わない。 */
   --color-mark-notice: #ff8fb8;
   --color-mark-apply: #7cc0ff;
+  --color-mark-special: #7cd6a0;
   /* 静かめ（管理）で使う罫線と地。 */
   --quiet-line: #e3d9c8;
   --quiet-line-strong: #c6bba7;
@@ -1722,21 +1723,24 @@ fieldset.field {
   white-space: nowrap;
 }
 
-/* 1 行目「イベント告知&申込のウェブページ、」が 17 文字で最も長い（約 15em）。
-   360px の端末でも 1 行に収まる 1.15rem から始め、幅が広がるほど上げる。
-   2 行はどの幅でも同じ大きさにする（行ごとに文字サイズを変えない）。 */
+/* 見出しの 1 つ目の文は「イベント告知&申込の／特設ウェブページ、」と「の」の直後で
+   2 段に折る。文字サイズは見出し全体で 1 つにする（1 つ目の文だけを大きくしない）。
+   いちばん長いのは、最後の段に横へ並べる「5分で簡単作成。スマホで完結。」の 15 文字。
+   この段が折り返さない上限で止める。 */
 .hero--stage .hero__title {
   max-width: 34rem;
   margin-top: 1.25rem;
-  font-size: clamp(1.15rem, 5.2vw, 1.5rem);
+  font-size: clamp(1.3rem, 5.6vw, 1.65rem);
   line-height: 1.35;
 }
 
-/* 見出しは 2 行のまま。最後の行だけ、右に吹き出しを 2 枚横に並べる。 */
+/* 見出しは 3 段のまま。最後の行だけ、右に吹き出しを 2 枚横に並べる。 */
 .hero--stage .hero__title-line {
   display: block;
 }
 
+/* 最後の段は見出しと同じ文字サイズ（`.hero__title` が持つ）。
+   15 文字を並べるこの段がいちばん長いので、この段が折り返さない大きさを選ぶ。 */
 .hero--stage .hero__title-row {
   display: flex;
   flex-wrap: wrap;
@@ -1854,8 +1858,8 @@ fieldset.field {
 }
 
 @media (min-width: 640px) {
-  /* 1 行目（17 文字、約 17.1em）は 2rem で約 546px。34rem（544px）では 2px 足りず
-     折り返すため、640〜899px のコピー列に収まる 36rem まで広げる。 */
+  /* 最後の段（15 文字、約 15em）は 2rem で約 480px。36rem（576px）の
+     コピー列に収まる。 */
   .hero--stage .hero__title {
     max-width: 36rem;
     font-size: 2rem;
@@ -1874,9 +1878,9 @@ fieldset.field {
     gap: 3rem;
   }
 
-  /* 900〜1023px はチラシ列が入り、コピーが約 28rem まで細る。1 行目（17 文字、
-     約 17.1em）は 1.65rem だと約 451px でコピー列に 1px 足りず折り返すため、
-     収まる上限の 1.6rem に留める。1024px からは列が広がるので上げ直す。 */
+  /* 900〜1023px はチラシ列が入り、コピーが約 28rem まで細る。最後の段
+     （15 文字、約 15em）は 1.6rem で約 384px。コピー列に収まる上限に留める。
+     1024px からは上げ直す。 */
   .hero--stage .hero__title {
     font-size: 1.6rem;
   }
@@ -2923,8 +2927,8 @@ h3,
   box-shadow: 2px 2px 0 rgb(0 0 0 / 0.35);
 }
 
-/* 見出しの「告知」「申込」だけを文字色で分ける。地は塗らず、墨地に 4.5:1 以上。
-   ピンクは告知、青は申込（製品の tokens.css / deco/base.css と同じ値）。 */
+/* 見出しの「告知」「申込」「特設」だけを文字色で分ける。地は塗らず、墨地に 4.5:1 以上。
+   ピンクは告知、青は申込、緑は特設（製品の tokens.css / deco/base.css と同じ値）。 */
 .hero--stage .hero__mark {
   font-weight: 700;
 }
@@ -2935,6 +2939,10 @@ h3,
 
 .hero--stage .hero__mark--apply {
   color: var(--color-mark-apply);
+}
+
+.hero--stage .hero__mark--special {
+  color: var(--color-mark-special);
 }
 
 .hero__poster-placeholder {
