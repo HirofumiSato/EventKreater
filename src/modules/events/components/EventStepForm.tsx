@@ -8,6 +8,7 @@ import {
   type CapacitySelection,
 } from "@/modules/events/lib/capacity";
 import {
+  advanceOpenKeys,
   EVENT_STEPS,
   isBasicStepComplete,
   isCapacityStepComplete,
@@ -78,6 +79,13 @@ const STEP_INDEX = new Map(EVENT_STEPS.map((step, index) => [step.key, index]));
 export interface VoiceStepApi {
   /** ステップを開く。すでに開いていれば何もしない。 */
   openStep: (key: EventStepKey) => void;
+  /**
+   * 音声が開いたステップの保護を解く。音声モードを抜けたら呼ぶ。
+   * 解かないと、そのステップは埋まっても畳まれず、開いたままになる。
+   *
+   * 省略できるのは、ステップを操作しない試験用の入口のため。画面は必ず渡す。
+   */
+  releaseStep?: () => void;
   /** 画面の読み上げに流す。 */
   announce: (message: string) => void;
 }
@@ -144,19 +152,18 @@ export function EventStepForm({
     return first?.key ?? null;
   })();
   const previousFrontier = useRef<EventStepKey | null>(frontier);
+  // 音声が開いたステップ。埋まっても自動では畳まない。畳むと入力欄が DOM から消え、
+  // 音声の覆い（`data-voice-target` の穴）を見失う。音声モードを抜けたら解く。
+  const pinnedStep = useRef<EventStepKey | null>(null);
   useEffect(() => {
     const before = previousFrontier.current;
     previousFrontier.current = frontier;
     if (before === null || before === frontier || !isForward(before, frontier)) return;
     const nextStep = EVENT_STEPS[(STEP_INDEX.get(before) ?? 0) + 1];
     if (!nextStep?.mandatory) return;
-    setOpenKeys((current) => {
-      if (!current.has(before)) return current;
-      const next = new Set(current);
-      next.delete(before);
-      next.add(nextStep.key);
-      return next;
-    });
+    setOpenKeys((current) =>
+      advanceOpenKeys(current, before, nextStep.key, pinnedStep.current),
+    );
     setAnnouncement(`「${nextStep.title}」に進みました。`);
   }, [frontier]);
 
@@ -186,12 +193,17 @@ export function EventStepForm({
   const voiceApi = useMemo<VoiceStepApi>(
     () => ({
       openStep: (key) => {
+        // 音声が開いたキーを控える。済んでも自動で畳まれないようにするため。
+        pinnedStep.current = key;
         setOpenKeys((current) => {
           if (current.has(key)) return current;
           const next = new Set(current);
           next.add(key);
           return next;
         });
+      },
+      releaseStep: () => {
+        pinnedStep.current = null;
       },
       announce: setAnnouncement,
     }),

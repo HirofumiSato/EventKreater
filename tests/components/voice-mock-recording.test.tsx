@@ -324,7 +324,7 @@ describe("入力内容の確認を直す", () => {
 });
 
 describe("自動確定する欄", () => {
-  it("確認を出さずに入り、1.5 秒だけ知らせを出して次の欄へ進む", async () => {
+  it("確認を出さずに入り、3 秒だけ知らせを出して次の欄へ進む", async () => {
     stubMockAnswer(true);
     const onChange = vi.fn();
 
@@ -341,9 +341,9 @@ describe("自動確定する欄", () => {
     expect(screen.getByText("何時に始まる？")).toBeTruthy();
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
 
-    // 知らせは 1.5 秒で消える。
+    // 知らせは 3 秒で消える。
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(3000);
     });
     expect(screen.queryByText("開催日を「12月5日」で入力しました")).toBeNull();
   });

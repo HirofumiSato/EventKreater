@@ -4,12 +4,13 @@
 //
 // ヘッダーの「プラン・カード管理」は `/organizer/plan` へのリンクになり、帯からは
 // その画面へ進む。単発チケットだけは、その場で買えるよう専用の層を開く。
-// ここで見るのは 5 つ。
+// ここで見るのは 6 つ。
 //   1. 未加入は「月額プランを見る」を `/organizer/plan` へのリンクとして出す
 //   2. 未加入は「単発チケットを買う」で単発チケットの層を開く
 //   3. 公開し放題プランに加入中は、2 つの導線とも出さない
 //   4. 支払いに問題がある間は、単発のボタンを止めて月額のリンクだけを残す
 //   5. 0円キャンペーンで受け取れるときは、ボタンを「0円チケットを受け取る」にする
+//   6. 残数の読み込み中は、同じ高さの場所取りを出して導線を出さない
 //
 // 購入したあとの動きは呼び出し元の仕事。ここでは `onPurchaseTicket` を呼ばずに、
 // 層が開くところまでを見る。
@@ -136,5 +137,45 @@ describe("単発チケットの導線", () => {
 
     expect(screen.getByRole("button", { name: "0円チケットを受け取る" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "単発チケットを買う" })).toBeNull();
+  });
+});
+
+describe("残数の読み込み中", () => {
+  it("プレースホルダを出し、月額と単発の導線は出さない", () => {
+    const onPurchaseTicket = vi.fn(async () => "REDIRECT" as const);
+    const { container } = render(
+      <QuotaStatusBanner quota={null} loading onPurchaseTicket={onPurchaseTicket} />,
+    );
+
+    // 帯の高さを取るための枠。読み上げには待っていることを伝える。
+    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy();
+    expect(screen.getByText("チケットの残りを読み込んでいます")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "月額プランを見る" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "単発チケットを買う" })).toBeNull();
+  });
+
+  it("quota が届いたら、プレースホルダを本物の帯に替える", () => {
+    const onPurchaseTicket = vi.fn(async () => "REDIRECT" as const);
+    const { container, rerender } = render(
+      <QuotaStatusBanner quota={null} loading onPurchaseTicket={onPurchaseTicket} />,
+    );
+    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy();
+
+    rerender(
+      <QuotaStatusBanner quota={quota()} loading={false} onPurchaseTicket={onPurchaseTicket} />,
+    );
+
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.getByRole("link", { name: "月額プランを見る" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "単発チケットを買う" })).toBeTruthy();
+  });
+
+  it("読み込みが終わって quota も無いときは、何も出さない", () => {
+    const onPurchaseTicket = vi.fn(async () => "REDIRECT" as const);
+    const { container } = render(
+      <QuotaStatusBanner quota={null} loading={false} onPurchaseTicket={onPurchaseTicket} />,
+    );
+
+    expect(container.firstChild).toBeNull();
   });
 });

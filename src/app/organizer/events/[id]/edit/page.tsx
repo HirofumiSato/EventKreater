@@ -212,6 +212,7 @@ function EditEventScreen({ params }: { params: { id: string } }) {
       {form.status === "DRAFT" && (
         <QuotaStatusBanner
           quota={quotaState.quota}
+          loading={quotaState.isLoading}
           onPurchaseTicket={() => quotaState.startOneTimeCheckout({ draftId: params.id, returnTo })}
           onGranted={() => void quotaState.refreshQuota()}
           nextPath={returnTo}

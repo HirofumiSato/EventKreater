@@ -29,7 +29,11 @@ import {
   voiceFieldOrder,
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
-import { panelBoxFor, type VoicePanelBox } from "@/modules/events/lib/voice/panel";
+import {
+  fieldScrollDelta,
+  panelBoxFor,
+  type VoicePanelBox,
+} from "@/modules/events/lib/voice/panel";
 import {
   circleSpotlightClipPath,
   spotlightClipPath,
@@ -99,7 +103,7 @@ const BATCH_PROMPT = "順番に話してください";
 const BATCH_EXAMPLE = "12月5日、18時から20時、渋谷ホール、3000円、30人";
 
 /** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
-const AUTO_MESSAGE_MS = 1_500;
+const AUTO_MESSAGE_MS = 3_000;
 
 /** 中止（`AbortController`）で止めた通信か。利用者がやめた操作は知らせない。 */
 function isAbortError(error: unknown): boolean {
@@ -268,6 +272,9 @@ export function VoiceInputDock({
   // パネルの上端。切り抜きの下端をここより上へ収める。
   const panelRef = useRef<HTMLElement | null>(null);
   const fabRef = useRef<HTMLButtonElement | null>(null);
+  // 入力完了の印。測り直しの effect からも読むので控える
+  // （状態を依存に入れると、完了のたびに測り直しを張り直してしまう）。
+  const completeRef = useRef(false);
 
   useEffect(() => {
     valueRef.current = value;
@@ -300,6 +307,10 @@ export function VoiceInputDock({
   useEffect(() => {
     batchModeRef.current = batchMode;
   }, [batchMode]);
+
+  useEffect(() => {
+    completeRef.current = complete;
+  }, [complete]);
 
   // モックの可否はサーバーの環境変数が決める。画面が勝手に決めないよう、開いたときに 1 度だけ聞く。
   // 聞けなければ false に倒れるので、実の録音のままになる。
@@ -400,7 +411,7 @@ export function VoiceInputDock({
     }
   }, []);
 
-  /** 自動確定の知らせを 1.5 秒だけ出す。次の欄の録音が始まっても消さない。 */
+  /** 自動確定の知らせを 3 秒だけ出す。次の欄の録音が始まっても消さない。 */
   const showAutoMessage = useCallback(
     (text: string) => {
       clearAutoMessageTimer();
@@ -466,6 +477,8 @@ export function VoiceInputDock({
   /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
   const stopSession = useCallback(() => {
     discardRecording();
+    // 音声が開いたステップの保護を解く。次にステップが埋まったときは通常どおり畳む。
+    api.releaseStep?.();
     // マイクは音声モードを抜けるまで保持した。ここが唯一の解放口になる。
     releaseAudio();
     clearAutoMessageTimer();
@@ -484,7 +497,7 @@ export function VoiceInputDock({
     setCursor(null);
     // 位置も捨てる。次に開いたとき、古い位置で 1 フレーム見せないため。
     setPanelBox(null);
-  }, [clearAutoMessageTimer, discardRecording, releaseAudio]);
+  }, [api, clearAutoMessageTimer, discardRecording, releaseAudio]);
 
   /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
   const finishSession = useCallback(() => {
@@ -1188,9 +1201,9 @@ export function VoiceInputDock({
     startRecording,
   ]);
 
-  // 強調する欄を画面の中央へ寄せる。DOM フォーカスは動かさない。
+  // 強調する欄を画面の上寄り（35%）へ寄せる。DOM フォーカスは動かさない。
   // 画面全体の中央へ寄せる `scrollIntoView` は使わない。パネルは欄のすぐ下に置くため、
-  // ここでは欄だけを中央に寄せ、パネルはその下に収める。
+  // 中央に寄せると下にパネルと固定の帯の居場所が残らない。
   useEffect(() => {
     if (!active) return;
     const slot = cursor ? voiceSlotById(cursor, valueRef.current, scopeNow()) : null;
@@ -1218,11 +1231,11 @@ export function VoiceInputDock({
       const reduced =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // 欄の中心をビューポートの中央へ置く。パネルの上端を基準にすると、
-      // パネルが欄の下へ動くぶんだけ基準も動き、測り直すたびに位置が発振する。
-      const usable = window.innerHeight;
+      // 欄の中心をビューポートの上寄り（35%）へ置き、下にパネルの居場所を残す。
+      // 基準は欄の矩形だけで決める。パネルの上端を基準にすると、パネルが欄の下へ
+      // 動くぶんだけ基準も動き、測り直すたびに位置が発振する。
       const rect = found.getBoundingClientRect();
-      const delta = rect.top + rect.height / 2 - usable / 2;
+      const delta = fieldScrollDelta(rect, window.innerHeight);
       if (Math.abs(delta) > 1) {
         window.scrollBy({ top: delta, behavior: reduced ? "auto" : "smooth" });
       }
@@ -1267,12 +1280,14 @@ export function VoiceInputDock({
         if (retries < 40) {
           retries += 1;
           frame = window.requestAnimationFrame(retry);
-        } else if (previous) {
+        } else if (completeRef.current) {
           if (observed) resizeObserver?.unobserve(observed);
           observed = null;
           previous = "";
-          // パネルは最後に測った位置のまま残す。欄が一瞬消えたときや
-          // 「入力完了！」を出しているあいだに、パネルまで消えないようにする。
+          // 覆いを消すのは、入力できる欄が尽きて「入力完了！」を出したときだけ。
+          // それ以外で欄が見つからないとき（音声が開いたステップの欄が DOM から
+          // 一時的に消えたとき）は最後の穴を残す。消すと、パネルだけが操作できない
+          // 画面の上に浮いたままになる。
           setSpotlight(null);
         }
         return;

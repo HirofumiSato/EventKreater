@@ -171,6 +171,7 @@ export default function MyPage() {
 
       <QuotaStatusBanner
         quota={quotaState.quota}
+        loading={quotaState.isLoading}
         onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/mypage" })}
         onGranted={() => void quotaState.refreshQuota()}
       />

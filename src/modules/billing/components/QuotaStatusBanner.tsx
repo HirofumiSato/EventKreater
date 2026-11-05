@@ -9,6 +9,11 @@ import { TicketPurchaseModal } from "@/modules/billing/components/TicketPurchase
 
 export interface QuotaStatusBannerProps {
   quota: UserQuota | null;
+  /**
+   * チケットの残りを取りに行っている間。`quota` が届くまで帯を描かないと、
+   * 応答の瞬間に下のフォームが 1 帯ぶん跳ね上がる。同じ高さの場所を空けておく。
+   */
+  loading?: boolean;
   /** 単発チケットの購入。押すと帯が TicketPurchaseModal を開く。 */
   onPurchaseTicket: () => Promise<OneTimeCheckoutResult>;
   /** 0 円で付与されたときに呼ぶ。 */
@@ -51,8 +56,23 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
   return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
-export function QuotaStatusBanner({ quota, onPurchaseTicket, onGranted, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
+export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, onGranted, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
   const [ticketOpen, setTicketOpen] = useState(false);
+  // まだ残数が分からない間は、未加入のいちばん多い形（本文 1 行 + 枠線ボタン 2 つ）で
+  // 場所だけを取る。届いた瞬間に下のフォームが動かないようにするのが目的なので、
+  // 中身は静かな棒のままにする。
+  if (!quota && loading) {
+    return (
+      <div className="alert alert--success alert--compact quota-banner--loading" aria-busy="true">
+        <p>
+          <span className="visually-hidden">チケットの残りを読み込んでいます</span>
+          <span aria-hidden="true" className="quota-banner__line" />
+        </p>
+        <span aria-hidden="true" className="quota-banner__action" />
+        <span aria-hidden="true" className="quota-banner__action" />
+      </div>
+    );
+  }
   if (!quota) return null;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
   const isSubscribed = quota.subscriptionStatus === "ACTIVE";

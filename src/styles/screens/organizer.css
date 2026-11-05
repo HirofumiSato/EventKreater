@@ -594,6 +594,9 @@
     calc(100dvh - var(--voice-panel-top, 0px) - 1rem - env(safe-area-inset-bottom, 0px))
   );
   overflow-y: auto;
+  /* パネルの中で指を動かしきっても、後ろのページへスクロールを渡さない。
+     渡すと穴を空けた欄が画面の外へ流れ、パネルだけが取り残される。 */
+  overscroll-behavior: contain;
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   padding: 0.9rem;

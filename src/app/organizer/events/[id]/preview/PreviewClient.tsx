@@ -281,6 +281,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
       <div className="preview-screen__banners page--narrow stack">
         <QuotaStatusBanner
           quota={quotaState.quota}
+          loading={quotaState.isLoading}
           onPurchaseTicket={() => quotaState.startOneTimeCheckout({ draftId: params.id, returnTo })}
           onGranted={() => void quotaState.refreshQuota()}
           nextPath={returnTo}

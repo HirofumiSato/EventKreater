@@ -210,6 +210,7 @@ function OrganizerEventsScreen() {
 
       <QuotaStatusBanner
         quota={quotaState.quota}
+        loading={quotaState.isLoading}
         onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/organizer/events" })}
         onGranted={() => void quotaState.refreshQuota()}
       />
