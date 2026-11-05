@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import sharp from "sharp";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -145,13 +145,13 @@ const STORAGE = path.join(ROOT, "storage");
 const FLYER_DIR = path.join(STORAGE, "flyers");
 const IMAGE_DIR = path.join(STORAGE, "images");
 const OUT_FILE = path.join(STORAGE, "ui-demo.json");
-/** チラシの見本。催しごとに 1 枚を写して、撮り直しても見た目が変わらないようにする。 */
+/** チラシとプロフィールの見本。写して使うので、撮り直しても見た目が変わらない。 */
 const SAMPLE_DIR = path.join(ROOT, "public", "samples");
 
 /** デモ主催者のアイコン。内容も ID も固定にして、撮り直しても画像名が変わらないようにする。 */
 const DEMO_AVATAR_ID = "8f3c1d2e-5a4b-4c6d-9e70-2b1a4c8d6f31";
 
-/** デモ主催者のヘッダー画像。アイコンと同じく、固定 ID で 1920x640（3:1）を作る。 */
+/** デモ主催者のヘッダー画像。アイコンと同じく、固定 ID で 1920x640（3:1）を置く。 */
 const DEMO_HEADER_ID = "3c7a9e14-6b2d-4f58-8a1c-5d9e0b4f7a62";
 
 /** パスワードと確認済みメール・電話を持つ会員を用意する。 */
@@ -267,82 +267,64 @@ async function createFlyer(userId, title, sample = "flyer-autumn.jpg") {
 }
 
 /**
- * デモ主催者のアイコンを置く。
+ * デモ主催者の画像を置く。
  *
- * アップロード API は通さず、同じ形（256px 角の WebP）を SVG から作って
- * `storage/images` と `image_assets` に直接入れる。固定の ID なので、
- * 何度実行してもモックの画像ファイル名は変わらない。
+ * アップロード API は通さず、`public/samples` の見本を `storage/images` と
+ * `image_assets` に直接入れる。固定の ID なので、何度実行してもモックの
+ * 画像ファイル名は変わらない。画面から上げた画像を見本に残すときは、
+ * `storage/images/<id>.webp` を `public/samples` の同じ名前に上書きしてから seed を回す。
+ * 見本が無いまま進むと、撮り直すたびに画像だけが消えるので、理由を添えて止める。
  */
-async function ensureDemoAvatar(userId) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#8b2635"/>
-        <stop offset="1" stop-color="#d9a05b"/>
-      </linearGradient>
-    </defs>
-    <rect width="256" height="256" fill="url(#g)"/>
-    <circle cx="128" cy="100" r="42" fill="#fbf6e9" opacity="0.92"/>
-    <path d="M38 256c0-52 40-86 90-86s90 34 90 86z" fill="#fbf6e9" opacity="0.92"/>
-  </svg>`;
-  const data = await sharp(Buffer.from(svg)).webp({ quality: 82 }).toBuffer();
+async function ensureDemoImage(userId, { id, kind, fileName, fallback }) {
+  const file = path.join(SAMPLE_DIR, fileName);
+  let data;
+  try {
+    data = await readFile(file);
+  } catch {
+    throw new Error(
+      `見本の画像が見つかりません: ${path.relative(ROOT, file)}。` +
+        `画面から上げた画像を、この名前で public/samples に置いてください。`,
+    );
+  }
+  const meta = await sharp(data).metadata();
+  const width = meta.width ?? fallback.width;
+  const height = meta.height ?? fallback.height;
   await mkdir(IMAGE_DIR, { recursive: true });
-  await writeFile(path.join(IMAGE_DIR, `${DEMO_AVATAR_ID}.webp`), data);
+  await writeFile(path.join(IMAGE_DIR, `${id}.webp`), data);
   await prisma.imageAsset.upsert({
-    where: { id: DEMO_AVATAR_ID },
+    where: { id },
     create: {
-      id: DEMO_AVATAR_ID,
+      id,
       userId,
-      kind: "AVATAR",
+      kind,
       contentType: "image/webp",
-      width: 256,
-      height: 256,
+      width,
+      height,
       byteSize: data.byteLength,
     },
-    update: { userId, isDeleted: false, byteSize: data.byteLength },
+    update: { userId, kind, isDeleted: false, width, height, byteSize: data.byteLength },
   });
-  return DEMO_AVATAR_ID;
+  return id;
 }
 
-/**
- * デモ主催者のヘッダー画像を置く。
- *
- * アイコンと同じくアップロード API は通さず、同じ形（1920x640 の WebP）を SVG から作って
- * `storage/images` と `image_assets` に直接入れる。固定の ID なので、何度実行しても
- * モックの画像ファイル名は変わらない。公開ページのフルブリードで確かめられるよう、
- * アイコンと同じ色（えんじ・山吹・生成り）で、空と丘が見える横長の構図にする。
- */
-async function ensureDemoHeader(userId) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="640">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#8b2635"/>
-        <stop offset="1" stop-color="#d9a05b"/>
-      </linearGradient>
-    </defs>
-    <rect width="1920" height="640" fill="url(#sky)"/>
-    <circle cx="1470" cy="200" r="92" fill="#fbf6e9" opacity="0.9"/>
-    <path d="M0 420c220-90 430 40 660 10s470-150 710-90 380 100 550 50v250H0z" fill="#fbf6e9" opacity="0.25"/>
-    <path d="M0 510c280-70 500 60 760 20s510-110 760-50 300 80 400 50v110H0z" fill="#fbf6e9" opacity="0.45"/>
-    <path d="M0 590c300-40 560 30 860 0s570-50 1060 10v40H0z" fill="#fbf6e9" opacity="0.8"/>
-  </svg>`;
-  const data = await sharp(Buffer.from(svg)).webp({ quality: 80 }).toBuffer();
-  await mkdir(IMAGE_DIR, { recursive: true });
-  await writeFile(path.join(IMAGE_DIR, `${DEMO_HEADER_ID}.webp`), data);
-  await prisma.imageAsset.upsert({
-    where: { id: DEMO_HEADER_ID },
-    create: {
-      id: DEMO_HEADER_ID,
-      userId,
-      kind: "PROFILE_HEADER",
-      contentType: "image/webp",
-      width: 1920,
-      height: 640,
-      byteSize: data.byteLength,
-    },
-    update: { userId, kind: "PROFILE_HEADER", isDeleted: false, byteSize: data.byteLength },
+/** デモ主催者のアイコン。見本は `public/samples/profile-avatar.webp`（256px 角）。 */
+async function ensureDemoAvatar(userId) {
+  return ensureDemoImage(userId, {
+    id: DEMO_AVATAR_ID,
+    kind: "AVATAR",
+    fileName: "profile-avatar.webp",
+    fallback: { width: 256, height: 256 },
   });
-  return DEMO_HEADER_ID;
+}
+
+/** デモ主催者のヘッダー。見本は `public/samples/profile-header.webp`（1920x640 の 3:1）。 */
+async function ensureDemoHeader(userId) {
+  return ensureDemoImage(userId, {
+    id: DEMO_HEADER_ID,
+    kind: "PROFILE_HEADER",
+    fileName: "profile-header.webp",
+    fallback: { width: 1920, height: 640 },
+  });
 }
 
 try {
