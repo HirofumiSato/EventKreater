@@ -61,6 +61,19 @@ function filenameFor(contentType: string): string {
 }
 
 /**
+ * いまの音声入力の設定。
+ *
+ * モックかどうかはサーバーの環境変数が決める。画面は「録音を省いてよいか」を知るために、
+ * 音声モードを開いたときに 1 度だけここへ聞く。音声そのものは受け取らない。
+ */
+export async function GET() {
+  return NextResponse.json(
+    { mock: isVoiceMockEnabled() },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+/**
  * 音声を文字にする。
  *
  * このルートは録音を保存しない。受け取った音声をそのまま OpenAI へ中継し、

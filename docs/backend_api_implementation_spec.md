@@ -121,6 +121,7 @@ flowchart TD
 | `/api/v1/flyer-assets/[id]/pdf` | GET | SCR-ORG-05 / SCR-ORG-16 | 不要 | 公開済みイベントのチラシを A4 PDF で返す。`?eventId=` が公開済みで、そのチラシを掲載しているときだけ。告知ページの QR を右下に入れる |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
+| `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-4o-mini-transcribe` へ中継し、`text` だけを返す。未設定なら 503 `TRANSCRIBE_DISABLED` |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
@@ -1360,6 +1361,8 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 ### 5.15. POST `/api/v1/voice/transcriptions`（音声を文字にする）
 
 イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）を受け取る。音声は保存せず、OpenAI の音声認識（既定 `gpt-4o-mini-transcribe`、`language=ja`、`response_format=json`）へ中継し、`{ "text": string, "model": string }` を返す。`Cache-Control: no-store`。
+
+同じパスの `GET` は設定だけを返す（`{ "mock": boolean }`、`Cache-Control: no-store`）。音声は受け取らない。画面は録音を省いてよいかを知るために、音声モードを開いたときに 1 度だけ聞く。`true` のとき画面はマイクを掴まず、疑似の録音のあと欄の入力例をその場で入れる（開発用）。
 
 | 状態 | error | 意味 |
 | :---- | :---- | :---- |

@@ -23,7 +23,7 @@ import {
   spotlightFor,
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
-import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import { fetchVoiceMockEnabled, transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
 import { dismissVoiceGuide, isVoiceGuideDismissed } from "@/modules/events/lib/voice/guide";
 import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
 import { Dialog } from "@/components/ui/Dialog";
@@ -42,6 +42,15 @@ import {
 } from "@/modules/events/types";
 
 type VoicePhase = "armed" | "listening" | "transcribing";
+
+/**
+ * モック（`VOICE_TRANSCRIBE_MOCK=1`）の疑似録音の間合い。
+ *
+ * マイクを使わないので、待つ長さで「録音中 → 文字にする」の移り変わりを作る。
+ * 実機より短くして、欄を巡回する様子を最後まで目で追えるようにしてある。
+ */
+const MOCK_RECORDING_MS = 1200;
+const MOCK_TRANSCRIBE_MS = 350;
 
 /** 文字起こしを確定する前に置く確認。`slotId` は確認しているあいだに値が変わっても引き直せる。 */
 interface VoicePending {
@@ -146,6 +155,8 @@ export function VoiceInputDock({
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideChecked, setGuideChecked] = useState(false);
   const [guideClip, setGuideClip] = useState<string | null>(null);
+  // モック（ローカル専用）なら録音を省き、欄の入力例をそのまま入れる。
+  const [mock, setMock] = useState(false);
 
   // 非同期のコールバック（録音停止・住所検索）から最新値を読むための控え。
   const valueRef = useRef(value);
@@ -161,6 +172,17 @@ export function VoiceInputDock({
   const timerRef = useRef<number | null>(null);
   const completeTimerRef = useRef<number | null>(null);
   const statusTimerRef = useRef<number | null>(null);
+  // モックの疑似録音の待ち。実の録音の `timerRef` とは別に持つ（同時には片方しか使わない）。
+  const mockTimerRef = useRef<number | null>(null);
+  const mockRef = useRef(false);
+  // モックかどうかのサーバーからの返事。届く前に押されても、録音の直前で待てるようにする。
+  const mockAnswerRef = useRef<Promise<boolean> | null>(null);
+  // 録音の開始は await を挟む。二度押しや自動遷移が重なると getUserMedia が二重に走り、
+  // 先に掴んだストリームが止まらないまま残る。開始の間だけ立てる印で、後から来た呼び出しは捨てる。
+  const startingRef = useRef(false);
+  // 開始の世代。開始の途中で音声モードを抜けたら、遅れて届いた結果を捨てる
+  // （閉じたのにマイクが開きっぱなしになるのを防ぐ）。
+  const startAttemptRef = useRef(0);
   // 指示は 1 行に収める。収まる中でいちばん大きい字を選ぶ。
   const promptRef = useRef<HTMLParagraphElement | null>(null);
   // 録音の開始は commit からも呼ぶ。互いを依存に持つと循環するので控えを挟む。
@@ -199,6 +221,25 @@ export function VoiceInputDock({
   useEffect(() => {
     guideCheckedRef.current = guideChecked;
   }, [guideChecked]);
+
+  useEffect(() => {
+    mockRef.current = mock;
+  }, [mock]);
+
+  // モックの可否はサーバーの環境変数が決める。画面が勝手に決めないよう、開いたときに 1 度だけ聞く。
+  // 聞けなければ false に倒れるので、実の録音のままになる。
+  // 返事は控えておき、届く前に押されても録音の直前で待てるようにする。
+  useEffect(() => {
+    let cancelled = false;
+    const answer = fetchVoiceMockEnabled();
+    mockAnswerRef.current = answer;
+    void answer.then((enabled) => {
+      if (!cancelled) setMock(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     dialogOpenRef.current = pending !== null || branch !== null;
@@ -246,6 +287,13 @@ export function VoiceInputDock({
     }
   }, []);
 
+  const clearMockTimer = useCallback(() => {
+    if (mockTimerRef.current !== null) {
+      window.clearTimeout(mockTimerRef.current);
+      mockTimerRef.current = null;
+    }
+  }, []);
+
   const markTouched = useCallback((key: VoiceFieldKey) => {
     const next = new Set(touchedRef.current);
     next.add(key);
@@ -255,9 +303,13 @@ export function VoiceInputDock({
 
   /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
   const stopSession = useCallback(() => {
+    // 開始の途中で抜けたら、遅れて届くマイクの結果を捨てる（次の開始は塞がない）。
+    startAttemptRef.current += 1;
+    startingRef.current = false;
     clearTimer();
     clearCompleteTimer();
     clearStatusTimer();
+    clearMockTimer();
     setStatusStopping(false);
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
@@ -276,7 +328,7 @@ export function VoiceInputDock({
     setBranch(null);
     cursorRef.current = null;
     setCursor(null);
-  }, [clearCompleteTimer, clearStatusTimer, clearTimer, releaseStream]);
+  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer, releaseStream]);
 
   /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
   const finishSession = useCallback(() => {
@@ -287,13 +339,14 @@ export function VoiceInputDock({
     setStatusStopping(false);
     setMessage(null);
     clearStatusTimer();
+    clearMockTimer();
     api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
     clearCompleteTimer();
     completeTimerRef.current = window.setTimeout(() => {
       completeTimerRef.current = null;
       stopSession();
     }, 3000);
-  }, [api, clearCompleteTimer, clearStatusTimer, stopSession]);
+  }, [api, clearCompleteTimer, clearMockTimer, clearStatusTimer, stopSession]);
 
   /**
    * 郵便番号が入ったら、既存の検索 API で住所を補完する。失敗しても手入力に任せる。
@@ -426,6 +479,7 @@ export function VoiceInputDock({
         if (!mountedRef.current) return;
         setPhase("armed");
         // すぐ確定せず、聞き取った値を確認に置く。読み取り違いを話し直す前に見せる。
+        // モックの疑似録音もここを通るので、確認の流れはローカルでも同じように確かめられる。
         setTranscript(result.text);
         setPending({ slotId: slot.id, text: result.text });
       } catch (error) {
@@ -439,67 +493,147 @@ export function VoiceInputDock({
     [finishSession, releaseStream, scopeNow],
   );
 
-  const stopRecording = useCallback(() => {
-    clearTimer();
-    const recorder = recorderRef.current;
-    if (!recorder || recorder.state === "inactive") return;
-    setPhase("transcribing");
-    // 印は止めた瞬間に少し縮んで消える。消えるだけより、押した手応えが残る。
+  /** 録音の印を止めた瞬間だけ少し縮ませる。押した手応えを残すため。 */
+  const flashStopping = useCallback(() => {
     clearStatusTimer();
     setStatusStopping(true);
     statusTimerRef.current = window.setTimeout(() => {
       statusTimerRef.current = null;
       setStatusStopping(false);
     }, 200);
+  }, [clearStatusTimer]);
+
+  /**
+   * モックの疑似録音を止め、その欄の入力例を確認に置く（ローカル専用）。
+   *
+   * マイクを使わないので、デバイスの無い PC でも「録音中 → 確認 → 次の欄」を
+   * 最後まで追える。入れる文は認識結果と同じ扱い（`slot.field.example`）にして、
+   * 実の経路と分岐が変わらないようにしてある。確認を挟むのも実の経路と同じ。
+   */
+  const applyMockRecording = useCallback(() => {
+    clearTimer();
+    clearMockTimer();
+    const key = cursorRef.current;
+    if (!key) {
+      finishSession();
+      return;
+    }
+    setPhase("transcribing");
+    flashStopping();
+    mockTimerRef.current = window.setTimeout(() => {
+      mockTimerRef.current = null;
+      const slot = voiceSlotById(key, valueRef.current, scopeNow());
+      if (!slot) {
+        setPhase("armed");
+        finishSession();
+        return;
+      }
+      // 実の経路と同じく、確認を出す前に録音の印を戻す。
+      setPhase("armed");
+      setTranscript(slot.field.example);
+      setPending({ slotId: slot.id, text: slot.field.example });
+    }, MOCK_TRANSCRIBE_MS);
+  }, [clearMockTimer, clearTimer, finishSession, flashStopping, scopeNow]);
+
+  const stopRecording = useCallback(() => {
+    clearTimer();
+    // モックは録音していないので、押されたら即座に文字化へ移る。
+    if (mockTimerRef.current !== null) {
+      applyMockRecording();
+      return;
+    }
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    setPhase("transcribing");
+    flashStopping();
     recorder.stop();
-  }, [clearStatusTimer, clearTimer]);
+  }, [applyMockRecording, clearTimer, flashStopping]);
 
   const startRecording = useCallback(async () => {
     // 入力完了の待ちに入っていたら、もう録音しない。
     if (completeTimerRef.current !== null) return;
+    // 開始の途中なら重ねない。マイクの許可待ちのあいだに押されても、掴むのは 1 本だけにする。
+    if (startingRef.current) return;
+    // すでに録音しているなら始めない。始め直すときは、いったん止める。
+    if (mockTimerRef.current !== null) return;
+    const current = recorderRef.current;
+    if (current && current.state !== "inactive") return;
     if (!cursorRef.current) {
       finishSession();
       return;
     }
-    if (!isRecordingSupported()) {
-      setMessage("このブラウザは録音に対応していません。手で入力してください。");
-      return;
-    }
-    setMessage(null);
-    clearStatusTimer();
-    setStatusStopping(false);
+    const attempt = startAttemptRef.current + 1;
+    startAttemptRef.current = attempt;
+    startingRef.current = true;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-      });
-      if (!mountedRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
+      // モックかどうかは、まだ返事が届いていなければここで待つ（待っても数ミリ秒）。
+      const mockEnabled = mockRef.current || (await mockAnswerRef.current) === true;
+      // 待っている間に音声モードを抜けていたら、始めない。
+      if (attempt !== startAttemptRef.current) return;
+      if (mockEnabled) {
+        // モックはマイクを掴まない。開いた瞬間から「録音中」にして、少し待ってから入力例を入れる。
+        setMessage(null);
+        clearStatusTimer();
+        setStatusStopping(false);
+        setPhase("listening");
+        clearMockTimer();
+        mockTimerRef.current = window.setTimeout(applyMockRecording, MOCK_RECORDING_MS);
         return;
       }
-      streamRef.current = stream;
-      const mimeType = pickRecorderMimeType() ?? "";
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      chunksRef.current = [];
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
-      };
-      recorder.onstop = () => {
-        const type = recorder.mimeType || mimeType || "audio/webm";
-        void finishRecording(type);
-      };
-      recorderRef.current = recorder;
-      recorder.start();
-      setPhase("listening");
-      timerRef.current = window.setTimeout(() => stopRecording(), MAX_RECORDING_MS);
-    } catch {
-      releaseStream();
-      if (!mountedRef.current) return;
-      setPhase("armed");
-      setMessage(
-        "マイクを使えませんでした。ブラウザの設定でマイクを許可するか、手で入力してください。",
-      );
+      if (!isRecordingSupported()) {
+        setMessage("このブラウザは録音に対応していません。手で入力してください。");
+        return;
+      }
+      setMessage(null);
+      clearStatusTimer();
+      setStatusStopping(false);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        });
+        // 待っている間に抜けた・別の開始に追い越されたなら、掴んだマイクをその場で離す。
+        if (!mountedRef.current || attempt !== startAttemptRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        const mimeType = pickRecorderMimeType() ?? "";
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        chunksRef.current = [];
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) chunksRef.current.push(event.data);
+        };
+        recorder.onstop = () => {
+          const type = recorder.mimeType || mimeType || "audio/webm";
+          void finishRecording(type);
+        };
+        recorderRef.current = recorder;
+        recorder.start();
+        setPhase("listening");
+        timerRef.current = window.setTimeout(() => stopRecording(), MAX_RECORDING_MS);
+      } catch {
+        // 追い越された・抜けたあとの失敗は、いまの開始に触れない（新しい録音のマイクを離さない）。
+        if (attempt !== startAttemptRef.current) return;
+        releaseStream();
+        if (!mountedRef.current) return;
+        setPhase("armed");
+        setMessage(
+          "マイクを使えませんでした。ブラウザの設定でマイクを許可するか、手で入力してください。",
+        );
+      }
+    } finally {
+      // 追い越されていたら、新しい開始の印は消さない。
+      if (attempt === startAttemptRef.current) startingRef.current = false;
     }
-  }, [clearStatusTimer, finishRecording, finishSession, releaseStream, stopRecording]);
+  }, [
+    applyMockRecording,
+    clearMockTimer,
+    clearStatusTimer,
+    finishRecording,
+    finishSession,
+    releaseStream,
+    stopRecording,
+  ]);
 
   useEffect(() => {
     startRecordingRef.current = () => {
@@ -524,13 +658,14 @@ export function VoiceInputDock({
     clearTimer();
     clearCompleteTimer();
     clearStatusTimer();
+    clearMockTimer();
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
       recorder.stop();
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
-  }, [clearCompleteTimer, clearStatusTimer, clearTimer]);
+  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer]);
 
   const startSession = useCallback(() => {
     if (disabled) return;

@@ -2,6 +2,43 @@ import { readProblem } from "@/lib/problem";
 import { extensionForMimeType, MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
 
+const VOICE_ENDPOINT = "/api/v1/voice/transcriptions";
+
+/**
+ * モックの可否を聞く待ち時間。
+ *
+ * 音声モードは開いた瞬間に録音を始めるため、この返事が遅いと録音の開始も遅れる。
+ * 待ちは短く切り、超えたら実の録音へ倒す（本番は常に false なので、待つ意味も無い）。
+ */
+const MOCK_QUERY_TIMEOUT_MS = 1_500;
+
+/**
+ * モックが有効かを聞く。
+ *
+ * モックの可否はサーバーの環境変数が決める。画面は録音を省いてよいかを知るために、
+ * 音声モードを開いたときに 1 度だけ聞く（欄ごとには聞かない）。
+ * 聞けなければ false（実の録音をする）に倒す。返事が遅いときも同じく打ち切る。
+ */
+export async function fetchVoiceMockEnabled(): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MOCK_QUERY_TIMEOUT_MS);
+  try {
+    const response = await fetch(VOICE_ENDPOINT, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) return false;
+    const body = (await response.json()) as { mock?: unknown };
+    return body.mock === true;
+  } catch {
+    // 通信の失敗も打ち切りも、実の録音に倒す。
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface TranscribeResult {
   text: string;
 }
@@ -48,7 +85,7 @@ export async function transcribeVoiceClip(input: {
   if (input.context?.title) form.append("title", input.context.title);
   if (input.context?.venueName) form.append("venueName", input.context.venueName);
 
-  const response = await fetch("/api/v1/voice/transcriptions", {
+  const response = await fetch(VOICE_ENDPOINT, {
     method: "POST",
     body: form,
   });

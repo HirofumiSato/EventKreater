@@ -6,8 +6,8 @@
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
 - ルートファイル: 80
-- エンドポイント（メソッド × パス）: 97
-- 仕様書に記載: 92
+- エンドポイント（メソッド × パス）: 98
+- 仕様書に記載: 93
 - 実装のみ（仕様書に記載なし）: 5
 - 仕様書のみ（実装なし）: 0
 
@@ -110,6 +110,7 @@
 | GET | `/api/v1/user/referral` | 必須（requireUserId） | あり | `src/app/api/v1/user/referral/route.ts` |
 | GET | `/api/v1/venues` | なし | あり | `src/app/api/v1/venues/route.ts` |
 | DELETE | `/api/v1/venues/[id]` | なし | あり | `src/app/api/v1/venues/[id]/route.ts` |
+| GET | `/api/v1/voice/transcriptions` | なし | あり | `src/app/api/v1/voice/transcriptions/route.ts` |
 | POST | `/api/v1/voice/transcriptions` | なし | あり | `src/app/api/v1/voice/transcriptions/route.ts` |
 | POST | `/api/v1/webhooks/stripe` | なし | あり | `src/app/api/v1/webhooks/stripe/route.ts` |
 
