@@ -19,6 +19,8 @@ storage/ui-demo.json
 storage/mock-shots/
 # mock:sync の控え。隠し DOM（日付・ステップ）と CSS の対応表。消すと次の撮影で作り直す。
 storage/mock-variants/
+# ホーム LP の素材にする画面控え（スマホ幅 390・DPR 2）。撮り直して使うだけで、コミットしない。
+storage/lp-shots/
 storage/mock-assets.json
 # 調査や切り分けで `storage/` に落とした一時ファイル。`storage/` 全体は ignore しない
 # （seed の置き場と追跡済みのものがあるため）。ログは上の `*.log` が拾う。

@@ -128,34 +128,31 @@ export default function HomePage() {
           <div className="hero__copy">
             <p className="hero__eyebrow">{HERO_EYEBROW}</p>
             {/*
-              改行の位置は文言の一部。どの幅も 2 行のままで、文字サイズだけを
+              改行の位置は文言の一部。幅で行数も並びも変えず、文字サイズだけを
               幅に合わせて上げる（CSS の .hero__title が持つ）。幅で DOM を変えない。
-              吹き出しは最後の行の右に横へ 2 枚並べる。最後の行だけが短いので、
-              狭い端末でも見出しを折り返さずに横へ並べられる。
+              1 行目だけを単独の行にし、残りの句は 1 段に横へ並べる。最後の段に
+              吹き出しを 2 枚添え、入りきらないときは束だけを次の行へ落とす。
             */}
             <h1 className="hero__title">
-              {SITE.taglineLines.map((line, index) =>
-                index === SITE.taglineLines.length - 1 ? (
-                  <span key={line} className="hero__title-row">
-                    <span className="hero__title-line">{renderTagline(line)}</span>
-                    <span className="hero__callouts">
-                      {HERO_CALLOUTS.map((lines) => (
-                        <span key={lines[0]} className="hero__callout">
-                          {lines.map((calloutLine) => (
-                            <span key={calloutLine} className="hero__callout-line">
-                              {calloutLine}
-                            </span>
-                          ))}
-                        </span>
-                      ))}
-                    </span>
-                  </span>
-                ) : (
+              <span className="hero__title-line">{renderTagline(SITE.taglineLines[0])}</span>
+              <span className="hero__title-row">
+                {SITE.taglineLines.slice(1).map((line) => (
                   <span key={line} className="hero__title-line">
                     {renderTagline(line)}
                   </span>
-                ),
-              )}
+                ))}
+                <span className="hero__callouts">
+                  {HERO_CALLOUTS.map((lines) => (
+                    <span key={lines[0]} className="hero__callout">
+                      {lines.map((calloutLine) => (
+                        <span key={calloutLine} className="hero__callout-line">
+                          {calloutLine}
+                        </span>
+                      ))}
+                    </span>
+                  ))}
+                </span>
+              </span>
             </h1>
             <p className="hero__lead">{HERO_LEAD}</p>
             <div className="hero__actions">

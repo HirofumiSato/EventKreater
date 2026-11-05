@@ -148,6 +148,12 @@ DB に無い、または画面が「見つかりません」になった場合�
 対応する名前は `scripts/seed-ui-demo.mjs` の `createFlyer(...)` の第 3 引数です
 （`flyer-autumn.jpg`・`flyer-gohan.jpg`・`flyer-bonfire.jpg` など）。
 
+同じ置き場に、デモ主催者のプロフィール画像の見本 `profile-avatar.webp`（256px 角）と
+`profile-header.webp`（1920×640）もあります。seed はこの 2 枚を固定 ID で `storage/images/` へ写すだけです。
+画面から上げた画像を見本にしたいときは、`storage/images/<imageAssetId>.webp` を同じ名前で
+`public/samples/` へ上書きコピーします。`storage/images` は追跡しないので、写し忘れると
+`npm run db:seed:ui` のたびに前の見本へ戻り、上げた画像は残りません。
+
 ## 画面の組み方（スマホが先）
 
 参加者はスマホで開き、主催者の PC は従です。画面は幅 390px を基準に組み、広い画面向けの差分だけを足します。
