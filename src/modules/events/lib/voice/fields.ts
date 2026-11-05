@@ -28,6 +28,7 @@ import type {
 } from "@/modules/events/lib/voice/types";
 import {
   groupPricePlanPairs,
+  pricingModeOf,
   type EventFormValues,
   type PriceAudience,
 } from "@/modules/events/types";
@@ -420,6 +421,17 @@ export function isSlotNeeded(
   scope: VoiceFieldScope,
 ): boolean {
   return isFieldNeeded(slot.field, value, scope, slot.row);
+}
+
+/**
+ * 費用の最初（プラン名）へ入る直前に、男女別を聞くか。
+ *
+ * 金額を聞いたあとではなく、費用の入口で聞く。男女別にすると行が増えるため、
+ * プラン名から金額へ進む流れを 1 回だけ作り直せる入口で尋ねるのが分かりやすい。
+ * 全部が共通（ANY）のときだけ聞く。男女別の行が 1 つでもあれば、もう聞かない。
+ */
+export function shouldAskGenderBeforePricing(value: EventFormValues): boolean {
+  return value.pricePlans.length > 0 && pricingModeOf(value.pricePlans) === "COMMON";
 }
 
 /** 巡回するマスの並び。行とスコープで絞ったもの。 */

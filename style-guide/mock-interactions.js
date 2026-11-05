@@ -324,10 +324,38 @@
   /**
    * 郵便番号が入ったら住所 3 欄を埋め、埋めた欄は巡回から外す。
    * 製品の VoiceInputDock は補完のあとで次の欄を決めるので、都道府県を聞き直さない。
+   *
+   * 製品は住所を API で引くあいだ、質問を「住所を調べています」に替え、例と「いまの値」を
+   * 隠したうえで録音・戻る・スキップを止める。モックは API を呼ばないので、待ちの見た目だけを
+   * 400ms 作ってから同じ順で欄を埋める。呼び出し元はこの Promise を待って次の欄を決める。
    */
-  function fillAddressFromPostalCode(code) {
+  async function fillAddressFromPostalCode(code) {
     const address = MOCK_ADDRESSES[code];
-    if (!address) return;
+    const panel = voice.panel;
+    if (!address || !panel) return;
+
+    const prompt = panel.querySelector(".voice-panel__prompt");
+    const hint = panel.querySelector(".voice-panel__hint");
+    const current = panel.querySelector(".voice-panel__current");
+    const talk = panel.querySelector("[data-voice-talk]");
+    const prev = panel.querySelector("[data-voice-prev]");
+    const skip = panel.querySelector("[data-voice-skip]");
+
+    // 質問を 1 行に絞る（製品が `searching` の間に出さないものと同じ組み合わせ）。
+    prompt.textContent = "住所を調べています";
+    hint.hidden = true;
+    current.hidden = true;
+    // 待ちのあいだに別の欄へ移らせない。録音も始めさせない。
+    talk.disabled = true;
+    prev.disabled = true;
+    skip.disabled = true;
+
+    // 製品は API の往復を待つ。モックは待っていることが分かる長さだけ止める。
+    await new Promise((resolve) => later(resolve, 400));
+
+    // 待っているあいだに閉じられたら、消えたパネルと欄は触らない。
+    if (!voice.active || !voice.panel) return;
+
     for (const id of ADDRESS_FIELDS) {
       const target = document.getElementById(id);
       if (!target) continue;
@@ -338,6 +366,15 @@
       window.setTimeout(() => target.classList.remove("voice-filled"), 900);
     }
     voice.fields = voice.fields.filter((entry) => !ADDRESS_FIELDS.includes(entry.field.id));
+
+    // 質問・例・「いまの値」は、このあとの pointAt / finishVoice が引き直す。
+    // ボタンのうち pointAt が戻さないのは主ボタンとスキップなので、ここで戻す。
+    // 自動遷移がオフのときは同じ欄をもう一度指すだけなので、戻さないと録音を始められない。
+    // 例は finishVoice が中身だけ差し替える（hidden は戻さない）ため、ここで出しておく。
+    talk.disabled = false;
+    prev.disabled = voice.cursor === 0;
+    skip.disabled = false;
+    hint.hidden = false;
   }
 
   function labelOf(field) {
@@ -383,9 +420,9 @@
   }
 
   /**
-   * 費用の最後の金額の直後に「男女別の費用を設定しますか」のターンを足す。
+   * 費用の最初（プラン名）の直前に「男女別の費用を設定しますか」のターンを足す。
    *
-   * 製品は最後の金額を入れた直後に尋ねる。モックはチェックボックスを巡回に含めないので、
+   * 製品はプラン名を聞く直前に尋ねる。モックはチェックボックスを巡回に含めないので、
    * ここで 1 ターン補う。はいならチェックを入れ、女性用の金額を巡回へ足す（`answerGender`）。
    * すでに男女別の画面なら、製品と同じく尋ねない。
    */
@@ -394,18 +431,19 @@
     if (!box || box.checked || box.disabled) return fields;
     if (document.querySelector(".price-group")) return fields;
 
-    let at = -1;
-    fields.forEach((entry, index) => {
-      if (entry.field.id && entry.field.id.startsWith("plan-amount-")) at = index;
-    });
+    const at = fields.findIndex((entry) => entry.field.id && entry.field.id.startsWith("plan-name-"));
     if (at < 0) return fields;
 
+    // 分けたあとに足す女性用の金額は、最初の男性用の金額（プラン名の次）を使う。
+    const maleAmount = fields.find((entry) => entry.field.id && entry.field.id.startsWith("plan-amount-"));
+    if (!maleAmount) return fields;
+
     const label = box.closest("label") || box;
-    fields.splice(at + 1, 0, {
+    fields.splice(at, 0, {
       // 強調するのはチェックボックスではなく、その札ごと（文字まで読めるようにする）。
       field: label,
       control: box,
-      amount: fields[at],
+      amount: maleAmount,
       kind: "gender",
       label: "男女別の費用",
       value: "はい",
@@ -483,9 +521,13 @@
       '<button type="button" class="voice-icon-btn" data-voice-prev aria-label="戻る" title="戻る">' +
       icon("left") +
       "</button>" +
+      // 飛ばすボタンも主ボタンと同じく、下に名前を出す（丸い印だけでは意味が分からない）。
+      '<div class="voice-panel__talk-wrap">' +
       '<button type="button" class="voice-icon-btn" data-voice-skip aria-label="スキップ" title="スキップ">' +
       icon("right") +
-      "</button></div>" +
+      "</button>" +
+      '<p class="voice-panel__talk">スキップ</p>' +
+      "</div></div>" +
       '<div class="voice-panel__options">' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional checked> 任意の項目も聞く</label>' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 自動遷移</label>' +
@@ -648,6 +690,10 @@
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = false;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = false;
     voice.panel.querySelector("[data-voice-prev]").disabled = index === 0;
+    // 住所検索の写しが止めたボタンも、欄を指し直した時点で元へ戻す。
+    // （検索中に別の欄を押すと `clearTimers` で待ちが消え、戻す機会が無くなるため）
+    voice.panel.querySelector("[data-voice-talk]").disabled = false;
+    voice.panel.querySelector("[data-voice-skip]").disabled = false;
   }
 
   function startListening() {
@@ -689,15 +735,16 @@
       label.classList.add("voice-filled");
       window.setTimeout(() => label.classList.remove("voice-filled"), 900);
     }
-    // モックの DOM は静的で女性用の行が増えないため、同じ金額の行を指すターンを巡回へ足す。
-    voice.fields.splice(voice.cursor + 1, 0, {
+    // モックの DOM は静的で女性用の行が増えないため、男性用の金額の直後に同じ金額の行を足す。
+    const at = voice.fields.findIndex((item) => item.field === entry.amount.field);
+    voice.fields.splice((at < 0 ? voice.cursor : at) + 1, 0, {
       field: entry.amount.field,
       label: "女性の金額",
       value: entry.amount.value,
     });
   }
 
-  function applyListening() {
+  async function applyListening() {
     const entry = voice.fields[voice.cursor];
     if (!entry) {
       finishVoice();
@@ -716,8 +763,12 @@
       window.setTimeout(() => field.classList.remove("voice-filled"), 900);
 
       // 郵便番号から住所を引く。製品と同じで、埋まった欄は次の巡回から外れる。
-      if (field.id === "event-postal-code") fillAddressFromPostalCode(entry.value);
+      // 製品は検索を待ってから次の欄を決めるので、モックも検索の写しを待ってから進める。
+      if (field.id === "event-postal-code") await fillAddressFromPostalCode(entry.value);
     }
+
+    // 検索を待つあいだに閉じられたら、パネルはもう無い。描き直さずに終わる。
+    if (!voice.active || !voice.panel) return;
 
     const status = voice.panel.querySelector(".voice-panel__status");
     if (status) status.hidden = true;
@@ -784,8 +835,12 @@
       else startListening();
     });
     voice.panel.querySelector("[data-voice-prev]").addEventListener("click", () => {
+      // 録音中でも戻れる。いまの録音は捨て、戻った欄で録音を始める（製品と同じ）。
       clearTimers();
+      voice.listening = false;
+      setTalkIcon("mic");
       pointAt(voice.cursor - 1);
+      startListening();
     });
     voice.panel.querySelector("[data-voice-skip]").addEventListener("click", () => {
       clearTimers();

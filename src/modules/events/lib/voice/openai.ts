@@ -1,5 +1,6 @@
 import { ProblemDetailException } from "@/lib/exceptions";
 import { isVoiceMockEnabled, mockTranscript } from "@/modules/events/lib/voice/mock";
+import { cleanTranscript } from "@/modules/events/lib/voice/normalize";
 import { buildVoicePrompt } from "@/modules/events/lib/voice/prompt";
 import type { VoiceFieldKey } from "@/modules/events/lib/voice/types";
 
@@ -154,7 +155,8 @@ export async function transcribeWithOpenAi(input: {
   }
 
   const payload = (await response.json().catch(() => null)) as { text?: unknown } | null;
-  const text = typeof payload?.text === "string" ? payload.text.trim() : "";
+  // 句点は画面の確認文にそのまま出る。末尾の句読点だけを落としてから返す。
+  const text = cleanTranscript(typeof payload?.text === "string" ? payload.text : "");
   if (!text) {
     throw new ProblemDetailException({
       status: 422,

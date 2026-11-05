@@ -2,11 +2,12 @@
 //
 // ローカル専用の近道（`VOICE_TRANSCRIBE_MOCK=1`）の再発防止。
 //
-// 見るのは 4 つ。
+// 見るのは 5 つ。
 //   1. モックなら、マイクを掴まずに開いた瞬間から「録音中」になる
 //   2. 少し待つと確認のモーダルが出る（実の経路と同じく、勝手に値を入れない）
 //   3. 「確定」で値が入り、次の欄の録音へ自動で進む
-//   4. モックでなければ、これまでどおり録音を試みる（マイクが無ければ案内を出す）
+//   4. 録音中でも戻る・スキップが押せ、移った欄で録音を始め直す
+//   5. モックでなければ、これまでどおり録音を試みる（マイクが無ければ案内を出す）
 //
 // 入力欄はこの部品の外にあるので、値の受け渡しは `onChange` で見る。
 // 待ちは疑似録音のものだけを進める（`userEvent` はタイマーを掴んで止まるため使わない）。
@@ -166,6 +167,60 @@ describe("モックの疑似録音", () => {
     // 押したときも確認は挟む。
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: "「忘年会」を入力します" })).toBeTruthy();
+  });
+});
+
+describe("録音中の戻る・スキップ", () => {
+  it("録音中でもスキップが押せて、次の欄の録音に移る", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+    expect(screen.getByText("イベント名は？")).toBeTruthy();
+
+    // 録音を止める主ボタンとは別に、飛ばす操作も録音中から押せる。
+    const skip = screen.getByRole("button", { name: "スキップ" }) as HTMLButtonElement;
+    expect(skip.disabled).toBe(false);
+    await press("スキップ");
+
+    // 飛ばした欄の録音は捨て、次の欄（開催日）の録音が始まる。値はまだ入らない。
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText("開催日は？")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
+  });
+
+  it("スキップの下に、同じ見た目の「スキップ」を出す", async () => {
+    stubMockAnswer(true);
+
+    await mount(() => {});
+    await press("音声入力を開始");
+
+    const label = screen.getByText("スキップ");
+    expect(label.tagName).toBe("P");
+    expect(label.className).toContain("voice-panel__talk");
+    // アイコンだけのボタンの意味は、aria-label と下の文字の両方で伝える。
+    expect(screen.getByRole("button", { name: "スキップ" })).toBeTruthy();
+  });
+
+  it("2 欄目でも戻るが押せて、前の欄の録音に戻る", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+    // 1 欄目を飛ばして、2 欄目（開催日）の録音にする。
+    await press("スキップ");
+    expect(screen.getByText("開催日は？")).toBeTruthy();
+
+    const back = screen.getByRole("button", { name: "戻る" }) as HTMLButtonElement;
+    expect(back.disabled).toBe(false);
+    await press("戻る");
+
+    // 録音中でも戻れ、戻った欄（イベント名）ですぐ録音が始まる。
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText("イベント名は？")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
   });
 });
 

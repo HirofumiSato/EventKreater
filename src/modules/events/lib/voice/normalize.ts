@@ -134,6 +134,20 @@ export function stripFillers(input: string): string {
 }
 
 /**
+ * 認識結果の前後の空白と、末尾の句読点を落とす。値の変換は parse.ts が持つ。
+ *
+ * 確認のダイアログにはこの文字列をそのまま出す。「18時。」の句点だけが残ると、
+ * 話した言葉をそのまま写したように見えて、入力する値との違いが分かりにくい。
+ * 文の途中の句読点は残す（「18時、20時」のような言い方を壊さないため）。
+ */
+export function cleanTranscript(input: string): string {
+  return input
+    .replace(/^[\s\u3000]+|[\s\u3000]+$/gu, "")
+    .replace(/[。、，．！？!?]+$/u, "")
+    .trim();
+}
+
+/**
  * 話し言葉を、値として使いやすい形へ寄せる。
  * 句読点と丁寧な語尾（です・ます・で・ね）を落とす。
  */

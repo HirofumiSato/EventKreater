@@ -15,6 +15,7 @@ import {
   fieldForDomId,
   nextNeededField,
   previousField,
+  shouldAskGenderBeforePricing,
   startFieldFor,
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
@@ -38,7 +39,6 @@ import type {
 import {
   createScheduleDraft,
   MAX_EVENT_OPTIONS,
-  pricingModeOf,
   withGenderPricing,
   type EventFormValues,
 } from "@/modules/events/types";
@@ -62,7 +62,7 @@ interface VoicePending {
 
 type VoiceBranchKind = "schedule" | "gender";
 
-/** 群から出る瞬間に出す分岐の質問。回答後に元のマスを引き直すため `slotId` を持つ。 */
+/** 分岐の質問（日時の群を出る瞬間・費用の入口）。回答後に元のマスを引き直すため `slotId` を持つ。 */
 interface VoiceBranchQuestion {
   kind: VoiceBranchKind;
   slotId: VoiceSlotId;
@@ -76,9 +76,11 @@ const SCHEDULE_KEYS: ReadonlySet<VoiceFieldKey> = new Set([
 ]);
 
 /**
- * 分岐の質問を出すか。特定の欄ではなく「群から出る瞬間」で見る。
+ * 日時の群を出る瞬間に「別の日程」を出すか。特定の欄ではなく「群から出る瞬間」で見る。
  * 開始時刻の範囲発話のように 1 つの発話で終了時刻まで埋まることがあるため、
  * 最後に触った欄の種類と、最終行の埋まり具合だけで決める。
+ *
+ * 男女別の質問は費用の入口（プラン名の直前）で出す。`advanceFrom` が見る。
  */
 function branchAfter(
   slot: VoiceSlot,
@@ -93,17 +95,7 @@ function branchAfter(
     if (filled && value.schedules.length < MAX_EVENT_OPTIONS) return "schedule";
   }
 
-  // 男女別は「最後の金額を入れた直後」に尋ねる。費用の補足（任意）はその後ろに置くので、
-  // 補足を飛ばしても、補足の前で止まっても、この質問まで届く。
-  if (
-    slot.key === "planAmount" &&
-    slot.row === value.pricePlans.length - 1 &&
-    pricingModeOf(value.pricePlans) === "COMMON"
-  ) {
-    const row = value.pricePlans[slot.row];
-    if (row?.name.trim() && row.amount.trim()) return "gender";
-  }
-
+  // 男女別は費用の入口（プラン名の直前）で尋ねる。ここは群から出る瞬間だけを見る。
   return null;
 }
 
@@ -148,6 +140,11 @@ export function VoiceInputDock({
   // 録音の印を止めた瞬間だけ少し縮ませる。押した手応えを残すため。
   const [statusStopping, setStatusStopping] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // 住所の補完に失敗したときの 1 行。補完のあと次の欄の録音が始まると `message` は
+  // 空になるので、次の値を入れるまで残るよう別に持つ。
+  const [addressNote, setAddressNote] = useState<string | null>(null);
+  // 郵便番号から住所を引いているあいだの印。待ちの間は録音を始めさせない。
+  const [searching, setSearching] = useState(false);
   // パネルの置き場所。そのセッションで最後に測った、強調中の欄のすぐ下。
   // null になるのは音声モードに入った直後（まだ一度も測れていない）だけ。
   const [panelBox, setPanelBox] = useState<VoicePanelBox | null>(null);
@@ -198,6 +195,8 @@ export function VoiceInputDock({
   const guideShownRef = useRef(false);
   // 閉じるときの判定は最新のチェックを読む。effect の依存を増やさないため控える。
   const guideCheckedRef = useRef(false);
+  // 男女別の費用を聞いたか。1 セッション 1 回だけ聞く（「共通のまま」のあと聞き直さない）。
+  const genderAskedRef = useRef(false);
   // ダイアログが開いているあいだは、音声モードの Esc を止める。
   const dialogOpenRef = useRef(false);
   // パネルの上端。切り抜きの下端をここより上へ収める。
@@ -307,9 +306,14 @@ export function VoiceInputDock({
     setTouched(next);
   }, []);
 
-  /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
-  const stopSession = useCallback(() => {
-    // 開始の途中で抜けたら、遅れて届くマイクの結果を捨てる（次の開始は塞がない）。
+  /**
+   * いまの録音を捨てる。戻る・スキップで欄を移るときに使う。
+   *
+   * `onstop` を外してから止めるので、捨てた録音が文字化へ流れることはない。
+   * 音声モードは抜けない（`stopSession` はこのあとに続けて片付ける）。
+   */
+  const discardRecording = useCallback(() => {
+    // 開始の途中で捨てたら、遅れて届くマイクの結果を捨てる（次の開始は塞がない）。
     startAttemptRef.current += 1;
     startingRef.current = false;
     clearTimer();
@@ -325,17 +329,27 @@ export function VoiceInputDock({
     recorderRef.current = null;
     chunksRef.current = [];
     releaseStream();
-    setActive(false);
     setPhase("armed");
+  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer, releaseStream]);
+
+  /** 音声モードを抜ける。録音・完了の待ち・強調をすべて戻す。 */
+  const stopSession = useCallback(() => {
+    discardRecording();
+    // 次のセッションでは、もう一度だけ男女別を聞ける。
+    genderAskedRef.current = false;
+    setActive(false);
     setComplete(false);
     setMessage(null);
+    setAddressNote(null);
+    // 待ちの途中で抜けても印は必ず戻す。次に開いたとき、待ちの見た目のまま始めない。
+    setSearching(false);
     setPending(null);
     setBranch(null);
     cursorRef.current = null;
     setCursor(null);
     // 位置も捨てる。次に開いたとき、古い位置で 1 フレーム見せないため。
     setPanelBox(null);
-  }, [clearCompleteTimer, clearMockTimer, clearStatusTimer, clearTimer, releaseStream]);
+  }, [discardRecording]);
 
   /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
   const finishSession = useCallback(() => {
@@ -345,6 +359,7 @@ export function VoiceInputDock({
     setPhase("armed");
     setStatusStopping(false);
     setMessage(null);
+    setAddressNote(null);
     clearStatusTimer();
     clearMockTimer();
     api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
@@ -356,15 +371,19 @@ export function VoiceInputDock({
   }, [api, clearCompleteTimer, clearMockTimer, clearStatusTimer, stopSession]);
 
   /**
-   * 郵便番号が入ったら、既存の検索 API で住所を補完する。失敗しても手入力に任せる。
-   * カーソルは動かさない。呼び出し元が補完後の値を見て次の欄を決める。
+   * 郵便番号が入ったら、既存の検索 API で住所を補完する。カーソルは動かさない。
+   * 呼び出し元が補完後の値を見て次の欄を決める。
+   *
+   * 補完は補助なので失敗しても手入力に任せるが、黙って進むと住所が入ったものと
+   * 思われるため、結果を返して呼び出し側に 1 行だけ知らせられるようにする。
    */
   const fillAddressFromPostalCode = useCallback(
-    async (postalCode: string) => {
+    async (postalCode: string): Promise<"filled" | "not-found" | "failed"> => {
       try {
         const found = await lookupPostalCode(postalCode);
         const first = found[0];
-        if (!first || !mountedRef.current) return;
+        if (!first) return "not-found";
+        if (!mountedRef.current) return "failed";
         const nextValue: EventFormValues = {
           ...valueRef.current,
           prefecture: first.prefecture,
@@ -373,8 +392,10 @@ export function VoiceInputDock({
         };
         valueRef.current = nextValue;
         onChange(nextValue);
+        return "filled";
       } catch {
         // 住所の補完は補助。取れなくても郵便番号だけで保存できる。
+        return "failed";
       }
     },
     [onChange],
@@ -384,6 +405,22 @@ export function VoiceInputDock({
   const advanceFrom = useCallback(
     (slot: VoiceSlot, spoken?: string) => {
       const next = nextNeededField(valueRef.current, slot.id, scopeNow());
+      // 費用の入口（プラン名の直前）で男女別を尋ねる。金額を聞いたあとではなく、
+      // プラン名から金額へ進む流れを作り直せるここで 1 セッション 1 回だけ聞く。
+      if (
+        next?.key === "planName" &&
+        next.row === 0 &&
+        !genderAskedRef.current &&
+        shouldAskGenderBeforePricing(valueRef.current)
+      ) {
+        // 答えるまでカーソルは直前に埋めた欄に残す。
+        cursorRef.current = slot.id;
+        setCursor(slot.id);
+        setMessage(null);
+        genderAskedRef.current = true;
+        setBranch({ kind: "gender", slotId: slot.id });
+        return;
+      }
       cursorRef.current = next?.id ?? null;
       setCursor(next?.id ?? null);
       if (!next) {
@@ -414,11 +451,29 @@ export function VoiceInputDock({
       valueRef.current = nextValue;
       onChange(nextValue);
       markTouched(field.key);
+      // 前の欄で出した住所の知らせは、次の値が入った時点で役目を終える。
+      setAddressNote(null);
 
       // 郵便番号は住所の補完を待ってから次の欄を決める。先に進めると、
       // 補完で埋まった都道府県・市区町村をもう一度聞いてしまう。
       if (field.key === "postalCode" && patch.postalCode) {
-        await fillAddressFromPostalCode(patch.postalCode);
+        setSearching(true);
+        setMessage(null);
+        // 画面を見ずに話している人にも、待ちの理由を音声で伝える。
+        api.announce("住所を調べています。");
+        try {
+          const outcome = await fillAddressFromPostalCode(patch.postalCode);
+          if (!mountedRef.current) return false;
+          if (outcome !== "filled") {
+            // このあと次の欄へ移って録音が始まり、`message` は空になる。
+            // 黙って進んだように見せないよう、次の値を入れるまで別に残す。
+            // 失敗すると住所は空のままで次の欄は都道府県になるため、「番地」とは書かない。
+            setAddressNote("住所を調べられませんでした。手で入力してください。");
+          }
+        } finally {
+          // 待ちの途中で音声モードを抜けていても、印は必ず戻す。
+          if (mountedRef.current) setSearching(false);
+        }
       }
 
       // 自動遷移が外れているときは同じ欄に留める。録音は止めて、言い直しを待つ。
@@ -682,12 +737,17 @@ export function VoiceInputDock({
     const first = startFieldFor(valueRef.current, scope, lastFocusedIdRef.current);
     touchedRef.current = new Set();
     setTouched(new Set());
+    // 男女別はセッションごとに 1 回だけ聞く。前のセッションの返事を引き継がない。
+    genderAskedRef.current = false;
     // 位置はセッションの開始で捨てる。前のセッションの位置を引き継ぐと、
     // まだ測れていない 1 フレームだけ古い場所に出てしまう。
     setPanelBox(null);
     setActive(true);
     setPhase("armed");
     setComplete(false);
+    // 前のセッションの住所の知らせと待ちの印は引き継がない。
+    setAddressNote(null);
+    setSearching(false);
     clearCompleteTimer();
     clearStatusTimer();
     setStatusStopping(false);
@@ -885,6 +945,9 @@ export function VoiceInputDock({
   useEffect(() => {
     if (!active) return;
     const handler = (event: Event) => {
+      // ダイアログを閉じると、開く前に触っていた欄へ焦点が戻る。その focusin で
+      // カーソルを戻さない（答えた直後に進んだ先を打ち消してしまう）。
+      if (dialogOpenRef.current) return;
       const target = event.target as HTMLElement | null;
       const id = target?.id;
       if (!id) return;
@@ -925,8 +988,12 @@ export function VoiceInputDock({
     ? "入力完了！"
     : transcribing
       ? "テキスト変換中"
-      : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
+      : searching
+        ? "住所を調べています"
+        : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
   const showStatus = listening || statusStopping;
+  // パネルに出す 1 行。いまの操作の知らせを優先し、無ければ住所の補完の知らせを出す。
+  const notice = message ?? addressNote;
   const talkLabel = listening
     ? "録音を停止"
     : transcribing
@@ -950,14 +1017,14 @@ export function VoiceInputDock({
   const fitPrompt = useCallback(() => {
     const element = promptRef.current;
     if (!element) return;
-    // 変換中は短い待ちの合図なので、質問と同じ大きさにしない。
-    let size = transcribing ? 16 : 36;
+    // 変換中と住所検索中は短い待ちの合図なので、質問と同じ大きさにしない。
+    let size = transcribing || searching ? 16 : 36;
     element.style.fontSize = `${size}px`;
     while (size > 15 && element.scrollWidth > element.clientWidth + 1) {
       size -= 1;
       element.style.fontSize = `${size}px`;
     }
-  }, [transcribing]);
+  }, [searching, transcribing]);
 
   useEffect(() => {
     if (!active) return;
@@ -975,20 +1042,24 @@ export function VoiceInputDock({
 
   const goPrevious = () => {
     if (!previous) return;
+    // 録音中なら、いまの録音は捨てる。戻った欄でそのまま録り直す。
+    if (listening) discardRecording();
     cursorRef.current = previous.id;
     setCursor(previous.id);
     setMessage(null);
     api.announce(`${previous.label}に戻りました。${previous.prompt}`);
+    startRecordingRef.current();
   };
 
   /**
    * いまの欄を飛ばす。次の欄へ移り、その場で録音を始める。
    *
-   * 費用の最後の金額を飛ばしたときは、男女別の質問を先に見る（`advanceFrom` と同じ扱い）。
-   * ここで録音を始めないと、会場名・郵便番号のターンで止まって見える。
+   * 録音中なら、いまの録音は捨てる（飛ばした欄の音声は使わない）。
+   * 費用の入口へ入るときの男女別の質問は、`advanceFrom` が見る。
    */
   const skip = () => {
     if (!cursor) return;
+    if (listening) discardRecording();
     const current = voiceSlotById(cursor, valueRef.current, scopeNow());
     if (!current) {
       cursorRef.current = null;
@@ -1088,19 +1159,12 @@ export function VoiceInputDock({
         return;
       }
 
+      // 男女別にする。行を分けたあとも、費用の入口（プラン名）から順に進める。
       const pricePlans = withGenderPricing(valueRef.current.pricePlans);
       const nextValue: EventFormValues = { ...valueRef.current, pricePlans };
       valueRef.current = nextValue;
       onChange(nextValue);
-      // 共通の金額を引き継いだ女性用の行を、そのまま言い直せるようにする。
-      const row = pricePlans.findIndex((plan) => plan.audience === "FEMALE");
-      const target =
-        row >= 0 ? voiceSlotById(`planAmount:${row}` as VoiceSlotId, nextValue, scopeNow()) : null;
-      if (!target) {
-        advanceFrom(source);
-        return;
-      }
-      moveTo(target);
+      advanceFrom(source);
     },
     [advanceFrom, branch, moveTo, onChange, scopeNow],
   );
@@ -1292,9 +1356,11 @@ export function VoiceInputDock({
               <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
                 {promptText}
               </p>
-              {!complete && field && <p className="voice-panel__hint">例: {field.example}</p>}
+              {!complete && field && !searching && (
+                <p className="voice-panel__hint">例: {field.example}</p>
+              )}
             </div>
-            {!complete && field && currentValue && (
+            {!complete && field && currentValue && !searching && (
               <p className="voice-panel__current">いまの値: {currentValue}</p>
             )}
             <button
@@ -1308,9 +1374,9 @@ export function VoiceInputDock({
             </button>
           </div>
 
-          {message && (
+          {notice && (
             <p className="voice-panel__message" role="status">
-              {message}
+              {notice}
             </p>
           )}
 
@@ -1322,15 +1388,17 @@ export function VoiceInputDock({
               <button
                 type="button"
                 className="voice-icon-btn voice-icon-btn--primary"
-                data-state={listening ? "stop" : transcribing ? "busy" : "mic"}
+                data-state={listening ? "stop" : transcribing || searching ? "busy" : "mic"}
                 aria-label={talkLabel}
                 title={talkLabel}
-                disabled={!listening && (!field || transcribing || disabled || complete)}
+                disabled={
+                  !listening && (!field || transcribing || searching || disabled || complete)
+                }
                 onClick={listening ? stopRecording : () => void startRecording()}
               >
                 {listening ? (
                   <Square className="icon" aria-hidden="true" />
-                ) : transcribing ? (
+                ) : transcribing || searching ? (
                   <Loader2 className="icon" aria-hidden="true" />
                 ) : (
                   <Mic className="icon" aria-hidden="true" />
@@ -1344,26 +1412,32 @@ export function VoiceInputDock({
                 </p>
               )}
             </div>
+            {/* 録音中でも戻る・スキップは押せる。いまの録音は捨て、移った欄で録り直す。
+                止めてよいのは、文字化・住所検索・完了の待ちのあいだだけ。 */}
             <button
               type="button"
               className="voice-icon-btn"
               aria-label="戻る"
               title="戻る"
-              disabled={!previous || listening || transcribing || complete}
+              disabled={!previous || transcribing || searching || complete}
               onClick={goPrevious}
             >
               <ChevronLeft className="icon" aria-hidden="true" />
             </button>
-            <button
-              type="button"
-              className="voice-icon-btn"
-              aria-label="スキップ"
-              title="スキップ"
-              disabled={!field || listening || transcribing || complete}
-              onClick={skip}
-            >
-              <ChevronsRight className="icon" aria-hidden="true" />
-            </button>
+            <div className="voice-panel__talk-wrap">
+              <button
+                type="button"
+                className="voice-icon-btn"
+                aria-label="スキップ"
+                title="スキップ"
+                disabled={!field || transcribing || searching || complete}
+                onClick={skip}
+              >
+                <ChevronsRight className="icon" aria-hidden="true" />
+              </button>
+              {/* 丸い印だけでは意味が分かりにくいので、下に同じ大きさ・色で名前を出す。 */}
+              <p className="voice-panel__talk">スキップ</p>
+            </div>
           </div>
 
           <div className="voice-panel__options">
@@ -1421,11 +1495,11 @@ export function VoiceInputDock({
         />
       )}
 
-      {/* 日時の群を出る瞬間と、費用の群を出る瞬間にだけ尋ねる。
+      {/* 日時の群を出る瞬間と、費用の入口にだけ尋ねる。
           背景・×・Esc は「追加しない」と同じ扱いにする。 */}
       {branch?.kind === "schedule" && (
         <Dialog
-          title="別の日時も追加しますか"
+          title="別の日程も追加しますか？"
           titleId="voice-branch-schedule-title"
           onClose={() => answerBranch(false)}
           closeLabel="追加しない"
@@ -1447,9 +1521,7 @@ export function VoiceInputDock({
               </button>
             </>
           }
-        >
-          <p className="dialog__body">日程を増やすと、参加者は都合のよい日を選べます。</p>
-        </Dialog>
+        />
       )}
 
       {branch?.kind === "gender" && (
@@ -1477,7 +1549,7 @@ export function VoiceInputDock({
             </>
           }
         >
-          <p className="dialog__body">男性と女性で金額を分けられます。いまの金額は引き継ぎます。</p>
+          <p className="dialog__body">男性と女性で金額を分けられます。</p>
         </Dialog>
       )}
     </>
