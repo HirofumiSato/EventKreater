@@ -19,7 +19,7 @@ const CREATE_EVENT = { href: "/organizer/events/new", label: "イベント告知
  * 吹き出しは最後の段に添える。
  */
 const TAGLINE_LINES = [
-  "イベント告知&申込の特設ウェブページ、",
+  "イベント告知&申込のウェブページ、",
   "5分で簡単作成。",
   "スマホで完結。",
 ] as const;

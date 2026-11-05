@@ -45,17 +45,17 @@ const HERO_LOGIN_LINKS = [
 ] as const;
 
 /**
- * h1 の 1 つ目の文。その中の「告知」「申込」「特設」だけを文字色で分ける。
+ * h1 の 1 つ目の文。その中の「告知」「申込」「ウェブ」だけを文字色で分ける。
  * 文言は `SITE.taglineLines` が持ち、ここは色分けのためだけに分割する。
  */
 const HERO_MARKS = [
   { word: "告知", className: "hero__mark--notice" },
   { word: "申込", className: "hero__mark--apply" },
-  { word: "特設", className: "hero__mark--special" },
+  { word: "ウェブ", className: "hero__mark--web" },
 ] as const;
 
 function renderTagline(line: string) {
-  return line.split(/(告知|申込|特設)/).map((part, index) => {
+  return line.split(/(告知|申込|ウェブ)/).map((part, index) => {
     const mark = HERO_MARKS.find((candidate) => candidate.word === part);
     if (mark) {
       return (
@@ -70,7 +70,7 @@ function renderTagline(line: string) {
 
 /**
  * 見出しの 1 つ目の文を、幅ではなく文の切れ目で 2 段に折る。
- * 「イベント告知&申込の／特設ウェブページ、」と、「の」の直後で改行する。
+ * 「イベント告知&申込の／ウェブページ、」と、「の」の直後で改行する。
  * 文言は `SITE.taglineLines` に置いたまま、ここは折る位置だけを持つ。
  */
 function splitTaglineHead(line: string): [string, string] {
