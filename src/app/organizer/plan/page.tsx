@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import {
   Alert,
@@ -32,6 +32,21 @@ type SubscriptionChoice = "MONTHLY_8" | "UNLIMITED";
  * 出さない（API は 409 を返す）ため、変更は Portal へ案内する。
  */
 export default function OrganizerPlanPage() {
+  // 決済から戻った `session_id` を読むため、`useSearchParams` を使う層は Suspense で包む。
+  return (
+    <Suspense
+      fallback={
+        <Loading>
+          読み込んでいます
+        </Loading>
+      }
+    >
+      <OrganizerPlanScreen />
+    </Suspense>
+  );
+}
+
+function OrganizerPlanScreen() {
   const quotaState = useEventQuota();
   const { quota, isLoading, refreshQuota, startSubscriptionCheckout } = quotaState;
   const [ticketOpen, setTicketOpen] = useState(false);
