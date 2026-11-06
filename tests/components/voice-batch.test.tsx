@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 //
-// 「まとめて話す」の確認画面の再発防止。
+// 「まとめて話す」の入口と確認画面の再発防止。
 //
-// 見るのは 4 つ。
-//   1. モックでは外部へ送らず、巡回する欄の入力例から行を組み立てる
-//   2. 値は編集でき、チェックを外した行は取り込まない
-//   3. 「すべて入力」は 1 回の onChange にまとめる（行ごとに呼ばない）
-//   4. 編集された行は、編集後の文字で parse し直す
+// 見るのは 5 つ。
+//   1. 空欄が 3 つ以上なら「まとめて」を既定にし、話す順と例を出す
+//   2. モックでは外部へ送らず、巡回する欄の入力例から行を組み立てる
+//   3. 値は編集でき、チェックを外した行は取り込まない
+//   4. 「すべて入力」は 1 回の onChange にまとめる（行ごとに呼ばない）
+//   5. 残りの必須が 2 つ以上なら、まとめてのまま続けられる
 //
 // 入力欄はこの部品の外にあるので、値の受け渡しは `onChange` で見る。
 // 待ちは疑似録音のものだけを進める（`userEvent` はタイマーを掴んで止まるため使わない）。
@@ -24,10 +25,16 @@ const PAST_TRANSCRIBE_MS = 350;
 
 /** モック可否の問い合わせだけを返す。POST が来たら試験で気づけるよう記録する。 */
 function stubFetch() {
-  const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     if (init?.method === "POST") {
       // モックでは `/api/v1/voice/utterances` を呼ばない約束。呼ばれたら中身を見せる。
       return new Response("unexpected", { status: 500 });
+    }
+    // 郵便番号の補完は、住所が入ったときの流れを見るために成功させる。
+    if (String(input).includes("/geo/postal-codes/")) {
+      return Response.json({
+        results: [{ prefecture: "東京都", city: "渋谷区", town: "神宮前" }],
+      });
     }
     return Response.json({ mock: true });
   });
@@ -35,8 +42,14 @@ function stubFetch() {
   return fetchMock;
 }
 
-function Harness({ onChange }: { onChange: (next: EventFormValues) => void }) {
-  const [value, setValue] = useState<EventFormValues>(EMPTY_EVENT_FORM);
+function Harness({
+  onChange,
+  initial = EMPTY_EVENT_FORM,
+}: {
+  onChange: (next: EventFormValues) => void;
+  initial?: EventFormValues;
+}) {
+  const [value, setValue] = useState<EventFormValues>(initial);
   return (
     <VoiceInputDock
       value={value}
@@ -49,8 +62,11 @@ function Harness({ onChange }: { onChange: (next: EventFormValues) => void }) {
   );
 }
 
-async function mount(onChange: (next: EventFormValues) => void) {
-  render(<Harness onChange={onChange} />);
+async function mount(
+  onChange: (next: EventFormValues) => void,
+  initial?: EventFormValues,
+) {
+  render(<Harness onChange={onChange} initial={initial} />);
   await act(async () => {});
 }
 
@@ -60,9 +76,9 @@ async function press(name: string) {
   });
 }
 
-async function toggle(name: string) {
+async function chooseMode(name: string) {
   await act(async () => {
-    screen.getByRole("checkbox", { name }).click();
+    screen.getByRole("radio", { name }).click();
   });
 }
 
@@ -104,22 +120,65 @@ afterEach(() => {
 });
 
 describe("まとめて話す", () => {
+  it("空欄が多いときは、話す順と例を添えて「まとめて」から始まる", async () => {
+    stubFetch();
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+
+    // 空欄が 3 つ以上あるので、まとめてが既定になる。
+    expect((screen.getByRole("radio", { name: "まとめて" }) as HTMLInputElement).checked).toBe(
+      true,
+    );
+    expect(
+      (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(screen.getByText("続けて話してください")).toBeTruthy();
+    // 話す順は、いまの空欄から作る。
+    expect(screen.getByText("名前")).toBeTruthy();
+    expect(screen.getByText("日時")).toBeTruthy();
+    expect(screen.getByText("費用")).toBeTruthy();
+    expect(screen.getByText("会場")).toBeTruthy();
+    expect(
+      screen.getByText("例: 忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール"),
+    ).toBeTruthy();
+    // 1 欄ずつの「いまの値」と戻る・スキップは、まとめてのときは出さない。
+    expect(screen.queryByText(/いまの値:/)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: "戻る" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "スキップ" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("「1つずつ」を選ぶと、1 欄ずつの質問に戻る", async () => {
+    stubFetch();
+    const onChange = vi.fn();
+
+    await mount(onChange);
+    await press("音声入力を開始");
+    await chooseMode("1つずつ");
+
+    expect(screen.getByText("イベント名は？")).toBeTruthy();
+    // まとめての話す順は消え、1 欄ずつの例だけが残る。
+    expect(screen.queryByRole("list", { name: "話す順" })).toBeNull();
+    expect(screen.getByText("例: 忘年会")).toBeTruthy();
+  });
+
   it("モックでは外部へ送らず、欄ごとの行を並べる", async () => {
     const fetchMock = stubFetch();
     const onChange = vi.fn();
 
     await mount(onChange);
     await press("音声入力を開始");
-    await toggle("まとめて話す");
-
-    // 質問と例は 1 回の録音向けに替わる。
-    expect(screen.getByText("順番に話してください")).toBeTruthy();
-    expect(
-      screen.getByText("例: 12月5日、18時から20時、渋谷ホール、3000円、30人"),
-    ).toBeTruthy();
 
     const dialog = await openBatchDialog();
     expect(within(dialog).getByRole("heading", { name: "まとめて入力します" })).toBeTruthy();
+    // 先頭に、入る欄の数と、入らなかった欄を出す。
+    expect(dialog.textContent).toContain("つの欄に入れます。");
 
     // 巡回する欄の入力例から、欄ごとの 1 行を作る。
     expect(within(dialog).getByLabelText("開催日")).toBeTruthy();
@@ -137,9 +196,13 @@ describe("まとめて話す", () => {
     stubFetch();
     const onChange = vi.fn();
 
-    await mount(onChange);
+    // 町域と番地は埋めておき、外したあとに残る必須が会場名だけになるようにする。
+    await mount(onChange, {
+      ...EMPTY_EVENT_FORM,
+      town: "神宮前",
+      addressLine: "1-2-3",
+    });
     await press("音声入力を開始");
-    await toggle("まとめて話す");
     const dialog = await openBatchDialog();
 
     // 会場名だけ取り込まない。
@@ -160,9 +223,33 @@ describe("まとめて話す", () => {
     // 外した行は入らない。
     expect(value.venueName).toBe("");
 
-    // 反映したら、最初の未入力欄（会場名）へ移って録音を始める。
+    // 残りの必須が 1 つ（会場名）なので、1 欄ずつに切り替えて録音を始める。
+    expect(screen.getByText("残りの欄は1つずつ話します。")).toBeTruthy();
     expect(screen.getByText("会場は？")).toBeTruthy();
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
+  });
+
+  it("残りの必須が 2 つ以上なら、まとめてのまま続けられる", async () => {
+    stubFetch();
+    const onChange = vi.fn();
+
+    // 番地だけ埋めておく。ほかの空欄は行として並ぶ。
+    await mount(onChange, { ...EMPTY_EVENT_FORM, addressLine: "1-2-3" });
+    await press("音声入力を開始");
+    const dialog = await openBatchDialog();
+
+    // 開催日と会場名を外すと、必須の空欄が 2 つ残る。
+    await act(async () => {
+      fireEvent.click(within(dialog).getByLabelText("開催日を取り込む"));
+      fireEvent.click(within(dialog).getByLabelText("会場名を取り込む"));
+    });
+    await pressInDialog("すべて入力");
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    // 録音は自動で始めず、話す準備ができてから押してもらう。
+    expect(screen.getByText("あと2つ。続けて話せます。")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "録音を停止" })).toBeNull();
+    expect(screen.getByRole("button", { name: "まとめて話す" })).toBeTruthy();
   });
 
   it("編集した行は、編集後の文字で parse し直す", async () => {
@@ -171,7 +258,6 @@ describe("まとめて話す", () => {
 
     await mount(onChange);
     await press("音声入力を開始");
-    await toggle("まとめて話す");
     const dialog = await openBatchDialog();
 
     const date = within(dialog).getByLabelText("開催日");
@@ -182,5 +268,19 @@ describe("まとめて話す", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(lastValue(onChange).schedules[0].eventDate).toMatch(/-12-06$/);
+  });
+
+  it("初回ガイドは、まとめてと 1 つずつの 2 択から始められる", async () => {
+    localStorage.removeItem(VOICE_GUIDE_STORAGE_KEY);
+    stubFetch();
+
+    await mount(vi.fn());
+
+    expect(
+      screen.getByText("1回の録音で、空欄をまとめて入力できます。"),
+    ).toBeTruthy();
+    // 吹き出しの外を押しても閉じるが、中の 2 択はそのまま押せる。
+    await press("1つずつ");
+    expect(screen.getByText("イベント名は？")).toBeTruthy();
   });
 });

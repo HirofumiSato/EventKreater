@@ -615,6 +615,27 @@
   box-shadow: 0 0 0 3px var(--color-danger-bg), 5px 5px 0 rgb(26 25 22 / 0.18);
 }
 
+/* まとめて話すときは、欄のすぐ下ではなく画面下寄りに固定する。
+   話す順と例で背が高くなるため、欄に合わせると下の帯や FAB と重なる。
+   右下のマイクボタン（下端 5rem・高さ 3.25rem）の上へ 1rem 空けて置く。 */
+.voice-panel--batch {
+  top: auto;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: calc(9.25rem + env(safe-area-inset-bottom, 0px));
+  width: auto;
+  max-height: min(58vh, 26rem);
+  max-height: min(58dvh, 26rem, calc(100dvh - 10rem - env(safe-area-inset-bottom, 0px)));
+}
+
+@media (min-width: 640px) {
+  .voice-panel--batch {
+    left: auto;
+    right: 1rem;
+    width: min(24rem, calc(100vw - 2rem));
+  }
+}
+
 /* 見出しの段は印・指示・閉じる。指示に幅を全部あけ、閉じるは隅へ重ねる。
    幅を奪い合うと 1 行に収まらず、文字を小さくするしかなくなる。 */
 .voice-panel__head {
@@ -750,6 +771,70 @@
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--color-text-subtle);
+}
+
+/* まとめて話すときの「話す順」と例。1 行の `.voice-panel__hint` に入れると
+   390px で末尾が切れるため、折り返せる別の行に置く。 */
+.voice-panel__guide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.voice-panel__guide-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: voice-step;
+}
+
+.voice-panel__guide-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4375rem 0.0625rem 0.3125rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: var(--font-action);
+  line-height: 1.4;
+}
+
+/* 札には順番を小さな丸で添える。話す順であることを、文字を増やさずに示す。 */
+.voice-panel__guide-step::before {
+  counter-increment: voice-step;
+  content: counter(voice-step);
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.voice-panel__guide-step--more::before {
+  content: none;
+}
+
+/* 例は 2 行まで。3 行以上になると、マイクのボタンがパネルの外へ押し出される。 */
+.voice-panel__guide-example {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* 確定済みの「いまの値」は、質問の行に詰めず下の別の行へ置く。 */
@@ -915,16 +1000,68 @@
   }
 }
 
+/* 話し方は「まとめて」「1つずつ」の 2 択。押せる面を 40px 以上にし、
+   選ばれている方を朱の淡色で示す。 */
+.voice-panel__mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.voice-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: var(--tap-target);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-action);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.voice-mode input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.voice-mode:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+
+.voice-mode:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 任意欄と、1 欄ずつの進み方は区切り線の下へ置き、話し方と混ぜない。 */
+.voice-panel__toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.375rem;
+  border-top: 1px dashed var(--color-border);
+}
+
 .voice-panel__optional {
   font-size: 0.8rem;
 }
 
-/* チェックは「任意の項目も聞く」「自動遷移」「まとめて話す」の 3 つ。横に並べると
+/* チェックは「任意の項目も聞く」「答えたら次へ」の 2 つ。横に並べると
    狭い幅で折り返して読みにくいので、縦に積む。 */
 .voice-panel__options {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.375rem;
 }
 
 /* 確認の本文。値は読み上げのまま置かず、欄の名前と入力欄にして、その場で直せるようにする。
@@ -1019,6 +1156,26 @@ textarea.voice-confirm__input {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-inline-end: 0.25rem;
+}
+
+/* 確認の先頭に、入る欄の数と、入らなかった欄を 1 行ずつ置く。
+   どれも一覧の前に読み終わるよう、行と同じ箱の先頭にまとめる。 */
+.voice-batch__summary {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.voice-batch__missed {
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .voice-batch__row {
@@ -1224,6 +1381,27 @@ textarea.voice-confirm__input {
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.4;
+}
+
+/* ガイドの本文。話し方の 2 択へつなぐ 1 文だけを置く。 */
+.voice-guide__body {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* 入口の 2 択。押した方がそのまま音声モードに入るので、主操作は「まとめて」に置く。 */
+.voice-guide__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding-block: 0.125rem 0.25rem;
+}
+
+.voice-guide__modes .btn {
+  min-height: var(--tap-target);
+  font-size: var(--font-action);
 }
 
 /* チェックは破線で切り離し、本文と混ぜない。 */

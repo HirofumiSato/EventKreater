@@ -86,6 +86,11 @@ export interface AssignUtteranceInput {
   now: Date;
   /** 巡回の対象。任意欄を聞くか、主催者名を出すかが変わる。 */
   scope: VoiceFieldScope;
+  /**
+   * 割当の対象にするマス。省略したら巡回順のすべてを使う。
+   * まとめて話すときは空欄だけ（`batchTargets`）を渡し、入力済みの欄を上書きしない。
+   */
+  targets?: readonly VoiceSlot[];
 }
 
 /** 自由文の欄が節を受け取るか。欄の語彙（`keywords`）が節に現れるときだけ受け取る。 */
@@ -130,7 +135,8 @@ export function assignUtterance(input: AssignUtteranceInput): {
   unassigned: string[];
 } {
   const clauses = splitUtterance(input.text);
-  const slots = voiceFieldOrder(input.value, input.scope);
+  // 対象を渡されたときは、その並びだけを巡回する（空欄だけのまとめて入力）。
+  const slots = input.targets ?? voiceFieldOrder(input.value, input.scope);
 
   const claimed = new Set<number>();
   const usedSlots = new Set<VoiceSlotId>();

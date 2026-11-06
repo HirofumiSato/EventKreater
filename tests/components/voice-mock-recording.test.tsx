@@ -84,6 +84,17 @@ async function press(name: string) {
   });
 }
 
+/**
+ * 音声モードを 1 欄ずつで開く。空欄が多いと「まとめて」が既定になるため、
+ * 1 欄ずつの確認・自動確定を見る試験では、開いたあとに明示して切り替える。
+ */
+async function startSingle() {
+  await press("音声入力を開始");
+  await act(async () => {
+    (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).click();
+  });
+}
+
 /** 疑似録音と文字化の待ちを進める。 */
 async function passMockWait() {
   await act(async () => {
@@ -135,7 +146,7 @@ describe("モックの疑似録音", () => {
     vi.stubGlobal("MediaRecorder", undefined);
 
     await mount(() => {});
-    await press("音声入力を開始");
+    await startSingle();
 
     const talk = screen.getByRole("button", { name: "録音を停止" });
     expect(talk.getAttribute("data-state")).toBe("stop");
@@ -147,7 +158,7 @@ describe("モックの疑似録音", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     // 値はまだ入っていない。まず何を入れるかを見せる（実の経路と同じ）。
@@ -169,7 +180,7 @@ describe("モックの疑似録音", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
     await press("再録音");
 
@@ -182,7 +193,7 @@ describe("モックの疑似録音", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     await press("録音を停止");
     await act(async () => {
       vi.advanceTimersByTime(PAST_TRANSCRIBE_MS);
@@ -200,7 +211,7 @@ describe("録音中の戻る・スキップ", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     expect(screen.getByText("イベント名は？")).toBeTruthy();
 
     // 録音を止める主ボタンとは別に、飛ばす操作も録音中から押せる。
@@ -218,7 +229,7 @@ describe("録音中の戻る・スキップ", () => {
     stubMockAnswer(true);
 
     await mount(() => {});
-    await press("音声入力を開始");
+    await startSingle();
 
     const label = screen.getByText("スキップ");
     expect(label.tagName).toBe("P");
@@ -232,7 +243,7 @@ describe("録音中の戻る・スキップ", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     // 1 欄目を飛ばして、2 欄目（開催日）の録音にする。
     await press("スキップ");
     expect(screen.getByText("開催日は？")).toBeTruthy();
@@ -254,6 +265,7 @@ describe("モックでないとき", () => {
     vi.stubGlobal("MediaRecorder", undefined);
 
     await mount(() => {});
+    // メッセージは話し方に依らない。まとめてのまま開いて、案内だけを見る。
     await press("音声入力を開始");
 
     expect(
@@ -266,7 +278,7 @@ describe("モックでないとき", () => {
     const getUserMedia = stubPendingMicrophone();
 
     await mount(() => {});
-    await press("音声入力を開始");
+    await startSingle();
     // マイクの許可待ちのあいだ（まだ「録音中」になっていない）にもう一度押す。
     await press("話す");
 
@@ -281,7 +293,7 @@ describe("入力内容の確認を直す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     const input = screen.getByRole("textbox") as HTMLInputElement;
@@ -300,7 +312,7 @@ describe("入力内容の確認を直す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     await act(async () => {
@@ -317,7 +329,7 @@ describe("入力内容の確認を直す", () => {
 
     // 会場名から始める（会場名は自由文なので必ず確認を挟む）。
     await mount(onChange, { focusId: "event-venue-name" });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     const box = within(screen.getByRole("dialog")).getByRole("textbox") as HTMLTextAreaElement;
@@ -335,7 +347,7 @@ describe("自動確定する欄", () => {
 
     // 開催日から始める（開催日は形が閉じているので自動確定）。
     await mount(onChange, { focusId: "schedule-date-schedule-initial" });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     // 確認は出さず、その場で値が入る。
@@ -392,7 +404,7 @@ describe("入力できる欄が尽きたとき", () => {
       initial: formWithRequiredFields({ building: "" }),
       focusId: "event-building",
     });
-    await press("音声入力を開始");
+    await startSingle();
     // 任意の欄を聞くと、そろっていても次を尋ね続ける。必須だけで終わる形にする。
     await act(async () => {
       fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
@@ -420,7 +432,7 @@ describe("入力できる欄が尽きたとき", () => {
       initial: formWithRequiredFields({ title: "" }),
       focusId: "event-title",
     });
-    await press("音声入力を開始");
+    await startSingle();
     await act(async () => {
       fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
     });
