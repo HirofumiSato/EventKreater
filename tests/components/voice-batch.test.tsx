@@ -161,6 +161,18 @@ describe("まとめて話す", () => {
     expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
     expect(screen.queryByRole("button", { name: "スキップ" })).toBeNull();
     expect(screen.queryByText("答えたら次へ")).toBeNull();
+    // 何を話すかは、マスの名前だけでは分からない。主ボタンの上に 1 文だけ置く。
+    expect(screen.getByText("以下をまとめて話してください")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
+        { selector: ".voice-panel__example-text" },
+      ),
+    ).toBeTruthy();
+    // まとめてでは、任意の欄は既定で外す（話す量を増やさない）。
+    expect(
+      (screen.getByLabelText("任意の項目も聞く") as HTMLInputElement).checked,
+    ).toBe(false);
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -173,9 +185,18 @@ describe("まとめて話す", () => {
     await chooseMode("1つずつ");
 
     expect(screen.getByText("イベント名は？")).toBeTruthy();
-    // まとめての話す順は消え、1 欄ずつの例だけが残る。
+    // まとめての話す順と 1 文の例は消え、1 欄ずつの例だけが残る。
     expect(screen.queryByRole("list", { name: "話す順" })).toBeNull();
     expect(screen.getByText("例: 忘年会")).toBeTruthy();
+    // 1 つずつなら、空欄でよい欄まで聞く（まとめてと既定が違う）。
+    expect(
+      (screen.getByLabelText("任意の項目も聞く") as HTMLInputElement).checked,
+    ).toBe(true);
+    // まとめてに戻すと、また外れる。
+    await chooseMode("まとめて");
+    expect(
+      (screen.getByLabelText("任意の項目も聞く") as HTMLInputElement).checked,
+    ).toBe(false);
   });
 
   it("話している間に、読めたマスの数が増える", async () => {
@@ -233,8 +254,11 @@ describe("まとめて話す", () => {
     expect(within(dialog).getByLabelText("開催日")).toBeTruthy();
     expect(within(dialog).getByLabelText("会場名")).toBeTruthy();
     expect(within(dialog).getByLabelText("金額")).toBeTruthy();
-    // どの欄にも当たらなかった節も 1 行で残す。
-    expect(dialog.textContent).toContain("読み取れなかった部分:");
+    // 当たらなかったことは、話した言葉ではなく欄の名前で 1 行にまとめる
+    // （同じ失敗を言葉と名前の 2 行で言わない）。
+    expect(dialog.textContent).toContain("入らなかった欄: 町域、番地");
+    expect(dialog.textContent).not.toContain("読み取れなかった部分");
+    expect(dialog.textContent).not.toContain("神宮前");
 
     // マイクも外部も使わない。POST は 1 度も出ない。
     expect(fetchMock.mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);
@@ -252,6 +276,10 @@ describe("まとめて話す", () => {
       addressLine: "1-2-3",
     });
     await press("音声入力を開始");
+    // まとめてでは任意の欄を既定で外す。定員まで聞く形にしてから録る。
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
+    });
     const dialog = await openBatchDialog();
 
     // 会場名だけ取り込まない。

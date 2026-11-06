@@ -104,6 +104,8 @@ export interface BatchCell {
   label: string;
   /** 30px の 1 行に出す質問（「イベント名は？」）。 */
   prompt: string;
+  /** 話し方の見本（「忘年会」）。マスには出さず、話す 1 文の例にだけ使う。 */
+  example: string;
 }
 
 /**
@@ -131,19 +133,30 @@ export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
     }
 
     const slotIds: VoiceSlotId[] = [target.id];
+    let example = target.field.example;
     let range = false;
     if (target.key === "scheduleStart") {
       const end = byId.get(`scheduleEnd:${target.row}` as VoiceSlotId);
       if (end) {
         range = true;
         slotIds.push(end.id);
+        example = `${example}から${end.field.example}`;
       }
     }
 
-    const text = cellText(target, range);
-    cells.push({ id: target.id, slotIds, ...text });
+    cells.push({ id: target.id, slotIds, example, ...cellText(target, range) });
   }
   return cells;
+}
+
+/**
+ * まとめて話す 1 文の例（「忘年会、12月5日、18時から20時、…」）。
+ *
+ * マスの名前だけでは、値として何を言えばよいか分からない。話す順に値を並べた
+ * 1 文を 1 か所だけ置き、押した直後に読む先を 1 つに絞る。
+ */
+export function batchExampleSentence(cells: readonly BatchCell[]): string {
+  return cells.map((cell) => cell.example).join("、");
 }
 
 /**

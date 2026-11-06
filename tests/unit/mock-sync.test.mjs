@@ -698,10 +698,11 @@ describe("モック専用の操作の script", () => {
 });
 
 describe("音声入力の写し", () => {
-  // 製品の音声入力（覆い・既定でオンの任意項目・郵便番号の住所補完）を写した印。
+  // 製品の音声入力（覆い・話し方で既定が変わる任意の項目・郵便番号の住所補完）を写した印。
   const complete =
     'const scrim = "voice-scrim";' +
-    '<input type="checkbox" data-voice-optional checked>' +
+    '<input type="checkbox" data-voice-optional>' +
+    "optional.checked = !batch;" +
     "event-postal-code event-prefecture event-city event-town";
 
   it("覆い・任意の項目・郵便番号の補完がそろっていれば通す", () => {
@@ -714,8 +715,16 @@ describe("音声入力の写し", () => {
     expect(problems[0]).toContain("voice-scrim");
   });
 
-  it("「任意の項目も聞く」が既定でチェックされていなければ止める", () => {
-    const problems = missingVoiceSimulation(complete.replace(" checked>", ">"));
+  it("「任意の項目も聞く」が無ければ止める", () => {
+    const problems = missingVoiceSimulation(complete.replace("data-voice-optional", "optional"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("任意の項目も聞く");
+  });
+
+  it("まとめてのときも「任意の項目も聞く」が入ったままなら止める", () => {
+    const problems = missingVoiceSimulation(
+      complete.replace("optional.checked = !batch;", ""),
+    );
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("任意の項目も聞く");
   });

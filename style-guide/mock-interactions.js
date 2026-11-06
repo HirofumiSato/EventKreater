@@ -352,9 +352,6 @@
     );
   }
 
-  /** まとめて話したときに、どの欄にも当たらなかった節として見せる固定の 1 行。 */
-  const BATCH_UNASSIGNED = ["よろしくお願いします"];
-
   /**
    * 郵便番号から入る住所。製品は API を呼ぶので、モックは見本の 1 件だけを持つ。
    * 郵便番号の見本（1540005）と同じ住所にして、音声で入れたときに 3 欄が埋まるようにする。
@@ -549,7 +546,7 @@
       '<p class="voice-panel__prompt" aria-live="polite"></p>' +
       '<p class="voice-panel__hint"></p>' +
       "</div>" +
-      // まとめて話すときは、話す順と見本を 1 枚に畳んだマスを質問の下に置く（製品と同じ）。
+      // まとめて話すときは、話す順のマスを質問の下に置く（製品と同じ）。
       '<ol class="voice-cells" aria-label="話す順" hidden></ol>' +
       // 聞き取りの途中経過は質問の下に 1 行だけ足す（製品と同じ位置）。
       '<p class="voice-panel__interim" aria-live="polite" hidden></p>' +
@@ -560,6 +557,11 @@
       // 入力完了のときだけ、次にすることを 1 行出す（製品の `.voice-panel__finish`）。
       '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
+      // まとめて話すときの 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
+      '<div class="voice-panel__example" hidden>' +
+      '<p class="voice-panel__example-lead">以下をまとめて話してください</p>' +
+      '<p class="voice-panel__example-text"><span class="voice-panel__example-key">例</span> <span data-voice-example></span></p>' +
+      "</div>" +
       '<div class="voice-panel__actions">' +
       // 主ボタンを縦積みの入れ物で包み、録音中だけその下に止め方を出す（製品と同じ）。
       '<div class="voice-panel__talk-wrap">' +
@@ -592,7 +594,7 @@
       '<label class="voice-mode"><input type="radio" name="mock-voice-mode" value="single" data-voice-single> 1つずつ</label>' +
       "</div>" +
       '<div class="voice-panel__toggles">' +
-      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional checked> 任意の項目も聞く</label>' +
+      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional> 任意の項目も聞く</label>' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 答えたら次へ</label>' +
       "</div></div>";
 
@@ -711,26 +713,49 @@
   }
 
   /**
-   * まとめて話すときのマス。製品の `batchPlan` と同じ名前と質問にする。
-   * 製品は `fields.ts` の `label` / `prompt` を使い、一部だけ短い名前に差し替える。
-   * モックは欄の id しか持たないので、同じ差し替えをここに写す。
+   * まとめて話すときのマスと例。製品の `batchPlan` と同じ名前・質問・見本にする。
+   * 製品は `fields.ts` の `label` / `prompt` / `example` を使い、一部だけ短い名前に差し替える。
+   * モックは欄の id しか持たないので、同じ差し替えと見本をここに写す。
    */
   const BATCH_CELL_TEXT = {
-    "event-title": { label: "イベント名", prompt: "イベント名は？" },
-    "event-organizer-name": { label: "主催者名", prompt: "主催者名は？" },
-    "event-venue-name": { label: "場所", prompt: "場所は？" },
-    "event-postal-code": { label: "郵便番号", prompt: "郵便番号は？" },
-    "plan-name": { label: "費用プラン名", prompt: "費用プラン名は？" },
-    "plan-amount": { label: "費用（～円）", prompt: "費用は？" },
+    "event-title": { label: "イベント名", prompt: "イベント名は？", example: "忘年会" },
+    "event-organizer-name": {
+      label: "主催者名",
+      prompt: "公開ページに出す主催者名は？",
+      example: "山田 太郎",
+    },
+    "schedule-date": { label: "開催日", prompt: "開催日は？", example: "12月5日" },
+    "schedule-start": { label: "開始時刻", prompt: "何時に始まる？", example: "18時" },
+    "schedule-end": { label: "終了時刻", prompt: "何時に終わる？", example: "20時" },
+    "plan-name": { label: "費用プラン名", prompt: "費用プラン名は？", example: "一般" },
+    "plan-amount": { label: "費用（～円）", prompt: "費用は？", example: "3000円" },
+    "plan-note": { label: "費用の補足", prompt: "補足は？", example: "1ドリンク付" },
+    "event-venue-name": { label: "場所", prompt: "場所は？", example: "渋谷ホール" },
+    "event-postal-code": { label: "郵便番号", prompt: "郵便番号は？", example: "1500001" },
+    "event-prefecture": { label: "都道府県", prompt: "都道府県は？", example: "東京都" },
+    "event-city": { label: "市区町村", prompt: "市区町村は？", example: "渋谷区" },
+    "event-town": { label: "町域", prompt: "町名は？", example: "神宮前" },
+    "event-address-line": { label: "番地", prompt: "番地は？", example: "1-2-3" },
+    "event-building": { label: "建物名", prompt: "建物名や階数は？", example: "○○ビル3階" },
+    "event-rain-policy": { label: "雨天時の方針", prompt: "雨ならどうする？", example: "雨天決行" },
+    "event-capacity": { label: "定員", prompt: "定員は？", example: "30人" },
+    "rsvp-deadline": {
+      label: "申し込み期限",
+      prompt: "締め切りは？",
+      example: "12月1日23時59分",
+    },
   };
 
   function batchCellText(id, entry) {
     for (const key of Object.keys(BATCH_CELL_TEXT)) {
-      if (id === key || id.startsWith(key + "-")) return BATCH_CELL_TEXT[key];
+      if (id === key || id.startsWith(key + "-")) {
+        return BATCH_CELL_TEXT[key];
+      }
     }
     return {
       label: entry.label || "この項目",
       prompt: entry.prompt || (entry.label || "この項目") + "は？",
+      example: entry.value || "",
     };
   }
 
@@ -756,18 +781,17 @@
         continue;
       }
       const text = batchCellText(id, target);
-      if (id.startsWith("schedule-start-")) {
-        const end = targets.find((item) => item.field.id === "schedule-end-" + row);
-        if (end) {
-          cells.push({
-            id: id,
-            label: "開始時間と終了時間",
-            prompt: "開始時間と終了時間は？",
-          });
-          continue;
-        }
+      if (id.startsWith("schedule-start-") && targets.some((item) => item.field.id === "schedule-end-" + row)) {
+        const end = batchCellText("schedule-end", target);
+        cells.push({
+          id: id,
+          label: "開始時間と終了時間",
+          prompt: "開始時間と終了時間は？",
+          example: text.example + "から" + end.example,
+        });
+        continue;
       }
-      cells.push({ id: id, label: text.label, prompt: text.prompt });
+      cells.push({ id: id, label: text.label, prompt: text.prompt, example: text.example });
     }
     return cells;
   }
@@ -778,6 +802,8 @@
     const prompt = voice.panel.querySelector(".voice-panel__prompt");
     const hint = voice.panel.querySelector(".voice-panel__hint");
     const cells = voice.panel.querySelector(".voice-cells");
+    const example = voice.panel.querySelector(".voice-panel__example");
+    const exampleText = voice.panel.querySelector("[data-voice-example]");
     if (voice.batchMode) {
       const targets = batchGuideEntries();
       const plan = batchCells(targets);
@@ -787,6 +813,14 @@
       voice.batchPrompts = plan.map((cell) => cell.prompt);
       hint.textContent = "";
       hint.hidden = true;
+      // 話す 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
+      if (example && exampleText) {
+        exampleText.textContent = plan
+          .map((cell) => cell.example)
+          .filter(Boolean)
+          .join("、");
+        example.hidden = plan.length === 0;
+      }
       if (cells) {
         cells.innerHTML = "";
         for (const cell of plan) {
@@ -808,6 +842,7 @@
       hint.textContent = "例: " + (entry.hint || entry.value);
       hint.hidden = false;
       if (cells) cells.hidden = true;
+      if (example) example.hidden = true;
     }
   }
 
@@ -851,6 +886,10 @@
   function setBatchMode(on) {
     voice.batchMode = on;
     if (!voice.panel) return;
+    // 任意の欄は、まとめてでは既定で外し、1 つずつなら聞く（製品と同じ）。
+    // 話し方を変えたら、その話し方の既定に戻す（開いているあいだの付け外しは残る）。
+    const optional = voice.panel.querySelector("[data-voice-optional]");
+    if (optional) optional.checked = !on;
     const entry = voice.fields[voice.cursor];
     if (entry) renderPrompt(entry);
     syncBatchUi();
@@ -1021,7 +1060,7 @@
 
   /**
    * まとめて話した内容の確認。モックは録音を持たないので、欄の入力例を固定の一覧として並べる。
-   * チェックを外した行は反映せず、読み取れなかった節は 1 行で残す。
+   * チェックを外した行は反映しない。一覧に載らなかった空欄は、欄の名前で先頭に 1 行だけ出す。
    */
   function openBatchDialog() {
     const entries = batchEntries();
@@ -1090,12 +1129,6 @@
       list.append(line);
       return { entry: row.entry, check, input };
     });
-
-    const unassigned = document.createElement("p");
-    unassigned.className = "voice-batch__unassigned";
-    unassigned.textContent =
-      "読み取れなかった部分: " + BATCH_UNASSIGNED.join("、") + "。再録音で言い直せます。";
-    list.append(unassigned);
 
     modal.querySelector("[data-voice-apply]").addEventListener("click", () => {
       const picked = controls.filter(
@@ -1362,6 +1395,7 @@
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
     voice.panel.querySelector(".voice-panel__mode").hidden = true;
     voice.panel.querySelector(".voice-cells").hidden = true;
+    voice.panel.querySelector(".voice-panel__example").hidden = true;
     // 完了では押しても動かない的を残さない（製品は操作の段ごと出さない）。
     voice.panel.querySelector(".voice-panel__actions").hidden = true;
     voice.panel.querySelector(".voice-panel__options").hidden = true;
@@ -1402,6 +1436,9 @@
     const built = buildVoicePanel();
     voice.panel = built.panel;
     voice.scrim = built.scrim;
+    // 任意の欄は、まとめてでは既定で外す（製品と同じ）。
+    const optional = voice.panel.querySelector("[data-voice-optional]");
+    if (optional) optional.checked = !voice.batchMode;
 
     voice.panel.querySelector(".voice-panel__close").addEventListener("click", closeVoice);
     voice.scrim.addEventListener("click", () => {
