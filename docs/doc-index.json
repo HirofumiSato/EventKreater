@@ -3337,7 +3337,7 @@
       "title": "新規イベント作成画面の初回ガイド",
       "summary": "イベント作成画面（ /organizer/events/new ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 8 枚のツアーです。 入力の全体像を先に渡し、どこから手を付けるかで迷わせないために置きます。",
       "preImplementation": false,
-      "lineCount": 304,
+      "lineCount": 328,
       "headings": [
         {
           "level": 1,
@@ -5850,7 +5850,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2166,
+      "lineCount": 2168,
       "headings": [
         {
           "level": 1,

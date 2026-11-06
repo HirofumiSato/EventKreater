@@ -41,16 +41,13 @@ export function isVoiceGuideDismissed(): boolean {
 }
 
 /**
- * 初回ガイドの記憶を書き換える。
- * `permanent` が true なら「次回から表示しない」を覚え、false なら記憶を消して次回も出す。
+ * 初回ガイドを閉じたことを覚える。次に開いたときの自動表示を止める。
+ * 手でマイクを押したときはこの記憶を見ないので、入口は塞がない。
  * 保存できない環境でも例外は投げない（毎回出すだけ）。
  */
-export function dismissVoiceGuide(permanent = true): void {
+export function dismissVoiceGuide(): void {
   try {
-    const storage = guideStorage();
-    if (!storage) return;
-    if (permanent) storage.setItem(VOICE_GUIDE_STORAGE_KEY, "1");
-    else storage.removeItem(VOICE_GUIDE_STORAGE_KEY);
+    guideStorage()?.setItem(VOICE_GUIDE_STORAGE_KEY, "1");
   } catch {
     // 保存できない環境では、次に開いたときにもう一度出るだけ。
   }

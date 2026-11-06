@@ -1494,23 +1494,6 @@ textarea.voice-confirm__input {
   white-space: nowrap;
 }
 
-/* チェックは破線で切り離し、本文と混ぜない。
-   1 行だけのチェックでも、押せる的は 40px を下回らせない（上下の余白ではなく
-   最小の高さで確保し、文字とチェックの中心をそろえる）。 */
-.voice-guide__check {
-  align-items: center;
-  min-height: var(--tap-target);
-  padding-top: 0.4375rem;
-  border-top: 1px dashed rgb(26 25 22 / 0.28);
-  font-size: 0.8rem;
-  color: var(--color-text-subtle);
-}
-
-/* 高さで上下の余白を取るので、チェックの浮かせは外す（中心を文字にそろえる）。 */
-.voice-guide__check input {
-  margin-top: 0;
-}
-
 /* --------------------------------------------------------------------------
    初回のスポットライトツアー（SCR-ORG-02）
    黒い面で対象だけをくり抜き、脇に説明の紙を置く。見た目は音声ガイドと同じ貼り紙。
@@ -1829,6 +1812,27 @@ body:has(.deco.is-motion-off) .guide-tap__ripple {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-block-start: 0.25rem;
+}
+
+/* 途中でやめる逃げ道。左下に静かに置き、進む操作（朱）とは色を分ける。
+   押せる的は 40px、文字は 15px を下回らせない（AGENTS.md「画面の組み方」）。
+   `margin-inline-end: auto` で、戻る・次へを右端へ寄せたまま左端に残す。 */
+.guide-bubble__skip {
+  margin-inline-end: auto;
+  min-height: var(--tap-target);
+  padding: 0 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-size: var(--font-action);
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.guide-bubble__skip:hover {
+  color: var(--color-text-strong);
 }
 
 /* `.btn--sm` は左右の余白だけを詰める指定なので、高さと文字はここで明示する。

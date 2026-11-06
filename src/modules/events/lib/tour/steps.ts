@@ -215,8 +215,21 @@ export const EVENT_GUIDE_ACTION_COPY = {
   back: "戻る",
   next: "次へ",
   start: "はじめる",
+  skip: "ガイドをスキップ",
   close: "ガイドを閉じる",
   dismiss: "次回から表示しない",
+} as const;
+
+/**
+ * 最終枚で「次回から表示しない」を選んで閉じたときの確認。
+ *
+ * チェックは既定で入っている。押した瞬間に黙って消すと、次に開いたときに
+ * ガイドが無い理由が分からないため、1 枚だけ確認を挟む。
+ */
+export const EVENT_GUIDE_DISMISS_NOTICE = {
+  title: "ガイドは以降、表示しません",
+  body: "次に開いたときは、この案内は出ません。",
+  confirm: "OK",
 } as const;
 
 /** その枚に出す文。ログイン済みの差し替えがあれば、そちらを優先する。 */

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { EVENT_STEPS, type EventStepKey } from "@/modules/events/lib/steps";
 import {
   EVENT_GUIDE_ACTION_COPY,
+  EVENT_GUIDE_DISMISS_NOTICE,
   EVENT_GUIDE_STEPS,
   eventGuideStep,
   guideCopy,
@@ -251,13 +252,19 @@ describe("開くステップの決め方", () => {
 });
 
 describe("操作の文言", () => {
-  it("戻る・次へ・はじめるを 1 か所に持つ", () => {
+  it("戻る・次へ・はじめる・スキップを 1 か所に持つ", () => {
     expect(EVENT_GUIDE_ACTION_COPY).toMatchObject({
       back: "戻る",
       next: "次へ",
       start: "はじめる",
+      skip: "ガイドをスキップ",
       close: "ガイドを閉じる",
     });
+  });
+
+  it("次回から表示しないで閉じたときの確認を 1 か所に持つ", () => {
+    expect(EVENT_GUIDE_DISMISS_NOTICE.title).toBe("ガイドは以降、表示しません");
+    expect(EVENT_GUIDE_DISMISS_NOTICE.body.length).toBeGreaterThan(0);
   });
 });
 

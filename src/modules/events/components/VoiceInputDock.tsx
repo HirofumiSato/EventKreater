@@ -254,9 +254,8 @@ export function VoiceInputDock({
   const [readCells, setReadCells] = useState<ReadonlySet<VoiceSlotId>>(new Set());
   // 群から出る瞬間の分岐。答えるまでカーソルは最後の欄に残す。
   const [branch, setBranch] = useState<VoiceBranchQuestion | null>(null);
-  // 初回ガイド。開いたかどうかと「次回から表示しない」のチェックを持つ。
+  // 初回ガイド。開いているかどうかだけを持つ。自動表示を止めたかは保存先が覚える。
   const [guideOpen, setGuideOpen] = useState(false);
-  const [guideChecked, setGuideChecked] = useState(false);
   const [guideClip, setGuideClip] = useState<string | null>(null);
   // モック（ローカル専用）なら録音を省き、欄の入力例をそのまま入れる。
   const [mock, setMock] = useState(false);
@@ -312,8 +311,8 @@ export function VoiceInputDock({
   const mountedRef = useRef(true);
   // 初回ガイドを 1 回だけ出すための印（再描画で開き直さない）。
   const guideShownRef = useRef(false);
-  // 閉じるときの判定は最新のチェックを読む。effect の依存を増やさないため控える。
-  const guideCheckedRef = useRef(false);
+  /** 直前の描画でツアーを待っていたか。待ちが明けた瞬間を、自動表示の合図に使う。 */
+  const guideDeferredRef = useRef(guideDeferred);
   // 男女別の費用を聞いたか。1 セッション 1 回だけ聞く（「共通のまま」のあと聞き直さない）。
   const genderAskedRef = useRef(false);
   // ダイアログが開いているあいだは、音声モードの Esc を止める。
@@ -358,10 +357,6 @@ export function VoiceInputDock({
   useEffect(() => {
     autoAdvanceRef.current = autoAdvance;
   }, [autoAdvance]);
-
-  useEffect(() => {
-    guideCheckedRef.current = guideChecked;
-  }, [guideChecked]);
 
   useEffect(() => {
     mockRef.current = mock;
@@ -1933,9 +1928,10 @@ export function VoiceInputDock({
     [advanceFrom, branch, moveTo, onChange, scopeNow],
   );
 
-  /** ガイドを閉じる。チェックが入っていれば次回から出さない。 */
+  /** ガイドを閉じる。閉じたことは覚え、次に開いたときの自動表示は止める。
+   *  マイクを手で押したときは記憶に関係なく開くので、入口は塞がない。 */
   const closeGuide = useCallback(() => {
-    if (guideCheckedRef.current) dismissVoiceGuide(true);
+    dismissVoiceGuide();
     setGuideOpen(false);
   }, []);
 
@@ -1972,9 +1968,14 @@ export function VoiceInputDock({
   // 初回ガイド（スポットライトツアー）が出ている間は待つ。閉じたら `guideDeferred` が
   // false になってこの effect が走り直し、続けて音声の案内を出す。
   useEffect(() => {
+    const wasDeferred = guideDeferredRef.current;
+    guideDeferredRef.current = guideDeferred;
     if (guideShownRef.current || disabled || active) return;
     if (guideDeferred) return;
-    if (isVoiceGuideDismissed()) return;
+    // ツアーが閉じた直後は、自動表示を止めた記憶より先に出す。
+    // ツアーの続きとして読む案内なので、ここだけ記憶を無視する。
+    // 手で FAB を押したときも同じ（下の onClick）。
+    if (!wasDeferred && isVoiceGuideDismissed()) return;
     guideShownRef.current = true;
     setGuideOpen(true);
   }, [active, disabled, guideDeferred]);
@@ -2101,18 +2102,6 @@ export function VoiceInputDock({
                 <span className="voice-guide__label">複数日程・費用男女別向け</span>
               </button>
             </div>
-            <label className="check voice-guide__check">
-              <input
-                type="checkbox"
-                checked={guideChecked}
-                onChange={(event) => {
-                  // チェックした直後に閉じても取りこぼさないよう、控えも同時に更新する。
-                  guideCheckedRef.current = event.target.checked;
-                  setGuideChecked(event.target.checked);
-                }}
-              />
-              次回から表示しない
-            </label>
           </div>
         </>
       )}
@@ -2125,14 +2114,15 @@ export function VoiceInputDock({
         aria-pressed={active}
         disabled={disabled}
         onClick={() => {
-          // ガイドの切り抜きから直接始められる。押したらガイドを閉じてから入る。
-          if (guideOpen) {
-            closeGuide();
-            startSession();
+          // 録音中なら、押したら終える（ボタンの印も × に変わっている）。
+          if (active) {
+            stopSession();
             return;
           }
-          if (active) stopSession();
-          else startSession();
+          // 押すたびに案内の吹き出しを出す。話し方はこの 2 択で決めてから録音を始める。
+          // 自動表示を止めた記憶は自動表示にだけ使い、手で押したときは必ず出す。
+          guideShownRef.current = true;
+          setGuideOpen(true);
         }}
       >
         {active ? (
