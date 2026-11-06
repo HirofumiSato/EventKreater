@@ -85,6 +85,13 @@ export interface EventGuideStep {
   signedInCopy?: EventGuideCopy;
   /** 最終枚か。「次回から表示しない」と「はじめる」はここだけに出す。 */
   final: boolean;
+  /**
+   * 黒い面を出すか。省略すると出す。
+   *
+   * 1 枚目（挨拶）だけ `false`。何の画面かを見せる枚で、画面を暗くすると全体像が
+   * 伝わらない。穴の枠・塞ぐ層・紙はそのまま出すので、触れないことと対象は伝わる。
+   */
+  scrim?: boolean;
 }
 
 /**
@@ -107,6 +114,8 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     targets: ["h1.page-title"],
     // 入口では開閉を動かさない（既定で開いている「基本」をそのまま見せる）。
     openStep: null,
+    // 挨拶の枚は画面の全体像を見せる。黒い面を出すと、何の画面かが分からなくなる。
+    scrim: false,
     copy: {
       title: "新規イベント作成へようこそ",
       body: "このページの使い方を、これから順に説明します。",
@@ -126,9 +135,8 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     // 見出しは押して開閉を試せる。手の合図を出し、穴の中の透明な層を外す。
     pressable: true,
     copy: {
-      title: "必須入力は3つ",
+      title: "必須入力は3つ。タップで開く",
       body: "名前と日時・費用・場所でプレビューに進めます。",
-      note: "見出しを押すと開いたり閉じたりします。",
     },
     final: false,
   },

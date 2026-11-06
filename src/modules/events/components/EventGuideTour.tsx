@@ -14,6 +14,7 @@ import {
   anchorForBubble,
   clampHole,
   fitHoleToBubble,
+  GUIDE_REVEAL_HOLD_MS,
   GUIDE_SETTLE_COUNT,
   GUIDE_SETTLE_MIN_DISTANCE,
   GUIDE_TAP_STAGGER_MS,
@@ -154,6 +155,30 @@ function isFixed(element: Element): boolean {
   return window.getComputedStyle(element).position === "fixed";
 }
 
+/**
+ * 紙が出るまでを数える輪。右上に置き、`GUIDE_REVEAL_HOLD_MS` かけて 1 周する。
+ *
+ * 止まった画面をただ待たせると「固まった」と見える。いつ紙が出るかが見えていれば、
+ * 待ちとして伝わる。読み上げには出さない（枠の 1 行が同じことを言っている）。
+ * 長さは CSS の変数で渡し、`holding` になった描画で 1 度だけ動かす。
+ */
+function GuideCount() {
+  return (
+    <span className="guide-count" aria-hidden="true">
+      <svg className="guide-count__ring" viewBox="0 0 36 36" focusable="false">
+        <circle className="guide-count__track" cx="18" cy="18" r="15" />
+        <circle
+          className="guide-count__bar"
+          cx="18"
+          cy="18"
+          r="15"
+          style={{ "--guide-count-ms": `${GUIDE_REVEAL_HOLD_MS}ms` } as CSSProperties}
+        />
+      </svg>
+    </span>
+  );
+}
+
 export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTourProps) {
   const [index, setIndex] = useState(0);
   /**
@@ -166,6 +191,11 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
    * 送っているあいだは紙を隠す（モーダルが出たまま画面が動かないように）。
    */
   const [settling, setSettling] = useState(false);
+  /**
+   * 送りが止まって、黒い面と紙を出す前の「見る時間」の最中か（`GUIDE_REVEAL_HOLD_MS`）。
+   * 画面は赤い枠だけのまま止めておき、この間だけ枠の 1 行を「ここを説明します」に変える。
+   */
+  const [holding, setHolding] = useState(false);
   /** くり抜く穴。基本は 1 つ。2 枚目だけ 3 つの見出しぶん 3 つになる。 */
   const [holes, setHoles] = useState<GuideHole[]>([]);
   const [placement, setPlacement] = useState<GuideBubblePlacement | null>(null);
@@ -218,6 +248,8 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
     /** 移動のアニメーション。effect を張り直すときに止める。 */
     let travelFrame = 0;
     let travelTimer = 0;
+    /** 止まってから紙を出すまでの待ち。枚が変わったら取り消す。 */
+    let revealTimer = 0;
     let travelDone = false;
     /** 送り始めたか。スクロールのたびに `run` が来るので、二重に始めないための印。 */
     let travelStarted = false;
@@ -377,7 +409,18 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
       }
       travelDone = true;
       run(performance.now());
-      setPhase("idle");
+      // 止まった位置を目で見る時間を置いてから、黒い面と紙を同時に出す。
+      // 止まった瞬間に暗くすると、着いた場所を見る間が無いまま紙に覆われる。
+      if (reducedMotion) {
+        setPhase("idle");
+        return;
+      }
+      setHolding(true);
+      revealTimer = window.setTimeout(() => {
+        revealTimer = 0;
+        setHolding(false);
+        setPhase("idle");
+      }, GUIDE_REVEAL_HOLD_MS);
     };
 
     /**
@@ -503,8 +546,10 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
       if (frame) window.cancelAnimationFrame(frame);
       if (travelFrame) window.cancelAnimationFrame(travelFrame);
       if (travelTimer) window.clearTimeout(travelTimer);
-      // 送り直しの途中で枚が変わることがある。隠したままにすると紙が出ない。
+      if (revealTimer) window.clearTimeout(revealTimer);
+      // 送り直し・見る時間の途中で枚が変わることがある。残したままだと紙が出ない。
       setSettling(false);
+      setHolding(false);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
       window.removeEventListener("scroll", schedule, true);
@@ -615,9 +660,14 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
 
   const content = (
     <>
-      {/* 黒い面。送っているあいだは出さない（赤い枠だけを残し、移動を見せる）。 */}
+      {/* 黒い面。送っているあいだは出さない（赤い枠だけを残し、移動を見せる）。
+          1 枚目（挨拶）は地を塗らない。塗らないだけで層は残し、画面の操作は止めたままにする。 */}
       {resting ? (
-        <div className="guide-scrim" aria-hidden="true" style={{ clipPath: clip }} />
+        <div
+          className={step.scrim === false ? "guide-scrim guide-scrim--clear" : "guide-scrim"}
+          aria-hidden="true"
+          style={{ clipPath: clip }}
+        />
       ) : null}
       {resting
         ? holes.map((hole, holeIndex) => (
@@ -660,10 +710,15 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
           ))
         : null}
       {/* 移動中は黒い面を外し、画面の内側に赤い枠だけを残す。枠は「触れない」の合図で、
-          画面を隠さないので、どこへ移ったかを目で追える。 */}
+          画面を隠さないので、どこへ移ったかを目で追える。止まったあとも少しのあいだ
+          枠だけを見せて（`holding`）、着いた場所を目で確かめてもらう。 */}
       {traveling ? (
         <div className="guide-travel" role="status" aria-live="polite">
-          <span className="guide-travel__label">次の説明へ移動しています</span>
+          <span className="guide-travel__label">
+            {holding ? "使い方ガイド表示中" : "次の説明へ移動しています"}
+          </span>
+          {/* 紙が出るまでの残りを数える輪。止まって見える時間を「待ち」に変える。 */}
+          {holding ? <GuideCount /> : null}
         </div>
       ) : null}
       {/* 吹き出しは黒い面の子にしない。子にすると親の clip-path で一緒に切り抜かれる。 */}

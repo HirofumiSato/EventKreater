@@ -147,7 +147,7 @@
 
 .. count-start
 
-132 ファイル、``it`` は 1883 件です。内訳は ``tests/unit/`` が 96 ファイル 1590 件、``tests/integration/`` が 25 ファイル 186 件です。結合の 186 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+132 ファイル、``it`` は 1893 件です。内訳は ``tests/unit/`` が 96 ファイル 1600 件、``tests/integration/`` が 25 ファイル 186 件です。結合の 186 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -432,11 +432,11 @@
      - 初回ガイドの記憶。閉じていなければ次も出す、「次回から表示しない」を選んだときだけ残す、チェックを入れずに閉じたら残さない、``localStorage`` が無い・読むだけで例外になる環境でも落ちずに毎回出す
      - SCR-ORG-02
    * - ``tests/unit/event-guide-placement.test.ts``
-     - 46
+     - 48
      - 初回ガイドの穴と吹き出しの配置。見出しの外接矩形、穴を画面の 6 割と 120px の下限で収めること、入りきらない穴の上辺を対象へそろえること、吹き出しを上下どちらへ置くか、左右を穴の中心へ寄せること、画面下に固定する帯の余白、吹き出しが収まらないときに穴を縮めること、3 つの見出しを別々の穴でくり抜くこと、対象を画面へ寄せる位置（`planScroll`）
      - SCR-ORG-02
    * - ``tests/unit/event-guide-steps.test.ts``
-     - 30
+     - 32
      - 初回ガイドの 8 枚。並び、指す対象のセレクタ、挨拶の枚が開閉を動かさないこと、2 枚目だけ全ステップを畳んで 3 つの見出しを別々に囲むこと、費用の枚の箇条書き（本文と併記しないこと）、開くステップの移り変わり、ゲストと会員の最終枚の差し替え、知らないキーの扱い
      - SCR-ORG-02
    * - ``tests/unit/event-guide-memory.test.ts``
@@ -444,7 +444,7 @@
      - 初回ガイドの記憶。閉じていなければ次も出す、「次回から表示しない」を選んだときだけ残す、``localStorage`` が無い・読むだけで例外になる環境でも落ちずに毎回出す
      - SCR-ORG-02
    * - ``tests/unit/event-guide-styles.test.mjs``
-     - 26
+     - 32
      - 初回ガイドの重なりと押しやすさ。黒面 48・吹き出し 49 の順、画面下の帯とダイアログのあいだにあること、押せる的の 40px、文字の 15px、紙の朱の輪を常に出すこと
      - SCR-ORG-02
    * - ``tests/unit/voice-prompt.test.ts``
@@ -690,7 +690,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1590、``tests/integration/`` が 186 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1590 件を実行して 186 件を skip します。
+件数の内訳は ``tests/unit/`` が 1600、``tests/integration/`` が 186 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1600 件を実行して 186 件を skip します。
 
 .. breakdown-end
 

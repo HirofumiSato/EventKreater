@@ -1524,6 +1524,12 @@ textarea.voice-confirm__input {
   background: rgb(26 25 22 / 0.68);
 }
 
+/* 1 枚目（挨拶）だけ地を塗らない。何の画面かを先に見せるため。
+   地を透明にするだけで、層は残す（背後を押せないのは他の枚と同じ）。 */
+.guide-scrim--clear {
+  background: transparent;
+}
+
 /* 穴の縁。くり抜いただけだと、どこまでが対象か分からないので山吹で 1 本だけ引く。
    枠は押せない。穴の内側は `.guide-blocker` が受け止める。 */
 .guide-ring {
@@ -1553,7 +1559,8 @@ textarea.voice-confirm__input {
   width: 2rem;
   height: 2rem;
   pointer-events: none;
-  color: var(--color-primary);
+  /* 押してよい合図なので、朱（進む操作）とは別の緑で塗る。 */
+  color: var(--color-success-line);
 }
 
 .guide-tap__hand {
@@ -1769,6 +1776,48 @@ body:has(.deco.is-motion-off) .guide-tap__ripple {
   line-height: 1.4;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* 紙が出るまでを数える輪。右上に置く。止まった画面をただ待たせると「固まった」と
+   見えるので、残りを 1 周で見せる。長さは `.guide-count__bar` の変数で受ける。 */
+.guide-count {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 1.75rem;
+  height: 1.75rem;
+  pointer-events: none;
+}
+
+.guide-count__ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 12 時の位置から始める。 */
+  transform: rotate(-90deg);
+}
+
+.guide-count__track {
+  fill: none;
+  stroke: rgb(26 25 22 / 0.16);
+  stroke-width: 3;
+}
+
+/* 1 周の長さ（半径 15 の円）。`stroke-dashoffset` を 1 周ぶん減らして描く。 */
+.guide-count__bar {
+  fill: none;
+  stroke: var(--color-success-line);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 94.25;
+  stroke-dashoffset: 94.25;
+  animation: guide-count var(--guide-count-ms, 3000ms) linear forwards;
+}
+
+@keyframes guide-count {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .guide-bubble__check input {

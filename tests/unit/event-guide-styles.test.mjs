@@ -24,6 +24,13 @@ function readStyles(relative) {
 
 const ORGANIZER = readStyles("src/styles/screens/organizer.css");
 const COMPONENTS = readStyles("src/styles/components.css");
+/** 部品のソース。コメントを落として、1 行の指定が残っているかだけを見る。 */
+const TOUR = readFileSync(
+  path.join(ROOT, "src/modules/events/components/EventGuideTour.tsx"),
+  "utf8",
+)
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/^\s*\/\/.*$/gm, "");
 
 /** 指定したセレクタの宣言をすべてつなげて返す（同じセレクタが複数あれば全部）。 */
 function declarations(source, selector) {
@@ -62,6 +69,10 @@ describe("ツアーの重なり", () => {
 
     expect(zIndex(ORGANIZER, ".guide-ring")).toBe(scrim);
     expect(zIndex(ORGANIZER, ".guide-blocker")).toBe(scrim);
+  });
+
+  it("1 枚目のために、地を塗らない黒い面を持つ（層は残して操作は止める）", () => {
+    expect(declarations(ORGANIZER, ".guide-scrim--clear")).toContain("background: transparent");
   });
 });
 
@@ -183,6 +194,10 @@ describe("押せる合図（手）", () => {
     expect(zIndex(ORGANIZER, ".guide-tap")).toBe(zIndex(ORGANIZER, ".guide-bubble"));
   });
 
+  it("押してよい合図なので、朱とは別の緑で塗る", () => {
+    expect(declarations(ORGANIZER, ".guide-tap")).toContain("color: var(--color-success-line)");
+  });
+
   it("指先を軸に押す（押している場所が動いて見えない）", () => {
     const body = declarations(ORGANIZER, ".guide-tap__hand");
 
@@ -208,11 +223,6 @@ describe("押せる合図（手）", () => {
 // `html { scroll-behavior: smooth }` に従ってブラウザのスムーススクロールに置き換わり、
 // 送り終わりに溜まった分が一気に詰まって「紙の直前に急に速く」なる。
 describe("スクロールの頼み方", () => {
-  const TOUR = readFileSync(
-    path.join(ROOT, "src/modules/events/components/EventGuideTour.tsx"),
-    "utf8",
-  ).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-
   it("CSS のスムーススクロールに従わせない（`instant` でその場で合わせる）", () => {
     expect(TOUR).toContain('behavior: "instant"');
   });
@@ -227,5 +237,35 @@ describe("スクロールの頼み方", () => {
     const calls = TOUR.match(/window\.scrollTo\(/g) ?? [];
 
     expect(calls).toHaveLength(1);
+  });
+});
+
+// 止まった瞬間に黒くすると、着いた場所を見る間が無いまま紙に覆われる。
+// 赤い枠だけの画面をしばらく置いてから、黒面と紙を同時に出す。
+describe("止まってから紙を出すまで", () => {
+  it("送り終わりに、紙を出さずに待つ", () => {
+    expect(TOUR).toContain("GUIDE_REVEAL_HOLD_MS");
+    expect(TOUR).toContain("setHolding(true)");
+  });
+
+  it("待っているあいだ、枠の 1 行を「移動しています」のままにしない", () => {
+    expect(TOUR).toContain("使い方ガイド表示中");
+  });
+
+  it("待ちの残りを、右上の輪で数える", () => {
+    expect(TOUR).toContain("GuideCount");
+    expect(ORGANIZER).toContain("@keyframes guide-count");
+    expect(declarations(ORGANIZER, ".guide-count")).toContain("position: absolute");
+    // 長さは部品が渡す（2 秒と 3 秒を取り違えない）。
+    expect(declarations(ORGANIZER, ".guide-count__bar")).toContain(
+      "animation: guide-count var(--guide-count-ms",
+    );
+  });
+});
+
+// 1 枚目（挨拶）だけ地を塗らない。何の画面かを先に見せるため。
+describe("1 枚目の黒い面", () => {
+  it("地を塗らない面に差し替える（層は残す）", () => {
+    expect(TOUR).toContain("guide-scrim--clear");
   });
 });
