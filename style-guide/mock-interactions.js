@@ -544,9 +544,7 @@
       '<p class="voice-panel__prompt" aria-live="polite"></p>' +
       '<p class="voice-panel__hint"></p>' +
       "</div>" +
-      // まとめて話すときは、話す順のマスを質問の下に置く（製品と同じ）。
-      '<ol class="voice-cells" aria-label="話す順" hidden></ol>' +
-      // 聞き取りの途中経過は質問の下に 1 行だけ足す（製品と同じ位置）。
+      // まとめて話すときは、ここに質問を進めない。待ちの理由だけを出す（製品と同じ）。
       '<p class="voice-panel__interim" aria-live="polite" hidden></p>' +
       '<button type="button" class="voice-panel__close" aria-label="音声入力を終了" title="音声入力を終了">' +
       icon("close") +
@@ -555,10 +553,16 @@
       // 入力完了のときだけ、次にすることを 1 行出す（製品の `.voice-panel__finish`）。
       '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
-      // まとめて話すときの 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
-      // 話し方の指示は 30px の行（`.voice-panel__prompt`）に固定で出す。
-      '<div class="voice-panel__example" hidden>' +
-      '<p class="voice-panel__example-text"><span class="voice-panel__example-key">例</span> <span data-voice-example></span></p>' +
+      // まとめて話すときの 1 文。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
+      // 1 つの欄の話ではないので、この 1 文をいちばん大きい字にして読む先を絞る。
+      '<div class="voice-panel__say" hidden>' +
+      '<p class="voice-panel__lead">この順で、自分の内容を話す</p>' +
+      '<p class="voice-panel__say-text" data-voice-example></p>' +
+      "</div>" +
+      // 話す順のマス。話した順に入り、読めた欄から印が変わる（製品と同じ）。
+      '<div class="voice-panel__plan" hidden>' +
+      '<p class="voice-panel__lead">話した順に入り、読めた欄に印が付きます</p>' +
+      '<ol class="voice-cells" aria-label="話す順"></ol>' +
       "</div>" +
       '<div class="voice-panel__actions">' +
       // 主ボタンを縦積みの入れ物で包み、録音中だけその下に止め方を出す（製品と同じ）。
@@ -710,9 +714,6 @@
       "px)";
   }
 
-  /** まとめて話すときの 30px の行。製品の `BATCH_PROMPT` と同じ固定の指示。 */
-  const BATCH_PROMPT = "以下をまとめて話してください";
-
   /**
    * まとめて話すときのマスと例。製品の `batchPlan` と同じ名前・質問・見本にする。
    * 製品は `fields.ts` の `label` / `prompt` / `example` を使い、一部だけ短い名前に差し替える。
@@ -797,29 +798,32 @@
     return cells;
   }
 
-  /** パネルの質問と例を差し替える。まとめて話すときは、巡回の欄名ではなく話す順を出す。 */
+  /** パネルの質問と例を差し替える。まとめて話すときは、質問ではなく話す 1 文とマスを出す。 */
   function renderPrompt(entry) {
     if (!voice.panel) return;
     const prompt = voice.panel.querySelector(".voice-panel__prompt");
     const hint = voice.panel.querySelector(".voice-panel__hint");
+    const say = voice.panel.querySelector(".voice-panel__say");
+    const planBox = voice.panel.querySelector(".voice-panel__plan");
     const cells = voice.panel.querySelector(".voice-cells");
-    const example = voice.panel.querySelector(".voice-panel__example");
     const exampleText = voice.panel.querySelector("[data-voice-example]");
     if (voice.batchMode) {
       const targets = batchGuideEntries();
       const plan = batchCells(targets);
-      // 30px の行は固定の指示。1 つの欄の話ではないので質問は進めない（製品と同じ）。
-      prompt.textContent = plan.length > 0 ? BATCH_PROMPT : "";
+      // 1 つの欄の話ではないので、質問は進めない（製品と同じ）。待ちの理由だけを出す。
+      prompt.textContent = "";
+      prompt.hidden = true;
       hint.textContent = "";
       hint.hidden = true;
-      // 話す 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
-      if (example && exampleText) {
+      // 話す中身の 1 文。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
+      if (say && exampleText) {
         exampleText.textContent = plan
           .map((cell) => cell.example)
           .filter(Boolean)
           .join("、");
-        example.hidden = plan.length === 0;
+        say.hidden = plan.length === 0;
       }
+      if (planBox) planBox.hidden = plan.length === 0;
       if (cells) {
         cells.innerHTML = "";
         for (const cell of plan) {
@@ -834,14 +838,14 @@
           item.append(mark, label);
           cells.append(item);
         }
-        cells.hidden = false;
       }
     } else {
+      prompt.hidden = false;
       prompt.textContent = entry.prompt || entry.label + "は？";
       hint.textContent = "例: " + (entry.hint || entry.value);
       hint.hidden = false;
-      if (cells) cells.hidden = true;
-      if (example) example.hidden = true;
+      if (say) say.hidden = true;
+      if (planBox) planBox.hidden = true;
     }
   }
 
@@ -1272,7 +1276,7 @@
   /**
    * まとめて話すときに、読めたマスを 1 つずつ塗る。
    * 製品は聞き取れた節ごとに `cell` を受け取る。モックは同じ間合いを疑似の待ちで作る。
-   * 30px の行は固定の指示なので、塗っても入れ替えない（製品と同じ）。
+   * 話す中身の 1 文は固定なので、塗っても入れ替えない（製品と同じ）。
    */
   function markMockCellsRead() {
     if (!voice.panel) return;
@@ -1372,7 +1376,9 @@
       item.removeAttribute("data-voice-target");
     }
     if (!voice.panel) return;
-    voice.panel.querySelector(".voice-panel__prompt").textContent = "必須項目の入力完了！";
+    const prompt = voice.panel.querySelector(".voice-panel__prompt");
+    prompt.hidden = false;
+    prompt.textContent = "必須項目の入力完了！";
     // 完了では例を出さない（製品は完了のときに hint を描かない）。代わりに
     // 次にすることを 1 行だけ添える。パネルは 5 秒で閉じるので、読み切れる長さにする。
     const hint = voice.panel.querySelector(".voice-panel__hint");
@@ -1389,8 +1395,8 @@
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
     voice.panel.querySelector(".voice-panel__mode").hidden = true;
-    voice.panel.querySelector(".voice-cells").hidden = true;
-    voice.panel.querySelector(".voice-panel__example").hidden = true;
+    voice.panel.querySelector(".voice-cells").closest(".voice-panel__plan").hidden = true;
+    voice.panel.querySelector(".voice-panel__say").hidden = true;
     // 完了では押しても動かない的を残さない（製品は操作の段ごと出さない）。
     voice.panel.querySelector(".voice-panel__actions").hidden = true;
     voice.panel.querySelector(".voice-panel__options").hidden = true;
@@ -1493,7 +1499,8 @@
     setFabActive(true);
     const start = voice.fields.findIndex((entry) => !entry.field.value);
     pointAt(start < 0 ? 0 : start);
-    later(startListening, 400);
+    // まとめては読む量がいちばん多い。開いた瞬間には録らず、押してから録る（製品と同じ）。
+    if (!voice.batchMode) later(startListening, 400);
   }
 
   function closeVoice() {

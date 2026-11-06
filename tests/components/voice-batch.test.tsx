@@ -99,6 +99,8 @@ async function startVoice(mode: "まとめて話す" | "1つずつ") {
 
 /** 疑似録音と文字化の待ちを進め、確認のダイアログが出るところまで進める。 */
 async function openBatchDialog() {
+  // まとめては、開いた瞬間には録らない（読む時間を空ける）。押してから進める。
+  await press("まとめて話す");
   await act(async () => {
     vi.advanceTimersByTime(PAST_RECORDING_MS);
   });
@@ -149,10 +151,11 @@ describe("まとめて話す", () => {
     expect(
       (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).checked,
     ).toBe(false);
-    // 30px の行は、まとめて全体への固定の指示。質問は進めない。
+    // まとめては 1 つの欄の話ではないので、質問は進めない。何を話すかは、
+    // 話す順に値を並べた 1 文をいちばん大きい字で置いて見せる。
     expect(
-      screen.getByText("以下をまとめて話してください", {
-        selector: ".voice-panel__prompt",
+      screen.getByText("この順で、自分の内容を話す", {
+        selector: ".voice-panel__lead",
       }),
     ).toBeTruthy();
     // 話す順は欄の名前で並べる。郵便番号まで出す。
@@ -174,17 +177,21 @@ describe("まとめて話す", () => {
     expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
     expect(screen.queryByRole("button", { name: "スキップ" })).toBeNull();
     expect(screen.queryByText("答えたら次へ")).toBeNull();
-    // 何を話すかは、マスの名前だけでは分からない。主ボタンの上に値の形（例）を置く。
+    // 何を話すかは、マスの名前だけでは分からない。値の形を 1 文で置く。
     expect(
       screen.getByText(
         "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
-        { selector: ".voice-panel__example-text" },
+        { selector: ".voice-panel__say-text" },
       ),
     ).toBeTruthy();
     // まとめてでは、任意の欄は既定で外す（話す量を増やさない）。
     expect(
       (screen.getByLabelText("任意の項目も聞く") as HTMLInputElement).checked,
     ).toBe(false);
+    // 読む量がいちばん多いので、開いた瞬間には録らない。押してから始める。
+    expect(screen.queryByRole("button", { name: "録音を停止" })).toBeNull();
+    await press("まとめて話す");
+    expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -220,15 +227,17 @@ describe("まとめて話す", () => {
       within(screen.getByRole("list", { name: "話す順" })).getAllByRole("listitem");
     const readCount = () =>
       cells().filter((cell) => cell.className.includes("is-read")).length;
-    const prompt = () => document.querySelector(".voice-panel__prompt")?.textContent;
+    const say = () => document.querySelector(".voice-panel__say-text")?.textContent;
 
-    // 録音が終わると文字化が始まる。まだ 1 枚も塗られていない。
+    // 押してから録り始める。まだ 1 枚も塗られていない。
+    expect(readCount()).toBe(0);
+    await press("まとめて話す");
     await act(async () => {
       vi.advanceTimersByTime(PAST_RECORDING_MS);
     });
     expect(readCount()).toBe(0);
-    // 30px の行は、まとめて全体への固定の指示。録音が始まっても変わらない。
-    expect(prompt()).toBe("以下をまとめて話してください");
+    // 何を話すかの 1 文は、録音中も文字化の途中も入れ替えない。
+    expect(say()).toBe("忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001");
 
     // 話すのをやめる（ダイアログが出る）前に、塗られるマスが増える。
     // 疑似の文字化は 350ms を 7 枚で割るので、1 枚目は 44ms、2 枚目は 88ms に来る。
@@ -246,8 +255,8 @@ describe("まとめて話す", () => {
     // 塗るだけで、値はまだ入れない。
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText(/いまの値:/)).toBeNull();
-    // 塗っても 30px の行は入れ替えない（目で追う 1 行を動かさない）。
-    expect(prompt()).toBe("以下をまとめて話してください");
+    // 塗っても 1 文は入れ替えない（目で追う 1 行を動かさない）。
+    expect(say()).toBe("忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001");
   });
 
   it("モックでは外部へ送らず、欄ごとの行を並べる", async () => {
@@ -365,7 +374,7 @@ describe("まとめて話す", () => {
 
     await mount(vi.fn());
 
-    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
+    expect(screen.getByText("話し方を選ぶと、入力が始まります。")).toBeTruthy();
     // どの催しに向く話しかは、ボタンの右端の札で示す。
     const batch = screen.getByRole("button", { name: /まとめて話す/ });
     const single = screen.getByRole("button", { name: /1つずつ/ });
@@ -391,7 +400,7 @@ describe("まとめて話す", () => {
     stubFetch();
 
     await mount(vi.fn());
-    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
+    expect(screen.getByText("話し方を選ぶと、入力が始まります。")).toBeTruthy();
 
     // 黒い面を押して閉じる。チェックは置かないので、閉じたこと自体を覚える。
     const scrim = document.querySelector(".voice-guide");
@@ -400,12 +409,12 @@ describe("まとめて話す", () => {
       fireEvent.click(scrim as Element);
     });
 
-    expect(screen.queryByText("話し方を選ぶと、録音が始まります。")).toBeNull();
+    expect(screen.queryByText("話し方を選ぶと、入力が始まります。")).toBeNull();
     expect(localStorage.getItem(VOICE_GUIDE_STORAGE_KEY)).toBe("1");
 
     // 手で押したときは記憶を見ない。案内はまた開く。
     await press("音声入力を開始");
-    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
+    expect(screen.getByText("話し方を選ぶと、入力が始まります。")).toBeTruthy();
   });
 
   it("日程が 2 件あっても、初回ガイドの札と装飾は変わらない", async () => {

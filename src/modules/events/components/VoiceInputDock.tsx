@@ -28,7 +28,6 @@ import {
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import {
-  BATCH_PROMPT,
   batchExampleSentence,
   batchPlan,
   batchTargets,
@@ -1333,9 +1332,18 @@ export function VoiceInputDock({
         : "空欄がありません。手で直したい欄を押すと、その欄を音声で入れ直せます。",
     );
     if (first) {
-      api.announce(`音声入力を始めます。${first.prompt}`);
-      // 音声モードに入ったら、そのまま録音を始める。もう一度押させない。
-      void startRecording();
+      if (chosen === "batch") {
+        // まとめては読む量がいちばん多い。開いた瞬間に録音を始めると、何を話すかを
+        // 読む前に話し始めることになる（話し直しが増える）。押してから録る。
+        api.announce(
+          "音声入力を始めます。例の順に話してから、マイクを押してください。",
+        );
+      } else {
+        api.announce(`音声入力を始めます。${first.prompt}`);
+        // 1 つずつは質問が 1 行で足りるので、開いたらそのまま録音を始める。
+        // もう一度押させない。
+        void startRecording();
+      }
     }
     api.openStep(first?.step ?? "basic");
     // 入口を数える。どちらの話し方で入ったかだけを送り、発話内容は送らない。
@@ -1576,18 +1584,18 @@ export function VoiceInputDock({
   const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
-  // まとめて話すときの 30px の行は固定の指示にする。1 つの欄の話ではないので、
-  // 質問（「イベント名は？」）を進めると、いま何を話すのかが 1 行ごとに変わってしまう。
-  // 進み具合はマスの塗りだけで示し、値の形は主ボタンの上の 1 文の例で見せる。
+  // まとめて話すときは、質問（「イベント名は？」）を進めない。1 つの欄の話ではないので、
+  // 話す中身は例の 1 文で見せ、進み具合はマスの塗りだけで示す。
+  // ここに残すのは、待ちの理由（住所・文字化）を伝える 1 行だけである。
   const completion = completionCopy(firstIncompleteMandatoryStep(value) === null);
   const promptText = complete
     ? completion.prompt
     : searching
       ? "住所を調べています"
-      : batchMode
-        ? BATCH_PROMPT
-        : transcribing
-          ? "テキスト変換中"
+      : transcribing
+        ? "テキスト変換中"
+        : batchMode
+          ? ""
           : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
   const showStatus = listening || statusStopping;
   // パネルに出す 1 行。住所の補完の失敗は、値が入った知らせより先に伝える
@@ -2079,7 +2087,7 @@ export function VoiceInputDock({
             <p className="voice-guide__title" role="status">
               ラクちん音声入力
             </p>
-            <p className="voice-guide__body">話し方を選ぶと、録音が始まります。</p>
+            <p className="voice-guide__body">話し方を選ぶと、入力が始まります。</p>
             {/* 話し方は入口で決める。押した方はそのまま音声モードに入る。
                 どの催しに向くかは、話し方の名前の下へ札として添える。札もボタンの中なので、
                 札を押しても同じ話し方で録音が始まる。名前を span で包むのは、
@@ -2163,33 +2171,25 @@ export function VoiceInputDock({
                 <span className="voice-panel__state">録音中</span>
               </p>
             )}
-            {/* 質問と例は 1 行に並べる。例は質問の隣に置き、目を戻さずに読めるようにする。
-                まとめて話すときのマスは折り返せる別の行へ置く（1 行に詰めると切れる）。 */}
-            <div className="voice-panel__ask">
+            {/* 1 欄ずつのときは、質問と例を 1 行に並べる。例は質問の隣に置き、
+                目を戻さずに読めるようにする。 */}
+            {!batchMode && (
+              <div className="voice-panel__ask">
+                <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
+                  {promptText}
+                </p>
+                {!complete && !searching && field && (
+                  <p className="voice-panel__hint">例: {field.example}</p>
+                )}
+              </div>
+            )}
+            {/* まとめては 1 つの欄の話ではないので、質問は進めない。ここに出すのは
+                待ちの理由（住所・文字化）と、入力完了の 1 行だけ。
+                何を話すかは下の 1 文の例で見せる。 */}
+            {batchMode && (complete || searching || transcribing) && (
               <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
                 {promptText}
               </p>
-              {!complete && !searching && !batchMode && field && (
-                <p className="voice-panel__hint">例: {field.example}</p>
-              )}
-            </div>
-            {/* まとめて話すときのマス。話す順を欄の名前で並べ、読めたマスから点と縁が変わる。
-                塗るのは聞き取れた印だけで、値は止めたあとの確認まで出さない。 */}
-            {!complete && batchMode && cells.length > 0 && (
-              <ol className="voice-cells" aria-label="話す順">
-                {cells.map((cell) => {
-                  const isRead = readCells.has(cell.id);
-                  return (
-                    <li
-                      className={`voice-cell${isRead ? " is-read" : ""}`}
-                      key={cell.id}
-                    >
-                      <span className="voice-cell__mark" aria-hidden="true" />
-                      <span className="voice-cell__label">{cell.label}</span>
-                    </li>
-                  );
-                })}
-              </ol>
             )}
             {/* 認識の途中経過は質問の下に 1 行だけ出す。質問は消さない
                 （何を話すかを目で追いながら、聞き取れた分を確かめられる）。 */}
@@ -2221,15 +2221,36 @@ export function VoiceInputDock({
             </p>
           )}
 
-          {/* 何を話すかを 1 文で見せる。マスの名前だけでは、値として何を
-              言えばよいか分からない。話し方の指示は上の 30px の行に固定で出して
-              あるので、ここは値の形（例）だけを置く。 */}
+          {/* まとめて話すときは、何を話すかを 1 文で見せる。マスの名前だけでは、
+              値として何を言えばよいか分からない。1 つの欄の話ではないので質問は進めず、
+              この 1 文をいちばん大きい字にして、読む先を 1 つに絞る。
+              「例」の札は付けない。話す中身そのものとして読ませたいためである。 */}
           {!complete && batchMode && exampleSentence && (
-            <div className="voice-panel__example">
-              <p className="voice-panel__example-text">
-                <span className="voice-panel__example-key">例</span>{" "}
-                {exampleSentence}
-              </p>
+            <div className="voice-panel__say">
+              <p className="voice-panel__lead">この順で、自分の内容を話す</p>
+              <p className="voice-panel__say-text">{exampleSentence}</p>
+            </div>
+          )}
+
+          {/* 話した順に欄が埋まることを、マスの名前で示す。聞き取れたマスから
+              点と縁が変わる（値は止めたあとの確認まで出さない）。 */}
+          {!complete && batchMode && cells.length > 0 && (
+            <div className="voice-panel__plan">
+              <p className="voice-panel__lead">話した順に入り、読めた欄に印が付きます</p>
+              <ol className="voice-cells" aria-label="話す順">
+                {cells.map((cell) => {
+                  const isRead = readCells.has(cell.id);
+                  return (
+                    <li
+                      className={`voice-cell${isRead ? " is-read" : ""}`}
+                      key={cell.id}
+                    >
+                      <span className="voice-cell__mark" aria-hidden="true" />
+                      <span className="voice-cell__label">{cell.label}</span>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
 
