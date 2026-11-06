@@ -12,7 +12,7 @@ import type { SemanticThemeId } from "@/lib/semantic-themes";
 /**
  * ホームから開く、告知ページの見本（SCR-PUB-16 / SCR-PUB-17）。
  *
- * DB を使わない。初見の幹事が「自分の催しならどう見えるか」を作る前に確かめる画面なので、
+ * DB を使わない。初見の主催者が「自分の催しならどう見えるか」を作る前に確かめる画面なので、
  * ログイン・API・出欠の送信を一切持たない。値は `scripts/seed-ui-demo.mjs` の
  * デモ催しと揃えてあり、チラシの画像も `public/samples/**` の実物をそのまま使う。
  *

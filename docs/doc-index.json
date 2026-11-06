@@ -5194,7 +5194,7 @@
       "title": "プロジェクト企画要件定義書",
       "summary": "本ドキュメントは、システム要件定義および実装仕様の策定に先立ち、プロダクトの「目的関数（Evaluation Function）」を定義するものである。上位の企画要件を固定化することで、後続フェーズにおける機能の取捨選択と非機能要件の境界設定を可能にする。",
       "preImplementation": false,
-      "lineCount": 128,
+      "lineCount": 130,
       "headings": [
         {
           "level": 1,
@@ -5288,7 +5288,7 @@
       "sphinxDoc": "flyer/specs/system_requirements",
       "format": "markdown",
       "title": "システム要件定義書",
-      "summary": "本システムは、個人経営店舗（バー、サロン、カフェ等）や、飯フェス、タコパ、ライブ、占い、撮影会などを開く小規模イベント主催者が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
+      "summary": "本システムは、店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会、飯フェス、タコパ、占い、撮影会などを開く小規模イベント主催者や、個人経営店舗（バー、サロン、カフェ等）の店主が、デザインの専門知識や工数をかけることなく、事実情報の入力のみで告知ページと A4 配布に適した高品質チラシ画像（A4 縦）を即座に取得できるWebアプリケーションである。",
       "preImplementation": false,
       "lineCount": 319,
       "headings": [
@@ -5717,7 +5717,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2145,
+      "lineCount": 2146,
       "headings": [
         {
           "level": 1,
@@ -5866,6 +5866,10 @@
         {
           "level": 3,
           "text": "12.3. 新規作成画面の ref と公開後の分岐"
+        },
+        {
+          "level": 3,
+          "text": "12.3.1. ログイン前の入力の退避（src/modules/events/lib/pending-form.ts）"
         },
         {
           "level": 3,
@@ -6412,9 +6416,9 @@
       "sphinxDoc": "index",
       "format": "rst",
       "title": "チケット管理・課金決済基盤",
-      "summary": "イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。 飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
+      "summary": "イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。 店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会などを開く主催者が、参加者へ直接URLを届ける用途を主対象にします。飯フェス、タコパ、占い、撮影会などの主催者も同じ立場です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 174,
+      "lineCount": 176,
       "headings": [
         {
           "level": 1,
@@ -10230,9 +10234,9 @@
       "sphinxDoc": "onboarding",
       "format": "markdown",
       "title": "全体を掴む 90 分",
-      "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。 対象は、飯フェス、タコパ、ライブ、占い、撮影会などの主催者です。主催者が自分のチャネルで参加者へ URL を届け、出欠を集める用途に絞ります。",
+      "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。 店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会などを開く主催者が、参加者へ直接URLを届ける用途を主対象にします。飯フェス、タコパ、占い、撮影会などの主催者も同じ立場です。 主催者が自分のチャネルで参加者へ URL を届け、集客から出欠・予約の管理までを完結させる用途に絞ります。 主対象の定義は docs/overall_system_requirements_common.md の §2.1 を正とします。",
       "preImplementation": false,
-      "lineCount": 116,
+      "lineCount": 118,
       "headings": [
         {
           "level": 1,
@@ -10271,6 +10275,10 @@
       "codePaths": [
         {
           "path": "docs/local.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/overall_system_requirements_common.md",
           "exists": true
         },
         {
@@ -10468,9 +10476,9 @@
       "sphinxDoc": "overall_system_requirements_common",
       "format": "markdown",
       "title": "1. 文書概要・目的",
-      "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.19版（正本の範囲・課金と Cookie の確定・体裁の修正）",
+      "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.20版（主対象の確定・ペルソナの序列）",
       "preImplementation": false,
-      "lineCount": 1135,
+      "lineCount": 1136,
       "headings": [
         {
           "level": 2,
@@ -12506,7 +12514,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 535,
+      "lineCount": 537,
       "headings": [
         {
           "level": 1,

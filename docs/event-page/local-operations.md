@@ -106,7 +106,7 @@ npm run dev
 ### 幹事のログインと一覧
 
 1. `http://localhost:3000/auth/login` を開きます。
-2. シード済みの `organizer@example.com` / `Testpass123!` でログインします。新規の幹事は `http://localhost:3000/auth/register` から登録します。
+2. シード済みの `organizer@example.com` / `Testpass123!` でログインします。新規の主催者は `http://localhost:3000/auth/register` から登録します。
 3. `http://localhost:3000/organizer/events` で主催イベントを確認します。並び順は開催日が近い順と、作成が新しい順を切り替えられます。
 4. 「新規作成」から `http://localhost:3000/organizer/events/new` を開き、title、eventDate、eventTime、price、location、rainPolicy、capacity の 7 項目を入れてイベントを作成します。
 5. 一覧のカードから編集、複製、共同幹事の招待、参加者一覧へ進めます。参加状況は `/organizer/events/{id}/participants` です。
