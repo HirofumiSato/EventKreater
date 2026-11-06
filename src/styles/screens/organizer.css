@@ -1438,12 +1438,21 @@ textarea.voice-confirm__input {
   font-size: var(--font-action);
 }
 
-/* チェックは破線で切り離し、本文と混ぜない。 */
+/* チェックは破線で切り離し、本文と混ぜない。
+   1 行だけのチェックでも、押せる的は 40px を下回らせない（上下の余白ではなく
+   最小の高さで確保し、文字とチェックの中心をそろえる）。 */
 .voice-guide__check {
+  align-items: center;
+  min-height: var(--tap-target);
   padding-top: 0.4375rem;
   border-top: 1px dashed rgb(26 25 22 / 0.28);
   font-size: 0.8rem;
   color: var(--color-text-subtle);
+}
+
+/* 高さで上下の余白を取るので、チェックの浮かせは外す（中心を文字にそろえる）。 */
+.voice-guide__check input {
+  margin-top: 0;
 }
 
 /* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
