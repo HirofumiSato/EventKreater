@@ -1,7 +1,7 @@
 # event-creater
 
 イベント告知・出欠管理と、主催者のチケット・Stripe 決済を扱うアプリケーションです。
-飯フェス、タコパ、ライブ、占い、撮影会などの主催者が、参加者へ直接URLを届ける用途を主対象にします。
+店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会などを開く主催者が、参加者へ直接URLを届ける用途を主対象にします。飯フェス、タコパ、占い、撮影会などの主催者も同じ立場です。
 Next.js 14（App Router）+ Prisma + PostgreSQL で動き、チラシ生成だけを Python の独立サービスに分けています。
 
 ## 起動
@@ -33,6 +33,7 @@ npm run docs:links   # 原稿と索引に書かれたリポジトリ内パスの
 | --- | --- |
 | 全体を 90 分で掴む | [docs/onboarding.md](docs/onboarding.md) |
 | ドキュメントの地図 | [docs/sitemap.rst](docs/sitemap.rst) |
+| 主対象（誰のためのサービスか） | [docs/overall_system_requirements_common.md](docs/overall_system_requirements_common.md) の §2.1 を正とします |
 | どの文書が正か、既知の乖離 | [docs/README.md](docs/README.md) |
 | 本番へ出す手順 | [docs/deploy.rst](docs/deploy.rst) |
 | 以前の要件と設計（現在の正ではない） | [docs/archive/index.rst](docs/archive/index.rst) |
