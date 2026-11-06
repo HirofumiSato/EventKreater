@@ -129,13 +129,13 @@ async function press(name: string) {
 }
 
 /**
- * 音声モードを 1 欄ずつで開く。空欄が多いと「まとめて」が既定になるため、
- * 1 欄ずつの質問と確認を見る試験では、開いたあとに明示して切り替える。
+ * 音声モードを 1 欄ずつで開く。マイクボタンは案内（吹き出し）を開くだけなので、
+ * 案内の「1つずつ」を選んで録音を始める。
  */
 async function startSingle() {
   await press("音声入力を開始");
   await act(async () => {
-    (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).click();
+    screen.getByRole("button", { name: /^1つずつ/ }).click();
   });
 }
 

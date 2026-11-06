@@ -86,6 +86,17 @@ async function chooseMode(name: string) {
   });
 }
 
+/**
+ * マイクボタンから初回の案内を開き、話し方を選んで録音を始める。
+ * 案内の 2 択はボタンで、名前の後ろに向く催しの札が付くため前方一致で選ぶ。
+ */
+async function startVoice(mode: "まとめて話す" | "1つずつ") {
+  await press("音声入力を開始");
+  await act(async () => {
+    screen.getByRole("button", { name: new RegExp(`^${mode}`) }).click();
+  });
+}
+
 /** 疑似録音と文字化の待ちを進め、確認のダイアログが出るところまで進める。 */
 async function openBatchDialog() {
   await act(async () => {
@@ -129,7 +140,7 @@ describe("まとめて話す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
 
     // 空欄が 3 つ以上あるので、まとめてが既定になる。
     expect((screen.getByRole("radio", { name: "まとめて" }) as HTMLInputElement).checked).toBe(
@@ -182,7 +193,7 @@ describe("まとめて話す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
     await chooseMode("1つずつ");
 
     expect(screen.getByText("イベント名は？")).toBeTruthy();
@@ -203,7 +214,7 @@ describe("まとめて話す", () => {
   it("話している間に、読めたマスの数が増える", async () => {
     stubFetch();
     await mount(vi.fn());
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
 
     const cells = () =>
       within(screen.getByRole("list", { name: "話す順" })).getAllByRole("listitem");
@@ -244,7 +255,7 @@ describe("まとめて話す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
 
     const dialog = await openBatchDialog();
     expect(within(dialog).getByRole("heading", { name: "まとめて入力します" })).toBeTruthy();
@@ -276,7 +287,7 @@ describe("まとめて話す", () => {
       town: "神宮前",
       addressLine: "1-2-3",
     });
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
     // まとめてでは任意の欄を既定で外す。定員まで聞く形にしてから録る。
     await act(async () => {
       fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
@@ -313,7 +324,7 @@ describe("まとめて話す", () => {
 
     // 番地だけ埋めておく。ほかの空欄は行として並ぶ。
     await mount(onChange, { ...EMPTY_EVENT_FORM, addressLine: "1-2-3" });
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
     const dialog = await openBatchDialog();
 
     // 開催日と会場名を外すと、必須の空欄が 2 つ残る。
@@ -335,7 +346,7 @@ describe("まとめて話す", () => {
     const onChange = vi.fn();
 
     await mount(onChange);
-    await press("音声入力を開始");
+    await startVoice("まとめて話す");
     const dialog = await openBatchDialog();
 
     const date = within(dialog).getByLabelText("開催日");
@@ -360,6 +371,9 @@ describe("まとめて話す", () => {
     const single = screen.getByRole("button", { name: /1つずつ/ });
     expect(within(batch).getByText("シンプルなイベント向け")).toBeTruthy();
     expect(within(single).getByText("複数日程・費用男女別向け")).toBeTruthy();
+    // 案内はマイクを押すたびに出るので、「次回から表示しない」のチェックは置かない。
+    expect(screen.queryByText("次回から表示しない")).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
     // 片方を既定として推す札は置かない。
     expect(screen.queryByText("おすすめ")).toBeNull();
     // 2 択は同じ装飾。片方だけが主操作に見えない。
@@ -370,6 +384,28 @@ describe("まとめて話す", () => {
       single.click();
     });
     expect(screen.getByText("イベント名は？")).toBeTruthy();
+  });
+
+  it("案内を閉じると自動表示は止まるが、マイクを押せばまた出る", async () => {
+    localStorage.removeItem(VOICE_GUIDE_STORAGE_KEY);
+    stubFetch();
+
+    await mount(vi.fn());
+    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
+
+    // 黒い面を押して閉じる。チェックは置かないので、閉じたこと自体を覚える。
+    const scrim = document.querySelector(".voice-guide");
+    expect(scrim).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(scrim as Element);
+    });
+
+    expect(screen.queryByText("話し方を選ぶと、録音が始まります。")).toBeNull();
+    expect(localStorage.getItem(VOICE_GUIDE_STORAGE_KEY)).toBe("1");
+
+    // 手で押したときは記憶を見ない。案内はまた開く。
+    await press("音声入力を開始");
+    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
   });
 
   it("日程が 2 件あっても、初回ガイドの札と装飾は変わらない", async () => {

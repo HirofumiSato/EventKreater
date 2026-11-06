@@ -6,10 +6,12 @@ import { X } from "lucide-react";
 import type { EventStepKey } from "@/modules/events/lib/steps";
 import {
   EVENT_GUIDE_ACTION_COPY,
+  EVENT_GUIDE_DISMISS_NOTICE,
   EVENT_GUIDE_STEPS,
   guideCopy,
   type EventGuideOpenMode,
 } from "@/modules/events/lib/tour/steps";
+import { Dialog } from "@/components/ui/Dialog";
 import {
   anchorForBubble,
   clampHole,
@@ -199,8 +201,13 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
   /** くり抜く穴。基本は 1 つ。2 枚目だけ 3 つの見出しぶん 3 つになる。 */
   const [holes, setHoles] = useState<GuideHole[]>([]);
   const [placement, setPlacement] = useState<GuideBubblePlacement | null>(null);
-  /** 最終枚の「次回から表示しない」。押したまま閉じたときだけ記憶する。 */
-  const [dontShow, setDontShow] = useState(false);
+  /**
+   * 最終枚の「次回から表示しない」。既定で入れる。
+   * 押したときに黙って消さず、確認の 1 枚を挟んでから閉じる。
+   */
+  const [dontShow, setDontShow] = useState(true);
+  /** 最終枚を閉じる前の確認。開いているあいだはツアーの Esc・Tab を止める。 */
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   /** 閉じる道は毎回作り直される。計測の effect を張り直さないよう ref 経由で呼ぶ。 */
@@ -208,18 +215,30 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
   closeRef.current = onClose;
   const openStepRef = useRef(onOpenStep);
   openStepRef.current = onOpenStep;
+  /** 確認の 1 枚が開いているか。キーの取り合いを避けるため、描画のたびに控える。 */
+  const noticeRef = useRef(noticeOpen);
+  noticeRef.current = noticeOpen;
 
   const step = EVENT_GUIDE_STEPS[index] ?? EVENT_GUIDE_STEPS[0];
   const copy = guideCopy(step, signedIn);
 
   /**
-   * 閉じる。チェックが入っていれば次回から出さない。Esc・×・最終枚の「はじめる」の
-   * どれから閉じても同じ扱いにする（音声ガイドと同じ）。
+   * 閉じる。×・Esc・「ガイドをスキップ」から呼ぶ。記憶は変えない
+   * （次に開いたときはまた出す）。記憶するのは最終枚で「はじめる」を押したときだけ。
    */
   const close = useCallback(() => {
-    if (step.final && dontShow) dismissEventGuide(true);
     closeRef.current();
-  }, [dontShow, step.final]);
+  }, []);
+
+  /**
+   * 最終枚の「はじめる」。チェックが入っていれば、次回から出さないことを 1 枚で確かめてから
+   * 閉じる。確かめずに閉じると、次に開いたときにガイドが無い理由が分からない。
+   */
+  const finishGuide = useCallback(() => {
+    dismissEventGuide(true);
+    setNoticeOpen(false);
+    closeRef.current();
+  }, []);
 
   // この枚の対象が DOM に出るよう、アコーディオンを整える（1 つだけ・全部・全部畳む）。
   // 開いた結果は次の描画で反映されるので、計測は下の effect が待ちながら測る。
@@ -591,6 +610,9 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
   // 音声モードの Esc と取り合わないよう、capture で先に止める。
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // 確認の 1 枚が開いているあいだは、Esc も Tab もその層に任せる。
+      // ここで受けると、1 回の Esc でツアーごと閉じてしまう。
+      if (noticeRef.current) return;
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -631,7 +653,9 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
    */
   const goNext = () => {
     if (step.final) {
-      close();
+      // チェックが入っていれば、次回から出さないことを 1 枚で確かめてから閉じる。
+      if (dontShow) setNoticeOpen(true);
+      else close();
       return;
     }
     setPhase("prepare");
@@ -772,6 +796,11 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
           {index + 1} / {EVENT_GUIDE_STEPS.length}。{copy.title}
         </p>
         <div className="guide-bubble__actions">
+          {/* 途中でやめたい人の逃げ道。左下に静かに置き、進む操作とは色を分ける。
+              記憶はせず、次に開いたときはまた最初から出す。 */}
+          <button type="button" className="guide-bubble__skip" onClick={close}>
+            {EVENT_GUIDE_ACTION_COPY.skip}
+          </button>
           {index > 0 ? (
             <button type="button" className="btn btn--ghost btn--sm" onClick={goBack}>
               {EVENT_GUIDE_ACTION_COPY.back}
@@ -791,6 +820,22 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
           <X className="icon" aria-hidden="true" size={18} />
         </button>
       </div>
+      {/* 最終枚で「次回から表示しない」を選んで閉じるときの確認。
+          黒い面と紙の上に出し、閉じたあとに音声入力の案内へ渡す。 */}
+      {noticeOpen ? (
+        <Dialog
+          title={EVENT_GUIDE_DISMISS_NOTICE.title}
+          titleId="event-guide-dismiss-title"
+          onClose={finishGuide}
+          actions={
+            <button type="button" className="btn btn--primary btn--block" onClick={finishGuide}>
+              {EVENT_GUIDE_DISMISS_NOTICE.confirm}
+            </button>
+          }
+        >
+          <p className="dialog__body">{EVENT_GUIDE_DISMISS_NOTICE.body}</p>
+        </Dialog>
+      ) : null}
     </>
   );
 

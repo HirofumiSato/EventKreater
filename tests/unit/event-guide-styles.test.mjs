@@ -97,6 +97,14 @@ describe("押せる的と文字", () => {
     expect(body).toContain("font-size: var(--font-action)");
   });
 
+  it("スキップは左下に置きつつ、40px の的と 15px の文字を保つ", () => {
+    const body = declarations(ORGANIZER, ".guide-bubble__skip");
+
+    expect(body).toContain("margin-inline-end: auto");
+    expect(body).toContain("min-height: var(--tap-target)");
+    expect(body).toContain("font-size: var(--font-action)");
+  });
+
   it("閉じる印も 40px の的を持つ", () => {
     const body = declarations(ORGANIZER, ".guide-bubble__close");
 
@@ -112,6 +120,23 @@ describe("押せる的と文字", () => {
 
   it("見出しは 15px を下回らない", () => {
     expect(declarations(ORGANIZER, ".guide-bubble__title")).toContain("font-size: 1.0625rem");
+  });
+});
+
+describe("最終枚のチェックと確認", () => {
+  it("「次回から表示しない」は既定で入れる", () => {
+    expect(TOUR).toContain("const [dontShow, setDontShow] = useState(true)");
+  });
+
+  it("チェックを入れたまま「はじめる」を押すと、閉じる前に確認を挟む", () => {
+    expect(TOUR).toContain("setNoticeOpen(true)");
+    expect(TOUR).toContain("EVENT_GUIDE_DISMISS_NOTICE.title");
+    expect(TOUR).toContain("dismissEventGuide(true)");
+  });
+
+  it("確認が開いているあいだは、ツアー側の Esc と Tab を止める", () => {
+    expect(TOUR).toContain("if (noticeRef.current) return;");
+    expect(TOUR).toContain("noticeRef.current = noticeOpen;");
   });
 });
 
