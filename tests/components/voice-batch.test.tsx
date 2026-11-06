@@ -17,7 +17,11 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VoiceInputDock } from "@/modules/events/components/VoiceInputDock";
 import { VOICE_GUIDE_STORAGE_KEY } from "@/modules/events/lib/voice/guide";
-import { EMPTY_EVENT_FORM, type EventFormValues } from "@/modules/events/types";
+import {
+  createScheduleDraft,
+  EMPTY_EVENT_FORM,
+  type EventFormValues,
+} from "@/modules/events/types";
 
 /** 疑似録音と文字化の待ち（`MOCK_RECORDING_MS` / `MOCK_TRANSCRIBE_MS`）を越える長さ。 */
 const PAST_RECORDING_MS = 1200;
@@ -276,11 +280,54 @@ describe("まとめて話す", () => {
 
     await mount(vi.fn());
 
+    expect(screen.getByText("押すと、そのまま録音が始まります。")).toBeTruthy();
+    // 2 択の下に、それぞれ何が違うかを注記で出す。
+    expect(screen.getByText("1回の録音で、空欄をまとめて入力")).toBeTruthy();
     expect(
-      screen.getByText("1回の録音で、空欄をまとめて入力できます。"),
+      screen.getByText("複数日程、男女別や複数の費用プランを入力"),
     ).toBeTruthy();
+    // 単純な値で空欄が多いので、「まとめて話す」が既定になる。
+    expect(
+      within(screen.getByRole("button", { name: /まとめて話す/ })).getByText(
+        "おすすめ",
+      ),
+    ).toBeTruthy();
+    expect(
+      within(screen.getByRole("button", { name: /1つずつ/ })).queryByText(
+        "おすすめ",
+      ),
+    ).toBeNull();
     // 吹き出しの外を押しても閉じるが、中の 2 択はそのまま押せる。
     await press("1つずつ");
+    expect(screen.getByText("イベント名は？")).toBeTruthy();
+  });
+
+  it("日程が 2 件あると、初回ガイドは 1 つずつの側におすすめを付ける", async () => {
+    localStorage.removeItem(VOICE_GUIDE_STORAGE_KEY);
+    stubFetch();
+
+    await mount(vi.fn(), {
+      ...EMPTY_EVENT_FORM,
+      schedules: [
+        createScheduleDraft({ key: "schedule-1" }),
+        createScheduleDraft({ key: "schedule-2" }),
+      ],
+    });
+
+    // 行が複数あるので「1つずつ」が既定になる。
+    expect(
+      within(screen.getByRole("button", { name: /1つずつ/ })).getByText("おすすめ"),
+    ).toBeTruthy();
+    expect(
+      within(screen.getByRole("button", { name: /まとめて話す/ })).queryByText(
+        "おすすめ",
+      ),
+    ).toBeNull();
+
+    // 札が付くと accessible name が「1つずつ おすすめ」になるので、部分一致で押す。
+    await act(async () => {
+      screen.getByRole("button", { name: /1つずつ/ }).click();
+    });
     expect(screen.getByText("イベント名は？")).toBeTruthy();
   });
 });

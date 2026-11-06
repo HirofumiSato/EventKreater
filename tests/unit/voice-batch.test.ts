@@ -11,7 +11,13 @@ import {
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { voiceFieldOrder } from "@/modules/events/lib/voice/fields";
 import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
-import { EMPTY_EVENT_FORM, type EventFormValues } from "@/modules/events/types";
+import {
+  createPricePlanDraft,
+  createScheduleDraft,
+  EMPTY_EVENT_FORM,
+  withGenderPricing,
+  type EventFormValues,
+} from "@/modules/events/types";
 
 /** 2026 年 10 月 24 日（日本時間）を基準にする。相対日付のテストを固定するため。 */
 const NOW = new Date("2026-10-24T09:00:00+09:00");
@@ -233,8 +239,49 @@ describe("まとめて話す案内", () => {
   it("空欄が 3 つ以上ならまとめてを既定にする", () => {
     const targets = batchTargets(EMPTY_EVENT_FORM, scope());
 
-    expect(defaultVoiceMode(targets.slice(0, 2))).toBe("single");
-    expect(defaultVoiceMode(targets.slice(0, 3))).toBe("batch");
+    expect(defaultVoiceMode(targets.slice(0, 2), EMPTY_EVENT_FORM)).toBe("single");
+    expect(defaultVoiceMode(targets.slice(0, 3), EMPTY_EVENT_FORM)).toBe("batch");
+  });
+
+  it("行が 1 つで空欄が 3 つ以上なら、まとめてを既定にする", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+
+    expect(targets.length).toBeGreaterThanOrEqual(3);
+    expect(defaultVoiceMode(targets, EMPTY_EVENT_FORM)).toBe("batch");
+  });
+
+  it("日程が 2 件あると、まとめてではなく 1 つずつを既定にする", () => {
+    const value: EventFormValues = {
+      ...EMPTY_EVENT_FORM,
+      schedules: [
+        createScheduleDraft({ key: "schedule-1" }),
+        createScheduleDraft({ key: "schedule-2" }),
+      ],
+    };
+
+    expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
+  });
+
+  it("男女別の費用があると、まとめてではなく 1 つずつを既定にする", () => {
+    const value: EventFormValues = {
+      ...EMPTY_EVENT_FORM,
+      pricePlans: withGenderPricing(EMPTY_EVENT_FORM.pricePlans),
+    };
+
+    expect(value.pricePlans.some((plan) => plan.audience !== "ANY")).toBe(true);
+    expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
+  });
+
+  it("費用プランが 2 組あると、まとめてではなく 1 つずつを既定にする", () => {
+    const value: EventFormValues = {
+      ...EMPTY_EVENT_FORM,
+      pricePlans: [
+        createPricePlanDraft({ key: "plan-1" }),
+        createPricePlanDraft({ key: "plan-2" }),
+      ],
+    };
+
+    expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
 
   it("モックの文字起こしは、入力済みの欄の例を含まない", () => {

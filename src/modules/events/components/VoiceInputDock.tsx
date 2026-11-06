@@ -323,7 +323,7 @@ export function VoiceInputDock({
   const guideSteps = useMemo(() => batchSteps(blankTargets), [blankTargets]);
   const guideExample = useMemo(() => batchExample(blankTargets), [blankTargets]);
   // まだ選ばれていなければ、空欄の数で既定を決める。セッションの途中で選ばれたらそれを優先する。
-  const defaultMode = defaultVoiceMode(blankTargets);
+  const defaultMode = defaultVoiceMode(blankTargets, value);
   const batchMode = (modeChoice ?? defaultMode) === "batch";
 
   useEffect(() => {
@@ -1235,7 +1235,12 @@ export function VoiceInputDock({
     // 直前に選んでいた欄があればそこから。無ければ最初の空欄から。
     const first = startFieldFor(valueRef.current, sessionScope, lastFocusedIdRef.current);
     // 話し方は、初回ガイドで選ばれたもの → 空欄の数から決めた既定、の順に使う。
-    const chosen = mode ?? defaultVoiceMode(batchTargets(valueRef.current, sessionScope));
+    const chosen =
+      mode ??
+      defaultVoiceMode(
+        batchTargets(valueRef.current, sessionScope),
+        valueRef.current,
+      );
     setModeChoice(chosen);
     batchModeRef.current = chosen === "batch";
     touchedRef.current = new Set();
@@ -1965,6 +1970,10 @@ export function VoiceInputDock({
     return () => document.removeEventListener("keydown", handler);
   }, [closeGuide, guideOpen]);
 
+  // 初回ガイドの「おすすめ」は、いま開いたときの値で決める。
+  // 行が複数あるイベントでは「1つずつ」が既定になる。
+  const guideDefault = defaultVoiceMode(blankTargets, value);
+
   return (
     <>
       {active && spotlight && (
@@ -1990,23 +1999,42 @@ export function VoiceInputDock({
             <p className="voice-guide__title" role="status">
               音声入力でスムーズに操作
             </p>
-            <p className="voice-guide__body">1回の録音で、空欄をまとめて入力できます。</p>
-            {/* 話し方は入口で決める。押した方はそのまま音声モードに入る。 */}
+            <p className="voice-guide__body">押すと、そのまま録音が始まります。</p>
+            {/* 話し方は入口で決める。押した方はそのまま音声モードに入る。
+                注記はボタンの外に出し、注記を押してもマイク許可が出ないようにする。 */}
             <div className="voice-guide__modes">
-              <button
-                type="button"
-                className="btn btn--primary btn--sm btn--block"
-                onClick={() => chooseGuideMode("batch")}
-              >
-                まとめて話す
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm btn--block"
-                onClick={() => chooseGuideMode("single")}
-              >
-                1つずつ
-              </button>
+              <div className="voice-guide__mode">
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm btn--block"
+                  aria-describedby="voice-guide-batch-note"
+                  onClick={() => chooseGuideMode("batch")}
+                >
+                  まとめて話す
+                  {guideDefault === "batch" && (
+                    <span className="voice-guide__pick">おすすめ</span>
+                  )}
+                </button>
+                <p className="voice-guide__mode-note" id="voice-guide-batch-note">
+                  1回の録音で、空欄をまとめて入力
+                </p>
+              </div>
+              <div className="voice-guide__mode">
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm btn--block"
+                  aria-describedby="voice-guide-single-note"
+                  onClick={() => chooseGuideMode("single")}
+                >
+                  1つずつ
+                  {guideDefault === "single" && (
+                    <span className="voice-guide__pick">おすすめ</span>
+                  )}
+                </button>
+                <p className="voice-guide__mode-note" id="voice-guide-single-note">
+                  複数日程、男女別や複数の費用プランを入力
+                </p>
+              </div>
             </div>
             <label className="check voice-guide__check">
               <input
