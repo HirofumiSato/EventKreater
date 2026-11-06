@@ -40,6 +40,7 @@ import {
   spotlightFor,
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
+import { firstIncompleteMandatoryStep } from "@/modules/events/lib/steps";
 import { fetchVoiceMockEnabled, transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
 import { transcribeVoiceUtterance } from "@/modules/events/lib/voice/utterance-client";
 import { isLongVoiceField, shouldAutoConfirm } from "@/modules/events/lib/voice/confirm";
@@ -105,6 +106,33 @@ const BATCH_EXAMPLE = "12月5日、18時から20時、渋谷ホール、3000円�
 /** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
 const AUTO_MESSAGE_MS = 3_000;
 
+/**
+ * 入力完了の表示を出しておく長さ。
+ *
+ * 「必須項目の入力完了！」に添える案内（テーマとチラシ）を読み終えられる長さにする。
+ * 3 秒だと 1 行を読み切る前にパネルが閉じる。
+ */
+const COMPLETE_HOLD_MS = 5_000;
+
+/**
+ * 入力完了の見出しと、次にすることを 1 行で返す。
+ *
+ * 音声で埋められる欄が尽きた時点で、必須がそろっているとは限らない
+ * （スキップで飛ばせるため）。そろっていないのに「完了」とは言わない。
+ * テーマとチラシは音声では選べないので、最後に画面からの操作へ渡す。
+ */
+function completionCopy(requiredComplete: boolean): { prompt: string; note: string } {
+  return requiredComplete
+    ? {
+        prompt: "必須項目の入力完了！",
+        note: "テーマを選び、チラシを作ると仕上がります。",
+      }
+    : {
+        prompt: "必須の入力が残っています",
+        note: "ステップを開いて、残りを入れてください。",
+      };
+}
+
 /** 中止（`AbortController`）で止めた通信か。利用者がやめた操作は知らせない。 */
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
@@ -168,7 +196,8 @@ interface VoiceInputDockProps {
  * その欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てる。
  * 入力欄の DOM フォーカスは動かさない。日付・時刻の入力欄に実フォーカスを当てると
  * OS のピッカーが開き、マイクを止めてしまうためである。
- * 入力できる欄が尽きたら「入力完了！」を出し、3 秒後に音声モードを抜ける。
+ * 入力できる欄が尽きたら「必須項目の入力完了！」と、テーマ・チラシへ進む案内を出し、
+ * 5 秒後に音声モードを抜ける。
  */
 export function VoiceInputDock({
   value,
@@ -185,7 +214,7 @@ export function VoiceInputDock({
   const [includeOptional, setIncludeOptional] = useState(true);
   // 1 欄入れたら次の欄へ移るか。既定はオン。オフなら同じ欄に留めて言い直しを待つ。
   const [autoAdvance, setAutoAdvance] = useState(true);
-  // 入力できる欄が尽きた印。「入力完了！」を出してから 3 秒で音声モードを抜ける。
+  // 入力できる欄が尽きた印。完了の表示を出してから 5 秒で音声モードを抜ける。
   const [complete, setComplete] = useState(false);
   // 録音の印を止めた瞬間だけ少し縮ませる。押した手応えを残すため。
   const [statusStopping, setStatusStopping] = useState(false);
@@ -499,7 +528,11 @@ export function VoiceInputDock({
     setPanelBox(null);
   }, [api, clearAutoMessageTimer, discardRecording, releaseAudio]);
 
-  /** 入力できる欄が尽きたとき。3 秒だけ「入力完了！」を見せてから音声モードを抜ける。 */
+  /**
+   * 入力できる欄が尽きたとき。完了の表示を `COMPLETE_HOLD_MS` だけ見せてから音声モードを抜ける。
+   *
+   * 必須がそろっていない（スキップで飛ばした）ときは、完了と言わずに残りを手で入れるよう案内する。
+   */
   const finishSession = useCallback(() => {
     cursorRef.current = null;
     setCursor(null);
@@ -511,12 +544,17 @@ export function VoiceInputDock({
     clearStatusTimer();
     clearMockTimer();
     clearAutoMessageTimer();
-    api.announce("音声で入力できる欄がすべて埋まりました。3秒後に音声入力を終了します。");
+    const requiredComplete = firstIncompleteMandatoryStep(valueRef.current) === null;
+    api.announce(
+      requiredComplete
+        ? "必須項目の入力がそろいました。テーマとチラシは画面から選べます。5秒後に音声入力を終了します。"
+        : "音声で入力できる欄がなくなりました。必須の入力が残っています。5秒後に音声入力を終了します。",
+    );
     clearCompleteTimer();
     completeTimerRef.current = window.setTimeout(() => {
       completeTimerRef.current = null;
       stopSession();
-    }, 3000);
+    }, COMPLETE_HOLD_MS);
   }, [api, clearAutoMessageTimer, clearCompleteTimer, clearMockTimer, clearStatusTimer, stopSession]);
 
   /**
@@ -1284,7 +1322,7 @@ export function VoiceInputDock({
           if (observed) resizeObserver?.unobserve(observed);
           observed = null;
           previous = "";
-          // 覆いを消すのは、入力できる欄が尽きて「入力完了！」を出したときだけ。
+          // 覆いを消すのは、入力できる欄が尽きて完了の表示を出したときだけ。
           // それ以外で欄が見つからないとき（音声が開いたステップの欄が DOM から
           // 一時的に消えたとき）は最後の穴を残す。消すと、パネルだけが操作できない
           // 画面の上に浮いたままになる。
@@ -1424,8 +1462,10 @@ export function VoiceInputDock({
   const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
+  // 完了の見出しは、必須がそろっているかで変える（スキップで飛ばせるため）。
+  const completion = completionCopy(firstIncompleteMandatoryStep(value) === null);
   const promptText = complete
-    ? "入力完了！"
+    ? completion.prompt
     : transcribing
       ? "テキスト変換中"
       : searching
@@ -1939,6 +1979,9 @@ export function VoiceInputDock({
             {!complete && field && currentValue && !searching && (
               <p className="voice-panel__current">いまの値: {currentValue}</p>
             )}
+            {/* 完了のあとに残るのは、音声では選べないテーマとチラシ。質問の行とは
+                別の行にして、質問の字を小さくしないまま次にすることを 1 行で渡す。 */}
+            {complete && <p className="voice-panel__finish">{completion.note}</p>}
             <button
               type="button"
               className="voice-panel__close"

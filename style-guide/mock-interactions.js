@@ -551,6 +551,8 @@
       icon("close") +
       "</button></div>" +
       '<p class="voice-panel__current" hidden></p>' +
+      // 入力完了のときだけ、次にすることを 1 行出す（製品の `.voice-panel__finish`）。
+      '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
       '<div class="voice-panel__actions">' +
       // 主ボタンを縦積みの入れ物で包み、録音中だけその下に止め方を出す（製品と同じ）。
@@ -1131,9 +1133,15 @@
       item.removeAttribute("data-voice-target");
     }
     if (!voice.panel) return;
-    voice.panel.querySelector(".voice-panel__prompt").textContent = "入力完了！";
+    voice.panel.querySelector(".voice-panel__prompt").textContent = "必須項目の入力完了！";
+    // 完了では例を出さない（製品は完了のときに hint を描かない）。代わりに
+    // 次にすることを 1 行だけ添える。パネルは 5 秒で閉じるので、読み切れる長さにする。
     const hint = voice.panel.querySelector(".voice-panel__hint");
-    hint.textContent = "内容を確かめて、そのまま公開できます。";
+    hint.textContent = "";
+    hint.hidden = true;
+    const finish = voice.panel.querySelector(".voice-panel__finish");
+    finish.textContent = "テーマを選び、チラシを作ると仕上がります。";
+    finish.hidden = false;
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector(".voice-panel__talk").hidden = true;
@@ -1144,7 +1152,7 @@
     voice.panel.querySelector("[data-voice-batch]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-talk]").disabled = true;
     if (voice.scrim) voice.scrim.hidden = true;
-    later(closeVoice, 3000);
+    later(closeVoice, 5000);
   }
 
   function startVoice() {
