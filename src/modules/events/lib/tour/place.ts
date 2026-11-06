@@ -97,6 +97,17 @@ export const GUIDE_TRAVEL_HOLD_MS = 200;
 export const GUIDE_SETTLE_COUNT = 2;
 export const GUIDE_SETTLE_MIN_DISTANCE = 160;
 /**
+ * 送りが止まってから、黒い面と紙を出すまでの間。
+ *
+ * 止まった瞬間に黒くすると、着いた場所（どの欄か）を見る間が無いまま紙に覆われる。
+ * 赤い枠だけの画面のまま少し置いて、目を目的地へ移してもらってから、黒面と紙を同時に出す。
+ * 動きではなく「見る時間」なので、距離では変えない。
+ *
+ * 待っているあいだ、右上にこの長さを数える輪（`.guide-count`）を出す。
+ * いつ紙が出るかが見えていれば、止まって見える時間も待ちとして伝わる。
+ */
+export const GUIDE_REVEAL_HOLD_MS = 3000;
+/**
  * これ未満の距離は「動かさない」と見なす。11px を 420ms かけて動かしても目には分からず、
  * 待たされただけになる。位置はその場で合わせ、枠だけを見せてから次の枚を出す。
  */
@@ -110,6 +121,13 @@ export function travelDuration(distance: number): number {
 /** 押せる合図（手）の大きさ。指先が読める最小で、見出しの高さ（56px）に収める。 */
 export const GUIDE_TAP_SIZE = 32;
 
+/**
+ * 手の中の指先の位置（箱の左上を 0、右下を 1 とした割合）。
+ * CSS の `transform-origin` と波の位置（`48% 12%`）と同じ値にする。
+ * ここがずれると、押している場所と指先の動きがちぐはぐに見える。
+ */
+export const GUIDE_TAP_TIP_X = 0.48;
+
 /** 手を穴の端から内側へ寄せる量。枠（2px）と余白に重ねない。 */
 export const GUIDE_TAP_INSET = 6;
 
@@ -122,16 +140,19 @@ export const GUIDE_TAP_STAGGER_MS = 320;
 /**
  * 押せる合図（手）の置き場所。ビューポート座標で、手の左上を返す。
  *
- * 見出しの文は左に寄っているので、右手前に置く。文の上へ重ねると読めなくなる。
- * 穴が手より狭いとき（狭い端末）は、はみ出さないよう左端へ寄せる。
+ * 穴の真ん中に置く。見出しの文の上に重なるが、押せることを真似る合図なので、
+ * 端に寄せるより「この見出しを押す」が伝わる。指先は手の上の中央（`x ≈ 48%`）に
+ * 来るので、指先が穴の中心に落ちるよう少しだけ左へ寄せる。
  */
 export function tapPoint(
   hole: GuideRect,
   size = GUIDE_TAP_SIZE,
   inset = GUIDE_TAP_INSET,
 ): { top: number; left: number } {
+  // 指先（48%）が穴の中心へ来る位置。中心に手の箱を置くと、指先が少し右へずれる。
+  const tipOffset = size * GUIDE_TAP_TIP_X;
   const left = clamp(
-    hole.left + hole.width - size - inset,
+    hole.left + hole.width / 2 - tipOffset,
     hole.left + inset,
     Math.max(hole.left + inset, hole.left + hole.width - size),
   );

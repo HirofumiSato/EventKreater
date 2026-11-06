@@ -12,6 +12,8 @@ import {
   fitHoleToBubble,
   GUIDE_TAP_INSET,
   GUIDE_TAP_SIZE,
+  GUIDE_TAP_TIP_X,
+  GUIDE_REVEAL_HOLD_MS,
   guideClipPath,
   placeBubble,
   planScroll,
@@ -359,14 +361,28 @@ describe("紙を出す前の送り直し", () => {
   });
 });
 
+// 止まった瞬間に黒くすると、着いた場所を見る間が無いまま紙に覆われる。
+// 赤い枠だけの画面をしばらく置いてから、黒面と紙を同時に出す。
+describe("止まってから紙を出すまで", () => {
+  it("着いた場所を目で見る時間を、3 秒ほど置く", () => {
+    expect(GUIDE_REVEAL_HOLD_MS).toBeGreaterThanOrEqual(2500);
+    expect(GUIDE_REVEAL_HOLD_MS).toBeLessThanOrEqual(3500);
+  });
+
+  it("距離では変えない（遠い枚ほど長く待たせない）", () => {
+    expect(GUIDE_REVEAL_HOLD_MS).toBe(3000);
+  });
+});
+
 describe("押せる合図（手）", () => {
   const HOLE = { top: 275, left: 13, width: 464, height: 72 };
 
-  it("見出しの文を隠さないよう、穴の右手前に置く", () => {
+  it("穴の真ん中に置く（指先を穴の中心へそろえる）", () => {
     const point = tapPoint(HOLE);
 
-    expect(point.left).toBe(HOLE.left + HOLE.width - GUIDE_TAP_SIZE - GUIDE_TAP_INSET);
-    expect(point.left).toBeGreaterThan(HOLE.left + HOLE.width / 2);
+    // 指先（箱の 48%）が穴の中心へ来る。
+    const tip = point.left + GUIDE_TAP_SIZE * GUIDE_TAP_TIP_X;
+    expect(Math.abs(tip - (HOLE.left + HOLE.width / 2))).toBeLessThanOrEqual(0.5);
   });
 
   it("縦は穴の中央に合わせる（枠からはみ出さない）", () => {

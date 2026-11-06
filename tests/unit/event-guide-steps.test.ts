@@ -40,6 +40,21 @@ describe("8 枚の並び", () => {
     expect(eventGuideStep("welcome").openStep).toBeNull();
   });
 
+  it("最初の枚だけ黒い面を出さない（何の画面かを先に見せる）", () => {
+    expect(eventGuideStep("welcome").scrim).toBe(false);
+    for (const step of EVENT_GUIDE_STEPS.filter((entry) => entry.key !== "welcome")) {
+      expect(step.scrim).toBeUndefined();
+    }
+  });
+
+  it("2 枚目は、見出しを押して開くことを見出しの文で伝える", () => {
+    const copy = eventGuideStep("required").copy;
+
+    expect(copy.title).toBe("必須入力は3つ。タップで開く");
+    // 同じことを注記でも言わない（1 文 1 用件）。
+    expect(copy.note).toBeUndefined();
+  });
+
   it("最終枚は 1 つだけで、そこにだけ「次回から表示しない」を出す", () => {
     const finals = EVENT_GUIDE_STEPS.filter((step) => step.final);
 
