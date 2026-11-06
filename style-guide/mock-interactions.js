@@ -506,8 +506,6 @@
     autoAdvance: true,
     // まとめて話す。オンなら停止したあとに欄ごとの一覧を出す。
     batchMode: false,
-    // マスに並べた質問。塗ったあとに 30px の行を次へ進めるために控える。
-    batchPrompts: [],
     panel: null,
     scrim: null,
     // 押したときだけ出る確認（入力内容の確認・まとめて入力します）の層。
@@ -558,8 +556,8 @@
       '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
       // まとめて話すときの 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
+      // 話し方の指示は 30px の行（`.voice-panel__prompt`）に固定で出す。
       '<div class="voice-panel__example" hidden>' +
-      '<p class="voice-panel__example-lead">以下をまとめて話してください</p>' +
       '<p class="voice-panel__example-text"><span class="voice-panel__example-key">例</span> <span data-voice-example></span></p>' +
       "</div>" +
       '<div class="voice-panel__actions">' +
@@ -712,6 +710,9 @@
       "px)";
   }
 
+  /** まとめて話すときの 30px の行。製品の `BATCH_PROMPT` と同じ固定の指示。 */
+  const BATCH_PROMPT = "以下をまとめて話してください";
+
   /**
    * まとめて話すときのマスと例。製品の `batchPlan` と同じ名前・質問・見本にする。
    * 製品は `fields.ts` の `label` / `prompt` / `example` を使い、一部だけ短い名前に差し替える。
@@ -807,10 +808,8 @@
     if (voice.batchMode) {
       const targets = batchGuideEntries();
       const plan = batchCells(targets);
-      // 30px の行には、次に話す欄の質問（「イベント名は？」）を出す（製品と同じ）。
-      prompt.textContent = plan.length > 0 ? plan[0].prompt : "";
-      // 塗ったあとに次の質問へ進めるよう、マスの質問を控える（DOM には出さない）。
-      voice.batchPrompts = plan.map((cell) => cell.prompt);
+      // 30px の行は固定の指示。1 つの欄の話ではないので質問は進めない（製品と同じ）。
+      prompt.textContent = plan.length > 0 ? BATCH_PROMPT : "";
       hint.textContent = "";
       hint.hidden = true;
       // 話す 1 文の例。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
@@ -1273,19 +1272,15 @@
   /**
    * まとめて話すときに、読めたマスを 1 つずつ塗る。
    * 製品は聞き取れた節ごとに `cell` を受け取る。モックは同じ間合いを疑似の待ちで作る。
-   * 30px の行も、次に話す欄の質問へ進める（読めた欄の数が増えることが分かる）。
+   * 30px の行は固定の指示なので、塗っても入れ替えない（製品と同じ）。
    */
   function markMockCellsRead() {
     if (!voice.panel) return;
-    const prompts = voice.batchPrompts || [];
     const items = Array.from(voice.panel.querySelectorAll(".voice-cell"));
     items.forEach((item, index) => {
       later(() => {
         if (!voice.panel) return;
         item.classList.add("is-read");
-        const prompt = voice.panel.querySelector(".voice-panel__prompt");
-        const next = prompts[Math.min(index + 1, prompts.length - 1)];
-        if (prompt && next) prompt.textContent = next;
       }, 120 * (index + 1));
     });
   }
