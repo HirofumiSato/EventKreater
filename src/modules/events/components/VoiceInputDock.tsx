@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ChevronLeft, ChevronsRight, Loader2, Mic, Square, X } from "lucide-react";
+import { ChevronLeft, ChevronsRight, Mic, Square, X } from "lucide-react";
 import type { VoiceStepApi } from "@/modules/events/components/EventStepForm";
 import {
   audioContextConstructor,
@@ -28,8 +28,7 @@ import {
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import {
-  batchExample,
-  batchSteps,
+  batchPlan,
   batchTargets,
   defaultVoiceMode,
   type VoiceMode,
@@ -106,9 +105,6 @@ interface VoiceBatchState {
   /** 空欄だったのに、割当が付かなかった欄の名前。 */
   missed: string[];
 }
-
-/** まとめて話すときの質問。話す順と例は、いまの空欄から作る（`batch-guide.ts`）。 */
-const BATCH_PROMPT = "続けて話してください";
 
 /** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
 const AUTO_MESSAGE_MS = 3_000;
@@ -243,6 +239,9 @@ export function VoiceInputDock({
   // 話し方（まとめて／1つずつ）。null はまだ選ばれていない（既定に従う）。
   const [modeChoice, setModeChoice] = useState<VoiceMode | null>(null);
   const [batch, setBatch] = useState<VoiceBatchState | null>(null);
+  // まとめて話すときに、聞き取れてマスが埋まった欄。値はまだ確定していない。
+  // 話している間に増えるのはこの集合だけで、文字と値は止めたあとの確認で出す。
+  const [readCells, setReadCells] = useState<ReadonlySet<VoiceSlotId>>(new Set());
   // 群から出る瞬間の分岐。答えるまでカーソルは最後の欄に残す。
   const [branch, setBranch] = useState<VoiceBranchQuestion | null>(null);
   // 初回ガイド。開いたかどうかと「次回から表示しない」のチェックを持つ。
@@ -285,6 +284,8 @@ export function VoiceInputDock({
   const batchRef = useRef<VoiceBatchState | null>(null);
   // モックの疑似録音の待ち。実の録音の `timerRef` とは別に持つ（同時には片方しか使わない）。
   const mockTimerRef = useRef<number | null>(null);
+  // モックでマスを 1 つずつ塗るための待ち。疑似録音の待ちとは別に片付ける。
+  const mockCellTimersRef = useRef<number[]>([]);
   const mockRef = useRef(false);
   // モックかどうかのサーバーからの返事。届く前に押されても、録音の直前で待てるようにする。
   const mockAnswerRef = useRef<Promise<boolean> | null>(null);
@@ -320,8 +321,8 @@ export function VoiceInputDock({
     [showOrganizerName, includeOptional, touched],
   );
   const blankTargets = useMemo(() => batchTargets(value, scope), [value, scope]);
-  const guideSteps = useMemo(() => batchSteps(blankTargets), [blankTargets]);
-  const guideExample = useMemo(() => batchExample(blankTargets), [blankTargets]);
+  // 話す順と見本は 1 本の並び。札と例を別々に作ると数も位置も合わない。
+  const cells = useMemo(() => batchPlan(blankTargets), [blankTargets]);
   // まだ選ばれていなければ、空欄の数で既定を決める。セッションの途中で選ばれたらそれを優先する。
   const defaultMode = defaultVoiceMode(blankTargets, value);
   const batchMode = (modeChoice ?? defaultMode) === "batch";
@@ -483,6 +484,23 @@ export function VoiceInputDock({
       window.clearTimeout(mockTimerRef.current);
       mockTimerRef.current = null;
     }
+    for (const timer of mockCellTimersRef.current) window.clearTimeout(timer);
+    mockCellTimersRef.current = [];
+  }, []);
+
+  /**
+   * まとめて話すときに、読めたマスを 1 つ塗る。
+   *
+   * 値は入れない。文字化の間に見せるのは「どこまで聞き取れたか」だけで、
+   * 確定値は録音を止めたあとの確認で出す（途中の値を確定値として見せない）。
+   */
+  const markCellRead = useCallback((slotId: VoiceSlotId) => {
+    setReadCells((current) => {
+      if (current.has(slotId)) return current;
+      const next = new Set(current);
+      next.add(slotId);
+      return next;
+    });
   }, []);
 
   const markTouched = useCallback((key: VoiceFieldKey) => {
@@ -557,6 +575,8 @@ export function VoiceInputDock({
     setBatch(null);
     // 話し方はセッションごとに選び直す。次は空欄の数で既定を決める。
     setModeChoice(null);
+    // 塗ったマスも捨てる。次に開いたとき、前のセッションの塗りを残さない。
+    setReadCells(new Set());
     cursorRef.current = null;
     setCursor(null);
     // 位置も捨てる。次に開いたとき、古い位置で 1 フレーム見せないため。
@@ -812,10 +832,15 @@ export function VoiceInputDock({
       try {
         if (batchModeRef.current) {
           // まとめて話す: 1 回の録音をそのまま送り、欄ごとの割当を受ける。
+          // 録音を止めたあと、聞き取れた節ごとに `cell` が届くので、マスだけを先に塗る。
           const result = await transcribeVoiceUtterance({
             blob,
             value: valueRef.current,
             scope: scopeNow(),
+            onCell: (slotId) => {
+              if (!mountedRef.current) return;
+              markCellRead(slotId);
+            },
             signal: controller.signal,
           });
           if (!mountedRef.current || controller.signal.aborted) return;
@@ -865,7 +890,7 @@ export function VoiceInputDock({
         if (mountedRef.current) setInterim("");
       }
     },
-    [finishSession, presentBatch, presentTranscript, scopeNow],
+    [finishSession, markCellRead, presentBatch, presentTranscript, scopeNow],
   );
 
   /** MediaRecorder 経路（webm/opus）の録音を送る。`onstop` から呼ぶ。 */
@@ -943,6 +968,18 @@ export function VoiceInputDock({
     }
     setPhase("transcribing");
     flashStopping();
+    // 疑似でもマスを 1 つずつ塗る。実の経路（`cell`）と同じ順に見せるため、
+    // 文字化の待ちをマスの数で割って、見えている順に塗る。
+    const cellsToRead: VoiceSlotId[] = batchModeRef.current
+      ? batchPlan(batchTargets(valueRef.current, scopeNow())).map((cell) => cell.id)
+      : [];
+    cellsToRead.forEach((slotId, index) => {
+      const timer = window.setTimeout(
+        () => markCellRead(slotId),
+        Math.round((MOCK_TRANSCRIBE_MS * (index + 1)) / (cellsToRead.length + 1)),
+      );
+      mockCellTimersRef.current.push(timer);
+    });
     mockTimerRef.current = window.setTimeout(() => {
       mockTimerRef.current = null;
       const slot = voiceSlotById(key, valueRef.current, scopeNow());
@@ -975,6 +1012,7 @@ export function VoiceInputDock({
     clearTimer,
     finishSession,
     flashStopping,
+    markCellRead,
     mockBatchText,
     presentBatch,
     presentTranscript,
@@ -1259,6 +1297,7 @@ export function VoiceInputDock({
     // 前のセッションの確認・途中経過・知らせも残さない。
     batchRef.current = null;
     setBatch(null);
+    setReadCells(new Set());
     setInterim("");
     interimRef.current = "";
     clearAutoMessageTimer();
@@ -1516,16 +1555,23 @@ export function VoiceInputDock({
   const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
+  // まとめて話すときの「いま話す欄」。塗れたマスを飛ばして、次に話す 1 枚を選ぶ。
+  // 30px の行には、その欄の質問（「イベント名は？」）を出す。1 欄ずつと同じ聞き方にして、
+  // 話し方を切り替えても読み方が変わらないようにする。説明文は置かない。
+  const nextCell = cells.find((cell) => !readCells.has(cell.id)) ?? null;
   // 完了の見出しは、必須がそろっているかで変える（スキップで飛ばせるため）。
   const completion = completionCopy(firstIncompleteMandatoryStep(value) === null);
   const promptText = complete
     ? completion.prompt
-    : transcribing
-      ? "テキスト変換中"
-      : searching
-        ? "住所を調べています"
-        : batchMode
-          ? BATCH_PROMPT
+    : searching
+      ? "住所を調べています"
+      : batchMode
+        ? // 文字化の待ちのあいだも、次に話す欄の質問を消さない。動くのはマスだけでよい。
+          (nextCell?.prompt ??
+          cells.at(-1)?.prompt ??
+          "入力できる欄がすべて埋まりました。内容を確認してください。")
+        : transcribing
+          ? "テキスト変換中"
           : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
   const showStatus = listening || statusStopping;
   // パネルに出す 1 行。住所の補完の失敗は、値が入った知らせより先に伝える
@@ -1533,13 +1579,13 @@ export function VoiceInputDock({
   const notice = addressNote ?? message;
   const talkLabel = listening
     ? "録音を停止"
-    : transcribing
-      ? "テキスト変換中"
-      : batchMode
-        ? "まとめて話す"
-        : currentValue
-          ? "言い直す"
-          : "話す";
+    : batchMode
+      ? "まとめて話す"
+      : currentValue
+        ? "言い直す"
+        : "話す";
+  // 待ちのあいだは主ボタンを置かない（押しても始められない的を残さない）。
+  const showTalk = !transcribing && !searching;
 
   // パネルの位置は測った値で決める。隠すのは「まだ一度も測れていない」1 フレームだけ
   // （音声モードに入った直後）。まとめて話すときは画面下寄りに固定するので使わない。
@@ -1810,6 +1856,8 @@ export function VoiceInputDock({
     }
     setBatch(null);
     setMessage(null);
+    // 録り直すので、塗ったマスも一度消す（読めた数が増える様子を見せる）。
+    setReadCells(new Set());
     void startRecording();
   }, [batch, startRecording]);
 
@@ -1877,6 +1925,8 @@ export function VoiceInputDock({
       setModeChoice(mode);
       batchModeRef.current = mode === "batch";
       setMessage(null);
+      // マスの並びが変わるので、塗りは捨てる（別の話し方の塗りを引き継がない）。
+      setReadCells(new Set());
       // どちらが選ばれたかだけを送る。発話内容と値は送らない。
       trackEvent("voice_mode_selected", { mode, default: mode === defaultMode });
     },
@@ -2095,7 +2145,7 @@ export function VoiceInputDock({
               </p>
             )}
             {/* 質問と例は 1 行に並べる。例は質問の隣に置き、目を戻さずに読めるようにする。
-                まとめて話すときの順と例は折り返せる別の行へ置く（1 行に詰めると切れる）。 */}
+                まとめて話すときのマスは折り返せる別の行へ置く（1 行に詰めると切れる）。 */}
             <div className="voice-panel__ask">
               <p className="voice-panel__prompt" aria-live="polite" ref={promptRef}>
                 {promptText}
@@ -2104,22 +2154,23 @@ export function VoiceInputDock({
                 <p className="voice-panel__hint">例: {field.example}</p>
               )}
             </div>
-            {!complete && !searching && batchMode && guideSteps.length > 0 && (
-              <div className="voice-panel__guide">
-                <ol className="voice-panel__guide-steps" aria-label="話す順">
-                  {guideSteps.slice(0, 5).map((step) => (
-                    <li className="voice-panel__guide-step" key={step}>
-                      {step}
+            {/* まとめて話すときのマス。話す順を欄の名前で並べ、読めたマスから点と縁が変わる。
+                塗るのは聞き取れた印だけで、値は止めたあとの確認まで出さない。 */}
+            {!complete && batchMode && cells.length > 0 && (
+              <ol className="voice-cells" aria-label="話す順">
+                {cells.map((cell) => {
+                  const isRead = readCells.has(cell.id);
+                  return (
+                    <li
+                      className={`voice-cell${isRead ? " is-read" : ""}`}
+                      key={cell.id}
+                    >
+                      <span className="voice-cell__mark" aria-hidden="true" />
+                      <span className="voice-cell__label">{cell.label}</span>
                     </li>
-                  ))}
-                  {guideSteps.length > 5 && (
-                    <li className="voice-panel__guide-step voice-panel__guide-step--more">
-                      ほか{guideSteps.length - 5}項目
-                    </li>
-                  )}
-                </ol>
-                <p className="voice-panel__guide-example">例: {guideExample}</p>
-              </div>
+                  );
+                })}
+              </ol>
             )}
             {/* 認識の途中経過は質問の下に 1 行だけ出す。質問は消さない
                 （何を話すかを目で追いながら、聞き取れた分を確かめられる）。 */}
@@ -2151,121 +2202,122 @@ export function VoiceInputDock({
             </p>
           )}
 
-          <div className="voice-panel__actions">
-            {/* 録音中だけ、止め方を主ボタンの下に添える。丸い停止の印だけでは、
-                話し終えたあとに何を押すかが分かりにくいため。 */}
-            <div className="voice-panel__talk-wrap">
-              {/* 文字ではなくアイコンで置き、意味は aria-label と title で補う。 */}
-              <button
-                type="button"
-                className="voice-icon-btn voice-icon-btn--primary"
-                data-state={listening ? "stop" : transcribing || searching ? "busy" : "mic"}
-                aria-label={talkLabel}
-                title={talkLabel}
-                disabled={
-                  !listening &&
-                  ((!field && !batchMode) ||
-                    transcribing ||
-                    searching ||
-                    disabled ||
-                    complete)
-                }
-                onClick={listening ? stopRecording : () => void startRecording()}
-              >
-                {listening ? (
-                  <Square className="icon" aria-hidden="true" />
-                ) : transcribing || searching ? (
-                  <Loader2 className="icon" aria-hidden="true" />
-                ) : (
-                  <Mic className="icon" aria-hidden="true" />
-                )}
-              </button>
-              {listening && (
-                <p className="voice-panel__talk">
-                  話し終わったら
-                  <br />
-                  タップ
-                </p>
+          {/* 押しても動かない的は置かない。まとめて話すときは戻る・スキップを使わないので、
+              止めて置くのではなく、そもそも出さない（主操作も 1 つに絞られる）。
+              文字化・住所検索の待ちのあいだは主ボタンを出さない。 */}
+          {!complete && (showTalk || !batchMode) && (
+            <div className="voice-panel__actions">
+              {/* 録音中だけ、止め方を主ボタンの下に添える。丸い停止の印だけでは、
+                  話し終えたあとに何を押すかが分かりにくいため。 */}
+              {showTalk && (
+                <div className="voice-panel__talk-wrap">
+                  {/* 文字ではなくアイコンで置き、意味は aria-label と title で補う。 */}
+                  <button
+                    type="button"
+                    className="voice-icon-btn voice-icon-btn--primary"
+                    data-state={listening ? "stop" : "mic"}
+                    aria-label={talkLabel}
+                    title={talkLabel}
+                    onClick={listening ? stopRecording : () => void startRecording()}
+                  >
+                    {listening ? (
+                      <Square className="icon" aria-hidden="true" />
+                    ) : (
+                      <Mic className="icon" aria-hidden="true" />
+                    )}
+                  </button>
+                  {listening && (
+                    <p className="voice-panel__talk">
+                      話し終わったら
+                      <br />
+                      タップ
+                    </p>
+                  )}
+                </div>
+              )}
+              {/* 録音中でも戻る・スキップは押せる。いまの録音は捨て、移った欄で録り直す。
+                  戻り先が無いときは、押せない丸を残さず場所だけ空ける（並びを動かさない）。 */}
+              {!batchMode && previous && (
+                <button
+                  type="button"
+                  className="voice-icon-btn"
+                  aria-label="戻る"
+                  title="戻る"
+                  onClick={goPrevious}
+                >
+                  <ChevronLeft className="icon" aria-hidden="true" />
+                </button>
+              )}
+              {!batchMode && !previous && (
+                <span className="voice-panel__slot" aria-hidden="true" />
+              )}
+              {!batchMode && (
+                <div className="voice-panel__talk-wrap">
+                  <button
+                    type="button"
+                    className="voice-icon-btn"
+                    aria-label="スキップ"
+                    title="スキップ"
+                    onClick={skip}
+                  >
+                    <ChevronsRight className="icon" aria-hidden="true" />
+                  </button>
+                  {/* 丸い印だけでは意味が分かりにくいので、下に同じ大きさ・色で名前を出す。 */}
+                  <p className="voice-panel__talk">スキップ</p>
+                </div>
               )}
             </div>
-            {/* 録音中でも戻る・スキップは押せる。いまの録音は捨て、移った欄で録り直す。
-                止めてよいのは、文字化・住所検索・完了の待ちのあいだだけ。
-                1 欄ずつの戻る・スキップは、まとめて話すときは使わない。 */}
-            <button
-              type="button"
-              className="voice-icon-btn"
-              aria-label="戻る"
-              title="戻る"
-              disabled={batchMode || !previous || transcribing || searching || complete}
-              onClick={goPrevious}
-            >
-              <ChevronLeft className="icon" aria-hidden="true" />
-            </button>
-            <div className="voice-panel__talk-wrap">
-              <button
-                type="button"
-                className="voice-icon-btn"
-                aria-label="スキップ"
-                title="スキップ"
-                disabled={batchMode || !field || transcribing || searching || complete}
-                onClick={skip}
-              >
-                <ChevronsRight className="icon" aria-hidden="true" />
-              </button>
-              {/* 丸い印だけでは意味が分かりにくいので、下に同じ大きさ・色で名前を出す。 */}
-              <p className="voice-panel__talk">スキップ</p>
-            </div>
-          </div>
+          )}
 
-          <div className="voice-panel__options">
-            {/* 話し方は入口の 2 択。まとめて話すときも、録音の途中で切り替えられる
-                （録った音声は同じで、停止したあとの送り先だけが変わる）。 */}
-            <div className="voice-panel__mode" role="radiogroup" aria-label="話し方">
-              <label className="voice-mode">
-                <input
-                  type="radio"
-                  name="voice-mode"
-                  value="batch"
-                  checked={batchMode}
-                  disabled={transcribing || searching}
-                  onChange={() => chooseMode("batch")}
-                />
-                まとめて
-              </label>
-              <label className="voice-mode">
-                <input
-                  type="radio"
-                  name="voice-mode"
-                  value="single"
-                  checked={!batchMode}
-                  disabled={transcribing || searching}
-                  onChange={() => chooseMode("single")}
-                />
-                1つずつ
-              </label>
+          {!complete && (
+            <div className="voice-panel__options">
+              {/* 話し方は入口の 2 択。まとめて話すときも、録音の途中で切り替えられる
+                  （録った音声は同じで、停止したあとの送り先だけが変わる）。 */}
+              <div className="voice-panel__mode" role="radiogroup" aria-label="話し方">
+                <label className="voice-mode">
+                  <input
+                    type="radio"
+                    name="voice-mode"
+                    value="batch"
+                    checked={batchMode}
+                    onChange={() => chooseMode("batch")}
+                  />
+                  まとめて
+                </label>
+                <label className="voice-mode">
+                  <input
+                    type="radio"
+                    name="voice-mode"
+                    value="single"
+                    checked={!batchMode}
+                    onChange={() => chooseMode("single")}
+                  />
+                  1つずつ
+                </label>
+              </div>
+              <div className="voice-panel__toggles">
+                <label className="check voice-panel__optional">
+                  <input
+                    type="checkbox"
+                    checked={includeOptional}
+                    onChange={(event) => setIncludeOptional(event.target.checked)}
+                  />
+                  任意の項目も聞く
+                </label>
+                {/* まとめて話すときは 1 欄ずつ進まないので、切り替え自体を出さない。 */}
+                {!batchMode && (
+                  <label className="check voice-panel__optional">
+                    <input
+                      type="checkbox"
+                      checked={autoAdvance}
+                      onChange={(event) => setAutoAdvance(event.target.checked)}
+                    />
+                    答えたら次へ
+                  </label>
+                )}
+              </div>
             </div>
-            <div className="voice-panel__toggles">
-              <label className="check voice-panel__optional">
-                <input
-                  type="checkbox"
-                  checked={includeOptional}
-                  disabled={listening || transcribing}
-                  onChange={(event) => setIncludeOptional(event.target.checked)}
-                />
-                任意の項目も聞く
-              </label>
-              <label className="check voice-panel__optional">
-                <input
-                  type="checkbox"
-                  checked={autoAdvance}
-                  // まとめて話すときは 1 欄ずつ進まないので、切り替え自体を止める。
-                  disabled={batchMode}
-                  onChange={(event) => setAutoAdvance(event.target.checked)}
-                />
-                答えたら次へ
-              </label>
-            </div>
-          </div>
+          )}
         </section>
       )}
 

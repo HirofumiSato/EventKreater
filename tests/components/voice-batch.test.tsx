@@ -138,23 +138,29 @@ describe("まとめて話す", () => {
     expect(
       (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).checked,
     ).toBe(false);
-    expect(screen.getByText("続けて話してください")).toBeTruthy();
-    // 話す順は、いまの空欄から作る。
-    expect(screen.getByText("名前")).toBeTruthy();
-    expect(screen.getByText("日時")).toBeTruthy();
-    expect(screen.getByText("費用")).toBeTruthy();
-    expect(screen.getByText("会場")).toBeTruthy();
+    // 30px の行は、次に話す欄の質問。
     expect(
-      screen.getByText("例: 忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール"),
+      screen.getByText("イベント名は？", { selector: ".voice-panel__prompt" }),
     ).toBeTruthy();
+    // 話す順は欄の名前で並べる。郵便番号まで出す。
+    const cells = within(screen.getByRole("list", { name: "話す順" })).getAllByRole(
+      "listitem",
+    );
+    expect(cells.map((cell) => cell.textContent)).toEqual([
+      "イベント名",
+      "開催日",
+      "開始時間と終了時間",
+      "費用プラン名",
+      "費用（～円）",
+      "場所",
+      "郵便番号",
+    ]);
     // 1 欄ずつの「いまの値」と戻る・スキップは、まとめてのときは出さない。
+    // 押せない的を置かず、そもそも描かない。
     expect(screen.queryByText(/いまの値:/)).toBeNull();
-    expect(
-      (screen.getByRole("button", { name: "戻る" }) as HTMLButtonElement).disabled,
-    ).toBe(true);
-    expect(
-      (screen.getByRole("button", { name: "スキップ" }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "スキップ" })).toBeNull();
+    expect(screen.queryByText("答えたら次へ")).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -170,6 +176,45 @@ describe("まとめて話す", () => {
     // まとめての話す順は消え、1 欄ずつの例だけが残る。
     expect(screen.queryByRole("list", { name: "話す順" })).toBeNull();
     expect(screen.getByText("例: 忘年会")).toBeTruthy();
+  });
+
+  it("話している間に、読めたマスの数が増える", async () => {
+    stubFetch();
+    await mount(vi.fn());
+    await press("音声入力を開始");
+
+    const cells = () =>
+      within(screen.getByRole("list", { name: "話す順" })).getAllByRole("listitem");
+    const readCount = () =>
+      cells().filter((cell) => cell.className.includes("is-read")).length;
+    const prompt = () => document.querySelector(".voice-panel__prompt")?.textContent;
+
+    // 録音が終わると文字化が始まる。まだ 1 枚も塗られていない。
+    await act(async () => {
+      vi.advanceTimersByTime(PAST_RECORDING_MS);
+    });
+    expect(readCount()).toBe(0);
+    // 30px の行は、次に話す欄の質問から始まる。
+    expect(prompt()).toBe("イベント名は？");
+
+    // 話すのをやめる（ダイアログが出る）前に、塗られるマスが増える。
+    // 疑似の文字化は 350ms を 7 枚で割るので、1 枚目は 44ms、2 枚目は 88ms に来る。
+    await act(async () => {
+      vi.advanceTimersByTime(45);
+    });
+    const first = readCount();
+    await act(async () => {
+      vi.advanceTimersByTime(50);
+    });
+    const second = readCount();
+
+    expect(first).toBeGreaterThan(0);
+    expect(second).toBeGreaterThan(first);
+    // 塗るだけで、値はまだ入れない。
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText(/いまの値:/)).toBeNull();
+    // 30px の行も、次に話す欄の質問へ進む。
+    expect(prompt()).toBe("開始時間と終了時間は？");
   });
 
   it("モックでは外部へ送らず、欄ごとの行を並べる", async () => {

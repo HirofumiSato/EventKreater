@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
-import { assignBatch, mockBatchTranscript } from "@/modules/events/lib/voice/batch";
+import {
+  assignBatch,
+  mockBatchTranscript,
+} from "@/modules/events/lib/voice/batch";
+import { batchTargets } from "@/modules/events/lib/voice/batch-guide";
 import { VOICE_FIELD_KEYS } from "@/modules/events/lib/voice/fields";
 import {
   isVoiceMockEnabled,
@@ -12,7 +16,15 @@ import {
 } from "@/modules/events/lib/voice/mock";
 import { transcribeDetailed } from "@/modules/events/lib/voice/openai";
 import { consumeVoiceRateLimit } from "@/modules/events/lib/voice/rate-limit";
-import type { VoiceFieldKey, VoiceFieldScope } from "@/modules/events/lib/voice/types";
+import {
+  assignTerminated,
+  terminatedPrefix,
+} from "@/modules/events/lib/voice/utterance";
+import type {
+  VoiceFieldKey,
+  VoiceFieldScope,
+  VoiceSlotId,
+} from "@/modules/events/lib/voice/types";
 import {
   EMPTY_EVENT_FORM,
   MAX_EVENT_OPTIONS,
@@ -162,6 +174,10 @@ function parseScope(raw: FormDataEntryValue | null): VoiceFieldScope {
  *
  * 文字起こしは 1 回だけ。決定的に割り当てられなかった節だけを LLM へ回し、
  * 返ってきた節は必ず `parse` に通してから返す。録音は保存しない。
+ *
+ * 応答は `text/event-stream`。文字起こしの増分が届くたびに、言い終わった節だけを
+ * 決定的に割り当て、読めたマスを `cell` で先に返す。値は返さない（`done` でまとめて返す）。
+ * 話している間はマスだけが埋まり、止めたあとに確認のダイアログで値を出す。
  */
 export async function POST(req: NextRequest) {
   try {
@@ -224,39 +240,151 @@ export async function POST(req: NextRequest) {
     // 課金を守るため、認識を呼ぶ前に 1 回ぶん消費する。モックは外部を呼ばないので数えない。
     if (!mock) consumeVoiceRateLimit(clientIp(req) ?? "local");
 
-    let text: string;
-    let model: string;
-    if (mock) {
-      text = mockBatchTranscript(value, scope);
-      model = "mock";
-    } else {
-      const bytes = new Uint8Array(await audio.arrayBuffer());
-      const transcription = await transcribeDetailed({
-        bytes,
-        contentType: audioType,
-        filename: filenameFor(audioType),
-        // まとめて話すときは欄を決めない。入力済みの名前だけを当て字の手掛かりにする。
-        field: null,
-        title: value.title || null,
-        venueName: value.venueName || null,
-      });
-      text = transcription.text;
-      // 控えのモデルへ落ちたときも、実際に使った名前を返す。
-      model = transcription.model;
-    }
+    // 画面が切れたら上流も切る。`req.signal` とストリームの `cancel()` の両方から止める。
+    const abort = new AbortController();
+    const onRequestAbort = (): void => abort.abort();
+    if (req.signal.aborted) abort.abort();
+    else req.signal.addEventListener("abort", onRequestAbort, { once: true });
 
-    const result = await assignBatch(text, { now: new Date(), value, scope });
+    const encoder = new TextEncoder();
+    let closed = false;
 
-    return NextResponse.json(
-      {
-        text,
-        assignments: result.assignments,
-        unassigned: result.unassigned,
-        model,
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        /** 1 イベントを書き出す。閉じたあとの書き込みは捨てる。 */
+        const send = (event: string, payload: unknown): void => {
+          if (closed || abort.signal.aborted) return;
+          try {
+            controller.enqueue(
+              encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`),
+            );
+          } catch {
+            closed = true;
+          }
+        };
+
+        // 読めたマス。同じマスを二度送らない。
+        const read = new Set<VoiceSlotId>();
+        // 直前にマスを確かめた位置。区切りが増えていなければ引き直さない。
+        let checkedLength = 0;
+
+        const emitCells = (prefix: string): void => {
+          if (prefix.length <= checkedLength) return;
+          checkedLength = prefix.length;
+          // 途中は決定的な割当だけを見る。LLM は止めたあとに 1 度だけ呼ぶ。
+          const partial = assignTerminated({
+            text: prefix,
+            value,
+            now: new Date(),
+            scope,
+            targets: batchTargets(value, scope),
+          });
+          for (const item of partial.assignments) {
+            if (read.has(item.slotId)) continue;
+            read.add(item.slotId);
+            // 値は送らない。どのマスが読めたかだけを返す。
+            send("cell", { slotId: item.slotId });
+          }
+        };
+
+        try {
+          let text: string;
+          let model: string;
+          if (mock) {
+            text = mockBatchTranscript(value, scope);
+            model = "mock";
+            // 疑似でも節ごとにマスを塗る。区切りごとに 1 つずつ増える様子を再現する。
+            let accumulated = "";
+            let first = true;
+            for (const clause of text.split("、")) {
+              const delta = first ? clause : `、${clause}`;
+              first = false;
+              accumulated += delta;
+              send("delta", { text: delta });
+              emitCells(`${accumulated}、`);
+            }
+          } else {
+            const bytes = new Uint8Array(await audio.arrayBuffer());
+            let accumulated = "";
+            const transcription = await transcribeDetailed({
+              bytes,
+              contentType: audioType,
+              filename: filenameFor(audioType),
+              // まとめて話すときは欄を決めない。入力済みの名前だけを当て字の手掛かりにする。
+              field: null,
+              title: value.title || null,
+              venueName: value.venueName || null,
+              onDelta: (delta) => {
+                accumulated += delta;
+                send("delta", { text: delta });
+                emitCells(terminatedPrefix(accumulated));
+              },
+              signal: abort.signal,
+            });
+            text = transcription.text;
+            // 控えのモデルへ落ちたときも、実際に使った名前を返す。
+            model = transcription.model;
+          }
+
+          const result = await assignBatch(text, { now: new Date(), value, scope });
+          // 止めたあとの割当で、まだ塗っていないマスを塗る（LLM の推定で決まった分）。
+          for (const item of result.assignments) {
+            if (read.has(item.slotId)) continue;
+            read.add(item.slotId);
+            send("cell", { slotId: item.slotId });
+          }
+          send("done", {
+            text,
+            assignments: result.assignments,
+            unassigned: result.unassigned,
+            model,
+          });
+        } catch (error) {
+          // 本文は流れ始めているため、ステータスは変えず error イベントで知らせる。
+          send("error", streamFailure(error));
+        } finally {
+          req.signal.removeEventListener("abort", onRequestAbort);
+          try {
+            if (!closed) controller.close();
+          } catch {
+            // すでに閉じている（画面が切れた）ときは何もしない。
+          }
+        }
       },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+      cancel() {
+        closed = true;
+        abort.abort();
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (error) {
+    // ストリームを始める前の失敗は、従来どおり problem+json で返す。
     return toErrorResponse(error, INSTANCE);
   }
+}
+
+/**
+ * ストリームが始まったあとの失敗を、自前プロトコルの `error` イベントへ変える。
+ * ステータスコードは変えられない（本文はすでに流れている）ため、コードと文言だけを返す。
+ */
+function streamFailure(error: unknown): { error: string; detail: string } {
+  if (error instanceof ProblemDetailException) {
+    const code =
+      typeof error.extras.error === "string" ? error.extras.error : "TRANSCRIBE_FAILED";
+    return { error: code, detail: error.detail };
+  }
+  console.error("[voice] batch stream failed", error);
+  return {
+    error: "TRANSCRIBE_FAILED",
+    detail: "音声を文字にできませんでした。手で入力してください。",
+  };
 }

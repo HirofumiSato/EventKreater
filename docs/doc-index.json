@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2994,
+      "lineCount": 3005,
       "headings": [
         {
           "level": 2,
@@ -13157,7 +13157,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 681,
+      "lineCount": 689,
       "headings": [
         {
           "level": 1,

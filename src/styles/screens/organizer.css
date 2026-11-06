@@ -773,68 +773,57 @@
   color: var(--color-text-subtle);
 }
 
-/* まとめて話すときの「話す順」と例。1 行の `.voice-panel__hint` に入れると
-   390px で末尾が切れるため、折り返せる別の行に置く。 */
-.voice-panel__guide {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.voice-panel__guide-steps {
+/* まとめて話すときのマス。話す順を欄の名前で並べる。
+   押せる的ではないので 40px は要らない（触るのは下の主ボタンだけ）。 */
+.voice-cells {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.375rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: voice-step;
 }
 
-.voice-panel__guide-step {
+.voice-cell {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.0625rem 0.4375rem 0.0625rem 0.3125rem;
-  border: 1px solid var(--color-border);
+  gap: 0.3125rem;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  border: 1px dashed var(--color-border-strong);
   border-radius: 999px;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
-  font-size: var(--font-action);
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
-/* 札には順番を小さな丸で添える。話す順であることを、文字を増やさずに示す。 */
-.voice-panel__guide-step::before {
-  counter-increment: voice-step;
-  content: counter(voice-step);
-  display: inline-grid;
-  place-items: center;
-  width: 1rem;
-  height: 1rem;
+/* 読めたかどうかは、点が塗られるかで示す。文字は増やさない。 */
+.voice-cell__mark {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--color-border-strong);
   border-radius: 999px;
+  background: transparent;
+}
+
+.voice-cell__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-cell.is-read {
+  border-style: solid;
+  border-color: var(--color-primary);
   background: var(--color-primary-soft);
   color: var(--color-primary-text);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
-.voice-panel__guide-step--more::before {
-  content: none;
-}
-
-/* 例は 2 行まで。3 行以上になると、マイクのボタンがパネルの外へ押し出される。 */
-.voice-panel__guide-example {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  margin: 0;
-  color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+.voice-cell.is-read .voice-cell__mark {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
 }
 
 /* 確定済みの「いまの値」は、質問の行に詰めず下の別の行へ置く。 */
@@ -909,6 +898,14 @@
   line-height: 1.4;
   text-align: center;
   white-space: normal;
+}
+
+/* 戻り先が無いときに、押せない丸を置かずに場所だけ空ける。
+   並び（主ボタン・戻る・スキップ）を欄ごとに入れ替えない。 */
+.voice-panel__slot {
+  flex: none;
+  width: var(--tap-target);
+  height: var(--tap-target);
 }
 
 .voice-icon-btn {

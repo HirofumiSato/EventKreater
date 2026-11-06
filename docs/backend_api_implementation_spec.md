@@ -130,7 +130,7 @@ flowchart TD
 | `/api/v1/geo/postal-codes/[code]` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要（IP 単位の回数制限） | 郵便番号から都道府県・市区町村・町名を引く。外部サービスへ中継し、24 時間キャッシュする（5.22） |
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-transcribe` へ中継し、`text/event-stream` で `delta` / `done` / `error` を返す。`VOICE_TRANSCRIBE_MODEL` で差し替え、モデルが使えないときは `VOICE_TRANSCRIBE_FALLBACK_MODEL` で 1 度だけ再試行する。未設定なら 503 `TRANSCRIBE_DISABLED` |
-| `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。文字起こしは 1 回だけで、決定的に節を割り当て、未割当の節だけ `VOICE_BATCH_MODEL`（既定 `gpt-4.1-mini`）で割当を推定する。`{ text, assignments, unassigned, model }` を返す。`VOICE_BATCH_LLM=0` で LLM を使わない |
+| `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。文字起こしは 1 回だけで、決定的に節を割り当て、未割当の節だけ `VOICE_BATCH_MODEL`（既定 `gpt-4.1-mini`）で割当を推定する。`text/event-stream` で `delta` / `cell` / `done` / `error` を返し、`cell` は読めたマスだけ（値は `done` にまとめる）。`VOICE_BATCH_LLM=0` で LLM を使わない |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -1410,7 +1410,18 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | `value` | 必須。いまのフォームの値（JSON）。`schedules` と `pricePlans` は 1 件以上 |
 | `scope` | 任意。巡回の指定（JSON）。`showOrganizerName` / `includeOptional` / `touched` |
 
-応答は `200 { "text": string, "assignments": [...], "unassigned": string[], "model": string }`。`assignments` の 1 件は `{ "slotId": string, "text": string, "value": string \| number \| null, "patch": object }`。`slotId` は `欄のキー:行`（`scheduleDate:0`、`planAmount:1`）。`value` は確認に出す読みやすい値（金額は数値、日付は `YYYY-MM-DD`）で、`patch` がフォームへ当てる差分。`Cache-Control: no-store`。
+応答は `200` の `text/event-stream`。イベントは 3 つ。
+
+| イベント | 内容 |
+| :---- | :---- |
+| `delta` | `{ "text": string }`。聞き取れた文字の増分 |
+| `cell` | `{ "slotId": string }`。言い終わった節で読めたマス。**値は含めない** |
+| `done` | `{ "text": string, "assignments": [...], "unassigned": string[], "model": string }` |
+| `error` | `{ "error": string, "detail": string }`。ストリーム開始後の失敗（ステータスは 200 のまま） |
+
+`assignments` の 1 件は `{ "slotId": string, "text": string, "value": string \| number \| null, "patch": object }`。`slotId` は `欄のキー:行`（`scheduleDate:0`、`planAmount:1`）。`value` は確認に出す読みやすい値（金額は数値、日付は `YYYY-MM-DD`）で、`patch` がフォームへ当てる差分。`Cache-Control: no-store`。
+
+`cell` は `utterance.ts` の `assignTerminated` で作る。最後の区切りより後ろは言いかけとして捨てるので、途中の値が確定値として出ることはない。同じマスは 1 回だけ送る。ストリーム開始前の失敗（形式・空・5MB・`value`・回数の上限・鍵の不在）は、従来どおり `application/problem+json` で返す。
 
 文字起こしは 1 回だけ（`transcribeDetailed`、`field` は渡さない）。割当は `src/modules/events/lib/voice/utterance.ts` の決定的な手順で行う。
 

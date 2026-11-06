@@ -166,10 +166,9 @@ function lastValue(onChange: { mock: { calls: unknown[][] } }): EventFormValues 
   return onChange.mock.calls.at(-1)?.[0] as EventFormValues;
 }
 
-/** 主ボタン（話す・言い直す）と、戻る・スキップの 3 つ。 */
+/** 戻る・スキップの 2 つ。主ボタンは待ちの間は描かれないので含めない。 */
 function panelButtons() {
   return {
-    talk: screen.getByRole("button", { name: /^(話す|言い直す)$/ }) as HTMLButtonElement,
     back: screen.getByRole("button", { name: "戻る" }) as HTMLButtonElement,
     skip: screen.getByRole("button", { name: "スキップ" }) as HTMLButtonElement,
   };
@@ -192,7 +191,7 @@ afterEach(() => {
 });
 
 describe("郵便番号の住所検索", () => {
-  it("確定すると「住所を調べています」を出し、待ちの間は録音・戻る・スキップを止める", async () => {
+  it("確定すると「住所を調べています」を出し、待ちの間は主ボタンを置かない", async () => {
     const stub = stubFetch();
     const onChange = vi.fn();
 
@@ -204,12 +203,12 @@ describe("郵便番号の住所検索", () => {
     expect(stub.urls).toHaveLength(1);
     expect(stub.urls[0]).toContain("/api/v1/geo/postal-codes/1500001");
 
-    // 待ちの間に録音を始めさせない。戻る・スキップも止める。
+    // 押しても始められない的は置かない（主ボタンごと出さない）。
+    expect(screen.queryByRole("button", { name: /^(話す|言い直す|まとめて話す)$/ })).toBeNull();
+    // 戻る・スキップは押せる。押せば待ちを捨てて、その欄へ移る。
     const buttons = panelButtons();
-    expect(buttons.talk.disabled).toBe(true);
-    expect(buttons.talk.getAttribute("data-state")).toBe("busy");
-    expect(buttons.back.disabled).toBe(true);
-    expect(buttons.skip.disabled).toBe(true);
+    expect(buttons.back.disabled).toBe(false);
+    expect(buttons.skip.disabled).toBe(false);
   });
 
   it("住所が 1 件見つかると 3 欄に入り、番地の録音へ進む", async () => {

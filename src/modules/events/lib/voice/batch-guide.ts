@@ -1,13 +1,22 @@
 import { isSlotNeeded, voiceFieldOrder } from "@/modules/events/lib/voice/fields";
-import type { VoiceFieldScope, VoiceSlot, VoiceSlotId } from "@/modules/events/lib/voice/types";
+import type {
+  VoiceField,
+  VoiceFieldScope,
+  VoiceSlot,
+  VoiceSlotId,
+} from "@/modules/events/lib/voice/types";
 import { groupPricePlanPairs, type EventFormValues } from "@/modules/events/types";
 
 /**
- * 「まとめて話す」の案内。話す順と例を、いまのフォームの空欄から作る。
+ * 「まとめて話す」の案内。話す順を、いまのフォームの空欄から作る。
  *
  * 固定の例を画面に置くと、欄が埋まったあとも埋まっていない欄の例を読み上げてしまい、
  * 話す順と実際に割り当てられる欄がずれる。案内と割当の対象を同じ `batchTargets` から
  * 作ることで、見えている順に話せばそのとおりに入る。
+ *
+ * 札（話す順の名前）と例（読み上げの見本）は、かつて別々の配列から作っていた。
+ * 片方は重複を除いた種類、もう片方は 6 項までの文字列だったため、5 枚と 6 項のように
+ * 数も位置も合わなかった。いまは `batchPlan` の 1 本の並びが、マスの名前と質問を持つ。
  *
  * DOM と Next に依存しない純ロジック。`fields.ts` の定義だけを読む。
  */
@@ -58,87 +67,96 @@ export function defaultVoiceMode(
   return targets.length >= BATCH_DEFAULT_MIN_TARGETS ? "batch" : "single";
 }
 
-/** 例に並べる上限。 */
-const MAX_EXAMPLE_ITEMS = 6;
+/** マスに並べる上限。390px で 3 段に収まる長さに抑える（郵便番号まで）。 */
+const MAX_CELLS = 7;
 
-/** ステップごとの短い名前。巡回順に重複を除いて返す。 */
-export function batchSteps(targets: readonly VoiceSlot[]): string[] {
-  const steps: string[] = [];
-  const seen = new Set<string>();
-  for (const target of targets) {
-    const name = shortStepName(target);
-    if (seen.has(name)) continue;
-    seen.add(name);
-    steps.push(name);
-  }
-  return steps;
+/**
+ * マスに出す名前と、30px の 1 行に出す質問。
+ *
+ * 既定は欄そのものの名前と質問（`fields.ts` の `label` / `prompt`）を使う。ここで
+ * 差し替えるのは、マスに並べると長いもの（費用プランの名前）、単位を添えないと
+ * 何を話すか決まらないもの（金額）、話す順では「場所」で通じるもの（会場名）だけである。
+ */
+const CELL_TEXT: Partial<Record<VoiceField["key"], { label: string; prompt: string }>> = {
+  planName: { label: "費用プラン名", prompt: "費用プラン名は？" },
+  planAmount: { label: "費用（～円）", prompt: "費用は？" },
+  venueName: { label: "場所", prompt: "場所は？" },
+};
+
+/** 開始と終了を 1 枚に畳んだときの名前と質問。 */
+const RANGE_TEXT = {
+  label: "開始時間と終了時間",
+  prompt: "開始時間と終了時間は？",
+} as const;
+
+/**
+ * まとめて話すときの 1 マス。
+ *
+ * 画面はこの並びをそのまま縦に置く。名前はマスに、質問は 30px の 1 行に出る。
+ * 1 欄ずつの `label` / `prompt` と同じ語を使うので、話し方を切り替えても読み方が変わらない。
+ */
+export interface BatchCell {
+  /** マスの識別子。読めたかどうかはこの id で持つ。 */
+  id: VoiceSlotId;
+  /** 1 文で埋まる組（「18時から20時」の開始と終了など）。 */
+  slotIds: VoiceSlotId[];
+  /** マスに出す欄の名前（「イベント名」）。 */
+  label: string;
+  /** 30px の 1 行に出す質問（「イベント名は？」）。 */
+  prompt: string;
 }
 
 /**
- * 例。`field.example` を巡回順に `、` でつなぐ。
+ * 話す順を 1 本の並びにする。
  *
- * - 必須の欄を先に、任意の欄を後ろに置く（例は「まず話すこと」を見せる）
- * - 同じ行の開始と終了が続くときは「18時から20時」の 1 項に畳む
- *   （`scheduleStart` の範囲解釈に合わせる）
- * - 6 項まで。390px で 2 行に収まる長さに抑える
+ * - 必須の欄を先に、任意の欄を後ろに置く（まず話すことを前へ出す）
+ * - 同じ行の開始と終了が続くときは 1 枚に畳む（`scheduleStart` の範囲解釈に合わせる）
+ * - 7 枚まで。8 枚目以降は確認のダイアログで扱う
  */
-export function batchExample(targets: readonly VoiceSlot[]): string {
+export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
   const byId = new Map<VoiceSlotId, VoiceSlot>(targets.map((slot) => [slot.id, slot]));
   const ordered = [
     ...targets.filter((slot) => !slot.field.optional),
     ...targets.filter((slot) => slot.field.optional),
   ];
 
-  const items: string[] = [];
-  const seen = new Set<string>();
+  const cells: BatchCell[] = [];
   for (const target of ordered) {
-    if (items.length >= MAX_EXAMPLE_ITEMS) break;
+    if (cells.length >= MAX_CELLS) break;
 
-    // 開始が同じ行にあれば、終了は開始の項に畳んである。
+    // 開始が同じ行にあれば、終了は開始のマスに畳んである。
     if (target.key === "scheduleEnd") {
       const start = byId.get(`scheduleStart:${target.row}` as VoiceSlotId);
       if (start) continue;
     }
 
-    let text = target.field.example;
+    const slotIds: VoiceSlotId[] = [target.id];
+    let range = false;
     if (target.key === "scheduleStart") {
       const end = byId.get(`scheduleEnd:${target.row}` as VoiceSlotId);
-      if (end) text = `${text}から${end.field.example}`;
+      if (end) {
+        range = true;
+        slotIds.push(end.id);
+      }
     }
 
-    if (seen.has(text)) continue;
-    seen.add(text);
-    items.push(text);
+    const text = cellText(target, range);
+    cells.push({ id: target.id, slotIds, ...text });
   }
-  return items.join("、");
+  return cells;
 }
 
-function shortStepName(slot: VoiceSlot): string {
-  switch (slot.key) {
-    case "title":
-    case "organizerName":
-      return "名前";
-    case "scheduleDate":
-    case "scheduleStart":
-    case "scheduleEnd":
-      return "日時";
-    case "planName":
-    case "planAmount":
-    case "planNote":
-      return "費用";
-    case "venueName":
-    case "postalCode":
-    case "prefecture":
-    case "city":
-    case "town":
-    case "addressLine":
-    case "building":
-    case "rainPolicy":
-      return "会場";
-    case "capacity":
-    case "rsvpDeadline":
-      return "定員";
-    default:
-      return "その他";
-  }
+/**
+ * マスの名前と質問を決める。
+ *
+ * 行や男女別で名前が変わる欄（「2件目の開催日」「女性の金額」）は、`fields.ts` が
+ * 作った名前をそのまま使う。差し替えると、どの行の話か分からなくなる。
+ */
+function cellText(
+  slot: VoiceSlot,
+  range: boolean,
+): { label: string; prompt: string } {
+  if (range) return RANGE_TEXT;
+  const own = slot.label === slot.field.label ? CELL_TEXT[slot.key] : undefined;
+  return own ?? { label: slot.label, prompt: slot.prompt };
 }

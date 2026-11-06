@@ -3,6 +3,7 @@ import {
   extensionForMimeType,
   MAX_AUDIO_BYTES,
 } from "@/modules/events/lib/voice/audio";
+import { readSseStream, type SseEvent } from "@/modules/events/lib/voice/sse";
 import type {
   VoiceFieldScope,
   VoicePatch,
@@ -16,6 +17,9 @@ import type { EventFormValues } from "@/modules/events/types";
  * 1 回の録音をそのまま `POST /api/v1/voice/utterances` へ送り、欄ごとの割当を受ける。
  * 値の解釈はサーバー（`parse.ts`）に閉じてあるので、ここでは形を検めるだけで、
  * 値を作り直さない。編集された行の読み直しは、画面側で `field.parse` に通す。
+ *
+ * 応答は `text/event-stream`。聞き取れた節ごとに `cell` が届くので、話している間に
+ * マスだけを先に埋められる。値は最後の `done` にまとめて入っている。
  */
 const UTTERANCE_ENDPOINT = "/api/v1/voice/utterances";
 
@@ -68,6 +72,98 @@ function readStrings(raw: unknown): string[] {
   return raw.filter((item): item is string => typeof item === "string");
 }
 
+/** `done` の本文を結果へ直す。形が崩れていたら null（読み取り側が失敗にする）。 */
+function readDone(raw: unknown): VoiceUtteranceResult | null {
+  if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  return {
+    text: raw.text,
+    assignments: readAssignments(raw.assignments),
+    unassigned: readStrings(raw.unassigned),
+    model: typeof raw.model === "string" ? raw.model : null,
+  };
+}
+
+/**
+ * 1 イベントを読む。知らないイベント名と壊れた JSON は捨てる。
+ * `error` だけは本文に理由があるので、投げて呼び出し側へ渡す。
+ */
+function parseEvent(event: SseEvent): { type: "delta" | "cell" | "done"; payload: unknown } | null {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(event.data);
+  } catch {
+    return null;
+  }
+  if (!isRecord(payload)) return null;
+
+  if (event.event === "delta") {
+    return typeof payload.text === "string"
+      ? { type: "delta", payload: payload.text }
+      : null;
+  }
+  if (event.event === "cell") {
+    return typeof payload.slotId === "string"
+      ? { type: "cell", payload: payload.slotId }
+      : null;
+  }
+  if (event.event === "done") {
+    return { type: "done", payload };
+  }
+  if (event.event === "error") {
+    throw new Error(
+      typeof payload.detail === "string" && payload.detail
+        ? payload.detail
+        : EMPTY_RESULT_MESSAGE,
+    );
+  }
+  return null;
+}
+
+/** `text/event-stream` を読み、`delta` / `cell` を順に渡して `done` の結果を返す。 */
+async function readStreamedResult(
+  response: Response,
+  options: {
+    onDelta?: (text: string) => void;
+    onCell?: (slotId: VoiceSlotId) => void;
+    signal?: AbortSignal;
+  },
+): Promise<VoiceUtteranceResult> {
+  if (!response.body) throw new Error(EMPTY_RESULT_MESSAGE);
+
+  const received: { done: VoiceUtteranceResult | null; text: string } = {
+    done: null,
+    text: "",
+  };
+
+  await readSseStream(
+    response.body,
+    (event) => {
+      const parsed = parseEvent(event);
+      if (!parsed) return;
+
+      if (parsed.type === "delta") {
+        const text = parsed.payload as string;
+        received.text += text;
+        options.onDelta?.(text);
+        return;
+      }
+      if (parsed.type === "cell") {
+        options.onCell?.(parsed.payload as VoiceSlotId);
+        return;
+      }
+      received.done = readDone(parsed.payload);
+    },
+    { signal: options.signal },
+  );
+
+  if (options.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (received.done) return received.done;
+  if (received.text) {
+    return { text: received.text, assignments: [], unassigned: [], model: null };
+  }
+  throw new Error(EMPTY_RESULT_MESSAGE);
+}
+
 /**
  * 録音した音声を送り、1 回の発話を複数の欄へ割り当てる。
  *
@@ -78,6 +174,10 @@ export async function transcribeVoiceUtterance(input: {
   blob: Blob;
   value: EventFormValues;
   scope: VoiceFieldScope;
+  /** 聞き取れた分が届くたびに呼ばれる。増分で、画面は使わない（マスだけを塗る）。 */
+  onDelta?: (text: string) => void;
+  /** 節が読めてマスが埋まるたびに呼ばれる。値はまだ確定していない。 */
+  onCell?: (slotId: VoiceSlotId) => void;
   signal?: AbortSignal;
 }): Promise<VoiceUtteranceResult> {
   if (input.blob.size === 0) {
@@ -112,15 +212,18 @@ export async function transcribeVoiceUtterance(input: {
     throw new Error(await readProblem(response));
   }
 
-  const body = (await response.json()) as unknown;
-  if (!isRecord(body) || typeof body.text !== "string") {
-    throw new Error(EMPTY_RESULT_MESSAGE);
+  // 古いサーバーや、応答をためるプロキシは JSON で返す。中身の種類で読み分ける。
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  if (contentType.includes("text/event-stream")) {
+    return readStreamedResult(response, {
+      onDelta: input.onDelta,
+      onCell: input.onCell,
+      signal: input.signal,
+    });
   }
 
-  return {
-    text: body.text,
-    assignments: readAssignments(body.assignments),
-    unassigned: readStrings(body.unassigned),
-    model: typeof body.model === "string" ? body.model : null,
-  };
+  const body = (await response.json()) as unknown;
+  const result = readDone(body);
+  if (!result) throw new Error(EMPTY_RESULT_MESSAGE);
+  return result;
 }
