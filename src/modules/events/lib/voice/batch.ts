@@ -3,7 +3,7 @@ import {
   RAIN_POLICY_LABELS,
   type EventFormValues,
 } from "@/modules/events/types";
-import { isSlotNeeded, voiceFieldOrder } from "@/modules/events/lib/voice/fields";
+import { batchTargets } from "@/modules/events/lib/voice/batch-guide";
 import { isVoiceMockEnabled } from "@/modules/events/lib/voice/mock";
 import {
   assignUtterance,
@@ -102,6 +102,9 @@ export function isVoiceBatchLlmEnabled(): boolean {
 
 /**
  * 決定的な割当。実装は `assignUtterance` に任せ、ここでは引数の形だけを整える。
+ *
+ * 対象は空欄だけ（`batchTargets`）。入力済みの欄を静かに上書きしないため、
+ * 巡回順のすべてではなく、いま埋めるべきマスだけを渡す。
  */
 export function assignDeterministically(
   text: string,
@@ -112,6 +115,7 @@ export function assignDeterministically(
     value: context.value,
     now: context.now,
     scope: context.scope,
+    targets: batchTargets(context.value, context.scope),
   });
 }
 
@@ -125,8 +129,7 @@ export function mockBatchTranscript(
 ): string {
   const seen = new Set<string>();
   const examples: string[] = [];
-  for (const slot of voiceFieldOrder(value, scope)) {
-    if (!isSlotNeeded(slot, value, scope)) continue;
+  for (const slot of batchTargets(value, scope)) {
     const example = slot.field.example;
     if (seen.has(example)) continue;
     seen.add(example);
@@ -156,8 +159,9 @@ export async function estimateBatchAssignments(
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return [];
 
-  // 渡された候補のうち、いまのスコープでも巡回するものだけを使う。
-  const ordered = voiceFieldOrder(value, scope);
+  // 渡された候補のうち、いま埋めるべきマス（空欄）だけを使う。
+  // 呼び出し側が巡回順のすべてを渡しても、入力済みの欄へは当てない。
+  const ordered = batchTargets(value, scope);
   const allowed = new Set(slots.map((slot) => slot.id));
   const candidates = ordered.filter((slot) => allowed.has(slot.id));
   if (candidates.length === 0) return [];
@@ -207,13 +211,13 @@ export async function assignBatch(
   text: string,
   context: BatchRequestContext,
 ): Promise<BatchResult> {
+  // 空欄だけを対象にする。決定的な割当も LLM の推定も同じ並びから作る。
+  const targets = batchTargets(context.value, context.scope);
   const deterministic = assignDeterministically(text, context);
   const usedSlots = new Set(deterministic.assignments.map((item) => item.slotId));
   const clauses = deterministic.unassigned;
 
-  const available = voiceFieldOrder(context.value, context.scope).filter(
-    (slot) => !usedSlots.has(slot.id),
-  );
+  const available = targets.filter((slot) => !usedSlots.has(slot.id));
   const estimated =
     clauses.length > 0 && available.length > 0
       ? await estimateBatchAssignments(
@@ -225,8 +229,8 @@ export async function assignBatch(
         )
       : [];
 
-  const slots = new Map(
-    voiceFieldOrder(context.value, context.scope).map((slot) => [slot.id, slot]),
+  const slots = new Map<VoiceSlotId, VoiceSlot>(
+    targets.map((slot) => [slot.id, slot]),
   );
   const assignments = [...deterministic.assignments, ...estimated].map((item) => {
     const slot = slots.get(item.slotId);

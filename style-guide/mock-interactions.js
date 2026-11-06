@@ -545,6 +545,11 @@
       '<p class="voice-panel__prompt" aria-live="polite"></p>' +
       '<p class="voice-panel__hint"></p>' +
       "</div>" +
+      // まとめて話すときは、話す順と例を質問の下の別の行に置く（製品と同じ）。
+      '<div class="voice-panel__guide" hidden>' +
+      '<ol class="voice-panel__guide-steps" aria-label="話す順"></ol>' +
+      '<p class="voice-panel__guide-example"></p>' +
+      "</div>" +
       // 聞き取りの途中経過は質問の下に 1 行だけ足す（製品と同じ位置）。
       '<p class="voice-panel__interim" aria-live="polite" hidden></p>' +
       '<button type="button" class="voice-panel__close" aria-label="音声入力を終了" title="音声入力を終了">' +
@@ -580,11 +585,15 @@
       '<p class="voice-panel__talk">スキップ</p>' +
       "</div></div>" +
       '<div class="voice-panel__options">' +
+      // 話し方は 2 択。録音中でも切り替えられ、止めたあとの送り先だけが変わる。
+      '<div class="voice-panel__mode" role="radiogroup" aria-label="話し方">' +
+      '<label class="voice-mode"><input type="radio" name="mock-voice-mode" value="batch" data-voice-batch> まとめて</label>' +
+      '<label class="voice-mode"><input type="radio" name="mock-voice-mode" value="single" data-voice-single> 1つずつ</label>' +
+      "</div>" +
+      '<div class="voice-panel__toggles">' +
       '<label class="check voice-panel__optional"><input type="checkbox" data-voice-optional checked> 任意の項目も聞く</label>' +
-      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 自動遷移</label>' +
-      // 1 回の録音で複数の欄を埋める。止めると欄ごとの一覧を出す。
-      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-batch> まとめて話す</label>' +
-      "</div>";
+      '<label class="check voice-panel__optional"><input type="checkbox" data-voice-auto checked> 答えたら次へ</label>' +
+      "</div></div>";
 
     document.body.append(scrim, panel);
     return { scrim, panel };
@@ -626,6 +635,16 @@
    */
   function placePanel() {
     if (!voice.active || !voice.panel) return;
+    // まとめて話すときは画面下寄りに固定する（製品の `.voice-panel--batch`）。
+    if (voice.batchMode) {
+      voice.panel.classList.add("voice-panel--batch");
+      voice.panel.classList.remove("is-placing");
+      voice.panel.style.removeProperty("--voice-panel-top");
+      voice.panel.style.removeProperty("--voice-panel-left");
+      voice.panel.style.removeProperty("--voice-panel-width");
+      return;
+    }
+    voice.panel.classList.remove("voice-panel--batch");
     const field = voice.fields[voice.cursor]?.field;
     if (!field) return;
     const rect = field.getBoundingClientRect();
@@ -645,6 +664,11 @@
   function measureSpotlight() {
     placePanel();
     if (!voice.active || !voice.scrim) return;
+    // まとめて話すときは 1 つの欄をくり抜かない（複数のステップを見ながら話せる）。
+    if (voice.batchMode) {
+      voice.scrim.hidden = true;
+      return;
+    }
     const field = voice.fields[voice.cursor]?.field;
     if (!field) {
       voice.scrim.hidden = true;
@@ -685,19 +709,121 @@
       "px)";
   }
 
+  /** まとめて話すときの、欄の種類ごとの短い名前。製品の `batchSteps` と同じ並び。 */
+  function batchStepName(entry) {
+    const id = (entry.field && entry.field.id) || "";
+    if (id === "event-title" || id === "event-organizer-name") return "名前";
+    if (id.indexOf("schedule-") === 0) return "日時";
+    if (id.indexOf("plan-") === 0) return "費用";
+    if (
+      id === "event-venue-name" ||
+      id === "event-postal-code" ||
+      id === "event-prefecture" ||
+      id === "event-city" ||
+      id === "event-town" ||
+      id === "event-address-line" ||
+      id === "event-building" ||
+      id === "event-rain-policy"
+    ) {
+      return "会場";
+    }
+    if (id === "event-capacity" || id === "rsvp-deadline") return "定員";
+    return "その他";
+  }
+
+  /** まとめて話す対象。モックでは値の空いた欄を、巡回の順のまま使う。 */
+  function batchGuideEntries() {
+    return voice.fields.filter(
+      (entry) => entry.kind !== "gender" && entry.field && !entry.field.value,
+    );
+  }
+
+  /**
+   * まとめて話す例に出す、読み上げの形。
+   *
+   * 製品は `fields.ts` の `field.example`（「12月5日」「18時」）を使う。モックは
+   * 欄の値（`2026-11-08`・`11:00`）しか持たないので、同じ読み上げの形へ直してから並べる。
+   * 機械の値のまま出すと、話す順の例だけが製品と食い違う。
+   */
+  function batchExampleValue(id, value) {
+    if (id.startsWith("schedule-date-")) return "11月8日";
+    if (id.startsWith("schedule-start-")) return "11時";
+    if (id.startsWith("schedule-end-")) return "15時";
+    if (id.startsWith("plan-amount-")) return value + "円";
+    if (id === "event-capacity" || id === "event-capacity-custom") return value + "人";
+    if (id === "event-postal-code") return "1540005";
+    if (id === "rsvp-deadline") return "10月31日23時59分";
+    return value;
+  }
+
+  /**
+   * 例の 1 行。製品の `batchExample` と同じ形にする。
+   * 同じ行の開始と終了は「11時から15時」の 1 項に畳み、6 項までにする。
+   */
+  function batchExampleText(targets) {
+    const items = [];
+    const seen = new Set();
+    for (const target of targets) {
+      if (items.length >= 6) break;
+      const id = target.field.id;
+      const row = id.replace(/^(schedule-date|schedule-start|schedule-end)-/, "");
+      // 開始が同じ行にあれば、終了は開始の項に畳んである。
+      if (id.startsWith("schedule-end-") && targets.some((item) => item.field.id === "schedule-start-" + row)) {
+        continue;
+      }
+      let text = batchExampleValue(id, target.value);
+      if (id.startsWith("schedule-start-")) {
+        const end = targets.find((item) => item.field.id === "schedule-end-" + row);
+        if (end) text = text + "から" + batchExampleValue(end.field.id, end.value);
+      }
+      if (seen.has(text)) continue;
+      seen.add(text);
+      items.push(text);
+    }
+    return items.join("、");
+  }
+
   /** パネルの質問と例を差し替える。まとめて話すときは、巡回の欄名ではなく話す順を出す。 */
   function renderPrompt(entry) {
     if (!voice.panel) return;
     const prompt = voice.panel.querySelector(".voice-panel__prompt");
     const hint = voice.panel.querySelector(".voice-panel__hint");
+    const guide = voice.panel.querySelector(".voice-panel__guide");
     if (voice.batchMode) {
-      prompt.textContent = "順番に話してください";
-      hint.textContent = "例: 12月5日、18時から20時、渋谷ホール、3000円、30人";
+      prompt.textContent = "続けて話してください";
+      hint.textContent = "";
+      hint.hidden = true;
+      if (guide) {
+        const targets = batchGuideEntries();
+        const steps = [];
+        for (const target of targets) {
+          const name = batchStepName(target);
+          if (steps.indexOf(name) < 0) steps.push(name);
+        }
+        const list = guide.querySelector(".voice-panel__guide-steps");
+        list.innerHTML = "";
+        for (const name of steps.slice(0, 5)) {
+          const item = document.createElement("li");
+          item.className = "voice-panel__guide-step";
+          item.textContent = name;
+          list.append(item);
+        }
+        if (steps.length > 5) {
+          const more = document.createElement("li");
+          more.className = "voice-panel__guide-step voice-panel__guide-step--more";
+          more.textContent = "ほか" + (steps.length - 5) + "項目";
+          list.append(more);
+        }
+        guide.querySelector(".voice-panel__guide-example").textContent =
+          "例: " + batchExampleText(targets);
+        guide.hidden = false;
+      }
     } else {
       prompt.textContent = entry.prompt || entry.label + "は？";
       hint.textContent = "例: " + (entry.hint || entry.value);
+      hint.hidden = false;
+      if (guide) guide.hidden = true;
     }
-    hint.hidden = false;
   }
 
   /** 聞き取りの途中経過。空文字を渡すと行ごと隠す。 */
@@ -709,14 +835,47 @@
     interim.hidden = !text;
   }
 
-  /** まとめて話すの切り替え。状態とチェックをそろえ、質問もすぐ差し替える。 */
+  /** まとめて話すかどうかを、パネルの見た目（2 択・戻る/スキップ・いまの値）へそろえる。 */
+  function syncBatchUi() {
+    if (!voice.panel) return;
+    const panel = voice.panel;
+    const batch = voice.batchMode;
+    panel.classList.toggle("voice-panel--batch", batch);
+    const batchRadio = panel.querySelector("[data-voice-batch]");
+    const singleRadio = panel.querySelector("[data-voice-single]");
+    if (batchRadio) batchRadio.checked = batch;
+    if (singleRadio) singleRadio.checked = !batch;
+    // 1 欄ずつの戻る・スキップ・「答えたら次へ」は、まとめてでは使わない。
+    const prev = panel.querySelector("[data-voice-prev]");
+    const skip = panel.querySelector("[data-voice-skip]");
+    const auto = panel.querySelector("[data-voice-auto]");
+    if (prev) prev.disabled = batch || voice.cursor <= 0;
+    if (skip) skip.disabled = batch;
+    if (auto) auto.disabled = batch;
+    const talk = panel.querySelector("[data-voice-talk]");
+    if (talk && !voice.listening) {
+      talk.setAttribute("aria-label", batch ? "まとめて話す" : "話す");
+      talk.setAttribute("title", batch ? "まとめて話す" : "話す");
+    }
+    // まとめてでは「いまの値」を出さない（1 つの欄の話ではない）。
+    if (batch) panel.querySelector(".voice-panel__current").hidden = true;
+  }
+
+  /** まとめて話すの切り替え。状態と 2 択をそろえ、質問もすぐ差し替える。 */
   function setBatchMode(on) {
     voice.batchMode = on;
     if (!voice.panel) return;
-    const box = voice.panel.querySelector("[data-voice-batch]");
-    if (box) box.checked = on;
     const entry = voice.fields[voice.cursor];
     if (entry) renderPrompt(entry);
+    syncBatchUi();
+    if (on) {
+      // 画面下寄りへ固定し直す。覆いも外す。
+      placePanel();
+      if (voice.scrim) voice.scrim.hidden = true;
+    } else {
+      placePanel();
+      window.setTimeout(measureSpotlight, 0);
+    }
   }
 
   /**
@@ -901,6 +1060,24 @@
     });
 
     const list = modal.querySelector(".voice-batch");
+
+    // 先頭に、入る欄の数と、一覧に載らなかった空欄を出す（製品と同じ位置）。
+    const summary = document.createElement("p");
+    summary.className = "voice-batch__summary";
+    summary.textContent = rows.length + "つの欄に入れます。";
+    list.append(summary);
+
+    const shown = new Set(entries);
+    const missed = batchGuideEntries()
+      .filter((entry) => !shown.has(entry))
+      .map((entry) => entry.label);
+    if (missed.length > 0) {
+      const note = document.createElement("p");
+      note.className = "voice-batch__missed";
+      note.textContent = "入らなかった欄: " + missed.join("、");
+      list.append(note);
+    }
+
     const controls = rows.map((row, index) => {
       const line = document.createElement("div");
       line.className = "voice-batch__row";
@@ -930,7 +1107,8 @@
 
     const unassigned = document.createElement("p");
     unassigned.className = "voice-batch__unassigned";
-    unassigned.textContent = "読み取れなかった部分: " + BATCH_UNASSIGNED.join("、");
+    unassigned.textContent =
+      "読み取れなかった部分: " + BATCH_UNASSIGNED.join("、") + "。再録音で言い直せます。";
     list.append(unassigned);
 
     modal.querySelector("[data-voice-apply]").addEventListener("click", () => {
@@ -955,15 +1133,38 @@
       }
       voice.fields = voice.fields.filter((entry) => !done.has(entry));
 
-      // 製品は取り込んだあと「まとめて話す」を外して、1 欄ずつの録音に戻す。
-      setBatchMode(false);
-      const next = voice.fields.findIndex((entry) => entry.field && !entry.field.value);
+      const remaining = voice.fields.filter(
+        (entry) => entry.kind !== "gender" && entry.field && !entry.field.value,
+      );
+      const optional = new Set([
+        "event-rain-policy",
+        "event-capacity",
+        "rsvp-deadline",
+        "plan-note",
+      ]);
+      const remainingRequired = remaining.filter(
+        (entry) => !optional.has((entry.field && entry.field.id) || ""),
+      );
+      const next = voice.fields.indexOf(remaining[0]);
       if (next < 0) {
         finishVoice();
         return;
       }
+
       pointAt(next);
+      const message = voice.panel.querySelector(".voice-panel__message");
+      if (remainingRequired.length >= 2) {
+        // 製品と同じく、まとめてのまま閉じる。録音は自動で始めない。
+        setBatchMode(true);
+        message.textContent = "あと" + remainingRequired.length + "つ。続けて話せます。";
+        message.hidden = false;
+        return;
+      }
+      // 残りが 1 つ以下なら、1 欄ずつに切り替えて録音を始める。
+      setBatchMode(false);
       startListening();
+      message.textContent = "残りの欄は1つずつ話します。";
+      message.hidden = false;
     });
 
     modal.querySelector("[data-voice-rerecord]").addEventListener("click", () => {
@@ -1019,19 +1220,20 @@
     const value =
       entry.current !== undefined ? entry.current : (entry.field.value || "").trim();
     current.textContent = value ? "いまの値: " + value : "";
-    current.hidden = !value;
+    current.hidden = voice.batchMode || !value;
     showInterim("");
     voice.panel.querySelector(".voice-panel__talk").hidden = true;
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = false;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = false;
-    voice.panel.querySelector("[data-voice-batch]").closest(".check").hidden = false;
-    voice.panel.querySelector("[data-voice-prev]").disabled = index === 0;
+    voice.panel.querySelector(".voice-panel__mode").hidden = false;
+    voice.panel.querySelector("[data-voice-prev]").disabled = voice.batchMode || index === 0;
     // 住所検索の写しが止めたボタンも、欄を指し直した時点で元へ戻す。
     // （検索中に別の欄を押すと `clearTimers` で待ちが消え、戻す機会が無くなるため）
     voice.panel.querySelector("[data-voice-talk]").disabled = false;
-    voice.panel.querySelector("[data-voice-skip]").disabled = false;
+    voice.panel.querySelector("[data-voice-skip]").disabled = voice.batchMode;
+    syncBatchUi();
   }
 
   function startListening() {
@@ -1149,7 +1351,8 @@
     showInterim("");
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
-    voice.panel.querySelector("[data-voice-batch]").closest(".check").hidden = true;
+    voice.panel.querySelector(".voice-panel__mode").hidden = true;
+    voice.panel.querySelector(".voice-panel__guide").hidden = true;
     voice.panel.querySelector("[data-voice-talk]").disabled = true;
     if (voice.scrim) voice.scrim.hidden = true;
     later(closeVoice, 5000);
@@ -1167,7 +1370,11 @@
     }
     voice.active = true;
     voice.autoAdvance = true;
-    voice.batchMode = false;
+    // 空欄が 3 つ以上なら「まとめて」を既定にする（製品の `defaultVoiceMode`）。
+    const blanks = voice.fields.filter(
+      (entry) => entry.kind !== "gender" && entry.field && !entry.field.value,
+    ).length;
+    voice.batchMode = blanks >= 3;
     voice.dialog = null;
     const built = buildVoicePanel();
     voice.panel = built.panel;
@@ -1206,7 +1413,10 @@
     });
     voice.panel.querySelector("[data-voice-batch]").addEventListener("change", (event) => {
       // 切り替えると質問と例がすぐ変わる（録音中でも、止めたあとの送り先だけが変わる）。
-      setBatchMode(event.target.checked);
+      if (event.target.checked) setBatchMode(true);
+    });
+    voice.panel.querySelector("[data-voice-single]").addEventListener("change", (event) => {
+      if (event.target.checked) setBatchMode(false);
     });
 
     // 入力欄を直接押したら、その欄に切り替える（製品と同じ）。

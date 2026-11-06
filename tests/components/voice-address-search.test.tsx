@@ -128,6 +128,17 @@ async function press(name: string) {
   });
 }
 
+/**
+ * 音声モードを 1 欄ずつで開く。空欄が多いと「まとめて」が既定になるため、
+ * 1 欄ずつの質問と確認を見る試験では、開いたあとに明示して切り替える。
+ */
+async function startSingle() {
+  await press("音声入力を開始");
+  await act(async () => {
+    (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).click();
+  });
+}
+
 /** 疑似録音と文字化の待ちを進める。 */
 async function passMockWait() {
   await act(async () => {
@@ -186,7 +197,7 @@ describe("郵便番号の住所検索", () => {
     const onChange = vi.fn();
 
     await mount({ onChange });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
     // 郵便番号は形が閉じているので自動で入り、そのまま住所の検索が始まる。
     expect(screen.getByText("住所を調べています")).toBeTruthy();
@@ -206,7 +217,7 @@ describe("郵便番号の住所検索", () => {
     const onChange = vi.fn();
 
     await mount({ onChange });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     await respondPostal(stub, [
@@ -230,7 +241,7 @@ describe("郵便番号の住所検索", () => {
     const onChange = vi.fn();
 
     await mount({ onChange });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     await respondPostal(stub, []);
@@ -267,7 +278,7 @@ describe("日時追加のダイアログ", () => {
     };
 
     await mount({ onChange, initial, focusId: "schedule-end-schedule-test" });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
     // 終了時刻は形が閉じているので自動で入る。群を出る質問がそのまま出る。
     const dialog = screen.getByRole("dialog");
@@ -293,7 +304,7 @@ describe("費用の入口の男女別の質問", () => {
     };
 
     await mount({ onChange, initial, focusId: "schedule-end-schedule-test" });
-    await press("音声入力を開始");
+    await startSingle();
     await passMockWait();
 
     // まず日時の群を出る質問（別の日程）に答える。終了時刻は自動で入っている。

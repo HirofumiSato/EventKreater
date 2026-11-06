@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/v1/voice/utterances/route";
-import { assignBatch, estimateBatchAssignments } from "@/modules/events/lib/voice/batch";
+import { assignBatch, estimateBatchAssignments, mockBatchTranscript } from "@/modules/events/lib/voice/batch";
+import {
+  batchExample,
+  batchSteps,
+  batchTargets,
+  defaultVoiceMode,
+} from "@/modules/events/lib/voice/batch-guide";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { voiceFieldOrder } from "@/modules/events/lib/voice/fields";
 import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
@@ -173,6 +179,73 @@ describe("LLM で節の割当を補う", () => {
 
     expect(assignments).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("まとめて話す案内", () => {
+  it("入力済みの欄は対象にしない", () => {
+    const value: EventFormValues = {
+      ...EMPTY_EVENT_FORM,
+      title: "秋の音楽会",
+      venueName: "渋谷ホール",
+    };
+
+    const ids = batchTargets(value, scope()).map((slot) => slot.id);
+
+    expect(ids).not.toContain("title:0");
+    expect(ids).not.toContain("venueName:0");
+    expect(ids).toContain("scheduleDate:0");
+    expect(ids).toContain("capacity:0");
+  });
+
+  it("任意欄を外したスコープでは必須の空欄だけになる", () => {
+    const ids = batchTargets(
+      EMPTY_EVENT_FORM,
+      scope({ includeOptional: false }),
+    ).map((slot) => slot.id);
+
+    expect(ids).toContain("title:0");
+    expect(ids).not.toContain("capacity:0");
+    expect(ids).not.toContain("rsvpDeadline:0");
+  });
+
+  it("話す順は欄の種類ごとに 1 つへまとめる", () => {
+    const steps = batchSteps(batchTargets(EMPTY_EVENT_FORM, scope()));
+
+    expect(steps).toEqual(["名前", "日時", "費用", "会場", "定員"]);
+  });
+
+  it("例は対象の欄から作り、開始と終了は 1 項に畳む", () => {
+    const targets = batchTargets(
+      { ...EMPTY_EVENT_FORM, title: "秋の音楽会" },
+      scope(),
+    );
+
+    const example = batchExample(targets);
+
+    expect(example).toContain("18時から20時");
+    expect(example).not.toContain("忘年会");
+    expect(example).not.toContain("秋の音楽会");
+    // 畳んだ終了時刻を、単独の項として重ねて出さない。
+    expect(example.split("、")).not.toContain("20時");
+  });
+
+  it("空欄が 3 つ以上ならまとめてを既定にする", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+
+    expect(defaultVoiceMode(targets.slice(0, 2))).toBe("single");
+    expect(defaultVoiceMode(targets.slice(0, 3))).toBe("batch");
+  });
+
+  it("モックの文字起こしは、入力済みの欄の例を含まない", () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    const text = mockBatchTranscript(
+      { ...EMPTY_EVENT_FORM, title: "秋の音楽会" },
+      scope(),
+    );
+
+    expect(text).not.toContain("忘年会");
+    expect(text).toContain("12月5日");
   });
 });
 

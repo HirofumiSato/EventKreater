@@ -13149,7 +13149,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 676,
+      "lineCount": 681,
       "headings": [
         {
           "level": 1,
@@ -13272,6 +13272,10 @@
         },
         {
           "path": "src/modules/events/lib/voice/audio.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/batch-guide.ts",
           "exists": true
         },
         {
