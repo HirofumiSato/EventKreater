@@ -274,35 +274,31 @@ describe("まとめて話す", () => {
     expect(lastValue(onChange).schedules[0].eventDate).toMatch(/-12-06$/);
   });
 
-  it("初回ガイドは、まとめてと 1 つずつの 2 択から始められる", async () => {
+  it("初回ガイドは、まとめてと 1 つずつの 2 択を同じ装飾で並べる", async () => {
     localStorage.removeItem(VOICE_GUIDE_STORAGE_KEY);
     stubFetch();
 
     await mount(vi.fn());
 
     expect(screen.getByText("押すと、そのまま録音が始まります。")).toBeTruthy();
-    // 2 択の下に、それぞれ何が違うかを注記で出す。
-    expect(screen.getByText("1回の録音で、空欄をまとめて入力")).toBeTruthy();
-    expect(
-      screen.getByText("複数日程、男女別や複数の費用プランを入力"),
-    ).toBeTruthy();
-    // 単純な値で空欄が多いので、「まとめて話す」が既定になる。
-    expect(
-      within(screen.getByRole("button", { name: /まとめて話す/ })).getByText(
-        "おすすめ",
-      ),
-    ).toBeTruthy();
-    expect(
-      within(screen.getByRole("button", { name: /1つずつ/ })).queryByText(
-        "おすすめ",
-      ),
-    ).toBeNull();
+    // どの催しに向く話しかは、ボタンの右端の札で示す。
+    const batch = screen.getByRole("button", { name: /まとめて話す/ });
+    const single = screen.getByRole("button", { name: /1つずつ/ });
+    expect(within(batch).getByText("シンプルなイベント向け")).toBeTruthy();
+    expect(within(single).getByText("複数日程・費用男女別向け")).toBeTruthy();
+    // 片方を既定として推す札は置かない。
+    expect(screen.queryByText("おすすめ")).toBeNull();
+    // 2 択は同じ装飾。片方だけが主操作に見えない。
+    expect(batch.className).toBe(single.className);
+    expect(batch.className).toContain("btn--block");
     // 吹き出しの外を押しても閉じるが、中の 2 択はそのまま押せる。
-    await press("1つずつ");
+    await act(async () => {
+      single.click();
+    });
     expect(screen.getByText("イベント名は？")).toBeTruthy();
   });
 
-  it("日程が 2 件あると、初回ガイドは 1 つずつの側におすすめを付ける", async () => {
+  it("日程が 2 件あっても、初回ガイドの札と装飾は変わらない", async () => {
     localStorage.removeItem(VOICE_GUIDE_STORAGE_KEY);
     stubFetch();
 
@@ -314,19 +310,16 @@ describe("まとめて話す", () => {
       ],
     });
 
-    // 行が複数あるので「1つずつ」が既定になる。
-    expect(
-      within(screen.getByRole("button", { name: /1つずつ/ })).getByText("おすすめ"),
-    ).toBeTruthy();
-    expect(
-      within(screen.getByRole("button", { name: /まとめて話す/ })).queryByText(
-        "おすすめ",
-      ),
-    ).toBeNull();
+    // 行が複数あっても、札と装飾は 2 択で同じまま。
+    const batch = screen.getByRole("button", { name: /まとめて話す/ });
+    const single = screen.getByRole("button", { name: /1つずつ/ });
+    expect(within(batch).getByText("シンプルなイベント向け")).toBeTruthy();
+    expect(within(single).getByText("複数日程・費用男女別向け")).toBeTruthy();
+    expect(screen.queryByText("おすすめ")).toBeNull();
+    expect(batch.className).toBe(single.className);
 
-    // 札が付くと accessible name が「1つずつ おすすめ」になるので、部分一致で押す。
     await act(async () => {
-      screen.getByRole("button", { name: /1つずつ/ }).click();
+      single.click();
     });
     expect(screen.getByText("イベント名は？")).toBeTruthy();
   });
