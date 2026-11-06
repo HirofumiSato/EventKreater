@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 482
+- 対象文書: 111（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 490
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -172,7 +172,7 @@
 | `src/app/organizer/events/[id]/preview/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) |
 | `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
-| `src/app/organizer/events/new/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
+| `src/app/organizer/events/new/page.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/app/organizer/events/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
 | `src/app/organizer/profile/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/app/organizer/register-required/layout.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
@@ -273,12 +273,13 @@
 | `src/modules/events/components` | [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/components/EventCard.tsx` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
 | `src/modules/events/components/EventFormSections.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
+| `src/modules/events/components/EventGuideTour.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
 | `src/modules/events/components/EventMetaCard.tsx` | [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
-| `src/modules/events/components/EventStepForm.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/components/EventStepForm.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/components/OrganizerInviteCard.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/PostalCodeField.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/VenueSelectModal.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
-| `src/modules/events/components/VoiceInputDock.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/components/VoiceInputDock.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/capacity.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/draft.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/event-filters.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -291,6 +292,9 @@
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/modules/events/lib/tour/memory.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
+| `src/modules/events/lib/tour/place.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/modules/events/lib/tour/steps.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/batch-guide.ts` | [docs/voice-input.rst](voice-input.rst) |
@@ -360,7 +364,7 @@
 | `src/styles/deco/surface.css` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/styles/deco/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/index.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
-| `src/styles/screens/organizer.css` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/styles/screens/organizer.css` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/styles/screens/public.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/themes.css` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -424,6 +428,10 @@
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-discounts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-filters.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-guide-memory.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-guide-placement.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-guide-steps.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-guide-styles.test.mjs` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -484,7 +492,7 @@
 | `tests/unit/voice-batch.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-confirm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-fields.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
-| `tests/unit/voice-guide.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-guide.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-keywords.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-mock.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-panel.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |

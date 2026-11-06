@@ -62,6 +62,7 @@
    event-page/index
    flyer/index
    voice-input
+   event-guide-tour
 
 .. toctree::
    :maxdepth: 2

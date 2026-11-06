@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EventFormValues } from "@/modules/events/types";
 import {
   capacitySelectionOf,
@@ -18,6 +18,7 @@ import {
   resumeStepKey,
   type EventStepKey,
 } from "@/modules/events/lib/steps";
+import { guideOpenKeys, type EventGuideOpenMode } from "@/modules/events/lib/tour/steps";
 import {
   BasicSection,
   CapacitySection,
@@ -27,6 +28,7 @@ import {
   ThemeSection,
 } from "@/modules/events/components/EventFormSections";
 import { EventPreviewModal } from "@/modules/events/components/EventPreviewModal";
+import { EventGuideTour } from "@/modules/events/components/EventGuideTour";
 import { Alert } from "@/components/ui";
 
 interface EventStepFormProps {
@@ -68,6 +70,16 @@ interface EventStepFormProps {
    */
   seedKey: string;
   ready: boolean;
+  /**
+   * 初回ガイド（スポットライトツアー）。出すかどうかは画面側が起動条件
+   * （下書き復元・チケット読み込み・記憶）を見て決める。
+   * 閉じたことは音声ガイドを出してよい合図になるので、`onClose` で画面へ返す。
+   */
+  tour?: {
+    enabled: boolean;
+    signedIn: boolean;
+    onClose: () => void;
+  };
 }
 
 const STEP_INDEX = new Map(EVENT_STEPS.map((step, index) => [step.key, index]));
@@ -118,6 +130,7 @@ export function EventStepForm({
   voiceSlot,
   seedKey,
   ready,
+  tour,
 }: EventStepFormProps) {
   const locked = disabled || submitting;
   const [openKeys, setOpenKeys] = useState<Set<EventStepKey>>(
@@ -209,6 +222,20 @@ export function EventStepForm({
     }),
     [],
   );
+
+  /**
+   * ガイド用にステップを開く。見出しボタンへ実フォーカスを移さない。
+   * `"closed"` は全部畳む。2 枚目で 3 つの必須の見出しを続けて見せるために使う
+   * （開いたままだと見出しのあいだが入力欄で埋まり、どこを指すか分からなくなる）。
+   * `"all"` は全部開く。3 枚目以降は開いたまま対象だけを移す（押すたびに
+   * 画面が組み替わると落ち着かない）。
+   *
+   * 音声の `openStep` は開いているステップへ足すだけだが、ガイドは「前のステップを
+   * 畳んで 1 つだけ」見せる。開いた直後に測り直すので、フォーカスを移すと画面が跳ねる。
+   */
+  const openGuideStep = useCallback((mode: EventGuideOpenMode) => {
+    setOpenKeys((current) => guideOpenKeys(mode, current));
+  }, []);
 
   const toggleStep = (key: EventStepKey) => {
     setOpenKeys((current) => {
@@ -517,6 +544,15 @@ export function EventStepForm({
       </div>
       {voiceSlot?.(voiceApi)}
     </form>
+    {/* 初回ガイドもフォームの外に置く。黒い面と吹き出しは画面に固定するので、
+        フォームの送信や無効化に巻き込まない。 */}
+    {tour?.enabled ? (
+      <EventGuideTour
+        signedIn={tour.signedIn}
+        onClose={tour.onClose}
+        onOpenStep={openGuideStep}
+      />
+    ) : null}
     {/* モーダルはフォームの外に置く。ステップの送信や無効化に巻き込まない。 */}
     {previewOpen && (
       <EventPreviewModal
