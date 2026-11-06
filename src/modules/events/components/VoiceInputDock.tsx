@@ -1970,10 +1970,6 @@ export function VoiceInputDock({
     return () => document.removeEventListener("keydown", handler);
   }, [closeGuide, guideOpen]);
 
-  // 初回ガイドの「おすすめ」は、いま開いたときの値で決める。
-  // 行が複数あるイベントでは「1つずつ」が既定になる。
-  const guideDefault = defaultVoiceMode(blankTargets, value);
-
   return (
     <>
       {active && spotlight && (
@@ -2001,40 +1997,25 @@ export function VoiceInputDock({
             </p>
             <p className="voice-guide__body">押すと、そのまま録音が始まります。</p>
             {/* 話し方は入口で決める。押した方はそのまま音声モードに入る。
-                注記はボタンの外に出し、注記を押してもマイク許可が出ないようにする。 */}
+                どの催しに向くかは、ボタンの右端に札として添える。札もボタンの中なので、
+                札を押しても同じ話し方で録音が始まる。 */}
             <div className="voice-guide__modes">
-              <div className="voice-guide__mode">
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm btn--block"
-                  aria-describedby="voice-guide-batch-note"
-                  onClick={() => chooseGuideMode("batch")}
-                >
-                  まとめて話す
-                  {guideDefault === "batch" && (
-                    <span className="voice-guide__pick">おすすめ</span>
-                  )}
-                </button>
-                <p className="voice-guide__mode-note" id="voice-guide-batch-note">
-                  1回の録音で、空欄をまとめて入力
-                </p>
-              </div>
-              <div className="voice-guide__mode">
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm btn--block"
-                  aria-describedby="voice-guide-single-note"
-                  onClick={() => chooseGuideMode("single")}
-                >
-                  1つずつ
-                  {guideDefault === "single" && (
-                    <span className="voice-guide__pick">おすすめ</span>
-                  )}
-                </button>
-                <p className="voice-guide__mode-note" id="voice-guide-single-note">
-                  複数日程、男女別や複数の費用プランを入力
-                </p>
-              </div>
+              <button
+                type="button"
+                className="btn btn--sm btn--block"
+                onClick={() => chooseGuideMode("batch")}
+              >
+                まとめて話す
+                <span className="voice-guide__label">シンプルなイベント向け</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn--sm btn--block"
+                onClick={() => chooseGuideMode("single")}
+              >
+                1つずつ
+                <span className="voice-guide__label">複数日程・費用男女別向け</span>
+              </button>
             </div>
             <label className="check voice-guide__check">
               <input
