@@ -28,6 +28,7 @@ import {
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import {
+  batchExampleSentence,
   batchPlan,
   batchTargets,
   defaultVoiceMode,
@@ -213,7 +214,9 @@ export function VoiceInputDock({
   const [phase, setPhase] = useState<VoicePhase>("armed");
   const [cursor, setCursor] = useState<VoiceSlotId | null>(null);
   const [touched, setTouched] = useState<ReadonlySet<VoiceFieldKey>>(new Set());
-  // 既定で任意の欄も聞く。空欄でよい欄まで一度に埋めたい利用者が多いため。
+  // 空欄でよい欄（補足・雨天時・定員・期限）まで聞くか。始めるときに話し方で決める
+  // （まとめては既定で外す。話す量が増えるほど、途中で言い直す手間も増える）。
+  // 開いているあいだに切り替えれば、そのセッションではその値を使う。
   const [includeOptional, setIncludeOptional] = useState(true);
   // 1 欄入れたら次の欄へ移るか。既定はオン。オフなら同じ欄に留めて言い直しを待つ。
   const [autoAdvance, setAutoAdvance] = useState(true);
@@ -323,6 +326,8 @@ export function VoiceInputDock({
   const blankTargets = useMemo(() => batchTargets(value, scope), [value, scope]);
   // 話す順と見本は 1 本の並び。札と例を別々に作ると数も位置も合わない。
   const cells = useMemo(() => batchPlan(blankTargets), [blankTargets]);
+  // まとめて話す 1 文の例。マスの名前だけでは、値として何を言えばよいか分からない。
+  const exampleSentence = useMemo(() => batchExampleSentence(cells), [cells]);
   // まだ選ばれていなければ、空欄の数で既定を決める。セッションの途中で選ばれたらそれを優先する。
   const defaultMode = defaultVoiceMode(blankTargets, value);
   const batchMode = (modeChoice ?? defaultMode) === "batch";
@@ -794,6 +799,9 @@ export function VoiceInputDock({
         return;
       }
       // 空欄だったのに割当が付かなかった欄を、確認の先頭で名指しする。
+      // 話した言葉（未割当の節）は並べない。同じ失敗を「言葉」と「欄の名前」の
+      // 2 行で言うことになり、どちらが欄の名前か分からなくなるため。
+      // 未割当の数は計測（`voice_batch_applied`）にだけ残す。
       const assigned = new Set(result.assignments.map((item) => item.slotId));
       const missed = batchTargets(valueRef.current, scopeNow())
         .filter((target) => !assigned.has(target.id))
@@ -1265,20 +1273,31 @@ export function VoiceInputDock({
 
   const startSession = useCallback((mode?: VoiceMode) => {
     if (disabled) return;
-    const sessionScope: VoiceFieldScope = {
+    // まとめて話すときは、任意の欄を既定で外す。話す量が増えるほど、途中で
+    // 言い直す手間も増えるため。どの欄を話すかは、その値で決まる。
+    const requiredScope: VoiceFieldScope = {
       showOrganizerName,
-      includeOptional: includeOptionalRef.current,
+      includeOptional: false,
       touched: new Set<VoiceFieldKey>(),
     };
-    // 直前に選んでいた欄があればそこから。無ければ最初の空欄から。
-    const first = startFieldFor(valueRef.current, sessionScope, lastFocusedIdRef.current);
-    // 話し方は、初回ガイドで選ばれたもの → 空欄の数から決めた既定、の順に使う。
+    // 話し方は、初回ガイドで選ばれたもの → 必須の空欄の数から決めた既定、の順に使う。
+    // まとめては任意の欄を外すので、任意を数えて「まとめて」にすると、話す欄が
+    // 2 つしかないのに 1 回で聞くことになる。必須だけで数える。
     const chosen =
       mode ??
       defaultVoiceMode(
-        batchTargets(valueRef.current, sessionScope),
+        batchTargets(valueRef.current, requiredScope),
         valueRef.current,
       );
+    const wantOptional = chosen !== "batch";
+    includeOptionalRef.current = wantOptional;
+    setIncludeOptional(wantOptional);
+    const sessionScope: VoiceFieldScope = {
+      ...requiredScope,
+      includeOptional: wantOptional,
+    };
+    // 直前に選んでいた欄があればそこから。無ければ最初の空欄から。
+    const first = startFieldFor(valueRef.current, sessionScope, lastFocusedIdRef.current);
     setModeChoice(chosen);
     batchModeRef.current = chosen === "batch";
     touchedRef.current = new Set();
@@ -1924,6 +1943,11 @@ export function VoiceInputDock({
       if ((batchModeRef.current ? "batch" : "single") === mode) return;
       setModeChoice(mode);
       batchModeRef.current = mode === "batch";
+      // 任意の欄は、まとめてでは既定で外し、1 つずつなら聞く。話したあとに
+      // 付け外しはできるが、話し方を変えたら、その話し方の既定に戻す。
+      const wantOptional = mode !== "batch";
+      includeOptionalRef.current = wantOptional;
+      setIncludeOptional(wantOptional);
       setMessage(null);
       // マスの並びが変わるので、塗りは捨てる（別の話し方の塗りを引き継がない）。
       setReadCells(new Set());
@@ -2202,6 +2226,19 @@ export function VoiceInputDock({
             </p>
           )}
 
+          {/* 何を話すかを 1 文で見せる。マスの名前を並べただけでは、値として何を
+              言えばよいか分からない。押した直後に読む先を 1 か所へ絞るため、
+              主ボタンのすぐ上に 1 か所だけ置く（話し方の説明は書かない）。 */}
+          {!complete && batchMode && exampleSentence && (
+            <div className="voice-panel__example">
+              <p className="voice-panel__example-lead">以下をまとめて話してください</p>
+              <p className="voice-panel__example-text">
+                <span className="voice-panel__example-key">例</span>{" "}
+                {exampleSentence}
+              </p>
+            </div>
+          )}
+
           {/* 押しても動かない的は置かない。まとめて話すときは戻る・スキップを使わないので、
               止めて置くのではなく、そもそも出さない（主操作も 1 つに絞られる）。
               文字化・住所検索の待ちのあいだは主ボタンを出さない。 */}
@@ -2436,11 +2473,6 @@ export function VoiceInputDock({
                 />
               </div>
             ))}
-            {batch.unassigned.length > 0 && (
-              <p className="voice-batch__unassigned">
-                読み取れなかった部分: {batch.unassigned.join("、")}。再録音で言い直せます。
-              </p>
-            )}
           </div>
         </Dialog>
       )}

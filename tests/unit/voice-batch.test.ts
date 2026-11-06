@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/v1/voice/utterances/route";
 import { assignBatch, estimateBatchAssignments, mockBatchTranscript } from "@/modules/events/lib/voice/batch";
 import {
+  batchExampleSentence,
   batchPlan,
   batchTargets,
   defaultVoiceMode,
@@ -256,6 +257,17 @@ describe("まとめて話す案内", () => {
     // 開始は範囲まで読むので、終了は別のマスにしない（`id` は開始）。
     expect(range?.label).toBe("開始時間と終了時間");
     expect(range?.slotIds).toEqual(["scheduleStart:0", "scheduleEnd:0"]);
+    // 話す 1 文の例でも、開始と終了を 1 つの言い方にまとめる。
+    expect(range?.example).toBe("18時から20時");
+  });
+
+  it("話す 1 文の例は、話す順に値を並べた 1 文になる", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+
+    // マスの名前だけでは、値として何を言えばよいか分からない。
+    expect(batchExampleSentence(cells)).toBe(
+      "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
+    );
   });
 
   it("入力済みの欄はマスにも出さない", () => {

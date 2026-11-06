@@ -81,7 +81,7 @@ export function missingInteractions(names, contents) {
  *
  * `mock-interactions.js` は手で保守するので、製品の音声入力を直したときに写しだけが
  * 古いまま残りうる。撮り直しても戻らないため、要る印が消えていたら `npm run check` で止める。
- * 見るのは 3 つ。覆い（穴あきの黒）、既定でオンになる「任意の項目も聞く」、郵便番号の住所補完。
+ * 見るのは 3 つ。覆い（穴あきの黒）、話し方で既定が変わる「任意の項目も聞く」、郵便番号の住所補完。
  */
 export function missingVoiceSimulation(source) {
   if (typeof source !== "string" || source.length === 0) {
@@ -96,9 +96,13 @@ export function missingVoiceSimulation(source) {
       "style-guide/mock-interactions.js に音声モードの覆い（voice-scrim）がありません。製品に合わせて直してください。",
     );
   }
-  if (!/data-voice-optional[^>]*\schecked/.test(source)) {
+  if (!source.includes("data-voice-optional")) {
     problems.push(
-      "style-guide/mock-interactions.js の「任意の項目も聞く」が既定でチェックされていません。製品に合わせて直してください。",
+      "style-guide/mock-interactions.js に「任意の項目も聞く」がありません。製品に合わせて直してください。",
+    );
+  } else if (!/data-voice-optional[\s\S]*?\.checked\s*=\s*!batch/.test(source)) {
+    problems.push(
+      "style-guide/mock-interactions.js の「任意の項目も聞く」が、まとめてで既定のまま入っています。製品に合わせて外してください。",
     );
   }
   const addressFill =
