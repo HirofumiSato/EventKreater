@@ -280,7 +280,7 @@ describe("まとめて話す", () => {
 
     await mount(vi.fn());
 
-    expect(screen.getByText("押すと、そのまま録音が始まります。")).toBeTruthy();
+    expect(screen.getByText("話し方を選ぶと、録音が始まります。")).toBeTruthy();
     // どの催しに向く話しかは、ボタンの右端の札で示す。
     const batch = screen.getByRole("button", { name: /まとめて話す/ });
     const single = screen.getByRole("button", { name: /1つずつ/ });
