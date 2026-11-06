@@ -1339,7 +1339,7 @@ textarea.voice-confirm__input {
   border-radius: var(--radius-xl);
   background: var(--pop-warm-tint);
   box-shadow: 4px 4px 0 rgb(26 25 22 / 0.85);
-  cursor: pointer;
+  cursor: default;
 }
 
 /* FAB を指す尾。縁の太さぶん、墨の三角の上に淡い三角を重ねて輪郭をそろえる。
@@ -1391,12 +1391,46 @@ textarea.voice-confirm__input {
   line-height: 1.5;
 }
 
-/* 入口の 2 択。押した方がそのまま音声モードに入るので、主操作は「まとめて」に置く。 */
+/* 入口の 2 択。押した方がそのまま音声モードに入るので、主操作は「まとめて」に置く。
+   2 列だと幅 17rem で注記が折れるため、1 列に積む。 */
 .voice-guide__modes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 1fr;
+  gap: 0.625rem;
   padding-block: 0.125rem 0.25rem;
+}
+
+/* ボタンと注記を 1 組にする。注記はボタンの外に置き、押しても録音を始めない。 */
+.voice-guide__mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.voice-guide__mode-note {
+  margin: 0;
+  padding-inline: 0.125rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* 主操作の朱の上でも注記が沈まないよう、地の色を継ぐ */
+.btn--primary + .voice-guide__mode-note {
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* 見出しの蛍光ペンと同じ山吹で、押す前に既定が分かるようにする */
+.voice-guide__pick {
+  margin-inline-start: 0.375rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--pop-warm);
+  color: var(--color-text-strong);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 .voice-guide__modes .btn {

@@ -1371,11 +1371,23 @@
     }
     voice.active = true;
     voice.autoAdvance = true;
-    // 空欄が 3 つ以上なら「まとめて」を既定にする（製品の `defaultVoiceMode`）。
     const blanks = voice.fields.filter(
       (entry) => entry.kind !== "gender" && entry.field && !entry.field.value,
     ).length;
-    voice.batchMode = blanks >= 3;
+    // 既定は製品の `defaultVoiceMode` に合わせる。複数日程・男女別・複数の費用プランがあると、
+    // まとめて話しても行を分けられないため、そのときは「1つずつ」を既定にする。
+    // 行が 1 つなら、空欄が 3 つ以上のときに「まとめて」を既定にする。
+    const rowCount = (prefix) =>
+      new Set(
+        voice.fields
+          .filter((entry) => entry.field && entry.field.id && entry.field.id.startsWith(prefix))
+          .map((entry) => entry.field.id),
+      ).size;
+    const complex =
+      rowCount("schedule-date-") > 1 ||
+      rowCount("plan-name-") > 1 ||
+      !!document.querySelector(".price-group");
+    voice.batchMode = !complex && blanks >= 3;
     voice.dialog = null;
     const built = buildVoicePanel();
     voice.panel = built.panel;

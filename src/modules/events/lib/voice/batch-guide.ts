@@ -1,6 +1,6 @@
 import { isSlotNeeded, voiceFieldOrder } from "@/modules/events/lib/voice/fields";
 import type { VoiceFieldScope, VoiceSlot, VoiceSlotId } from "@/modules/events/lib/voice/types";
-import type { EventFormValues } from "@/modules/events/types";
+import { groupPricePlanPairs, type EventFormValues } from "@/modules/events/types";
 
 /**
  * 「まとめて話す」の案内。話す順と例を、いまのフォームの空欄から作る。
@@ -32,8 +32,29 @@ export function batchTargets(
   return voiceFieldOrder(value, scope).filter((slot) => isSlotNeeded(slot, value, scope));
 }
 
-/** 空欄が 3 つ以上なら「まとめて」を既定にする。 */
-export function defaultVoiceMode(targets: readonly VoiceSlot[]): VoiceMode {
+/**
+ * 行を分けて話す必要があるか。日程・男女別・費用プランの組のいずれかが複数なら真。
+ *
+ * 「まとめて」は 1 行ぶんの並びを前提にしているので、行が複数あると 2 行目以降が
+ * 行き止まりになる。入口の既定を決める前に、ここで行の複雑さを見る。
+ */
+export function hasMultipleRows(value: EventFormValues): boolean {
+  if (value.schedules.length > 1) return true;
+  if (value.pricePlans.some((plan) => plan.audience !== "ANY")) return true;
+  return groupPricePlanPairs(value.pricePlans).length > 1;
+}
+
+/**
+ * 話し方の既定を決める。
+ *
+ * 行が複数あるときは「1つずつ」。1 行だけなら、空欄が 3 つ以上のときに
+ * 「まとめて」を選ぶ（1〜2 欄なら 1 つずつ聞いた方が速い）。
+ */
+export function defaultVoiceMode(
+  targets: readonly VoiceSlot[],
+  value: EventFormValues,
+): VoiceMode {
+  if (hasMultipleRows(value)) return "single";
   return targets.length >= BATCH_DEFAULT_MIN_TARGETS ? "batch" : "single";
 }
 
