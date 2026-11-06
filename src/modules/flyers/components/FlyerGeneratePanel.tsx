@@ -229,7 +229,7 @@ export function FlyerGeneratePanel({
             </p>
           ) : eventId ? (
             <p>
-              このイベントで作れるチラシは {quota?.limit} 回までです。共同主催者を含めた回数です。
+              このイベントで作れるチラシは {quota?.limit} 回までです。共同主催・幹事を含めた回数です。
             </p>
           ) : (
             <>

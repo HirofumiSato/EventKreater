@@ -187,7 +187,7 @@ export function CalendarView() {
                           参加 {event.stats.attendingCount}
                           {event.capacity === null ? "名（定員なし）" : ` / ${event.capacity}名`} ・{" "}
                           {STATUS_LABELS[event.status]}
-                          {event.role === "CO_HOST" && " · 共同主催"}</>}
+                          {event.role === "CO_HOST" && " · 共同主催・幹事"}</>}
                       aside={<><div className="event-card__actions">
                         <Link href={`/organizer/events/${event.id}/participants`} className="btn btn--ghost btn--sm">
                           出欠

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-react";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
+import { InviteCoHostModal } from "@/modules/organizers/components/InviteCoHostModal";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -35,6 +36,9 @@ import { Alert, Dialog, EmptyState, Field, Loading, PageHeader, Section, Section
 
 type LifecycleAction = "close" | "reopen" | "delete";
 
+/** 一覧 API が返す閲覧者。招待リンクを発行できるのは会員の主催者だけ。 */
+type Viewer = { userId: string | null; name: string | null };
+
 /** モーダルの中だけで動かす控え。閉じたときに捨てれば、一覧は元の条件のまま。 */
 type FilterDraft = { status: OrganizerStatusFilter; from: string; to: string };
 
@@ -43,6 +47,10 @@ function OrganizerEventsScreen() {
   const searchParams = useSearchParams();
   const quotaState = useEventQuota();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
+  // 招待リンクを発行できるかは、役割だけでなく「会員か」でも決まる（ゲスト主催者は登録が要る）。
+  const [viewer, setViewer] = useState<Viewer | null>(null);
+  // 札ごとにモーダルを持たせず、一覧に 1 枚だけ置く。閉じたら null に戻す。
+  const [inviteTarget, setInviteTarget] = useState<OrganizerEvent | null>(null);
   // 下書きは専用の一覧（/organizer/events/drafts）へ分ける。出欠の統計が常に 0 のため。
   const [draftCount, setDraftCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -97,9 +105,10 @@ function OrganizerEventsScreen() {
       setError(await readProblem(res));
       return;
     }
-    const data = (await res.json()) as { events: OrganizerEvent[] };
+    const data = (await res.json()) as { events: OrganizerEvent[]; viewer?: Viewer | null };
     // 下書きは別の一覧へ分ける。並びは API のまま（作った新しい順）で変えない。
     setEvents(data.events.filter((event) => event.status !== "DRAFT"));
+    setViewer(data.viewer ?? null);
     setDraftCount(data.events.filter((event) => event.status === "DRAFT").length);
     setError(null);
   }, []);
@@ -351,6 +360,7 @@ function OrganizerEventsScreen() {
               onStop={() => void runLifecycle(event.id, "close")}
               onResume={() => void runLifecycle(event.id, "reopen")}
               onDelete={() => setDeletingId(event.id)}
+              onInvite={() => setInviteTarget(event)}
             />
           ))}
         </div>
@@ -459,6 +469,17 @@ function OrganizerEventsScreen() {
             <p className="help">開催日が範囲内のイベントだけを表示します。</p>
           </div>
         </Dialog>
+      )}
+
+      {/* 招待は札ごとではなく一覧に 1 枚だけ置く。中身は開いた札の ID で作り直す。 */}
+      {inviteTarget && (
+        <InviteCoHostModal
+          eventId={inviteTarget.id}
+          eventTitle={inviteTarget.title}
+          canInvite={inviteTarget.role === "OWNER" && viewer !== null && viewer.userId !== null}
+          registerRequired={inviteTarget.role === "OWNER" && (viewer === null || viewer.userId === null)}
+          onClose={() => setInviteTarget(null)}
+        />
       )}
 
       {/* 一覧の主要な操作は、どこまでスクロールしても押せるよう画面下に固定する。

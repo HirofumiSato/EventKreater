@@ -143,7 +143,7 @@ export async function assertOwner(req: NextRequest, eventId: string): Promise<Au
     throw new ProblemDetailException({
       status: 403,
       title: "Forbidden",
-      detail: "この操作は筆頭幹事（オーナー）のみ実行できます。",
+      detail: "この操作は主催者だけが行えます。",
     });
   }
   return ctx;
@@ -184,7 +184,7 @@ export async function assertRegisteredOwner(
     throw new ProblemDetailException({
       status: 403,
       title: "Forbidden",
-      detail: "この操作は筆頭幹事（オーナー）のみ実行できます。",
+      detail: "この操作は主催者だけが行えます。",
     });
   }
   return ctx;

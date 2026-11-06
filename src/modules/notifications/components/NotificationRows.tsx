@@ -20,12 +20,16 @@ const KIND_LABELS: Record<NotificationKind, string> = {
   RSVP_ATTENDING: "出席",
   RSVP_WAITLISTED: "参加要望",
   REFERRAL_GRANTED: "紹介",
+  COHOST_JOINED: "共同主催",
+  COHOST_REMOVED: "解除",
 };
 
 const KIND_TONES: Record<NotificationKind, BadgeTone> = {
   RSVP_ATTENDING: "attending",
   RSVP_WAITLISTED: "waitlist",
   REFERRAL_GRANTED: "success",
+  COHOST_JOINED: "success",
+  COHOST_REMOVED: "neutral",
 };
 
 type NotificationRowsProps = {

@@ -32,7 +32,7 @@ describe("organizerDisplayName", () => {
 
   it("表示名は必ず空にしない", () => {
     expect(organizerLabel({ role: "OWNER" })).toBe("主催者");
-    expect(organizerLabel({ role: "CO_HOST" })).toBe("共同主催者");
+    expect(organizerLabel({ role: "CO_HOST" })).toBe("共同主催・幹事");
     expect(organizerRoleLabel("OWNER")).toBe("主催者");
   });
 

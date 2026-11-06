@@ -15,7 +15,7 @@ export interface OrganizerNameSource {
 
 export const ORGANIZER_ROLE_LABELS: Record<OrganizerRole, string> = {
   OWNER: "主催者",
-  CO_HOST: "共同主催者",
+  CO_HOST: "共同主催・幹事",
 };
 
 export function organizerDisplayName(row: OrganizerNameSource): string | null {

@@ -3,6 +3,14 @@ import { isUniqueViolation } from "@/lib/exceptions";
 import type { RsvpStatus } from "@/modules/events/types";
 import { ticketExpiresAt } from "@/modules/billing/lib/tickets";
 import {
+  buildCoHostJoinedNotification,
+  buildCoHostRemovedNotification,
+  cohostJoinedRecipientIds,
+  cohostNoticeDedupeKey,
+  cohostRemovedRecipientIds,
+  type CohostRecipientSource,
+} from "@/modules/notifications/lib/cohost-notification";
+import {
   buildReferralNotification,
   referralNoticeDedupeKey,
 } from "@/modules/notifications/lib/referral-notification";
@@ -12,12 +20,14 @@ import {
   notificationRecipientIds,
   shouldNotifyRsvp,
 } from "@/modules/notifications/lib/rsvp-notification";
+import type { NotificationKind } from "@/modules/notifications/types";
 
 /**
- * アプリ内通知を残す。参加表明（`notifyRsvpSubmitted`）と、紹介のチケット付与
- * （`notifyReferralGranted`）の 2 種類を持つ。
+ * アプリ内通知を残す。参加表明（`notifyRsvpSubmitted`）、紹介のチケット付与
+ * （`notifyReferralGranted`）、共同主催の受諾・解除（`notifyCoHostJoined` /
+ * `notifyCoHostRemoved`）の 4 種類を持つ。
  *
- * どちらも元になる操作のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * どれも元になる操作のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
  * **ここで失敗しても本来の操作は成功させる**（呼び出し側が握りつぶす）。
  *
  * 通知はメールを送らない。DB の行を増やすだけなので、件数が増えても費用は掛からない。
@@ -170,6 +180,149 @@ export async function notifyReferralGranted(input: ReferralGrantedInput): Promis
 
   if (created > 0) {
     await deliver([{ userId: row.userId, title: row.title, body: row.body }]);
+  }
+  return created;
+}
+
+export interface CoHostJoinedInput {
+  eventId: string;
+  /** イベント名。通知の文面へ焼き付ける。 */
+  eventTitle: string;
+  /** 受諾した会員。宛先から除く。 */
+  actorUserId: string;
+  /** 受諾した会員の名前。文面に使う。 */
+  actorName: string;
+  /** 受諾で増えた幹事の行。指紋に使い、解除して再招待されると別の値になる。 */
+  organizerId: string;
+  /** 受諾前の幹事。`userId` を持たないゲスト行は宛先にしない。 */
+  organizers: readonly CohostRecipientSource[];
+}
+
+/**
+ * 共同主催に加わったことを、先に居た幹事へ知らせる。
+ *
+ * 受諾のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * **ここで失敗しても受諾そのものは成功させる**（呼び出し側が握りつぶす）。
+ * 受諾した本人と、`userId` を持たないゲスト幹事には作らない。
+ */
+export async function notifyCoHostJoined(input: CoHostJoinedInput): Promise<number> {
+  const recipients = cohostJoinedRecipientIds(input.organizers, input.actorUserId);
+  if (recipients.length === 0) return 0;
+
+  const content = buildCoHostJoinedNotification({
+    eventId: input.eventId,
+    eventTitle: input.eventTitle,
+    actorName: input.actorName,
+  });
+
+  return createCoHostNotifications(
+    recipients.map((userId) => ({
+      userId,
+      eventId: input.eventId,
+      participantId: null,
+      kind: content.kind,
+      title: content.title,
+      body: content.body,
+      dedupeKey: cohostNoticeDedupeKey({
+        kind: content.kind,
+        userId,
+        organizerId: input.organizerId,
+      }),
+    })),
+  );
+}
+
+export interface CoHostRemovedInput {
+  eventId: string;
+  /** イベント名。通知の文面へ焼き付ける。 */
+  eventTitle: string;
+  /** 外れた幹事の行。指紋に使い、再招待で行が変われば別の通知にする。 */
+  organizerId: string;
+  /** 外れた会員。`userId` を持たないゲスト行は null で、本人へは送らない。 */
+  removedUserId: string | null;
+  /** 外れた幹事の表示名。文面に使う。 */
+  removedName: string;
+  /** 解除した会員。宛先から除く。 */
+  actorUserId: string;
+  /** 解除後に残る幹事。`userId` を持たないゲスト行は宛先にしない。 */
+  remainingOrganizers: readonly CohostRecipientSource[];
+}
+
+/**
+ * 共同主催から外れたことを、外れた本人と残る幹事へ知らせる。
+ *
+ * 解除のトランザクションがコミットした後に呼ぶ。通知はおまけなので、
+ * **ここで失敗しても解除そのものは成功させる**（呼び出し側が握りつぶす）。
+ */
+export async function notifyCoHostRemoved(input: CoHostRemovedInput): Promise<number> {
+  const recipients = cohostRemovedRecipientIds({
+    remainingOrganizers: input.remainingOrganizers,
+    removedUserId: input.removedUserId,
+    actorUserId: input.actorUserId,
+  });
+  if (recipients.length === 0) return 0;
+
+  // 外れた本人には自分の名前を三人称で書かない。残る幹事には誰が外れたかを添える。
+  const selfContent = buildCoHostRemovedNotification({
+    eventTitle: input.eventTitle,
+    removedName: input.removedName,
+    self: true,
+  });
+  const otherContent = buildCoHostRemovedNotification({
+    eventTitle: input.eventTitle,
+    removedName: input.removedName,
+    self: false,
+  });
+
+  return createCoHostNotifications(
+    recipients.map((userId) => {
+      const content = userId === input.removedUserId ? selfContent : otherContent;
+      return {
+        userId,
+        eventId: input.eventId,
+        participantId: null,
+        kind: content.kind,
+        title: content.title,
+        body: content.body,
+        dedupeKey: cohostNoticeDedupeKey({
+          kind: content.kind,
+          userId,
+          organizerId: input.organizerId,
+        }),
+      };
+    }),
+  );
+}
+
+interface CoHostNotificationRow {
+  userId: string;
+  eventId: string;
+  participantId: null;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  dedupeKey: string;
+}
+
+/**
+ * 共同主催の通知をまとめて作る。同じ指紋の行は一意制約で弾き、成功として扱う。
+ * 作った分だけ配信（いまは何もしない）へ渡す。
+ */
+async function createCoHostNotifications(rows: readonly CoHostNotificationRow[]): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  let created = 0;
+  try {
+    const result = await prisma.notification.createMany({ data: [...rows], skipDuplicates: true });
+    created = result.count;
+  } catch (error) {
+    // 一意制約は「同じ受諾・解除を先に作った別のリクエストがある」だけなので、成功として扱う。
+    if (!isUniqueViolation(error)) throw error;
+    return 0;
+  }
+
+  if (created > 0) {
+    await deliver(rows.map((row) => ({ userId: row.userId, title: row.title, body: row.body })));
   }
   return created;
 }

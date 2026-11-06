@@ -11,14 +11,14 @@
 1. **ハイブリッド・アイデンティティ（段階的会員化）のデータ吸収:**
    - 「未登録（端末Cookie依存）」「ゲスト幹事（暗号化トークン所持）」「認証済み会員（User ID保持）」という3つの利用形態を、単一スキーマ体系で一貫して保持する。
 2. **暗号学的トークンハッシュ化によるゼロトラスト設計:**
-   - ゲスト幹事トークン、出欠照会トークン、共同幹事招待コードは、DB内に平文で保存せず、すべてSHA-256ハッシュ値として保存する。
+   - ゲスト幹事トークン、出欠照会トークン、共同主催・幹事の招待コードは、DB内に平文で保存せず、すべてSHA-256ハッシュ値として保存する。
 3. **PostgreSQL固有のアトミック排他制御（Pessimistic Lease Lock）:**
-   - 共同幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
+   - 共同主催・幹事の同時編集事故（Lost Update）を防ぐため、外部キャッシュ（Redis等）を用いず、PostgreSQLの `ON CONFLICT DO UPDATE WHERE lock_token_hash = :currentLockTokenHash` 構文を活用してDB単体で厳密な原子性を担保する。ロックは時間で失効させず、保持者が解放するか他の幹事が引き継ぐまで保持する。
 4. **マネタイズ基盤（課金クォータ・Stripe連携）の完全統合:**
    - 主催者のチケット（累計2枚無料、単発299円クレジット、8件まで公開プラン980円・公開し放題プラン2980円のサブスクリプション）を `user_usage_quotas` テーブルで管理。定額プランの上限は暦月の公開件数ではなく、公開中のイベント数（`events.quota_source = 'SUBSCRIPTION'` かつ開催日が今日以降）で判定する。
    - 決済監査ログ（`billing_transactions`）および Webhook冪等性制御（`stripe_webhook_events`）を統合し、二重課金・二重付与を物理遮断する。
-5. **筆頭作成者（オーナー）のみチケット消費ルール:**
-   - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは筆頭作成者（OWNER）のみとし、招待された共同幹事（CO_HOST）のチケットは消費しない。
+5. **主催者のみチケット消費ルール:**
+   - イベントを複数幹事で共同運営する場合でも、クォータを消費するのは主催者（OWNER）のみとし、招待された共同主催・幹事（CO_HOST）のチケットは消費しない。
 
 ---
 
@@ -34,11 +34,11 @@
 * **Event (イベント本体):** 主催者が告知・出欠を集めるイベントの実体（基本7項目＋ステータス＋掲載フラグ＋任意の申し込み期限）。`visibility` は将来のメディアサイト用の予約列であり、いまのアプリは一覧を持たないため常に `UNLISTED`（紹介制）。
 * **Receipt (参加費の領収書・旧):** 旧画面で幹事が出席者へ発行した文書。1参加者につき1件。金額は幹事の入力で、参加費の決済は持たない。**画面からは外した**（参加者向け・主催者向けの領収書画面を廃止）。既存データの保護と `GET /api/v1/user/hydrate` の会員統合が参照するため残し、新しい書き込みはしない。今後は `participants.collected_at` で集金を記録する。
 * **FlyerAsset (チラシ画像アセット):** チラシ生成 API が保存した A4 縦（1080×1528）の JPEG、または主催者がアップロードした完成済みの画像。`imageUrl` は `GET /api/v1/flyer-assets/{id}/image` を指し、バイト列そのものは生成なら `storage/flyers/{id}.jpg`、アップロードなら `storage/flyers/{id}.{jpg|png|webp}` に置く。アップロードは再エンコードせず、`aspectRatio` は `auto`、`externalFlyerId` は NULL になる。ダウンロード用の A4 PDF と告知ページの QR は保存せず、`GET /api/v1/flyer-assets/{id}/pdf` が要求のたびに作る。チラシなしのイベントも許容する。
-* **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（筆頭幹事。1イベント1行）とCO_HOST（共同主催者）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
+* **EventOrganizer (幹事権限):** イベントと主催者を結ぶ多対多エンティティ。OWNER（主催者。1イベント1行）と CO_HOST（共同主催・幹事）を識別する。会員は `User.name` を表示名に使い、ゲストは `display_name` を使う。
 * **ImageAsset (会員が上げた画像):** プロフィールのアイコンやヘッダーなど、会員がアップロードした画像の実体。1行1画像で、バイト列は `storage/images/{id}.webp` に置き、`GET /api/v1/image-assets/{id}/image` で配る。参照する側（`organizer_profiles.avatar_image_id` / `organizer_profiles.header_image_id`、将来は `events.cover_image_id`）に外部キーを置く。用途（`kind`）は `AVATAR` / `EVENT_COVER` / `PROFILE_HEADER` の3つで、列挙型にせずアプリ側で検証する。
 * **Participant (参加者・出欠):** 参加者の出欠登録実体。未登録時は端末Cookieトークンで紐付け。集金は `collectedAt`（`collected_at`）で持ち、NULL は未集金。金額は `priceAmount` から割引を引いた額（0 円で止める）× `partySize` で、手入力はしない。
-* **EventLock (排他編集ロック):** 共同主催者間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
-* **EventInvitation (共同主催者の招待):** 既存幹事が他の会員を共同主催者として迎えるためのワンタイム招待実体。受諾は会員のみ。
+* **EventLock (排他編集ロック):** 主催者と共同主催・幹事の間の同時編集競合を防止する排他編集ロック。保持者が解放するか、他の幹事が引き継ぐまで保持され、時間では失効しない。
+* **EventInvitation (共同主催・幹事の招待):** 既存幹事が他の会員を共同主催・幹事として迎えるためのワンタイム招待実体。受諾は会員のみ。
 
 ### 2.2. 概念ER図
 
@@ -51,7 +51,7 @@ erDiagram
     EventOrganizers }o--|| Events : "管理対象 0..* 対 1"
     Events ||--o| FlyerAsset : "チラシ 1 対 0..1"
     Events ||--o| EventLock : "排他ロック 1 対 0..1"
-    Events ||--o{ EventInvitation : "共同幹事招待 1 対 0..*"
+    Events ||--o{ EventInvitation : "共同主催・幹事の招待 1 対 0..*"
     Events ||--o{ Participant : "出欠 1 対 0..*"
     Users {
         string role "会員基盤"
@@ -75,7 +75,7 @@ erDiagram
         string role "排他編集ロック"
     }
     EventInvitation {
-        string role "共同幹事招待"
+        string role "共同主催・幹事の招待"
     }
     Participant {
         string role "参加者出欠"
@@ -112,9 +112,9 @@ erDiagram
 | **RainPolicy** | `RAIN_OR_SHINE`, `CANCEL_ON_RAIN`, `POSTPONE_ON_RAIN`, `INDOOR` | 雨天時の催行方針 |
 | **EventStatus** | `DRAFT`, `PUBLISHED`, `CLOSED` | イベント公開状態 |
 | **EventVisibility** | `PUBLIC`, `UNLISTED` | 将来のメディアサイト向けの掲載フラグ。`PUBLIC` は一覧掲載、`UNLISTED` は紹介制。いまのアプリは常に `UNLISTED` |
-| **OrganizerRole** | `OWNER`, `CO_HOST` | 幹事ロール（筆頭作成者 / 共同幹事）。イベント単位 |
+| **OrganizerRole** | `OWNER`, `CO_HOST` | 幹事ロール（主催者 / 共同主催・幹事）。イベント単位 |
 | **RevenueSplitMode** | `RATIO`, `HEADCOUNT` | 売上の按分方式。割合（basis points）か、連れてきた人数か |
-| **RevenueShareVisibility** | `ALL`, `OWN_ONLY` | 按分の閲覧範囲。`OWN_ONLY` は共同主催者に自分の行だけを見せる |
+| **RevenueShareVisibility** | `ALL`, `OWN_ONLY` | 按分の閲覧範囲。`OWN_ONLY` は共同主催・幹事に自分の行だけを見せる |
 | **PlatformRole** | `MEMBER`, `ADMIN` | プラットフォーム権限。会員行に1つ。既定は `MEMBER` |
 | **LoginChallengeChannel** | `SMS`, `EMAIL` | ログイン確認番号の届け方。既定は一般会員が `EMAIL`、管理者の入口が `SMS` |
 | **LoginChallengePurpose** | `MEMBER`, `ADMIN`, `PARTICIPANT` | 主催者入口か管理者入口か参加者入口か。`PARTICIPANT` は管理者も通り抜けられる |
@@ -186,8 +186,8 @@ enum EventVisibility {
 }
 
 enum OrganizerRole {
-  OWNER    // 主催幹事（筆頭作成者・チケット消費対象）
-  CO_HOST  // 共同幹事（チケット消費なし）
+  OWNER    // 主催者（チケット消費対象）
+  CO_HOST  // 共同主催・幹事（チケット消費なし）
 }
 
 enum RsvpStatus {
@@ -392,7 +392,7 @@ model FlyerAsset {
 }
 
 /// チラシ生成 1 回分の記録。回数制限と監査に使う。
-/// 保存済みイベントは event_id で数え、共同主催者も同じ枠を共有する。
+/// 保存済みイベントは event_id で数え、共同主催・幹事も同じ枠を共有する。
 /// 公開前の新規作成は event_id を NULL にし、公開時に付け替える。
 /// 候補画像そのものは保存しない（使い捨てのため、サービス側の TTL で消える）。
 model FlyerGenerationLog {
@@ -573,7 +573,7 @@ model EventOrganizer {
   @@map("event_organizers")
 }
 
--- 1イベント1オーナーは、Prisma で表現できない部分ユニーク索引で保証する（migration の生SQL）。
+-- 1イベント1主催者は、Prisma で表現できない部分ユニーク索引で保証する（migration の生SQL）。
 -- CREATE UNIQUE INDEX "event_organizers_one_owner"
 --   ON "event_organizers" ("event_id") WHERE "role" = 'OWNER';
 
@@ -715,7 +715,7 @@ model EventLock {
 }
 
 // =============================================================
-// 8. 共同幹事招待
+// 8. 共同主催・幹事の招待
 // =============================================================
 model EventInvitation {
   id             String   @id @default(uuid()) @db.Uuid
@@ -1134,7 +1134,7 @@ CREATE TABLE event_organizers (
 
 CREATE INDEX idx_organizers_user ON event_organizers(user_id);
 
--- 1イベント1オーナー（筆頭幹事）を保証する部分ユニーク索引。
+-- 1イベント1主催者を保証する部分ユニーク索引。
 CREATE UNIQUE INDEX event_organizers_one_owner
     ON event_organizers(event_id)
     WHERE role = 'OWNER';
@@ -1242,7 +1242,7 @@ CREATE TABLE event_locks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 10. 共同幹事招待テーブル
+-- 10. 共同主催・幹事の招待テーブル
 CREATE TABLE event_invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -1765,7 +1765,7 @@ export async function createEventWithQuotaGate(
         status: 'PUBLISHED',
       },
     });
-    // 3. 筆頭幹事ロール（OWNER）を付与
+    // 3. 主催者ロール（OWNER）を付与
     await tx.eventOrganizer.create({
       data: {
         eventId: event.id,
@@ -1900,7 +1900,7 @@ export async function cloneEvent(sourceEventId: string, currentUserId: string) {
         status: 'DRAFT',
       },
     });
-    // 複製実行者をオーナーとして登録
+    // 複製実行者を主催者として登録
     await tx.eventOrganizer.create({
       data: {
         eventId: newEvent.id,
@@ -1937,7 +1937,7 @@ export async function withdrawAccount(input: {
 
   const now = new Date();
   await prisma.$transaction(async (tx) => {
-    // 筆頭幹事のイベントだけ閉じる。共同幹事の紐付けは外し、他の筆頭のイベントは残す。
+    // 主催者のイベントだけ閉じる。共同主催・幹事の紐付けは外し、他の主催者のイベントは残す。
     await tx.event.updateMany({
       where: { isDeleted: false, organizers: { some: { userId: input.userId, role: 'OWNER' } } },
       data: { isDeleted: true, status: 'CLOSED' },

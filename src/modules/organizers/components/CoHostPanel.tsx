@@ -79,7 +79,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
       setRemovingId(null);
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "共同主催者を外せませんでした");
+      setError(cause instanceof Error ? cause.message : "共同主催・幹事を外せませんでした");
     } finally {
       setPending(false);
     }
@@ -90,7 +90,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
 
   return (
     <Panel>
-      <PanelHead title="共同幹事" note="招待リンクで、幹事を1人増やせます。解除はその場で確認します。" />
+      <PanelHead title="共同主催・幹事" note="招待リンクで、幹事を1人増やせます。解除はその場で確認します。" />
       {error && <Alert tone="error">{error}</Alert>}
       {loading ? (
         <Loading>
@@ -102,15 +102,15 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
             {owner && (
               <Row
                 title={<>{owner.name}</>}
-                meta={<>筆頭幹事 ／ 公開・非公開を変えられる
+                meta={<>主催者 ／ 公開・非公開を変えられる
                     {owner.isGuest ? " ／ 未登録の幹事" : ""}</>}
-                aside={<><Badge tone="neutral" small>主催</Badge></>}
+                aside={<><Badge tone="neutral" small>主催者</Badge></>}
               />
             )}
             {coHosts.map((row) => (
               <Row
                 title={<>{row.name}</>}
-                meta={<>共同幹事 ／ 名簿と売上を見られる
+                meta={<>共同主催・幹事 ／ 名簿と売上を見られる
                     {row.isGuest ? " ／ 未登録の幹事" : ""}</>}
                 aside={<>{data?.canManage &&
                   (removingId === row.id ? (
@@ -146,7 +146,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
               />
             ))}
             {coHosts.length === 0 && (
-              <Row title="共同幹事はまだいません" meta="リンクで幹事を1人増やせます。" />
+              <Row title="共同主催・幹事はまだいません" meta="リンクで幹事を1人増やせます。" />
             )}
           </Rows>
 
@@ -174,7 +174,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
               </Link>
             </div>
           ) : (
-            <p className="help">共同主催者の招待・削除は筆頭幹事だけが行えます。</p>
+            <p className="help">招待・解除は主催者だけが行えます。</p>
           )}
 
           {shareUrl && (
@@ -183,7 +183,7 @@ export function CoHostPanel({ eventId }: { eventId: string }) {
               <p className="quote">{shareUrl}</p>
               {expiresAt && <p className="help">有効期限 {formatDateTimeJa(expiresAt)}</p>}
               <p className="help">
-                URLを知っている会員が受諾すると、共同主催者になります。7日間有効で、1回だけ使えます。
+                URLを知っている会員が受諾すると、共同主催・幹事になります。7日間有効で、1回だけ使えます。
               </p>
               <div className="panel__actions">
                 <button

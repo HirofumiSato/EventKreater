@@ -78,7 +78,7 @@ async function saveWithQuota(
           status: 409,
           title: "Conflict",
           detail:
-            "他の共同主催者と同時に保存されました。回数を確認して、もう一度お試しください。",
+            "他の共同主催・幹事と同時に保存されました。回数を確認して、もう一度お試しください。",
         });
       }
       throw error;

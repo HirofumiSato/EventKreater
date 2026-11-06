@@ -214,7 +214,7 @@ export default function OrganizerRevenuePage() {
                   <Row
                     title={<><Link href={`/organizer/events/${event.id}/revenue`}>{event.title}</Link>
                         {event.role === "CO_HOST" ? (
-                          <Badge tone="neutral" small>共同主催</Badge>
+                          <Badge tone="neutral" small>共同主催・幹事</Badge>
                         ) : null}</>}
                     meta={<>{event.sortDate} ／ {STATUS_LABELS[event.status]} ／ 出席{" "}
                         {event.attendingCount}・欠席 {event.declinedCount}

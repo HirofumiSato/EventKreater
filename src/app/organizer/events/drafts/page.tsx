@@ -95,7 +95,7 @@ export default function OrganizerDraftsPage() {
               <p className="draft-card__title">
                 {event.title}
                 <Badge tone="neutral" small>
-                  {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催" : "共同主催"}
+                  {STATUS_LABELS[event.status]} · {event.role === "OWNER" ? "主催者" : "共同主催・幹事"}
                 </Badge>
               </p>
               <p className="draft-card__meta">

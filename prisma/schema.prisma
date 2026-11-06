@@ -140,10 +140,13 @@ enum PlatformRole {
 
 /// 主催者へ届けるアプリ内通知の種別。文面は作成時点で確定して保存する。
 /// REFERRAL_GRANTED は紹介のチケットが配られたことを紹介者へ知らせる（催しに紐づかない）。
+/// COHOST_JOINED / COHOST_REMOVED は共同主催の受諾・解除を、幹事へ知らせる。
 enum NotificationKind {
   RSVP_ATTENDING
   RSVP_WAITLISTED
   REFERRAL_GRANTED
+  COHOST_JOINED
+  COHOST_REMOVED
 }
 
 enum LoginChallengeChannel {

@@ -217,7 +217,7 @@ function RegisterRequiredScreen() {
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
           <Row
-            title="共同幹事の招待"
+            title="共同主催・幹事の招待"
             meta="同じイベントの幹事を1人増やせます。"
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />

@@ -71,7 +71,7 @@ export function toOrganizerCellItem({ event, schedule }: CalendarEntry): Calenda
     key: `${event.id}-${schedule.id}`,
     title: event.title,
     tone: event.status === "PUBLISHED" ? "default" : "muted",
-    detail: [schedule.eventTime || "時刻未定", STATUS_LABELS[event.status], event.role === "CO_HOST" ? "共同主催" : ""]
+    detail: [schedule.eventTime || "時刻未定", STATUS_LABELS[event.status], event.role === "CO_HOST" ? "共同主催・幹事" : ""]
       .filter((part) => part !== "")
       .join(" · "),
     href: organizerEventHref(event),

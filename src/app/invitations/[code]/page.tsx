@@ -63,7 +63,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
   if (error && !preview) {
     return (
       <div className="page--form stack">
-        <h1 className="page-title">共同主催者の招待</h1>
+        <h1 className="page-title">共同主催・幹事の招待</h1>
         <p className="page-lead">招待を表示できません。</p>
         <Alert tone="error">{error}</Alert>
       </div>
@@ -79,7 +79,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
 
   return (
     <div className="page--form stack">
-      <PageHeader eyebrow="招待" title="共同主催者に加わりますか" lead={<>{preview.event.title}</>} />
+      <PageHeader eyebrow="招待" title="共同主催・幹事に加わりますか" lead={<>{preview.event.title}</>} />
       {error && <Alert tone="error">{error}</Alert>}
       <div className="auth-card">
         <h2 className="auth-card__title">{preview.event.organizer.ownerName ?? "主催者"} からの招待</h2>
@@ -108,12 +108,12 @@ export default function InvitationPage({ params }: { params: { code: string } })
         <div className="panel__actions">
           {preview.loggedIn ? (
             <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
-              {pending ? "参加処理中…" : "共同主催者として参加する"}
+              {pending ? "参加処理中…" : "共同主催・幹事として参加する"}
             </button>
           ) : (
             <>
               <p className="help">
-                共同主催者として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。チケットは消費しません。
+                共同主催・幹事として参加するには会員登録が必要です。登録すると、このイベントの編集と名簿を分担できます。チケットは消費しません。
               </p>
               <Link href={loginHref} className="btn btn--primary btn--block">
                 会員登録して受諾する

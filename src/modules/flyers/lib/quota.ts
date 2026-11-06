@@ -84,7 +84,7 @@ function exceeded(scope: FlyerQuotaScope, limit: number): ProblemDetailException
     return new ProblemDetailException({
       status: 403,
       title: "Quota Exceeded",
-      detail: `このイベントで作れるチラシは${limit}回までです。共同主催者を含めた回数で、作り直す場合は新しいイベントを作成してください。`,
+      detail: `このイベントで作れるチラシは${limit}回までです。共同主催・幹事を含めた回数で、作り直す場合は新しいイベントを作成してください。`,
       error: FLYER_QUOTA_EXCEEDED,
     });
   }

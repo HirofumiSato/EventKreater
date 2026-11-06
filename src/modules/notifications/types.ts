@@ -7,10 +7,15 @@
  */
 
 /**
- * 通知の種別。出席・参加要望と、紹介でのチケット付与を持つ
+ * 通知の種別。出席・参加要望、紹介でのチケット付与、共同主催の受諾・解除を持つ
  * （欠席・取り消しは知らせない）。
  */
-export type NotificationKind = "RSVP_ATTENDING" | "RSVP_WAITLISTED" | "REFERRAL_GRANTED";
+export type NotificationKind =
+  | "RSVP_ATTENDING"
+  | "RSVP_WAITLISTED"
+  | "REFERRAL_GRANTED"
+  | "COHOST_JOINED"
+  | "COHOST_REMOVED";
 
 /** 旧名。出席・参加要望だけを指していた頃の呼び出しを壊さないための別名。 */
 export type RsvpNotificationKind = NotificationKind;
