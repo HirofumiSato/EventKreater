@@ -1511,6 +1511,311 @@ textarea.voice-confirm__input {
   margin-top: 0;
 }
 
+/* --------------------------------------------------------------------------
+   初回のスポットライトツアー（SCR-ORG-02）
+   黒い面で対象だけをくり抜き、脇に説明の紙を置く。見た目は音声ガイドと同じ貼り紙。
+   重なりは「画面下の帯（40）より上、モーダル（50）より下」に置く。帯より下にすると
+   最後の 1 枚で公開の操作が黒い面に隠れ、モーダルより上にすると開いた層の意味が崩れる。
+   -------------------------------------------------------------------------- */
+.guide-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  background: rgb(26 25 22 / 0.68);
+}
+
+/* 穴の縁。くり抜いただけだと、どこまでが対象か分からないので山吹で 1 本だけ引く。
+   枠は押せない。穴の内側は `.guide-blocker` が受け止める。 */
+.guide-ring {
+  position: fixed;
+  z-index: 48;
+  border: 2px solid var(--pop-warm);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 2px rgb(26 25 22 / 0.35);
+  pointer-events: none;
+}
+
+/* 穴の上に重ねる透明な層。`clip-path` は当たり判定にも効くので、これが無いと
+   穴の中の見出しや入力欄をそのまま押せてしまう（誤操作で対象の値が変わる）。 */
+.guide-blocker {
+  position: fixed;
+  z-index: 48;
+  background: transparent;
+  cursor: default;
+}
+
+/* 押せる合図。穴の右手前に手を置き、指先で押す動きを繰り返す。
+   穴の中身（見出し）を押せるよう、この層は当たり判定を持たない。
+   指先は上の中央（`x ≈ 48%` `y ≈ 12%`）。押す軸と波の位置をそこへ合わせる。 */
+.guide-tap {
+  position: fixed;
+  z-index: 49;
+  width: 2rem;
+  height: 2rem;
+  pointer-events: none;
+  color: var(--color-primary);
+}
+
+.guide-tap__hand {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  transform-origin: 48% 12%;
+  /* 黒い面と山吹の枠のどちらに重なっても輪郭が残るよう、下地を 1 枚だけ敷く。 */
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 0.95));
+}
+
+/* 押した瞬間に指先から広がる波。`left` / `top` は手の指先に合わせる。 */
+.guide-tap__ripple {
+  position: absolute;
+  top: 12%;
+  left: 48%;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.75rem 0 0 -0.75rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  opacity: 0;
+}
+
+/* 3 つの手が同時に跳ねると、どれを押せばよいか分からない。穴ごとに遅らせる。 */
+@media (prefers-reduced-motion: no-preference) {
+  .guide-tap__hand {
+    animation: guide-tap-press 2000ms ease-in-out infinite;
+    animation-delay: var(--guide-tap-delay, 0ms);
+  }
+
+  .guide-tap__ripple {
+    animation: guide-tap-ripple 2000ms ease-out infinite;
+    animation-delay: var(--guide-tap-delay, 0ms);
+  }
+
+  @keyframes guide-tap-press {
+    0%,
+    55%,
+    100% {
+      transform: none;
+    }
+
+    12% {
+      transform: scale(0.9) translate(1px, 2px);
+    }
+
+    26% {
+      transform: none;
+    }
+  }
+
+  @keyframes guide-tap-ripple {
+    0%,
+    8% {
+      transform: scale(0.35);
+      opacity: 0.55;
+    }
+
+    45%,
+    100% {
+      transform: scale(1.3);
+      opacity: 0;
+    }
+  }
+}
+
+/* 動きを切っている端末では止める。ポータルは `.deco` の外へ出るので、`:has()` で見る。 */
+body:has(.deco.is-motion-off) .guide-tap__hand,
+body:has(.deco.is-motion-off) .guide-tap__ripple {
+  animation: none;
+}
+
+/* 説明の紙。位置は部品が測って top / left で置く。幅だけをここで決める。
+   390px で左右 12px ずつ空け、狭い端末でも横スクロールを出さない。
+   縁の朱は、`base.css` の `:focus-visible`（2px・offset 2px）と同じ見た目を常に出す。
+   紙は開いた直後に焦点を 1 回だけ受け、2 枚目以降は焦点を動かさないため、既定のままだと
+   1 枚目だけ縁が付いて見える。どの枚も同じ紙に見えるよう、輪をここで固定する。 */
+.guide-bubble {
+  position: fixed;
+  z-index: 49;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: min(22rem, calc(100vw - 1.5rem));
+  padding: 0.875rem 1rem 0.75rem;
+  border: 2px solid var(--tape-ink);
+  border-radius: var(--radius-xl);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  background: var(--pop-warm-tint);
+  box-shadow: 4px 4px 0 rgb(26 25 22 / 0.85);
+  cursor: default;
+}
+
+/* 何枚目か。閉じる印（40px）の下へ文字を潜らせないよう、右上に余白を空ける。 */
+.guide-bubble__step {
+  margin: 0;
+  padding-inline-end: 2.25rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+/* 見出しは音声ガイドと同じく、下だけ山吹の太い線で引く。 */
+.guide-bubble__title {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.guide-bubble__body {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* 本文の代わりに出す箇条書き。番号は振らない（並列の項目に順番の意味が無い）。
+   点は山吹に寄せ、本文と同じ行の高さと字の大きさで読ませる。 */
+.guide-bubble__list {
+  margin: 0;
+  padding-inline-start: 1.125rem;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.guide-bubble__list li::marker {
+  color: var(--pop-warm);
+}
+
+.guide-bubble__list li + li {
+  margin-top: 0.125rem;
+}
+
+.guide-bubble__note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* 閉じる印。紙の角に置くが、押せる的は 40px を下回らせない。 */
+.guide-bubble__close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tape-ink);
+  cursor: pointer;
+}
+
+.guide-bubble__close:hover {
+  background: rgb(26 25 22 / 0.08);
+}
+
+/* 最終枚のチェック。1 行でも押せる的は 40px を下回らせない（音声ガイドと同じ）。 */
+.guide-bubble__check {
+  align-items: center;
+  min-height: var(--tap-target);
+  padding-top: 0.375rem;
+  border-top: 1px dashed rgb(26 25 22 / 0.28);
+  color: var(--color-text-subtle);
+  font-size: 0.8rem;
+}
+
+/* 枚を進めるときの移動。黒い面は外し、画面の内側に赤い枠だけを残す。
+   枠は「いまは触れない」の合図で、地は塗らない（どこへ移るかを見せるため）。
+   この層が画面全体を覆うので、移動中の押下はすべてここで止まる。 */
+.guide-travel {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  cursor: default;
+  touch-action: none;
+}
+
+.guide-travel::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+
+/* 何が起きているかの 1 行。枠だけでは「触れない」の意味が伝わらないので添える。
+   移動の邪魔をしないよう、上端に小さく置く。 */
+.guide-travel__label {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--pop-warm-tint);
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.guide-bubble__check input {
+  margin-top: 0;
+}
+
+.guide-bubble__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-block-start: 0.25rem;
+}
+
+/* `.btn--sm` は左右の余白だけを詰める指定なので、高さと文字はここで明示する。
+   15px を下回らせない（AGENTS.md「画面の組み方」）。 */
+.guide-bubble__actions .btn {
+  min-height: var(--tap-target);
+  font-size: var(--font-action);
+}
+
+/* 広い画面は紙を少し広げる。位置は測り直すので、ここでは幅と余白だけを変える。 */
+@media (min-width: 640px) {
+  .guide-bubble {
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 1rem 1.125rem 0.875rem;
+  }
+}
+
+/* 動きは音声ガイドとそろえる。`is-motion-off` のときは止める。 */
+@media (prefers-reduced-motion: no-preference) {
+  .deco:not(.is-motion-off) .guide-bubble {
+    animation: guide-bubble-in 160ms ease-out;
+  }
+
+  @keyframes guide-bubble-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
 /* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
 [data-voice-target="true"] {
   position: relative;

@@ -192,6 +192,11 @@ interface VoiceInputDockProps {
    */
   showOrganizerName?: boolean;
   disabled?: boolean;
+  /**
+   * 初回ガイド（スポットライトツアー）が終わるまで、この音声ガイドを待たせる。
+   * 2 つを同時に出すと、どちらを先に読むのか分からなくなる。
+   */
+  guideDeferred?: boolean;
 }
 
 /**
@@ -210,6 +215,7 @@ export function VoiceInputDock({
   api,
   showOrganizerName = false,
   disabled = false,
+  guideDeferred = false,
 }: VoiceInputDockProps) {
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState<VoicePhase>("armed");
@@ -1963,12 +1969,15 @@ export function VoiceInputDock({
   );
 
   // 操作できる状態になり、音声モードでなく、まだ閉じていないときだけ 1 回出す。
+  // 初回ガイド（スポットライトツアー）が出ている間は待つ。閉じたら `guideDeferred` が
+  // false になってこの effect が走り直し、続けて音声の案内を出す。
   useEffect(() => {
     if (guideShownRef.current || disabled || active) return;
+    if (guideDeferred) return;
     if (isVoiceGuideDismissed()) return;
     guideShownRef.current = true;
     setGuideOpen(true);
-  }, [active, disabled]);
+  }, [active, disabled, guideDeferred]);
 
   // FAB の矩形を測って、その丸のぶんだけ黒い面をくり抜く。スクロール・リサイズで測り直す。
   // FAB は position: fixed だが、画面下に固定する帯の高さ（`--final-bar-h`）が

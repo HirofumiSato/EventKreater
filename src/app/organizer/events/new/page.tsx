@@ -18,6 +18,7 @@ import { phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
 import { readFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { savePendingForm, takePendingForm } from "@/modules/events/lib/pending-form";
+import { isEventGuideDismissed } from "@/modules/events/lib/tour/memory";
 import {
   applyFlyerToForm,
   draftsFromOptions,
@@ -73,6 +74,19 @@ function NewEventScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
   const [pickerOpen, setPickerOpen] = useState(false);
+  /**
+   * 初回ガイド（スポットライトツアー）を出すか。記憶は端末にしか無いので、
+   * サーバーが返した HTML と食い違わないよう「読み終わるまでは出さない」から始める。
+   * 読み終わる前を `null` にしているのは、音声ガイドの待ちを決めるため。`false` から
+   * 始めると、記憶を読む前の 1 描画で音声ガイドが出てしまい、ツアーと二重になる。
+   */
+  const [guideDismissed, setGuideDismissed] = useState<boolean | null>(null);
+  /** 利用者がツアーを閉じたか。閉じたら音声ガイドへ渡す。 */
+  const [tourClosed, setTourClosed] = useState(false);
+
+  useEffect(() => {
+    setGuideDismissed(isEventGuideDismissed());
+  }, []);
 
   // 参照元を保ったまま、この作成画面へ戻るパス。購入後の戻り先にも使う。
   const nextPath = referrerEventId
@@ -81,6 +95,25 @@ function NewEventScreen() {
 
   // 下書きは会員だけが保存できる。未登録の幹事には登録・ログインの 2 択を出す。
   const canSaveDraft = !quotaState.isLoading && Boolean(quotaState.quota);
+
+  /**
+   * 初回ガイドを出す条件。下書きの復元で来た人には出さない（続きを書く邪魔になる）。
+   * 入力の復元とチケットの読み込みが終わるまでは待つ。途中で出すと、読み込みで
+   * 画面が伸びたときに穴の位置がずれる。
+   */
+  const tourEnabled =
+    !draftIdParam &&
+    !restoring &&
+    !quotaState.isLoading &&
+    guideDismissed === false &&
+    !tourClosed;
+  /**
+   * 音声ガイドを待たせるか。ツアーを出す経路では閉じるまで true、出さない経路
+   * （記憶済み・下書き復元）では最初から false にして、これまでどおり出す。
+   * 記憶を読む前（`null`）も待たせる。読んだ結果ツアーを出さないと決まったら、
+   * この値が false になって音声ガイドが出る。
+   */
+  const guideDeferred = !draftIdParam && guideDismissed !== true && !tourClosed;
 
   // 購入後に戻ってきたときは下書きを、登録・ログインから戻ってきたときは
   // 退避した入力をフォームへ戻す。どちらも 1 度だけ読む。
@@ -262,6 +295,11 @@ function NewEventScreen() {
         ready={!restoring}
         seedKey={draftId ?? "new"}
         flyerPreviewUrl={flyerPreview}
+        tour={{
+          enabled: tourEnabled,
+          signedIn: canSaveDraft,
+          onClose: () => setTourClosed(true),
+        }}
         flyerSlot={
           <>
             <FlyerGeneratePanel
@@ -299,6 +337,7 @@ function NewEventScreen() {
             onChange={setForm}
             api={voiceApi}
             disabled={savingDraft || restoring}
+            guideDeferred={guideDeferred}
           />
         )}
       />

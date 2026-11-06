@@ -162,11 +162,14 @@ export function BasicSection({
               </div>
             );
           })}
+          {/* 初回ガイドの 2 枚目がこのボタンを指す。見出しではなく操作そのものを
+              見せたいので、対象はここに置く。 */}
           <button
             type="button"
             className="btn btn--outline btn--sm"
             disabled={value.schedules.length >= MAX_EVENT_OPTIONS}
             onClick={() => set("schedules", [...value.schedules, createScheduleDraft()])}
+            data-guide-target="add-schedule"
           >
             日時を追加
           </button>
@@ -799,20 +802,24 @@ export function CapacitySection({
           <p className="help">51人以上を入れてください。空欄では次へ進めません。</p>
         </Field>
       )}
-      <Field label="対象世代（任意）" htmlFor="event-target-generation">
-        <input
-          id="event-target-generation"
-          maxLength={50}
-          disabled={disabled}
-          value={value.targetGeneration}
-          onChange={(event) => set("targetGeneration", event.target.value)}
-          placeholder="20代から40代"
-          className="input"
-        />
-        <p className="help">
-          公開ページに「対象」として出ます。チラシの人物表現にも使います。
-        </p>
-      </Field>
+      {/* 初回ガイドの 4 枚目はこの欄を指す。`Field` は外側の骨格だけを持つので、
+          目印は包む側へ置き、ラベル・入力・補足をまとめて 1 つの穴に入れる。 */}
+      <div data-guide-target="target-generation">
+        <Field label="対象世代（任意）" htmlFor="event-target-generation">
+          <input
+            id="event-target-generation"
+            maxLength={50}
+            disabled={disabled}
+            value={value.targetGeneration}
+            onChange={(event) => set("targetGeneration", event.target.value)}
+            placeholder="20代から40代"
+            className="input"
+          />
+          <p className="help">
+            公開ページに「対象」として出ます。チラシの人物表現にも使います。
+          </p>
+        </Field>
+      </div>
       <Field label="申し込み期限" htmlFor="rsvp-deadline">
         <input
           id="rsvp-deadline"

@@ -1,4 +1,4 @@
-﻿ドキュメントの見取り図
+ドキュメントの見取り図
 ================================
 
 このページは、Sphinx が生成する HTML 全体の入口です。左メニューは ``docs/index.rst`` の ``toctree`` から作ります。``toctree`` に無いファイルはメニューにも検索対象の本文にも入りません。
@@ -36,6 +36,8 @@
      - :doc:`event-page/index`
    * - イベント作成の音声入力
      - :doc:`voice-input` 。右下のマイクボタンと OpenAI の音声認識、導入と上限
+   * - イベント作成の初回ガイド
+     - :doc:`event-guide-tour` 。新規作成画面の 8 枚のツアー、起動の条件、くり抜きの計算
    * - チラシ生成 API
      - :doc:`flyer/index` 。章の地図は :doc:`flyer/sphinx_structure`
    * - 以前の要件と設計
@@ -74,6 +76,7 @@
       Features --> Billing["チケット・課金の要件"]
       Features --> Event["event-page"]
       Features --> Voice["音声入力"]
+      Features --> Tour["初回ガイド"]
       Features --> Flyer["flyer"]
       Root --> Archive["archive 実装前の設計"]
 
@@ -213,6 +216,18 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
      - 中身
    * - :doc:`voice-input`
      - イベント作成画面の右下のマイクボタン。OpenAI の音声認識の導入手順、環境変数、課金の上限、プライバシー
+
+新規作成の初回ガイド
+^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - ページ
+     - 中身
+   * - :doc:`event-guide-tour`
+     - 新規作成画面（SCR-ORG-02）の初回ガイド。8 枚の手順、起動の条件、音声入力の案内との排他、くり抜きの計算
 
 AI チラシ自動生成
 ^^^^^^^^^^^^^^^^^^
