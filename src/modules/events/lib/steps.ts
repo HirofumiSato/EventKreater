@@ -170,6 +170,35 @@ export function resumeStepKey(value: EventFormValues): EventStepKey {
   return firstIncompleteMandatoryStep(value) ?? "capacity";
 }
 
+/**
+ * 済んだステップを畳んで次を開くときの、開いているステップの集合。
+ *
+ * `pinned` は音声が使っているステップ。音声モードのあいだは、そのステップを閉じない。
+ * 閉じると入力欄が DOM から消え、覆いの穴（`data-voice-target`）を見失って、
+ * パネルだけが残る。`pinned` 以外は従来どおり閉じて、次だけを開く。
+ * 変わらないときは同じ集合を返す（呼び出し側の再描画を増やさない）。
+ */
+export function advanceOpenKeys(
+  current: Set<EventStepKey>,
+  before: EventStepKey,
+  next: EventStepKey,
+  pinned: EventStepKey | null = null,
+): Set<EventStepKey> {
+  // 開いていないステップが埋まっただけなら、開いているものは動かさない。
+  if (!current.has(before)) return current;
+  if (before === pinned) {
+    // 音声が使っているステップは閉じず、次を足すだけにする。
+    if (current.has(next)) return current;
+    const open = new Set(current);
+    open.add(next);
+    return open;
+  }
+  const open = new Set(current);
+  open.delete(before);
+  open.add(next);
+  return open;
+}
+
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
 /** 2026-09-21 → 9月21日（月）。日付として読めなければそのまま返す。 */

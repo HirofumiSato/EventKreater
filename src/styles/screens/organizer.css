@@ -594,6 +594,9 @@
     calc(100dvh - var(--voice-panel-top, 0px) - 1rem - env(safe-area-inset-bottom, 0px))
   );
   overflow-y: auto;
+  /* パネルの中で指を動かしきっても、後ろのページへスクロールを渡さない。
+     渡すと穴を空けた欄が画面の外へ流れ、パネルだけが取り残される。 */
+  overscroll-behavior: contain;
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   padding: 0.9rem;
@@ -755,6 +758,16 @@
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--color-text-subtle);
+}
+
+/* 入力完了のあとに、次にすることを 1 行だけ添える。質問（大きい字）とは
+   別の行にして、字を奪い合わないようにする。パネルは数秒で閉じるので、
+   枠や地は足さず、読ませたい 1 行として「いまの値」より濃くする。 */
+.voice-panel__finish {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 /* 聞き取りの途中経過。質問は消さず、その下に 1 行ずつ伸ばす。

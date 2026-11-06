@@ -17,7 +17,12 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VoiceInputDock } from "@/modules/events/components/VoiceInputDock";
 import { VOICE_GUIDE_STORAGE_KEY } from "@/modules/events/lib/voice/guide";
-import { EMPTY_EVENT_FORM, type EventFormValues } from "@/modules/events/types";
+import {
+  createPricePlanDraft,
+  createScheduleDraft,
+  EMPTY_EVENT_FORM,
+  type EventFormValues,
+} from "@/modules/events/types";
 
 /** 疑似録音と文字化の待ち（`MOCK_RECORDING_MS` / `MOCK_TRANSCRIBE_MS`）を越える長さ。 */
 const PAST_RECORDING_MS = 1200;
@@ -324,7 +329,7 @@ describe("入力内容の確認を直す", () => {
 });
 
 describe("自動確定する欄", () => {
-  it("確認を出さずに入り、1.5 秒だけ知らせを出して次の欄へ進む", async () => {
+  it("確認を出さずに入り、3 秒だけ知らせを出して次の欄へ進む", async () => {
     stubMockAnswer(true);
     const onChange = vi.fn();
 
@@ -341,10 +346,91 @@ describe("自動確定する欄", () => {
     expect(screen.getByText("何時に始まる？")).toBeTruthy();
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
 
-    // 知らせは 1.5 秒で消える。
+    // 知らせは 3 秒で消える。
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(3000);
     });
     expect(screen.queryByText("開催日を「12月5日」で入力しました")).toBeNull();
+  });
+});
+
+/**
+ * 必須の欄だけを埋めたフォーム。任意の欄（雨天時の方針・定員・申し込み期限）は空のまま。
+ * 「任意の項目も聞く」を外したときの巡回が、必須を埋めた時点で尽きる場面を作る。
+ */
+function formWithRequiredFields(overrides: Partial<EventFormValues> = {}): EventFormValues {
+  return {
+    ...EMPTY_EVENT_FORM,
+    title: "忘年会",
+    schedules: [
+      createScheduleDraft({
+        key: "schedule-initial",
+        eventDate: "2026-12-05",
+        startTime: "18:00",
+        endTime: "20:00",
+      }),
+    ],
+    pricePlans: [createPricePlanDraft({ key: "plan-initial", name: "一般", amount: "3000" })],
+    venueName: "渋谷ホール",
+    postalCode: "1500001",
+    prefecture: "東京都",
+    city: "渋谷区",
+    town: "神南",
+    addressLine: "1-2-3",
+    building: "3階",
+    ...overrides,
+  };
+}
+
+describe("入力できる欄が尽きたとき", () => {
+  it("必須がそろっていれば「必須項目の入力完了！」と、テーマ・チラシの案内を出す", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    // 最後に残った必須（建物名）から始め、聞き取った時点で巡回が尽きる。
+    await mount(onChange, {
+      initial: formWithRequiredFields({ building: "" }),
+      focusId: "event-building",
+    });
+    await press("音声入力を開始");
+    // 任意の欄を聞くと、そろっていても次を尋ね続ける。必須だけで終わる形にする。
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
+    });
+    await passMockWait();
+    await press("確定");
+
+    expect(lastValue(onChange).building).toContain("3階");
+    // 「入力完了」ではなく、必須がそろったことと次にすることが伝わる。
+    expect(screen.getByText("必須項目の入力完了！")).toBeTruthy();
+    expect(screen.getByText("テーマを選び、チラシを作ると仕上がります。")).toBeTruthy();
+
+    // 案内を読み終えられる長さ（5 秒）だけ見せてから、音声モードを抜ける。
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByText("必須項目の入力完了！")).toBeNull();
+  });
+
+  it("スキップで必須を飛ばしていれば、完了と言わずに残りを手で入れるよう案内する", async () => {
+    stubMockAnswer(true);
+    const onChange = vi.fn();
+
+    await mount(onChange, {
+      initial: formWithRequiredFields({ title: "" }),
+      focusId: "event-title",
+    });
+    await press("音声入力を開始");
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("任意の項目も聞く"));
+    });
+
+    // 空のまま飛ばすと巡回が尽きる。必須（イベント名）は空のままなので、完了とは言わない。
+    await press("スキップ");
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText("必須の入力が残っています")).toBeTruthy();
+    expect(screen.getByText("ステップを開いて、残りを入れてください。")).toBeTruthy();
+    expect(screen.queryByText("必須項目の入力完了！")).toBeNull();
   });
 });

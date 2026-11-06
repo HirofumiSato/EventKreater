@@ -240,6 +240,7 @@ function NewEventScreen() {
       )}
       <QuotaStatusBanner
         quota={quotaState.quota}
+        loading={quotaState.isLoading}
         onPurchaseTicket={() =>
           quotaState.startOneTimeCheckout({ ...(draftId ? { draftId } : {}), returnTo: nextPath })
         }

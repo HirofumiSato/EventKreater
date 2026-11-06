@@ -1966,6 +1966,49 @@ fieldset.field {
   }
 }
 
+/* チケットの残りの帯が届くまでの場所取り。`quota` が来るまで帯を描かないと、
+   応答の瞬間に下のフォームが 1 帯ぶん（137px ほど）跳ね上がる。未加入のいちばん
+   多い形（本文 1 行 + 枠線ボタン 2 つ）に高さを合わせ、届いたら同じ高さのまま
+   本物へ差し替える。動かすと目が引かれるので、棒は置いたままにする
+   （shimmer は使わない）。 */
+.quota-banner--loading {
+  pointer-events: none;
+}
+
+/* 本文 1 行ぶんの高さ。棒そのものは細く、行の高さで場所を合わせる。 */
+.quota-banner--loading > p {
+  display: flex;
+  align-items: center;
+  min-height: 1.5em;
+}
+
+.quota-banner__line,
+.quota-banner__action {
+  display: block;
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-100);
+}
+
+/* 3 割ほど短くして、文が 1 行で終わる形に見せる。 */
+.quota-banner__line {
+  width: 65%;
+  height: 0.75rem;
+}
+
+/* `.btn--sm` 相当の高さ（40px）。スマホは `.alert--compact` の縦積みで
+   幅いっぱいに伸びる。 */
+.quota-banner__action {
+  height: var(--tap-target);
+}
+
+/* 640px 以上は `.alert--compact` の行組みにそのまま乗る。ボタンは中身の幅に
+   戻るので、棒も 2 つ分の幅を持たせる。 */
+@media (min-width: 640px) {
+  .quota-banner__action {
+    width: 9rem;
+  }
+}
+
 .alert--error {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);

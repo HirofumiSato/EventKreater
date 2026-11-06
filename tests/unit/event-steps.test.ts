@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  advanceOpenKeys,
   EVENT_STEPS,
   firstIncompleteMandatoryStep,
   formatShortDate,
@@ -11,6 +12,7 @@ import {
   isPricingStepComplete,
   resumeStepKey,
   summarizeStep,
+  type EventStepKey,
 } from "@/modules/events/lib/steps";
 import {
   EMPTY_EVENT_FORM,
@@ -170,6 +172,35 @@ describe("続きのステップ", () => {
     const form = filledForm();
     expect(firstIncompleteMandatoryStep(form)).toBeNull();
     expect(resumeStepKey(form)).toBe("capacity");
+  });
+});
+
+describe("済んだステップを畳んで次を開く", () => {
+  it("音声が使っていなければ、済んだステップを閉じて次を開く", () => {
+    const open = advanceOpenKeys(new Set<EventStepKey>(["basic"]), "basic", "pricing");
+    expect([...open]).toEqual(["pricing"]);
+  });
+
+  it("音声が使っているステップは閉じず、次を足す", () => {
+    const open = advanceOpenKeys(
+      new Set<EventStepKey>(["pricing"]),
+      "pricing",
+      "location",
+      "pricing",
+    );
+    // 費用の欄（男女別の金額など）を音声が触っているあいだは、DOM から消さない。
+    expect(open.has("pricing")).toBe(true);
+    expect(open.has("location")).toBe(true);
+  });
+
+  it("音声が使っていても、次がすでに開いていれば集合を変えない", () => {
+    const current = new Set<EventStepKey>(["pricing", "location"]);
+    expect(advanceOpenKeys(current, "pricing", "location", "pricing")).toBe(current);
+  });
+
+  it("閉じているステップが埋まっただけなら、開いているものは動かさない", () => {
+    const current = new Set<EventStepKey>(["basic"]);
+    expect(advanceOpenKeys(current, "pricing", "location")).toBe(current);
   });
 });
 
