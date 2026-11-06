@@ -68,6 +68,21 @@ export const CLOSED_FIELDS: ReadonlySet<VoiceFieldKey> = new Set<VoiceFieldKey>(
   "rsvpDeadline",
 ]);
 
+/**
+ * 区切りで閉じている前半だけを返す。
+ *
+ * 話している途中の文字列は、最後の節がまだ言い終わっていない（「12月」まで来ていて
+ * 「5日」が続く）。言い終わっていない節を `parse` に通すと、途中の値が確定値のように
+ * 読めてしまうため、最後の区切りより後ろは捨てる。
+ */
+export function terminatedPrefix(text: string): string {
+  let end = 0;
+  for (const matched of text.matchAll(DELIMITER)) {
+    end = (matched.index ?? 0) + matched[0].length;
+  }
+  return end === 0 ? "" : text.slice(0, end);
+}
+
 export interface UtteranceAssignment {
   /** 割り当て先のマス。`欄のキー:行` の形。 */
   slotId: VoiceSlotId;
@@ -176,4 +191,20 @@ export function assignUtterance(input: AssignUtteranceInput): {
     .map((clause) => clause.text);
 
   return { assignments, unassigned };
+}
+
+/**
+ * 話している途中の文字列から、言い終わった節だけを割り当てる。
+ *
+ * 文字起こしの増分が届くたびに呼び、読めたマスを 1 つずつ画面へ返すために使う。
+ * 末尾の言いかけは捨てるので、途中の値が確定値として出ることはない
+ * （`parse` が通らない言いかけは、そもそも割当にならない）。
+ */
+export function assignTerminated(input: AssignUtteranceInput): {
+  assignments: UtteranceAssignment[];
+  unassigned: string[];
+} {
+  const prefix = terminatedPrefix(input.text);
+  if (prefix.trim().length === 0) return { assignments: [], unassigned: [] };
+  return assignUtterance({ ...input, text: prefix });
 }

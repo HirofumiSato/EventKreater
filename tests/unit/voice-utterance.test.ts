@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assignUtterance, splitUtterance } from "@/modules/events/lib/voice/utterance";
+import {
+  assignTerminated,
+  assignUtterance,
+  splitUtterance,
+  terminatedPrefix,
+} from "@/modules/events/lib/voice/utterance";
 import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
 import { EMPTY_EVENT_FORM, type EventFormValues } from "@/modules/events/types";
 
@@ -149,5 +154,51 @@ describe("まとめて話した発話の割当", () => {
     expect(result.bySlot.get("title:0")?.patch).toEqual({ title: "忘年会" });
     expect(result.bySlot.get("venueName:0")?.text).toBe("渋谷ホール");
     expect(result.unassigned).toEqual([]);
+  });
+});
+
+describe("話している途中の割当", () => {
+  it("区切りより後ろの言いかけは捨てる", () => {
+    expect(terminatedPrefix("12月5日、18時")).toBe("12月5日、");
+    expect(terminatedPrefix("12月5日、")).toBe("12月5日、");
+    expect(terminatedPrefix("12月")).toBe("");
+  });
+
+  it("言い終わった節だけをマスにする", () => {
+    // 「12月」まで来ていても、日付として確定しない（途中の値を確定値にしない）。
+    expect(assignTerminated({
+      text: "12月",
+      value: EMPTY_EVENT_FORM,
+      now: NOW,
+      scope: scope({ includeOptional: true }),
+    }).assignments).toEqual([]);
+
+    const partial = assignTerminated({
+      text: "12月5日、18時",
+      value: EMPTY_EVENT_FORM,
+      now: NOW,
+      scope: scope({ includeOptional: true }),
+    });
+    expect(partial.assignments.map((item) => item.slotId)).toEqual(["scheduleDate:0"]);
+  });
+
+  it("話が進むと、読めたマスは増えるだけで減らない", () => {
+    const text = "忘年会、12月5日、18時から20時、渋谷ホール";
+    const seen: string[] = [];
+    for (let end = 1; end <= text.length; end += 1) {
+      const prefix = text.slice(0, end);
+      const result = assignTerminated({
+        text: prefix,
+        value: EMPTY_EVENT_FORM,
+        now: NOW,
+        scope: scope({ includeOptional: true }),
+      });
+      const ids = result.assignments.map((item) => item.slotId);
+      // 前の時点で読めていたマスは、この時点でも読めている。
+      for (const id of seen) expect(ids).toContain(id);
+      for (const id of ids) if (!seen.includes(id)) seen.push(id);
+    }
+    expect(seen).toContain("title:0");
+    expect(seen).toContain("scheduleDate:0");
   });
 });

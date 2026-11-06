@@ -3,8 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/v1/voice/utterances/route";
 import { assignBatch, estimateBatchAssignments, mockBatchTranscript } from "@/modules/events/lib/voice/batch";
 import {
-  batchExample,
-  batchSteps,
+  batchPlan,
   batchTargets,
   defaultVoiceMode,
 } from "@/modules/events/lib/voice/batch-guide";
@@ -215,25 +214,65 @@ describe("まとめて話す案内", () => {
     expect(ids).not.toContain("rsvpDeadline:0");
   });
 
-  it("話す順は欄の種類ごとに 1 つへまとめる", () => {
-    const steps = batchSteps(batchTargets(EMPTY_EVENT_FORM, scope()));
+  it("話す順は欄の名前で並べ、郵便番号まで出す", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+    const cells = batchPlan(targets);
 
-    expect(steps).toEqual(["名前", "日時", "費用", "会場", "定員"]);
+    // 見本の値ではなく、話す欄の名前を並べる。
+    expect(cells.map((cell) => cell.label)).toEqual([
+      "イベント名",
+      "開催日",
+      "開始時間と終了時間",
+      "費用プラン名",
+      "費用（～円）",
+      "場所",
+      "郵便番号",
+    ]);
+    expect(cells.map((cell) => cell.prompt)).toEqual([
+      "イベント名は？",
+      "開催日は？",
+      "開始時間と終了時間は？",
+      "費用プラン名は？",
+      "費用は？",
+      "場所は？",
+      "郵便番号は？",
+    ]);
+    // 名前と質問は同じマスから作るので、位置がずれない。
+    expect(cells.map((cell) => cell.id)).toEqual([
+      "title:0",
+      "scheduleDate:0",
+      "scheduleStart:0",
+      "planName:0",
+      "planAmount:0",
+      "venueName:0",
+      "postalCode:0",
+    ]);
   });
 
-  it("例は対象の欄から作り、開始と終了は 1 項に畳む", () => {
-    const targets = batchTargets(
-      { ...EMPTY_EVENT_FORM, title: "秋の音楽会" },
-      scope(),
+  it("開始と終了は 1 つのマスに畳み、開始のマスが読めたら塗る", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+    const range = cells.find((cell) => cell.id === "scheduleStart:0");
+
+    // 開始は範囲まで読むので、終了は別のマスにしない（`id` は開始）。
+    expect(range?.label).toBe("開始時間と終了時間");
+    expect(range?.slotIds).toEqual(["scheduleStart:0", "scheduleEnd:0"]);
+  });
+
+  it("入力済みの欄はマスにも出さない", () => {
+    const cells = batchPlan(
+      batchTargets({ ...EMPTY_EVENT_FORM, title: "秋の音楽会" }, scope()),
     );
 
-    const example = batchExample(targets);
+    expect(cells.map((cell) => cell.label)).not.toContain("イベント名");
+    // 畳んだ終了時刻を、単独のマスとして重ねて出さない。
+    expect(cells.map((cell) => cell.label)).not.toContain("終了時間");
+  });
 
-    expect(example).toContain("18時から20時");
-    expect(example).not.toContain("忘年会");
-    expect(example).not.toContain("秋の音楽会");
-    // 畳んだ終了時刻を、単独の項として重ねて出さない。
-    expect(example.split("、")).not.toContain("20時");
+  it("同じマスを二度並べない", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+    const ids = cells.map((cell) => cell.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("空欄が 3 つ以上ならまとめてを既定にする", () => {
@@ -317,6 +356,20 @@ function request(options: {
   });
 }
 
+/** SSE の本文を、`event` と `data` の組に分ける。 */
+async function readEvents(response: Response): Promise<{ event: string; data: any }[]> {
+  const body = await response.text();
+  return body
+    .split("\n\n")
+    .filter((chunk) => chunk.trim().length > 0)
+    .map((chunk) => {
+      const lines = chunk.split("\n");
+      const event = lines.find((line) => line.startsWith("event: "))?.slice(7) ?? "";
+      const data = lines.find((line) => line.startsWith("data: "))?.slice(6) ?? "null";
+      return { event, data: JSON.parse(data) };
+    });
+}
+
 describe("POST /api/v1/voice/utterances", () => {
   it("モック有効なら 200 で割当を返す", async () => {
     vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
@@ -325,7 +378,10 @@ describe("POST /api/v1/voice/utterances", () => {
     const response = await POST(request());
 
     expect(response.status).toBe(200);
-    const body = (await response.json()) as {
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    const events = await readEvents(response);
+    const done = events.find((item) => item.event === "done");
+    const body = done?.data as {
       text: string;
       assignments: { slotId: string; text: string; value: unknown; patch: unknown }[];
       unassigned: string[];
@@ -337,6 +393,26 @@ describe("POST /api/v1/voice/utterances", () => {
     expect(body.assignments[0]).toHaveProperty("patch");
     expect(body.assignments.map((item) => item.slotId)).toContain("scheduleDate:0");
     expect(Array.isArray(body.unassigned)).toBe(true);
+  });
+
+  it("話している間に、読めたマスを cell で先に返す", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    vi.stubEnv("OPENAI_API_KEY", "");
+
+    const events = await readEvents(await POST(request()));
+    const cells = events.filter((item) => item.event === "cell");
+
+    // 値は返さず、どのマスが読めたかだけを返す。
+    expect(cells.length).toBeGreaterThan(0);
+    expect(Object.keys(cells[0].data)).toEqual(["slotId"]);
+    expect(cells.map((item) => item.data.slotId)).toContain("scheduleDate:0");
+    // 同じマスを二度塗らない。
+    const slots = cells.map((item) => item.data.slotId);
+    expect(new Set(slots).size).toBe(slots.length);
+    // `cell` は `done` より前に届く（話している間に塗れる）。
+    expect(events.findIndex((item) => item.event === "cell")).toBeLessThan(
+      events.findIndex((item) => item.event === "done"),
+    );
   });
 
   it("モックは回数の上限を数えない", async () => {
@@ -371,7 +447,11 @@ describe("POST /api/v1/voice/utterances", () => {
     const response = await POST(request({ ip: "198.51.100.10" }));
 
     expect(response.status).toBe(200);
-    const body = (await response.json()) as { text: string; model: string };
+    const events = await readEvents(response);
+    const body = events.find((item) => item.event === "done")?.data as {
+      text: string;
+      model: string;
+    };
     expect(body.text).toBe("渋谷ホール");
     expect(body.model).toBe("gpt-4o-mini-transcribe");
     expect(fetchMock).toHaveBeenCalledTimes(2);
