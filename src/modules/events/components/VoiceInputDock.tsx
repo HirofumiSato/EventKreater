@@ -1991,21 +1991,26 @@ export function VoiceInputDock({
             onClick={closeGuide}
           />
           <div className="voice-guide__bubble">
-            {/* ガイドは focus を奪わないので、出たことを読み上げで知らせる。 */}
+            {/* ガイドは focus を奪わないので、出たことを読み上げで知らせる。
+                見出しは「何の機能か」と「手軽さ」を 1 行で言う。何の話かだけを
+                書くと、初めて触る人には身構える機能の説明に見えてしまう。
+                「ラクちん」は端末のマイクに向かって話すだけ、という軽さを伝える語。
+                見出しだけは下線で目を引く（CSS の `.voice-guide__title`）。 */}
             <p className="voice-guide__title" role="status">
-              音声入力でスムーズに操作
+              ラクちん音声入力
             </p>
-            <p className="voice-guide__body">押すと、そのまま録音が始まります。</p>
+            <p className="voice-guide__body">話し方を選ぶと、録音が始まります。</p>
             {/* 話し方は入口で決める。押した方はそのまま音声モードに入る。
-                どの催しに向くかは、ボタンの右端に札として添える。札もボタンの中なので、
-                札を押しても同じ話し方で録音が始まる。 */}
+                どの催しに向くかは、話し方の名前の下へ札として添える。札もボタンの中なので、
+                札を押しても同じ話し方で録音が始まる。名前を span で包むのは、
+                題と札で文字の大きさと太さを分けるため。 */}
             <div className="voice-guide__modes">
               <button
                 type="button"
                 className="btn btn--sm btn--block"
                 onClick={() => chooseGuideMode("batch")}
               >
-                まとめて話す
+                <span className="voice-guide__name">まとめて話す</span>
                 <span className="voice-guide__label">シンプルなイベント向け</span>
               </button>
               <button
@@ -2013,7 +2018,7 @@ export function VoiceInputDock({
                 className="btn btn--sm btn--block"
                 onClick={() => chooseGuideMode("single")}
               >
-                1つずつ
+                <span className="voice-guide__name">1つずつ</span>
                 <span className="voice-guide__label">複数日程・費用男女別向け</span>
               </button>
             </div>

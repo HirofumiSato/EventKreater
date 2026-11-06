@@ -1370,15 +1370,19 @@ textarea.voice-confirm__input {
   border-top: 0.625rem solid var(--pop-warm-tint);
 }
 
-/* 見出しには蛍光ペンのように山吹を敷く。札の地と同系色なので、帯ではなく線に見える。 */
+/* 見出しは「何の機能か」と「手軽さ」を 1 行で言い、下だけ山吹の太い線で引く。
+   蛍光ペン（文字の背後を塗る）にしないのは、地が吹き出しと近い色で、
+   背後の帯が文字の輪郭を濁すため。下線なら 1 本で済み、目を引く力も落ちない。
+   幅は文字ぶんに縮め、線が吹き出しの右端まで伸びないようにする。 */
 .voice-guide__title {
+  display: inline-block;
   align-self: flex-start;
   margin: 0;
-  padding-inline: 0.125rem;
-  background: linear-gradient(transparent 58%, var(--pop-warm) 58%);
+  padding-bottom: 0.0625rem;
+  border-bottom: 3px solid var(--pop-warm);
   color: var(--color-text-strong);
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -1391,36 +1395,95 @@ textarea.voice-confirm__input {
   line-height: 1.5;
 }
 
-/* 入口の 2 択。押した方がそのまま音声モードに入るので、主操作は「まとめて」に置く。
-   2 列だと幅 17rem で注記が折れるため、1 列に積む。 */
+/* 入口の 2 択。押した方がそのまま音声モードに入る。2 列だと幅 17rem で
+   「どの催しに向くか」の札が折れるため、1 列に積む。
+   上だけ 0.25rem 空ける。見出しと本文をひとまとまりにし、2 択を次の段にする。 */
 .voice-guide__modes {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.5rem;
+  margin-block-start: 0.25rem;
   padding-block: 0.125rem 0.25rem;
 }
 
 /* 2 択は対等に置く。どちらを押してもその話し方で録音が始まるので、装飾は同じにする。
-   左に話し方の名前、右に「どの催しに向くか」の札を並べる。
+   地の淡い山吹に白い面を重ねるだけでは、面の明度差が 1.03:1 しかなく、
+   押せる紙に見えない。そこで墨の縁と山吹の硬い影で「押す紙」を示す。
+   縁は 1px で足りる。2px にすると吹き出し自身の縁（2px）と太さが並び、
+   内と外のどちらが器か分からなくなるうえ、線が二重に見えて画面がごちゃつく。
+   影を墨ではなく山吹にするのは、吹き出しの地と同系の色で縁の外側だけを暖かくし、
+   墨の縁を 1 本に保つため。
+   中身は 1 行目に話し方の名前、2 行目に「どの催しに向くか」の札を置く。
+   右端に札を寄せると、札の長さの差がそのまま 2 枚の重心の差になる。左そろえで
+   縦に積めば、札が短くても長くても 2 枚は同じ形に見える。
    `.deco .btn--sm` の左右の余白より広い指定に負けないよう、`--block` を添えて受ける。 */
 .voice-guide__modes .btn.btn--block {
-  min-height: var(--tap-target);
-  justify-content: space-between;
-  gap: 0.25rem;
-  padding-inline: 0.5rem;
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 3.5rem;
+  padding: 0.4375rem 1.75rem 0.4375rem 0.75rem;
+  border: 1px solid var(--tape-ink);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 var(--pop-warm);
   font-size: var(--font-action);
+  text-align: start;
 }
 
-/* 札は山吹で塗る。白いボタンの上で、貼り付けた付箋のように見せる。
+/* 押せる紙の右端に山形を 1 つ置く。文字ではなく枠 2 辺で描くので読み上げには出ない。
+   ここでは「別の画面へ移る」ではなく「押すとその場で始まる」の印として置く。
+   行の形をした押し物は、山形が無いと一覧の見出しや注記に見えて、押せることが伝わらない。
+   名前より薄く敷き、縁や影より先に主張させない。 */
+.voice-guide__modes .btn.btn--block::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.8125rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-top: 2px solid var(--tape-ink);
+  border-right: 2px solid var(--tape-ink);
+  opacity: 0.35;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* 浮かせた紙を、指の下でもう 1px 浮かす。`.btn:hover` の地（`--color-bg`）は
+   この画面では吹き出しと同じ山吹の淡色なので、そのままだと紙が地に溶ける。
+   面は白のまま置き、影だけを深くする。 */
+.voice-guide__modes .btn.btn--block:hover {
+  background: var(--color-surface);
+  box-shadow: 4px 4px 0 var(--pop-warm);
+}
+
+/* 押した瞬間は影を落として、紙が沈む。`.deco` の押し込み（translateY）に
+   影の消滅だけを足す。 */
+.voice-guide__modes .btn.btn--block:active {
+  box-shadow: 0 0 0 var(--pop-warm);
+}
+
+/* 話し方の名前は札の題。下の札より先に読ませるため、太字にして 1 段大きくする。 */
+.voice-guide__name {
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 札は山吹の淡い地で塗る。塗らないと、名（15px・太字）の下の 11px が
+   ただの補足文に沈み、「どの催しに向くか」という手掛かりとして読まれない。
+   ただし地は 22% まで薄める。山吹をそのまま塗ると、ボタンの影と同じ色が
+   1 枚の中にもう 1 つ入り、同じ色が二重に出てごちゃついた。
+   地を濃くする代わりに、名との差は大きさ（15px と 11px）で付ける。
    折り返すと 2 択の高さがそろわないので、札の中では折り返さない。 */
 .voice-guide__label {
   flex: 0 0 auto;
-  padding: 0.0625rem 0.375rem;
-  border: 1px solid rgb(26 25 22 / 0.35);
-  background: var(--pop-warm);
-  color: var(--color-text-strong);
+  padding: 0 0.3125rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--pop-warm) 22%, var(--color-surface));
+  color: var(--color-text-muted);
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.5;
   letter-spacing: 0.01em;
   white-space: nowrap;
