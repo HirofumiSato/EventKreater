@@ -28,6 +28,7 @@ import {
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
 import {
+  BATCH_PROMPT,
   batchExampleSentence,
   batchPlan,
   batchTargets,
@@ -1574,21 +1575,16 @@ export function VoiceInputDock({
   const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
-  // まとめて話すときの「いま話す欄」。塗れたマスを飛ばして、次に話す 1 枚を選ぶ。
-  // 30px の行には、その欄の質問（「イベント名は？」）を出す。1 欄ずつと同じ聞き方にして、
-  // 話し方を切り替えても読み方が変わらないようにする。説明文は置かない。
-  const nextCell = cells.find((cell) => !readCells.has(cell.id)) ?? null;
-  // 完了の見出しは、必須がそろっているかで変える（スキップで飛ばせるため）。
+  // まとめて話すときの 30px の行は固定の指示にする。1 つの欄の話ではないので、
+  // 質問（「イベント名は？」）を進めると、いま何を話すのかが 1 行ごとに変わってしまう。
+  // 進み具合はマスの塗りだけで示し、値の形は主ボタンの上の 1 文の例で見せる。
   const completion = completionCopy(firstIncompleteMandatoryStep(value) === null);
   const promptText = complete
     ? completion.prompt
     : searching
       ? "住所を調べています"
       : batchMode
-        ? // 文字化の待ちのあいだも、次に話す欄の質問を消さない。動くのはマスだけでよい。
-          (nextCell?.prompt ??
-          cells.at(-1)?.prompt ??
-          "入力できる欄がすべて埋まりました。内容を確認してください。")
+        ? BATCH_PROMPT
         : transcribing
           ? "テキスト変換中"
           : (slot?.prompt ?? "入力できる欄がすべて埋まりました。内容を確認してください。");
@@ -2226,12 +2222,11 @@ export function VoiceInputDock({
             </p>
           )}
 
-          {/* 何を話すかを 1 文で見せる。マスの名前を並べただけでは、値として何を
-              言えばよいか分からない。押した直後に読む先を 1 か所へ絞るため、
-              主ボタンのすぐ上に 1 か所だけ置く（話し方の説明は書かない）。 */}
+          {/* 何を話すかを 1 文で見せる。マスの名前だけでは、値として何を
+              言えばよいか分からない。話し方の指示は上の 30px の行に固定で出して
+              あるので、ここは値の形（例）だけを置く。 */}
           {!complete && batchMode && exampleSentence && (
             <div className="voice-panel__example">
-              <p className="voice-panel__example-lead">以下をまとめて話してください</p>
               <p className="voice-panel__example-text">
                 <span className="voice-panel__example-key">例</span>{" "}
                 {exampleSentence}

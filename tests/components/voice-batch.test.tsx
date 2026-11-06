@@ -138,9 +138,11 @@ describe("まとめて話す", () => {
     expect(
       (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).checked,
     ).toBe(false);
-    // 30px の行は、次に話す欄の質問。
+    // 30px の行は、まとめて全体への固定の指示。質問は進めない。
     expect(
-      screen.getByText("イベント名は？", { selector: ".voice-panel__prompt" }),
+      screen.getByText("以下をまとめて話してください", {
+        selector: ".voice-panel__prompt",
+      }),
     ).toBeTruthy();
     // 話す順は欄の名前で並べる。郵便番号まで出す。
     const cells = within(screen.getByRole("list", { name: "話す順" })).getAllByRole(
@@ -161,8 +163,7 @@ describe("まとめて話す", () => {
     expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
     expect(screen.queryByRole("button", { name: "スキップ" })).toBeNull();
     expect(screen.queryByText("答えたら次へ")).toBeNull();
-    // 何を話すかは、マスの名前だけでは分からない。主ボタンの上に 1 文だけ置く。
-    expect(screen.getByText("以下をまとめて話してください")).toBeTruthy();
+    // 何を話すかは、マスの名前だけでは分からない。主ボタンの上に値の形（例）を置く。
     expect(
       screen.getByText(
         "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
@@ -215,8 +216,8 @@ describe("まとめて話す", () => {
       vi.advanceTimersByTime(PAST_RECORDING_MS);
     });
     expect(readCount()).toBe(0);
-    // 30px の行は、次に話す欄の質問から始まる。
-    expect(prompt()).toBe("イベント名は？");
+    // 30px の行は、まとめて全体への固定の指示。録音が始まっても変わらない。
+    expect(prompt()).toBe("以下をまとめて話してください");
 
     // 話すのをやめる（ダイアログが出る）前に、塗られるマスが増える。
     // 疑似の文字化は 350ms を 7 枚で割るので、1 枚目は 44ms、2 枚目は 88ms に来る。
@@ -234,8 +235,8 @@ describe("まとめて話す", () => {
     // 塗るだけで、値はまだ入れない。
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText(/いまの値:/)).toBeNull();
-    // 30px の行も、次に話す欄の質問へ進む。
-    expect(prompt()).toBe("開始時間と終了時間は？");
+    // 塗っても 30px の行は入れ替えない（目で追う 1 行を動かさない）。
+    expect(prompt()).toBe("以下をまとめて話してください");
   });
 
   it("モックでは外部へ送らず、欄ごとの行を並べる", async () => {

@@ -835,14 +835,6 @@
   margin: 0;
 }
 
-/* 例の見出しは、例そのものより弱くする（読むのは値のほう）。 */
-.voice-panel__example-lead {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--color-text-subtle);
-}
-
 .voice-panel__example-text {
   margin: 0;
   font-size: 0.8125rem;
