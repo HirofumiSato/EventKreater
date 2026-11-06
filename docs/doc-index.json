@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2985,
+      "lineCount": 2994,
       "headings": [
         {
           "level": 2,
@@ -2204,11 +2204,11 @@
         },
         {
           "level": 3,
-          "text": "5.20. DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]（共同主催者を外す）"
+          "text": "5.20. DELETE /api/v1/organizer/events/[id]/organizers/[organizerId]（共同主催・幹事を外す）"
         },
         {
           "level": 3,
-          "text": "5.21. GET / POST /api/v1/invitations/[code]（共同幹事の招待）"
+          "text": "5.21. GET / POST /api/v1/invitations/[code]（共同主催・幹事の招待）"
         },
         {
           "level": 3,
@@ -2543,6 +2543,10 @@
         },
         {
           "path": "src/modules/flyers/lib/pdf.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/notifications/lib/cohost-notification.ts",
           "exists": true
         },
         {
@@ -5717,7 +5721,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2146,
+      "lineCount": 2147,
       "headings": [
         {
           "level": 1,
@@ -10586,7 +10590,7 @@
         },
         {
           "level": 4,
-          "text": "UC-10 共同主催者を招待し、受諾する"
+          "text": "UC-10 共同主催・幹事を招待し、受諾する"
         },
         {
           "level": 4,
@@ -11645,7 +11649,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 786,
+      "lineCount": 790,
       "headings": [
         {
           "level": 1,
@@ -11892,6 +11896,10 @@
         },
         {
           "path": "tests/unit/clone-shift.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/cohost-notification.test.ts",
           "exists": true
         },
         {

@@ -272,7 +272,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
           )}
           {isDraft && (!registered || role !== "OWNER") && (
             <Alert tone="warning">
-              公開は筆頭幹事（オーナー）の会員だけが行えます。内容の確認と編集はこのまま続けられます。
+              公開は主催者の会員だけが行えます。内容の確認と編集はこのまま続けられます。
             </Alert>
           )}
         </div>

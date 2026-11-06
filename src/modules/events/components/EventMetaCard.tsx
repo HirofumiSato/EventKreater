@@ -39,7 +39,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
       <h1 className="event-sheet__title">{event.title}</h1>
       {(owner || coHosts.length > 0) && (
         <p className="event-sheet__host">
-          主催:{" "}
+          主催者:{" "}
           {owner && (
             <>
               {owner.userId ? (
@@ -54,7 +54,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           {coHosts.length > 0 && (
             <>
               {owner ? "／" : null}
-              共同主催:{" "}
+              共同主催・幹事:{" "}
               {coHosts.map((row, index) => (
                 <span key={`${row.name}-${index}`}>
                   {index > 0 && "、"}

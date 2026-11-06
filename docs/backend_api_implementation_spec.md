@@ -45,7 +45,7 @@ flowchart TD
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行。IP と端末の回数制限あり） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す。上限は 429（5.3） |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
 | `/api/v1/public/organizers/[userId]` | GET | SCR-PUB-14 | 不要 | 主催者の公開プロフィール。非公開でも 200 を返し、`profile.isPublished = false` にして本文・リンク・実績・テーマ・ヘッダーを空にする（アイコンの `avatarUrl` だけは返す）。会員が無い・退会済みは 404（催しが0件でも返す） |
-| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 不要 | 主催者のページの催し部分。未ログインでも返し、催しが0件でも 200 で空の一覧を返す。筆頭幹事と共同主催の催しをまとめ、掲載条件を満たすものだけを返す |
+| `/api/v1/public/organizers/[userId]/events` | GET | SCR-PUB-14 | 不要 | 主催者のページの催し部分。未ログインでも返し、催しが0件でも 200 で空の一覧を返す。主催者と共同主催・幹事の催しをまとめ、掲載条件を満たすものだけを返す |
 | `/api/v1/organizer/profile` | GET | SCR-ORG-14 | 会員＋主催イベント1件以上 | 自分の公開プロフィールの下書き、実績、公開ページの URL。催し0件は 403 `NOT_ORGANIZER`、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/profile` | PUT | SCR-ORG-14 | 同左 | 公開プロフィールの保存（upsert）。`users.name` は変えない。`themeId` は null（標準）または 9 テーマのいずれか |
 | `/api/v1/organizer/profile/avatar` | POST | SCR-ORG-14 | 会員＋主催イベント1件以上 | アイコン画像の登録・差し替え。WebP 256px 角に作り直して保存し、旧画像を退役させる（5.16） |
@@ -57,22 +57,22 @@ flowchart TD
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
 | `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点でチケットを1枚消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催幹事（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
+| `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催者（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
 | `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・集金済み・未集金・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催幹事（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催者（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
-| `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-07 | 主催幹事（OWNER・会員のみ） | 共同幹事招待コード発行。未登録の幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/organizers` | GET | SCR-ORG-05、SCR-ORG-07 | 幹事（会員/ゲスト） | 幹事の一覧。筆頭幹事と共同主催者に分け、閲覧者のロールと管理可否（`canManage`）を返す（5.19） |
-| `/api/v1/organizer/events/[id]/organizers/[organizerId]` | DELETE | SCR-ORG-05、SCR-ORG-07 | 筆頭幹事（OWNER・会員のみ） | 共同主催者を外す。筆頭幹事は 409 `OWNER_NOT_REMOVABLE`。外れる人が持つ編集ロックも同じトランザクションで解放する（5.20） |
-| `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意 | 共同幹事招待コードの検証。催しの概要と `loggedIn` を返す。権限は付与しない（5.21） |
-| `/api/v1/invitations/[code]` | POST | SCR-ORG-07 | 会員必須（未登録は 403 `REGISTER_REQUIRED`） | 招待コードを受諾して共同主催者になる。コードは受諾時に失効させる（5.21） |
+| `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-01、SCR-ORG-05 | 主催者（OWNER・会員のみ） | 共同主催・幹事の招待コード発行。主催一覧（SCR-ORG-01）の札と編集画面の幹事パネルから発行する。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/organizers` | GET | SCR-ORG-05、SCR-ORG-07 | 幹事（会員/ゲスト） | 幹事の一覧。主催者と共同主催・幹事に分け、閲覧者のロールと管理可否（`canManage`）を返す（5.19） |
+| `/api/v1/organizer/events/[id]/organizers/[organizerId]` | DELETE | SCR-ORG-05、SCR-ORG-07 | 主催者（OWNER・会員のみ） | 共同主催・幹事を外す。主催者は 409 `OWNER_NOT_REMOVABLE`。外れる人が持つ編集ロックも同じトランザクションで解放する（5.20） |
+| `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意 | 共同主催・幹事の招待コードの検証。催しの概要と `loggedIn` を返す。権限は付与しない（5.21） |
+| `/api/v1/invitations/[code]` | POST | SCR-ORG-07 | 会員必須（未登録は 403 `REGISTER_REQUIRED`） | 招待コードを受諾して共同主催・幹事になる。コードは受諾時に失効させる（5.21） |
 | `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。開催日（`sort_date`）・各日程（`event_schedules.event_date`）・申込締切（`rsvp_deadline`）は1か月後へずらし、月末はその月の末日へ丸める（1月31日 → 2月28日、閏年は2月29日。申込締切の時刻は JST のまま保つ）。応答は適用した月を `shiftedMonths: 1` で返す。`publicUrl` は `null` |
-| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
-| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 筆頭幹事（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催幹事（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
+| `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 主催者（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
+| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 主催者（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催者（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。会員行が無いときは、登録途中の意向（`signup_intents`）をパスワードで引き当てて再開する。メール未確認なら確認メールを再送して `unverifiedEmail`、メール確認済み・電話未確認なら `signupPending` を返す。登録の成否はメールの有無で変えない |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
@@ -554,7 +554,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | 出欠の変更・削除 | `PATCH` / `DELETE /api/v1/organizer/events/[id]/participants/[participantId]` |
 | 集金の記録 | `PUT /api/v1/organizer/events/[id]/participants/[participantId]/collection` |
 | 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
-| 共同幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（オーナーのみ） |
+| 共同主催・幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（主催者のみ） |
 
 名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。集金の記録が使う既定額（`unitPayableAmount`）も同じ値になる。
 
@@ -1485,7 +1485,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 対象画面は SCR-PUB-03（主催者マイページの新着。4 件まで）、SCR-PUB-15（通知一覧。50 件まで）と、共通ヘッダーの頭文字の札に出す未読数のバッジ。認可は `requireUserId(req)`（未ログインは 401）。**自分の行しか読めない・既読にできない。**
 
-参加者が出席または参加要望を送ると、その催しの会員主催者（`OWNER` / `CO_HOST`）へ `notifications` の行が作られる。ゲスト主催者（`user_id IS NULL`）と、自分自身の出欠は宛先にしない。作るのは `src/modules/notifications/lib/notify.ts` の `notifyRsvpSubmitted()` で、出欠のトランザクションがコミットした後に呼ぶ。**通知の作成に失敗しても出欠の送信は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
+参加者が出席または参加要望を送ると、その催しの会員の主催者・共同主催・幹事（`OWNER` / `CO_HOST`）へ `notifications` の行が作られる。ゲスト幹事（`user_id IS NULL`）と、自分自身の出欠は宛先にしない。作るのは `src/modules/notifications/lib/notify.ts` の `notifyRsvpSubmitted()` で、出欠のトランザクションがコミットした後に呼ぶ。**通知の作成に失敗しても出欠の送信は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
 
 紹介された人がはじめて公開し、紹介者へチケットが配られたときは、紹介者へ `REFERRAL_GRANTED` の行を作る。作るのは同じ `notify.ts` の `notifyReferralGranted()` で、公開のトランザクションがコミットした後に呼ぶ。扱いは出欠の通知と同じで、**失敗しても公開は成功させる**。この通知は催しに紐づかないため `event_id` は `NULL` である（`notifications.event_id` は NULL 可）。
 
@@ -1493,6 +1493,14 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 - 文面は作成時点の催し名・参加者名を焼き付ける（`title` 100 文字、`body` 300 文字）。後から名前を変えても過去の通知は変わらない。
 - 同じ出欠行の同じ変化は `dedupe_key`（sha256）の一意制約で 1 行に抑える。同時送信・リトライで増えない。
 - 紹介の通知は 1 件の付与につき 1 行で、`dedupe_key` は紹介された人の `userId` から作る。同じ人が二度公開しても増えない。文面（題「紹介でチケットが届きました」、本文「〇〇さんがはじめて公開しました。チケット2枚（YYYY/MM/DD まで）。」）は `src/modules/notifications/lib/referral-notification.ts` が作る。枚数は生涯上限の端数で 1 枚になることがある。
+
+**共同主催・幹事の受諾・解除**は、`src/modules/notifications/lib/cohost-notification.ts` が文面と宛先を組み立て、`notify.ts` の `notifyCoHostJoined()` / `notifyCoHostRemoved()` が作る。アプリ内通知だけで、**メールは送らない**（`deliverMail` を呼ばない）。
+
+- 種別は、受諾が `COHOST_JOINED`、解除が `COHOST_REMOVED` である。
+- 宛先は、受諾では受諾した本人以外の幹事全員、解除では外れた本人と、実行した主催者以外の残る幹事である。ゲスト幹事（`user_id IS NULL`）は落とし、同じ会員は 1 回だけにする。
+- 文面は作成時点の催し名と幹事名を焼き付ける（`title` 100 文字、`body` 300 文字）。題は「共同主催が加わりました」「共同主催が外れました」。本文は、受諾が「〇〇さんが「△△」の共同主催・幹事に加わりました。」、解除が本人宛なら「「△△」の共同主催・幹事から外れました。」、残る幹事宛なら「〇〇さんが「△△」の共同主催・幹事から外れました。」である。
+- `dedupe_key` は `sha256(["cohost", kind, userId, organizerId].join("\n"))`。同じ受諾・解除の再送やリトライで増えない（解除して再招待されると行 ID が変わるので衝突しない）。
+- 通知の作成は、受諾・解除のトランザクションがコミットした後に呼ぶ。**失敗しても受諾・解除は成功させる**（呼び出し側が `try/catch` で握りつぶし、`console.error` に残す）。
 
 **GET `/api/v1/notifications?limit=20`**
 
@@ -1517,7 +1525,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`kind` は `RSVP_ATTENDING`、`RSVP_WAITLISTED`、`REFERRAL_GRANTED` のいずれか。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る）。`href` は種別で分かれ、出欠は名簿（`/organizer/events/<eventId>/participants`）、紹介はマイページ（`/mypage`）。どちらもサーバーが組み立てる。
+`kind` は `RSVP_ATTENDING`、`RSVP_WAITLISTED`、`REFERRAL_GRANTED`、`COHOST_JOINED`、`COHOST_REMOVED` のいずれか。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る。共同主催・幹事の通知では常に `null`）。`href` は種別で分かれ、出欠は名簿（`/organizer/events/<eventId>/participants`）、紹介はマイページ（`/mypage`）、共同主催・幹事の受諾は編集画面（`/organizer/events/<eventId>/edit`）、解除は主催一覧（`/organizer/events`）。どれもサーバーが組み立てる。
 
 紹介の通知は催しを持たないため、`eventId` は `null` になる。
 
@@ -1566,21 +1574,22 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-- 並びは筆頭幹事、そのあとに共同主催者を `created_at` の昇順で返す。`owner` が無い催しでは `null` になる。
-- `name` は会員なら `users.name`、ゲストなら `display_name`、どちらも空なら「主催者」「共同主催者」。`user_id` はゲストで `null`。
-- `role` は閲覧者のロール。`canManage` は `role = OWNER` かつ閲覧者が会員のときだけ `true`（招待と解除ができる）。`registerRequired` は `role = OWNER` かつ閲覧者が未登録のときだけ `true` で、画面は会員登録へ送る。
+- 並びは主催者、そのあとに共同主催・幹事を `created_at` の昇順で返す。`owner` が無い催しでは `null` になる。
+- `name` は会員なら `users.name`、ゲストなら `display_name`、どちらも空なら「主催者」「共同主催・幹事」。`user_id` はゲストで `null`。
+- `role` は閲覧者のロール。`canManage` は `role = OWNER` かつ閲覧者が会員のときだけ `true`（招待と解除ができる）。`registerRequired` は `role = OWNER` かつ閲覧者が未登録のときだけ `true` で、画面は会員登録へ送る。読み取りは幹事なら誰でもできるため、編集画面の幹事パネルは共同主催・幹事にも表示し、操作だけを `canManage` で分ける。
 
-### 5.20. DELETE `/api/v1/organizer/events/[id]/organizers/[organizerId]`（共同主催者を外す）
+### 5.20. DELETE `/api/v1/organizer/events/[id]/organizers/[organizerId]`（共同主催・幹事を外す）
 
-対象画面は SCR-ORG-05 の幹事パネル。認可は `assertRegisteredOwner` で、会員の筆頭幹事だけが実行できる。未登録の幹事は 403 `REGISTER_REQUIRED`、共同主催者は 403。
+対象画面は SCR-ORG-05 の幹事パネル。認可は `assertRegisteredOwner` で、会員の主催者だけが実行できる。未登録の幹事は 403 `REGISTER_REQUIRED`、共同主催・幹事は 403。
 
-- `organizerId` がその催しの幹事行でなければ 404。`role = OWNER` の行は 409 `OWNER_NOT_REMOVABLE`（催しに筆頭幹事が居なくなるため）。
+- `organizerId` がその催しの幹事行でなければ 404。`role = OWNER` の行は 409 `OWNER_NOT_REMOVABLE`（催しに主催者が居なくなるため）。
 - 外す行が編集ロックを持っていたら、同じトランザクションで `event_locks` の該当行（`locked_by_user_id` / `locked_by_token_hash`）を消す。権限だけ外すと、ロックを解放する手段が誰にも無くなるため。
 - 消すのは `event_organizers` の 1 行だけで、催し・名簿・集金には触れない。成功は `{ "success": true }`。
+- コミット後に、5.18 の `COHOST_REMOVED` をアプリ内通知で作る（メールは送らない）。
 
-### 5.21. GET / POST `/api/v1/invitations/[code]`（共同幹事の招待）
+### 5.21. GET / POST `/api/v1/invitations/[code]`（共同主催・幹事の招待）
 
-対象画面は SCR-ORG-07（`/invitations/[code]`）。
+対象画面は SCR-ORG-07（`/invitations/[code]`）。招待 URL は、SCR-ORG-01 の札の「その他の操作」と SCR-ORG-05 の幹事パネルから発行する（`POST /api/v1/organizer/events/[id]/invitations`、主催者のみ）。
 
 **GET** は招待コードの検証だけを行い、権限は付与しない。`resolveOptionalUserId` で Cookie を見て `loggedIn` を足す。
 
@@ -1603,7 +1612,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 **POST** は受諾。会員だけが実行でき、未登録は 403 `REGISTER_REQUIRED`（Cookie での幹事権限は発行しない）。コードが無効・失効済み・期限切れ・催しが削除済みなら GET と同じく 404。
 
-トランザクションで `event_organizers` に `CO_HOST` を足し（`@@unique([eventId, userId])` と `skipDuplicates` で重複行を作らない）、`event_invitations.is_revoked = true` にする。既に幹事（`OWNER` を含む）でも成功し、行は増えずコードだけが失効する。
+トランザクションで `event_organizers` に `CO_HOST` を足し（`@@unique([eventId, userId])` と `skipDuplicates` で重複行を作らない）、`event_invitations.is_revoked = true` にする。既に幹事（`OWNER` を含む）でも成功し、行は増えずコードだけが失効する。コミット後に、5.18 の `COHOST_JOINED` をアプリ内通知で作る（メールは送らない）。
 
 ```json
 { "success": true, "eventId": "…", "role": "CO_HOST", "manageUrl": "/organizer/events/…/edit" }

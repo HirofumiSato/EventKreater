@@ -5,6 +5,7 @@ import { appBaseUrl } from "@/lib/http";
 import { serializePricePlans, serializeSchedules } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { organizerLabel } from "@/modules/organizers/lib/names";
+import { notifyCoHostJoined } from "@/modules/notifications/lib/notify";
 import type { AuthContext } from "@/modules/auth/lib/guards";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -97,17 +98,29 @@ export async function acceptInvitation(code: string, identity: AuthContext) {
       status: 403,
       title: "Forbidden",
       type: "probs/register-required",
-      detail: "共同主催への参加には会員登録が必要です。",
+      detail: "共同主催・幹事への参加には会員登録が必要です。",
       error: "REGISTER_REQUIRED",
     });
   }
   const invitation = await findActiveInvitation(code);
   const userId = identity.userId;
 
-  await prisma.$transaction(async (tx) => {
+  const accepted = await prisma.$transaction(async (tx) => {
+    // イベント名と受諾前の幹事を読む。通知の文面と宛先はこの時点のものを使う。
+    const [event, before] = await Promise.all([
+      tx.event.findUnique({
+        where: { id: invitation.eventId },
+        select: { title: true },
+      }),
+      tx.eventOrganizer.findMany({
+        where: { eventId: invitation.eventId },
+        select: { userId: true },
+      }),
+    ]);
+
     // 既に幹事（OWNER を含む）なら何もしない。同時受諾で競合しても
     // @@unique([eventId, userId]) に任せて重複行を作らない。
-    await tx.eventOrganizer.createMany({
+    const created = await tx.eventOrganizer.createMany({
       data: [{ eventId: invitation.eventId, userId, role: "CO_HOST" }],
       skipDuplicates: true,
     });
@@ -116,7 +129,40 @@ export async function acceptInvitation(code: string, identity: AuthContext) {
       where: { id: invitation.id },
       data: { isRevoked: true },
     });
+
+    // 既に幹事だった人は「加わった」わけではないので、通知を作らない。
+    if (created.count === 0) return null;
+
+    const [organizer, member] = await Promise.all([
+      tx.eventOrganizer.findFirst({
+        where: { eventId: invitation.eventId, userId },
+        select: { id: true },
+      }),
+      tx.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    ]);
+    return {
+      organizerId: organizer?.id ?? null,
+      actorName: member?.name ?? "",
+      eventTitle: event?.title ?? "",
+      before,
+    };
   });
+
+  // 通知はコミット後に作る。失敗しても受諾は成立させる（RSVP 通知と同じ扱い）。
+  if (accepted?.organizerId) {
+    try {
+      await notifyCoHostJoined({
+        eventId: invitation.event.id,
+        eventTitle: accepted.eventTitle,
+        actorUserId: userId,
+        actorName: accepted.actorName,
+        organizerId: accepted.organizerId,
+        organizers: accepted.before,
+      });
+    } catch (error) {
+      console.error("共同主催の参加通知に失敗しました", error);
+    }
+  }
 
   return {
     success: true,

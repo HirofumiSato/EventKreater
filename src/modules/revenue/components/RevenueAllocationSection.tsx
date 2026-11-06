@@ -188,7 +188,7 @@ export function RevenueAllocationSection({
                         {row.isYou && <span className="help">（あなた）</span>}
                       </td>
                       <td className="roster__meta">
-                        {row.role === "OWNER" ? "主催者" : "共同主催者"}
+                        {row.role === "OWNER" ? "主催者" : "共同主催・幹事"}
                         {row.isGuest && "（未登録）"}
                       </td>
                       <td>
@@ -241,7 +241,7 @@ export function RevenueAllocationSection({
               ))}
             </div>
             <p className="help">
-              主催者は設定にかかわらず全員分を見られます。共同主催者は「各自の分だけ」のとき、自分の行と他の人数だけを見ます。
+              主催者は設定にかかわらず全員分を見られます。共同主催・幹事は「各自の分だけ」のとき、自分の行と他の人数だけを見ます。
             </p>
 
             <div className="panel__actions">
@@ -288,7 +288,7 @@ export function RevenueAllocationSection({
                         {row.isYou && <span className="help">（あなた）</span>}
                       </td>
                       <td className="roster__meta">
-                        {row.role === "OWNER" ? "主催者" : "共同主催者"}
+                        {row.role === "OWNER" ? "主催者" : "共同主催・幹事"}
                         {row.isGuest && "（未登録）"}
                       </td>
                       <td className="is-num">

@@ -18,11 +18,12 @@
 //  10. 名簿の 1 枚 … 行を押して開く 1 枚。集金の切り替えをその場で入れ替える
 //  11. 料金プラン … 帯から加入モーダルを開き、初月0円の札と 2 か月目からの金額を出す
 //  12. 公開の確認 … 「公開する」から確認の層を開き、公開後は「チケットを使いました」を出す
+//  13. 共同主催・幹事の招待 … 札の「その他の操作」から招待リンクの層を開き、URL をコピーする
 //
 // 値や文言を作り直すのは、音声入力のサンプルと確認（入力内容の確認・まとめて入力します）、
 // 押したときにしか出ない絞り込みモーダルの中身、申込の割引モーダルの中身、ヘッダーの切り抜きダイアログ、
 // 名簿の表示列ダイアログ、名簿の 1 枚の集金日時、料金プランの加入モーダル、
-// 公開の確認と公開後の「チケットを使いました」だけ。
+// 公開の確認と公開後の「チケットを使いました」、招待モーダルの中身だけ。
 // 他の表示は製品の DOM のまま動かす。
 // 隠し DOM（`data-mock-hidden`）は `scripts/lib/mock-variants.mjs` が合成している。
 
@@ -1550,6 +1551,75 @@
     area.remove();
   }
 
+  /**
+   * 主催一覧の札「共同主催・幹事を招待」から開く 1 枚。
+   * 製品の `Dialog` と同じ骨格（`.modal` + `.dialog` + `.dialog__content`）にして、
+   * 本文だけを送り、題と操作は残す。
+   *
+   * 製品は開いた時点で招待を発行する（API が要る）ので、URL はサンプルを出す。
+   * コピーだけは実際に動かし、押した返事をトーストで返す。
+   */
+  function openInviteDialog() {
+    // 二重に開かない（同じ札を続けて押したときなど）。
+    if (document.querySelector("[data-mock-invite]")) return;
+    const sampleUrl = "https://example.com/invitations/sample-code";
+
+    const modal = document.createElement("div");
+    modal.className = "modal modal--open";
+    modal.setAttribute("data-mock-invite", "true");
+    modal.innerHTML =
+      '<button type="button" class="modal__backdrop" aria-label="閉じる"></button>' +
+      '<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mock-invite-title" tabindex="-1">' +
+      '<button type="button" class="dialog__close" aria-label="閉じる">' +
+      icon("close") +
+      "</button>" +
+      '<h3 id="mock-invite-title" class="dialog__title">共同主催・幹事を招待</h3>' +
+      '<div class="dialog__content">' +
+      '<p class="dialog__body">リンクを送ると共同主催・幹事に加われます</p>' +
+      '<p class="dialog__body">相手は会員登録が必要です</p>' +
+      '<p class="dialog__body">7日間有効で、1回だけ使えます</p>' +
+      '<div class="input-row">' +
+      '<input class="input" type="text" readonly aria-label="招待リンク">' +
+      '<button type="button" class="btn btn--outline btn--sm" data-mock-invite-copy>URLをコピー</button>' +
+      "</div>" +
+      "</div>" +
+      '<div class="dialog__actions">' +
+      '<button type="button" class="btn btn--ghost btn--block" data-mock-invite-close>閉じる</button>' +
+      "</div></div>";
+    modal.querySelector(".input-row .input").value = sampleUrl;
+    document.body.append(modal);
+    document.documentElement.setAttribute("data-scroll-lock", "true");
+
+    const close = () => {
+      modal.remove();
+      document.removeEventListener("keydown", onKey, true);
+      // 重ねて開いた 1 枚が残っているときは、本文の停止を解かない。
+      if (!document.querySelector(".modal.modal--open")) {
+        document.documentElement.removeAttribute("data-scroll-lock");
+      }
+    };
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      // ヘッダーなど他の Esc の処理より先に、この 1 枚だけを閉じる。
+      event.stopPropagation();
+      close();
+    };
+
+    modal.querySelector(".modal__backdrop").addEventListener("click", close);
+    modal.querySelector(".dialog__close").addEventListener("click", close);
+    modal.querySelector("[data-mock-invite-close]").addEventListener("click", close);
+    modal.querySelector("[data-mock-invite-copy]").addEventListener("click", () => {
+      copyText(sampleUrl);
+      toast("URL をコピーしました。");
+      // トーストは z-index: 40、層は 50 なので、そのままだと背景の下に隠れる。
+      // この 1 枚の上に返事を出すときだけ、作ったトーストを持ち上げる。
+      const feedback = document.querySelector(".toast");
+      if (feedback) feedback.style.zIndex = "60";
+    });
+    document.addEventListener("keydown", onKey, true);
+    modal.querySelector(".dialog").focus();
+  }
+
   function wireActions() {
     document.addEventListener(
       "click",
@@ -1600,6 +1670,14 @@
           } else {
             toast("コピーする URL がありません。", "error");
           }
+          return;
+        }
+
+        // 札の「その他の操作」から開く招待の 1 枚。押した時点で API を呼ぶ画面なので
+        // 汎用の「モックでは実行しません」ではなく、製品と同じ骨格の層を出す。
+        if (label === "共同主催・幹事を招待") {
+          event.preventDefault();
+          openInviteDialog();
           return;
         }
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, Copy, CopyPlus, ExternalLink } from "lucide-react";
+import { Check, ChevronDown, Copy, CopyPlus, ExternalLink, UserPlus } from "lucide-react";
 import { scheduleLabel } from "@/lib/serializers";
 import { STATUS_LABELS, type OrganizerEvent } from "@/modules/events/types";
 import { LineShareButton } from "@/modules/organizers/components/LineShareButton";
@@ -18,6 +18,8 @@ interface EventCardProps {
   onResume: () => void;
   /** 削除の確認を開く。 */
   onDelete: () => void;
+  /** 共同主催・幹事の招待を開く。状態は問わず、下書きにも出す。 */
+  onInvite: () => void;
 }
 
 /** 状態の札。公開中だけ色を付け、停止と下書きは墨のままにする。 */
@@ -25,7 +27,7 @@ function statusTone(status: OrganizerEvent["status"]): "success" | "neutral" {
   return status === "PUBLISHED" ? "success" : "neutral";
 }
 
-export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: EventCardProps) {
+export function EventCard({ event, busy, onClone, onStop, onResume, onDelete, onInvite }: EventCardProps) {
   const ratio = event.capacity
     ? Math.min(100, Math.round((event.stats.attendingCount / event.capacity) * 100))
     : null;
@@ -85,7 +87,7 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
             {STATUS_LABELS[event.status]}
           </Badge>
           <Badge tone="neutral" small>
-            {event.role === "OWNER" ? "主催" : "共同主催"}
+            {event.role === "OWNER" ? "主催者" : "共同主催・幹事"}
           </Badge>
         </div>
 
@@ -157,6 +159,10 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete }: 
             />
           )}
           {/* URL のコピーは札の右上の印が受ける。ここには置かない（同じ行き先を重ねない）。 */}
+          <button type="button" onClick={onInvite} className="btn btn--outline btn--sm">
+            共同主催・幹事を招待
+            <UserPlus className="icon" aria-hidden="true" />
+          </button>
           <button type="button" onClick={onClone} disabled={busy} className="btn btn--outline btn--sm">
             コピー作成
             <CopyPlus className="icon" aria-hidden="true" />

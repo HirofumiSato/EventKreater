@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 110（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 480
+- 文書から参照されているコードパス: 482
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -322,6 +322,7 @@
 | `src/modules/notifications/components/NotificationList.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/components/NotificationRows.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/hooks/useNotifications.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/modules/notifications/lib/cohost-notification.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/notifications/lib/notify.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/lib/referral-notification.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/notifications/lib/rsvp-notification.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
@@ -414,6 +415,7 @@
 | `tests/unit/ci-scope.test.mjs` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/client-ip.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/clone-shift.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/cohost-notification.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/design-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/dev-stuck.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-lifecycle.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |

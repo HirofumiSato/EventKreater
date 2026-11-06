@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 401,
         title: "Unauthorized",
-        detail: "イベントの複製には会員登録が必要です。複製すると筆頭幹事としてチケットを消費します。",
+        detail: "イベントの複製には会員登録が必要です。複製すると主催者としてチケットを消費します。",
       });
     }
     const userId = ctx.userId;

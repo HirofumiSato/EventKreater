@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 403,
         title: "Forbidden",
-        detail: "下書きの保存は筆頭幹事（オーナー）の会員だけが行えます。",
+        detail: "下書きの保存は主催者の会員だけが行えます。",
       });
     }
 

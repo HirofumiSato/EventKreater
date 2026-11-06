@@ -224,7 +224,7 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         </Loading>
       )}
       {lock.error && <Alert tone="error">{lock.error}</Alert>}
-      {role === "OWNER" && <CoHostPanel eventId={params.id} />}
+      {role !== null && <CoHostPanel eventId={params.id} />}
       <EventForm
         value={form}
         onChange={setForm}
