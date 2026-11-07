@@ -162,7 +162,7 @@ erDiagram
 - `.btn--primary` / `.btn--outline` / `.btn--ghost` の枠と影
 - 入力欄 `.input` / `.textarea` / `.select`（`.deco` が面を白で固定している）→ `--st-surface-raised` と `--st-content-primary`。暗いテーマでは地に白い板が浮き、テーマの明るい字と同化して入力した文字が読めなくなるため。案内文は `--color-placeholder`（`--st-content-secondary` を 28% 混ぜる）で、地ではなく**入力欄の面**を基準に薄くする
 
-`parchment` と `washi` の見出しはシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`candy` は丸ゴシック。割り当ては `--st-font-heading` だけが持ち、部品は `--font-display` を継ぐ。Web フォントは 1 つも増やしていない。
+見出しの書体は `--st-font-heading` だけが持ち、部品はその値を読む。`washi` / `tavern` / `spotlight` はシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`parchment` は Kaisei Decol、`neo-brutalism` / `poster` は Dela Gothic One、`candy` / `kraft` は Yusei Magic を指す。追加書体は `src/components/ui/ThemeTypefaces.tsx` が 1 本の URL にまとめ、テーマを選んだ画面だけが読む。
 
 印刷（`@media print`）では地を塗らず、文字を黒にする。テーマは画面のためのもの。
 
@@ -278,7 +278,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
   - `accept={UPLOAD_ACCEPT}`。クライアント側でも 4MB を事前に弾く。
   - 選ぶとすぐ `POST` し、成功したら `avatarUrl` を差し替えてトーストを出す。失敗は `readProblem` の文言。
   - 「選ぶとすぐに保存されます」と補足する。
-- 「公開」の下に `ThemePicker`。選択肢は「標準」＋14 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。
+- 「公開」の下に `ThemePicker`。選択肢は「標準」＋14 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。見本はセクション見出しの 1 行（罫線・左バー・飾り）を含み、見出しの書体・アイブロウ・カード上辺・ボタンとチップの角を、公開ページと同じ書体トークンと装飾トークンから作る。選択中テーマのときだけ `ThemeTypefaces` がそのテーマの追加書体を 1 本の `<link>` で読む（テーマ未選択なら追加のフォントリクエストは出ない）。
 - プレビューは `SemanticThemeScope`（`page={false}`）で `OrganizerProfileView` を包み、`profileContentFromDraft(draft, stats, avatarUrl)` を渡す。保存前のテーマも確認できる。
 - 見出し下のリードと `screen-note` に、アイコンとテーマの 1 文を足した。
 
@@ -307,8 +307,8 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 | :---- | :---- |
 | テーマ用の JS | 0 バイト。属性と静的 CSS だけ |
 | 追加される CSS | 14 テーマで数 KB（1 枚の `themes.css`） |
-| テーマごとの追加リクエスト | 無し |
-| Web フォント | 増やしていない（`parchment` / `washi` はシステム明朝、`candy` はシステムの丸ゴシック） |
+| テーマごとの追加リクエスト | テーマを選んだ画面だけ、そのテーマの書体をまとめた `<link>` が 1 本。テーマ未選択なら 0 |
+| Web フォント | テーマ適用時だけ 3 書体（Kaisei Decol / Dela Gothic One / Yusei Magic）を 1 本の `<link>` で読む。テーマ未選択のページは追加のフォントファイルを取りに行かない |
 | `backdrop-filter` / アニメーション | 使わない（テストで固定） |
 | アイコンの重さ | 最大 256px 角の WebP。数十 KB |
 | アイコンのキャッシュ | `immutable` で 1 年。差し替えは URL が変わる |
@@ -354,7 +354,8 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - [x] 14 テーマから選んで保存でき、公開ページ全体に適用される
 - [x] テーマ未選択（標準）では、DOM も見た目も現行と変わらない
 - [x] 非公開にするとテーマは外れ、アイコンは残る
-- [x] 編集画面のプレビューが、テーマ込みで公開ページと同じ見た目になる
+- [x] 編集画面のプレビューが、テーマ込みで公開ページと同じ見た目になる（見本のセクション見出し 1 行・書体・罫線・角を含む）
+- [x] テーマ未選択のページでは追加書体（Kaisei Decol / Dela Gothic One / Yusei Magic）を読まない
 - [x] 公開ページのテーマ適用にクライアントコンポーネントを足していない（`SemanticThemeScope` はサーバーで属性を出すだけ）
 - [x] アイコンの応答が `immutable` で、`width` / `height` 付きの `<img>` で出る
 - [x] 未知のテーマ ID は 400、DB に残った未知の値は標準の見た目になる

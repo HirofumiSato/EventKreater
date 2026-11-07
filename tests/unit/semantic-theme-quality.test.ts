@@ -1,9 +1,10 @@
-// テーマの「質」を機械で止める 4 つのゲート。
+// テーマの「質」を機械で止める 5 つのゲート。
 //
 // 1. コントラスト  … 地・面・差し色・状態色の組み合わせが読めるか（WCAG 2.1 の相対輝度）
 // 2. 網羅性        … 参照したトークンに既定値があるか、死んだトークンを残していないか
 // 3. テーマ固有規則 … `[data-semantic-theme="x"] .card` のような特例を書いていないか
-// 4. 近接テーマ    … 色だけを変えた「同じ紙」が 2 つ並んでいないか
+// 4. 近接テーマ    … 色だけを変えた「同じ紙」が 2 つ並んでいないか（6 軸）
+// 5. シグネチャ    … 各テーマが書体と装飾を持ち、未知の書体を持ち込んでいないか
 //
 // 色の正は src/styles/themes.css、ID の正は src/lib/semantic-themes.ts。
 // この試験はブラウザも DB も使わず、CSS を読んで計算するだけ。
@@ -14,6 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { themeFontHref } from "@/components/ui/ThemeTypefaces";
 import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 
 const ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
@@ -77,6 +79,58 @@ const THEME_TOKENS = new Map<string, Tokens>(
 
 const DEFAULTS_RULE = RULES.find((rule) => rule.selector === ".semantic-theme");
 const DEFAULTS = DEFAULTS_RULE ? declarations(DEFAULTS_RULE.body) : {};
+
+/** テーマごとに必ず書く必須トークン。既定値を持たない（semantic-theme-css.test.ts と同じ一覧）。 */
+const REQUIRED_TOKENS: readonly string[] = [
+  "--st-surface-base",
+  "--st-surface-raised",
+  "--st-content-primary",
+  "--st-content-secondary",
+  "--st-accent-primary",
+  "--st-accent-text",
+  "--st-accent-contrast",
+  "--st-border-width",
+  "--st-border-color",
+  "--st-radius-base",
+  "--st-shadow-elevation",
+];
+
+/**
+ * 既定値を持たせない色トークン。
+ *
+ * 状態色（警告・危険・成功）は全テーマが自分の地に合わせて持ち、コントラスト試験が
+ * 値を縛る。既定値を置くと「テーマが書き忘れても通る」状態になるため、任意トークンの
+ * 網羅から外す。ここに足してよいのは、本当に既定値を持たない色だけ。
+ */
+const COLOR_TOKENS_WITHOUT_DEFAULTS: readonly string[] = [
+  "--st-danger",
+  "--st-warning",
+  "--st-success",
+];
+
+/**
+ * 既定値ではなく `var()` のフォールバックで受ける任意トークン。
+ *
+ * 地紋とその寸法・繰り返しは、消費側が `var(--st-surface-image, none)` /
+ * `var(--st-surface-image-size, auto)` の形で読む。テーマが書かなければブラウザ既定に
+ * 戻るので、`.semantic-theme` に既定値を置かない（必須扱いにしない）。
+ */
+const FALLBACK_ONLY_TOKENS: readonly string[] = [
+  "--st-surface-image",
+  "--st-surface-image-size",
+  "--st-surface-image-repeat",
+];
+
+/**
+ * 任意トークンの一覧は、`.semantic-theme` ブロックの `--st-*` 宣言から自動で作る。
+ * 手で並べると、次にトークンを足したときに「既定値を置いたのに一覧へ入れ忘れる」
+ * 状態が起きる。必須トークンと、既定値を持たない色だけを除く。
+ */
+const OPTIONAL_TOKENS = Object.keys(DEFAULTS)
+  .filter((name) => name.startsWith("--st-"))
+  .filter((name) => !REQUIRED_TOKENS.includes(name))
+  .filter((name) => !COLOR_TOKENS_WITHOUT_DEFAULTS.includes(name))
+  .sort();
 
 function themeTokens(id: string): Tokens {
   return { ...DEFAULTS, ...(THEME_TOKENS.get(id) ?? {}) };
@@ -256,17 +310,26 @@ describe("網羅性（トークンの契約）", () => {
   });
 
   it("任意トークンは .semantic-theme に既定値を持つ", () => {
-    for (const name of [
-      "--st-font-heading",
-      "--st-font-body",
-      "--st-heading-weight",
-      "--st-heading-tracking",
-      "--st-stack-gap",
-      "--st-content-width",
-      "--st-border-strong",
-    ]) {
-      expect(DEFAULTS[name], `${name} の既定値`).toBeTruthy();
-    }
+    // 書体・装飾を含む任意トークン全部を、`.semantic-theme` の宣言から自動で拾う。
+    expect(OPTIONAL_TOKENS.length).toBeGreaterThan(0);
+
+    const missing = OPTIONAL_TOKENS.filter((name) => !DEFAULTS[name]?.trim());
+    expect(missing, "既定値の無い任意トークン").toEqual([]);
+  });
+
+  it("任意トークンはテーマ固有の宣言か既定値のどちらかで説明できる", () => {
+    // テーマだけが持つ `--st-*` は、必須・既定値なしの色・フォールバック付きの 3 種類しか許さない。
+    // どれにも当たらない名前を足すと、どのテーマでも値が決まらないまま部品へ渡る。
+    const allowed = new Set<string>([
+      ...REQUIRED_TOKENS,
+      ...COLOR_TOKENS_WITHOUT_DEFAULTS,
+      ...FALLBACK_ONLY_TOKENS,
+    ]);
+    const orphans = [...new Set([...THEME_TOKENS.values()].flatMap((tokens) => Object.keys(tokens)))]
+      .filter((name) => name.startsWith("--st-"))
+      .filter((name) => !(name in DEFAULTS) && !allowed.has(name))
+      .sort();
+    expect(orphans, "既定値もフォールバックも無いテーマ固有トークン").toEqual([]);
   });
 });
 
@@ -287,7 +350,28 @@ describe("テーマ固有の規則を持たない", () => {
 });
 
 describe("近接テーマ（色違いの水増しを止める）", () => {
-  /** 地の明るさ・差し色の色相・角丸・表示書体・密度の 5 軸に落とす。 */
+  /**
+   * 見出しの書体を 1 つの名前へ寄せる。
+   *
+   * 追加書体のスタックは末尾に総称ファミリ（`sans-serif`）を持つ。先に
+   * `mincho|serif` を見ると、Dela Gothic One / Yusei Magic まで明朝に落ちる。
+   * 固有の書体名を先に判定し、総称ファミリは `sans-serif` を除いてから見る。
+   */
+  function headingFont(heading: string): string {
+    if (heading.includes("Dela Gothic One")) return "極太";
+    if (heading.includes("Kaisei Decol")) return "明朝デコ";
+    if (heading.includes("Yusei Magic")) return "手書き";
+    if (/mincho|serif/i.test(heading) && !/sans-serif/i.test(heading)) return "明朝";
+    if (heading.includes("--font-display")) return "表示書体";
+    return "角ゴシック";
+  }
+
+  /**
+   * 地・差し色・角丸・書体・密度・装飾の 6 軸に落とす。
+   *
+   * 装飾は「罫線の太さと線種 / 左バーの有無 / 地紋の有無」を 1 つの文字列にする。
+   * 軸を増やすほど「同じ紙」を見逃しにくくなるが、4 つ以上一致で落とす基準は緩めない。
+   */
   function axes(id: string) {
     const tokens = themeTokens(id);
     const base = over(color(tokens["--st-surface-base"], tokens), WHITE);
@@ -297,20 +381,18 @@ describe("近接テーマ（色違いの水増しを止める）", () => {
     const width = tokens["--st-content-width"].includes("--width-content")
       ? 42
       : Number.parseFloat(tokens["--st-content-width"]);
-    const heading = tokens["--st-font-heading"];
-
-    const font = /mincho|serif/i.test(heading)
-      ? "明朝"
-      : heading.includes("--font-display")
-        ? "表示書体"
-        : "角ゴシック";
+    const surfaceImage = tokens["--st-surface-image"].trim();
+    const lead = Number.parseFloat(tokens["--st-section-lead"]) > 0;
 
     return {
       地: luminance(base) < 0.2 ? "暗い" : "明るい",
       差し色: Math.floor(hue(accent) / 30),
       角丸: radius <= 2 ? "角" : radius <= 7 ? "小" : radius <= 14 ? "中" : "大",
-      書体: font,
+      書体: headingFont(tokens["--st-font-heading"]),
       密度: `${gap <= 1.0625 ? "詰" : gap <= 1.375 ? "並" : "広"}/${width <= 40 ? "狭" : width >= 44 ? "広" : "並"}`,
+      装飾: `${tokens["--st-border-width"].trim()}/${tokens["--st-divider-style"].trim()}/${
+        lead ? "lead" : "nolead"
+      }/${surfaceImage === "none" ? "flat" : "texture"}`,
     };
   }
 
@@ -329,7 +411,7 @@ describe("近接テーマ（色違いの水増しを止める）", () => {
     return (degree * 60 + 360) % 360;
   }
 
-  it("5 軸のうち 4 つ以上が同じテーマの組は無い", () => {
+  it("6 軸のうち 4 つ以上が同じテーマの組は無い", () => {
     const near: string[] = [];
     for (let i = 0; i < SEMANTIC_THEME_IDS.length; i += 1) {
       for (let j = i + 1; j < SEMANTIC_THEME_IDS.length; j += 1) {
@@ -344,5 +426,78 @@ describe("近接テーマ（色違いの水増しを止める）", () => {
       }
     }
     expect(near).toEqual([]);
+  });
+});
+
+describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
+  /** テーマが最低 1 つは書く書体トークン。 */
+  const FONT_TOKENS = ["--st-font-heading", "--st-font-body"];
+
+  /** テーマが最低 2 つは書く装飾トークン。 */
+  const DECORATION_TOKENS = [
+    "--st-section-rule",
+    "--st-section-lead",
+    "--st-section-ornament",
+    "--st-divider-style",
+    "--st-card-top",
+    "--st-button-radius",
+    "--st-chip-radius",
+    "--st-surface-image",
+    "--st-eyebrow-bg",
+    "--st-heading-transform",
+  ];
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 書体 1 つ以上と装飾 2 つ以上を持つ", (id) => {
+    // 既定値ではなく、そのテーマのブロックに書かれた宣言だけを見る。
+    // 色だけを変えたテーマは、ここが空になって落ちる。
+    const tokens = THEME_TOKENS.get(id) ?? {};
+    const fonts = FONT_TOKENS.filter((name) => name in tokens);
+    const decorations = DECORATION_TOKENS.filter((name) => name in tokens);
+
+    expect(fonts, `${id}: 書体トークン`).not.toHaveLength(0);
+    expect(decorations.length, `${id}: 装飾トークン（${decorations.join(" / ")}）`).toBeGreaterThanOrEqual(2);
+  });
+
+  /** 追加書体の名前と、Google Fonts の URL に載る family 指定。 */
+  const LOADED_TYPEFACES: Record<string, string> = {
+    "Kaisei Decol": "Kaisei+Decol",
+    "Dela Gothic One": "Dela+Gothic+One",
+    "Yusei Magic": "Yusei+Magic",
+  };
+
+  /** 追加で読み込まない、システムの書体と総称ファミリ。 */
+  const SYSTEM_FAMILIES = new Set([
+    "Hiragino Mincho ProN",
+    "Yu Mincho",
+    "YuMincho",
+    "Noto Serif JP",
+    "Zen Kaku Gothic New",
+    "serif",
+    "sans-serif",
+  ]);
+
+  /** 書体そのものではなく、サイトの表示書体を継ぐ指示。 */
+  const TOKEN_FAMILIES = new Set(["var(--font)", "var(--font-display)"]);
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 見出しの書体は読み込み済みか総称だけを指す", (id) => {
+    // 未知のファミリ名を書くと、その端末にフォントが無いときだけ別の書体へ落ちる。
+    // Web フォントは「そのテーマで実際に読み込む」ことまで確かめる（CSS と ThemeTypefaces の突き合わせ）。
+    const heading = themeTokens(id)["--st-font-heading"].trim();
+    if (TOKEN_FAMILIES.has(heading)) return;
+
+    const families = heading
+      .split(",")
+      .map((family) => family.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+    expect(families.length, `${id}: 空の書体指定`).toBeGreaterThan(0);
+
+    for (const family of families) {
+      const loaded = LOADED_TYPEFACES[family];
+      if (loaded) {
+        expect(themeFontHref(id), `${id}: ${family} を読み込む URL`).toContain(loaded);
+        continue;
+      }
+      expect(SYSTEM_FAMILIES.has(family), `${id}: 未知の書体「${family}」`).toBe(true);
+    }
   });
 });

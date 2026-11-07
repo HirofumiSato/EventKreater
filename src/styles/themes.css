@@ -48,10 +48,11 @@
      面・文字・差し色・枠・角丸・影の 10 個。色の正はテーマブロックだけ。
    - 任意（書かなければ下の既定値になる。`tests/unit/semantic-theme-quality.test.ts`
      が「参照している名前には既定値がある」ことを確かめる）:
-     書体・字間・密度・読み幅・操作部品の枠色。テーマは変えたい値だけを書く。
+     書体・字間・行間・密度・読み幅・操作部品の枠色と、罫線・飾り・角・区切りの線種。
 
-   既定値は現行の見た目と同じにしてある。だから、任意のトークンを書かないテーマ
-   （既存 5 つ）の見た目は 1px も変わらない。
+   既定値は原則として現行の見た目に寄せてある。数値が今と違うもの（セクション罫線・
+   左の差し色・ボタンとチップの角）は、14 テーマがすべて自分の値を書くので、
+   既定が公開ページへ出ることはない。既定を読むのは、テーマを選ぶ前の見本だけ。
    -------------------------------------------------------------------------- */
 
 .semantic-theme {
@@ -65,6 +66,34 @@
   /* 押せる部品（入力欄・枠線のボタン・選択肢）の境界。装飾の罫線（--color-border）
      とは別に持つ。細い罫線のテーマでも、操作できる場所だけは 3:1 を満たす。 */
   --st-border-strong: color-mix(in srgb, var(--st-border-color) 55%, var(--st-content-secondary));
+
+  /* 声（書体・字組み）。既定は継承と `none` にして、書かないテーマは今の見た目のまま。
+     見出しの行間だけは `inherit` を挟む。deco の行間をそのまま受けるため。 */
+  --st-heading-leading: inherit;
+  --st-body-leading: inherit;
+  --st-body-tracking: normal;
+  --st-heading-transform: none;
+  --st-heading-rule: none;
+  --st-heading-rule-offset: 0.42em;
+  --st-eyebrow-tracking: 0.12em;
+  --st-eyebrow-weight: 700;
+  --st-eyebrow-bg: none;
+  --st-eyebrow-color: var(--st-accent-text);
+  --st-eyebrow-padding: 0;
+  --st-eyebrow-radius: 0;
+  --st-eyebrow-transform: none;
+
+  /* 線と縁。セクション見出しの罫線・左の差し色・飾り、区切りの線種、
+     ボタンとチップの角、カードの上辺。既定はどれも今の枠と同じ値にしてある。 */
+  --st-section-rule: var(--st-border-width) solid var(--st-content-primary);
+  --st-section-lead: 5px;
+  --st-section-lead-color: var(--st-accent-primary);
+  --st-section-ornament: none;
+  --st-section-ornament-color: var(--st-accent-primary);
+  --st-divider-style: solid;
+  --st-button-radius: 999px;
+  --st-chip-radius: 999px;
+  --st-card-top: var(--st-border-width) solid var(--st-border-color);
 
   --color-bg: var(--st-surface-base);
   --color-surface: var(--st-surface-raised);
@@ -129,9 +158,11 @@
 
   color: var(--color-text);
   font-family: var(--st-font-body);
+  letter-spacing: var(--st-body-tracking);
+  line-height: var(--st-body-leading);
 }
 
-/* 任意トークンの消費。書体・字間・密集度・読み幅は、ここ 3 規則だけが読む。
+/* 任意トークンの消費。書体・字間・行間・密集度・読み幅は、ここ 3 規則だけが読む。
    テーマごとに部品を書き換えないので、新しいテーマでも全画面が揃う。 */
 .semantic-theme h1,
 .semantic-theme h2,
@@ -143,10 +174,64 @@
 .semantic-theme .profile-head__name {
   font-weight: var(--st-heading-weight);
   letter-spacing: var(--st-heading-tracking);
+  line-height: var(--st-heading-leading);
+  text-transform: var(--st-heading-transform);
+  text-decoration: var(--st-heading-rule);
+  text-underline-offset: var(--st-heading-rule-offset);
 }
 
 .semantic-theme .stack {
   gap: var(--st-stack-gap);
+}
+
+/* 装飾の共通規則。テーマ固有のセレクタは書かず、`--st-*` の値だけで差を出す。
+   セクション見出しの罫線・左の差し色・飾り、カードの上辺、押せる部品の角、
+   一覧の区切り線をここ 1 箇所で決める。 */
+
+/* セクション見出し。罫線の太さと色は `--st-section-rule`、左の帯は
+   `--st-section-lead` が決める。帯の幅だけ内側の余白も開ける（0 なら 0 のまま）。 */
+.semantic-theme .section__head {
+  padding-bottom: 0.5rem;
+  padding-inline-start: calc(var(--st-section-lead) * 3);
+  border-bottom: var(--st-section-rule);
+  border-left: var(--st-section-lead) solid var(--st-section-lead-color);
+}
+
+/* 飾りは `::after` に 1 文字だけ置く。`--st-section-ornament` が `none` のときは
+   疑似要素そのものが生まれないので、余白も残らない。 */
+.semantic-theme .section__title::after {
+  content: var(--st-section-ornament);
+  margin-inline-start: 0.4em;
+  color: var(--st-section-ornament-color);
+  font-size: 0.8em;
+}
+
+/* カード・パネル・カレンダー・案内の上辺。既定は今の枠と同じ値なので、
+   何も書かないテーマでは見た目が変わらない。 */
+.semantic-theme .card,
+.semantic-theme .panel,
+.semantic-theme .cal,
+.semantic-theme .alert {
+  border-top: var(--st-card-top);
+}
+
+/* 押せる部品の角。入力欄も同じトークンで揃え、ボタンだけ丸い紙面を作らない。 */
+.semantic-theme .btn,
+.semantic-theme .btn--primary,
+.semantic-theme .btn--outline,
+.semantic-theme .btn--ghost,
+.semantic-theme .input,
+.semantic-theme .textarea,
+.semantic-theme .select {
+  border-radius: var(--st-button-radius);
+}
+
+/* 一覧の区切り線の種類。色は各節が持つので、ここでは線種だけを差し替える。 */
+.semantic-theme .kv__row,
+.semantic-theme .rows__item,
+.semantic-theme .event-facts__row,
+.semantic-theme .cal__day {
+  border-bottom-style: var(--st-divider-style);
 }
 
 /* --------------------------------------------------------------------------
@@ -172,9 +257,18 @@
   --st-danger: #f87171;
   --st-warning: #fbbf24;
   --st-success: #4ade80;
-  --st-surface-image: radial-gradient(1200px 420px at 50% -8%, rgb(79 70 229 / 0.28), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
-  --st-surface-image-size: auto;
+  --st-surface-image:
+    linear-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.05) 1px, transparent 1px),
+    radial-gradient(1200px 420px at 50% -8%, rgb(79 70 229 / 0.28), transparent 70%);
+  --st-surface-image-repeat: repeat, repeat, no-repeat;
+  --st-surface-image-size: 32px 32px, 32px 32px, auto;
+  --st-font-heading: var(--font-display);
+  --st-heading-tracking: 0.09em;
+  --st-heading-transform: uppercase;
+  --st-section-rule: 1px solid var(--st-accent-primary);
+  --st-section-lead: 3px;
+  --st-button-radius: 8px;
 }
 
 /* --------------------------------------------------------------------------
@@ -201,7 +295,21 @@
   --st-danger: #dc2626;
   --st-warning: #b45309;
   --st-success: #15803d;
-  --st-surface-image: none;
+  --st-surface-image:
+    linear-gradient(rgb(17 24 39 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(17 24 39 / 0.04) 1px, transparent 1px);
+  --st-surface-image-repeat: repeat, repeat;
+  --st-surface-image-size: 24px 24px, 24px 24px;
+  --st-font-heading: var(--font-display);
+  --st-heading-tracking: -0.01em;
+  --st-section-rule: 1px solid var(--st-border-color);
+  --st-section-lead: 0;
+  --st-card-top: 2px solid var(--st-accent-primary);
+  --st-button-radius: 8px;
+  --st-eyebrow-bg: var(--st-accent-primary);
+  --st-eyebrow-color: var(--st-accent-contrast);
+  --st-eyebrow-padding: 0.0625rem 0.375rem;
+  --st-eyebrow-radius: 2px;
 }
 
 /* --------------------------------------------------------------------------
@@ -212,7 +320,7 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="parchment"] {
-  --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-font-heading: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
   --st-surface-base: #f4eedd;
   --st-surface-raised: #fbf6e9;
   --st-content-primary: #2c221e;
@@ -232,6 +340,15 @@
   --st-surface-image: radial-gradient(rgb(44 34 30 / 0.05) 1px, transparent 1px);
   --st-surface-image-size: 18px 18px;
   --st-surface-image-repeat: repeat;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.04em;
+  --st-heading-leading: 1.5;
+  --st-section-rule: 1px solid var(--st-content-primary);
+  --st-section-lead: 3px;
+  --st-card-top: 3px double var(--st-content-primary);
+  --st-button-radius: var(--st-radius-base);
+  --st-chip-radius: var(--st-radius-base);
+  --st-eyebrow-tracking: 0.16em;
 }
 
 /* --------------------------------------------------------------------------
@@ -264,7 +381,22 @@
      4.5:1 を割らないよう、他のテーマより一段暗い山吹にしている。 */
   --st-warning: #9f5a12;
   --st-success: #2f7d4f;
-  --st-surface-image: none;
+  /* 8px のハーフトーン。墨の枠に紙の粒を重ね、平坦なワイヤーフレームに見せない。 */
+  --st-surface-image: radial-gradient(rgb(23 21 15 / 0.06) 1px, transparent 1px);
+  --st-surface-image-size: 8px 8px;
+  --st-surface-image-repeat: repeat;
+  --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.02em;
+  --st-section-rule: 3px solid var(--st-content-primary);
+  --st-section-lead: 0;
+  --st-card-top: 3px solid var(--st-content-primary);
+  --st-button-radius: 0;
+  --st-chip-radius: 0;
+  --st-eyebrow-bg: var(--st-content-primary);
+  --st-eyebrow-color: var(--st-surface-base);
+  --st-eyebrow-padding: 0.0625rem 0.4375rem;
+  --st-eyebrow-radius: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -290,8 +422,19 @@
   --st-danger: #ff5c8a;
   --st-warning: #ffd166;
   --st-success: #3ddc97;
-  --st-surface-image: radial-gradient(900px 340px at 50% -6%, rgb(0 240 255 / 0.18), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
+  --st-surface-image:
+    linear-gradient(rgb(0 240 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 240 255 / 0.05) 1px, transparent 1px),
+    radial-gradient(900px 340px at 50% -6%, rgb(0 240 255 / 0.18), transparent 70%);
+  --st-surface-image-repeat: repeat, repeat, no-repeat;
+  --st-surface-image-size: 24px 24px, 24px 24px, auto;
+  --st-font-heading: var(--font-display);
+  --st-heading-tracking: 0.14em;
+  --st-heading-transform: uppercase;
+  --st-section-rule: 1px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-button-radius: 6px;
+  --st-chip-radius: 999px;
 }
 
 /* --------------------------------------------------------------------------
@@ -304,7 +447,7 @@
 
 [data-semantic-theme="washi"] {
   --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
-  --st-heading-tracking: 0.06em;
+  --st-heading-tracking: 0.09em;
   --st-stack-gap: 1.5rem;
   --st-surface-base: #f7f4ec;
   --st-surface-raised: #fdfbf5;
@@ -321,12 +464,20 @@
   --st-danger: #9e3b2e;
   --st-warning: #8a5800;
   --st-success: #3f6b46;
-  --st-surface-image: repeating-linear-gradient(
-    90deg,
-    rgb(35 32 28 / 0.028) 0 1px,
-    transparent 1px 6px
-  );
-  --st-surface-image-repeat: repeat;
+  /* 縦の繊維（6px）に、横の織り（24px）を重ねる。 */
+  --st-surface-image:
+    repeating-linear-gradient(90deg, rgb(35 32 28 / 0.028) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgb(47 74 109 / 0.03) 0 1px, transparent 1px 24px);
+  --st-surface-image-repeat: repeat, repeat;
+  --st-heading-weight: 500;
+  --st-body-leading: 1.9;
+  --st-section-rule: 1px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-button-radius: var(--st-radius-base);
+  --st-chip-radius: 2px;
+  --st-eyebrow-bg: color-mix(in srgb, var(--st-accent-primary) 12%, var(--st-surface-raised));
+  --st-eyebrow-padding: 0.0625rem 0.375rem;
+  --st-eyebrow-radius: 2px;
 }
 
 /* --------------------------------------------------------------------------
@@ -356,6 +507,13 @@
   --st-warning: #8a5800;
   --st-success: #2f6b46;
   --st-surface-image: none;
+  --st-heading-weight: 500;
+  --st-heading-tracking: 0.02em;
+  --st-body-leading: 1.95;
+  --st-section-rule: none;
+  --st-section-lead: 2px;
+  --st-button-radius: var(--st-radius-base);
+  --st-chip-radius: var(--st-radius-base);
 }
 
 /* --------------------------------------------------------------------------
@@ -382,8 +540,23 @@
   --st-danger: #b3261e;
   --st-warning: #9a5b00;
   --st-success: #2f7d4f;
-  --st-surface-image: radial-gradient(600px 240px at 90% -10%, rgb(255 77 132 / 0.14), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
+  /* 24px の紙吹雪。粒は淡く、地の桃を濁らせない。 */
+  --st-surface-image:
+    radial-gradient(rgb(255 77 132 / 0.06) 1.5px, transparent 1.5px),
+    radial-gradient(600px 240px at 90% -10%, rgb(255 77 132 / 0.14), transparent 70%);
+  --st-surface-image-repeat: repeat, no-repeat;
+  --st-surface-image-size: 24px 24px, auto;
+  --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.02em;
+  --st-section-rule: 3px dotted var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-divider-style: dotted;
+  --st-button-radius: 999px;
+  --st-chip-radius: 999px;
+  --st-eyebrow-bg: color-mix(in srgb, var(--st-accent-primary) 14%, var(--st-surface-raised));
+  --st-eyebrow-padding: 0.0625rem 0.5rem;
+  --st-eyebrow-radius: 999px;
 }
 
 /* --------------------------------------------------------------------------
@@ -411,8 +584,18 @@
   --st-danger: #ff8f80;
   --st-warning: #ffc76b;
   --st-success: #7fd6a0;
-  --st-surface-image: radial-gradient(900px 360px at 50% -8%, rgb(255 138 76 / 0.22), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
+  /* 上は光、下辺は琥珀の地平線。地の上下で夜の始まり方を変える。 */
+  --st-surface-image:
+    radial-gradient(900px 360px at 50% -8%, rgb(255 138 76 / 0.22), transparent 70%),
+    linear-gradient(0deg, rgb(255 176 122 / 0.06), transparent 38%);
+  --st-surface-image-repeat: no-repeat, no-repeat;
+  --st-heading-weight: 600;
+  --st-heading-tracking: 0.05em;
+  --st-section-rule: 2px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-card-top: 2px solid var(--st-accent-primary);
+  --st-button-radius: 10px;
+  --st-chip-radius: var(--st-radius-base);
 }
 
 /* --------------------------------------------------------------------------
@@ -442,10 +625,24 @@
   --st-danger: #ff5c7a;
   --st-warning: #ffd166;
   --st-success: #3ddc97;
+  /* 12px の斜線。発光の放射の下に敷き、紙面ではなくフライヤーらしい地にする。 */
   --st-surface-image:
+    repeating-linear-gradient(45deg, rgb(255 45 158 / 0.05) 0 1px, transparent 1px 12px),
     radial-gradient(760px 340px at 18% -8%, rgb(124 58 237 / 0.26), transparent 66%),
     radial-gradient(680px 320px at 86% -4%, rgb(255 45 158 / 0.22), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
+  --st-surface-image-repeat: repeat, no-repeat, no-repeat;
+  --st-font-heading: var(--font-display);
+  --st-heading-tracking: 0.1em;
+  --st-heading-transform: uppercase;
+  --st-section-rule: 2px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-card-top: 2px solid var(--st-accent-primary);
+  --st-button-radius: 2px;
+  --st-chip-radius: 2px;
+  --st-eyebrow-bg: var(--st-accent-primary);
+  --st-eyebrow-color: var(--st-accent-contrast);
+  --st-eyebrow-padding: 0.0625rem 0.4375rem;
+  --st-eyebrow-radius: 2px;
 }
 
 /* --------------------------------------------------------------------------
@@ -475,8 +672,18 @@
   --st-danger: #ff8f80;
   --st-warning: #ffc76b;
   --st-success: #7fd6a0;
-  --st-surface-image: radial-gradient(820px 320px at 50% -6%, rgb(245 194 107 / 0.2), transparent 70%);
-  --st-surface-image-repeat: no-repeat;
+  /* 8px 間隔の木目。横の筋だけを薄く敷き、カウンターの板を思わせる。 */
+  --st-surface-image:
+    repeating-linear-gradient(0deg, rgb(245 194 107 / 0.035) 0 1px, transparent 1px 8px),
+    radial-gradient(820px 320px at 50% -6%, rgb(245 194 107 / 0.2), transparent 70%);
+  --st-surface-image-repeat: repeat, no-repeat;
+  --st-heading-weight: 600;
+  --st-heading-tracking: 0.06em;
+  --st-section-rule: 1px solid var(--st-accent-primary);
+  --st-section-lead: 4px;
+  --st-divider-style: dotted;
+  --st-button-radius: 4px;
+  --st-chip-radius: 4px;
 }
 
 /* --------------------------------------------------------------------------
@@ -487,7 +694,7 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="kraft"] {
-  --st-font-heading: var(--font);
+  --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
   --st-surface-base: #eee3d0;
   --st-surface-raised: #f8f1e4;
   --st-content-primary: #241d15;
@@ -505,12 +712,19 @@
   --st-danger: #9e3b2e;
   --st-warning: #8a5800;
   --st-success: #3f6b46;
-  --st-surface-image: repeating-linear-gradient(
-    90deg,
-    rgb(36 29 21 / 0.03) 0 1px,
-    transparent 1px 7px
-  );
-  --st-surface-image-repeat: repeat;
+  /* 縦の繊維に、9px の斑点を重ねる。クラフト紙の漉きムラを表す。 */
+  --st-surface-image:
+    repeating-linear-gradient(90deg, rgb(36 29 21 / 0.03) 0 1px, transparent 1px 7px),
+    radial-gradient(rgb(168 74 38 / 0.05) 1px, transparent 1px);
+  --st-surface-image-repeat: repeat, repeat;
+  --st-surface-image-size: auto, 9px 9px;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.03em;
+  --st-section-rule: 2px dashed var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-divider-style: dashed;
+  --st-button-radius: 4px;
+  --st-chip-radius: 4px;
 }
 
 /* --------------------------------------------------------------------------
@@ -539,7 +753,23 @@
   --st-danger: #ff6b5f;
   --st-warning: #ffd166;
   --st-success: #58d68d;
-  --st-surface-image: none;
+  /* 6px のハーフトーン。黒地に印刷の網点を敷き、遠目でも紙面の密度を出す。 */
+  --st-surface-image: radial-gradient(rgb(247 244 239 / 0.05) 1px, transparent 1px);
+  --st-surface-image-size: 6px 6px;
+  --st-surface-image-repeat: repeat;
+  --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.08em;
+  --st-heading-transform: uppercase;
+  --st-section-rule: 4px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-card-top: 2px solid var(--st-accent-primary);
+  --st-button-radius: 0;
+  --st-chip-radius: 0;
+  --st-eyebrow-bg: var(--st-accent-primary);
+  --st-eyebrow-color: var(--st-accent-contrast);
+  --st-eyebrow-padding: 0.0625rem 0.4375rem;
+  --st-eyebrow-radius: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -571,6 +801,15 @@
   --st-success: #7fd6a0;
   --st-surface-image: radial-gradient(620px 420px at 50% -18%, rgb(219 231 255 / 0.22), transparent 68%);
   --st-surface-image-repeat: no-repeat;
+  --st-heading-weight: 400;
+  --st-heading-tracking: 0.12em;
+  --st-heading-leading: 1.5;
+  --st-section-rule: 1px solid var(--st-accent-primary);
+  --st-section-lead: 0;
+  --st-section-ornament: "◆";
+  --st-button-radius: var(--st-radius-base);
+  --st-chip-radius: var(--st-radius-base);
+  --st-eyebrow-tracking: 0.24em;
 }
 
 /* --------------------------------------------------------------------------
@@ -588,29 +827,34 @@
 :where(.deco) .semantic-theme[data-semantic-theme] .cal,
 :where(.deco) .semantic-theme[data-semantic-theme] .alert {
   border: var(--st-border-width) solid var(--st-border-color);
+  /* `border` の短縮が上辺も戻すため、差し色は短縮のあとで入れ直す。 */
+  border-top: var(--st-card-top);
   border-radius: var(--radius-xl);
   background: var(--st-surface-raised);
   box-shadow: var(--st-shadow-elevation);
   transform: none;
 }
 
-/* 見出しの札は、テーマでは色を塗らない。紙面の静けさを優先する。 */
+/* 見出しの札。形・色・字間はテーマのトークンが決める（既定は色を塗らない静かな札）。
+   deco の傾きと硬い影だけは、ここで落とす。 */
 :where(.deco) .semantic-theme[data-semantic-theme] .eyebrow {
   display: inline-block;
-  padding: 0;
+  padding: var(--st-eyebrow-padding);
   border: 0;
-  border-radius: 0;
-  background: none;
+  border-radius: var(--st-eyebrow-radius);
+  background: var(--st-eyebrow-bg);
   box-shadow: none;
-  color: var(--st-accent-text);
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  color: var(--st-eyebrow-color);
+  font-weight: var(--st-eyebrow-weight);
+  letter-spacing: var(--st-eyebrow-tracking);
+  text-transform: var(--st-eyebrow-transform);
   transform: none;
 }
 
-/* 見出し（`.section__head`）の下線は引かない。deco は左の帯と題の波線で区切り、
-   下線を持たない（`deco/base.css`）。ここで `--color-text` の線を足すと、暗い紙面
-   では白い 2px の帯になり、題ではなく本文の区切りに見える。 */
+/* 見出し（`.section__head`）の罫線と左の帯は、テーマのトークンが決める
+   （`--st-section-rule` / `--st-section-lead`）。deco の固定の帯（`deco/base.css`）は
+   同じ詳細度なので、あとから読むこのファイルの指定が勝つ。題の波線は `.section__title`
+   の `text-decoration`（`--st-heading-rule`）が引き受ける。 */
 
 :where(.deco) .semantic-theme[data-semantic-theme] .btn--primary {
   border: var(--st-border-width) solid var(--st-accent-primary);
@@ -641,7 +885,7 @@
 
 :where(.deco) .semantic-theme[data-semantic-theme] .chip {
   border: var(--st-border-width) solid var(--st-border-color);
-  border-radius: 999px;
+  border-radius: var(--st-chip-radius);
   background: color-mix(in srgb, var(--st-accent-primary) 10%, var(--st-surface-raised));
   color: var(--st-content-primary);
   box-shadow: none;

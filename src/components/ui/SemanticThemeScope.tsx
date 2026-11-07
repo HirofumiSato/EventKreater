@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { normalizeSemanticThemeId, type SemanticThemeId } from "@/lib/semantic-themes";
+import { ThemeTypefaces } from "./ThemeTypefaces";
 
 interface SemanticThemeScopeProps {
   /** 保存されているテーマ。NULL・未知の値なら何も包まない（標準の見た目）。 */
@@ -17,6 +18,7 @@ interface SemanticThemeScopeProps {
  *
  * 色は `src/styles/themes.css` が `data-semantic-theme` 属性から決める。
  * ここは属性を 1 つ出すだけで、JavaScript を持たない（サーバーコンポーネントから使える）。
+ * 追加の書体も、テーマが有効なこの中だけで読む（重さ）。
  *
  * テーマ未選択（NULL）のときは要素を増やさず、そのまま children を返す。
  * 既存のページの DOM と見た目を変えないため。
@@ -30,6 +32,7 @@ export function SemanticThemeScope({ themeId, children, page = false }: Semantic
       className={page ? "semantic-theme semantic-theme--page" : "semantic-theme"}
       data-semantic-theme={theme}
     >
+      <ThemeTypefaces themeId={theme} />
       {children}
     </div>
   );
