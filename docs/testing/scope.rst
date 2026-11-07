@@ -147,7 +147,7 @@
 
 .. count-start
 
-134 ファイル、``it`` は 2036 件です。内訳は ``tests/unit/`` が 97 ファイル 1732 件、``tests/integration/`` が 26 ファイル 195 件です。結合の 195 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+134 ファイル、``it`` は 2039 件です。内訳は ``tests/unit/`` が 97 ファイル 1732 件、``tests/integration/`` が 26 ファイル 198 件です。結合の 198 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -324,7 +324,7 @@
      - 確認コードの再送を押せるまでの残り秒数。境界、送信前、端末の時計が戻ったとき
      - SCR-PUB-02
    * - ``tests/integration/login-challenge.test.ts``
-     - 4
+     - 7
      - 同じ宛先への再送で前の確認番号が無効になる。送信上限で 429 と再試行時刻。一般会員の既定はメールで SMS の試行を数えない。SMS はチャネルを明示して確かめ、メールへ切り替えると宛先のマスクが変わる
      - SCR-PUB-02 / ``/console/login``
    * - ``tests/integration/password-reset.test.ts``
@@ -698,7 +698,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1732、``tests/integration/`` が 195 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1732 件を実行して 195 件を skip します。
+件数の内訳は ``tests/unit/`` が 1732、``tests/integration/`` が 198 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1732 件を実行して 198 件を skip します。
 
 .. breakdown-end
 
