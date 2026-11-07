@@ -137,8 +137,8 @@ erDiagram
 
 | トークン | 既定値 | 役割 |
 | :---- | :---- | :---- |
-| `--st-font-heading` | `var(--font-display)` | 見出しの書体。`parchment` / `washi` は明朝、`candy` は丸ゴシック |
-| `--st-font-body` | `var(--font)` | 本文の書体。段落・注記・入力欄・ボタンまで効く（`sage` / `candy` / `dusk` / `tavern` / `kraft` は Zen Maru Gothic、`parchment` は Kaisei Decol、`washi` はシステム明朝） |
+| `--st-font-heading` | `var(--font-display)` | 見出しの書体。`parchment` は Kaisei Decol、`washi` は Shippori Mincho（明朝）、`candy` / `kraft` は Yusei Magic（手書き）、`neo-brutalism` / `poster` は Dela Gothic One（極太）、`tavern` / `spotlight` はシステム明朝 |
+| `--st-font-body` | `var(--font)` | 本文の書体。段落・注記・入力欄・ボタンまで効く（`parchment` は Noto Serif JP、`washi` は Shippori Mincho、`sage` / `tavern` / `kraft` は Zen Maru Gothic、`candy` / `dusk` は M PLUS Rounded 1c、`modern-slate` / `poster` は M PLUS 1p、`enterprise-clean` は BIZ UDPGothic、`neon-magenta` は Noto Sans JP、`neo-brutalism` / `neon` / `spotlight` は Zen Kaku Gothic New） |
 | `--st-heading-weight` | `700` | 見出しの太さ |
 | `--st-heading-tracking` | `0.01em` | 見出しの字間（`washi` は `0.06em`） |
 | `--st-stack-gap` | `1.25rem` | `.stack` の縦の間隔（密度） |
@@ -162,9 +162,9 @@ erDiagram
 - `.btn--primary` / `.btn--outline` / `.btn--ghost` の枠と影
 - 入力欄 `.input` / `.textarea` / `.select`（`.deco` が面を白で固定している）→ `--st-surface-raised` と `--st-content-primary`。暗いテーマでは地に白い板が浮き、テーマの明るい字と同化して入力した文字が読めなくなるため。案内文は `--color-placeholder`（`--st-content-secondary` を 28% 混ぜる）で、地ではなく**入力欄の面**を基準に薄くする
 
-見出しの書体は `--st-font-heading` だけが持ち、部品はその値を読む。`washi` / `tavern` / `spotlight` はシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`parchment` は Kaisei Decol、`neo-brutalism` / `poster` は Dela Gothic One、`candy` / `kraft` は Yusei Magic を指す。見出しは h1〜h6 と見出しクラス（`.section__title` / `.profile-head__name` / `.page-title` / `.panel__title` / `.card__title`）の両方に当てる。h3 までにすると、料金表のように h4 を使う画面だけ別の書体で残るため。
+見出しの書体は `--st-font-heading` だけが持ち、部品はその値を読む。`parchment` は Kaisei Decol、`washi` は Shippori Mincho、`tavern` / `spotlight` はシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`neo-brutalism` / `poster` は Dela Gothic One、`candy` / `kraft` は Yusei Magic、`modern-slate` は M PLUS 1p、`enterprise-clean` は BIZ UDPGothic、`neon` は Zen Kaku Gothic New（900）、`sage` は Zen Maru Gothic、`dusk` は M PLUS Rounded 1c、`neon-magenta` は Noto Sans JP（900）を指す。見出しは h1〜h6 と見出しクラス（`.section__title` / `.profile-head__name` / `.page-title` / `.panel__title` / `.card__title`）の両方に当てる。h3 までにすると、料金表のように h4 を使う画面だけ別の書体で残るため。
 
-本文の書体は `--st-font-body` が `.semantic-theme` 全体に効かせ、段落・注記・入力欄・ボタンまで揃える。極太（Dela Gothic One）と手書き（Yusei Magic）は本文に使わない（長い案内を読ませる場面で字面が強すぎるため）。`parchment` は Kaisei Decol、`washi` はシステムの明朝、`sage` / `candy` / `dusk` / `tavern` / `kraft` は Zen Maru Gothic、残りは角ゴシック（`var(--font)`）にする。Zen Maru Gothic は `layout.tsx` が全ページで読むので、テーマごとの追加読み込みには含めない。追加書体は `src/components/ui/ThemeTypefaces.tsx` が 1 本の URL にまとめ、テーマを選んだ画面だけが読む。
+本文の書体は `--st-font-body` が `.semantic-theme` 全体に効かせ、段落・注記・入力欄・ボタンまで揃える。極太（Dela Gothic One）と手書き（Yusei Magic）は本文に使わない（長い案内を読ませる場面で字面が強すぎるため）。`parchment` は Noto Serif JP、`washi` は Shippori Mincho、`sage` / `tavern` / `kraft` は Zen Maru Gothic、`candy` / `dusk` は M PLUS Rounded 1c、`modern-slate` / `poster` は M PLUS 1p、`enterprise-clean` は BIZ UDPGothic、`neon-magenta` は Noto Sans JP、`neo-brutalism` / `neon` / `spotlight` は Zen Kaku Gothic New にする。1 テーマが追加で読むのは 2 ファミリーまで（`THEME_FONTS`）。Zen Kaku Gothic New と Zen Maru Gothic は `layout.tsx` が全ページで読む base で、テーマの URL には不足するウェイト（見出し 900、本文 400）だけを足す。追加書体は `src/components/ui/ThemeTypefaces.tsx` が 1 本の URL にまとめ、テーマを選んだ画面だけが読む。
 
 印刷（`@media print`）では地を塗らず、文字を黒にする。テーマは画面のためのもの。
 

@@ -2042,7 +2042,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 * テーマは `data-semantic-theme` 属性と静的な CSS（`src/styles/themes.css`）だけで適用する。公開ページにテーマ用のクライアント JS は載せず、ハイドレーション後の色替えもしない。
 * `themeId` が null のときは `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
-* 追加する CSS は 14 テーマで数 KB（1 枚の `themes.css`）。`backdrop-filter` とアニメーションは使わず、Web フォントも増やさない（明朝のテーマはシステムの明朝）。
+* 追加する CSS は 14 テーマで数 KB（1 枚の `themes.css`）。`backdrop-filter` とアニメーションは使わない。追加の書体は 9 ファミリーで、1 テーマが読むのは見出しと本文の 2 ファミリーまで（同じファミリーならウェイト差で性格を出す）。`src/app/layout.tsx` が全ページで読む Zen Kaku Gothic New `400;500;700` と Zen Maru Gothic `500;700` を base とし、テーマの URL には base に無いウェイトだけを載せる（`neon` の見出し 900、`sage` / `tavern` / `kraft` の本文 400）。`font-synthesis: none` なので、見出しの `--st-heading-weight` と本文 400 は必ず base かテーマの URL に載せる。
 * 全幅の地は `margin-inline: calc(50% - 50vw)` と内側の余白で作り、本文の読み幅（既定 42rem、テーマによって 38〜44rem）は `--st-content-width` で決める。
 * 公開ページの縦の余白は `.page--narrow` をスコープにし、`--space-head`（見出しと中身）・`--space-block`（節の中の区切り）・`--space-section`（節と節）の 3 段だけで組む。`.section__head` の下は deco の見出しが下線を持たないぶん、`margin-bottom` で空ける。
 
@@ -2093,7 +2093,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * 単体（`tests/unit/image-crop.test.ts`、24件）: 枠を覆う倍率（横長・縦長・同じ比）、ずらし幅の端での止まり方、中心を保つ拡大と縮小、切り出し矩形が整数で元画像の外へ出ないこと、最小幅 800px を割らない最大倍率と判定。
 * 単体（`tests/unit/semantic-theme.test.ts`、11件）: ID の重複・件数・表示名とグループ、`themesInGroup` が全テーマを 1 回ずつ返すこと、`normalizeSemanticThemeId` が未知の値と null を落とすこと、`OrganizerProfileSchema` が 14 テーマと null を受け、未知の ID を弾くこと。
 * 単体（`tests/unit/semantic-theme-css.test.ts`、7件）: 各テーマの CSS ブロックと必須 11 トークン、`themes.css` が `index.css` の最後にあること、ぼかし・アニメーションを使わないこと、全幅の面の作り方、入力欄と案内文が面を基準にしていること。
-* 単体（`tests/unit/semantic-theme-quality.test.ts`、63件）: 14 テーマのコントラスト（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）、参照した `--st-*` の既定値、定義した `--st-*` の参照、テーマ固有セレクタの禁止、5 軸で近すぎるテーマが無いこと。手順は `docs/ui-review/theme-review.md`。
+* 単体（`tests/unit/semantic-theme-quality.test.ts`、162件）: 14 テーマのコントラスト（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）、参照した `--st-*` の既定値、定義した `--st-*` の参照、テーマ固有セレクタの禁止、6 軸で近すぎるテーマが無いこと、見出しと本文が別ファミリーなら書体の分類も変わること、1 テーマの追加ファミリーが 2 つまでであること、見出しと本文のウェイトが base かテーマの URL に載っていること。手順は `docs/ui-review/theme-review.md`。
 * 結合（`tests/integration/public-organizer-page.test.ts`、9件）: 未ログインでも公開中の催しを返すこと、存在しない・退会済みの 404、催し0件でも 200 で空の一覧、筆頭幹事と共同主催の掲載対象（下書き・締切・過去日・削除済みを混ぜない）、開催日の文字列化、複数候補日の並び、満員と参加要望の数え方、締切済みの除外。`TEST_DATABASE_URL` があるときだけ走る。
 * 結合（`tests/integration/organizer-profile.test.ts`、17件）: 未設定でも名前だけ返す、保存内容の公開、非公開に戻すと隠す、upsert が1行にまとまる、テーマの保存と公開 API への反映、テーマを外すと null に戻る、未知のテーマ 400、非公開ならテーマも隠す、催し0件・退会・不正な UUID の 404、未ログイン 401、催し0件の会員 403 `NOT_ORGANIZER`、http の URL 400、実績の表示可否、編集画面の GET / PUT の応答（`headerUrl` を含む）。
 * 結合（`tests/integration/organizer-header.test.ts`、9件）: PNG を 1920x640 の WebP にして `kind = PROFILE_HEADER` で保存する、公開 API の `headerUrl` と非公開時の `null`、差し替えで旧画像が 404、削除で参照とファイルが消える、横 800px 未満は 422 `IMAGE_TOO_SMALL`、画像でない本文 422、8MB 超 413、未ログイン 401、不正な UUID 404。`storage/images` の後片付けも行う。
