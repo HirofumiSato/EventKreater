@@ -519,6 +519,15 @@
   }
 }
 
+/* 360px 級の狭い端末だけ、リードを 1px 落とす。いちばん長い 21 文字（1・2 行目）が
+   320px の列に 1 行で収まる（16px のままだと 336px になり、1・2 行目が 2 行に折れる）。
+   ヒーローの他の文字は変えない。 */
+@media (max-width: 360px) {
+  .hero--stage .hero__lead {
+    font-size: 0.9375rem;
+  }
+}
+
 
 .card-grid {
   display: grid;

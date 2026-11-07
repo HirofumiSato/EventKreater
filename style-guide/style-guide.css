@@ -1823,6 +1823,13 @@ fieldset.field {
   line-height: 1.8;
 }
 
+/* 360px 級の狭い端末だけ、リードを 1px 落とす（製品の components.css と同じ）。 */
+@media (max-width: 360px) {
+  .hero--stage .hero__lead {
+    font-size: 0.9375rem;
+  }
+}
+
 .hero--stage .text-link {
   color: var(--color-ink-soft);
   text-decoration: underline;
@@ -2946,6 +2953,22 @@ h3,
   text-decoration-color: var(--pop-warm);
   text-decoration-thickness: 0.22em;
   text-underline-offset: 0.16em;
+}
+
+/* リードは 3 行。2 行目（成果）は山吹の文字にして、見出しのマーカーより
+   下へ落とした 3px の線を引く。3 行目は白のまま太さも上げない
+   （製品の deco/base.css と同じ）。 */
+.hero--stage .hero__lead strong {
+  display: block;
+  color: var(--pop-warm);
+  font-weight: 700;
+  text-decoration: underline 3px var(--pop-warm);
+  text-underline-offset: 0.3em;
+}
+
+.hero--stage .hero__lead-note {
+  display: block;
+  color: #fff;
 }
 
 .hero__poster-placeholder {

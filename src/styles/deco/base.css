@@ -170,9 +170,29 @@
   box-shadow: 5px 7px 0 rgb(0 0 0 / 0.35);
 }
 
+/* リードは 3 行。2 行目（いちばん伝えたい成果）だけを山吹の文字にし、
+   線だけを他とずらす。見出しのマーカー（0.16em・4.5px）より下へ落とした
+   3px の線にする（太さと位置で別の線に見せる）。1 行目（手軽さ）は補助色の
+   まま残し、3 行目（そのあとに残るもの）は白のまま太さも上げない。山吹を 2 行に
+   増やすと見出しの札と合わせて黄が 3 つ並ぶので、強調は 1 行に絞る。
+   見出しより小さく、太さは本文から 1 段だけ強くして、FV の主役は見出しのまま保つ
+   （回転はさせない。傾けると 2 行の文が読みにくくなり、上の札の傾きとも紛れる）。
+   各行は独立した行（block）にして、幅で折れたときに強調の範囲が行の途中で
+   変わらないようにする。 */
 .deco .hero--stage .hero__lead strong {
-  text-decoration: underline 2px var(--pop-warm);
-  text-underline-offset: 0.4em;
+  display: block;
+  color: var(--pop-warm);
+  font-weight: 700;
+  /* 線は文字のすぐ下に置く。3 行目があるので、離しすぎると 2 行目と 3 行目の
+     区切りに見えてしまう。見出しのマーカー（0.16em・4.5px）より下・太めにして、
+     別の線として見せる。 */
+  text-decoration: underline 3px var(--pop-warm);
+  text-underline-offset: 0.3em;
+}
+
+.deco .hero--stage .hero__lead-note {
+  display: block;
+  color: #fff;
 }
 
 /* --------------------------------------------------------------------------
