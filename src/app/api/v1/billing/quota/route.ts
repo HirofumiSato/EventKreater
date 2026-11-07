@@ -6,10 +6,12 @@ import { toErrorResponse } from "@/lib/http";
 import {
   FREE_EVENT_LIMIT,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countDraftEvents,
   countPublishedEvents,
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from "@/modules/billing/lib/quota";
+import { draftEventLimitOf, type DraftPlanId } from "@/modules/billing/lib/plans";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
 import { readTicketSummary } from "@/modules/billing/lib/referral";
@@ -65,6 +67,18 @@ export async function GET(req: NextRequest) {
         quota.paidCredits > 0 ||
         ticketAvailable > 0 ||
         (!isSubActive && remainingFree > 0 && phoneVerified));
+
+    // 下書きの枠。公開の可否（canCreate）とは別で、既存の下書きの保存は常に通す。
+    // 放題プランも 30 件を返し、画面が N / 30 と出せるようにする。
+    const draftPlan: DraftPlanId = isSubActive
+      ? quota.subscriptionPlan === "MONTHLY_8"
+        ? "monthly-8"
+        : "unlimited"
+      : "free";
+    const draftEventLimit = draftEventLimitOf(draftPlan, quota.paidCredits > 0);
+    const draftEventCount = await countDraftEvents(prisma, userId);
+    const remainingDrafts = Math.max(0, draftEventLimit - draftEventCount);
+    const canSaveDraft = remainingDrafts > 0;
 
     let planType:
       | "FREE_TRIAL"
@@ -123,6 +137,11 @@ export async function GET(req: NextRequest) {
       remainingPublished,
       currentPeriodEnd: quota.currentPeriodEnd ? quota.currentPeriodEnd.toISOString() : null,
       canCreate,
+      // 下書きの件数と枠。`canSaveDraft` はログイン済みかではなく、枠が空いているか。
+      draftEventCount,
+      draftEventLimit,
+      remainingDrafts,
+      canSaveDraft,
       planType,
       phoneVerified,
       pricing,

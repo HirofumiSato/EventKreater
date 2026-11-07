@@ -11,6 +11,7 @@ import {
   parseRsvpDeadline,
   serializeEvent,
 } from "@/lib/serializers";
+import { assertCanSaveDraft } from "@/modules/billing/lib/quota";
 import { shiftDateByMonths } from "@/modules/events/lib/clone";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       });
     }
     const userId = ctx.userId;
+    // 複製は下書きを1件増やす。新規作成と同じく、上限に達していたら作らせない。
+    await assertCanSaveDraft(prisma, userId);
 
     const source = await prisma.event.findFirst({
       where: { id: params.id, isDeleted: false },

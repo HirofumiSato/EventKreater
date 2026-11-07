@@ -147,7 +147,7 @@
 
 .. count-start
 
-132 ファイル、``it`` は 1919 件です。内訳は ``tests/unit/`` が 96 ファイル 1624 件、``tests/integration/`` が 25 ファイル 186 件です。結合の 186 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+134 ファイル、``it`` は 1934 件です。内訳は ``tests/unit/`` が 97 ファイル 1630 件、``tests/integration/`` が 26 ファイル 195 件です。結合の 195 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -367,6 +367,10 @@
      - 12
      - 下書き保存の必須項目、保存と同時の公開状態の変更を断る、次に開くステップの判定
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/unit/draft-limit.test.ts``
+     - 6
+     - 下書きの上限（無料3件・980円10件・放題30件・単発クレジット持ちは10件）と、上限に達したときの 403 ``DRAFT_LIMIT_REACHED``（文言に上限の件数、``draftLimit`` を添える）
+     - SCR-ORG-01 / SCR-ORG-02
    * - ``tests/unit/event-filters.test.ts``
      - 15
      - 主催一覧の絞り込み（状態・過去・開催日）、10 件ずつのページ割り、日本時間の今日
@@ -655,6 +659,10 @@
      - 5
      - 下書き保存ではチケットを消費せず公開で消費する。上書き保存の可否と、402・409・404 の分かれ方
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/integration/draft-limit.test.ts``
+     - 9
+     - 無料の4件目・980円の11件目・放題の31件目が 403 ``DRAFT_LIMIT_REACHED``。共同主催だけの下書きは数えず、過去日の下書きは数える。1件削除すれば作れる。上限でも既存の下書きの保存は通り、複製は 403。``GET /api/v1/billing/quota`` が下書きの件数と枠を返し、``canCreate`` の意味は変わらない
+     - SCR-ORG-01 / SCR-ORG-02 / SCR-MOD-01
    * - ``tests/integration/organizer-avatar.test.ts``
      - 8
      - プロフィールのアイコンの登録（201・DB の行・WebP の配信）、差し替えで旧画像が 404、削除で参照が NULL、4MB 超と画像でないバイト列の拒否、``storage/images`` の後片付け
@@ -690,7 +698,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1624、``tests/integration/`` が 186 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1624 件を実行して 186 件を skip します。
+件数の内訳は ``tests/unit/`` が 1630、``tests/integration/`` が 195 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1630 件を実行して 195 件を skip します。
 
 .. breakdown-end
 
