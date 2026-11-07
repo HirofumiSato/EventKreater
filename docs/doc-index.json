@@ -13294,7 +13294,7 @@
       "title": "テーマを 1 つ足すときの合格条件",
       "summary": "公開ページのセマンティックテーマ（data-semantic-theme）を増やすときの手順と、 人手で確かめる項目をまとめます。機械で止められるものは tests/unit/semantic-theme-quality.test.ts と services/flyer/tests/test_theme_parity.py が先に落とします。 このページは、その上で目で見ないと分からないものだけを扱います。",
       "preImplementation": false,
-      "lineCount": 212,
+      "lineCount": 252,
       "headings": [
         {
           "level": 1,
@@ -13306,7 +13306,7 @@
         },
         {
           "level": 2,
-          "text": "追加する書体は 3 つ"
+          "text": "追加する書体は 9 ファミリー"
         },
         {
           "level": 2,
@@ -13389,6 +13389,10 @@
         },
         {
           "path": "src/lib/semantic-themes.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/base.css",
           "exists": true
         },
         {

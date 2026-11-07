@@ -20,7 +20,8 @@ export { Subnav, type SubnavItem } from "./Subnav";
 export { ThemePicker } from "./ThemePicker";
 export {
   ThemeTypefaces,
-  THEME_FONT_FAMILIES,
+  THEME_FONTS,
   themeFontHref,
   type FontFamilyKey,
+  type ThemeFontPair,
 } from "./ThemeTypefaces";

@@ -11,43 +11,64 @@
 | 用途グループ | ID | ラベル | 見出しの書体 | 主な装飾 | 向く催し |
 | --- | --- | --- | --- | --- | --- |
 | 落ち着き | `parchment` | 羊皮紙 | Kaisei Decol（明朝デコ） | 墨 1px の罫線 + 3px の左バー、二重線のカード上辺、18px の点粒地紋 | 読み物・日記のような告知 |
-| 落ち着き | `washi` | 和紙と藍 | システム明朝 | 藍 1px の罫線、左バーなし、縦繊維 + 横織りの地紋、2px 角のチップ | 占い・季節の催し・手紙のような告知 |
-| 明るい | `enterprise-clean` | クリーン | 表示書体 | 細い罫線、カード上辺 2px の差し色、24px の薄いグリッド、8px 角のボタン | 相談・勉強会・どんな催しにも |
-| 明るい | `sage` | 余白 | 角ゴシック | 罫線なし、2px の左バー、影なし、地紋なし | 読書会・ヨガ・マルシェ |
+| 落ち着き | `washi` | 和紙と藍 | Shippori Mincho（明朝） | 藍 1px の罫線、左バーなし、縦繊維 + 横織りの地紋、2px 角のチップ | 占い・季節の催し・手紙のような告知 |
+| 明るい | `enterprise-clean` | クリーン | BIZ UDPGothic（角ゴシック） | 細い罫線、カード上辺 2px の差し色、24px の薄いグリッド、8px 角のボタン | 相談・勉強会・どんな催しにも |
+| 明るい | `sage` | 余白 | Zen Maru Gothic（丸ゴシック） | 罫線なし、2px の左バー、影なし、地紋なし | 読書会・ヨガ・マルシェ |
 | 元気 | `neo-brutalism` | 太枠 | Dela Gothic One（極太） | 墨 3px の罫線、カード上辺 3px、角 0、8px のハーフトーン、墨地のアイブロウ | 手づくり・チラシらしい勢い |
 | 元気 | `candy` | キャンディ | Yusei Magic（手書き） | 差し色 3px の点線罫線、丸いボタンとチップ、24px の紙吹雪、点線の区切り | タコパ・誕生日・子ども連れ |
 | 元気 | `kraft` | クラフト | Yusei Magic（手書き） | テラコッタ 2px の破線罫線、4px 角のチップ、斑点 + 縦繊維、破線の区切り | マルシェ・一日店長・手しごと |
-| 夜 | `modern-slate` | 夜のスレート | 表示書体 | 藍 1px の罫線 + 3px の左バー、32px の薄いグリッド、大文字化、8px 角のボタン | 写真を主役にしたライブ |
-| 夜 | `neon` | ネオン | 表示書体 | シアン 1px の罫線、24px の薄いグリッド、大文字化、6px 角のボタン、丸いチップ | クラブ・深夜の催し |
-| 夜 | `dusk` | 夕暮れ | 角ゴシック | 橙 2px の罫線、カード上辺 2px、下辺の地平線、10px 角のボタン | BBQ・夕方のライブ・ビアガーデン |
+| 夜 | `modern-slate` | 夜のスレート | M PLUS 1p（角ゴシック） | 藍 1px の罫線 + 3px の左バー、32px の薄いグリッド、大文字化、8px 角のボタン | 写真を主役にしたライブ |
+| 夜 | `neon` | ネオン | Zen Kaku Gothic New（角ゴシック 900） | シアン 1px の罫線、24px の薄いグリッド、大文字化、6px 角のボタン、丸いチップ | クラブ・深夜の催し |
+| 夜 | `dusk` | 夕暮れ | M PLUS Rounded 1c（丸ゴシック） | 橙 2px の罫線、カード上辺 2px、下辺の地平線、10px 角のボタン | BBQ・夕方のライブ・ビアガーデン |
 | 食 | `tavern` | 店の灯り | システム明朝 | 琥珀 1px の罫線 + 4px の左バー、点線の区切り、8px の木目、4px 角 | バー・食堂・店の催し |
-| ステージ | `neon-magenta` | マゼンタのネオン | 表示書体 | 桃紫 2px の罫線、カード上辺 2px、12px の斜線、2px 角、大文字化 | クラブ・アイドル・DJの夜 |
+| ステージ | `neon-magenta` | マゼンタのネオン | Noto Sans JP（角ゴシック 900） | 桃紫 2px の罫線、カード上辺 2px、12px の斜線、2px 角、大文字化 | クラブ・アイドル・DJの夜 |
 | ステージ | `poster` | ライブポスター | Dela Gothic One（極太） | 朱 4px の罫線、カード上辺 2px、6px のハーフトーン、角 0、朱地のアイブロウ | バンド・DJ・演劇の告知 |
 | ステージ | `spotlight` | スポットライト | システム明朝 | クリーム 1px の罫線、`◆` の飾り、16px 角、字間 0.24em のアイブロウ | 演劇・ダンス・舞台の発表 |
 
 「色だけ違うテーマ」は増やしません。近いテーマの検出（後述）が、
 地・差し色・角丸・書体・密度・装飾の 6 軸で 4 つ以上一致する組を落とします。
+書体の軸は「見出しの分類 / 本文の分類」の対です。見出しだけを見ると、
+本文が同じ角ゴシックのテーマ同士を見逃します。
 6 軸に広げたあとも基準は 4 つ以上のままです（軸を増やしたぶん、逃げ道は狭くなります）。
 
-## 追加する書体は 3 つ
+## 追加する書体は 9 ファミリー
 
-見出しの声を色とは別に選べるよう、テーマは 3 つの書体のどれかを指します。
+見出しと本文の声を色とは別に選べるよう、テーマは 2 つの書体（見出し・本文）を指します。
+**1 テーマにつき追加で読むのは 2 ファミリーまで**です。見出しと本文で同じファミリーを
+使うなら、ウェイト差で性格を出します（`modern-slate` の M PLUS 1p は見出し 800 / 本文 400）。
+3 つ目を足すと、テーマを選ぶだけで取りに行く書体が増え、初回表示が遅くなります。
 書体そのものは `src/components/ui/ThemeTypefaces.tsx` の 1 箇所だけが持ちます。
 
 | 書体 | キー | 使うテーマ | 役割 |
 | --- | --- | --- | --- |
-| Kaisei Decol | `kaisei` | `parchment` | 羊皮紙のための、少し装飾的な明朝 |
-| Dela Gothic One | `dela` | `neo-brutalism` / `poster` | 太枠・ライブポスターのための極太表示 |
-| Yusei Magic | `yusei` | `candy` / `kraft` | キャンディ・クラフトのための手書き風 |
+| Kaisei Decol | `kaisei` | `parchment`（見出し） | 羊皮紙のための、少し装飾的な明朝 |
+| Dela Gothic One | `dela` | `neo-brutalism` / `poster`（見出し） | 太枠・ライブポスターのための極太表示 |
+| Yusei Magic | `yusei` | `candy` / `kraft`（見出し） | キャンディ・クラフトのための手書き風 |
+| M PLUS 1p | `mplus1p` | `modern-slate`（見出し・本文）/ `poster`（本文） | 幾何的な角ゴシック。見出しは 800 |
+| M PLUS Rounded 1c | `mplusRounded` | `dusk`（見出し・本文）/ `candy`（本文） | 丸ゴシック。夕暮れとポップの温度 |
+| Noto Serif JP | `notoSerif` | `parchment`（本文） | 長く読むための明朝 |
+| Noto Sans JP | `notoSans` | `neon-magenta`（見出し・本文） | ステージの角ゴシック。見出しは 900 |
+| BIZ UDPGothic | `bizUd` | `enterprise-clean`（見出し・本文） | 業務画面の読み違えにくい角ゴシック |
+| Shippori Mincho | `shippori` | `washi`（見出し・本文） | 和紙の素朴な明朝 |
+| Zen Kaku Gothic New（base） | `zenKakuExtra` | `neon`（見出し 900） | `layout.tsx` が 400;500;700 を読む。テーマは不足する 900 だけを足す |
+| Zen Maru Gothic（base） | `zenMaruBody` | `sage` / `tavern` / `kraft`（本文 400） | `layout.tsx` は 500;700 を読む。本文の 400 だけを足す |
 
 - **テーマを選んだ画面だけが読みます。** `SemanticThemeScope` と `ThemePicker` が、
   テーマが有効なときだけ `<link rel="stylesheet">` を出します。テーマ未選択のページは
   追加のフォントファイルを取りに行きません（参加者の初回表示を遅くしないため）。
 - **1 つのテーマの書体は 1 本の URL にまとめます。** `themeFontHref(themeId)` が
-  `THEME_FONT_FAMILIES` の割り当てを読み、必要な family だけを `display=swap` 付きで並べます。
-  書体ごとに `<link>` を分けると、テーマを 1 つ選ぶだけでリクエストが増えます。
-- **割り当ての正は `THEME_FONT_FAMILIES`。** テーマの CSS が `"Kaisei Decol"` を指しているのに
+  `THEME_FONTS` の割り当てを読み、必要な family だけを `display=swap` 付きで並べます。
+  見出しと本文が同じファミリーなら 1 エントリに畳みます。書体ごとに `<link>` を分けると、
+  テーマを 1 つ選ぶだけでリクエストが増えます。
+- **base とテーマで分担します。** `src/app/layout.tsx` は全ページで Zen Kaku Gothic New の
+  `400;500;700` と Zen Maru Gothic の `500;700` を読みます。テーマの URL には、
+  base に無いウェイトだけを載せます。Zen Maru 400 を base に足すと全ページが +1 ウェイト
+  払うので、`sage` / `tavern` / `kraft` のテーマ URL 側で読みます。
+- **割り当ての正は `THEME_FONTS`。** テーマの CSS が `"Kaisei Decol"` を指しているのに
   そのテーマが書体を読まない、というずれは品質テストが落とします。
+- **ウェイトは必ず URL に載せます。** `src/styles/base.css` の `font-synthesis: none` により、
+  読み込んでいないウェイトは近い値へ丸められます。見出しの `--st-heading-weight` と
+  本文の 400 が、base かテーマの URL に載っていることを品質テストが確かめます。
 
 ## 本文の書体
 
@@ -56,16 +77,31 @@
 （Dela Gothic One と Yusei Magic は見出しだけ）。長い案内を読ませる場面で、
 字面の主張が強すぎると読み疲れるためです。
 
-| 本文の書体 | 使うテーマ | 理由 |
-| --- | --- | --- |
-| 角ゴシック（`var(--font)`） | `enterprise-clean` / `modern-slate` / `neon` / `neon-magenta` / `poster` / `spotlight` / `neo-brutalism` | 見出しが丸ゴシック・極太・明朝のどれでも、本文は素の角ゴシックで読ませる |
-| 丸ゴシック（Zen Maru Gothic） | `sage` / `candy` / `dusk` / `tavern` / `kraft` | 柔らかい・手書き・灯りのテーマ。見出しの温度を本文でも受ける |
-| 明朝（Kaisei Decol） | `parchment` | 読み物として最後まで読ませる。字間 0.02em |
-| 明朝（システム） | `washi` | 和紙の素朴さ。Kaisei Decol を追加で読まず、端末の明朝で組む |
+全 14 テーマの見出し・本文・ウェイト・追加読み込みは次のとおりです。
 
-- Zen Maru Gothic は `src/app/layout.tsx` が全ページで読むので、テーマごとの
-  `ThemeTypefaces` には載せません（`--font-display` の既定でもあります）。
-- 本文の書体も、見出しと同じ規則で検査します。読み込み済みの 3 書体・システム書体・
+| テーマ | 見出し | 本文 | 見出しのウェイト | 追加読み込み |
+| --- | --- | --- | --- | --- |
+| `modern-slate` | M PLUS 1p | M PLUS 1p | 800 | `mplus1p` |
+| `enterprise-clean` | BIZ UDPGothic | BIZ UDPGothic | 700 | `bizUd` |
+| `parchment` | Kaisei Decol | Noto Serif JP | 700 | `kaisei` / `notoSerif` |
+| `neo-brutalism` | Dela Gothic One | Zen Kaku Gothic New | 400 | `dela` |
+| `neon` | Zen Kaku Gothic New | Zen Kaku Gothic New | 900 | `zenKakuExtra` |
+| `washi` | Shippori Mincho | Shippori Mincho | 600 | `shippori` |
+| `sage` | Zen Maru Gothic | Zen Maru Gothic | 500 | `zenMaruBody` |
+| `candy` | Yusei Magic | M PLUS Rounded 1c | 400 | `yusei` / `mplusRounded` |
+| `dusk` | M PLUS Rounded 1c | M PLUS Rounded 1c | 700 | `mplusRounded` |
+| `neon-magenta` | Noto Sans JP | Noto Sans JP | 900 | `notoSans` |
+| `tavern` | システム明朝 | Zen Maru Gothic | 600 | `zenMaruBody` |
+| `kraft` | Yusei Magic | Zen Maru Gothic | 400 | `yusei` / `zenMaruBody` |
+| `poster` | Dela Gothic One | M PLUS 1p | 400 | `dela` / `mplus1p` |
+| `spotlight` | システム明朝 | Zen Kaku Gothic New | 400 | なし |
+
+- Zen Kaku Gothic New と Zen Maru Gothic は `src/app/layout.tsx` が全ページで読みます。
+  テーマ側は不足するウェイト（ネオンの見出し 900、丸ゴシック本文の 400）だけを足します。
+- 見出しと本文が別ファミリーなのに、どちらも同じ分類（角ゴシック×角ゴシック、
+  丸ゴシック×丸ゴシックなど）になる組は品質テストが落とします。例外は、同一ファミリーの
+  ウェイト差と、片方が装飾書体（Dela Gothic One / Yusei Magic / Kaisei Decol）の組だけです。
+- 本文の書体も、見出しと同じ規則で検査します。読み込み済みの 9 書体・システム書体・
   総称ファミリ・`var(--font)` 以外を指すと品質テストが落ちます。
 
 ## 見出しの範囲
@@ -145,10 +181,13 @@
 | コントラスト | 本文 7:1、補助文字・リンク 4.5:1、押せる部品の境界 3:1（地と面の両方）。待ちの札の地色と文字も 4.5:1 | 色を直す。目分量で薄くしない |
 | 網羅性 | 参照したトークンに既定値かフォールバックがある。定義したトークンがどこかで使われている | 既定値を足す。使っていないトークンは消す |
 | 任意トークンの既定値 | `.semantic-theme` の `--st-*` 宣言を自動で列挙し、すべてに既定値がある。テーマだけが持つ `--st-*` は、必須・既定値なしの色・フォールバック付きのどれかに分類できる | 既定値を足す。分類できない名前は足さない |
-| 書体の分類 | `--st-font-heading` を 極太 / 明朝デコ / 手書き / 明朝 / 表示書体 / 角ゴシック に落とし、Dela Gothic One や Yusei Magic を明朝と数えない | 判定の順を直す。書体名を足すときは判定も足す |
+| 書体の分類 | `--st-font-heading` と `--st-font-body` を 極太 / 明朝デコ / 手書き / 丸ゴシック / 明朝 / 表示書体 / 角ゴシック に落とし、Dela Gothic One や Yusei Magic を明朝と数えない | 判定の順を直す。書体名を足すときは判定も足す |
 | テーマ固有規則 | `[data-semantic-theme="x"]` が定義ブロックの 1 箇所だけ | トークンで表せないか考える。表せないなら部品側を直す |
-| 近接テーマ | 6 軸（地・差し色・角丸・書体・密度・装飾）のうち 4 つ以上が同じ組が無い | 色だけでなく、書体・角・密度・装飾のどれかをずらす |
-| シグネチャ | 全テーマが書体トークン 1 つ以上 + 装飾トークン 2 つ以上を持つ。見出しと本文の書体は、読み込み済みの 3 書体・システム書体・総称ファミリ・`var(--font)` / `var(--font-display)` だけを指す。全テーマが `--st-font-body` を自分のブロックで決める | CSS にシグネチャを足す。Web フォントを指すなら `THEME_FONT_FAMILIES` にも割り当てる |
+| 近接テーマ | 6 軸（地・差し色・角丸・書体・密度・装飾）のうち 4 つ以上が同じ組が無い。書体は見出しと本文の対 | 色だけでなく、書体・角・密度・装飾のどれかをずらす |
+| 書体の対比 | 見出しと本文が別ファミリーなのに、分類が同じ（角×角・丸×丸など）組が無い。例外は同一ファミリーのウェイト差と、片方が装飾書体の組 | どちらかのファミリーを変える。同じファミリーならウェイト差で性格を出す |
+| 書体プール | 1 テーマが追加で読むファミリーは 2 つまで（`THEME_FONTS` の重複を除いた数） | 見出しと本文で同じファミリーを使い、ウェイト差にする |
+| ウェイト | 各テーマの `--st-heading-weight` と本文 400 が、base の URL か `themeFontHref(id)` のどちらかに載っている | URL に足す。載っていないウェイトは `font-synthesis: none` で丸められる |
+| シグネチャ | 全テーマが書体トークン 1 つ以上 + 装飾トークン 2 つ以上を持つ。見出しと本文の書体は、読み込み済みの 9 書体・システム書体・総称ファミリ・`var(--font)` / `var(--font-display)` だけを指す。全テーマが `--st-font-body` を自分のブロックで決める | CSS にシグネチャを足す。Web フォントを指すなら `THEME_FONTS` にも割り当てる |
 | 言語間のずれ | `themes.css` の地・差し色・墨と `_THEME_LOOKS` の `base` / `accent` / `ink` が一致 | 同じ PR で両方直す |
 
 ```powershell
@@ -184,11 +223,12 @@ npm run mock:sync -- --only=06,27,23
 - 罫線の細いテーマでも、押せる部品の境界が 3:1 を満たす
 - 見出しの声（書体・字間・行間・大文字化）がテーマごとに変わり、同じ用途の隣のテーマと見分けられる
 - 本文の書体もテーマについてくる（段落・注記・入力欄・ボタン）。極太と手書きが見出しだけに留まっている
+- 見出しと本文が別ファミリーのテーマは、字面の性格も変わっている（角×角・丸×丸になっていない）
 - セクション見出しの罫線・左バー・飾り（`◆` など）が出る。`--st-section-lead: 0` のテーマでは帯が残らない
 - カード・パネル・カレンダーの上辺に差し色（`--st-card-top`）が出る。細い枠のテーマでも上辺だけ太くならない
 - ボタン・入力欄・チップの角（`--st-button-radius` / `--st-chip-radius`）が揃い、ボタンだけ丸くならない
 - 地の柄（`--st-surface-image`）が本文の背後でちらつかない。alpha は 0.06 以下
-- テーマ未選択のページで追加書体（Kaisei Decol / Dela Gothic One / Yusei Magic）を読まない（DevTools の Network で確認）
+- テーマ未選択のページで追加書体（9 ファミリー）を読まない（DevTools の Network で確認）
 - 編集画面の見本（27）と公開ページ（06）で、見出しの書体・罫線・角が一致する
 - 印刷（`@media print`）で地を塗らない。地紋も落ちる
 - チラシの紙面と色が揃っている（flyer の `theme_look` と同一値）
@@ -202,7 +242,7 @@ npm run mock:sync -- --only=06,27,23
 | 種類 | ファイル |
 | --- | --- |
 | 色・書体・密度 | `src/styles/themes.css` の `[data-semantic-theme="..."]` |
-| 追加書体の読み込みと割り当て | `src/components/ui/ThemeTypefaces.tsx`（`THEME_FONT_FAMILIES`） |
+| 追加書体の読み込みと割り当て | `src/components/ui/ThemeTypefaces.tsx`（`THEME_FONTS`） |
 | ID・ラベル・説明・用途グループ | `src/lib/semantic-themes.ts` |
 | モックの状態 | `scripts/lib/mock-screens.mjs` の `states`（ラベルは TS と一致させる） |
 | チラシの色と英語の方向付け | `services/flyer/src/domain/models.py` の `SemanticTheme` / `_THEME_DIRECTIONS` |

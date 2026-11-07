@@ -270,9 +270,10 @@
     radial-gradient(1200px 420px at 50% -8%, rgb(79 70 229 / 0.28), transparent 70%);
   --st-surface-image-repeat: repeat, repeat, no-repeat;
   --st-surface-image-size: 32px 32px, 32px 32px, auto;
-  --st-font-heading: var(--font-display);
-  /* 本文は角ゴシックのまま。夜の写真の上で、丸ゴシックの見出しとの差を作る。 */
-  --st-font-body: var(--font);
+  --st-font-heading: "M PLUS 1p", var(--font-display);
+  /* 見出しと本文を同じファミリーにして、ウェイト差（800 / 400）で階層を作る。 */
+  --st-font-body: "M PLUS 1p", var(--font);
+  --st-heading-weight: 800;
   --st-heading-tracking: 0.09em;
   --st-heading-transform: uppercase;
   --st-section-rule: 1px solid var(--st-accent-primary);
@@ -309,9 +310,11 @@
     linear-gradient(90deg, rgb(17 24 39 / 0.04) 1px, transparent 1px);
   --st-surface-image-repeat: repeat, repeat;
   --st-surface-image-size: 24px 24px, 24px 24px;
-  --st-font-heading: var(--font-display);
-  /* 業務の画面なので、本文は素の角ゴシック。見出しだけ丸ゴシックで柔らげる。 */
-  --st-font-body: var(--font);
+  /* 業務の画面なので、見出しも本文も素の角ゴシック。BIZ UDPGothic の
+     小さな字面で、数字と住所が読み違えにくい。 */
+  --st-font-heading: "BIZ UDPGothic", var(--font-display);
+  --st-font-body: "BIZ UDPGothic", var(--font);
+  --st-heading-weight: 700;
   --st-heading-tracking: -0.01em;
   --st-section-rule: 1px solid var(--st-border-color);
   --st-section-lead: 0;
@@ -331,9 +334,10 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="parchment"] {
-  --st-font-heading: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
-  /* 読み物のテーマなので、本文も明朝。字間をわずかに開き、行間 1.5 で読ませる。 */
-  --st-font-body: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --st-font-heading: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  /* 読み物のテーマなので、本文も明朝。見出しは装飾的な Kaisei Decol、
+     長く読む本文は字面の落ち着いた Noto Serif JP に分ける。字間をわずかに開き、行間 1.5 で読ませる。 */
+  --st-font-body: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --st-body-tracking: 0.02em;
   --st-surface-base: #f4eedd;
   --st-surface-raised: #fbf6e9;
@@ -354,7 +358,7 @@
   --st-surface-image: radial-gradient(rgb(44 34 30 / 0.05) 1px, transparent 1px);
   --st-surface-image-size: 18px 18px;
   --st-surface-image-repeat: repeat;
-  --st-heading-weight: 400;
+  --st-heading-weight: 700;
   --st-heading-tracking: 0.04em;
   --st-heading-leading: 1.5;
   --st-section-rule: 1px solid var(--st-content-primary);
@@ -399,9 +403,9 @@
   --st-surface-image: radial-gradient(rgb(23 21 15 / 0.06) 1px, transparent 1px);
   --st-surface-image-size: 8px 8px;
   --st-surface-image-repeat: repeat;
-  --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
-  /* 極太は本文に使えない。本文は角ゴシックのまま、見出しだけ極太にする。 */
-  --st-font-body: var(--font);
+  --st-font-heading: "Dela Gothic One", var(--font-display);
+  /* 極太は本文に使えない。本文は角ゴシック（base の Zen Kaku 400）にして、見出しだけ極太にする。 */
+  --st-font-body: "Zen Kaku Gothic New", var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.02em;
   --st-section-rule: 3px solid var(--st-content-primary);
@@ -444,9 +448,10 @@
     radial-gradient(900px 340px at 50% -6%, rgb(0 240 255 / 0.18), transparent 70%);
   --st-surface-image-repeat: repeat, repeat, no-repeat;
   --st-surface-image-size: 24px 24px, 24px 24px, auto;
-  --st-font-heading: var(--font-display);
-  /* 発光する見出しの下は、素の角ゴシックで読ませる。 */
-  --st-font-body: var(--font);
+  --st-font-heading: "Zen Kaku Gothic New", var(--font-display);
+  /* 発光する見出しも、本文も同じ角ゴシック。見出しだけ 900 まで太くする。 */
+  --st-font-body: "Zen Kaku Gothic New", var(--font);
+  --st-heading-weight: 900;
   --st-heading-tracking: 0.14em;
   --st-heading-transform: uppercase;
   --st-section-rule: 1px solid var(--st-accent-primary);
@@ -464,9 +469,9 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="washi"] {
-  --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
-  /* 本文も明朝。Kaisei Decol を読み込まず、端末の明朝で組む（和紙の素朴さを保ち、取得も増やさない）。 */
-  --st-font-body: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-font-heading: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  /* 本文も同じ明朝。和紙の素朴さを保つため、見出し 600 / 本文 400 のウェイト差だけで組む。 */
+  --st-font-body: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --st-body-tracking: 0.02em;
   --st-heading-tracking: 0.09em;
   --st-stack-gap: 1.5rem;
@@ -490,7 +495,7 @@
     repeating-linear-gradient(90deg, rgb(35 32 28 / 0.028) 0 1px, transparent 1px 6px),
     repeating-linear-gradient(0deg, rgb(47 74 109 / 0.03) 0 1px, transparent 1px 24px);
   --st-surface-image-repeat: repeat, repeat;
-  --st-heading-weight: 500;
+  --st-heading-weight: 600;
   --st-body-leading: 1.9;
   --st-section-rule: 1px solid var(--st-accent-primary);
   --st-section-lead: 0;
@@ -509,8 +514,8 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="sage"] {
-  --st-font-heading: var(--font);
-  /* 静けさのテーマなので、本文は丸ゴシック。影を落とさない面と柔らかい字を揃える。 */
+  --st-font-heading: "Zen Maru Gothic", var(--font-display);
+  /* 静けさのテーマなので、見出しも本文も丸ゴシック。影を落とさない面と柔らかい字を揃える。 */
   --st-font-body: "Zen Maru Gothic", var(--font);
   --st-stack-gap: 1.5rem;
   --st-content-width: 38rem;
@@ -569,9 +574,9 @@
     radial-gradient(600px 240px at 90% -10%, rgb(255 77 132 / 0.14), transparent 70%);
   --st-surface-image-repeat: repeat, no-repeat;
   --st-surface-image-size: 24px 24px, auto;
-  --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+  --st-font-heading: "Yusei Magic", var(--font-display);
   /* 手書きは見出しだけ。本文は丸ゴシックにして、長い案内でも読み疲れないようにする。 */
-  --st-font-body: "Zen Maru Gothic", var(--font);
+  --st-font-body: "M PLUS Rounded 1c", var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.02em;
   --st-section-rule: 3px dotted var(--st-accent-primary);
@@ -593,9 +598,9 @@
 
 [data-semantic-theme="dusk"] {
   color-scheme: dark;
-  --st-font-heading: var(--font);
-  /* 夕暮れの柔らかさを、本文の丸ゴシックでも受ける。 */
-  --st-font-body: "Zen Maru Gothic", var(--font);
+  --st-font-heading: "M PLUS Rounded 1c", var(--font-display);
+  /* 夕暮れの柔らかさを、丸ゴシックの見出しと本文で受ける。ウェイト差は 700 / 400。 */
+  --st-font-body: "M PLUS Rounded 1c", var(--font);
   --st-content-width: 44rem;
   --st-surface-base: #1c1410;
   --st-surface-raised: #2a1f18;
@@ -616,7 +621,7 @@
     radial-gradient(900px 360px at 50% -8%, rgb(255 138 76 / 0.22), transparent 70%),
     linear-gradient(0deg, rgb(255 176 122 / 0.06), transparent 38%);
   --st-surface-image-repeat: no-repeat, no-repeat;
-  --st-heading-weight: 600;
+  --st-heading-weight: 700;
   --st-heading-tracking: 0.05em;
   --st-section-rule: 2px solid var(--st-accent-primary);
   --st-section-lead: 0;
@@ -658,9 +663,10 @@
     radial-gradient(760px 340px at 18% -8%, rgb(124 58 237 / 0.26), transparent 66%),
     radial-gradient(680px 320px at 86% -4%, rgb(255 45 158 / 0.22), transparent 70%);
   --st-surface-image-repeat: repeat, no-repeat, no-repeat;
-  --st-font-heading: var(--font-display);
-  /* ステージの見出しは丸ゴシック。本文は角ゴシックで、暗い地でも輪郭を保つ。 */
-  --st-font-body: var(--font);
+  --st-font-heading: "Noto Sans JP", var(--font-display);
+  /* ステージの見出しも本文も Noto Sans JP。見出しだけ 900 まで太くする。 */
+  --st-font-body: "Noto Sans JP", var(--font);
+  --st-heading-weight: 900;
   --st-heading-tracking: 0.1em;
   --st-heading-transform: uppercase;
   --st-section-rule: 2px solid var(--st-accent-primary);
@@ -725,7 +731,7 @@
    -------------------------------------------------------------------------- */
 
 [data-semantic-theme="kraft"] {
-  --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+  --st-font-heading: "Yusei Magic", var(--font-display);
   /* 手書きの見出しに、丸ゴシックの本文。漉きムラのある紙に鉛筆で書いたような組にする。 */
   --st-font-body: "Zen Maru Gothic", var(--font);
   --st-surface-base: #eee3d0;
@@ -790,9 +796,9 @@
   --st-surface-image: radial-gradient(rgb(247 244 239 / 0.05) 1px, transparent 1px);
   --st-surface-image-size: 6px 6px;
   --st-surface-image-repeat: repeat;
-  --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
-  /* 遠目に効く極太の見出しに、素の角ゴシックの本文。 */
-  --st-font-body: var(--font);
+  --st-font-heading: "Dela Gothic One", var(--font-display);
+  /* 遠目に効く極太の見出しに、M PLUS 1p の本文。看板らしい硬さを残す。 */
+  --st-font-body: "M PLUS 1p", var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.08em;
   --st-heading-transform: uppercase;
@@ -817,8 +823,8 @@
 [data-semantic-theme="spotlight"] {
   color-scheme: dark;
   --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
-  /* 幕の見出しは明朝、本文は角ゴシック。舞台のプログラムのような組みにする。 */
-  --st-font-body: var(--font);
+  /* 幕の見出しは端末の明朝、本文は base の角ゴシック。舞台のプログラムのような組みにする。 */
+  --st-font-body: "Zen Kaku Gothic New", var(--font);
   --st-surface-base: #0c0e13;
   --st-surface-raised: #151922;
   --st-content-primary: #f5f2ea;

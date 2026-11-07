@@ -1,10 +1,13 @@
-// テーマの「質」を機械で止める 5 つのゲート。
+// テーマの「質」を機械で止める 8 つのゲート。
 //
 // 1. コントラスト  … 地・面・差し色・状態色の組み合わせが読めるか（WCAG 2.1 の相対輝度）
 // 2. 網羅性        … 参照したトークンに既定値があるか、死んだトークンを残していないか
 // 3. テーマ固有規則 … `[data-semantic-theme="x"] .card` のような特例を書いていないか
 // 4. 近接テーマ    … 色だけを変えた「同じ紙」が 2 つ並んでいないか（6 軸）
 // 5. シグネチャ    … 各テーマが見出しと本文の書体・装飾を持ち、未知の書体を持ち込んでいないか
+// 6. 書体の対比    … 別ファミリーなのに同じ分類（角ゴシック同士など）で並んでいないか
+// 7. 書体プール    … 1 テーマが追加で読むファミリーは 2 つまでか
+// 8. ウェイト      … 見出しと本文のウェイトが、base かテーマの URL に載っているか
 //
 // 色の正は src/styles/themes.css、ID の正は src/lib/semantic-themes.ts。
 // この試験はブラウザも DB も使わず、CSS を読んで計算するだけ。
@@ -15,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { themeFontHref } from "@/components/ui/ThemeTypefaces";
+import { THEME_FONTS, themeFontHref, type FontFamilyKey } from "@/components/ui/ThemeTypefaces";
 import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 
 const ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
@@ -134,6 +137,35 @@ const OPTIONAL_TOKENS = Object.keys(DEFAULTS)
 
 function themeTokens(id: string): Tokens {
   return { ...DEFAULTS, ...(THEME_TOKENS.get(id) ?? {}) };
+}
+
+/**
+ * 書体のスタックを 1 つの分類へ寄せる。見出しにも本文にも使う。
+ *
+ * 追加書体のスタックは末尾に総称ファミリ（`sans-serif` / `serif`）を持つ。先に
+ * `mincho|serif` を見ると、Dela Gothic One / Yusei Magic まで明朝に落ちる。
+ * 固有の書体名を先に判定し、総称ファミリは `sans-serif` を除いてから見る。
+ * 丸ゴシックは `Zen Maru Gothic` と `M PLUS Rounded 1c` の 2 つ。
+ */
+function typefaceClass(stack: string): string {
+  if (stack.includes("Dela Gothic One")) return "極太";
+  if (stack.includes("Kaisei Decol")) return "明朝デコ";
+  if (stack.includes("Yusei Magic")) return "手書き";
+  if (stack.includes("Zen Maru Gothic") || stack.includes("M PLUS Rounded 1c")) return "丸ゴシック";
+  if (/mincho|serif/i.test(stack) && !/sans-serif/i.test(stack)) return "明朝";
+  // 実在の書体名を持たず、サイトの表示書体を継ぐだけのとき（既定値のまま）。
+  if (!leadingFamily(stack)) return "表示書体";
+  return "角ゴシック";
+}
+
+/** スタックの先頭にある実在の書体名。`var(--font)` などの継ぎ指示は飛ばす。 */
+function leadingFamily(stack: string): string | null {
+  for (const part of stack.split(",")) {
+    const family = part.trim().replace(/^["']|["']$/g, "");
+    if (!family || family.startsWith("var(")) continue;
+    return family;
+  }
+  return null;
 }
 
 /** `#rrggbb` / `rgb(r g b / a)` / `var(--st-x)` / `color-mix(in srgb, ...)` を解く。 */
@@ -351,25 +383,11 @@ describe("テーマ固有の規則を持たない", () => {
 
 describe("近接テーマ（色違いの水増しを止める）", () => {
   /**
-   * 見出しの書体を 1 つの名前へ寄せる。
-   *
-   * 追加書体のスタックは末尾に総称ファミリ（`sans-serif`）を持つ。先に
-   * `mincho|serif` を見ると、Dela Gothic One / Yusei Magic まで明朝に落ちる。
-   * 固有の書体名を先に判定し、総称ファミリは `sans-serif` を除いてから見る。
-   */
-  function headingFont(heading: string): string {
-    if (heading.includes("Dela Gothic One")) return "極太";
-    if (heading.includes("Kaisei Decol")) return "明朝デコ";
-    if (heading.includes("Yusei Magic")) return "手書き";
-    if (/mincho|serif/i.test(heading) && !/sans-serif/i.test(heading)) return "明朝";
-    if (heading.includes("--font-display")) return "表示書体";
-    return "角ゴシック";
-  }
-
-  /**
    * 地・差し色・角丸・書体・密度・装飾の 6 軸に落とす。
    *
    * 装飾は「罫線の太さと線種 / 左バーの有無 / 地紋の有無」を 1 つの文字列にする。
+   * 書体は「見出しの分類 / 本文の分類」の対にする。見出しだけを見ると、
+   * 本文が同じ角ゴシックのテーマ同士を見逃す。
    * 軸を増やすほど「同じ紙」を見逃しにくくなるが、4 つ以上一致で落とす基準は緩めない。
    */
   function axes(id: string) {
@@ -388,7 +406,7 @@ describe("近接テーマ（色違いの水増しを止める）", () => {
       地: luminance(base) < 0.2 ? "暗い" : "明るい",
       差し色: Math.floor(hue(accent) / 30),
       角丸: radius <= 2 ? "角" : radius <= 7 ? "小" : radius <= 14 ? "中" : "大",
-      書体: headingFont(tokens["--st-font-heading"]),
+      書体: `${typefaceClass(tokens["--st-font-heading"])}/${typefaceClass(tokens["--st-font-body"])}`,
       密度: `${gap <= 1.0625 ? "詰" : gap <= 1.375 ? "並" : "広"}/${width <= 40 ? "狭" : width >= 44 ? "広" : "並"}`,
       装飾: `${tokens["--st-border-width"].trim()}/${tokens["--st-divider-style"].trim()}/${
         lead ? "lead" : "nolead"
@@ -463,6 +481,12 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
     "Kaisei Decol": "Kaisei+Decol",
     "Dela Gothic One": "Dela+Gothic+One",
     "Yusei Magic": "Yusei+Magic",
+    "M PLUS 1p": "M+PLUS+1p",
+    "M PLUS Rounded 1c": "M+PLUS+Rounded+1c",
+    "Noto Serif JP": "Noto+Serif+JP",
+    "Noto Sans JP": "Noto+Sans+JP",
+    "BIZ UDPGothic": "BIZ+UDPGothic",
+    "Shippori Mincho": "Shippori+Mincho",
   };
 
   /** 追加で読み込まない、システムの書体と総称ファミリ。 */
@@ -470,7 +494,6 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
     "Hiragino Mincho ProN",
     "Yu Mincho",
     "YuMincho",
-    "Noto Serif JP",
     "Zen Kaku Gothic New",
     // 本文用の丸ゴシック。`src/app/layout.tsx` が全ページで読み込むので、
     // テーマごとの `ThemeTypefaces` には載せない。
@@ -495,15 +518,24 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
       .filter(Boolean);
     expect(families.length, `${id}: ${token} の空の書体指定`).toBeGreaterThan(0);
 
+    let first = true;
     for (const family of families) {
       // `"Zen Maru Gothic", var(--font)` のように、先頭に書体を置いて残りをサイトの書体へ継ぐ形も許す。
       if (TOKEN_FAMILIES.has(family)) continue;
       const loaded = LOADED_TYPEFACES[family];
       if (loaded) {
-        expect(themeFontHref(id), `${id}: ${family} を読み込む URL`).toContain(loaded);
+        // 読み込みを要求するのは先頭の実在書体だけ。2 つ目以降は、その書体が無い端末の
+        // ための控えなので、Web フォントの名前でも読み込みを強制しない
+        // （`tavern` の「Hiragino Mincho ProN, ..., Noto Serif JP, serif」がこれに当たる）。
+        if (first) {
+          expect(themeFontHref(id), `${id}: ${family} を読み込む URL`).toContain(loaded);
+        }
+        first = false;
         continue;
       }
       expect(SYSTEM_FAMILIES.has(family), `${id}: 未知の書体「${family}」`).toBe(true);
+      // 端末の書体が出たら、そのあとは控え。読み込みの要求はしない。
+      first = false;
     }
   }
 
@@ -521,5 +553,96 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
     // 既定（サイトの角ゴシック）のままでよいテーマも、`var(--font)` と明示して
     // 「考えて選んだ」ことを残す。書き忘れと、意図した角ゴシックを区別する。
     expect(THEME_TOKENS.get(id)?.["--st-font-body"], `${id}: --st-font-body`).toBeTruthy();
+  });
+});
+
+describe("書体プール（テーマごとの声を 1 つに寄せない）", () => {
+  /** 装飾書体。本文に置くと長文が読みにくいので、見出しだけに使い、対比の例外にする。 */
+  const DECORATIVE = new Set(["Dela Gothic One", "Yusei Magic", "Kaisei Decol"]);
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 別ファミリーなら分類も変える（角×角・丸×丸を避ける）", (id) => {
+    // 見出しと本文を同じ分類（角ゴシック×角ゴシックなど）で並べると、名前を変えただけの
+    // 同じ紙になる。`modern-slate` / `enterprise-clean` / `neon` / `neon-magenta` が
+    // 同じ書体ペアになっていた再発を、ここで止める。
+    const tokens = themeTokens(id);
+    const heading = leadingFamily(tokens["--st-font-heading"]);
+    const body = leadingFamily(tokens["--st-font-body"]);
+    // 継ぎ指示だけのテーマは、base の表示書体（Zen Maru）と本文（Zen Kaku）で組む。
+    if (!heading || !body) return;
+    // 例外 (a): 同一ファミリー。ウェイト差で性格を出す（modern-slate の 800 / 400 など）。
+    if (heading === body) return;
+    // 例外 (b): 片方が装飾書体。見出しの主張と本文の読みやすさを分ける組。
+    if (DECORATIVE.has(heading) || DECORATIVE.has(body)) return;
+
+    const headingClass = typefaceClass(tokens["--st-font-heading"]);
+    const bodyClass = typefaceClass(tokens["--st-font-body"]);
+    expect(
+      headingClass,
+      `${id}: 見出し「${heading}」と本文「${body}」がどちらも ${headingClass}。別ファミリーなら分類も変える`,
+    ).not.toBe(bodyClass);
+  });
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 追加で読むファミリーは 2 つまで", (id) => {
+    // 見出しと本文で同じファミリーを使うなら 1 つ、別々なら 2 つ。
+    // `zenKakuExtra` / `zenMaruBody` は base 読み込み済みの補完（不足するウェイトだけ）だが、
+    // 数えても 2 に収まるので、そのまま数える（数え漏れで 3 つ目が通る方が困る）。
+    const fonts = THEME_FONTS[id];
+    const families = new Set<FontFamilyKey>(
+      [fonts.heading, fonts.body].filter((key): key is FontFamilyKey => key !== null),
+    );
+    expect(
+      families.size,
+      `${id}: 追加ファミリー（${[...families].join(" / ")}）`,
+    ).toBeLessThanOrEqual(2);
+  });
+
+  /** base（`src/app/layout.tsx`）が全ページで読む書体とウェイト。 */
+  const BASE_FONT_WEIGHTS: readonly (readonly [string, readonly number[]])[] = [
+    ["Zen+Kaku+Gothic+New", [400, 500, 700]],
+    ["Zen+Maru+Gothic", [500, 700]],
+  ];
+
+  /** CSS の書体名を、Google Fonts の family 名（`M+PLUS+1p`）に寄せる。 */
+  function familyToken(family: string): string {
+    return family.replace(/ /g, "+");
+  }
+
+  /** そのテーマで使えるウェイト。base と `themeFontHref` の両方を合わせる。 */
+  function availableWeights(id: string): Map<string, Set<number>> {
+    const available = new Map<string, Set<number>>();
+    for (const [family, weights] of BASE_FONT_WEIGHTS) available.set(family, new Set(weights));
+
+    const href = themeFontHref(id);
+    if (!href) return available;
+    for (const match of href.matchAll(/family=([^&]+)/g)) {
+      const [family, weights] = match[1].split(":wght@");
+      // Dela Gothic One / Yusei Magic は 1 ウェイトしか持たない（`wght` を書かない）。
+      const list = weights ? weights.split(";").map(Number) : [400];
+      available.set(family, new Set([...(available.get(family) ?? []), ...list]));
+    }
+    return available;
+  }
+
+  function expectWeightLoaded(
+    id: string,
+    token: "--st-font-heading" | "--st-font-body",
+    weight: number,
+  ) {
+    const family = leadingFamily(themeTokens(id)[token]);
+    if (!family) return; // 継ぎ指示だけ（base の書体）は base のウェイトで足りる。
+    const available = availableWeights(id).get(familyToken(family));
+    if (!available) return; // 端末の書体（Hiragino / Yu Mincho）は、こちらのウェイトを選べない。
+    expect(
+      [...available].sort((a, b) => a - b),
+      `${id}: ${token} の「${family}」に ${weight} が無い（font-synthesis: none で丸められる）`,
+    ).toContain(weight);
+  }
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 見出しと本文のウェイトが URL に載っている", (id) => {
+    // `src/styles/base.css` の `font-synthesis: none` により、読み込んでいないウェイトは
+    // 近い値へ丸められる。Zen Maru 400 の穴（本文が 500 で組まれていた）をここで止める。
+    // base の URL とテーマの URL のどちらかに載っていればよい。
+    expectWeightLoaded(id, "--st-font-heading", Number(themeTokens(id)["--st-heading-weight"]));
+    expectWeightLoaded(id, "--st-font-body", 400);
   });
 });
