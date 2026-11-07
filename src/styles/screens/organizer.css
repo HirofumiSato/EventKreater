@@ -615,6 +615,13 @@
   box-shadow: 0 0 0 3px var(--color-danger-bg), 5px 5px 0 rgb(26 25 22 / 0.18);
 }
 
+/* 録り終えたあとの「テキスト変換中」は、録音の朱と同じ赤の太字にする。
+   待ちの間だけ色が変わるので、止めた音声がいま文字になっていると分かる。 */
+.voice-panel.is-transcribing .voice-panel__prompt {
+  color: var(--color-danger-text);
+  font-weight: 700;
+}
+
 /* まとめて話すときは、欄のすぐ下ではなく画面下寄りに固定する。
    話す順と例で背が高くなるため、欄に合わせると下の帯や FAB と重なる。
    右下のマイクボタン（下端 5rem・高さ 3.25rem）の上へ 1rem 空けて置く。 */

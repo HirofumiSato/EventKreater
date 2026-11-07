@@ -214,7 +214,7 @@
 }
 
 /* 見本は準備中。押せない見た目と当たり判定は `.btn:disabled` が受ける。
-   札だけはボタンの外に置き、右上へ少し傾けて貼る。 */
+   札だけはボタンの外へ置く。傾けず、色も落として、主操作の隣で主張しない。 */
 .hero__sample {
   position: relative;
   display: inline-flex;
@@ -223,9 +223,8 @@
 .hero__sample-badge {
   position: absolute;
   z-index: 1;
-  top: -0.6rem;
-  right: -0.6rem;
-  transform: rotate(-4deg);
+  top: -0.5rem;
+  right: -0.5rem;
   pointer-events: none;
 }
 
