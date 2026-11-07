@@ -161,7 +161,7 @@ export default function HomePage() {
                     {SITE.nav.sample.label}
                   </button>
                   <span className="hero__sample-badge">
-                    <Badge tone="warning" small>
+                    <Badge tone="neutral" small>
                       準備中
                     </Badge>
                   </span>

@@ -544,7 +544,7 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 | 位置 | 変更 | 正 |
 | --- | --- | --- |
 | サンプル | `Link`（`target="_blank"` / `rel="noopener noreferrer"`）をやめ、`<span class="hero__sample">` の中の `<button type="button" class="btn btn--outline btn--lg" disabled>` にした。押せない見た目と当たり判定は `.btn:disabled` が受ける | `src/app/page.tsx` / `.hero__sample` |
-| 札 | ボタンの右上に `Badge`（`tone="warning"`、`small`）で「準備中」を重ねる（`.hero__sample-badge`。少し傾け、`pointer-events: none`） | `src/components/ui/Badge.tsx` / `.hero__sample-badge` |
+| 札 | ボタンの右上に `Badge`（`tone="neutral"`、`small`）で「準備中」を重ねる（`.hero__sample-badge`。傾けず、灰の札にして主操作の隣で主張させない。`pointer-events: none`） | `src/components/ui/Badge.tsx` / `.hero__sample-badge` |
 | 折り返し | `.hero__buttons` の行間を 0.75rem → 1.25rem に広げ、360px 級で 2 段になったとき札が上の段に重ならないようにした | `src/styles/components.css` |
 | `/sample` | ルートと `SITE.nav.sample`・`siteChrome`・サンプル内の相互リンクは変えない（URL を直接開けば見られる） | `src/app/sample/**` / `src/lib/site.ts` |
 

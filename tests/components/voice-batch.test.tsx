@@ -222,6 +222,18 @@ describe("まとめて話す", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("まとめて話すときは、後ろを黒透過の覆いで暗くする", async () => {
+    stubFetch();
+
+    await mount(vi.fn());
+    await startVoice("まとめて話す");
+
+    const scrim = document.querySelector<HTMLElement>(".voice-scrim");
+    expect(scrim).toBeTruthy();
+    // まとめては 1 つの欄を聞いているわけではないので、穴を空けない。
+    expect(scrim?.style.clipPath).toBe("");
+  });
+
   it("「1つずつ」を選ぶと、1 欄ずつの質問に戻る", async () => {
     stubFetch();
     const onChange = vi.fn();

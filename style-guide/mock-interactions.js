@@ -670,9 +670,11 @@
   function measureSpotlight() {
     placePanel();
     if (!voice.active || !voice.scrim) return;
-    // まとめて話すときは 1 つの欄をくり抜かない（複数のステップを見ながら話せる）。
+    // まとめて話すときは 1 つの欄をくり抜かない。覆いは穴を空けずに全体を暗くする
+    // （製品と同じ。パネルと FAB だけが手前に残る）。
     if (voice.batchMode) {
-      voice.scrim.hidden = true;
+      voice.scrim.style.clipPath = "";
+      voice.scrim.hidden = false;
       return;
     }
     const field = voice.fields[voice.cursor]?.field;

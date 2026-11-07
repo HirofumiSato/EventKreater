@@ -1416,8 +1416,8 @@ export function VoiceInputDock({
       setPanelBox(null);
       return;
     }
-    // まとめて話すときは 1 つの欄をくり抜かない。覆いを出すと全体が押せなくなり、
-    // 複数のステップを見ながら話せないためである。
+    // まとめて話すときは 1 つの欄をくり抜かない。覆いは穴を空けずに全体を暗くする
+    // （どの欄を聞いている話ではないので、強調する 1 か所が決まらないため）。
     if (batchMode) {
       setSpotlight(null);
       return;
@@ -2062,12 +2062,15 @@ export function VoiceInputDock({
 
   return (
     <>
-      {active && spotlight && (
+      {/* 音声モードの覆い。1 欄ずつのときはいま聞いている欄だけをくり抜き、
+          まとめて話すときは全体を暗くする。どちらも後ろの操作は止める。
+          まとめては穴を空けないので、くり抜きの指定（clipPath）を渡さない。 */}
+      {active && (batchMode || spotlight) && (
         <div
           className="voice-scrim"
           aria-hidden="true"
-          style={{ clipPath: spotlightClipPath(spotlight) }}
-          onClick={explainScrim}
+          style={!batchMode && spotlight ? { clipPath: spotlightClipPath(spotlight) } : undefined}
+          onClick={batchMode ? undefined : explainScrim}
         />
       )}
       {/* 初回ガイド。FAB だけを切り抜いた黒い面と、使い方を添える吹き出し。
