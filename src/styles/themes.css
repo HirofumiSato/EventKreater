@@ -416,7 +416,165 @@
 }
 
 /* --------------------------------------------------------------------------
-   12. 装飾（deco）の打ち消し
+   12. テーマ 10: Neon Magenta（マゼンタのネオン）
+
+   黒に近い紫の地に、桃紫の発光。シアンの Neon とは色相を変えるだけでなく、
+   角丸を 6px から 2px へ詰め、読み幅も狭めて、紙面の密度で区別する。
+   発光は紫から桃へ 2 つの放射を重ね、本文の背後では弱く留める。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="neon-magenta"] {
+  color-scheme: dark;
+  --st-surface-base: #0b0713;
+  --st-surface-raised: #161028;
+  --st-content-primary: #f3e9ff;
+  --st-content-secondary: #b9a8d6;
+  --st-accent-primary: #ff2d9e;
+  --st-accent-text: #ff7ac4;
+  --st-accent-contrast: #14020c;
+  --st-border-width: 1px;
+  --st-border-color: rgb(255 45 158 / 0.28);
+  --st-border-strong: #a86a94;
+  --st-radius-base: 2px;
+  --st-shadow-elevation: 0 0 26px -6px rgb(255 45 158 / 0.5);
+  --st-stack-gap: 0.875rem;
+  --st-content-width: 36rem;
+  --st-danger: #ff5c7a;
+  --st-warning: #ffd166;
+  --st-success: #3ddc97;
+  --st-surface-image:
+    radial-gradient(760px 340px at 18% -8%, rgb(124 58 237 / 0.26), transparent 66%),
+    radial-gradient(680px 320px at 86% -4%, rgb(255 45 158 / 0.22), transparent 70%);
+  --st-surface-image-repeat: no-repeat;
+}
+
+/* --------------------------------------------------------------------------
+   13. テーマ 11: Tavern（店の灯り）
+
+   焦げ茶の地に琥珀の灯り。見出しは明朝にして、カウンター越しの献立のような
+   静けさを出す。夕暮れ（Dusk）とは色相・角丸・書体の 3 つをずらしている。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="tavern"] {
+  color-scheme: dark;
+  --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-surface-base: #1a120c;
+  --st-surface-raised: #261a12;
+  --st-content-primary: #f7efe3;
+  --st-content-secondary: #cdb8a4;
+  --st-accent-primary: #f5c26b;
+  --st-accent-text: #f5c26b;
+  --st-accent-contrast: #241605;
+  --st-border-width: 1px;
+  --st-border-color: rgb(247 239 227 / 0.18);
+  --st-border-strong: #a08b74;
+  --st-radius-base: 4px;
+  --st-shadow-elevation: 0 18px 40px -28px rgb(0 0 0 / 0.95);
+  --st-stack-gap: 1.375rem;
+  --st-content-width: 44rem;
+  --st-danger: #ff8f80;
+  --st-warning: #ffc76b;
+  --st-success: #7fd6a0;
+  --st-surface-image: radial-gradient(820px 320px at 50% -6%, rgb(245 194 107 / 0.2), transparent 70%);
+  --st-surface-image-repeat: no-repeat;
+}
+
+/* --------------------------------------------------------------------------
+   14. テーマ 12: Kraft（クラフト）
+
+   クラフト紙の地にテラコッタの差し色。羊皮紙・和紙（どちらも明朝）とは違い、
+   見出しを角ゴシックにして、密度と読み幅を広げる。マルシェ・一日店長向け。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="kraft"] {
+  --st-font-heading: var(--font);
+  --st-surface-base: #eee3d0;
+  --st-surface-raised: #f8f1e4;
+  --st-content-primary: #241d15;
+  --st-content-secondary: #5b4d3c;
+  --st-accent-primary: #a84a26;
+  --st-accent-text: #8f3d1f;
+  --st-accent-contrast: #fdf6ec;
+  --st-border-width: 1px;
+  --st-border-color: #d8c8ae;
+  --st-border-strong: #82705a;
+  --st-radius-base: 4px;
+  --st-shadow-elevation: 0 6px 18px -14px rgb(36 29 21 / 0.7);
+  --st-stack-gap: 1.5rem;
+  --st-content-width: 44rem;
+  --st-danger: #9e3b2e;
+  --st-warning: #8a5800;
+  --st-success: #3f6b46;
+  --st-surface-image: repeating-linear-gradient(
+    90deg,
+    rgb(36 29 21 / 0.03) 0 1px,
+    transparent 1px 7px
+  );
+  --st-surface-image-repeat: repeat;
+}
+
+/* --------------------------------------------------------------------------
+   15. テーマ 13: Poster（ライブポスター）
+
+   黒地に朱の差し色。太枠（Neo-Brutalism）のような明るい紙ではなく、印刷所の
+   版ズレを思わせる硬い影を赤で置く。枠は 2px にして、遠目でも線が残るようにする。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="poster"] {
+  color-scheme: dark;
+  --st-surface-base: #121212;
+  --st-surface-raised: #1d1d1d;
+  --st-content-primary: #f7f4ef;
+  --st-content-secondary: #b9b2a8;
+  --st-accent-primary: #e8342a;
+  --st-accent-text: #ff6b5f;
+  --st-accent-contrast: #080202;
+  --st-border-width: 2px;
+  --st-border-color: rgb(247 244 239 / 0.3);
+  --st-border-strong: #a9a29a;
+  --st-radius-base: 4px;
+  --st-shadow-elevation: 4px 4px 0 rgb(232 52 42 / 0.8);
+  --st-stack-gap: 1rem;
+  --st-content-width: var(--width-content);
+  --st-danger: #ff6b5f;
+  --st-warning: #ffd166;
+  --st-success: #58d68d;
+  --st-surface-image: none;
+}
+
+/* --------------------------------------------------------------------------
+   16. テーマ 14: Spotlight（スポットライト）
+
+   暗い舞台に一筋の冷たい光。差し色は舞台の白（わずかに青を含む）にして、
+   見出しは明朝。角丸は 16px と大きくとり、幕の落ちる柔らかさを出す。
+   -------------------------------------------------------------------------- */
+
+[data-semantic-theme="spotlight"] {
+  color-scheme: dark;
+  --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-surface-base: #0c0e13;
+  --st-surface-raised: #151922;
+  --st-content-primary: #f5f2ea;
+  --st-content-secondary: #b3b7c2;
+  --st-accent-primary: #dbe7ff;
+  --st-accent-text: #cfdcff;
+  --st-accent-contrast: #10141c;
+  --st-border-width: 1px;
+  --st-border-color: rgb(245 242 234 / 0.16);
+  --st-border-strong: #8b93a3;
+  --st-radius-base: 16px;
+  --st-shadow-elevation: 0 30px 60px -40px rgb(0 0 0 / 0.95);
+  --st-stack-gap: 1.5rem;
+  --st-content-width: 38rem;
+  --st-danger: #ff8f80;
+  --st-warning: #ffc76b;
+  --st-success: #7fd6a0;
+  --st-surface-image: radial-gradient(620px 420px at 50% -18%, rgb(219 231 255 / 0.22), transparent 68%);
+  --st-surface-image-repeat: no-repeat;
+}
+
+/* --------------------------------------------------------------------------
+   17. 装飾（deco）の打ち消し
 
    `/organizers/[userId]` は導入（pop）のスコープなので、貼り紙の硬い影・傾き・
    山吹の札が付く。テーマを選んだページでは、その紙面の作法を優先する。
@@ -509,7 +667,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   13. プロフィールの頭
+   18. プロフィールの頭
 
    モノグラムは地味になりやすいので、テーマの差し色で塗る。
    アイコン画像を設定したときは、丸の中に切り抜いて収める。
@@ -545,7 +703,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   14. カレンダー
+   19. カレンダー
 
    短冊は固定の山吹で塗られている。テーマの差し色に置き換えないと、
    暗い紙面に 1 色だけ別の体系が混ざる。
@@ -603,7 +761,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   15. 一覧・補足
+   20. 一覧・補足
    -------------------------------------------------------------------------- */
 
 :where(.deco) .semantic-theme[data-semantic-theme] .rows {
@@ -637,7 +795,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   16. 印刷。テーマは画面のためのもの。紙に出すときは地を塗らない。
+   21. 印刷。テーマは画面のためのもの。紙に出すときは地を塗らない。
    -------------------------------------------------------------------------- */
 
 @media print {

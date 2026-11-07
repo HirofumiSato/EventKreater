@@ -9,8 +9,8 @@
  * そのため、この 1 箇所だけが ID の一覧を持つ（DB の列挙型にはしない）。
  */
 
-/** 選ぶときの手がかり。9 つを 1 列に並べず、用途で 4 つに分ける。 */
-export type SemanticThemeGroup = "calm" | "bright" | "night" | "vivid";
+/** 選ぶときの手がかり。14 個を 1 列に並べず、用途で 6 つに分ける。 */
+export type SemanticThemeGroup = "calm" | "bright" | "night" | "vivid" | "food" | "stage";
 
 export const SEMANTIC_THEME_GROUPS: readonly {
   id: SemanticThemeGroup;
@@ -21,6 +21,8 @@ export const SEMANTIC_THEME_GROUPS: readonly {
   { id: "bright", label: "明るい", note: "相談・勉強会・昼の集まり" },
   { id: "vivid", label: "元気", note: "パーティー・子ども連れ・手づくり" },
   { id: "night", label: "夜", note: "ライブ・バー・写真を主役に" },
+  { id: "food", label: "食", note: "バー・食堂・夜の店" },
+  { id: "stage", label: "ステージ", note: "ライブ・クラブ・舞台" },
 ] as const;
 
 export const SEMANTIC_THEME_IDS = [
@@ -33,6 +35,11 @@ export const SEMANTIC_THEME_IDS = [
   "sage",
   "candy",
   "dusk",
+  "neon-magenta",
+  "tavern",
+  "kraft",
+  "poster",
+  "spotlight",
 ] as const;
 
 export type SemanticThemeId = (typeof SEMANTIC_THEME_IDS)[number];
@@ -101,6 +108,36 @@ export const SEMANTIC_THEMES: readonly SemanticThemeDefinition[] = [
     label: "夕暮れ",
     note: "焦げ茶の地に橙の光。夕方のライブ・BBQ・ビアガーデン向け。",
     group: "night",
+  },
+  {
+    id: "neon-magenta",
+    label: "マゼンタのネオン",
+    note: "黒地に桃紫の発光。クラブ・アイドル・DJの夜向け。",
+    group: "stage",
+  },
+  {
+    id: "tavern",
+    label: "店の灯り",
+    note: "焦げ茶の地に琥珀の灯り。バー・食堂・店の催し向け。",
+    group: "food",
+  },
+  {
+    id: "kraft",
+    label: "クラフト",
+    note: "クラフト紙にテラコッタ。マルシェ・一日店長・手しごと向け。",
+    group: "vivid",
+  },
+  {
+    id: "poster",
+    label: "ライブポスター",
+    note: "黒と赤の硬い紙面。バンド・DJ・演劇の告知向け。",
+    group: "stage",
+  },
+  {
+    id: "spotlight",
+    label: "スポットライト",
+    note: "暗い舞台に一筋の光。演劇・ダンス・舞台の発表向け。",
+    group: "stage",
   },
 ];
 

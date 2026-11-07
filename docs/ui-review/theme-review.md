@@ -6,7 +6,7 @@
 `services/flyer/tests/test_theme_parity.py` が先に落とします。
 このページは、その上で**目で見ないと分からない**ものだけを扱います。
 
-## 9 つのテーマと用途
+## 14 つのテーマと用途
 
 | 用途グループ | ID | ラベル | 向く催し |
 | --- | --- | --- | --- |
@@ -16,9 +16,14 @@
 | 明るい | `sage` | 余白 | 読書会・ヨガ・マルシェ |
 | 元気 | `neo-brutalism` | 太枠 | 手づくり・チラシらしい勢い |
 | 元気 | `candy` | キャンディ | タコパ・誕生日・子ども連れ |
+| 元気 | `kraft` | クラフト | マルシェ・一日店長・手しごと |
 | 夜 | `modern-slate` | 夜のスレート | 写真を主役にしたライブ |
 | 夜 | `neon` | ネオン | クラブ・深夜の催し |
 | 夜 | `dusk` | 夕暮れ | BBQ・夕方のライブ・ビアガーデン |
+| 食 | `tavern` | 店の灯り | バー・食堂・店の催し |
+| ステージ | `neon-magenta` | マゼンタのネオン | クラブ・アイドル・DJの夜 |
+| ステージ | `poster` | ライブポスター | バンド・DJ・演劇の告知 |
+| ステージ | `spotlight` | スポットライト | 演劇・ダンス・舞台の発表 |
 
 「色だけ違うテーマ」は増やしません。近いテーマの検出（後述）が、
 地の明るさ・差し色の色相・角丸・書体・密度の 5 軸で 4 つ以上一致する組を落とします。
@@ -55,7 +60,7 @@
 
 色・書体・密度はトークンだけで表します。`[data-semantic-theme="x"] .card` のような
 テーマ固有の規則は書きません（書くと、そのテーマだけ部品の面倒を見ることになり、
-新しい部品を足すたびに 9 箇所を直すことになります）。
+新しい部品を足すたびに 14 箇所を直すことになります）。
 
 ## 機械が止めるもの
 
@@ -116,4 +121,4 @@ npm run mock:sync -- --only=06,27,23
 | チラシの色と英語の方向付け | `services/flyer/src/domain/models.py` の `SemanticTheme` / `_THEME_DIRECTIONS` |
 | チラシの色の写し | `services/flyer/src/domain/semantic_theme.py` の `_THEME_LOOKS` |
 | 一覧の列挙 | `docs/backend_api_implementation_spec.md`、`docs/front_implementation_spec.md`、`docs/flyer/swagger.rst`、`docs/flyer/http_api.rst`、`docs/issues/organizer-profile-appearance.md` |
-| このページ | 上の「9 つのテーマと用途」 |
+| このページ | 上の「14 つのテーマと用途」 |
