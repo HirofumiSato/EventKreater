@@ -271,7 +271,7 @@ describe("モックでないとき", () => {
     await act(async () => {
       screen.getByRole("button", { name: /^まとめて話す/ }).click();
     });
-    await press("まとめて話す");
+    await press("録音を始める");
 
     expect(
       screen.getByText("このブラウザは録音に対応していません。手で入力してください。"),

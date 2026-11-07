@@ -219,20 +219,23 @@ describe("まとめて話す案内", () => {
     const targets = batchTargets(EMPTY_EVENT_FORM, scope());
     const cells = batchPlan(targets);
 
-    // 見本の値ではなく、話す欄の名前を並べる。
+    // 見本の値ではなく、話す欄の名前を並べる。1 マスは 1 つの欄なので、
+    // 開始と終了も別のマスにする（名前を 1 行に収めるため）。
     expect(cells.map((cell) => cell.label)).toEqual([
       "イベント名",
       "開催日",
-      "開始時間と終了時間",
+      "開始時間",
+      "終了時間",
       "費用プラン名",
-      "費用（～円）",
+      "費用（円）",
       "場所",
       "郵便番号",
     ]);
     expect(cells.map((cell) => cell.prompt)).toEqual([
       "イベント名は？",
       "開催日は？",
-      "開始時間と終了時間は？",
+      "開始時間は？",
+      "終了時間は？",
       "費用プラン名は？",
       "費用は？",
       "場所は？",
@@ -243,6 +246,7 @@ describe("まとめて話す案内", () => {
       "title:0",
       "scheduleDate:0",
       "scheduleStart:0",
+      "scheduleEnd:0",
       "planName:0",
       "planAmount:0",
       "venueName:0",
@@ -250,15 +254,18 @@ describe("まとめて話す案内", () => {
     ]);
   });
 
-  it("開始と終了は 1 つのマスに畳み、開始のマスが読めたら塗る", () => {
+  it("開始と終了は別のマスにし、話す 1 文の例だけ 1 つの言い方にまとめる", () => {
     const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
-    const range = cells.find((cell) => cell.id === "scheduleStart:0");
+    const start = cells.find((cell) => cell.id === "scheduleStart:0");
+    const end = cells.find((cell) => cell.id === "scheduleEnd:0");
 
-    // 開始は範囲まで読むので、終了は別のマスにしない（`id` は開始）。
-    expect(range?.label).toBe("開始時間と終了時間");
-    expect(range?.slotIds).toEqual(["scheduleStart:0", "scheduleEnd:0"]);
-    // 話す 1 文の例でも、開始と終了を 1 つの言い方にまとめる。
-    expect(range?.example).toBe("18時から20時");
+    expect(start?.label).toBe("開始時間");
+    expect(end?.label).toBe("終了時間");
+    // 開始のマスは「18時から20時」で終了まで読む（マスの id は開始のまま）。
+    expect(start?.slotIds).toEqual(["scheduleStart:0", "scheduleEnd:0"]);
+    expect(start?.example).toBe("18時から20時");
+    // 例の 1 文では 1 回だけ言うので、終了のマスには見本を持たせない。
+    expect(end?.example).toBe("");
   });
 
   it("話す 1 文の例は、話す順に値を並べた 1 文になる", () => {
@@ -276,8 +283,8 @@ describe("まとめて話す案内", () => {
     );
 
     expect(cells.map((cell) => cell.label)).not.toContain("イベント名");
-    // 畳んだ終了時刻を、単独のマスとして重ねて出さない。
-    expect(cells.map((cell) => cell.label)).not.toContain("終了時間");
+    // 空欄の終了時刻は、別のマスとして残る（開始と畳まない）。
+    expect(cells.map((cell) => cell.label)).toContain("終了時間");
   });
 
   it("同じマスを二度並べない", () => {

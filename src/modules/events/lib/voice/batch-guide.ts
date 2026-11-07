@@ -68,26 +68,23 @@ export function defaultVoiceMode(
 }
 
 /** マスに並べる上限。390px で 3 段に収まる長さに抑える（郵便番号まで）。 */
-const MAX_CELLS = 7;
+const MAX_CELLS = 8;
 
 /**
- * マスに出す名前と、30px の 1 行に出す質問。
+ * マスに出す名前と、1 行に出す質問。
  *
  * 既定は欄そのものの名前と質問（`fields.ts` の `label` / `prompt`）を使う。ここで
  * 差し替えるのは、マスに並べると長いもの（費用プランの名前）、単位を添えないと
- * 何を話すか決まらないもの（金額）、話す順では「場所」で通じるもの（会場名）だけである。
+ * 何を話すか決まらないもの（金額）、話す順では「場所」で通じるもの（会場名）、
+ * 口に出しやすい言い方に寄せるもの（開始時刻・終了時刻）だけである。
  */
 const CELL_TEXT: Partial<Record<VoiceField["key"], { label: string; prompt: string }>> = {
+  scheduleStart: { label: "開始時間", prompt: "開始時間は？" },
+  scheduleEnd: { label: "終了時間", prompt: "終了時間は？" },
   planName: { label: "費用プラン名", prompt: "費用プラン名は？" },
-  planAmount: { label: "費用（～円）", prompt: "費用は？" },
+  planAmount: { label: "費用（円）", prompt: "費用は？" },
   venueName: { label: "場所", prompt: "場所は？" },
 };
-
-/** 開始と終了を 1 枚に畳んだときの名前と質問。 */
-const RANGE_TEXT = {
-  label: "開始時間と終了時間",
-  prompt: "開始時間と終了時間は？",
-} as const;
 
 /**
  * まとめて話すときの 1 マス。
@@ -98,7 +95,7 @@ const RANGE_TEXT = {
 export interface BatchCell {
   /** マスの識別子。読めたかどうかはこの id で持つ。 */
   id: VoiceSlotId;
-  /** 1 文で埋まる組（「18時から20時」の開始と終了など）。 */
+  /** 1 文で埋まる組。開始のマスは「18時から20時」で終了まで読むので、終了も含む。 */
   slotIds: VoiceSlotId[];
   /** マスに出す欄の名前（「イベント名」）。 */
   label: string;
@@ -112,8 +109,8 @@ export interface BatchCell {
  * 話す順を 1 本の並びにする。
  *
  * - 必須の欄を先に、任意の欄を後ろに置く（まず話すことを前へ出す）
- * - 同じ行の開始と終了が続くときは 1 枚に畳む（`scheduleStart` の範囲解釈に合わせる）
- * - 7 枚まで。8 枚目以降は確認のダイアログで扱う
+ * - 1 マスは 1 つの欄。開始と終了も別のマスにし、名前を 1 行に収める
+ * - 8 枚まで。9 枚目以降は確認のダイアログで扱う
  */
 export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
   const byId = new Map<VoiceSlotId, VoiceSlot>(targets.map((slot) => [slot.id, slot]));
@@ -126,25 +123,24 @@ export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
   for (const target of ordered) {
     if (cells.length >= MAX_CELLS) break;
 
-    // 開始が同じ行にあれば、終了は開始のマスに畳んである。
-    if (target.key === "scheduleEnd") {
-      const start = byId.get(`scheduleStart:${target.row}` as VoiceSlotId);
-      if (start) continue;
-    }
-
     const slotIds: VoiceSlotId[] = [target.id];
     let example = target.field.example;
-    let range = false;
     if (target.key === "scheduleStart") {
+      // 話す 1 文の例だけは「18時から20時」とまとめる。欄は 2 枚に分かれていても、
+      // 口に出すときは 1 つの言い方になるためである（終了のマスの見本は空にする）。
       const end = byId.get(`scheduleEnd:${target.row}` as VoiceSlotId);
       if (end) {
-        range = true;
         slotIds.push(end.id);
         example = `${example}から${end.field.example}`;
       }
+    } else if (
+      target.key === "scheduleEnd" &&
+      byId.has(`scheduleStart:${target.row}` as VoiceSlotId)
+    ) {
+      example = "";
     }
 
-    cells.push({ id: target.id, slotIds, example, ...cellText(target, range) });
+    cells.push({ id: target.id, slotIds, example, ...cellText(target) });
   }
   return cells;
 }
@@ -153,11 +149,14 @@ export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
  * まとめて話す 1 文の例（「忘年会、12月5日、18時から20時、…」）。
  *
  * まとめては 1 つの欄の話ではないので質問は進めない。代わりに、話す中身を値の並びで
- * 1 文だけ置き、画面でいちばん大きい字にする（読む先を 1 つに絞る）。
+ * 1 文だけ置き、押す直前に読めるようにする。
  * マスの名前だけでは、値として何を言えばよいか分からないためである。
  */
 export function batchExampleSentence(cells: readonly BatchCell[]): string {
-  return cells.map((cell) => cell.example).join("、");
+  return cells
+    .map((cell) => cell.example)
+    .filter((example) => example !== "")
+    .join("、");
 }
 
 /**
@@ -166,11 +165,7 @@ export function batchExampleSentence(cells: readonly BatchCell[]): string {
  * 行や男女別で名前が変わる欄（「2件目の開催日」「女性の金額」）は、`fields.ts` が
  * 作った名前をそのまま使う。差し替えると、どの行の話か分からなくなる。
  */
-function cellText(
-  slot: VoiceSlot,
-  range: boolean,
-): { label: string; prompt: string } {
-  if (range) return RANGE_TEXT;
+function cellText(slot: VoiceSlot): { label: string; prompt: string } {
   const own = slot.label === slot.field.label ? CELL_TEXT[slot.key] : undefined;
   return own ?? { label: slot.label, prompt: slot.prompt };
 }

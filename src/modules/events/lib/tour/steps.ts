@@ -118,7 +118,7 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     scrim: false,
     copy: {
       title: "新規イベント作成へようこそ",
-      body: "このページの使い方を、これから順に説明します。",
+      body: "このページの使い方を順にガイドします。",
       note: "「次へ」で進みます。いつでも閉じられます。",
     },
     final: false,

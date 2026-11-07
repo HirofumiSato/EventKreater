@@ -774,87 +774,144 @@
 }
 
 /* まとめて話すときのマス。話す順を欄の名前で並べる。
-   押せる的ではないので 40px は要らない（触るのは下の主ボタンだけ）。 */
+   押せる的ではないので 40px は要らない（触るのは下の主ボタンだけ）。
+   幅で折り返すと、同じ 8 枚が端末ごとに違う段数になり、話す順を見渡せない。
+   スマホでも 1 段に 3 枚入るよう、3 列の格子に固定する。 */
 .voice-cells {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.375rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.voice-cell {
-  display: inline-flex;
+/* 話す順の 1 歩。矢印は升の幅から借りず、列の間へ置く（名前の幅を削らないため）。 */
+.voice-step {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0.3125rem;
-  max-width: 100%;
-  padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+  min-width: 0;
+}
+
+/* 前のマスとの間に置く右向き矢印。列の間（16px）へ重ねるので、升の幅を削らない。
+   3 枚で 1 段なので、段の先頭になる 4 枚目・7 枚目の前は置かない。 */
+.voice-step__sep {
+  position: absolute;
+  top: 50%;
+  left: -0.75rem;
+  margin: 0;
+  color: var(--color-border-strong);
+  font-size: 0.6875rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+/* 段の先頭（1・4・7 枚目）の前には置かない。段が変わったことを矢印で示さないため。 */
+.voice-step:nth-child(3n + 1) .voice-step__sep {
+  display: none;
+}
+
+/* 話す順のマス。升の幅に収めるため、名前に合わせて広げない。
+   高さは 1 行に固定し、名前が入りきらないときだけ末尾を省略する
+   （2 行に折れると、同じ段のマスと高さがそろわない）。
+   番号と名前は 1 組として中央に寄せる（左右の余白を同じにしないと、中央に寄らない）。 */
+.voice-cell {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 番号と名前の間は半角スペース相当（12px の 0.25em）。 */
+  gap: 0.25em;
+  min-width: 0;
+  padding: 0.1875rem 0.3125rem;
   border: 1px dashed var(--color-border-strong);
   border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-text-subtle);
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
-/* 読めたかどうかは、点が塗られるかで示す。文字は増やさない。 */
-.voice-cell__mark {
+/* 話す順は「1.」の形で示す。丸で囲むと名前の幅を削るので、字だけで置く。
+   読めたかどうかは縁と地の色で示す（数字は変えない）。 */
+.voice-cell__number {
   flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  background: transparent;
+  color: var(--color-text-faint);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
+/* 名前は 1 行に固定する。折ると同じ段で高さが変わるためである。 */
 .voice-cell__label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.voice-cell.is-read {
+/* 読めたかどうかは、縁が実線になり地が朱に寄るかで示す。文字は増やさない。
+   印は `li`（`.voice-step`）に付ける。話した順に 1 歩ずつ塗るためである。 */
+.voice-step.is-read .voice-cell {
   border-style: solid;
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
   color: var(--color-primary-text);
 }
 
-.voice-cell.is-read .voice-cell__mark {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
+/* 読めたら、番号も濃くする（地の上で薄いままだと読めない）。 */
+.voice-step.is-read .voice-cell__number {
+  color: var(--color-primary-text);
 }
 
-/* まとめて話すときの 1 文。マスの名前だけでは値の形が分からないので、
-   話す順に値を並べた 1 文を 1 か所だけ置く。1 つの欄の話ではないので質問は進めず、
-   この 1 文を画面でいちばん大きい字にして、読む先を 1 つに絞る。
-   押せる的ではないので、枠も地も足さず字だけで置く。 */
-.voice-panel__say,
+/* 話す順のマスの前に置く指示。何をするか（押す・話す・止める）を最初に渡すので、
+   読み上げ例より強くする。押せる的ではないので、朱は主ボタンに残したまま、
+   薄い地と左の縦罫だけで「指示」だと分かる形にする。 */
+.voice-panel__lead {
+  margin: 0;
+  padding: 0.3125rem 0.5rem;
+  border-left: 0.1875rem solid var(--color-text-strong);
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* 指示の後半は必ず次の行から始める。パネルは幅 24rem までなので、
+   1 行に詰めると文の途中で折れて読みにくい。 */
+.voice-panel__lead-stop {
+  display: block;
+}
+
 .voice-panel__plan {
   display: flex;
   flex-direction: column;
-  gap: 0.1875rem;
+  gap: 0.375rem;
   margin: 0;
 }
 
-/* 例の前に置く 1 行（「この順で、自分の内容を話す」）と、マスの意味を言う 1 行。
-   例そのものと混ざらないよう、補助文字の大きさ・色に落とす。 */
-.voice-panel__lead {
+/* まとめて話すときの読み上げ例。マスの名前だけでは値の形が分からないので、
+   話す順に値を並べた 1 文を 1 か所だけ置く。指示ではないので、指示より弱い字
+   （12px・補助色）に落とし、「読み上げ例：」で何の例かを言う。
+   押せる的ではないので、枠も地も足さず字だけで置く。 */
+.voice-panel__say {
   margin: 0;
   font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--color-text-subtle);
+  line-height: 1.55;
 }
 
-/* 話す中身。例の値であって催しの値ではない。話す 1 文としてそのまま読ませたいので、
-   「例」の札は付けず、この行だけで読ませる。 */
+/* 「読み上げ例：」は、後ろの値と混ざらないよう名前の側だけ濃くする。 */
+.voice-panel__say-label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* 話す中身。例の値であって催しの値ではない。 */
 .voice-panel__say-text {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.55;
-  color: var(--color-text);
+  color: var(--color-text-subtle);
 }
 
 /* 確定済みの「いまの値」は、質問の行に詰めず下の別の行へ置く。 */
@@ -902,7 +959,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.5rem;
 }
 

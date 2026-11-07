@@ -100,7 +100,7 @@ async function startVoice(mode: "まとめて話す" | "1つずつ") {
 /** 疑似録音と文字化の待ちを進め、確認のダイアログが出るところまで進める。 */
 async function openBatchDialog() {
   // まとめては、開いた瞬間には録らない（読む時間を空ける）。押してから進める。
-  await press("まとめて話す");
+  await press("録音を始める");
   await act(async () => {
     vi.advanceTimersByTime(PAST_RECORDING_MS);
   });
@@ -152,32 +152,55 @@ describe("まとめて話す", () => {
       (screen.getByRole("radio", { name: "1つずつ" }) as HTMLInputElement).checked,
     ).toBe(false);
     // まとめては 1 つの欄の話ではないので、質問は進めない。何を話すかは、
-    // 話す順に値を並べた 1 文をいちばん大きい字で置いて見せる。
+    // 話す順に値を並べた読み上げ例で見せる。
+    // 並びは「指示 → 欄の名前 → 読み上げ例 → 主ボタン」。
     expect(
-      screen.getByText("この順で、自分の内容を話す", {
+      screen.getByText("録音ボタンを押して順に話してください。", {
         selector: ".voice-panel__lead",
       }),
     ).toBeTruthy();
-    // 話す順は欄の名前で並べる。郵便番号まで出す。
-    const cells = within(screen.getByRole("list", { name: "話す順" })).getAllByRole(
-      "listitem",
-    );
-    expect(cells.map((cell) => cell.textContent)).toEqual([
+    // 後半は必ず次の行から始める（パネルは 24rem までなので 1 行に詰められない）。
+    expect(
+      screen.getByText("全部読み上げ終えたら停止", {
+        selector: ".voice-panel__lead-stop",
+      }),
+    ).toBeTruthy();
+    // 話す順は欄の名前で並べる。郵便番号まで出す。順番の番号は名前に混ぜない。
+    const list = screen.getByRole("list", { name: "話す順" });
+    const cells = within(list).getAllByRole("listitem");
+    expect(
+      cells.map((cell) => cell.querySelector(".voice-cell__label")?.textContent),
+    ).toEqual([
       "イベント名",
       "開催日",
-      "開始時間と終了時間",
+      "開始時間",
+      "終了時間",
       "費用プラン名",
-      "費用（～円）",
+      "費用（円）",
       "場所",
       "郵便番号",
     ]);
+    // 順番は「1.」の形で示す。8 枚そろって 1 から数える。
+    expect(
+      cells.map((cell) => cell.querySelector(".voice-cell__number")?.textContent),
+    ).toEqual(["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8."]);
+    // 順番は矢印でも示す。段の先頭の矢印は CSS で消すので、DOM には 8 枚とも置く。
+    expect(
+      cells.map((cell) => cell.querySelector(".voice-step__sep")?.textContent),
+    ).toEqual(["→", "→", "→", "→", "→", "→", "→", "→"]);
     // 1 欄ずつの「いまの値」と戻る・スキップは、まとめてのときは出さない。
     // 押せない的を置かず、そもそも描かない。
     expect(screen.queryByText(/いまの値:/)).toBeNull();
     expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
     expect(screen.queryByRole("button", { name: "スキップ" })).toBeNull();
     expect(screen.queryByText("答えたら次へ")).toBeNull();
-    // 何を話すかは、マスの名前だけでは分からない。値の形を 1 文で置く。
+    // 何を話すかは、マスの名前だけでは分からない。値の形を 1 文で置き、
+    // 何の例かを「読み上げ例：」で言う。
+    expect(
+      screen.getByText("読み上げ例：", {
+        selector: ".voice-panel__say-label",
+      }),
+    ).toBeTruthy();
     expect(
       screen.getByText(
         "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
@@ -189,8 +212,12 @@ describe("まとめて話す", () => {
       (screen.getByLabelText("任意の項目も聞く") as HTMLInputElement).checked,
     ).toBe(false);
     // 読む量がいちばん多いので、開いた瞬間には録らない。押してから始める。
+    // 丸い印だけでは何を押すか決まらないので、ボタンの下に名前を出す。
     expect(screen.queryByRole("button", { name: "録音を停止" })).toBeNull();
-    await press("まとめて話す");
+    expect(
+      screen.getByText("録音を始める", { selector: ".voice-panel__talk" }),
+    ).toBeTruthy();
+    await press("録音を始める");
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -231,7 +258,7 @@ describe("まとめて話す", () => {
 
     // 押してから録り始める。まだ 1 枚も塗られていない。
     expect(readCount()).toBe(0);
-    await press("まとめて話す");
+    await press("録音を始める");
     await act(async () => {
       vi.advanceTimersByTime(PAST_RECORDING_MS);
     });
@@ -240,7 +267,7 @@ describe("まとめて話す", () => {
     expect(say()).toBe("忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001");
 
     // 話すのをやめる（ダイアログが出る）前に、塗られるマスが増える。
-    // 疑似の文字化は 350ms を 7 枚で割るので、1 枚目は 44ms、2 枚目は 88ms に来る。
+    // 疑似の文字化は 350ms を 8 枚で割るので、1 枚目は 39ms、2 枚目は 78ms に来る。
     await act(async () => {
       vi.advanceTimersByTime(45);
     });
@@ -347,7 +374,7 @@ describe("まとめて話す", () => {
     // 録音は自動で始めず、話す準備ができてから押してもらう。
     expect(screen.getByText("あと2つ。続けて話せます。")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "録音を停止" })).toBeNull();
-    expect(screen.getByRole("button", { name: "まとめて話す" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "録音を始める" })).toBeTruthy();
   });
 
   it("編集した行は、編集後の文字で parse し直す", async () => {

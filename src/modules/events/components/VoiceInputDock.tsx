@@ -1336,7 +1336,7 @@ export function VoiceInputDock({
         // まとめては読む量がいちばん多い。開いた瞬間に録音を始めると、何を話すかを
         // 読む前に話し始めることになる（話し直しが増える）。押してから録る。
         api.announce(
-          "音声入力を始めます。例の順に話してから、マイクを押してください。",
+          "音声入力を始めます。録音ボタンを押してから、順番に話してください。",
         );
       } else {
         api.announce(`音声入力を始めます。${first.prompt}`);
@@ -1601,10 +1601,12 @@ export function VoiceInputDock({
   // パネルに出す 1 行。住所の補完の失敗は、値が入った知らせより先に伝える
   // （補完できていないのに「入りました」だけを見せない）。住所の知らせは次の値で消える。
   const notice = addressNote ?? message;
+  // まとめての主ボタンは、下に出す名前（「録音を始める」）と読み上げ名をそろえる。
+  // 見えている言葉で呼びかけても押せないと、音声操作の端末で迷うためである。
   const talkLabel = listening
     ? "録音を停止"
     : batchMode
-      ? "まとめて話す"
+      ? "録音を始める"
       : currentValue
         ? "言い直す"
         : "話す";
@@ -2221,36 +2223,57 @@ export function VoiceInputDock({
             </p>
           )}
 
-          {/* まとめて話すときは、何を話すかを 1 文で見せる。マスの名前だけでは、
-              値として何を言えばよいか分からない。1 つの欄の話ではないので質問は進めず、
-              この 1 文をいちばん大きい字にして、読む先を 1 つに絞る。
-              「例」の札は付けない。話す中身そのものとして読ませたいためである。 */}
-          {!complete && batchMode && exampleSentence && (
-            <div className="voice-panel__say">
-              <p className="voice-panel__lead">この順で、自分の内容を話す</p>
-              <p className="voice-panel__say-text">{exampleSentence}</p>
-            </div>
-          )}
-
           {/* 話した順に欄が埋まることを、マスの名前で示す。聞き取れたマスから
-              点と縁が変わる（値は止めたあとの確認まで出さない）。 */}
+              縁と地の色が変わる（値は止めたあとの確認まで出さない）。
+              並びは「指示 → 欄の名前 → 読み上げ例 → 主ボタン」。押す直前に何を言うかを
+              目に入れるため、例はマスの下に置く。 */}
           {!complete && batchMode && cells.length > 0 && (
             <div className="voice-panel__plan">
-              <p className="voice-panel__lead">話した順に入り、読めた欄に印が付きます</p>
+              {/* 指示は 2 つに割る。片方を 1 行に詰めると、狭い端末で
+                  文の途中から折り返して読みにくい。 */}
+              <p className="voice-panel__lead">
+                録音ボタンを押して順に話してください。
+                <span className="voice-panel__lead-stop">
+                  全部読み上げ終えたら停止
+                </span>
+              </p>
               <ol className="voice-cells" aria-label="話す順">
-                {cells.map((cell) => {
+                {cells.map((cell, index) => {
                   const isRead = readCells.has(cell.id);
                   return (
                     <li
-                      className={`voice-cell${isRead ? " is-read" : ""}`}
+                      className={`voice-step${isRead ? " is-read" : ""}`}
                       key={cell.id}
                     >
-                      <span className="voice-cell__mark" aria-hidden="true" />
-                      <span className="voice-cell__label">{cell.label}</span>
+                      {/* 順番は矢印でも示す。読み上げでは順序を数える意味が無いので、
+                          印は読み上げから外し、名前だけを並べる。 */}
+                      <span className="voice-step__sep" aria-hidden="true">
+                        →
+                      </span>
+                      <span className="voice-cell">
+                        {/* 番号は「1.」の形で置く。丸で囲むと名前の幅を削り、
+                            スマホで 1 段に 3 枚入らなくなるためである。 */}
+                        <span className="voice-cell__number" aria-hidden="true">
+                          {index + 1}.
+                        </span>
+                        <span className="voice-cell__label">{cell.label}</span>
+                      </span>
                     </li>
                   );
                 })}
               </ol>
+            </div>
+          )}
+
+          {/* まとめて話すときは、何を話すかを 1 文の例で見せる。マスの名前だけでは、
+              値として何を言えばよいか分からない。1 つの欄の話ではないので質問は進めず、
+              例はいちばん下に置いて、押す直前に読めるようにする。
+              指示ではないので、指示より弱い字（12px・補助色）にし、「読み上げ例：」で
+              何の例かを言う。 */}
+          {!complete && batchMode && exampleSentence && (
+            <div className="voice-panel__say">
+              <span className="voice-panel__say-label">読み上げ例：</span>
+              <span className="voice-panel__say-text">{exampleSentence}</span>
             </div>
           )}
 
@@ -2278,12 +2301,19 @@ export function VoiceInputDock({
                       <Mic className="icon" aria-hidden="true" />
                     )}
                   </button>
-                  {listening && (
+                  {listening ? (
                     <p className="voice-panel__talk">
                       話し終わったら
                       <br />
                       タップ
                     </p>
+                  ) : (
+                    batchMode && (
+                      /* 丸いマイクの印だけでは何を押すか決まらないので、下に名前を置く。
+                         押せる的はボタンだけで、文字は押せない。読み上げ名も同じ言葉に
+                         そろえ、見えている言葉で呼びかけても押せるようにする。 */
+                      <p className="voice-panel__talk">録音を始める</p>
+                    )
                   )}
                 </div>
               )}

@@ -33,7 +33,7 @@ describe("8 枚の並び", () => {
     const copy = eventGuideStep("welcome").copy;
 
     expect(copy.title).toBe("新規イベント作成へようこそ");
-    expect(copy.body).toContain("使い方");
+    expect(copy.body).toBe("このページの使い方を順にガイドします。");
     expect(copy.note).toContain("次へ");
   });
 

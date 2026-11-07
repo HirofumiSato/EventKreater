@@ -553,16 +553,17 @@
       // 入力完了のときだけ、次にすることを 1 行出す（製品の `.voice-panel__finish`）。
       '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
-      // まとめて話すときの 1 文。主ボタンのすぐ上に 1 か所だけ置く（製品と同じ）。
-      // 1 つの欄の話ではないので、この 1 文をいちばん大きい字にして読む先を絞る。
-      '<div class="voice-panel__say" hidden>' +
-      '<p class="voice-panel__lead">この順で、自分の内容を話す</p>' +
-      '<p class="voice-panel__say-text" data-voice-example></p>' +
-      "</div>" +
-      // 話す順のマス。話した順に入り、読めた欄から印が変わる（製品と同じ）。
+      // 話す順のマス。話した順に入り、読めた欄から縁と地の色が変わる（製品と同じ）。
+      // 並びは「指示 → 欄の名前 → 読み上げ例 → 主ボタン」。
       '<div class="voice-panel__plan" hidden>' +
-      '<p class="voice-panel__lead">話した順に入り、読めた欄に印が付きます</p>' +
+      '<p class="voice-panel__lead">録音ボタンを押して順に話してください。<span class="voice-panel__lead-stop">全部読み上げ終えたら停止</span></p>' +
       '<ol class="voice-cells" aria-label="話す順"></ol>' +
+      "</div>" +
+      // まとめて話すときの読み上げ例。マスの下に 1 か所だけ置く（製品と同じ）。
+      // 指示より弱い字にし、「読み上げ例：」で何の例かを言う。
+      '<div class="voice-panel__say" hidden>' +
+      '<span class="voice-panel__say-label">読み上げ例：</span>' +
+      '<span class="voice-panel__say-text" data-voice-example></span>' +
       "</div>" +
       '<div class="voice-panel__actions">' +
       // 主ボタンを縦積みの入れ物で包み、録音中だけその下に止め方を出す（製品と同じ）。
@@ -727,10 +728,10 @@
       example: "山田 太郎",
     },
     "schedule-date": { label: "開催日", prompt: "開催日は？", example: "12月5日" },
-    "schedule-start": { label: "開始時刻", prompt: "何時に始まる？", example: "18時" },
-    "schedule-end": { label: "終了時刻", prompt: "何時に終わる？", example: "20時" },
+    "schedule-start": { label: "開始時間", prompt: "開始時間は？", example: "18時" },
+    "schedule-end": { label: "終了時間", prompt: "終了時間は？", example: "20時" },
     "plan-name": { label: "費用プラン名", prompt: "費用プラン名は？", example: "一般" },
-    "plan-amount": { label: "費用（～円）", prompt: "費用は？", example: "3000円" },
+    "plan-amount": { label: "費用（円）", prompt: "費用は？", example: "3000円" },
     "plan-note": { label: "費用の補足", prompt: "補足は？", example: "1ドリンク付" },
     "event-venue-name": { label: "場所", prompt: "場所は？", example: "渋谷ホール" },
     "event-postal-code": { label: "郵便番号", prompt: "郵便番号は？", example: "1500001" },
@@ -770,30 +771,23 @@
 
   /**
    * まとめて話すときのマス。製品の `batchPlan` と同じ形にする。
-   * 開始と終了は 1 枚に畳み、7 枚までにする。
+   * 1 マスは 1 つの欄。開始と終了も分け、8 枚までにする。
    */
   function batchCells(targets) {
     const cells = [];
     for (const target of targets) {
-      if (cells.length >= 7) break;
+      if (cells.length >= 8) break;
       const id = target.field.id || "";
       const row = id.replace(/^(schedule-date|schedule-start|schedule-end)-/, "");
-      // 開始が同じ行にあれば、終了は開始のマスに畳んである。
-      if (id.startsWith("schedule-end-") && targets.some((item) => item.field.id === "schedule-start-" + row)) {
-        continue;
-      }
       const text = batchCellText(id, target);
+      // 話す 1 文の例だけは「18時から20時」とまとめる（欄は 2 枚に分かれる）。
       if (id.startsWith("schedule-start-") && targets.some((item) => item.field.id === "schedule-end-" + row)) {
         const end = batchCellText("schedule-end", target);
-        cells.push({
-          id: id,
-          label: "開始時間と終了時間",
-          prompt: "開始時間と終了時間は？",
-          example: text.example + "から" + end.example,
-        });
+        cells.push({ id: id, label: text.label, prompt: text.prompt, example: text.example + "から" + end.example });
         continue;
       }
-      cells.push({ id: id, label: text.label, prompt: text.prompt, example: text.example });
+      const example = id.startsWith("schedule-end-") ? "" : text.example;
+      cells.push({ id: id, label: text.label, prompt: text.prompt, example: example });
     }
     return cells;
   }
@@ -826,18 +820,28 @@
       if (planBox) planBox.hidden = plan.length === 0;
       if (cells) {
         cells.innerHTML = "";
-        for (const cell of plan) {
+        plan.forEach((cell, index) => {
           const item = document.createElement("li");
-          item.className = "voice-cell";
-          const mark = document.createElement("span");
-          mark.className = "voice-cell__mark";
-          mark.setAttribute("aria-hidden", "true");
+          item.className = "voice-step";
+          // 順番の矢印は読み上げから外す（製品と同じ）。
+          const sep = document.createElement("span");
+          sep.className = "voice-step__sep";
+          sep.setAttribute("aria-hidden", "true");
+          sep.textContent = "→";
+          const pill = document.createElement("span");
+          pill.className = "voice-cell";
+          // 番号は「1.」の形で置く。読み上げからは外す（製品と同じ）。
+          const number = document.createElement("span");
+          number.className = "voice-cell__number";
+          number.setAttribute("aria-hidden", "true");
+          number.textContent = String(index + 1) + ".";
           const label = document.createElement("span");
           label.className = "voice-cell__label";
           label.textContent = cell.label;
-          item.append(mark, label);
+          pill.append(number, label);
+          item.append(sep, pill);
           cells.append(item);
-        }
+        });
       }
     } else {
       prompt.hidden = false;
@@ -878,11 +882,33 @@
     if (auto) auto.closest(".check").hidden = batch;
     const talk = panel.querySelector("[data-voice-talk]");
     if (talk && !voice.listening) {
-      talk.setAttribute("aria-label", batch ? "まとめて話す" : "話す");
-      talk.setAttribute("title", batch ? "まとめて話す" : "話す");
+      talk.setAttribute("aria-label", batch ? "録音を始める" : "話す");
+      talk.setAttribute("title", batch ? "録音を始める" : "話す");
     }
     // まとめてでは「いまの値」を出さない（1 つの欄の話ではない）。
     if (batch) panel.querySelector(".voice-panel__current").hidden = true;
+    syncTalkCaption();
+  }
+
+  /**
+   * 主ボタンの下の 1 行。録音中は止め方を、まとめてで待っているあいだは
+   * ボタンの名前（「録音を始める」）を出す（製品と同じ）。
+   */
+  function syncTalkCaption() {
+    if (!voice.panel) return;
+    const talk = voice.panel.querySelector(".voice-panel__talk");
+    if (!talk) return;
+    if (voice.listening) {
+      talk.innerHTML = "話し終わったら<br>タップ";
+      talk.hidden = false;
+      return;
+    }
+    if (voice.batchMode) {
+      talk.textContent = "録音を始める";
+      talk.hidden = false;
+      return;
+    }
+    talk.hidden = true;
   }
 
   /** まとめて話すの切り替え。状態と 2 択をそろえ、質問もすぐ差し替える。 */
@@ -1244,7 +1270,7 @@
     current.textContent = value ? "いまの値: " + value : "";
     current.hidden = voice.batchMode || !value;
     showInterim("");
-    voice.panel.querySelector(".voice-panel__talk").hidden = true;
+    syncTalkCaption();
     voice.panel.querySelector(".voice-panel__status").hidden = true;
     voice.panel.querySelector(".voice-panel__message").hidden = true;
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = false;
@@ -1265,9 +1291,9 @@
     status.hidden = false;
     voice.panel.querySelector(".voice-panel__state").textContent = "録音中";
     voice.panel.querySelector(".voice-panel__message").hidden = true;
-    voice.panel.querySelector(".voice-panel__talk").hidden = false;
     showInterim("");
     voice.listening = true;
+    syncTalkCaption();
     setTalkIcon("stop");
     clearTimers();
     later(finishListening, 2600);
@@ -1280,7 +1306,7 @@
    */
   function markMockCellsRead() {
     if (!voice.panel) return;
-    const items = Array.from(voice.panel.querySelectorAll(".voice-cell"));
+    const items = Array.from(voice.panel.querySelectorAll(".voice-step"));
     items.forEach((item, index) => {
       later(() => {
         if (!voice.panel) return;
