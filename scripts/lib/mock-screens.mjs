@@ -104,7 +104,7 @@ export function buildScreens(demo) {
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
         },
-        // 保存されているテーマはデモでは羊皮紙なので、ほかの 8 つと標準は
+        // 保存されているテーマはデモでは羊皮紙なので、ほかの 13 と標準は
         // 撮る直前に属性を差し替えて作る（`applySemanticTheme`）。
         {
           key: "theme-none",
@@ -175,6 +175,41 @@ export function buildScreens(demo) {
           path: `/organizers/${demo.organizerId}`,
           auth: "participant",
           theme: "dusk",
+        },
+        {
+          key: "theme-neon-magenta",
+          label: "マゼンタのネオン",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "neon-magenta",
+        },
+        {
+          key: "theme-tavern",
+          label: "店の灯り",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "tavern",
+        },
+        {
+          key: "theme-kraft",
+          label: "クラフト",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "kraft",
+        },
+        {
+          key: "theme-poster",
+          label: "ライブポスター",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "poster",
+        },
+        {
+          key: "theme-spotlight",
+          label: "スポットライト",
+          path: `/organizers/${demo.organizerId}`,
+          auth: "participant",
+          theme: "spotlight",
         },
       ],
     },

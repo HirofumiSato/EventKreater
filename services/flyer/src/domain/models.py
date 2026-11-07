@@ -78,6 +78,11 @@ class SemanticTheme(str, Enum):
     SAGE = "sage"
     CANDY = "candy"
     DUSK = "dusk"
+    NEON_MAGENTA = "neon-magenta"
+    TAVERN = "tavern"
+    KRAFT = "kraft"
+    POSTER = "poster"
+    SPOTLIGHT = "spotlight"
 
     @property
     def design_direction(self) -> str:
@@ -131,6 +136,26 @@ _THEME_DIRECTIONS: dict[SemanticTheme, str] = {
     SemanticTheme.DUSK: (
         "orange sunset rim light, deep warm shadows, dusk outdoor gathering, "
         "glowing warm highlights, relaxed evening mood"
+    ),
+    SemanticTheme.NEON_MAGENTA: (
+        "magenta and violet neon glow, deep purple shadows, wet reflections, "
+        "night club energy, high contrast"
+    ),
+    SemanticTheme.TAVERN: (
+        "warm tungsten bar light, amber and brass accents, wood and glass textures, "
+        "intimate evening mood"
+    ),
+    SemanticTheme.KRAFT: (
+        "kraft paper texture on props, terracotta and clay accents, matte earthy palette, "
+        "handmade market daylight"
+    ),
+    SemanticTheme.POSTER: (
+        "black and red print palette, hard high-contrast poster light, graphic shadows, "
+        "gig poster energy"
+    ),
+    SemanticTheme.SPOTLIGHT: (
+        "single cool spotlight beam on a dark stage, cool white highlights, "
+        "deep black shadows, theatrical drama"
     ),
 }
 

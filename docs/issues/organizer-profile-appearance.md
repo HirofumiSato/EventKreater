@@ -15,7 +15,7 @@
 | 論点 | 決定 |
 | :---- | :---- |
 | テーマの適用範囲 | 公開ページ全体（プロフィール＋カレンダー＋一覧）。プロフィールのカードだけに色を付けると、紙面の途中で配色が切り替わって読みにくい |
-| テーマの数 | 現在は 9 つ。`modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` に `washi` / `sage` / `candy` / `dusk` を足した（[ui-review/theme-review.md](../ui-review/theme-review.md)） |
+| テーマの数 | 現在は 14 つ。`modern-slate` / `enterprise-clean` / `parchment` / `neo-brutalism` / `neon` に `washi` / `sage` / `candy` / `dusk` / `neon-magenta` / `tavern` / `kraft` / `poster` / `spotlight` を足した（[ui-review/theme-review.md](../ui-review/theme-review.md)） |
 | 未選択の扱い | `theme_id` が NULL なら**現行の見た目を完全に維持する**。`SemanticThemeScope` は要素を増やさず children をそのまま返す |
 | 非公開のとき | アイコンは出す。テーマは適用しない（本文を隠しているのに紙面だけ変えると、下書きが公開されたように見える） |
 | テーマの当て方 | `<div class="semantic-theme" data-semantic-theme="...">` と `[data-semantic-theme="..."]` の CSS 変数。クライアント JS は使わない |
@@ -83,9 +83,9 @@ erDiagram
 
 | 名前 | 役割 |
 | :---- | :---- |
-| `SEMANTIC_THEME_IDS` | 9 つの readonly tuple。ID の一覧はここだけ |
+| `SEMANTIC_THEME_IDS` | 14 つの readonly tuple。ID の一覧はここだけ |
 | `SemanticThemeId` | 上の要素の union |
-| `SEMANTIC_THEME_GROUPS` | 用途グループ（`calm` / `bright` / `vivid` / `night`）と表示名 |
+| `SEMANTIC_THEME_GROUPS` | 用途グループ（`calm` / `bright` / `vivid` / `night` / `food` / `stage`）と表示名 |
 | `SEMANTIC_THEMES` | ID・日本語ラベル・1 行の説明・所属グループ。色は持たない |
 | `themesInGroup(group)` | グループに属するテーマを `SEMANTIC_THEMES` の順で返す |
 | `isSemanticThemeId(value)` | 一覧に含まれるか |
@@ -102,9 +102,14 @@ erDiagram
 | `sage` | 明るい | 余白 | 薄い緑灰と影のない面。行長を詰めて、静かに読ませます。 |
 | `neo-brutalism` | 元気 | ネオ・ブルータリズム | 墨の枠と紙を重ねた影。手づくりのチラシらしい、落ち着いた勢い。 |
 | `candy` | 元気 | キャンディ | 桃色の地に丸い角。誕生日・タコパ・子ども連れの集まり向け。 |
+| `kraft` | 元気 | クラフト | クラフト紙にテラコッタ。マルシェ・一日店長・手しごと向け。 |
 | `modern-slate` | 夜 | 夜のスレート | 暗い地に白い文字。写真が映え、落ち着いて読めます。 |
 | `neon` | 夜 | ネオン | 黒地にシアンの発光。クラブ・ライブ・夜の催し向け。 |
 | `dusk` | 夜 | 夕暮れ | 焦げ茶の地に橙の光。夕方のライブ・BBQ・ビアガーデン向け。 |
+| `tavern` | 食 | 店の灯り | 焦げ茶の地に琥珀の灯り。バー・食堂・店の催し向け。 |
+| `neon-magenta` | ステージ | マゼンタのネオン | 黒地に桃紫の発光。クラブ・アイドル・DJの夜向け。 |
+| `poster` | ステージ | ライブポスター | 黒と赤の硬い紙面。バンド・DJ・演劇の告知向け。 |
+| `spotlight` | ステージ | スポットライト | 暗い舞台に一筋の光。演劇・ダンス・舞台の発表向け。 |
 
 ### 2. `src/styles/themes.css`
 
@@ -185,7 +190,7 @@ export function SemanticThemeScope({ themeId, children, page = false }: Semantic
 - テーマが NULL のときは要素を増やさない（既存の DOM と見た目を変えない）。
 - `page` は公開ページでは `true`、編集画面のプレビューでは `false`（すでに枠の中にあるため）。
 
-`src/components/ui/ThemePicker.tsx` は編集画面だけで使うクライアント部品。用途グループ（落ち着き / 明るい / 元気 / 夜）の見出しの下に `fieldset` + radio のチップを並べ、選んでいる 1 つを下の大きな見本（`theme-preview`）で見せる。各チップは `data-semantic-theme` を付けた 3 本線の見本（`theme-swatch`）で、色は CSS だけで描く（選択肢の色を TS に写さない）。見本もタグを差し替えるだけで、画像も追加リクエストも増やさない。
+`src/components/ui/ThemePicker.tsx` は編集画面だけで使うクライアント部品。用途グループ（落ち着き / 明るい / 元気 / 夜 / 食 / ステージ）の見出しの下に `fieldset` + radio のチップを並べ、選んでいる 1 つを下の大きな見本（`theme-preview`）で見せる。各チップは `data-semantic-theme` を付けた 3 本線の見本（`theme-swatch`）で、色は CSS だけで描く（選択肢の色を TS に写さない）。見本もタグを差し替えるだけで、画像も追加リクエストも増やさない。
 
 ### 4. 画像の保存と配信
 
@@ -273,7 +278,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
   - `accept={UPLOAD_ACCEPT}`。クライアント側でも 4MB を事前に弾く。
   - 選ぶとすぐ `POST` し、成功したら `avatarUrl` を差し替えてトーストを出す。失敗は `readProblem` の文言。
   - 「選ぶとすぐに保存されます」と補足する。
-- 「公開」の下に `ThemePicker`。選択肢は「標準」＋9 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。
+- 「公開」の下に `ThemePicker`。選択肢は「標準」＋14 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。
 - プレビューは `SemanticThemeScope`（`page={false}`）で `OrganizerProfileView` を包み、`profileContentFromDraft(draft, stats, avatarUrl)` を渡す。保存前のテーマも確認できる。
 - 見出し下のリードと `screen-note` に、アイコンとテーマの 1 文を足した。
 
@@ -294,14 +299,14 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - `overflow: hidden` と `img { width: 100%; height: 100%; object-fit: cover; }` で丸に収める。
 - テーマ未選択なら `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
 - `generateMetadata` の `openGraph.images` に `avatarUrl` があれば載せる（`metadataBase` があるので相対 URL でよい）。
-- モック（`style-guide/`）は 06 主催者のページに、未ログイン・ログイン済みに加えて標準と 9 テーマの状態を持つ（計 12 枚）。属性を差し替えて撮るので、テーマごとのデモ会員は増やしていない（[ui-review/mock-sync.md](../ui-review/mock-sync.md)）。
+- モック（`style-guide/`）は 06 主催者のページに、未ログイン・ログイン済みに加えて標準と 14 テーマの状態を持つ（計 15 枚）。属性を差し替えて撮るので、テーマごとのデモ会員は増やしていない（[ui-review/mock-sync.md](../ui-review/mock-sync.md)）。
 
 ### 8. パフォーマンス
 
 | 項目 | 実際 |
 | :---- | :---- |
 | テーマ用の JS | 0 バイト。属性と静的 CSS だけ |
-| 追加される CSS | 9 テーマで数 KB（1 枚の `themes.css`） |
+| 追加される CSS | 14 テーマで数 KB（1 枚の `themes.css`） |
 | テーマごとの追加リクエスト | 無し |
 | Web フォント | 増やしていない（`parchment` / `washi` はシステム明朝、`candy` はシステムの丸ゴシック） |
 | `backdrop-filter` / アニメーション | 使わない（テストで固定） |
@@ -316,20 +321,20 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 
 同じ部品をそのまま使える形にしてある。
 
-- `events` に `theme_id VARCHAR(32)` を足し、`SemanticThemeScope` / `ThemePicker` / `semantic-themes.ts` を使い回す。テーマの選択肢はプロフィールと同じ 9 つ。
+- `events` に `theme_id VARCHAR(32)` を足し、`SemanticThemeScope` / `ThemePicker` / `semantic-themes.ts` を使い回す。テーマの選択肢はプロフィールと同じ 14 つ。
 - 表紙画像は `events.cover_image_id` から `image_assets` を参照し、`kind = 'EVENT_COVER'` で `createImageAsset` を呼ぶ。`transform` の分岐だけが違う（幅 1200 に揃え、高さは原本の比に任せる。`COVER_WIDTH` は定義済み）。
 - `image_assets` は**参照する側に外部キーを置く**形にしたので、用途が増えてもこの表は変えない。ポリモーフィックな所有者列は持たない。
 
 ## テスト
 
-- 単体 `tests/unit/semantic-theme.test.ts`（11件）: ID が重複しない・9 件ある・表示名と説明とグループが空でない、`themesInGroup` が全テーマを 1 回ずつ返す、`normalizeSemanticThemeId` が未知・NULL・空文字を NULL にする、`OrganizerProfileSchema` が 9 テーマと NULL を受け、未知の ID を 400 にする。
+- 単体 `tests/unit/semantic-theme.test.ts`（11件）: ID が重複しない・14 件ある・表示名と説明とグループが空でない、`themesInGroup` が全テーマを 1 回ずつ返す、`normalizeSemanticThemeId` が未知・NULL・空文字を NULL にする、`OrganizerProfileSchema` が 14 テーマと NULL を受け、未知の ID を 400 にする。
 - 単体 `tests/unit/semantic-theme-css.test.ts`（7件）: すべての ID に `[data-semantic-theme]` のブロックがある、必須 11 トークンが揃う、`themes.css` が `index.css` の最後、`backdrop-filter`・アニメーション・`@keyframes` を持たない、全幅の面が負のマージンで広がる、入力欄が `--st-surface-raised` と `--st-content-primary` を使う、案内文が入力欄の面を基準に薄くなる。
-- 単体 `tests/unit/semantic-theme-quality.test.ts`（43件）: 9 テーマすべてがコントラストの下限（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）を満たす、参照した `--st-*` に既定値がある、定義した `--st-*` が必ず参照される、`[data-semantic-theme="x"]` がトークン定義ブロックの外に現れない、5 軸（地の明度帯・差し色の色相帯・角丸・表示書体・密度）で 4 軸以上一致するテーマが無い。
+- 単体 `tests/unit/semantic-theme-quality.test.ts`（63件）: 14 テーマすべてがコントラストの下限（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）を満たす、参照した `--st-*` に既定値がある、定義した `--st-*` が必ず参照される、`[data-semantic-theme="x"]` がトークン定義ブロックの外に現れない、5 軸（地の明度帯・差し色の色相帯・角丸・表示書体・密度）で 4 軸以上一致するテーマが無い。
 - 単体 `tests/unit/organizer-profile.test.ts`（42件）: `profileContentFromDraft` が `themeId` と `avatarUrl` を載せる、非公開の行はテーマと本文を隠してアイコンは残す、など。
 - 結合 `tests/integration/organizer-avatar.test.ts`（8件）: 小さな PNG の `POST` で 201・DB 行・`GET /api/v1/image-assets/{id}/image` が WebP で返る、`POST` の差し替えで旧画像が 404 になる、`DELETE` で参照が NULL になり画像が 404、4MB 超は 413、JPEG でないバイト列は 422。`storage/images` の後片付けをする。
 - 結合 `tests/integration/organizer-profile.test.ts`（16件）: `PUT` で `themeId` が保存され公開 API に返る、未知の `themeId` は 400、アイコンの URL が応答に載る。
 - チラシ側の `tests/unit/flyer-upload.test.ts` は、再エクスポート経由でそのまま通る。
-- 単体 `tests/unit/mock-sync.test.mjs`: 目録が 9 テーマと未選択を 1 枚ずつ持ち、表示名が `SEMANTIC_THEMES` のラベルと一致すること。
+- 単体 `tests/unit/mock-sync.test.mjs`: 目録が 14 テーマと未選択を 1 枚ずつ持ち、表示名が `SEMANTIC_THEMES` のラベルと一致すること。
 
 ## ドキュメント
 
@@ -346,7 +351,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - [x] `/organizer/profile` でアイコン画像を選ぶと、その場で保存され、丸いアイコンに切り替わる
 - [x] アイコンを削除すると頭文字に戻り、画像の URL は 404 になる
 - [x] 4MB 超・JPEG / PNG / WebP 以外は、理由の分かるエラーになる
-- [x] 9 テーマから選んで保存でき、公開ページ全体に適用される
+- [x] 14 テーマから選んで保存でき、公開ページ全体に適用される
 - [x] テーマ未選択（標準）では、DOM も見た目も現行と変わらない
 - [x] 非公開にするとテーマは外れ、アイコンは残る
 - [x] 編集画面のプレビューが、テーマ込みで公開ページと同じ見た目になる
