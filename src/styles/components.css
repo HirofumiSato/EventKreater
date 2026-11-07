@@ -205,12 +205,28 @@
   margin-top: 2rem;
 }
 
-/* 主操作と副のボタン（サンプルを見る）を 1 段に並べる。
-   幅が足りないときだけ折り返し、押せる的は 52px のまま保つ。 */
+/* 主操作と副のボタンを 1 段に並べる。札が上へはみ出すので、折り返したとき
+   上の段と触れないだけの行間を空ける。 */
 .hero__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1.25rem 0.75rem;
+}
+
+/* 見本は準備中。押せない見た目と当たり判定は `.btn:disabled` が受ける。
+   札だけはボタンの外に置き、右上へ少し傾けて貼る。 */
+.hero__sample {
+  position: relative;
+  display: inline-flex;
+}
+
+.hero__sample-badge {
+  position: absolute;
+  z-index: 1;
+  top: -0.6rem;
+  right: -0.6rem;
+  transform: rotate(-4deg);
+  pointer-events: none;
 }
 
 /* 主操作の下に並べるテキストリンク。狭い幅では折り返す。

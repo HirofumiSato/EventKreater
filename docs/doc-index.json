@@ -12684,7 +12684,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 537,
+      "lineCount": 560,
       "headings": [
         {
           "level": 1,
@@ -12881,6 +12881,18 @@
         {
           "level": 3,
           "text": "13.4. 却下した案"
+        },
+        {
+          "level": 2,
+          "text": "14. サンプルを準備中として非活性にする（2026-11-07）"
+        },
+        {
+          "level": 3,
+          "text": "14.1. 変更"
+        },
+        {
+          "level": 3,
+          "text": "14.2. 公開するとき"
         }
       ],
       "toctree": [],
@@ -12967,6 +12979,10 @@
         },
         {
           "path": "src/components/common/SiteChrome.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Badge.tsx",
           "exists": true
         },
         {
