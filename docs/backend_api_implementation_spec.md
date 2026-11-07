@@ -1,4 +1,4 @@
-﻿# バックエンドAPI実装仕様書
+# バックエンドAPI実装仕様書
 
 ## チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）
 
@@ -1182,7 +1182,7 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
   "rows": [
     {
       "organizerId": "b1f0...",
-      "name": "佐藤 博文",
+      "name": "佐藤 太郎",
       "role": "OWNER",
       "isGuest": false,
       "isYou": true,

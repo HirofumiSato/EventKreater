@@ -133,7 +133,7 @@ CREATE UNIQUE INDEX "event_organizers_one_owner"
 
 ```json
 "organizers": {
-  "owner": { "name": "佐藤 博文" },
+  "owner": { "name": "佐藤 太郎" },
   "coHosts": [{ "name": "田中" }]
 }
 ```

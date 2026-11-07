@@ -2029,11 +2029,15 @@
       "path": "docs/backend_api_implementation_spec.md",
       "sphinxDoc": "backend_api_implementation_spec",
       "format": "markdown",
-      "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
+      "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
       "lineCount": 3025,
       "headings": [
+        {
+          "level": 1,
+          "text": "バックエンドAPI実装仕様書"
+        },
         {
           "level": 2,
           "text": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）"
@@ -3120,7 +3124,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 913,
+      "lineCount": 996,
       "headings": [
         {
           "level": 1,
@@ -3152,6 +3156,10 @@
         },
         {
           "level": 3,
+          "text": "問い合わせの受信（Cloudflare Email Routing）"
+        },
+        {
+          "level": 3,
           "text": "SMS 配送（Twilio と Worker）"
         },
         {
@@ -3172,15 +3180,19 @@
         },
         {
           "level": 2,
-          "text": "5. デプロイ後の確認"
+          "text": "5. 無料期間の終了前のお知らせを回す"
         },
         {
           "level": 2,
-          "text": "6. 更新と切り戻し"
+          "text": "6. デプロイ後の確認"
         },
         {
           "level": 2,
-          "text": "7. いまの制約"
+          "text": "7. 更新と切り戻し"
+        },
+        {
+          "level": 2,
+          "text": "8. いまの制約"
         }
       ],
       "toctree": [],
@@ -5854,7 +5866,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2168,
+      "lineCount": 2176,
       "headings": [
         {
           "level": 1,
@@ -11349,7 +11361,7 @@
       "title": "Stripe のローカルテストと操作",
       "summary": "このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、チケットの確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。",
       "preImplementation": false,
-      "lineCount": 263,
+      "lineCount": 343,
       "headings": [
         {
           "level": 1,
@@ -11398,10 +11410,22 @@
         {
           "level": 2,
           "text": "自動テストとの分担"
+        },
+        {
+          "level": 2,
+          "text": "本番（live）の準備"
+        },
+        {
+          "level": 2,
+          "text": "無料期間の終了前のお知らせ（本番の cron）"
         }
       ],
       "toctree": [],
       "codePaths": [
+        {
+          "path": "scripts/stripe-live-setup.mjs",
+          "exists": true
+        },
         {
           "path": "src/app/api/v1/webhooks/stripe/route.ts",
           "exists": true

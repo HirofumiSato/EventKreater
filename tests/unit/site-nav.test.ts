@@ -241,7 +241,7 @@ describe("ログイン状態の札", () => {
   });
 
   it("頭文字は 1 文字に切り、空の名前でも崩れない", () => {
-    expect(viewerInitial("博文")).toBe("博");
+    expect(viewerInitial("春子")).toBe("春");
     expect(viewerInitial("  Anna  ")).toBe("A");
     expect(viewerInitial("")).toBe("?");
     expect(viewerInitial("   ")).toBe("?");
