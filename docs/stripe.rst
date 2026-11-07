@@ -285,7 +285,10 @@ live でもう一度作ります。Dashboard を手で触らずに同じ状態�
 * Price は ``lookup_key``（ ``eventkreater_monthly_8`` など）で見分ける。金額か周期が変わっていたら、古い Price の lookup key を外して止め、新しい Price を作る
 * 金額はすべて税込みの JPY。``unit_amount`` にそのまま入れる
 * Webhook は ``/api/v1/webhooks/stripe`` の 1 本に、処理する 7 つのイベントを全部入れる
-* Customer Portal は ``is_default`` の 1 本を作る。``route.ts`` が configuration を渡さないので、これがそのまま使われる
+* Customer Portal は、継続課金の Price 2 つ（単発は入れない）を持つ設定を 1 本だけ作り、それを既定にする。
+  ``route.ts`` が configuration を渡さないので、これがそのまま使われる。``is_default`` は
+  create でも update でも受け付けられず、既定が 1 本も無いときに最初に作った設定が自動で既定になる
+  （2026-11 に live で確認）。既に既定があるときは、その設定を更新する
 
 .. warning::
 

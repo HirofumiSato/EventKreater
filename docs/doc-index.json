@@ -11361,7 +11361,7 @@
       "title": "Stripe のローカルテストと操作",
       "summary": "このページは、手元で Stripe のテストモードを使う手順と、お金に触る操作の境界です。 起動と画面パスは local、チケットの確認 SQL は database、仕様の正は billing_and_quota_system_requirements です。",
       "preImplementation": false,
-      "lineCount": 343,
+      "lineCount": 346,
       "headings": [
         {
           "level": 1,

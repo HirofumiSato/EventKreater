@@ -254,10 +254,18 @@ async function ensurePortalConfiguration(products) {
     return existing.id;
   }
 
-  const created = await stripe.billingPortal.configurations.create({
-    ...payload,
-    is_default: true,
-  });
+  // `is_default` は create / update のどちらでも受け付けられない（2026-11 時点の live で確認）。
+  // 既定が 1 本も無いときは、最初に作った設定が自動で is_default になる。
+  const created = await stripe.billingPortal.configurations.create(payload);
+  if (!created.is_default) {
+    // 既定でない設定が既にある状態。Dashboard で「既定」に切り替えないと
+    // billingPortal.sessions.create が古い設定を使う。
+    log(
+      `Portal の設定を作りました (${created.id}) が、既定になっていません。` +
+        "Stripe Dashboard の「カスタマーポータル」で既定に切り替えてください。",
+    );
+    return created.id;
+  }
   log(`Portal の既定を作りました (${created.id})`);
   return created.id;
 }
@@ -281,7 +289,9 @@ async function setup() {
   }
 
   const webhook = await ensureWebhookEndpoint();
-  await ensurePortalConfiguration(resolved);
+  // Portal のプラン変更に置けるのは、継続課金の Price だけ。単発（ONE_TIME）を混ぜると
+  // "Only active, per unit licensed prices are supported" で失敗する。
+  await ensurePortalConfiguration(resolved.filter((spec) => spec.recurring));
 
   console.log("\n--- 次の 1 行を実行して Fly の秘密を差し替えてください ---\n");
   // 秘密鍵そのものは画面に出さない（PowerShell が実行時に展開する）。
@@ -347,9 +357,13 @@ async function verify() {
     if (webhook.status !== "enabled") problems.push(`Webhook の状態が ${webhook.status} です`);
   }
 
-  const portal = (await stripe.billingPortal.configurations.list({ limit: 100 })).data.find(
-    (configuration) => configuration.is_default,
-  );
+  // プラン変更に出す Price は、expand しないと応答に載らない（products が欠ける）。
+  const portal = (
+    await stripe.billingPortal.configurations.list({
+      limit: 100,
+      expand: ["data.features.subscription_update.products"],
+    })
+  ).data.find((configuration) => configuration.is_default);
   if (!portal) {
     problems.push("Customer Portal の既定の設定がありません");
   } else {
