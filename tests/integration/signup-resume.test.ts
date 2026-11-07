@@ -24,7 +24,7 @@ describeDb("登録途中の再開（結合）", () => {
   let passwordHash = "";
 
   beforeAll(async () => {
-    // ハッシュづくりは 1 回だけ（bcrypt の費用をテストごとに払わない）。
+    // ハッシュづくりは 1 回だけ（bcrypt のコストをテストごとに払わない）。
     passwordHash = await hashPassword(PASSWORD);
   });
 

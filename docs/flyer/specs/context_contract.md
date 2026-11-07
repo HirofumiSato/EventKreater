@@ -29,7 +29,7 @@
 | `title` | そのまま | `title` | 題材・感情の核を 1 つの被写体へ翻訳させる | チラシの見出し |
 | `schedules[0].eventDate` | `eventDate` | `event_date` | 季節（11月なら秋）を推論させる | 開催日 |
 | `schedules[0].startTime` / `endTime` | `composeEventTime` | `event_time` | 時間帯（19:00 なら夜）を推論させる | 開催時間 |
-| `pricePlans` | `flyerPriceLabel`（30 文字以内） | `price` | 価格帯から規模と層を推論させる。文字は描かせない | 費用 |
+| `pricePlans` | `flyerPriceLabel`（30 文字以内） | `price` | 価格帯から規模と層を推論させる。文字は描かせない | 料金 |
 | `venueName` / `city` / `location` | `flyerLocationLabel`（60 文字以内） | `location` | 会場の型（`setting_family`）を決め、屋内・屋外を判断させる | 開催場所 |
 | `rainPolicy` | `RAIN_POLICY_LABELS` | `rain_policy` | 屋内開催なら屋内、雨天決行なら屋外可として扱わせる | 雨天時の案内 |
 | `capacity` | `flyerCapacityLabel`（`先着15名`、20 文字を超えたら null） | `capacity` | 規模（少人数か大箱か）を推論させる | 定員 |

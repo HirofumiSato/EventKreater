@@ -99,7 +99,7 @@ function rowDomId(prefix: string, key: string | undefined): string | null {
 /**
  * 行を付けた欄の名前。「2件目の開催日」「女性の金額」など。
  *
- * 費用プランの金額と補足は、画面の並び（男性用・女性用の順に組を作る）から
+ * 料金プランの金額と補足は、画面の並び（男性用・女性用の順に組を作る）から
  * 行の性別を決める。`audience` を渡せばそれを優先する（画面は値を持っているため）。
  * `prompt.ts` は値を持たないので、この決め方だけを手掛かりにする。
  */
@@ -117,15 +117,15 @@ export function voiceFieldLabel(
     case "scheduleEnd":
       return row <= 0 ? "終了時刻" : `${nth}の終了時刻`;
     case "planName":
-      return row <= 0 ? "費用プランの名前" : `${row + 1}組目のプラン名`;
+      return row <= 0 ? "料金プランの名前" : `${row + 1}組目のプラン名`;
     case "planAmount":
       return audience
         ? planAudienceLabel("金額", audience, row)
         : priceRowLabel("金額", row);
     case "planNote":
       return audience
-        ? planAudienceLabel("費用の補足", audience, row)
-        : priceRowLabel("費用の補足", row);
+        ? planAudienceLabel("料金の補足", audience, row)
+        : priceRowLabel("料金の補足", row);
     default:
       return voiceFieldByKey(key)?.label ?? key;
   }
@@ -144,7 +144,7 @@ function planAudienceLabel(
 
 /**
  * 値を持たない側（`prompt.ts`）の呼び方。男女別の並びは男性用・女性用の順なので、
- * 奇数行を女性用とみなす。共通の費用が 2 件以上あるときは言い方が変わるが、
+ * 奇数行を女性用とみなす。共通の料金が 2 件以上あるときは言い方が変わるが、
  * 欄の名前は当て字の手掛かりでしかないため、行の番号だけで十分とする。
  */
 function priceRowLabel(base: string, row: number): string {
@@ -275,7 +275,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
   },
   {
     key: "planName",
-    label: "費用プランの名前",
+    label: "料金プランの名前",
     step: "pricing",
     labelFor: (_value, row) => voiceFieldLabel("planName", row),
     // 男女別は 1 組＝1 プランなので、名前の欄は組の先頭の行の id を返す。
@@ -325,7 +325,7 @@ export const VOICE_FIELDS: readonly VoiceField[] = [
   },
   {
     key: "planNote",
-    label: "費用の補足",
+    label: "料金の補足",
     step: "pricing",
     labelFor: (value, row) =>
       voiceFieldLabel("planNote", row, value.pricePlans[row]?.audience),
@@ -530,7 +530,7 @@ function makeSlot(field: VoiceField, value: EventFormValues, row: number): Voice
 
 /**
  * 行を展開したすべてのマス。スコープでは絞らない。
- * 並びは `title` → `organizerName` → 日時（行ごと）→ 費用（組ごとの名前、組の行ごとの金額・補足）
+ * 並びは `title` → `organizerName` → 日時（行ごと）→ 料金（組ごとの名前、組の行ごとの金額・補足）
  * → 場所 → 定員・期限（任意）。
  */
 function allSlots(value: EventFormValues): VoiceSlot[] {
@@ -605,9 +605,9 @@ export function isSlotNeeded(
 }
 
 /**
- * 費用の最初（プラン名）へ入る直前に、男女別を聞くか。
+ * 料金の最初（プラン名）へ入る直前に、男女別を聞くか。
  *
- * 金額を聞いたあとではなく、費用の入口で聞く。男女別にすると行が増えるため、
+ * 金額を聞いたあとではなく、料金の入口で聞く。男女別にすると行が増えるため、
  * プラン名から金額へ進む流れを 1 回だけ作り直せる入口で尋ねるのが分かりやすい。
  * 全部が共通（ANY）のときだけ聞く。男女別の行が 1 つでもあれば、もう聞かない。
  */

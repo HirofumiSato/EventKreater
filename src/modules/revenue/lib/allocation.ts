@@ -30,7 +30,7 @@ export interface AllocationInput {
   shares: readonly AllocationShare[];
   expectedRevenue: number;
   collectedRevenue: number;
-  /** 按分の分母になる出席者数。費用プラン未選択の人も数える。 */
+  /** 按分の分母になる出席者数。料金プラン未選択の人も数える。 */
   attendingCount: number;
 }
 

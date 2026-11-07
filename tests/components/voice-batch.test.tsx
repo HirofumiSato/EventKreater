@@ -175,8 +175,8 @@ describe("まとめて話す", () => {
       "開催日",
       "開始時間",
       "終了時間",
-      "費用プラン名",
-      "費用（円）",
+      "料金プラン名",
+      "料金（円）",
       "場所",
       "郵便番号",
     ]);
@@ -406,7 +406,7 @@ describe("まとめて話す", () => {
     const batch = screen.getByRole("button", { name: /まとめて話す/ });
     const single = screen.getByRole("button", { name: /1つずつ/ });
     expect(within(batch).getByText("シンプルなイベント向け")).toBeTruthy();
-    expect(within(single).getByText("複数日程・費用男女別向け")).toBeTruthy();
+    expect(within(single).getByText("複数日程・料金男女別向け")).toBeTruthy();
     // 案内はマイクを押すたびに出るので、「次回から表示しない」のチェックは置かない。
     expect(screen.queryByText("次回から表示しない")).toBeNull();
     expect(screen.queryByRole("checkbox")).toBeNull();
@@ -460,7 +460,7 @@ describe("まとめて話す", () => {
     const batch = screen.getByRole("button", { name: /まとめて話す/ });
     const single = screen.getByRole("button", { name: /1つずつ/ });
     expect(within(batch).getByText("シンプルなイベント向け")).toBeTruthy();
-    expect(within(single).getByText("複数日程・費用男女別向け")).toBeTruthy();
+    expect(within(single).getByText("複数日程・料金男女別向け")).toBeTruthy();
     expect(screen.queryByText("おすすめ")).toBeNull();
     expect(batch.className).toBe(single.className);
 

@@ -3449,7 +3449,7 @@ body.scope-admin {
   }
 
   /* スマホでは、名前・出欠・人数・支払いだけを残す。横に送らせない。
-     費用・回答・メモは、開いた詳細で読む。 */
+     料金・回答・メモは、開いた詳細で読む。 */
   .roster th:nth-child(4),
   .roster td:nth-child(4),
   .roster th:nth-child(6),

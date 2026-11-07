@@ -77,7 +77,7 @@ class FlyerGenerationRequest(BaseModel):
         ...,
         min_length=1,
         max_length=30,
-        description="費用（例: 3,000円 (1ドリンク付)）",
+        description="料金（例: 3,000円 (1ドリンク付)）",
     )
     location: str = Field(
         ..., min_length=2, max_length=60, description="開催場所・店名"

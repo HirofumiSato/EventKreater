@@ -87,7 +87,7 @@ export default function OrganizerRevenuePage() {
     <div className="stack">
       <PageHeader
         title="売上見込"
-        lead="出席者が選んだ費用プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。"
+        lead="出席者が選んだ料金プランから、見込みの売上を自動で集計します。金額は出欠を入れた時点のものです。"
         actions={<><Link href="/organizer/events" className="btn btn--outline btn--sm">
             主催一覧へ
           </Link>
@@ -186,7 +186,7 @@ export default function OrganizerRevenuePage() {
               <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
               <Panel as="div">
                 <p className="panel__note panel__note--warning">
-                  費用プラン未選択の参加者が {totals.unassignedPlanCount} 人います。売上には含みません。名簿で選ぶと集計に入ります。
+                  料金プラン未選択の参加者が {totals.unassignedPlanCount} 人います。売上には含みません。名簿で選ぶと集計に入ります。
                 </p>
                 <ul className="alert__list">
                   {unassignedEvents.map((event) => (
@@ -250,7 +250,7 @@ export default function OrganizerRevenuePage() {
           </Section>
 
           <p className="help">
-            見込み売上は、参加者が申し込んだ時点の費用プラン金額で計算します。あとからプラン金額を変えても、申込済みの金額は変わりません。
+            見込み売上は、参加者が申し込んだ時点の料金プラン金額で計算します。あとからプラン金額を変えても、申込済みの金額は変わりません。
           </p>
         </>
       )}

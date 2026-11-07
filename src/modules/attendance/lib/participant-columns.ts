@@ -41,7 +41,7 @@ export const PARTICIPANT_COLUMN_LABELS: Record<ParticipantColumnKey, string> = {
   status: "出欠",
   partySize: "人数",
   schedule: "日時",
-  pricePlan: "費用プラン",
+  pricePlan: "料金プラン",
   collected: "集金",
   comment: "コメント",
   createdAt: "回答日時",

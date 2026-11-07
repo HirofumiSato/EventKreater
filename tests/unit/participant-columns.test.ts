@@ -11,7 +11,7 @@ import {
 } from "@/modules/attendance/lib/participant-columns";
 
 describe("参加者名簿の表示列", () => {
-  it("既定は名前・出欠・人数・費用プランの 4 列", () => {
+  it("既定は名前・出欠・人数・料金プランの 4 列", () => {
     expect([...DEFAULT_PARTICIPANT_COLUMNS]).toEqual(["name", "status", "partySize", "pricePlan"]);
   });
 
@@ -108,13 +108,13 @@ describe("参加者名簿の表示列", () => {
     expect(parseParticipantColumns(JSON.stringify(next))).toEqual(["name", "createdAt"]);
   });
 
-  it("集金の列は費用プランの直後・コメントの前にあり、既定には入らず、保存値から読み戻せる", () => {
+  it("集金の列は料金プランの直後・コメントの前にあり、既定には入らず、保存値から読み戻せる", () => {
     const index = PARTICIPANT_COLUMN_ORDER.indexOf("collected");
     expect(index).toBeGreaterThanOrEqual(0);
     expect(PARTICIPANT_COLUMN_ORDER[index - 1]).toBe("pricePlan");
     expect(PARTICIPANT_COLUMN_ORDER[index + 1]).toBe("comment");
     expect(PARTICIPANT_COLUMN_LABELS.collected).toBe("集金");
-    // 既定の 4 列（名前・出欠・人数・費用プラン）は増やさない。
+    // 既定の 4 列（名前・出欠・人数・料金プラン）は増やさない。
     expect(DEFAULT_PARTICIPANT_COLUMNS).not.toContain("collected");
     // 表示列から選んだ保存値は、そのまま読み戻せる。
     expect(parseParticipantColumns(JSON.stringify(["name", "collected"]))).toEqual([

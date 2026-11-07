@@ -58,7 +58,7 @@ const pricePlanInputSchema = z.object({
     .transform((value) => (value ? value : null)),
 });
 
-/** 割引 1 件。すべての費用プランに適用する。参加者が申込時に選ぶ。 */
+/** 割引 1 件。すべての料金プランに適用する。参加者が申込時に選ぶ。 */
 const discountInputSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1, "割引の名前を入力してください").max(50),
@@ -150,7 +150,7 @@ function refineAttendanceChoice(
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["pricePlanId"],
-      message: "費用プランを選んでください",
+      message: "料金プランを選んでください",
     });
   }
 }
@@ -165,7 +165,7 @@ export const GenerateFlyerSchema = z.object({
       return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
     }, "実在する日付を入力してください"),
   eventTime: z.string().trim().min(4, "開催時間は4文字以上30文字以内です").max(30, "チラシの開催時間は30文字以内です"),
-  price: z.string().trim().min(1, "費用を入力してください").max(30, "チラシの費用は30文字以内です"),
+  price: z.string().trim().min(1, "料金を入力してください").max(30, "チラシの料金は30文字以内です"),
   location: z.string().trim().min(2, "開催場所は2文字以上60文字以内です").max(60, "チラシの場所は60文字以内です"),
   rainPolicy: z.enum(["RAIN_OR_SHINE", "CANCEL_ON_RAIN", "POSTPONE_ON_RAIN", "INDOOR"]),
   capacity: z.number().int().positive().nullable().optional(),
@@ -251,7 +251,7 @@ const postalCodeSchema = z
 const eventBodySchema = z.object({
   title: z.string().trim().min(1, "イベント名を入力してください").max(100),
   schedules: z.array(scheduleInputSchema).min(1, "開催日時を1件以上入力してください").max(MAX_EVENT_OPTIONS),
-  pricePlans: z.array(pricePlanInputSchema).min(1, "費用プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),
+  pricePlans: z.array(pricePlanInputSchema).min(1, "料金プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),
   /** 参加者が申込時に選べる割引。任意で、省略した既存クライアントは 0 件として扱う。 */
   discounts: z.array(discountInputSchema).max(MAX_EVENT_OPTIONS).default([]),
   /** 旧・自由入力の開催場所。構造化住所が無いときだけ使う。 */

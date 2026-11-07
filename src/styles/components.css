@@ -215,7 +215,7 @@
 
 /* 主操作の下に並べるテキストリンク。狭い幅では折り返す。
    行の高さは押せる的（40px）を確保し、字の位置は中央に置く。
-   主操作（`--font-action` の 15px）より二段小さくする。費用の注記（12px）とは
+   主操作（`--font-action` の 15px）より二段小さくする。料金の注記（12px）とは
    分ける添え書きなので、その間の 13px にする。押せる的は下げない。 */
 .hero__links {
   display: flex;
@@ -1686,13 +1686,13 @@ fieldset.field {
   grid-template-columns: 1fr;
 }
 
-/* 費用プランの札。3 枠までは 1 行（390px で 3 枠 = 約 108px）。4 枠以上は 2 段目へ回る。
+/* 料金プランの札。3 枠までは 1 行（390px で 3 枠 = 約 108px）。4 枠以上は 2 段目へ回る。
    札が細くなりすぎないよう、1 枠 5.5rem を下回らせない。 */
 .choice-group--plans {
   grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
 }
 
-/* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
+/* 性別の 2 択。文字だけの札なので、料金プランと同じ高さ（4.5rem）にすると
    層が無駄に伸びる。押せる的の下限（40px）まで詰める。 */
 .choice-group--compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1721,7 +1721,7 @@ fieldset.field {
   cursor: pointer;
 }
 
-/* 費用プランは「品名」と「金額」の 2 段。横に長い 1 行のままだと 3 枠に入らない。 */
+/* 料金プランは「品名」と「金額」の 2 段。横に長い 1 行のままだと 3 枠に入らない。 */
 .choice--plan {
   gap: 0.125rem;
   min-height: var(--tap-target);
@@ -1751,7 +1751,7 @@ fieldset.field {
   overflow-wrap: anywhere;
 }
 
-/* 性別の 2 択。文字だけの札なので、費用プランと同じ高さ（4.5rem）にすると
+/* 性別の 2 択。文字だけの札なので、料金プランと同じ高さ（4.5rem）にすると
    層が無駄に伸びる。押せる的の下限（40px）まで詰める。 */
 .choice-group--compact .choice {
   min-height: var(--tap-target);
@@ -1804,7 +1804,7 @@ fieldset.field {
   background: var(--color-bg);
 }
 
-/* 選んだ札は、朱の枠と薄い朱地で示す。性別・日時・費用のどれも同じ扱い。
+/* 選んだ札は、朱の枠と薄い朱地で示す。性別・日時・料金のどれも同じ扱い。
    地を墨で塗り返さないので、文字は差し色のまま読める。
    色だけに頼らないよう、右上にチェックの丸を 1 つ添える。 */
 .choice:has(input:checked:not(:disabled)) {
@@ -1841,7 +1841,7 @@ fieldset.field {
 }
 
 /* 選べない札は消さずにグレーにする。欠席・参加要望のときと、性別に合わない
-   費用プランがここに入る。消すと「あとから欄が現れる」動きになり、身構えさせる。 */
+   料金プランがここに入る。消すと「あとから欄が現れる」動きになり、身構えさせる。 */
 .choice:has(input:disabled) {
   border-color: var(--color-border);
   background: var(--color-slate-100);

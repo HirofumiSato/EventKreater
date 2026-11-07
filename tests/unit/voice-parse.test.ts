@@ -199,7 +199,7 @@ describe("行の指定", () => {
     expect(patch?.schedules?.[1].eventDate).toBe("2026-12-10");
   });
 
-  it("費用プランの金額も行ごとに入れ替える", () => {
+  it("料金プランの金額も行ごとに入れ替える", () => {
     const value = withRows({
       pricePlans: [
         createPricePlanDraft({ key: "m-1", name: "一般", amount: "3000", audience: "MALE" }),

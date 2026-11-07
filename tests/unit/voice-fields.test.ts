@@ -53,7 +53,7 @@ function filledForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
   };
 }
 
-/** 開催日時 2 行・費用 2 組。行の id を固定して domId を確かめられるようにする。 */
+/** 開催日時 2 行・料金 2 組。行の id を固定して domId を確かめられるようにする。 */
 function multiRowForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
   return {
     ...EMPTY_EVENT_FORM,
@@ -110,7 +110,7 @@ describe("音声で埋める欄の定義", () => {
 });
 
 describe("音声で埋めるマスの並び", () => {
-  it("開催日時は行ごとに、費用は組ごとに並ぶ", () => {
+  it("開催日時は行ごとに、料金は組ごとに並ぶ", () => {
     const ids = voiceFieldOrder(multiRowForm(), scope()).map((slot) => slot.id);
     expect(ids.slice(0, 7)).toEqual([
       "title:0",
@@ -202,8 +202,8 @@ describe("次に埋める欄の決め方", () => {
   });
 });
 
-describe("費用の入口で男女別を聞くか", () => {
-  it("共通の費用だけなら、プラン名の直前に聞く", () => {
+describe("料金の入口で男女別を聞くか", () => {
+  it("共通の料金だけなら、プラン名の直前に聞く", () => {
     expect(shouldAskGenderBeforePricing(EMPTY_EVENT_FORM)).toBe(true);
   });
 
@@ -211,13 +211,13 @@ describe("費用の入口で男女別を聞くか", () => {
     expect(shouldAskGenderBeforePricing(genderForm())).toBe(false);
   });
 
-  it("費用の行が無ければ聞かない", () => {
+  it("料金の行が無ければ聞かない", () => {
     expect(shouldAskGenderBeforePricing({ ...EMPTY_EVENT_FORM, pricePlans: [] })).toBe(false);
   });
 });
 
 describe("任意の欄", () => {
-  it("費用の補足は任意で、既定では空でも埋める対象にしない", () => {
+  it("料金の補足は任意で、既定では空でも埋める対象にしない", () => {
     const field = voiceFieldByKey("planNote");
     const value = {
       ...EMPTY_EVENT_FORM,
@@ -415,7 +415,7 @@ describe("複数のパッチの適用", () => {
     expect(next.schedules[1].eventDate).toBe("2026-12-06");
   });
 
-  it("費用の行も key で突き合わせて合成する", () => {
+  it("料金の行も key で突き合わせて合成する", () => {
     const base = {
       ...EMPTY_EVENT_FORM,
       pricePlans: [

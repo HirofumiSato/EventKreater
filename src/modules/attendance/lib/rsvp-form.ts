@@ -36,14 +36,14 @@ export function rsvpSubmitName(
   return normalizeMember(memberName) ?? typedName.trim();
 }
 
-/** 男女別の費用プランを、選んだ性別で選べるか。共通（ANY）は常に選べる。 */
+/** 男女別の料金プランを、選んだ性別で選べるか。共通（ANY）は常に選べる。 */
 export function isRsvpPlanSelectable(plan: EventPricePlanOption, gender: Gender | ""): boolean {
   if (plan.audience === "ANY") return true;
   return gender !== "" && plan.audience === gender;
 }
 
 /**
- * 選べる費用プランだけを残す。性別が未選択なら共通プランだけになる。
+ * 選べる料金プランだけを残す。性別が未選択なら共通プランだけになる。
  * これは「送ってよいか」の判定に使い、表示は絞らない（札は全部出して無効にする）。
  */
 export function selectableRsvpPlans(
@@ -54,7 +54,7 @@ export function selectableRsvpPlans(
 }
 
 /**
- * 実際に選ばれている費用プランの ID。選べる札の中から選ぶ。
+ * 実際に選ばれている料金プランの ID。選べる札の中から選ぶ。
  * 選んでいた札が性別の変更で選べなくなったら、先頭の選べる札へ移す。
  */
 export function resolveSelectedPlanId(
@@ -77,9 +77,9 @@ export interface RsvpPlanChoice {
 }
 
 /**
- * 費用プランの札を、表示する順のまま組む。
+ * 料金プランの札を、表示する順のまま組む。
  *
- * 性別が未選択でも札は出す。ここで絞ると、性別を選ぶまで費用の欄ごと消え、
+ * 性別が未選択でも札は出す。ここで絞ると、性別を選ぶまで料金の欄ごと消え、
  * 「選んだのに何も出ない」ように見える（男女別プランしか無い催しで起きていた）。
  */
 export function rsvpPlanChoices(input: {

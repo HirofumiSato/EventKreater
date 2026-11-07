@@ -44,7 +44,7 @@ interface ParticipantSheetProps {
  * 名簿の 1 行を押したときに開く 1 枚。
  *
  * 表に操作の列を置かない代わりに、直すときだけこの層を出す。表は読むためだけに使い、
- * 列の幅を操作に奪われないようにする。出欠・人数・日時・費用プランは `required` に近い扱いで、
+ * 列の幅を操作に奪われないようにする。出欠・人数・日時・料金プランは `required` に近い扱いで、
  * 参加のときは日時を 1 つ以上選ばないと保存できない（既定のまま送ると金額の事故になる）。
  */
 export function ParticipantSheet({
@@ -297,9 +297,9 @@ export function ParticipantSheet({
             )}
 
             <Field
-              label="費用プラン"
+              label="料金プラン"
               htmlFor="participant-sheet-plan"
-              help={pricePlans.length === 0 ? "このイベントには費用プランがありません。" : undefined}
+              help={pricePlans.length === 0 ? "このイベントには料金プランがありません。" : undefined}
             >
               <select
                 id="participant-sheet-plan"

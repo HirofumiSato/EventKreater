@@ -201,7 +201,7 @@ describe("最終枚の文言", () => {
     }
   });
 
-  it("費用の枚は、3 つの作り方を番号なしの箇条書きで並べる", () => {
+  it("料金の枚は、3 つの作り方を番号なしの箇条書きで並べる", () => {
     const copy = eventGuideStep("pricing").copy;
 
     expect(copy.title).toBe("料金プランをカスタマイズ");

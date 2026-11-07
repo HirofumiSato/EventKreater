@@ -449,20 +449,20 @@
     return fields;
   }
 
-  /** 男女別の費用のチェックボックス。`voiceFields()` はチェックボックスを拾わないので別に探す。 */
+  /** 男女別の料金のチェックボックス。`voiceFields()` はチェックボックスを拾わないので別に探す。 */
   function genderCheckbox() {
     const form = document.querySelector("form.event-steps") || document.querySelector(".page--form form");
     if (!form) return null;
     for (const box of form.querySelectorAll('input[type="checkbox"]')) {
       const label = box.closest("label");
       const text = label ? label.textContent || "" : "";
-      if (text.indexOf("男女別の費用") >= 0) return box;
+      if (text.indexOf("男女別の料金") >= 0) return box;
     }
     return null;
   }
 
   /**
-   * 費用の最初（プラン名）の直前に「男女別の費用を設定しますか」のターンを足す。
+   * 料金の最初（プラン名）の直前に「男女別の料金を設定しますか」のターンを足す。
    *
    * 製品はプラン名を聞く直前に尋ねる。モックはチェックボックスを巡回に含めないので、
    * ここで 1 ターン補う。はいならチェックを入れ、女性用の金額を巡回へ足す（`answerGender`）。
@@ -487,9 +487,9 @@
       control: box,
       amount: maleAmount,
       kind: "gender",
-      label: "男女別の費用",
+      label: "男女別の料金",
       value: "はい",
-      prompt: "男女別の費用を設定しますか",
+      prompt: "男女別の料金を設定しますか",
       hint: "はい／いいえ",
       // チェックボックスは値を持たないので、「いまの値」は出さない。
       current: "",
@@ -730,9 +730,9 @@
     "schedule-date": { label: "開催日", prompt: "開催日は？", example: "12月5日" },
     "schedule-start": { label: "開始時間", prompt: "開始時間は？", example: "18時" },
     "schedule-end": { label: "終了時間", prompt: "終了時間は？", example: "20時" },
-    "plan-name": { label: "費用プラン名", prompt: "費用プラン名は？", example: "一般" },
-    "plan-amount": { label: "費用（円）", prompt: "費用は？", example: "3000円" },
-    "plan-note": { label: "費用の補足", prompt: "補足は？", example: "1ドリンク付" },
+    "plan-name": { label: "料金プラン名", prompt: "料金プラン名は？", example: "一般" },
+    "plan-amount": { label: "料金（円）", prompt: "料金は？", example: "3000円" },
+    "plan-note": { label: "料金の補足", prompt: "補足は？", example: "1ドリンク付" },
     "event-venue-name": { label: "場所", prompt: "場所は？", example: "渋谷ホール" },
     "event-postal-code": { label: "郵便番号", prompt: "郵便番号は？", example: "1500001" },
     "event-prefecture": { label: "都道府県", prompt: "都道府県は？", example: "東京都" },
@@ -1336,7 +1336,7 @@
   }
 
   /**
-   * 男女別の費用のターンに答える。
+   * 男女別の料金のターンに答える。
    *
    * モックは回答の UI を持たないので、製品で「はい」を選んだときと同じくチェックを入れ、
    * 女性用の金額を巡回へ足す。すでに男女別なら何もせず次へ進む（＝「いいえ」と同じ）。
@@ -1445,7 +1445,7 @@
     const blanks = voice.fields.filter(
       (entry) => entry.kind !== "gender" && entry.field && !entry.field.value,
     ).length;
-    // 既定は製品の `defaultVoiceMode` に合わせる。複数日程・男女別・複数の費用プランがあると、
+    // 既定は製品の `defaultVoiceMode` に合わせる。複数日程・男女別・複数の料金プランがあると、
     // まとめて話しても行を分けられないため、そのときは「1つずつ」を既定にする。
     // 行が 1 つなら、空欄が 3 つ以上のときに「まとめて」を既定にする。
     const rowCount = (prefix) =>
@@ -2410,7 +2410,7 @@
    * 名簿の行を押したときに開く 1 枚（製品の `ParticipantSheet`）。
    *
    * 製品では押したときにしか出ず、撮った HTML に残らないので、ここで骨格を組み直す。
-   * 値は押した行のセルから読む（名前・出欠・人数・費用プラン・コメント）。
+   * 値は押した行のセルから読む（名前・出欠・人数・料金プラン・コメント）。
    * 日時は撮った HTML に無い（既定の表示列に無い）ので、この写しでは出さない。
    * 出欠を「出席」以外にすると、席を取らない項目を隠す（製品と同じ）。
    */
@@ -2429,7 +2429,7 @@
       return cell ? (cell.textContent || "").trim() : "";
     };
 
-    /** 費用プランは、割引と支払額の行を除いた「プラン名 金額」だけを取る。 */
+    /** 料金プランは、割引と支払額の行を除いた「プラン名 金額」だけを取る。 */
     const planText = (row) => {
       const cell = row.querySelector('td[data-column="pricePlan"]');
       if (!cell) return "";
@@ -2492,7 +2492,7 @@
         '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-party">人数</label>' +
         '<input id="mock-roster-sheet-party" class="input" type="number" inputmode="numeric" min="1" max="20">' +
         '<p class="help">自分を含めた人数です。</p></div>' +
-        '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-plan">費用プラン</label>' +
+        '<div class="field" data-mock-sheet-attending><label class="label" for="mock-roster-sheet-plan">料金プラン</label>' +
         '<input id="mock-roster-sheet-plan" class="input"></div>' +
         '<div class="field"><label class="label" for="mock-roster-sheet-comment">コメント</label>' +
         '<input id="mock-roster-sheet-comment" class="input" maxlength="500"></div>' +

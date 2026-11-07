@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw new ProblemDetailException({
         status: 400,
         title: "Validation Error",
-        detail: "コピー元に開催日時または費用プランがありません。",
+        detail: "コピー元に開催日時または料金プランがありません。",
       });
     }
 

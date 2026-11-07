@@ -6,7 +6,7 @@ import { cleanup, seedEvent } from "./helpers";
 
 const describeDb = process.env.TEST_DATABASE_URL ? describe : describe.skip;
 
-/** 割引だけを差し替えて保存する。日時と費用プランは前の状態を引き継ぐ。 */
+/** 割引だけを差し替えて保存する。日時と料金プランは前の状態を引き継ぐ。 */
 async function saveDiscounts(
   eventId: string,
   discounts: { id?: string; name: string; amount: number; note: string | null }[],

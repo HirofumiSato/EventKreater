@@ -9,7 +9,7 @@ import { keepDiscountSnapshot } from "@/modules/events/lib/events";
 import { draftsFromOptions, createDiscountDraft } from "@/modules/events/types";
 
 /**
- * 割引は「条件名＋値引き額（円）＋補足」の組。すべての費用プランから引き、支払額は 0 円で止める。
+ * 割引は「条件名＋値引き額（円）＋補足」の組。すべての料金プランから引き、支払額は 0 円で止める。
  * 申込時点の写し（スナップショット）を残すので、定義を編集・削除しても金額は動かない。
  */
 describe("composeDiscountText", () => {

@@ -60,7 +60,7 @@ function filledForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
  * 定員・申し込み期限・チラシは公開までに埋めればよいので、保存では要求しない。
  */
 describe("下書きの入力条件", () => {
-  it("催し名・日時・費用プラン・場所だけで保存できる", () => {
+  it("催し名・日時・料金プラン・場所だけで保存できる", () => {
     const parsed = SaveEventDraftSchema.parse(draftPayload());
     expect(parsed.title).toBe("下書きの催し");
     expect(parsed.status).toBe("DRAFT");
@@ -70,7 +70,7 @@ describe("下書きの入力条件", () => {
     expect(parsed.flyerAssetId).toBeNull();
   });
 
-  it("費用プランが無いと保存できない", () => {
+  it("料金プランが無いと保存できない", () => {
     const result = SaveEventDraftSchema.safeParse(draftPayload({ pricePlans: [] }));
     expect(result.success).toBe(false);
   });
@@ -126,7 +126,7 @@ describe("下書き保存できるステップ", () => {
     expect(isDraftReady(EMPTY_EVENT_FORM)).toBe(false);
   });
 
-  it("費用プランが空なら費用プランを開く", () => {
+  it("料金プランが空なら料金プランを開く", () => {
     expect(firstIncompleteDraftStep(filledForm({ pricePlans: [] }))).toBe("pricing");
   });
 

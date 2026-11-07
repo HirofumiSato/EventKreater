@@ -183,7 +183,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
       {data.revenue.unassignedPlanCount > 0 && (
         <Alert tone="warning">
-          費用プラン未選択の参加者が {data.revenue.unassignedPlanCount} 人います。名簿で選ぶと売上に入ります。
+          料金プラン未選択の参加者が {data.revenue.unassignedPlanCount} 人います。名簿で選ぶと売上に入ります。
         </Alert>
       )}
       <ParticipantListTable

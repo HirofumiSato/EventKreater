@@ -267,7 +267,7 @@ export async function resolveAttendanceChoice(
     throw new ProblemDetailException({
       status: 400,
       title: "Validation Error",
-      detail: "選んだ日時または費用プランがこのイベントにありません。",
+      detail: "選んだ日時または料金プランがこのイベントにありません。",
     });
   }
   // 共通プランだけなら性別は聞かない。男女別プランを選ぶときだけ必須にする。
@@ -283,7 +283,7 @@ export async function resolveAttendanceChoice(
     throw new ProblemDetailException({
       status: 400,
       title: "Validation Error",
-      detail: "選んだ性別では、その費用プランを選べません。",
+      detail: "選んだ性別では、その料金プランを選べません。",
       error: "PRICE_PLAN_GENDER_MISMATCH",
     });
   }

@@ -45,7 +45,7 @@ function csvCell(value: string): string {
 }
 
 function downloadCsv(rows: ParticipantRow[]) {
-  const header = ["名前", "性別", "出欠", "人数", "日時", "費用プラン", "割引", "支払額", "集金", "コメント", "回答日時"];
+  const header = ["名前", "性別", "出欠", "人数", "日時", "料金プラン", "割引", "支払額", "集金", "コメント", "回答日時"];
   const lines = rows.map((row) =>
     [
       csvCell(row.name),
@@ -316,7 +316,7 @@ export function ParticipantListTable({
       </div>
       <div className="table-card__foot">
         <p className="help">
-          {onSave ? "行を押すと、出欠・人数・費用プランを直せます。" : "回答順に並びます。"}
+          {onSave ? "行を押すと、出欠・人数・料金プランを直せます。" : "回答順に並びます。"}
         </p>
       </div>
       {columnPickerOpen && (

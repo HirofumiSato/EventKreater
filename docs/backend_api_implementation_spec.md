@@ -71,7 +71,7 @@ flowchart TD
 | `/api/v1/invitations/[code]` | POST | SCR-ORG-07 | 会員必須（未登録は 403 `REGISTER_REQUIRED`） | 招待コードを受諾して共同主催・幹事になる。コードは受諾時に失効させる（5.21） |
 | `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。開催日（`sort_date`）・各日程（`event_schedules.event_date`）・申込締切（`rsvp_deadline`）は1か月後へずらし、月末はその月の末日へ丸める（1月31日 → 2月28日、閏年は2月29日。申込締切の時刻は JST のまま保つ）。応答は適用した月を `shiftedMonths: 1` で返す。`publicUrl` は `null` |
 | `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 主催者（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
-| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 主催者（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・費用プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 主催者（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・料金プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催者（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
 | `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。会員行が無いときは、登録途中の意向（`signup_intents`）をパスワードで引き当てて再開する。メール未確認なら確認メールを再送して `unverifiedEmail`、メール確認済み・電話未確認なら `signupPending` を返す。登録の成否はメールの有無で変えない |
@@ -556,7 +556,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
 | 共同主催・幹事の招待 | `POST /api/v1/organizer/events/[id]/invitations`（主催者のみ） |
 
-名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。費用プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。集金の記録が使う既定額（`unitPayableAmount`）も同じ値になる。
+名簿（GET）と出欠の変更（PATCH）が返す `pricePlanLabel` と `pricePlanAmount` は、出席者では申込時点のスナップショット（`price_amount` / `price_plan_name` / `price_audience`）を優先する。料金プランの金額や名前を編集しても、名簿の金額が売上と食い違わないようにするためである。スナップショットが無い行は現在のプラン値を返す。集金の記録が使う既定額（`unitPayableAmount`）も同じ値になる。
 
 割引を選んだ出席者には `discounts`（`discountId` / `name` / `amount` / `note` / `label`）、`discountAmount`（割引の合計 × `partySize`）、`payableAmount`（`(pricePlanAmount − 割引の合計) × partySize` の支払額。0 円で止めてから人数を掛ける）、`unitPayableAmount`（`pricePlanAmount − 割引の合計`。人数を掛けない 1 人ぶん）を返す。`payableAmount` と `unitPayableAmount` が `null` なのはプラン未選択の行だけで、**集金は 1 人ずつ記録するので、集計にも名簿の 1 枚にも `unitPayableAmount` を使う**（名簿には「1人 2,500円」と「3人 合計 7,500円」の 2 行で両方を出す）。名簿の変更（`PATCH`）は `discountIds` と `partySize`、`scheduleIds` を受け取り、出席のときだけ写しを入れ替える（`resolveDiscountChoice` / `keepDiscountSnapshot`）。出席でない行の `partySize` は 1 に戻し、参加要望は 1 人として並べて、承認したときに名簿で人数を入れる。
 
@@ -694,9 +694,9 @@ export const CreateEventSchema = z.object({
   pricePlans: z.array(z.object({
     id: z.string().uuid().optional(),
     name: z.string().min(1, 'プラン名を入力してください').max(50),
-    price: z.string().min(1, '費用を入力してください').max(50),
+    price: z.string().min(1, '料金を入力してください').max(50),
   })).min(1).max(8),
-  /** 任意の割引。0〜8 件で、すべての費用プランに適用する。省略すると 0 件。 */
+  /** 任意の割引。0〜8 件で、すべての料金プランに適用する。省略すると 0 件。 */
   discounts: z.array(z.object({
     id: z.string().uuid().optional(),
     name: z.string().trim().min(1, '割引名を入力してください').max(50),
@@ -902,7 +902,7 @@ export const SubmitRsvpSchema = z.object({
   4. 見つからなければ新規トークンを発行し INSERT する。ログイン中なら `userId` も入れる。
   5. 同じ会員の同時送信で一意制約に当たった場合は、1 回だけ更新としてやり直す。
   6. `Set-Cookie: rsvp_token_<id>=<token>; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure` をセット。会員の行を使い続ける場合は新しいトークンを発行しない。
-  7. 出席にしたときは、選んだ費用プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
+  7. 出席にしたときは、選んだ料金プランの金額・プラン名・対象を `participants.price_amount` / `price_plan_name` / `price_audience` に写す（スナップショット）。既に同じプランを選んでいる行の更新では、申込時点の金額を保つ（`keepPriceSnapshot`）。幹事が名簿で名前だけ直したときに、あとから変えたプラン金額へ引きずられないようにするため。欠席にしたときは 3 つとも `NULL` にする。
   8. 出席にしたときは、`discountIds` を `event_discounts` と突き合わせ、名前・金額・補足を `participant_discounts` に写す（スナップショット）。重複した ID は畳み、イベントに属さない ID が混ざっていれば 400 `DISCOUNT_NOT_FOUND`。更新で同じ割引を選び直しただけなら申込時点の金額を保つ（`keepDiscountSnapshot`）。欠席・参加要望にしたときは行を消し、`myRsvp.discounts` は空になる。定義を後から編集・削除しても、保存済みの写しは動かない。
   9. 日程は `scheduleIds`（無ければ `scheduleId` 1 件）をイベントの `sort_order` 順に正規化し、`participant_schedules` を `deleteMany` → `create` で差し替える。`participants.schedule_id` には先頭を代表として入れ、欠席・参加要望のときは join 行を空にして `schedule_id` も `NULL` にする。イベントに属さない `scheduleIds` が混ざっていれば 400 `VALIDATION_ERROR`。
   10. 参加人数は `partySize`（既定 1、1〜20 の外は 400）。出席のときだけ持ち、欠席・参加要望は 1 に戻す（要望は席を取らない）。定員は人数の合計 `Σ attending.party_size` で判定し、更新時は自分が使っていた人数を差し引いてから比べる。超えるときは `ATTENDING` を `WAITLISTED` に読み替える（更新の場合は 409 `CAPACITY_REACHED` で拒否）。
@@ -1238,7 +1238,7 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 | `HEADCOUNT_EXCEEDS_ATTENDING` | 409 | 人数の合計が出席者数を超える |
 | `REGISTER_REQUIRED` | 403 | 未登録の主催者 |
 
-計算規則は `src/modules/revenue/lib/allocation.ts` に閉じている。各人を切り捨て、余りは主催者（`OWNER`）へ寄せる。人数方式の分母は出席者数（費用プラン未選択の人も数える）。出席者が 0 人なら全員 0 円。
+計算規則は `src/modules/revenue/lib/allocation.ts` に閉じている。各人を切り捨て、余りは主催者（`OWNER`）へ寄せる。人数方式の分母は出席者数（料金プラン未選択の人も数える）。出席者が 0 人なら全員 0 円。
 
 ---
 

@@ -31,7 +31,7 @@ export const SITE = {
   taglineLines: TAGLINE_LINES,
   tagline: TAGLINE_LINES.join(""),
   description:
-    "イベント名・日時・場所・費用を入れるだけで、チラシと告知ページが5分でできます。URLを送るだけで集客と予約管理が完結し、出欠の集計も自動です。",
+    "イベント名・日時・場所・料金を入れるだけで、チラシと告知ページが5分でできます。URLを送るだけで集客と予約管理が完結し、出欠の集計も自動です。",
   nav: {
     home: { href: "/", label: "トップ" },
     service: { href: "/service", label: "サービスと料金" },

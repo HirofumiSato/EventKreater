@@ -24,7 +24,7 @@ export const GENDER_LABELS: Record<Gender, string> = {
   FEMALE: "女性",
 };
 
-/** 参加者の性別から選べる費用プランの対象を返す。 */
+/** 参加者の性別から選べる料金プランの対象を返す。 */
 export function audiencesForGender(gender: Gender): PriceAudience[] {
   return gender === "MALE" ? ["MALE", "ANY"] : ["FEMALE", "ANY"];
 }
@@ -412,8 +412,8 @@ export function pricePlanChoiceLabel(plan: {
 }
 
 /**
- * 名簿に出す、その人が申し込んだ費用プラン。
- * 出欠確定時点の金額が残っていればそちらを優先する。費用プランを編集しても、
+ * 名簿に出す、その人が申し込んだ料金プラン。
+ * 出欠確定時点の金額が残っていればそちらを優先する。料金プランを編集しても、
  * 名簿の金額が売上と食い違わないようにするため。
  */
 export function participantPriceDisplay(row: {
@@ -438,7 +438,7 @@ export function participantPriceDisplay(row: {
   };
 }
 
-/** チラシの費用を 30 文字までに収める。入りきらないときは先頭の金額に「〜」を付ける。 */
+/** チラシの料金を 30 文字までに収める。入りきらないときは先頭の金額に「〜」を付ける。 */
 export function flyerPriceLabel(
   rows: { name: string; audience?: PriceAudience; amount: number; note?: string | null }[],
 ): string {

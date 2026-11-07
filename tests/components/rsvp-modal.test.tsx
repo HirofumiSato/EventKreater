@@ -3,8 +3,8 @@
 // 出欠の層（`DynamicRsvpBox`）の再発防止。
 //
 // 直したのは 4 つで、どれも「選択すると欄が出る」形に戻ると壊れる。
-//   1. 性別・日時・費用は最初から出す（欠席なら消さずにグレーアウトする）
-//   2. 性別別の費用プランしか無い催しでも、費用の欄が消えない
+//   1. 性別・日時・料金は最初から出す（欠席なら消さずにグレーアウトする）
+//   2. 性別別の料金プランしか無い催しでも、料金の欄が消えない
 //   3. 日時は 3 件までを 1 行に並べる
 //   4. ログイン中は名前の欄と「アカウントを切り替える」を出さない
 //
@@ -106,11 +106,11 @@ afterEach(() => {
 });
 
 describe("初期表示", () => {
-  it("出席の欄（性別・日時・費用）を、選ぶ前から出す", () => {
+  it("出席の欄（性別・日時・料金）を、選ぶ前から出す", () => {
     renderBox();
     expect(screen.getByText("性別")).toBeTruthy();
     expect(screen.getByText("出席する日時")).toBeTruthy();
-    expect(screen.getByText("費用プラン")).toBeTruthy();
+    expect(screen.getByText("料金プラン")).toBeTruthy();
   });
 
   it("出席が既定なので、性別と日時の札は押せる", () => {
@@ -130,7 +130,7 @@ describe("欠席にしたとき", () => {
     // 見出しは残る。
     expect(screen.getByText("性別")).toBeTruthy();
     expect(screen.getByText("出席する日時")).toBeTruthy();
-    expect(screen.getByText("費用プラン")).toBeTruthy();
+    expect(screen.getByText("料金プラン")).toBeTruthy();
 
     // 入力は残るが、どれも押せない。
     for (const input of radios(container, "gender")) expect(input.disabled).toBe(true);
@@ -150,7 +150,7 @@ describe("欠席にしたとき", () => {
   });
 });
 
-describe("性別と費用プラン", () => {
+describe("性別と料金プラン", () => {
   it("性別を選ぶ前は、男女別の札を残したまま押せなくする", () => {
     const { container } = renderBox();
     const byAudience = (audience: PriceAudience) =>
@@ -186,9 +186,9 @@ describe("性別と費用プラン", () => {
     expect(byAudience("FEMALE").disabled).toBe(false);
   });
 
-  it("男女別プランが 1 件だけでも、費用の欄と札を出す（以前は欄ごと消えていた）", () => {
+  it("男女別プランが 1 件だけでも、料金の欄と札を出す（以前は欄ごと消えていた）", () => {
     const { container } = renderBox({ pricePlans: [plan("male", "MALE")] });
-    expect(screen.getByText("費用プラン")).toBeTruthy();
+    expect(screen.getByText("料金プラン")).toBeTruthy();
     expect(radios(container, "price-plan")).toHaveLength(1);
 
     fireEvent.click(container.querySelector('input[name="gender"][value="MALE"]')!);
@@ -201,7 +201,7 @@ describe("性別と費用プラン", () => {
     const { container } = renderBox({ pricePlans: [plan("female", "FEMALE")] });
     fireEvent.click(container.querySelector('input[name="gender"][value="MALE"]')!);
     expect(
-      screen.getByText("この性別で選べる費用プランがありません。幹事に確認してください。"),
+      screen.getByText("この性別で選べる料金プランがありません。幹事に確認してください。"),
     ).toBeTruthy();
     expect(radios(container, "price-plan").every((input) => input.disabled)).toBe(true);
   });

@@ -348,7 +348,7 @@ P0 は情報の並べ替えに留まり、画面の印象は変わらなかっ�
 
 2026-10-31（2 回目）: 「ハロウィン おやこマルシェ」と「手しごとの市 秋の道具市」の 2 枚を、いまの描画（紙の地・配色・題の折り返し・可読性の判定）で作り直した。どちらも同じ 2 ステップを通し、背景は AI（`source: ai`）、紙面はテーマのおすすめ（キャンディ → `style_3_vibrant_pop`、和紙と藍 → `style_1_bar_stylish`）、積みは `classic`。あわせて 12 月の催しを 2 件足し、その見本も同じ手順で作った（クリスマス ダンスパフォーマンス＝羊皮紙＋`style_1_bar_stylish`、DJナイト Vol.7＝ネオン＋`style_3_vibrant_pop`）。4 枚とも 1080×1528（A4）。
 
-2026-10-31（3 回目）: 題から催しの型（活動・モチーフ・会場・人物方針・光）を取り出す `visual_hints` と、プロンプトの受け渡し（`prompt_payload`）を入れたあとに、4 枚を作り直した。画面と同じ経路（`/api/v1/flyers/candidates` → `/{id}/types` → 候補画像）を BFF 越しに通し、payload は催しの DB の値から組んだ（費用は `flyerPriceLabel`、場所は `flyerLocationLabel`、人数は `先着◯名`）。背景は 4 枚とも AI（`source: ai`）、紙面はテーマのおすすめ（ハロウィン → `style_3_vibrant_pop`、手しごと・クリスマス → `style_1_bar_stylish`、DJ → `style_3_vibrant_pop`）、積みは `classic`。差し替え先は `public/samples/*.jpg` と、いまの DB が指す `storage/flyers/<flyerAssetId>.jpg` の両方。
+2026-10-31（3 回目）: 題から催しの型（活動・モチーフ・会場・人物方針・光）を取り出す `visual_hints` と、プロンプトの受け渡し（`prompt_payload`）を入れたあとに、4 枚を作り直した。画面と同じ経路（`/api/v1/flyers/candidates` → `/{id}/types` → 候補画像）を BFF 越しに通し、payload は催しの DB の値から組んだ（料金は `flyerPriceLabel`、場所は `flyerLocationLabel`、人数は `先着◯名`）。背景は 4 枚とも AI（`source: ai`）、紙面はテーマのおすすめ（ハロウィン → `style_3_vibrant_pop`、手しごと・クリスマス → `style_1_bar_stylish`、DJ → `style_3_vibrant_pop`）、積みは `classic`。差し替え先は `public/samples/*.jpg` と、いまの DB が指す `storage/flyers/<flyerAssetId>.jpg` の両方。
 
 2026-10-31（3 回目）: 「クリスマス ダンスパフォーマンス」を、催しの型（活動 × モチーフ × 会場 × 人物方針）で作り直した。背景は AI（`source: ai`）、紙面は羊皮紙＋`style_1_bar_stylish`、積みは `classic`。ダンスが主で、クリスマスのツリーと光は両脇、会場は暗い劇場、人は後ろ姿・シルエットで顔は読めない。`storage/flyers/7e333fdc-db9d-452f-bf49-00d7afc18eb4.jpg` と `public/samples/flyer-christmas.jpg` を同じ画像にそろえた。
 

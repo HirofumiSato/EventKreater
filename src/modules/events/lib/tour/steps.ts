@@ -28,7 +28,7 @@ export interface EventGuideCopy {
   body?: string;
   /**
    * 本文の代わりに出す箇条書き。番号は振らない（順番に意味が無いため）。
-   * 費用の 3 つの作り方のように、並列の項目を 1 文に詰めると読みにくいときに使う。
+   * 料金の 3 つの作り方のように、並列の項目を 1 文に詰めると読みにくいときに使う。
    */
   bullets?: readonly string[];
   /** 本文の下に 1 行だけ添える注記。無い枚もある。 */
@@ -136,7 +136,7 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     pressable: true,
     copy: {
       title: "必須入力は3つ。タップで開く",
-      body: "名前と日時・費用・場所でプレビューに進めます。",
+      body: "名前と日時・料金・場所でプレビューに進めます。",
     },
     final: false,
   },
