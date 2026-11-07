@@ -486,6 +486,22 @@ try {
     "flyer-christmas.jpg",
   );
   const flyerDj = await createFlyer(organizer.id, "DJナイト Vol.7", "flyer-dj.jpg");
+  // 公開し放題の会員の 3 件。食とステージの束で足したテーマの見本を兼ねる。
+  const flyerNeonMagenta = await createFlyer(
+    organizerUnlimited.id,
+    "NEON AFTER PARTY Vol.3",
+    "flyer-neon-magenta.jpg",
+  );
+  const flyerPoster = await createFlyer(
+    organizerUnlimited.id,
+    "真夜中の残響 — Release Live",
+    "flyer-poster.jpg",
+  );
+  const flyerSpotlight = await createFlyer(
+    organizerUnlimited.id,
+    "舞台『灯をともす』",
+    "flyer-spotlight.jpg",
+  );
 
   /**
    * 催しを 1 件作り、日程・料金プラン・幹事・出欠をまとめて入れる。
@@ -1224,6 +1240,179 @@ try {
     );
   }
 
+  /**
+   * 食とステージの束で足した 3 テーマの見本。
+   * 題・料金・会場をそれぞれの催しの型に寄せ、配色と書体の違いを告知ページで確かめられるようにする。
+   */
+  const neonDate = addDays(today, 16);
+  const neonMagenta = await createEvent({
+    ownerId: organizerUnlimited.id,
+    title: "NEON AFTER PARTY Vol.3",
+    sortDate: neonDate,
+    location: "CIRCUS TOKYO（東京都渋谷区宇田川町3-18-7 B1F）",
+    postalCode: "1500043",
+    prefecture: "東京都",
+    city: "渋谷区",
+    town: "宇田川町",
+    addressLine: "3-18-7",
+    building: "B1F",
+    venueName: "CIRCUS TOKYO",
+    rainPolicy: "INDOOR",
+    capacity: 120,
+    status: "PUBLISHED",
+    flyerAssetId: flyerNeonMagenta.id,
+    targetGeneration: "20代〜30代",
+    themeId: "neon-magenta",
+    rsvpDeadline: tokyoDateTime(addDays(neonDate, -1), "23:59"),
+    schedules: [schedule(neonDate, "22:00", "05:00", 0)],
+    plans: [
+      { name: "前売", audience: "ANY", amount: 3500, note: "1ドリンク付" },
+      { name: "当日", audience: "ANY", amount: 4000, note: "1ドリンク付" },
+    ],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "23 時ごろ着きます。",
+        appliedDaysBefore: 4,
+      },
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "友だち 2 人と一緒に行きます。",
+        appliedDaysBefore: 3,
+      },
+      {
+        name: "鈴木 大輔",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 1,
+        scheduleIndex: 0,
+        appliedDaysBefore: 2,
+      },
+      {
+        name: "山本 かおり",
+        gender: "FEMALE",
+        status: "WAITLISTED",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  const posterDate = addDays(today, 23);
+  const posterLive = await createEvent({
+    ownerId: organizerUnlimited.id,
+    title: "真夜中の残響 — Release Live",
+    sortDate: posterDate,
+    location: "下北沢 SHELTER（東京都世田谷区北沢2-6-5 B1F）",
+    postalCode: "1550031",
+    prefecture: "東京都",
+    city: "世田谷区",
+    town: "北沢",
+    addressLine: "2-6-5",
+    building: "B1F",
+    venueName: "下北沢 SHELTER",
+    rainPolicy: "INDOOR",
+    capacity: 90,
+    status: "PUBLISHED",
+    flyerAssetId: flyerPoster.id,
+    targetGeneration: "10代〜20代",
+    themeId: "poster",
+    rsvpDeadline: tokyoDateTime(addDays(posterDate, -1), "23:59"),
+    schedules: [schedule(posterDate, "18:30", "21:30", 0)],
+    plans: [
+      { name: "前売", audience: "ANY", amount: 2800, note: "ドリンク別" },
+      { name: "当日", audience: "ANY", amount: 3300, note: "ドリンク別" },
+    ],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "新譜を楽しみにしています。",
+        appliedDaysBefore: 5,
+      },
+      { name: "小林 亮", gender: "MALE", status: "ATTENDING", planIndex: 0, scheduleIndex: 0 },
+      { name: "伊藤 さくら", gender: "FEMALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
+      {
+        name: "渡辺 健",
+        gender: "MALE",
+        status: "DECLINED",
+        scheduleIndex: 0,
+        comment: "同日に別の現場が入りました。",
+      },
+    ],
+  });
+
+  const spotlightDate = addDays(today, 30);
+  const spotlightStage = await createEvent({
+    ownerId: organizerUnlimited.id,
+    title: "舞台『灯をともす』",
+    sortDate: spotlightDate,
+    location: "座・高円寺2（東京都杉並区高円寺北2-1-2 地下1階）",
+    postalCode: "1660002",
+    prefecture: "東京都",
+    city: "杉並区",
+    town: "高円寺北",
+    addressLine: "2-1-2",
+    building: "地下1階",
+    venueName: "座・高円寺2",
+    rainPolicy: "INDOOR",
+    capacity: 60,
+    status: "PUBLISHED",
+    flyerAssetId: flyerSpotlight.id,
+    targetGeneration: "20代〜60代",
+    themeId: "spotlight",
+    rsvpDeadline: tokyoDateTime(addDays(spotlightDate, -1), "23:59"),
+    schedules: [schedule(spotlightDate, "19:00", "20:40", 0)],
+    plans: [
+      { name: "一般", audience: "ANY", amount: 3000, note: "全席自由" },
+      { name: "学生", audience: "ANY", amount: 2000, note: "学生証の提示" },
+    ],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "初日の回を希望します。",
+        appliedDaysBefore: 6,
+      },
+      { name: "中村 あゆみ", gender: "FEMALE", status: "ATTENDING", planIndex: 1, scheduleIndex: 0 },
+      {
+        name: "松本 拓也",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "車いすで伺います。通路側だと助かります。",
+        appliedDaysBefore: 2,
+      },
+      {
+        name: "井上 由紀",
+        gender: "FEMALE",
+        status: "WAITLISTED",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
   const freeEvent = await createEvent({
     ownerId: organizerFree.id,
     quotaSource: "FREE_TRIAL",
@@ -1438,6 +1627,9 @@ try {
       reading: reading.event.id,
       christmas: christmas.event.id,
       djNight: djNight.event.id,
+      neonMagenta: neonMagenta.event.id,
+      posterLive: posterLive.event.id,
+      spotlightStage: spotlightStage.event.id,
     },
     participantId: participant.id,
     organizerId: organizer.id,
@@ -1480,6 +1672,9 @@ try {
   console.log(`    朝の読書会（0円チケットで公開・チケット公開1件）: ${reading.event.id}`);
   console.log(`    クリスマス ダンスパフォーマンス（12月・羊皮紙）: ${christmas.event.id}`);
   console.log(`    DJナイト Vol.7（12月・ネオン）: ${djNight.event.id}`);
+  console.log(`    NEON AFTER PARTY Vol.3（マゼンタのネオン・公開し放題）: ${neonMagenta.event.id}`);
+  console.log(`    真夜中の残響 — Release Live（ライブポスター・公開し放題）: ${posterLive.event.id}`);
+  console.log(`    舞台『灯をともす』（スポットライト・公開し放題）: ${spotlightStage.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);
   console.log(`  書き出し: storage/ui-demo.json`);
   if (!tokens.organizer) {

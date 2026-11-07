@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 111（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 491
+- 文書から参照されているコードパス: 494
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -39,6 +39,9 @@
 | `public/samples/flyer-dj.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-gohan.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-halloween.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-neon-magenta.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-poster.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-spotlight.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/voice/pcm-worklet.js` | [docs/voice-input.rst](voice-input.rst) |
 | `scripts/billing-notices.mjs` | [docs/DBschema.md](DBschema.md) |
 | `scripts/build-icons.mjs` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
