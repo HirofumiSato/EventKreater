@@ -42,7 +42,7 @@ export function batchTargets(
 }
 
 /**
- * 行を分けて話す必要があるか。日程・男女別・費用プランの組のいずれかが複数なら真。
+ * 行を分けて話す必要があるか。日程・男女別・料金プランの組のいずれかが複数なら真。
  *
  * 「まとめて」は 1 行ぶんの並びを前提にしているので、行が複数あると 2 行目以降が
  * 行き止まりになる。入口の既定を決める前に、ここで行の複雑さを見る。
@@ -74,15 +74,15 @@ const MAX_CELLS = 8;
  * マスに出す名前と、1 行に出す質問。
  *
  * 既定は欄そのものの名前と質問（`fields.ts` の `label` / `prompt`）を使う。ここで
- * 差し替えるのは、マスに並べると長いもの（費用プランの名前）、単位を添えないと
+ * 差し替えるのは、マスに並べると長いもの（料金プランの名前）、単位を添えないと
  * 何を話すか決まらないもの（金額）、話す順では「場所」で通じるもの（会場名）、
  * 口に出しやすい言い方に寄せるもの（開始時刻・終了時刻）だけである。
  */
 const CELL_TEXT: Partial<Record<VoiceField["key"], { label: string; prompt: string }>> = {
   scheduleStart: { label: "開始時間", prompt: "開始時間は？" },
   scheduleEnd: { label: "終了時間", prompt: "終了時間は？" },
-  planName: { label: "費用プラン名", prompt: "費用プラン名は？" },
-  planAmount: { label: "費用（円）", prompt: "費用は？" },
+  planName: { label: "料金プラン名", prompt: "料金プラン名は？" },
+  planAmount: { label: "料金（円）", prompt: "料金は？" },
   venueName: { label: "場所", prompt: "場所は？" },
 };
 

@@ -96,7 +96,7 @@ export default function InvitationPage({ params }: { params: { code: string } })
             <dd>{preview.event.location}</dd>
           </div>
           <div className="kv__row">
-            <dt>費用</dt>
+            <dt>料金</dt>
             <dd>{preview.event.pricePlans.map((row) => `${row.name} ${row.price}`).join("、")}</dd>
           </div>
           <div className="kv__row">

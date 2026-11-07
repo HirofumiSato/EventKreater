@@ -95,14 +95,14 @@ describe("選んだ札", () => {
     expect(body).toContain("background: var(--color-primary)");
   });
 
-  it("性別・日時・費用プランの札も黒塗りではなく、朱の枠と薄い朱地で示す", () => {
+  it("性別・日時・料金プランの札も黒塗りではなく、朱の枠と薄い朱地で示す", () => {
     const body = declarations(COMPONENTS, ".choice:has(input:checked:not(:disabled))");
     expect(body).toContain("border-color: var(--color-primary)");
     expect(body).toContain("background: var(--color-primary-soft)");
     expect(body).not.toContain("background: var(--color-text)");
   });
 
-  it("性別・日時・費用プランの札も右上の朱丸に白いチェックを付ける", () => {
+  it("性別・日時・料金プランの札も右上の朱丸に白いチェックを付ける", () => {
     const body = declarations(COMPONENTS, ".choice:has(input:checked:not(:disabled))::after");
     expect(body).toContain("content:");
     expect(body).toContain("background: var(--color-primary)");

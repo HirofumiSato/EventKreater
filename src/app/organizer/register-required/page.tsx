@@ -208,7 +208,7 @@ function RegisterRequiredScreen() {
         <Rows>
           <Row
             title="参加者名簿"
-            meta="出欠・人数・費用・支払いを1枚で。"
+            meta="出欠・人数・料金・支払いを1枚で。"
             aside={<><Badge tone="neutral" small>登録後</Badge></>}
           />
           <Row

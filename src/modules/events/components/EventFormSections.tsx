@@ -182,7 +182,7 @@ export function BasicSection({
   );
 }
 
-/** 費用プラン。共通料金と男女別の切り替えを含む。 */
+/** 料金プラン。共通料金と男女別の切り替えを含む。 */
 export function PricePlansSection({
   value,
   onChange,
@@ -297,7 +297,7 @@ export function PricePlansSection({
     const group = planGroups.find((rows) => rows.some((item) => item.key === rowKey));
     const removing = new Set((group ?? []).map((item) => item.key));
     const next = value.pricePlans.filter((item) => !removing.has(item.key));
-    // 費用プランは1件以上必要なので、最後の1組は消さない。
+    // 料金プランは1件以上必要なので、最後の1組は消さない。
     if (next.length === 0) return;
     set("pricePlans", next);
   };
@@ -306,7 +306,7 @@ export function PricePlansSection({
     <>
       <fieldset className="field" disabled={disabled}>
         <legend className="label">
-          費用プラン <span className="req">*</span>
+          料金プラン <span className="req">*</span>
         </legend>
         <div className="repeat-block">
           <label className="check">
@@ -323,7 +323,7 @@ export function PricePlansSection({
                 setConfirmCommonOpen(true);
               }}
             />
-            男女別の費用を設定する
+            男女別の料金を設定する
           </label>
           {pricingModeLocked ? (
             <p className="help">
@@ -465,7 +465,7 @@ export function PricePlansSection({
 /**
  * 割引。参加者が申込時にモーダルで選ぶ条件名と値引き額の組。
  * 任意なので 0 件が既定で、0 件なら告知ページに行を出さない。
- * すべての費用プランに適用する（対象プランの指定は持たない）。
+ * すべての料金プランに適用する（対象プランの指定は持たない）。
  */
 export function DiscountSection({ value, onChange, disabled = false }: EventSectionProps) {
   const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
@@ -496,7 +496,7 @@ export function DiscountSection({ value, onChange, disabled = false }: EventSect
       <legend className="label">割引（任意）</legend>
       <div className="repeat-block">
         <p className="help">
-          参加者が申込時に選べる割引です。すべての費用プランから引きます。{MAX_EVENT_OPTIONS}件まで。
+          参加者が申込時に選べる割引です。すべての料金プランから引きます。{MAX_EVENT_OPTIONS}件まで。
         </p>
         {value.discounts.length === 0 ? (
           <p className="help">割引がなければ、このままで大丈夫です。</p>

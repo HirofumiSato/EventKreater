@@ -43,7 +43,7 @@ function readStatus(value: string | null): EventStatusFilter | null {
 /**
  * 主催イベントを横断した売上集計。
  * 期間は開催日（`Event.sortDate`）で絞る。初期表示は全期間。
- * 金額は出欠確定時点のスナップショットなので、費用プランを編集しても過去は動かない。
+ * 金額は出欠確定時点のスナップショットなので、料金プランを編集しても過去は動かない。
  */
 export async function GET(req: NextRequest) {
   try {

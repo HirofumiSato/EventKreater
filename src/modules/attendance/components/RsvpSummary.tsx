@@ -17,7 +17,7 @@ interface RsvpSummaryProps {
   partySize: number;
   /** 選んだ日時の短いラベル（11/21 など）。 */
   scheduleLabels: string[];
-  /** 申込時に選んだ費用プラン。見つからなければ null。 */
+  /** 申込時に選んだ料金プラン。見つからなければ null。 */
   plan: EventPricePlanOption | null;
   /** 申込時点の割引の写し。定義が消えていても、申込んだときの額を出す。 */
   discounts: MyRsvp["discounts"];

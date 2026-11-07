@@ -302,7 +302,7 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
         : (() => {
             const union = unionRect(rects);
             if (!union) return [];
-            // 穴が高い枚（費用・テーマ）は、そのままだと吹き出しが穴の上端を覆う。
+            // 穴が高い枚（料金・テーマ）は、そのままだと吹き出しが穴の上端を覆う。
             // 下に置ける高さまで縮めてから、吹き出しの位置を決める。
             return [
               fitHoleToBubble(

@@ -114,7 +114,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
           </dd>
         </div>
         <div className="event-facts__row">
-          <dt>費用</dt>
+          <dt>料金</dt>
           <dd>
             {event.pricePlans.map((row) => (
               <span key={row.id} className="event-facts__line">

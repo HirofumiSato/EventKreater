@@ -16,7 +16,7 @@ interface RouteContext {
 
 /**
  * イベント1件の売上内訳。
- * 金額は出欠確定時点のスナップショットを使うので、費用プランを編集しても過去は動かない。
+ * 金額は出欠確定時点のスナップショットを使うので、料金プランを編集しても過去は動かない。
  */
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {

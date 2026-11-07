@@ -9196,7 +9196,7 @@
       "sphinxDoc": "issues/organizer-revenue-dashboard",
       "format": "markdown",
       "title": "主催者に売上管理ダッシュボードを追加し、ホームで紹介する",
-      "summary": "> GitHub Issue の下書き。gh 未導入の環境のため、このファイルを本文として起票する。 > タイトル案: 主催者に売上管理ダッシュボードを追加する（費用プラン×参加人数から自動集計）",
+      "summary": "> GitHub Issue の下書き。gh 未導入の環境のため、このファイルを本文として起票する。 > タイトル案: 主催者に売上管理ダッシュボードを追加する（料金プラン×参加人数から自動集計）",
       "preImplementation": false,
       "lineCount": 191,
       "headings": [

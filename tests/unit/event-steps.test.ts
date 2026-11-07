@@ -81,7 +81,7 @@ describe("ステップ1（イベント名と開催日時）", () => {
   });
 });
 
-describe("ステップ2（費用プラン）", () => {
+describe("ステップ2（料金プラン）", () => {
   it("金額が空なら未完了", () => {
     const form = filledForm({
       pricePlans: [createPricePlanDraft({ name: "一般", amount: "" })],
@@ -162,7 +162,7 @@ describe("続きのステップ", () => {
     expect(resumeStepKey(EMPTY_EVENT_FORM)).toBe("basic");
   });
 
-  it("催しの名前と日時が済んでいれば費用プランから再開する", () => {
+  it("催しの名前と日時が済んでいれば料金プランから再開する", () => {
     const form = filledForm({ venueName: "" });
     expect(firstIncompleteMandatoryStep(form)).toBe("location");
     expect(resumeStepKey(form)).toBe("location");
@@ -188,7 +188,7 @@ describe("済んだステップを畳んで次を開く", () => {
       "location",
       "pricing",
     );
-    // 費用の欄（男女別の金額など）を音声が触っているあいだは、DOM から消さない。
+    // 料金の欄（男女別の金額など）を音声が触っているあいだは、DOM から消さない。
     expect(open.has("pricing")).toBe(true);
     expect(open.has("location")).toBe(true);
   });
@@ -216,7 +216,7 @@ describe("畳んだステップの要約", () => {
     expect(summarizeStep("basic", form)).toBe("忘年会 / 12月5日（土） 18:00〜20:00 / ほか2件");
   });
 
-  it("費用プランは2件まで金額を出し、残りは件数にする", () => {
+  it("料金プランは2件まで金額を出し、残りは件数にする", () => {
     const form = filledForm({
       pricePlans: [
         createPricePlanDraft({ name: "一般", amount: "3000" }),

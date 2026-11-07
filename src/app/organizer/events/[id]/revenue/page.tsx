@@ -96,7 +96,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
           <SectionHead title="プラン未選択の参加者" note="金額が決まっていない人は、見込みに入りません。" />
           <Panel as="div">
             <p className="panel__note panel__note--warning">
-              費用プラン未選択の参加者が {summary.unassignedPlanCount} 人います。売上には含みません。
+              料金プラン未選択の参加者が {summary.unassignedPlanCount} 人います。売上には含みません。
             </p>
             <p className="alert__actions">
               <Link href={`/organizer/events/${params.id}/participants`} className="text-link">
@@ -123,7 +123,7 @@ export default function EventRevenuePage({ params }: { params: { id: string } })
         {byPlan.length === 0 ? (
           <EmptyState>
             <span className="empty__title">プランを選んだ出席者がまだいません。</span>
-            <span className="empty__body">名簿から費用プランを選ぶと、ここに小計が出ます。</span>
+            <span className="empty__body">名簿から料金プランを選ぶと、ここに小計が出ます。</span>
           </EmptyState>
         ) : (
           <Rows>

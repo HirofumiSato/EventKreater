@@ -534,7 +534,7 @@ model EventPricePlan {
 }
 
 /// 参加者が申込時に選べる割引。条件名と値引き額（円）の組を 0〜8 件持つ。
-/// すべての費用プランに適用し、対象プランの指定は持たない。
+/// すべての料金プランに適用し、対象プランの指定は持たない。
 model EventDiscount {
   id        String  @id @default(uuid()) @db.Uuid
   eventId   String  @map("event_id") @db.Uuid
@@ -618,7 +618,7 @@ model Participant {
   userId        String?    @map("user_id") @db.Uuid
   rsvpTokenHash String     @unique @map("rsvp_token_hash") @db.VarChar(64)
   name          String     @db.VarChar(50)
-  /// 男女別の費用プランを選ぶための性別。移行前の既存行は NULL。
+  /// 男女別の料金プランを選ぶための性別。移行前の既存行は NULL。
   gender        Gender?
   status        RsvpStatus
   comment       String?    @db.Text
@@ -840,7 +840,7 @@ CREATE TYPE organizer_role_enum AS ENUM ('OWNER', 'CO_HOST');
 
 CREATE TYPE rsvp_status_enum AS ENUM ('ATTENDING', 'DECLINED');
 
--- 費用プランの対象（ANY は男女共通）と参加者の性別。
+-- 料金プランの対象（ANY は男女共通）と参加者の性別。
 CREATE TYPE price_audience_enum AS ENUM ('ANY', 'MALE', 'FEMALE');
 
 CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE');
@@ -1093,7 +1093,7 @@ CREATE TABLE event_schedules (
 CREATE INDEX idx_event_schedules_event ON event_schedules(event_id, sort_order);
 CREATE INDEX idx_event_schedules_date ON event_schedules(event_date);
 
--- 6c. 費用プラン（プラン名 + 対象 + 金額。1〜8件）
+-- 6c. 料金プラン（プラン名 + 対象 + 金額。1〜8件）
 CREATE TABLE event_price_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -1173,7 +1173,7 @@ CREATE TABLE participants (
     -- 出席のときだけ持ち、欠席・参加要望は 1（要望は席を取らず、承認時に入れる）。
     party_size INTEGER NOT NULL DEFAULT 1 CHECK (party_size >= 1),
     price_plan_id UUID NULL REFERENCES event_price_plans(id) ON DELETE SET NULL,
-    -- 出欠確定時点の費用プランの写し。プラン編集後も見込み売上を変えない。
+    -- 出欠確定時点の料金プランの写し。プラン編集後も見込み売上を変えない。
     price_amount INTEGER NULL,
     price_plan_name VARCHAR(50) NULL,
     price_audience price_audience_enum NULL,

@@ -226,8 +226,8 @@ describe("まとめて話す案内", () => {
       "開催日",
       "開始時間",
       "終了時間",
-      "費用プラン名",
-      "費用（円）",
+      "料金プラン名",
+      "料金（円）",
       "場所",
       "郵便番号",
     ]);
@@ -236,8 +236,8 @@ describe("まとめて話す案内", () => {
       "開催日は？",
       "開始時間は？",
       "終了時間は？",
-      "費用プラン名は？",
-      "費用は？",
+      "料金プラン名は？",
+      "料金は？",
       "場所は？",
       "郵便番号は？",
     ]);
@@ -320,7 +320,7 @@ describe("まとめて話す案内", () => {
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
 
-  it("男女別の費用があると、まとめてではなく 1 つずつを既定にする", () => {
+  it("男女別の料金があると、まとめてではなく 1 つずつを既定にする", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       pricePlans: withGenderPricing(EMPTY_EVENT_FORM.pricePlans),
@@ -330,7 +330,7 @@ describe("まとめて話す案内", () => {
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
 
-  it("費用プランが 2 組あると、まとめてではなく 1 つずつを既定にする", () => {
+  it("料金プランが 2 組あると、まとめてではなく 1 つずつを既定にする", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       pricePlans: [

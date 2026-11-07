@@ -118,7 +118,7 @@ async function main() {
   }
 
   const prices = await backfillPrices();
-  console.log(`費用: ${prices.updated} 件を更新`);
+  console.log(`料金: ${prices.updated} 件を更新`);
   if (prices.ambiguous.length > 0) {
     console.log("男女複合のため自動分割しなかった行（プランを分けて入れ直してください）:");
     for (const row of prices.ambiguous) console.log(`  - ${row.id}: ${row.price}`);

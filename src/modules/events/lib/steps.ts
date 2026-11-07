@@ -28,7 +28,7 @@ export const EVENT_STEPS: readonly EventStep[] = [
   },
   {
     key: "pricing",
-    title: "費用と割引",
+    title: "料金と割引",
     hint: "参加者が選ぶ金額です。割引は任意です。",
     mandatory: true,
   },
@@ -80,7 +80,7 @@ export function isBasicStepComplete(value: EventFormValues): boolean {
   );
 }
 
-/** すべての費用プランに名前と、0 以上の整数の金額が入っているか。 */
+/** すべての料金プランに名前と、0 以上の整数の金額が入っているか。 */
 export function isPricingStepComplete(value: EventFormValues): boolean {
   if (value.pricePlans.length === 0) return false;
   return value.pricePlans.every(

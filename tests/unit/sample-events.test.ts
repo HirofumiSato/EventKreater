@@ -29,7 +29,7 @@ describe("告知ページの見本", () => {
     }
   });
 
-  it("日程と費用プランを 1 件以上持ち、人数が定員を超えない", () => {
+  it("日程と料金プランを 1 件以上持ち、人数が定員を超えない", () => {
     for (const event of SAMPLE_EVENTS) {
       expect(event.schedules.length).toBeGreaterThan(0);
       expect(event.pricePlans.length).toBeGreaterThan(0);

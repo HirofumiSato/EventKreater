@@ -58,7 +58,7 @@ function post(
     new NextRequest(url(eventId), {
       method: "POST",
       headers,
-      // 欠席なら日時と費用プランを選ばなくてよい（上限だけを見るため）。
+      // 欠席なら日時と料金プランを選ばなくてよい（上限だけを見るため）。
       body: JSON.stringify({ name: input.name ?? "参加者", status: "DECLINED" }),
     }),
     { params: { id: eventId } },

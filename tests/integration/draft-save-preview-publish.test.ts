@@ -68,7 +68,7 @@ describeDb("下書きの保存と公開（結合）", () => {
     expect(quota.freeEventCount).toBe(1);
   });
 
-  it("下書きの上書き保存は状態を変えず、日時と費用プランだけを入れ替える", async () => {
+  it("下書きの上書き保存は状態を変えず、日時と料金プランだけを入れ替える", async () => {
     const user = await createUser(0);
     userIds.push(user.id);
     const draft = await seedEvent({ userId: user.id, status: "DRAFT" });

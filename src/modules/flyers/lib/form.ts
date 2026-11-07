@@ -6,7 +6,7 @@ import {
 import type { SemanticThemeId } from "@/lib/semantic-themes";
 import type { EventFormValues } from "@/modules/events/types";
 
-/** チラシ生成サービスへ渡す 9 項目（題・日時・費用・場所・雨天・定員・テーマ・対象世代）。ウィザードの全ステップで同じ値を使う。 */
+/** チラシ生成サービスへ渡す 9 項目（題・日時・料金・場所・雨天・定員・テーマ・対象世代）。ウィザードの全ステップで同じ値を使う。 */
 export interface FlyerFormPayload {
   title: string;
   eventDate: string;
@@ -59,7 +59,7 @@ export function validateFlyerForm(value: EventFormValues): string | null {
     return "先に開催日の開始・終了時刻を入れてください。";
   }
   if (value.pricePlans.some((row) => row.amount === "")) {
-    return "先に費用プランの金額を入れてください。";
+    return "先に料金プランの金額を入れてください。";
   }
   if (!value.title.trim()) {
     return "先にイベント名を入れてください。";

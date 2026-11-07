@@ -41,7 +41,7 @@ export interface VoiceContext {
   /** いまのフォームの値。行の index を決めるのに使う。 */
   value: EventFormValues;
   /**
-   * 対象の行。開催日時は `schedules` の index、費用プラン名は組の index、
+   * 対象の行。開催日時は `schedules` の index、料金プラン名は組の index、
    * 金額・補足は `pricePlans` の index。省略したら 0（先頭の行）として扱う。
    */
   row?: number;
@@ -123,7 +123,7 @@ export interface VoiceSlot {
   /** 欄のキー。`touched` やパッチの判定に使う。 */
   key: VoiceFieldKey;
   /**
-   * 行の番号。開催日時は `schedules` の index、費用プラン名は組の index、
+   * 行の番号。開催日時は `schedules` の index、料金プラン名は組の index、
    * 金額・補足は `pricePlans` の index。
    */
   row: number;

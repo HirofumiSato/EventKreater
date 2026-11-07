@@ -103,10 +103,10 @@ function initialRsvpScheduleIds(
  * 層は閉じている間も `hidden` で DOM に残す。開き直したときに入力が消えず、
  * モック（`npm run mock:sync`）も同じ DOM をそのまま写せる。
  *
- * 層の中で畳むのは、任意の項目だけ（コメント・割引）。性別・日時・費用プランは
+ * 層の中で畳むのは、任意の項目だけ（コメント・割引）。性別・日時・料金プランは
  * `required` なので畳まない。畳むと、既定値のまま送られて金額の事故になる。
  *
- * **選択によって欄を出し入れしない。** 性別・日時・費用プランは最初から並べ、
+ * **選択によって欄を出し入れしない。** 性別・日時・料金プランは最初から並べ、
  * 欠席や参加要望のときは消さずにグレーアウトする（`lib/rsvp-form.ts`）。
  * あとから欄が現れると、そこへ何かを書かねばならないのではないかと身構えさせる。
  * ログイン中は会員名で答えるので、名前の欄と「アカウントを切り替える」は出さない。
@@ -198,7 +198,7 @@ export function DynamicRsvpBox({
     setStatus((current) => (current === "DECLINED" ? current : attendValue));
   }, [attendValue]);
 
-  /** 出席のときだけ、性別・日時・費用・割引を入力できる。 */
+  /** 出席のときだけ、性別・日時・料金・割引を入力できる。 */
   const attending = status === "ATTENDING";
   /** ログイン中の会員名。空白だけなら未ログインとして扱う。 */
   const member = memberName?.trim() ?? "";
@@ -206,7 +206,7 @@ export function DynamicRsvpBox({
 
   /**
    * 性別に合うプラン。**表示は絞らない。** 絞ると、男女別プランしか無い催しで
-   * 性別を選ぶまで費用の欄ごと消え、「選んだのに何も出ない」ように見える。
+   * 性別を選ぶまで料金の欄ごと消え、「選んだのに何も出ない」ように見える。
    * ここは「送ってよいプランか」の判定にだけ使う。
    */
   const selectablePlans = useMemo(
@@ -468,7 +468,7 @@ export function DynamicRsvpBox({
             />
             <p className="help">自分を含む人数です。残席より多いと参加要望になります。</p>
           </fieldset>
-          {/* 性別・日時・費用は、選択によって出し入れしない。欠席や参加要望のときも
+          {/* 性別・日時・料金は、選択によって出し入れしない。欠席や参加要望のときも
               欄は残したままグレーアウトする（あとから欄が現れると身構えさせる）。
               性別は、どの催しでも聞く必要があるときだけ出す。 */}
           {!hasOnlyCommonPlans && (
@@ -492,7 +492,7 @@ export function DynamicRsvpBox({
                   </label>
                 ))}
               </div>
-              <p className="help">性別によって選べる費用プランが変わります。</p>
+              <p className="help">性別によって選べる料金プランが変わります。</p>
             </fieldset>
           )}
           {/* 日時が 1 件だけなら選ぶ余地がない。state の初期値（唯一の日時）を
@@ -524,11 +524,11 @@ export function DynamicRsvpBox({
               )}
             </fieldset>
           )}
-          {/* 費用プランは、性別が未選択でも全部の札を出す。絞ると、性別を選ぶまで
-              費用の欄ごと消え、「選んだのに何も出ない」ように見える。 */}
+          {/* 料金プランは、性別が未選択でも全部の札を出す。絞ると、性別を選ぶまで
+              料金の欄ごと消え、「選んだのに何も出ない」ように見える。 */}
           {pricePlans.length > 0 && (
             <fieldset className={attending ? "field" : "field field--disabled"}>
-              <legend className="label">費用プラン</legend>
+              <legend className="label">料金プラン</legend>
               <div className="choice-group choice-group--plans">
                 {planChoices.map(({ plan: row, disabled, checked }) => (
                   <label key={row.id} className="choice choice--plan">
@@ -554,16 +554,16 @@ export function DynamicRsvpBox({
                 ))}
               </div>
               {attending && !hasOnlyCommonPlans && gender === "" && (
-                <p className="help">性別を選ぶと、選べる費用プランが変わります。</p>
+                <p className="help">性別を選ぶと、選べる料金プランが変わります。</p>
               )}
               {attending && gender !== "" && selectablePlans.length === 0 && (
-                <p className="help">この性別で選べる費用プランがありません。幹事に確認してください。</p>
+                <p className="help">この性別で選べる料金プランがありません。幹事に確認してください。</p>
               )}
             </fieldset>
           )}
           {pricePlans.length === 0 && attending && (
             <Alert tone="warning">
-              このイベントには費用プランが登録されていません。幹事に確認してください。
+              このイベントには料金プランが登録されていません。幹事に確認してください。
             </Alert>
           )}
           {/* ログイン中は会員名で答えるので、名前の欄は出さない（送信名は会員名）。 */}
@@ -584,7 +584,7 @@ export function DynamicRsvpBox({
               />
             </div>
           )}
-          {/* 任意の項目だけを畳む。必須の項目（性別・日時・費用）は畳まない。
+          {/* 任意の項目だけを畳む。必須の項目（性別・日時・料金）は畳まない。
               畳むと既定値のまま送られ、金額の事故になる。
               割引は欠席・参加要望でも欄を残し、選べないだけにする。 */}
           {hasDiscounts && (

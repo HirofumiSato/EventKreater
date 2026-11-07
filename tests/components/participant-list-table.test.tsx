@@ -204,7 +204,7 @@ describe("集金の列", () => {
       participant({ id: "b", name: "未集金さん", collectedAt: null }),
     ]);
 
-    // 既定の 4 列（名前・出欠・人数・費用プラン）には集金を入れない。
+    // 既定の 4 列（名前・出欠・人数・料金プラン）には集金を入れない。
     expect(screen.queryByRole("columnheader", { name: "集金" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "表示列" }));

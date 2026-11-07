@@ -144,7 +144,7 @@ function isAbortError(error: unknown): boolean {
 
 type VoiceBranchKind = "schedule" | "gender";
 
-/** 分岐の質問（日時の群を出る瞬間・費用の入口）。回答後に元のマスを引き直すため `slotId` を持つ。 */
+/** 分岐の質問（日時の群を出る瞬間・料金の入口）。回答後に元のマスを引き直すため `slotId` を持つ。 */
 interface VoiceBranchQuestion {
   kind: VoiceBranchKind;
   slotId: VoiceSlotId;
@@ -162,7 +162,7 @@ const SCHEDULE_KEYS: ReadonlySet<VoiceFieldKey> = new Set([
  * 開始時刻の範囲発話のように 1 つの発話で終了時刻まで埋まることがあるため、
  * 最後に触った欄の種類と、最終行の埋まり具合だけで決める。
  *
- * 男女別の質問は費用の入口（プラン名の直前）で出す。`advanceFrom` が見る。
+ * 男女別の質問は料金の入口（プラン名の直前）で出す。`advanceFrom` が見る。
  */
 function branchAfter(
   slot: VoiceSlot,
@@ -177,7 +177,7 @@ function branchAfter(
     if (filled && value.schedules.length < MAX_EVENT_OPTIONS) return "schedule";
   }
 
-  // 男女別は費用の入口（プラン名の直前）で尋ねる。ここは群から出る瞬間だけを見る。
+  // 男女別は料金の入口（プラン名の直前）で尋ねる。ここは群から出る瞬間だけを見る。
   return null;
 }
 
@@ -312,7 +312,7 @@ export function VoiceInputDock({
   const guideShownRef = useRef(false);
   /** 直前の描画でツアーを待っていたか。待ちが明けた瞬間を、自動表示の合図に使う。 */
   const guideDeferredRef = useRef(guideDeferred);
-  // 男女別の費用を聞いたか。1 セッション 1 回だけ聞く（「共通のまま」のあと聞き直さない）。
+  // 男女別の料金を聞いたか。1 セッション 1 回だけ聞く（「共通のまま」のあと聞き直さない）。
   const genderAskedRef = useRef(false);
   // ダイアログが開いているあいだは、音声モードの Esc を止める。
   const dialogOpenRef = useRef(false);
@@ -653,7 +653,7 @@ export function VoiceInputDock({
   const advanceFrom = useCallback(
     (slot: VoiceSlot, spoken?: string) => {
       const next = nextNeededField(valueRef.current, slot.id, scopeNow());
-      // 費用の入口（プラン名の直前）で男女別を尋ねる。金額を聞いたあとではなく、
+      // 料金の入口（プラン名の直前）で男女別を尋ねる。金額を聞いたあとではなく、
       // プラン名から金額へ進む流れを作り直せるここで 1 セッション 1 回だけ聞く。
       if (
         next?.key === "planName" &&
@@ -1670,7 +1670,7 @@ export function VoiceInputDock({
    * いまの欄を飛ばす。次の欄へ移り、その場で録音を始める。
    *
    * 録音中なら、いまの録音は捨てる（飛ばした欄の音声は使わない）。
-   * 費用の入口へ入るときの男女別の質問は、`advanceFrom` が見る。
+   * 料金の入口へ入るときの男女別の質問は、`advanceFrom` が見る。
    */
   const skip = () => {
     if (!cursor) return;
@@ -1928,7 +1928,7 @@ export function VoiceInputDock({
         return;
       }
 
-      // 男女別にする。行を分けたあとも、費用の入口（プラン名）から順に進める。
+      // 男女別にする。行を分けたあとも、料金の入口（プラン名）から順に進める。
       const pricePlans = withGenderPricing(valueRef.current.pricePlans);
       const nextValue: EventFormValues = { ...valueRef.current, pricePlans };
       valueRef.current = nextValue;
@@ -2109,7 +2109,7 @@ export function VoiceInputDock({
                 onClick={() => chooseGuideMode("single")}
               >
                 <span className="voice-guide__name">1つずつ</span>
-                <span className="voice-guide__label">複数日程・費用男女別向け</span>
+                <span className="voice-guide__label">複数日程・料金男女別向け</span>
               </button>
             </div>
           </div>
@@ -2522,7 +2522,7 @@ export function VoiceInputDock({
         </Dialog>
       )}
 
-      {/* 日時の群を出る瞬間と、費用の入口にだけ尋ねる。
+      {/* 日時の群を出る瞬間と、料金の入口にだけ尋ねる。
           背景・×・Esc は「追加しない」と同じ扱いにする。 */}
       {branch?.kind === "schedule" && (
         <Dialog
@@ -2553,7 +2553,7 @@ export function VoiceInputDock({
 
       {branch?.kind === "gender" && (
         <Dialog
-          title="男女別の費用を設定しますか"
+          title="男女別の料金を設定しますか"
           titleId="voice-branch-gender-title"
           onClose={() => answerBranch(false)}
           closeLabel="共通のまま"

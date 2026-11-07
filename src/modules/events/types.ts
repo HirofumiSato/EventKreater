@@ -9,11 +9,11 @@ export type RsvpStatus = "ATTENDING" | "DECLINED" | "WAITLISTED";
 export type OrganizerRole = "OWNER" | "CO_HOST";
 /** どのチケットから公開したか。未公開・移行前のイベントは null。 */
 export type QuotaSource = "FREE_TRIAL" | "PAID_CREDIT" | "SUBSCRIPTION";
-/** 費用プランの対象。ANY は男女共通。 */
+/** 料金プランの対象。ANY は男女共通。 */
 export type PriceAudience = "ANY" | "MALE" | "FEMALE";
 export type Gender = "MALE" | "FEMALE";
 
-/** 開催日時・費用プランの上限。API のバリデーションと画面で共有する。 */
+/** 開催日時・料金プランの上限。API のバリデーションと画面で共有する。 */
 export const MAX_EVENT_OPTIONS = 8;
 
 export interface FlyerAsset {
@@ -164,7 +164,7 @@ export interface EventPricePlanOption {
   price: string;
 }
 
-/** 参加者が申込時に選べる割引。すべての費用プランに適用する。 */
+/** 参加者が申込時に選べる割引。すべての料金プランに適用する。 */
 export interface EventDiscountOption {
   id: string;
   /** 「友達と参加」のような条件名。 */
@@ -479,7 +479,7 @@ export function createDiscountDraft(partial?: Partial<DiscountDraft>): DiscountD
 }
 
 /**
- * 費用の入力モード。既定は共通（ANY）で、必要なときだけ男女別にする。
+ * 料金の入力モード。既定は共通（ANY）で、必要なときだけ男女別にする。
  * DB には保存せず、プラン行の audience から導出する。
  */
 export type PricingMode = "COMMON" | "GENDER";

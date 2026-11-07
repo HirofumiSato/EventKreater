@@ -68,7 +68,7 @@ describe("名前の欄", () => {
   });
 });
 
-describe("選べる費用プラン", () => {
+describe("選べる料金プラン", () => {
   it("共通プランは性別に関係なく選べる", () => {
     expect(isRsvpPlanSelectable(plan("any", "ANY"), "")).toBe(true);
     expect(isRsvpPlanSelectable(plan("any", "ANY"), "FEMALE")).toBe(true);
@@ -93,7 +93,7 @@ describe("選べる費用プラン", () => {
   });
 });
 
-describe("選ばれている費用プラン", () => {
+describe("選ばれている料金プラン", () => {
   it("選べる札を選んでいればそのまま", () => {
     expect(resolveSelectedPlanId(PLANS, "MALE", "male")).toBe("male");
   });
@@ -113,7 +113,7 @@ describe("選ばれている費用プラン", () => {
   });
 });
 
-describe("費用プランの札", () => {
+describe("料金プランの札", () => {
   const base = { plans: PLANS, enabled: true, locked: false, selectedPlanId: "" };
 
   it("性別が未選択でも全プランを出し、男女別は押せなくする", () => {

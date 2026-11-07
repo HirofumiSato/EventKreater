@@ -7,7 +7,7 @@
 //   2. 応答が 1 件なら都道府県・市区町村・町域が入り、番地の録音へ進む
 //   3. 0 件でも 1 行知らせて、進行は止めない
 //   4. 日時を埋めて群を出るとき、題だけの「別の日程も追加しますか？」を出す
-//   5. 費用の入口（プラン名の前）で男女別を聞き、「共通のまま」ならプラン名へ進む
+//   5. 料金の入口（プラン名の前）で男女別を聞き、「共通のまま」ならプラン名へ進む
 //
 // 郵便番号のターンから始めるため、ハーネスに入力欄を置いて focus する。
 // `VoiceInputDock` は focusin で欄の id を控え、音声モードの開始位置に使う。
@@ -290,11 +290,11 @@ describe("日時追加のダイアログ", () => {
   });
 });
 
-describe("費用の入口の男女別の質問", () => {
+describe("料金の入口の男女別の質問", () => {
   it("最終の終了時刻を入れると、男女別を聞いてからプラン名へ進む", async () => {
     stubFetch();
     const onChange = vi.fn();
-    // 終了時刻だけ空けた最終行から始める。費用は共通の 1 行（名前・金額は空）のまま。
+    // 終了時刻だけ空けた最終行から始める。料金は共通の 1 行（名前・金額は空）のまま。
     const initial: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       schedules: [
@@ -314,10 +314,10 @@ describe("費用の入口の男女別の質問", () => {
     ).toBeTruthy();
     await pressInDialog("追加しない");
 
-    // 費用の入口で男女別を聞く。プラン名より前であることが、この並びの要点。
+    // 料金の入口で男女別を聞く。プラン名より前であることが、この並びの要点。
     const genderDialog = screen.getByRole("dialog");
     expect(
-      within(genderDialog).getByRole("heading", { name: "男女別の費用を設定しますか" }),
+      within(genderDialog).getByRole("heading", { name: "男女別の料金を設定しますか" }),
     ).toBeTruthy();
     // 金額はまだ無い時点なので、引き継ぎの説明は出さない。
     expect(genderDialog.textContent).toContain("男性と女性で金額を分けられます。");
