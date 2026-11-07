@@ -1082,9 +1082,12 @@
 
 
 
+/* 札（`.badge`）が行の高さに引き伸ばされないよう、縦は中央でそろえる。
+   横に並べる操作列なので、伸ばす前提の子は無い。 */
 .btn-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
 }
 

@@ -2044,6 +2044,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 * `themeId` が null のときは `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
 * 追加する CSS は 14 テーマで数 KB（1 枚の `themes.css`）。`backdrop-filter` とアニメーションは使わず、Web フォントも増やさない（明朝のテーマはシステムの明朝）。
 * 全幅の地は `margin-inline: calc(50% - 50vw)` と内側の余白で作り、本文の読み幅（既定 42rem、テーマによって 38〜44rem）は `--st-content-width` で決める。
+* 公開ページの縦の余白は `.page--narrow` をスコープにし、`--space-head`（見出しと中身）・`--space-block`（節の中の区切り）・`--space-section`（節と節）の 3 段だけで組む。`.section__head` の下は deco の見出しが下線を持たないぶん、`margin-bottom` で空ける。
 
 ### 14.5. 主催者側の導線
 
