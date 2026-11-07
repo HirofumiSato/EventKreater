@@ -608,9 +608,9 @@
   transform: none;
 }
 
-:where(.deco) .semantic-theme[data-semantic-theme] .section__head {
-  border-bottom: var(--st-border-width) solid var(--color-text);
-}
+/* 見出し（`.section__head`）の下線は引かない。deco は左の帯と題の波線で区切り、
+   下線を持たない（`deco/base.css`）。ここで `--color-text` の線を足すと、暗い紙面
+   では白い 2px の帯になり、題ではなく本文の区切りに見える。 */
 
 :where(.deco) .semantic-theme[data-semantic-theme] .btn--primary {
   border: var(--st-border-width) solid var(--st-accent-primary);
