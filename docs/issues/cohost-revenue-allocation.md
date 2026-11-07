@@ -185,7 +185,7 @@ type AllocationInput = {
   "rows": [
     {
       "organizerId": "…",
-      "name": "佐藤 博文",
+      "name": "佐藤 太郎",
       "role": "OWNER",
       "isGuest": false,
       "isYou": true,

@@ -86,6 +86,9 @@ describe("画面の領域の分類", () => {
     expect(viewerArea("/mypage")).toBe("organizer");
     expect(viewerArea("/participant")).toBe("participant");
     expect(viewerArea("/service")).toBe("public");
+    expect(viewerArea("/terms")).toBe("public");
+    expect(viewerArea("/privacy")).toBe("public");
+    expect(viewerArea("/tokushoho")).toBe("public");
     expect(viewerArea("/console")).toBe("admin");
   });
 });

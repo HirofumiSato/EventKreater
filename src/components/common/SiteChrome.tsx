@@ -49,6 +49,12 @@ export function SiteChrome({ children }: { children: ReactNode }) {
               <li>
                 <a href={SITE.nav.terms.href}>{SITE.nav.terms.label}</a>
               </li>
+              <li>
+                <a href={SITE.nav.privacy.href}>{SITE.nav.privacy.label}</a>
+              </li>
+              <li>
+                <a href={SITE.nav.tokushoho.href}>{SITE.nav.tokushoho.label}</a>
+              </li>
             </ul>
           </div>
         </footer>

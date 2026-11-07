@@ -65,7 +65,7 @@ const SHARED_AREA_PREFIXES = ["/account"] as const;
 const PARTICIPANT_AREA_PREFIXES = ["/participant"] as const;
 
 /** ヘッダーを出す公開画面。増やすときはここへ 1 行足す（勝手に増えないようテストで縛る）。 */
-const PUBLIC_HEADER_PATHS = ["/service", "/terms"] as const;
+const PUBLIC_HEADER_PATHS = ["/service", "/terms", "/privacy", "/tokushoho"] as const;
 const PUBLIC_HEADER_PREFIXES = ["/auth", "/invite"] as const;
 
 /** 前方一致はパスの区切りまで見る。`/organizerlike` を `/organizer` と誤認しないため。 */

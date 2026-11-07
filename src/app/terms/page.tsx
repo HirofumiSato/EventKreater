@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description: "料金、初月無料、期間限定の価格キャンペーン、自動更新と終了前の通知について定めます。",
 };
 
-const UPDATED_AT = "2026年11月2日";
+const UPDATED_AT = "2026年11月7日";
 
 const sections = [
   ["第1条（適用）", "applicability"],
@@ -84,6 +84,20 @@ export default function TermsPage() {
           本規約は、本サービスの利用に関する利用者と運営者との間の一切の関係に適用されます。
           利用者は、本規約に同意したうえで本サービスを利用するものとします。本サービス上で表示する料金、
           キャンペーン条件、注意書きは、本規約の一部を構成します。
+        </p>
+        <p>
+          本規約において「運営者」とは、本サービスを運営する {SITE.name} をいいます。
+          販売条件の表示は
+          <Link href="/tokushoho" className="text-link">
+            {" "}
+            特定商取引法に基づく表記{" "}
+          </Link>
+          、個人情報の取扱いは
+          <Link href="/privacy" className="text-link">
+            {" "}
+            プライバシーポリシー{" "}
+          </Link>
+          に定めます。
         </p>
       </section>
 
@@ -382,8 +396,11 @@ export default function TermsPage() {
       <section className="legal">
         <h2>お問い合わせ</h2>
         <p>
-          料金、キャンペーン、解約に関するお問い合わせは、マイページの「お支払い管理」または
-          運営者が別途案内する窓口からご連絡ください。
+          料金、キャンペーン、解約に関するお問い合わせは、マイページの「お支払い管理」、または{" "}
+          <a href={`mailto:${SITE.legal.supportEmail}`} className="text-link">
+            {SITE.legal.supportEmail}
+          </a>
+          {" "}までご連絡ください。ご連絡から{SITE.legal.disclosureLeadTime}にご回答します。
         </p>
         <p className="help">
           <Link href="/service" className="text-link">
@@ -392,6 +409,14 @@ export default function TermsPage() {
           {" ・ "}
           <Link href="/mypage" className="text-link">
             マイページ
+          </Link>
+          {" ・ "}
+          <Link href="/tokushoho" className="text-link">
+            特定商取引法に基づく表記
+          </Link>
+          {" ・ "}
+          <Link href="/privacy" className="text-link">
+            プライバシーポリシー
           </Link>
         </p>
       </section>

@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 project = "AIチラシ自動生成"
-author = "博文"
-copyright = "2026, 博文"
+author = "EventKreater"
+copyright = "2026, EventKreater"
 version = "0.1"
 release = "0.1.0"
 language = "ja"
