@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
 import { appBaseUrl } from "@/lib/http";
-import { deliverMail } from "@/lib/mail";
+import { deliverMail, logRecordedMail } from "@/lib/mail";
 import { ProblemDetailException, isUniqueViolation } from "@/lib/exceptions";
 import { hashPassword, passwordMatches } from "@/modules/auth/lib/auth";
 import { clientIp } from "@/modules/auth/lib/cookies";
@@ -228,7 +228,7 @@ export async function startEmailChange(input: {
     subject: "メールアドレス変更の確認",
     body: `${user.name} さん\n\n次のリンクを開くとメールアドレスの変更が完了します。このリンクは24時間で無効になります。\n心当たりがないときは、リンクを開かずにこのメールを破棄してください。\n${url}\n`,
   });
-  if (status === "RECORDED") console.info(`[mail] email change for ${newEmail}: ${url}`);
+  if (status === "RECORDED") logRecordedMail(`email change for ${newEmail}: ${url}`);
   return { maskedEmail: maskEmail(newEmail), expiresAt: expiresAt.toISOString() };
 }
 

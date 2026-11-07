@@ -2450,9 +2450,12 @@ GET は進行中のチャレンジを返す。Cookie が無い、期限切れ、
   "purpose": "MEMBER",
   "attemptsRemaining": 10,
   "attemptLimit": 10,
-  "lockMinutes": 15
+  "lockMinutes": 15,
+  "devCode": "123456"
 }
 ```
+
+`devCode` は開発のときだけ載る。`NODE_ENV !== "production"` かつ配送が記録に留まった（`SMS_WEBHOOK_URL` / `MAIL_WEBHOOK_URL` が空で `RECORDED` が返った）ときに、発行した 6 桁をそのまま返す。`AUTH_DEV_CODE=0` で止まる。本番ビルドでは `NODE_ENV` の比較が定数に畳まれ、この分岐ごと消える。
 
 POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`。新しい 6 桁を発行し、同じ Cookie を付け替える。**進行中のチャネルと同じ値を渡すと送り直しになる**（前のチャレンジは使用済みにし、新しい行を作る）。既定のチャネルは、確認済み電話番号がある管理者（`purpose` が `ADMIN`）が SMS、一般会員（`MEMBER` / `PARTICIPANT`）が EMAIL である。SMS は画面のチャネル切り替え（「SMSで受け取る」）で選ぶ。電話が無い会員へ `SMS` は 400。SMS は会員あたり 1 時間に 5 回、メールは 5 回。IP あたりはどちらも 1 時間に 10 回。`SMS_WEBHOOK_URL` が未設定・送信失敗のときも発行は成功として返すが、本番（`NODE_ENV === "production"`）ではコードをサーバログに残さず、マスクした宛先だけを警告する。ローカルとテストではコードをログに残す。失敗回数は発行し直しても引き継ぎ、`attemptsRemaining` は残りの入力可能回数である。上限に達したら 429 `probs/rate-limit`、`error: "RATE_LIMITED"`、`limitLabel`、`attemptLimit`、`remainingAttempts: 0`、`windowSeconds`、`retryAfterSeconds`、`retryAt` を返す。
 

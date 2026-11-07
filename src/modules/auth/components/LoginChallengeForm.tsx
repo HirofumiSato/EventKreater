@@ -13,6 +13,8 @@ interface ChallengeView {
   attemptsRemaining?: number;
   attemptLimit?: number;
   lockMinutes?: number;
+  /** 開発時だけ返る確認番号。 */
+  devCode?: string;
 }
 
 const FALLBACK_ATTEMPT_LIMIT = 10;
@@ -223,6 +225,7 @@ export function LoginChallengeForm({
             ? `登録済みの電話 ${view.destinationMask} へSMSで確認番号を送りました。`
             : `登録済みのメール ${view.destinationMask} へ確認番号を送りました。`}</>}
       />
+      {view.devCode ? <Alert tone="info">開発用の確認番号は {view.devCode} です。</Alert> : null}
       {lockedNotice ? <Alert tone="warning">{lockedNotice}</Alert> : null}
       {attemptNotice ? <Alert tone="warning">{attemptNotice}</Alert> : null}
       <div className="auth-card">

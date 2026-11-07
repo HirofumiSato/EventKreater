@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
 import { appBaseUrl } from "@/lib/http";
-import { deliverMail } from "@/lib/mail";
+import { deliverMail, logRecordedMail } from "@/lib/mail";
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
 const INTENT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -16,7 +16,7 @@ export const VERIFICATION_NOTICE =
   "確認メールを送信しました。メールのリンクを開いてください。届かない場合は迷惑メールも確認してください。";
 
 async function logIfUnsent(status: "SENT" | "RECORDED", line: string): Promise<void> {
-  if (status === "RECORDED") console.info(`[mail] ${line}`);
+  if (status === "RECORDED") logRecordedMail(line);
 }
 
 export async function sendVerificationEmail(user: { id: string; email: string; name: string }): Promise<void> {

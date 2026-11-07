@@ -4,6 +4,12 @@ export interface OutboundMail {
   body: string;
 }
 
+/** 配送が記録に留まったときだけ本文をログへ残す。本番では出さない。 */
+export function logRecordedMail(line: string): void {
+  if (process.env.NODE_ENV === "production") return;
+  console.info(`[mail] ${line}`);
+}
+
 export async function deliverMail(message: OutboundMail): Promise<"SENT" | "RECORDED"> {
   const webhook = process.env.MAIL_WEBHOOK_URL;
   if (!webhook) return "RECORDED";

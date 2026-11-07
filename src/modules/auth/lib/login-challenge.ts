@@ -3,7 +3,7 @@ import type { LoginChallengeChannel, LoginChallengePurpose, User } from "@prisma
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
-import { deliverMail } from "@/lib/mail";
+import { deliverMail, logRecordedMail } from "@/lib/mail";
 import { deliverSms } from "@/lib/sms";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { signLocalToken } from "@/modules/auth/lib/auth";
@@ -31,6 +31,24 @@ const { codeMaxAttempts: MAX_ATTEMPTS, lockMs: LOCK_MS } = AUTH_RATE_LIMITS;
 const ATTEMPT_WARN_AFTER_FAILURES = 3;
 const INVALID_CODE = "確認番号が正しくないか、期限が切れています。";
 
+type DevCode = { code: string; expiresAt: number };
+// Turbopack はモジュールを評価し直すので、控えはプロセス全体で 1 つの Map に置く。
+const devCodeStore = ((globalThis as { __devLoginCodes?: Map<string, DevCode> })
+  .__devLoginCodes ??= new Map());
+
+/** 画面に番号を出してよいか。本番ビルドでは false に畳まれる。 */
+function devCodeEnabled(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.AUTH_DEV_CODE !== "0";
+}
+
+/** 期限切れの控えを捨てる。照合されないまま消えたチャレンジの分も残さない。 */
+function sweepDevCodes(): void {
+  const now = Date.now();
+  for (const [id, entry] of devCodeStore) {
+    if (entry.expiresAt <= now) devCodeStore.delete(id);
+  }
+}
+
 export type ChallengeUser = Pick<
   User,
   "id" | "email" | "name" | "phoneE164" | "phoneVerifiedAt" | "platformRole"
@@ -47,6 +65,8 @@ export interface LoginChallengePublic {
   attemptsRemaining: number;
   attemptLimit: number;
   lockMinutes: number;
+  /** 開発時だけ載る確認番号。配送が記録に留まったときだけ入る。 */
+  devCode?: string;
 }
 
 function codeHash(challengeId: string, code: string): string {
@@ -207,7 +227,9 @@ function publicView(
   channel: LoginChallengeChannel,
   purpose: LoginChallengePurpose,
   attemptsRemaining: number,
+  challengeId: string,
 ): LoginChallengePublic {
+  const devCode = devCodeStore.get(challengeId);
   return {
     challengeRequired: true,
     channel,
@@ -218,10 +240,15 @@ function publicView(
     attemptsRemaining,
     attemptLimit: MAX_ATTEMPTS,
     lockMinutes: LOCK_MS / 60_000,
+    ...(devCode ? { devCode: devCode.code } : {}),
   };
 }
 
-async function deliver(user: ChallengeUser, channel: LoginChallengeChannel, code: string): Promise<void> {
+async function deliver(
+  user: ChallengeUser,
+  channel: LoginChallengeChannel,
+  code: string,
+): Promise<"SENT" | "RECORDED"> {
   if (channel === "SMS") {
     if (!user.phoneE164) {
       throw new ProblemDetailException({
@@ -230,11 +257,10 @@ async function deliver(user: ChallengeUser, channel: LoginChallengeChannel, code
         detail: "このアカウントには確認済みの電話番号がありません。",
       });
     }
-    await deliverSms({
+    return deliverSms({
       to: user.phoneE164,
       body: `確認番号は ${code} です。10分以内に入力してください。`,
     });
-    return;
   }
   const body = `確認番号は ${code} です。10分以内に入力してください。このメールに心当たりがないときは破棄してください。`;
   const status = await deliverMail({
@@ -242,7 +268,8 @@ async function deliver(user: ChallengeUser, channel: LoginChallengeChannel, code
     subject: "ログイン確認番号",
     body,
   });
-  if (status === "RECORDED") console.info(`[mail] ${user.email}: ${body}`);
+  if (status === "RECORDED") logRecordedMail(`${user.email}: ${body}`);
+  return status;
 }
 
 export function writeLoginChallengeCookie(response: NextResponse, req: NextRequest, challengeId: string): void {
@@ -335,11 +362,24 @@ async function issueChallenge(input: {
     where: { id: created.id },
     data: { codeHash: codeHash(created.id, code) },
   });
-  await deliver(input.user, input.channel, code);
+  const delivery = await deliver(input.user, input.channel, code);
+  if (delivery === "SENT") {
+    // Webhook があり、実際に送れた。画面に出す控えは要らない。
+    devCodeStore.delete(created.id);
+  } else if (devCodeEnabled()) {
+    sweepDevCodes();
+    devCodeStore.set(created.id, { code, expiresAt: created.expiresAt.getTime() });
+  }
   const failures = await countAttempts(failureBucket(input.user.id), LOCK_MS);
   return {
     id: created.id,
-    view: publicView(input.user, input.channel, input.purpose, Math.max(0, MAX_ATTEMPTS - failures)),
+    view: publicView(
+      input.user,
+      input.channel,
+      input.purpose,
+      Math.max(0, MAX_ATTEMPTS - failures),
+      created.id,
+    ),
   };
 }
 
@@ -382,7 +422,13 @@ export async function currentLoginChallenge(req: NextRequest): Promise<LoginChal
   const { challenge, user } = await readActiveChallenge(req);
   await assertNotLocked(user.id);
   const failures = await countAttempts(failureBucket(user.id), LOCK_MS);
-  return publicView(user, challenge.channel, challenge.purpose, Math.max(0, MAX_ATTEMPTS - failures));
+  return publicView(
+    user,
+    challenge.channel,
+    challenge.purpose,
+    Math.max(0, MAX_ATTEMPTS - failures),
+    challenge.id,
+  );
 }
 
 export async function switchLoginChallengeChannel(input: {
@@ -448,6 +494,8 @@ async function verifyChallenge(input: {
     where: { id: row.id },
     data: { usedAt: new Date() },
   });
+  // 使った番号は控えからも消す。画面を戻しても出し直さない。
+  devCodeStore.delete(row.id);
   return { user, challengeId: row.id, purpose: challenge.purpose };
 }
 

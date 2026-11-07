@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
 import { appBaseUrl } from "@/lib/http";
-import { deliverMail } from "@/lib/mail";
+import { deliverMail, logRecordedMail } from "@/lib/mail";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { passwordResetUrl } from "@/lib/auth-links";
 import { hashPassword } from "@/modules/auth/lib/auth";
@@ -76,7 +76,7 @@ export async function requestPasswordReset(input: {
     subject: "パスワードの再設定",
     body: `${user.name} さん\n\nパスワードを再設定する場合は、次のリンクを開いてください。このリンクは30分で無効になります。\n心当たりがなければ、リンクは開かずにこのメールを破棄してください。\n${url}\n`,
   });
-  if (status === "RECORDED") console.info(`[mail] password reset for ${user.email}: ${url}`);
+  if (status === "RECORDED") logRecordedMail(`password reset for ${user.email}: ${url}`);
   return { sent: true, detail: RESET_NOTICE };
 }
 

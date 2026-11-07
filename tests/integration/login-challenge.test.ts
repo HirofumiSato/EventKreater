@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { bucketOf } from "@/modules/auth/lib/rate-limit";
 import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import {
+  confirmAccountChallenge,
+  currentLoginChallenge,
   startAccountChallenge,
   startLoginChallenge,
   switchLoginChallengeChannel,
@@ -153,5 +155,61 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     expect(started.view.destinationMask).toContain("@");
     // SMS のバケットは空のまま。メール既定にした分だけ従量が減る。
     expect(await prisma.authAttempt.count({ where: { bucket: { in: smsBuckets } } })).toBe(0);
+  });
+
+  it("開発で配送が記録に留まると、応答の確認番号をそのまま入力して通れる", async () => {
+    const user = await seedUser("dev-code");
+    const ip = key("dev-code-ip");
+    buckets.push(
+      bucketOf(rules.loginEmailChallengeUser, user.id),
+      bucketOf(rules.loginEmailChallengeIp, ip),
+      bucketOf(rules.loginConfirmIp, ip),
+    );
+
+    const started = await startAccountChallenge({ user, ip, channel: "EMAIL" });
+
+    expect(started.view.channel).toBe("EMAIL");
+    expect(started.view.devCode).toMatch(/^\d{6}$/);
+
+    const confirmed = await confirmAccountChallenge({
+      req: requestWith(started.id),
+      code: started.view.devCode as string,
+      ip,
+    });
+    expect(confirmed.id).toBe(user.id);
+  });
+
+  it("本番では、配送が記録に留まっても応答に確認番号を載せない", async () => {
+    const user = await seedUser("dev-code-prod");
+    const ip = key("dev-code-prod-ip");
+    buckets.push(bucketOf(rules.loginEmailChallengeUser, user.id), bucketOf(rules.loginEmailChallengeIp, ip));
+
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const started = await startAccountChallenge({ user, ip, channel: "EMAIL" });
+      expect(started.view.devCode).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("照合に使ったチャレンジは、画面を開き直しても番号を返さない", async () => {
+    const user = await seedUser("dev-code-used");
+    const ip = key("dev-code-used-ip");
+    buckets.push(
+      bucketOf(rules.loginEmailChallengeUser, user.id),
+      bucketOf(rules.loginEmailChallengeIp, ip),
+      bucketOf(rules.loginConfirmIp, ip),
+    );
+
+    const started = await startAccountChallenge({ user, ip, channel: "EMAIL" });
+    const code = started.view.devCode;
+    expect(code).toBeDefined();
+
+    await confirmAccountChallenge({ req: requestWith(started.id), code: code as string, ip });
+
+    const error = await currentLoginChallenge(requestWith(started.id)).catch((cause: unknown) => cause);
+    expect(error).toBeInstanceOf(ProblemDetailException);
+    expect((error as ProblemDetailException).status).toBe(401);
   });
 });
