@@ -486,7 +486,7 @@ try {
     "flyer-christmas.jpg",
   );
   const flyerDj = await createFlyer(organizer.id, "DJナイト Vol.7", "flyer-dj.jpg");
-  // 公開し放題の会員の 3 件。食とステージの束で足したテーマの見本を兼ねる。
+  // 公開し放題の会員の 4 件。食とステージの束で足したテーマの見本を兼ねる。
   const flyerNeonMagenta = await createFlyer(
     organizerUnlimited.id,
     "NEON AFTER PARTY Vol.3",
@@ -501,6 +501,12 @@ try {
     organizerUnlimited.id,
     "舞台『灯をともす』",
     "flyer-spotlight.jpg",
+  );
+  // 食の束の見本。バーの夜を居酒屋のテーマ（`tavern`）で見せる。
+  const flyerTavernChristmas = await createFlyer(
+    organizerUnlimited.id,
+    "BAR 月灯り クリスマス飲み会",
+    "flyer-tavern-christmas.jpg",
   );
 
   /**
@@ -1215,7 +1221,8 @@ try {
   /**
    * 帯の見え方を撮るための催し。
    *
-   * 公開し放題の会員は 3 件、未加入の会員は無料枠から 1 件だけ持たせる。
+   * 公開し放題の会員には、件数を見るための催しを 3 件持たせる。
+   * 未加入の会員は無料枠から 1 件だけ持たせる。
    * 公開中の件数は「開催日が今日以降」で数えるので、いずれも未来の日付にする。
    */
   const unlimitedEvents = [];
@@ -1408,6 +1415,78 @@ try {
         status: "WAITLISTED",
         planIndex: 0,
         scheduleIndex: 0,
+        appliedDaysBefore: 1,
+      },
+    ],
+  });
+
+  /**
+   * バーのクリスマス飲み会。食の束（`tavern`）の見本を兼ねる。
+   * 早割の期限は開催日から逆算し、いつ seed を回しても過去の日付が残らないようにする。
+   */
+  const tavernDate = upcomingChristmas(today);
+  const tavernEarlyEnd = addDays(tavernDate, -10);
+  const tavernEarlyLabel = `${Number(tavernEarlyEnd.slice(5, 7))}/${Number(tavernEarlyEnd.slice(8, 10))}`;
+  const tavernChristmas = await createEvent({
+    ownerId: organizerUnlimited.id,
+    title: "BAR 月灯り クリスマス飲み会",
+    sortDate: tavernDate,
+    location: "BAR 月灯り（東京都渋谷区渋谷1-2-3 月灯りビル 2F）",
+    postalCode: "1500002",
+    prefecture: "東京都",
+    city: "渋谷区",
+    town: "渋谷",
+    addressLine: "1-2-3",
+    building: "月灯りビル 2F",
+    venueName: "BAR 月灯り",
+    rainPolicy: "INDOOR",
+    capacity: 20,
+    status: "PUBLISHED",
+    flyerAssetId: flyerTavernChristmas.id,
+    targetGeneration: "20代〜30代",
+    themeId: "tavern",
+    rsvpDeadline: tokyoDateTime(addDays(tavernDate, -3), "23:59"),
+    schedules: [schedule(tavernDate, "19:00", "22:00", 0)],
+    plans: [
+      { name: "クリスマスプラン", audience: "ANY", amount: 6000, note: "2ドリンク＋フード付き" },
+    ],
+    discounts: [{ name: "早割", amount: 500, note: `${tavernEarlyLabel}までの申込` }],
+    participants: [
+      {
+        name: PARTICIPANT.name,
+        asParticipantUser: true,
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "友だちと2人で参加します。",
+        discountIndexes: [0],
+        appliedDaysBefore: 6,
+      },
+      {
+        name: "藤田 さくら",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "乾杯のときに合流します。",
+        appliedDaysBefore: 4,
+      },
+      {
+        name: "鈴木 大輔",
+        gender: "MALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        appliedDaysBefore: 3,
+      },
+      {
+        name: "山本 かおり",
+        gender: "FEMALE",
+        status: "ATTENDING",
+        planIndex: 0,
+        scheduleIndex: 0,
+        comment: "クリスマスの飾り、楽しみにしています。",
         appliedDaysBefore: 1,
       },
     ],
@@ -1630,6 +1709,7 @@ try {
       neonMagenta: neonMagenta.event.id,
       posterLive: posterLive.event.id,
       spotlightStage: spotlightStage.event.id,
+      tavernChristmas: tavernChristmas.event.id,
     },
     participantId: participant.id,
     organizerId: organizer.id,
@@ -1675,6 +1755,7 @@ try {
   console.log(`    NEON AFTER PARTY Vol.3（マゼンタのネオン・公開し放題）: ${neonMagenta.event.id}`);
   console.log(`    真夜中の残響 — Release Live（ライブポスター・公開し放題）: ${posterLive.event.id}`);
   console.log(`    舞台『灯をともす』（スポットライト・公開し放題）: ${spotlightStage.event.id}`);
+  console.log(`    BAR 月灯り クリスマス飲み会（居酒屋・公開し放題）: ${tavernChristmas.event.id}`);
   console.log(`  招待コード: ${INVITE_CODE}`);
   console.log(`  書き出し: storage/ui-demo.json`);
   if (!tokens.organizer) {

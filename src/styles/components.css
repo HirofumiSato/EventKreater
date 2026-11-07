@@ -332,12 +332,14 @@
 
 /* 3 セットをつないだ帯。帯ごと左へ 1 セットぶん送って先頭へ戻すので、
    継ぎ目なく回り続ける。触っている間だけ `:active` で止める（止める条件を
-   JS の状態に持たせない）。セットは 3 つなので、送る量は 1/3。 */
+   JS の状態に持たせない）。セットは 3 つなので、送る量は 1/3。
+   秒数は 1 セットの枚数に比例させる（4 枚で 40s。見かけの速さを保つため、
+   枚数を増減したら同じ比率で直す）。 */
 .hero__showcase-track {
   display: flex;
   flex: 0 0 auto;
   width: max-content;
-  animation: showcase-slide 40s linear infinite;
+  animation: showcase-slide 60s linear infinite;
   will-change: transform;
 }
 
