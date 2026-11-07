@@ -532,5 +532,28 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 | 帯を画面幅いっぱいにする（`50% - 50vw`） | スクロールバーの幅だけはみ出し、帯が左右にずれる。本文の列（`--width-page`）にそろえる |
 | `/sample` に共通ヘッダーを出す | 見本の上に製品のクロムが乗り、本物の告知ページと見比べられない |
 
+---
+
+## 14. サンプルを準備中として非活性にする（2026-11-07）
+
+見本（SCR-PUB-16 / SCR-PUB-17 / SCR-PUB-18）が未公開のため、ホームのヒーローから辿れないようにしました。
+「サンプルを見る」は遷移しない無効ボタンに置き換え、右上に「準備中」の札を重ねます。
+
+### 14.1. 変更
+
+| 位置 | 変更 | 正 |
+| --- | --- | --- |
+| サンプル | `Link`（`target="_blank"` / `rel="noopener noreferrer"`）をやめ、`<span class="hero__sample">` の中の `<button type="button" class="btn btn--outline btn--lg" disabled>` にした。押せない見た目と当たり判定は `.btn:disabled` が受ける | `src/app/page.tsx` / `.hero__sample` |
+| 札 | ボタンの右上に `Badge`（`tone="warning"`、`small`）で「準備中」を重ねる（`.hero__sample-badge`。少し傾け、`pointer-events: none`） | `src/components/ui/Badge.tsx` / `.hero__sample-badge` |
+| 折り返し | `.hero__buttons` の行間を 0.75rem → 1.25rem に広げ、360px 級で 2 段になったとき札が上の段に重ならないようにした | `src/styles/components.css` |
+| `/sample` | ルートと `SITE.nav.sample`・`siteChrome`・サンプル内の相互リンクは変えない（URL を直接開けば見られる） | `src/app/sample/**` / `src/lib/site.ts` |
+
+第 13 節の「新しいタブで開く（`target="_blank"`）」は当時の記録です。いまの正はこの節です。
+
+### 14.2. 公開するとき
+
+見本を公開したら、`span.hero__sample` の中身を `href={SITE.nav.sample.href}` の `Link` に戻し、
+`Badge` と `.hero__sample-badge` を外します（新しいタブで開く指定も戻す）。第 13 節の並びがそのまま正になります。
+
 
 

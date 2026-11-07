@@ -483,6 +483,22 @@ svg {
   margin-top: 0;
 }
 
+/* 見本は準備中。押せない見た目と当たり判定は `.btn:disabled` が受ける。
+   札だけはボタンの外に置き、右上へ少し傾けて貼る（製品の `.hero__sample` と同じ）。 */
+.hero__sample {
+  position: relative;
+  display: inline-flex;
+}
+
+.hero__sample-badge {
+  position: absolute;
+  z-index: 1;
+  top: -0.6rem;
+  right: -0.6rem;
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+
 .card-grid,
 .stat-grid {
   display: grid;

@@ -101,7 +101,7 @@
 | :--- | :--- | :--- |
 | `SITE.nav.home` | トップ | SCR-PUB-00 |
 | `SITE.nav.service` | サービスと料金 | SCR-PUB-06 |
-| `SITE.nav.sample` | サンプルを見る | SCR-PUB-16 |
+| `SITE.nav.sample` | サンプルを見る | SCR-PUB-16（ホームでは準備中のため非活性。URL の直開きのみ） |
 | `SITE.nav.createEvent` | イベント告知ページを作る | SCR-ORG-02 |
 | `SITE.nav.organizerList` | 主催一覧 | SCR-ORG-01 |
 | `SITE.nav.organizerLogin` | 主催者ログイン | SCR-PUB-02 |

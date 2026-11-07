@@ -3,7 +3,7 @@ import { SITE } from "@/lib/site";
 import { yen } from "@/lib/format";
 import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SERVICE_PLANS } from "@/modules/billing/lib/plans";
 import { WithdrawnNotice } from "@/modules/account/components/WithdrawnNotice";
-import { PlanCard, Row, Rows, Section, SectionHead } from "@/components/ui";
+import { Badge, PlanCard, Row, Rows, Section, SectionHead } from "@/components/ui";
 import { HomeShowcase } from "./HomeShowcase";
 
 /*
@@ -152,17 +152,20 @@ export default function HomePage() {
                   {SITE.cta.createEventFree}
                 </Link>
                 {/*
-                  作る前に、自分の催しならどう見えるかを確かめる入口。主操作の隣に
-                  副のボタンとして並べる。見本は別のタブで開き、作りかけの入力を失わない。
+                  作る前に、自分の催しならどう見えるかを確かめる入口。見本はまだ準備中なので、
+                  遷移させず、押せないボタンとして置き、右上に「準備中」の札を重ねる。
+                  公開するときは、この要素を href={SITE.nav.sample.href} の Link に戻す。
                 */}
-                <Link
-                  href={SITE.nav.sample.href}
-                  className="btn btn--outline btn--lg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {SITE.nav.sample.label}
-                </Link>
+                <span className="hero__sample">
+                  <button type="button" className="btn btn--outline btn--lg" disabled>
+                    {SITE.nav.sample.label}
+                  </button>
+                  <span className="hero__sample-badge">
+                    <Badge tone="warning" small>
+                      準備中
+                    </Badge>
+                  </span>
+                </span>
               </div>
               {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
               <p className="hero__links">
