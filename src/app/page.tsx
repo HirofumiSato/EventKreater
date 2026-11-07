@@ -18,8 +18,18 @@ const HERO_EYEBROW = (
     <span className="hero__eyebrow-tail">主催者様へ</span>
   </>
 );
-const HERO_LEAD =
-  "イベント名・日時・場所・料金を入れるだけ。告知ページができ、URLを送るだけで集客と予約管理が完結します。";
+/*
+ * ヒーローのリード。3 行に分け、上から「手軽さ」「いちばん伝えたい成果」
+ * 「そのあとに残るもの」の順に置く。2 行目だけを山吹の文字にし、見出しの
+ * アンダーラインより下へ落とした線を引いて、見出しから主操作へ視線が落ちる
+ * 導線にする。3 行目は白のまま太さも上げず、2 行目の添え書きとして読ませる
+ * （山吹を 2 行に増やすと、見出しの札と合わせて黄が 3 つ並ぶ）。
+ * どの行も block で改行し、幅で折れたときに強調の範囲が行の途中で変わらない
+ * ようにする（見た目は deco/base.css が持つ）。
+ */
+const HERO_LEAD_SETUP = "イベント名・日時・場所・料金を入れるだけ。";
+const HERO_LEAD_POINT = "きれいな告知ページで、誘いやすくなります。";
+const HERO_LEAD_NOTE = "誰が来るかも、作業なしで一覧に。";
 /**
  * 見出しの最後の行の右に横に並べる吹き出し。見出しが主、これは添え書き。
  * 左から「作れるもの」「そのあとも使えるもの」の順に置く。
@@ -145,7 +155,11 @@ export default function HomePage() {
                 </span>
               </span>
             </h1>
-            <p className="hero__lead">{HERO_LEAD}</p>
+            <p className="hero__lead">
+              {HERO_LEAD_SETUP}
+              <strong>{HERO_LEAD_POINT}</strong>
+              <span className="hero__lead-note">{HERO_LEAD_NOTE}</span>
+            </p>
             <div className="hero__actions">
               <div className="hero__buttons">
                 <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--lg">

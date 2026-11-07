@@ -12724,7 +12724,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 568,
+      "lineCount": 609,
       "headings": [
         {
           "level": 1,
@@ -12933,6 +12933,22 @@
         {
           "level": 3,
           "text": "14.2. 公開するとき"
+        },
+        {
+          "level": 2,
+          "text": "15. ヒーローのリードを 3 行にして、成果を山吹で強調する（2026-11-08）"
+        },
+        {
+          "level": 3,
+          "text": "15.1. 変更"
+        },
+        {
+          "level": 3,
+          "text": "15.2. 決めた理由"
+        },
+        {
+          "level": 3,
+          "text": "15.3. 実測"
         }
       ],
       "toctree": [],
