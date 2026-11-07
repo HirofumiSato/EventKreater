@@ -96,4 +96,28 @@ describe("セマンティックテーマの CSS", () => {
       /--color-placeholder:\s*color-mix\(in srgb, var\(--st-content-secondary\) \d+%, var\(--st-surface-raised\)\)/,
     );
   });
+
+  it("見出しの書体は h1〜h6 と見出しクラスの両方へ当たる", () => {
+    // `<p class="panel__title">` のような要素でない見出しもあり、h4 以下を外すと
+    // 同じ画面の中で書体が混ざる。1 つの規則で両方を受ける。
+    const start = THEMES_CSS.indexOf("/* 見出しの書体。");
+    expect(start, "見出しの書体の規則がありません").toBeGreaterThanOrEqual(0);
+    const rule = THEMES_CSS.slice(start, THEMES_CSS.indexOf("font-family: var(--st-font-heading);", start));
+
+    for (const selector of [
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      ".section__title",
+      ".profile-head__name",
+      ".page-title",
+      ".panel__title",
+      ".card__title",
+    ]) {
+      expect(rule, `見出しの書体に ${selector} が無い`).toContain(selector);
+    }
+  });
 });

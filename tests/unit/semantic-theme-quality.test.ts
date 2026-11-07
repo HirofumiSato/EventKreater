@@ -4,7 +4,7 @@
 // 2. 網羅性        … 参照したトークンに既定値があるか、死んだトークンを残していないか
 // 3. テーマ固有規則 … `[data-semantic-theme="x"] .card` のような特例を書いていないか
 // 4. 近接テーマ    … 色だけを変えた「同じ紙」が 2 つ並んでいないか（6 軸）
-// 5. シグネチャ    … 各テーマが書体と装飾を持ち、未知の書体を持ち込んでいないか
+// 5. シグネチャ    … 各テーマが見出しと本文の書体・装飾を持ち、未知の書体を持ち込んでいないか
 //
 // 色の正は src/styles/themes.css、ID の正は src/lib/semantic-themes.ts。
 // この試験はブラウザも DB も使わず、CSS を読んで計算するだけ。
@@ -472,6 +472,9 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
     "YuMincho",
     "Noto Serif JP",
     "Zen Kaku Gothic New",
+    // 本文用の丸ゴシック。`src/app/layout.tsx` が全ページで読み込むので、
+    // テーマごとの `ThemeTypefaces` には載せない。
+    "Zen Maru Gothic",
     "serif",
     "sans-serif",
   ]);
@@ -479,19 +482,22 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
   /** 書体そのものではなく、サイトの表示書体を継ぐ指示。 */
   const TOKEN_FAMILIES = new Set(["var(--font)", "var(--font-display)"]);
 
-  it.each([...SEMANTIC_THEME_IDS])("%s: 見出しの書体は読み込み済みか総称だけを指す", (id) => {
+  /** 書体の指定が、読み込み済みの 3 書体・システム書体・総称・`var()` だけで出来ているか。 */
+  function expectKnownFamilies(id: string, token: "--st-font-heading" | "--st-font-body") {
     // 未知のファミリ名を書くと、その端末にフォントが無いときだけ別の書体へ落ちる。
     // Web フォントは「そのテーマで実際に読み込む」ことまで確かめる（CSS と ThemeTypefaces の突き合わせ）。
-    const heading = themeTokens(id)["--st-font-heading"].trim();
-    if (TOKEN_FAMILIES.has(heading)) return;
+    const value = themeTokens(id)[token].trim();
+    if (TOKEN_FAMILIES.has(value)) return;
 
-    const families = heading
+    const families = value
       .split(",")
       .map((family) => family.trim().replace(/^["']|["']$/g, ""))
       .filter(Boolean);
-    expect(families.length, `${id}: 空の書体指定`).toBeGreaterThan(0);
+    expect(families.length, `${id}: ${token} の空の書体指定`).toBeGreaterThan(0);
 
     for (const family of families) {
+      // `"Zen Maru Gothic", var(--font)` のように、先頭に書体を置いて残りをサイトの書体へ継ぐ形も許す。
+      if (TOKEN_FAMILIES.has(family)) continue;
       const loaded = LOADED_TYPEFACES[family];
       if (loaded) {
         expect(themeFontHref(id), `${id}: ${family} を読み込む URL`).toContain(loaded);
@@ -499,5 +505,21 @@ describe("テーマのシグネチャ（書体と装飾を持つ）", () => {
       }
       expect(SYSTEM_FAMILIES.has(family), `${id}: 未知の書体「${family}」`).toBe(true);
     }
+  }
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 見出しの書体は読み込み済みか総称だけを指す", (id) => {
+    expectKnownFamilies(id, "--st-font-heading");
+  });
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 本文の書体は読み込み済みか総称だけを指す", (id) => {
+    // 本文は見出しより字数が多く、字面の差がそのまま読みやすさに出る。
+    // 未知の書体や、そのテーマで読まない Web フォントを指すと、端末ごとに紙面が変わる。
+    expectKnownFamilies(id, "--st-font-body");
+  });
+
+  it.each([...SEMANTIC_THEME_IDS])("%s: 本文の書体を自分のブロックで決める", (id) => {
+    // 既定（サイトの角ゴシック）のままでよいテーマも、`var(--font)` と明示して
+    // 「考えて選んだ」ことを残す。書き忘れと、意図した角ゴシックを区別する。
+    expect(THEME_TOKENS.get(id)?.["--st-font-body"], `${id}: --st-font-body`).toBeTruthy();
   });
 });

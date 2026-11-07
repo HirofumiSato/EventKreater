@@ -168,7 +168,7 @@
 | `src/app/global-error.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/invitations/[code]/layout.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
 | `src/app/invitations/[code]/page.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/app/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/notifications/page.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
