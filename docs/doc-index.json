@@ -5866,7 +5866,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2177,
+      "lineCount": 2178,
       "headings": [
         {
           "level": 1,
@@ -8655,7 +8655,7 @@
       "title": "公開プロフィールにアイコン画像とセマンティックテーマを足す",
       "summary": "> [organizer-profile.md](organizer-profile.md) の「スコープ外」から切り出した issue。プロフィールの本文（肩書き・自己紹介・リンク）は動いている前提で、そこに「その人らしさ」を出す手段を 2 つ足す。",
       "preImplementation": false,
-      "lineCount": 372,
+      "lineCount": 373,
       "headings": [
         {
           "level": 1,
@@ -8794,6 +8794,10 @@
         },
         {
           "path": "src/components/ui/ThemePicker.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/ThemeTypefaces.tsx",
           "exists": true
         },
         {
@@ -13290,7 +13294,7 @@
       "title": "テーマを 1 つ足すときの合格条件",
       "summary": "公開ページのセマンティックテーマ（data-semantic-theme）を増やすときの手順と、 人手で確かめる項目をまとめます。機械で止められるものは tests/unit/semantic-theme-quality.test.ts と services/flyer/tests/test_theme_parity.py が先に落とします。 このページは、その上で目で見ないと分からないものだけを扱います。",
       "preImplementation": false,
-      "lineCount": 125,
+      "lineCount": 183,
       "headings": [
         {
           "level": 1,
@@ -13299,6 +13303,10 @@
         {
           "level": 2,
           "text": "14 つのテーマと用途"
+        },
+        {
+          "level": 2,
+          "text": "追加する書体は 3 つ"
         },
         {
           "level": 2,
@@ -13361,6 +13369,10 @@
         },
         {
           "path": "services/flyer/tests/test_theme_parity.py",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/ThemeTypefaces.tsx",
           "exists": true
         },
         {

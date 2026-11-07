@@ -2871,16 +2871,26 @@ html[data-scroll-lock] {
   gap: 0.5rem;
   padding: 0.75rem;
   border: var(--st-border-width, 1px) solid var(--color-border);
+  /* テーマのカードと同じく、上辺だけ差し色を許す。 */
+  border-top: var(--st-card-top, 1px solid var(--color-border));
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
 
+/* 見本のアイブロウ。地・角・余白・字間・大文字化はテーマのトークンが決める。
+   札として置くので、幅いっぱいに伸ばさず文字の幅で止める（`justify-self`）。 */
 .theme-preview__eyebrow {
-  color: var(--color-primary-text);
+  justify-self: start;
+  padding: var(--st-eyebrow-padding, 0);
+  border-radius: var(--st-eyebrow-radius, 0);
+  background: var(--st-eyebrow-bg, none);
+  color: var(--st-eyebrow-color, var(--st-accent-text, var(--color-primary-text)));
   font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-weight: var(--st-eyebrow-weight, 700);
+  letter-spacing: var(--st-eyebrow-tracking, 0.12em);
+  line-height: 1.4;
+  text-transform: var(--st-eyebrow-transform, none);
 }
 
 .theme-preview__title {
@@ -2888,13 +2898,60 @@ html[data-scroll-lock] {
   font-size: 0.9375rem;
   font-weight: var(--st-heading-weight, 700);
   letter-spacing: var(--st-heading-tracking, 0.01em);
-  line-height: 1.5;
+  line-height: var(--st-heading-leading, 1.5);
+  text-decoration: var(--st-heading-rule, none);
+  text-underline-offset: var(--st-heading-rule-offset, 0.42em);
+  text-transform: var(--st-heading-transform, none);
 }
 
 .theme-preview__meta {
   color: var(--color-text-muted);
   font-size: 0.6875rem;
   line-height: 1.5;
+}
+
+/* セクション見出しの見本。罫線・左の差し色・飾り・書体を、公開ページの
+   `.section__head` と同じトークンから作る。高さは 1 行に抑え、`compact` でも
+   入力の流れを切らない。標準（`--st-*` が無い）は下線だけの控えめな見た目にする。 */
+.theme-preview__section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding-bottom: 0.25rem;
+  padding-inline-start: calc(var(--st-section-lead, 0px) * 3);
+  border-bottom: var(--st-section-rule, 2px solid var(--color-text));
+  border-left: var(--st-section-lead, 0px) solid var(--st-section-lead-color, var(--color-primary));
+  line-height: 1.4;
+}
+
+.theme-preview__section-title {
+  min-width: 0;
+  font-family: var(--st-font-heading, var(--font-display));
+  font-size: 0.75rem;
+  font-weight: var(--st-heading-weight, 700);
+  letter-spacing: var(--st-heading-tracking, 0.01em);
+  line-height: var(--st-heading-leading, 1.3);
+  text-decoration: var(--st-heading-rule, none);
+  text-underline-offset: var(--st-heading-rule-offset, 0.42em);
+  text-transform: var(--st-heading-transform, none);
+  white-space: nowrap;
+}
+
+/* 飾りは `::after` に 1 文字。`none` のときは箱が生まれないので余白も出ない。 */
+.theme-preview__section-title::after {
+  content: var(--st-section-ornament, none);
+  margin-inline-start: 0.4em;
+  color: var(--st-section-ornament-color, var(--color-primary));
+  font-size: 0.8em;
+}
+
+.theme-preview__section-note {
+  color: var(--color-text-subtle);
+  font-size: 0.625rem;
+  white-space: nowrap;
 }
 
 .theme-preview__chips {
@@ -2905,7 +2962,7 @@ html[data-scroll-lock] {
 
 .theme-preview__chip {
   padding: 0.0625rem 0.4375rem;
-  border-radius: 999px;
+  border-radius: var(--st-chip-radius, 999px);
   background: var(--color-primary-soft);
   color: var(--color-primary-text);
   font-size: 0.625rem;
@@ -2926,7 +2983,7 @@ html[data-scroll-lock] {
   min-height: 1.75rem;
   padding: 0 0.5rem;
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--st-button-radius, var(--radius-lg));
   background: var(--color-surface);
   color: var(--color-text-faint);
   font-size: 0.625rem;
@@ -2939,7 +2996,7 @@ html[data-scroll-lock] {
   justify-content: center;
   min-height: 1.75rem;
   padding: 0 0.75rem;
-  border-radius: var(--radius-lg);
+  border-radius: var(--st-button-radius, var(--radius-lg));
   background: var(--st-accent-primary, var(--color-primary));
   color: var(--st-accent-contrast, #ffffff);
   font-size: 0.6875rem;

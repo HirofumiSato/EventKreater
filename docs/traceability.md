@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 111（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 498
+- 文書から参照されているコードパス: 499
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -210,6 +210,7 @@
 | `src/components/ui/SemanticThemeScope.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/components/ui/Subnav.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/components/ui/ThemePicker.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
+| `src/components/ui/ThemeTypefaces.tsx` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/lib` | `AGENTS.md` / [docs/testing/design.rst](testing/design.rst) |
 | `src/lib/analytics.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/lib/auth-links.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |

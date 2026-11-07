@@ -66,6 +66,14 @@ describe("セマンティックテーマの CSS", () => {
     expect(THEMES_CSS).not.toMatch(/@keyframes/);
   });
 
+  it("印刷では地紋を落とす（テーマは画面のためのもの）", () => {
+    // 地紋（--st-surface-image）は `background` の短縮でまとめて落とす。
+    // 紙に色と柄を持ち込むと、インクを無駄に使い、文字の下で柄がちらつく。
+    const print = THEMES_CSS.slice(THEMES_CSS.indexOf("@media print"));
+    expect(print).not.toBe("");
+    expect(print).toMatch(/background(-image)?:\s*none/);
+  });
+
   it("全幅の面は負のマージンで画面端まで広げる", () => {
     expect(THEMES_CSS).toMatch(/\.semantic-theme--page\s*\{[^}]*margin-inline:\s*calc\(50% - 50vw\)/);
   });

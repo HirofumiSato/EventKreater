@@ -18,3 +18,9 @@ export { Section, SectionHead } from "./Section";
 export { SemanticThemeScope } from "./SemanticThemeScope";
 export { Subnav, type SubnavItem } from "./Subnav";
 export { ThemePicker } from "./ThemePicker";
+export {
+  ThemeTypefaces,
+  THEME_FONT_FAMILIES,
+  themeFontHref,
+  type FontFamilyKey,
+} from "./ThemeTypefaces";

@@ -7,6 +7,7 @@ import {
   semanticTheme,
   themesInGroup,
 } from "@/lib/semantic-themes";
+import { ThemeTypefaces } from "./ThemeTypefaces";
 
 interface ThemePickerProps {
   /** 選んでいるテーマ。null は「標準」。 */
@@ -156,6 +157,8 @@ export function ThemePicker({
           className={`theme-preview__frame${value ? " semantic-theme" : ""}`}
           data-semantic-theme={value ?? undefined}
         >
+          {/* 見本の書体を選択肢と一致させる。選んでいるテーマがあるときだけ読む（重さ）。 */}
+          <ThemeTypefaces themeId={value} />
           {/* 見本であることの札。選んだ見た目そのものではないので読み上げには出さない。 */}
           <span className="theme-preview__badge" aria-hidden="true">
             サンプル
@@ -176,6 +179,11 @@ export function ThemePicker({
               <span className="theme-preview__button">申し込む</span>
             </div>
           </div>
+          {/* セクション見出しの見本。罫線・左バー・飾りがテーマごとに変わることを見せる。 */}
+          <p className="theme-preview__section">
+            <span className="theme-preview__section-title">次の催し</span>
+            <span className="theme-preview__section-note">11月15日</span>
+          </p>
           <div className="theme-preview__cal">
             {[8, 9, 10, 11, 12, 13, 14].map((day) => (
               <span className="theme-preview__day" key={day}>
