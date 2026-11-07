@@ -138,7 +138,7 @@ erDiagram
 | トークン | 既定値 | 役割 |
 | :---- | :---- | :---- |
 | `--st-font-heading` | `var(--font-display)` | 見出しの書体。`parchment` / `washi` は明朝、`candy` は丸ゴシック |
-| `--st-font-body` | `var(--font)` | 本文の書体 |
+| `--st-font-body` | `var(--font)` | 本文の書体。段落・注記・入力欄・ボタンまで効く（`sage` / `candy` / `dusk` / `tavern` / `kraft` は Zen Maru Gothic、`parchment` は Kaisei Decol、`washi` はシステム明朝） |
 | `--st-heading-weight` | `700` | 見出しの太さ |
 | `--st-heading-tracking` | `0.01em` | 見出しの字間（`washi` は `0.06em`） |
 | `--st-stack-gap` | `1.25rem` | `.stack` の縦の間隔（密度） |
@@ -162,7 +162,9 @@ erDiagram
 - `.btn--primary` / `.btn--outline` / `.btn--ghost` の枠と影
 - 入力欄 `.input` / `.textarea` / `.select`（`.deco` が面を白で固定している）→ `--st-surface-raised` と `--st-content-primary`。暗いテーマでは地に白い板が浮き、テーマの明るい字と同化して入力した文字が読めなくなるため。案内文は `--color-placeholder`（`--st-content-secondary` を 28% 混ぜる）で、地ではなく**入力欄の面**を基準に薄くする
 
-見出しの書体は `--st-font-heading` だけが持ち、部品はその値を読む。`washi` / `tavern` / `spotlight` はシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`parchment` は Kaisei Decol、`neo-brutalism` / `poster` は Dela Gothic One、`candy` / `kraft` は Yusei Magic を指す。追加書体は `src/components/ui/ThemeTypefaces.tsx` が 1 本の URL にまとめ、テーマを選んだ画面だけが読む。
+見出しの書体は `--st-font-heading` だけが持ち、部品はその値を読む。`washi` / `tavern` / `spotlight` はシステムの明朝（`Hiragino Mincho ProN`, `Yu Mincho`, serif）、`parchment` は Kaisei Decol、`neo-brutalism` / `poster` は Dela Gothic One、`candy` / `kraft` は Yusei Magic を指す。見出しは h1〜h6 と見出しクラス（`.section__title` / `.profile-head__name` / `.page-title` / `.panel__title` / `.card__title`）の両方に当てる。h3 までにすると、料金表のように h4 を使う画面だけ別の書体で残るため。
+
+本文の書体は `--st-font-body` が `.semantic-theme` 全体に効かせ、段落・注記・入力欄・ボタンまで揃える。極太（Dela Gothic One）と手書き（Yusei Magic）は本文に使わない（長い案内を読ませる場面で字面が強すぎるため）。`parchment` は Kaisei Decol、`washi` はシステムの明朝、`sage` / `candy` / `dusk` / `tavern` / `kraft` は Zen Maru Gothic、残りは角ゴシック（`var(--font)`）にする。Zen Maru Gothic は `layout.tsx` が全ページで読むので、テーマごとの追加読み込みには含めない。追加書体は `src/components/ui/ThemeTypefaces.tsx` が 1 本の URL にまとめ、テーマを選んだ画面だけが読む。
 
 印刷（`@media print`）では地を塗らず、文字を黒にする。テーマは画面のためのもの。
 
@@ -278,7 +280,7 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
   - `accept={UPLOAD_ACCEPT}`。クライアント側でも 4MB を事前に弾く。
   - 選ぶとすぐ `POST` し、成功したら `avatarUrl` を差し替えてトーストを出す。失敗は `readProblem` の文言。
   - 「選ぶとすぐに保存されます」と補足する。
-- 「公開」の下に `ThemePicker`。選択肢は「標準」＋14 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。見本はセクション見出しの 1 行（罫線・左バー・飾り）を含み、見出しの書体・アイブロウ・カード上辺・ボタンとチップの角を、公開ページと同じ書体トークンと装飾トークンから作る。選択中テーマのときだけ `ThemeTypefaces` がそのテーマの追加書体を 1 本の `<link>` で読む（テーマ未選択なら追加のフォントリクエストは出ない）。
+- 「公開」の下に `ThemePicker`。選択肢は「標準」＋14 テーマを用途グループで並べ、`draft.themeId` を更新する。保存は既存の「保存する」（他の入力と同じ単位）。見本はセクション見出しの 1 行（罫線・左バー・飾り）を含み、見出しと本文の書体・アイブロウ・カード上辺・ボタンとチップの角を、公開ページと同じ書体トークンと装飾トークンから作る。選択中テーマのときだけ `ThemeTypefaces` がそのテーマの追加書体を 1 本の `<link>` で読む（テーマ未選択なら追加のフォントリクエストは出ない）。
 - プレビューは `SemanticThemeScope`（`page={false}`）で `OrganizerProfileView` を包み、`profileContentFromDraft(draft, stats, avatarUrl)` を渡す。保存前のテーマも確認できる。
 - 見出し下のリードと `screen-note` に、アイコンとテーマの 1 文を足した。
 
@@ -328,8 +330,8 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 ## テスト
 
 - 単体 `tests/unit/semantic-theme.test.ts`（11件）: ID が重複しない・14 件ある・表示名と説明とグループが空でない、`themesInGroup` が全テーマを 1 回ずつ返す、`normalizeSemanticThemeId` が未知・NULL・空文字を NULL にする、`OrganizerProfileSchema` が 14 テーマと NULL を受け、未知の ID を 400 にする。
-- 単体 `tests/unit/semantic-theme-css.test.ts`（7件）: すべての ID に `[data-semantic-theme]` のブロックがある、必須 11 トークンが揃う、`themes.css` が `index.css` の最後、`backdrop-filter`・アニメーション・`@keyframes` を持たない、全幅の面が負のマージンで広がる、入力欄が `--st-surface-raised` と `--st-content-primary` を使う、案内文が入力欄の面を基準に薄くなる。
-- 単体 `tests/unit/semantic-theme-quality.test.ts`（63件）: 14 テーマすべてがコントラストの下限（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）を満たす、参照した `--st-*` に既定値がある、定義した `--st-*` が必ず参照される、`[data-semantic-theme="x"]` がトークン定義ブロックの外に現れない、5 軸（地の明度帯・差し色の色相帯・角丸・表示書体・密度）で 4 軸以上一致するテーマが無い。
+- 単体 `tests/unit/semantic-theme-css.test.ts`（9件）: すべての ID に `[data-semantic-theme]` のブロックがある、必須 11 トークンが揃う、`themes.css` が `index.css` の最後、`backdrop-filter`・アニメーション・`@keyframes` を持たない、全幅の面が負のマージンで広がる、入力欄が `--st-surface-raised` と `--st-content-primary` を使う、案内文が入力欄の面を基準に薄くなる、印刷で地紋を落とす、見出しの書体が h1〜h6 と見出しクラスの両方へ当たる。
+- 単体 `tests/unit/semantic-theme-quality.test.ts`（120件）: 14 テーマすべてがコントラストの下限（本文 7:1、補足・差し色・状態色 4.5:1、押せる部品の境界 3:1）を満たす、参照した `--st-*` に既定値がある、定義した `--st-*` が必ず参照される、`[data-semantic-theme="x"]` がトークン定義ブロックの外に現れない、6 軸（地の明度帯・差し色の色相帯・角丸・書体・密度・装飾）で 4 軸以上一致するテーマが無い、見出しと本文の書体が読み込み済みかシステム書体・総称だけを指す、全テーマが `--st-font-body` を自分のブロックで決める。
 - 単体 `tests/unit/organizer-profile.test.ts`（42件）: `profileContentFromDraft` が `themeId` と `avatarUrl` を載せる、非公開の行はテーマと本文を隠してアイコンは残す、など。
 - 結合 `tests/integration/organizer-avatar.test.ts`（8件）: 小さな PNG の `POST` で 201・DB 行・`GET /api/v1/image-assets/{id}/image` が WebP で返る、`POST` の差し替えで旧画像が 404 になる、`DELETE` で参照が NULL になり画像が 404、4MB 超は 413、JPEG でないバイト列は 422。`storage/images` の後片付けをする。
 - 結合 `tests/integration/organizer-profile.test.ts`（16件）: `PUT` で `themeId` が保存され公開 API に返る、未知の `themeId` は 400、アイコンの URL が応答に載る。
@@ -355,6 +357,8 @@ sharp(bytes, { limitInputPixels: 25_000_000, failOn: "error" })
 - [x] テーマ未選択（標準）では、DOM も見た目も現行と変わらない
 - [x] 非公開にするとテーマは外れ、アイコンは残る
 - [x] 編集画面のプレビューが、テーマ込みで公開ページと同じ見た目になる（見本のセクション見出し 1 行・書体・罫線・角を含む）
+- [x] 本文もテーマの書体で組まれる（段落・注記・入力欄・ボタン）。極太と手書きは見出しだけに留まる
+- [x] 見出しの書体が h1〜h6 と見出しクラス（`.card__title` など）の両方に当たる
 - [x] テーマ未選択のページでは追加書体（Kaisei Decol / Dela Gothic One / Yusei Magic）を読まない
 - [x] 公開ページのテーマ適用にクライアントコンポーネントを足していない（`SemanticThemeScope` はサーバーで属性を出すだけ）
 - [x] アイコンの応答が `immutable` で、`width` / `height` 付きの `<img>` で出る

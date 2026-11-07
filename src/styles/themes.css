@@ -56,7 +56,8 @@
    -------------------------------------------------------------------------- */
 
 .semantic-theme {
-  /* 任意トークンの既定値。 見出しの書体は、装飾（deco）が入れた表示書体を継ぐ。 */
+  /* 任意トークンの既定値。 見出しの書体は、装飾（deco）が入れた表示書体を継ぐ。
+     本文の書体は、書かないテーマではサイトの角ゴシックのまま。 */
   --st-font-heading: var(--font-display);
   --st-font-body: var(--font);
   --st-heading-weight: 700;
@@ -163,10 +164,16 @@
 }
 
 /* 任意トークンの消費。書体・字間・行間・密集度・読み幅は、ここ 3 規則だけが読む。
-   テーマごとに部品を書き換えないので、新しいテーマでも全画面が揃う。 */
+   テーマごとに部品を書き換えないので、新しいテーマでも全画面が揃う。
+
+   見出しは h1〜h6 まで同じ扱いにする。h4 以下を外すと、料金表のように
+   深い階層を持つ画面だけ別の書体で残り、テーマの声が途中で途切れる。 */
 .semantic-theme h1,
 .semantic-theme h2,
 .semantic-theme h3,
+.semantic-theme h4,
+.semantic-theme h5,
+.semantic-theme h6,
 .semantic-theme .page-title,
 .semantic-theme .section__title,
 .semantic-theme .panel__title,
@@ -264,6 +271,8 @@
   --st-surface-image-repeat: repeat, repeat, no-repeat;
   --st-surface-image-size: 32px 32px, 32px 32px, auto;
   --st-font-heading: var(--font-display);
+  /* 本文は角ゴシックのまま。夜の写真の上で、丸ゴシックの見出しとの差を作る。 */
+  --st-font-body: var(--font);
   --st-heading-tracking: 0.09em;
   --st-heading-transform: uppercase;
   --st-section-rule: 1px solid var(--st-accent-primary);
@@ -301,6 +310,8 @@
   --st-surface-image-repeat: repeat, repeat;
   --st-surface-image-size: 24px 24px, 24px 24px;
   --st-font-heading: var(--font-display);
+  /* 業務の画面なので、本文は素の角ゴシック。見出しだけ丸ゴシックで柔らげる。 */
+  --st-font-body: var(--font);
   --st-heading-tracking: -0.01em;
   --st-section-rule: 1px solid var(--st-border-color);
   --st-section-lead: 0;
@@ -321,6 +332,9 @@
 
 [data-semantic-theme="parchment"] {
   --st-font-heading: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  /* 読み物のテーマなので、本文も明朝。字間をわずかに開き、行間 1.5 で読ませる。 */
+  --st-font-body: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --st-body-tracking: 0.02em;
   --st-surface-base: #f4eedd;
   --st-surface-raised: #fbf6e9;
   --st-content-primary: #2c221e;
@@ -386,6 +400,8 @@
   --st-surface-image-size: 8px 8px;
   --st-surface-image-repeat: repeat;
   --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  /* 極太は本文に使えない。本文は角ゴシックのまま、見出しだけ極太にする。 */
+  --st-font-body: var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.02em;
   --st-section-rule: 3px solid var(--st-content-primary);
@@ -429,6 +445,8 @@
   --st-surface-image-repeat: repeat, repeat, no-repeat;
   --st-surface-image-size: 24px 24px, 24px 24px, auto;
   --st-font-heading: var(--font-display);
+  /* 発光する見出しの下は、素の角ゴシックで読ませる。 */
+  --st-font-body: var(--font);
   --st-heading-tracking: 0.14em;
   --st-heading-transform: uppercase;
   --st-section-rule: 1px solid var(--st-accent-primary);
@@ -447,6 +465,9 @@
 
 [data-semantic-theme="washi"] {
   --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  /* 本文も明朝。Kaisei Decol を読み込まず、端末の明朝で組む（和紙の素朴さを保ち、取得も増やさない）。 */
+  --st-font-body: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --st-body-tracking: 0.02em;
   --st-heading-tracking: 0.09em;
   --st-stack-gap: 1.5rem;
   --st-surface-base: #f7f4ec;
@@ -489,6 +510,8 @@
 
 [data-semantic-theme="sage"] {
   --st-font-heading: var(--font);
+  /* 静けさのテーマなので、本文は丸ゴシック。影を落とさない面と柔らかい字を揃える。 */
+  --st-font-body: "Zen Maru Gothic", var(--font);
   --st-stack-gap: 1.5rem;
   --st-content-width: 38rem;
   --st-surface-base: #f4f6f1;
@@ -547,6 +570,8 @@
   --st-surface-image-repeat: repeat, no-repeat;
   --st-surface-image-size: 24px 24px, auto;
   --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+  /* 手書きは見出しだけ。本文は丸ゴシックにして、長い案内でも読み疲れないようにする。 */
+  --st-font-body: "Zen Maru Gothic", var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.02em;
   --st-section-rule: 3px dotted var(--st-accent-primary);
@@ -569,6 +594,8 @@
 [data-semantic-theme="dusk"] {
   color-scheme: dark;
   --st-font-heading: var(--font);
+  /* 夕暮れの柔らかさを、本文の丸ゴシックでも受ける。 */
+  --st-font-body: "Zen Maru Gothic", var(--font);
   --st-content-width: 44rem;
   --st-surface-base: #1c1410;
   --st-surface-raised: #2a1f18;
@@ -632,6 +659,8 @@
     radial-gradient(680px 320px at 86% -4%, rgb(255 45 158 / 0.22), transparent 70%);
   --st-surface-image-repeat: repeat, no-repeat, no-repeat;
   --st-font-heading: var(--font-display);
+  /* ステージの見出しは丸ゴシック。本文は角ゴシックで、暗い地でも輪郭を保つ。 */
+  --st-font-body: var(--font);
   --st-heading-tracking: 0.1em;
   --st-heading-transform: uppercase;
   --st-section-rule: 2px solid var(--st-accent-primary);
@@ -655,6 +684,8 @@
 [data-semantic-theme="tavern"] {
   color-scheme: dark;
   --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  /* 暗い地の小さい字は明朝だと細く沈む。本文は丸ゴシックにして、灯りの下でも読ませる。 */
+  --st-font-body: "Zen Maru Gothic", var(--font);
   --st-surface-base: #1a120c;
   --st-surface-raised: #261a12;
   --st-content-primary: #f7efe3;
@@ -695,6 +726,8 @@
 
 [data-semantic-theme="kraft"] {
   --st-font-heading: "Yusei Magic", "Zen Kaku Gothic New", sans-serif;
+  /* 手書きの見出しに、丸ゴシックの本文。漉きムラのある紙に鉛筆で書いたような組にする。 */
+  --st-font-body: "Zen Maru Gothic", var(--font);
   --st-surface-base: #eee3d0;
   --st-surface-raised: #f8f1e4;
   --st-content-primary: #241d15;
@@ -758,6 +791,8 @@
   --st-surface-image-size: 6px 6px;
   --st-surface-image-repeat: repeat;
   --st-font-heading: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  /* 遠目に効く極太の見出しに、素の角ゴシックの本文。 */
+  --st-font-body: var(--font);
   --st-heading-weight: 400;
   --st-heading-tracking: 0.08em;
   --st-heading-transform: uppercase;
@@ -782,6 +817,8 @@
 [data-semantic-theme="spotlight"] {
   color-scheme: dark;
   --st-font-heading: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  /* 幕の見出しは明朝、本文は角ゴシック。舞台のプログラムのような組みにする。 */
+  --st-font-body: var(--font);
   --st-surface-base: #0c0e13;
   --st-surface-raised: #151922;
   --st-content-primary: #f5f2ea;
@@ -902,11 +939,20 @@
   color: var(--st-content-primary);
 }
 
+/* 見出しの書体。要素（h1〜h6）と、見出しの役をするクラスの両方へ当てる。
+   クラスだけの見出し（`<p class="panel__title">` など）を外すと、同じ画面の中で
+   書体が混ざる。 */
 :where(.deco) .semantic-theme[data-semantic-theme] .section__title,
 :where(.deco) .semantic-theme[data-semantic-theme] .profile-head__name,
+:where(.deco) .semantic-theme[data-semantic-theme] .page-title,
+:where(.deco) .semantic-theme[data-semantic-theme] .panel__title,
+:where(.deco) .semantic-theme[data-semantic-theme] .card__title,
 :where(.deco) .semantic-theme[data-semantic-theme] h1,
 :where(.deco) .semantic-theme[data-semantic-theme] h2,
-:where(.deco) .semantic-theme[data-semantic-theme] h3 {
+:where(.deco) .semantic-theme[data-semantic-theme] h3,
+:where(.deco) .semantic-theme[data-semantic-theme] h4,
+:where(.deco) .semantic-theme[data-semantic-theme] h5,
+:where(.deco) .semantic-theme[data-semantic-theme] h6 {
   font-family: var(--st-font-heading);
 }
 
