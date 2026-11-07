@@ -29,7 +29,7 @@ const HSTS_HEADER = {
 // HTML の <meta name="robots"> を読まないクローラ向け。全環境で付ける。
 const NOINDEX_HEADER = { key: "X-Robots-Tag", value: "noindex, nofollow" };
 
-// 検索結果に載せないパス。公開してよいのは "/"・"/service"・"/terms" だけ。
+// 検索結果に載せないパス。公開してよいのは "/"・"/service"・"/terms"・"/privacy"・"/tokushoho" だけ。
 // 招待 URL は共同主催の権限を持つため、とくに載せない。
 const PRIVATE_PATH_PATTERNS = [
   "/console/:path*",

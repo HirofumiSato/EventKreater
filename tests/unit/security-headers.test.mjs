@@ -98,12 +98,14 @@ describe("応答ヘッダー", () => {
       "/notifications",
       "/api/:path*",
     ]);
-    // 公開してよい "/"・"/service"・"/terms" には付けない。
+    // 公開してよい "/"・"/service"・"/terms"・"/privacy"・"/tokushoho" には付けない。
     expect(findRule(rules, "/:path*").headers).not.toContainEqual(
       expect.objectContaining({ key: "X-Robots-Tag" }),
     );
     expect(findRule(rules, "/service")).toBeUndefined();
     expect(findRule(rules, "/terms")).toBeUndefined();
+    expect(findRule(rules, "/privacy")).toBeUndefined();
+    expect(findRule(rules, "/tokushoho")).toBeUndefined();
     // どのパスも X-Robots-Tag を二重に持たない。
     for (const rule of rules) {
       const count = rule.headers.filter(({ key }) => key.toLowerCase() === "x-robots-tag").length;

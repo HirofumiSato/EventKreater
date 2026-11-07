@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 111（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 497
+- 文書から参照されているコードパス: 498
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -61,6 +61,7 @@
 | `scripts/lib/mock-variants.mjs` | [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `scripts/promote-admin.mjs` | [docs/staging.rst](staging.rst) |
 | `scripts/seed-ui-demo.mjs` | `AGENTS.md` / [docs/flyer/catchup/images.rst](flyer/catchup/images.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `scripts/stripe-live-setup.mjs` | [docs/stripe.rst](stripe.rst) |
 | `services/flyer` | [docs/testing/ci.rst](testing/ci.rst) |
 | `services/flyer/AGENTS.md` | `AGENTS.md` / [docs/README.md](README.md) / [docs/onboarding.md](onboarding.md) / `llms.txt` |
 | `services/flyer/entrypoint.py` | [docs/deploy.rst](deploy.rst) |

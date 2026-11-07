@@ -62,7 +62,7 @@
         - staging / production とも ``migrate`` → ``flyer`` → ``web`` が success
 
    まだ通していないのは Stripe です（手順 4）。鍵を入れるまで、契約・Portal・Webhook は動きません。
-   無料の範囲だけが使え、手順 5 のうち Stripe の行は確かめられません。
+   無料の範囲だけが使え、手順 6 のうち Stripe の行は確かめられません。
 
 0. 前提
 -------
@@ -425,9 +425,13 @@ Worker の custom domain と Resend の DKIM が DNS で衝突します。
       rsend.send.eventkreater.com           CNAME  rsend-apne1.forge.rmta.net
       resend._domainkey.send.eventkreater.com  TXT  p=...
 
-   DoH で引くと、``send.send.*`` は ``v=spf1 ip4:... ~all``、``rsend.send.*`` は ``v=spf1 include:amazonses.com ~all`` を返します。SPF は CNAME の先が持っているので、このゾーンには SPF の TXT も ``feedback-smtp...`` の MX も作りません。
+   DoH で引くと、``send.send.*`` は ``v=spf1 ip4:... ~all``、``rsend.send.*`` は ``v=spf1 include:amazonses.com ~all`` を返します。**送信**の SPF は CNAME の先が持っているので、送信ドメイン用に別の SPF は作りません。
 
-3. DMARC は ``_dmarc.eventkreater.com`` の TXT に ``v=DMARC1; p=none; adkim=r; aspf=r`` を入れます。``rua`` は付けていません。このゾーンには MX が 1 つも無く、レポートの宛先にできる実在の受信箱を決められないためです。``rua`` を付けるときは、先に受信できる宛先を用意してください。DKIM と SPF が通るのを見るまで ``p=reject`` にしないでください。
+   .. note::
+
+      2026-11-07 に受信のため Cloudflare Email Routing を有効にしたので、**apex（``eventkreater.com``）には MX 3 本と受信用の SPF** ``v=spf1 include:_spf.mx.cloudflare.net ~all`` が入っています。Cloudflare が自動で作り、``meta.email_routing`` 付きの読み取り専用レコードになります。手で消さないでください。送信は ``send.eventkreater.com`` の CNAME 先が返す SPF で通るため、apex の SPF とは衝突しません。
+
+3. DMARC は ``_dmarc.eventkreater.com`` の TXT に ``v=DMARC1; p=none; adkim=r; aspf=r`` を入れます。``rua`` は付けていません。受信箱は ``support@eventkreater.com`` があるので用意できますが、レポートは大量に届くため、運用に余裕ができるまで付けません。``rua`` を付けるときは、専用のアドレスを用意してください。DKIM と SPF が通るのを見るまで ``p=reject`` にしないでください。
 4. Worker をデプロイします。ふだんは CI（``.github/workflows/deploy-env.yml`` の ``mail`` ジョブ）が上げます。environment secrets の ``CLOUDFLARE_API_TOKEN`` と ``CLOUDFLARE_ACCOUNT_ID`` が入っているときだけ動き、未設定ならジョブを飛ばします。初回だけ、手元で秘密を 4 つ入れてからデプロイします。
 
 .. code-block:: powershell
@@ -521,6 +525,53 @@ Resend のダッシュボードで状態を確認できます。
    # Worker のログを流したまま、別の端末から 1 通送る
    cd infra\mail-webhook
    npx wrangler tail --config wrangler.prod.toml
+
+問い合わせの受信（Cloudflare Email Routing）
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+特商法表記とプライバシーポリシーに載せる連絡先 ``support@eventkreater.com`` は、Cloudflare Email Routing で
+個人のメールボックスへ転送します。送信（上の Resend と Worker）とは別の仕組みで、MX だけを使います。
+
+2026-11-07 に設定済みです。作り直すときは次の順で行います。
+
+.. code-block:: powershell
+
+   # 1. 有効化。apex に MX 3 本と受信用の SPF が入る
+   cf email-routing enable -z eventkreater.com
+
+   # 2. 転送先。アカウントのメールなら検証済みのまま作れる
+   cf email-routing addresses create --email <転送先> -z eventkreater.com
+
+   # 3. support@ を転送先へつなぐ
+   cf email-routing rules create -z eventkreater.com --name support --enabled true `
+     --body "@rule.json"
+
+``rule.json`` は次の形です。
+
+.. code-block:: json
+
+   {
+     "name": "support",
+     "enabled": true,
+     "matchers": [{ "type": "literal", "field": "to", "value": "support@eventkreater.com" }],
+     "actions": [{ "type": "forward", "value": ["<転送先>"] }]
+   }
+
+確かめることは 3 つです。
+
+.. code-block:: powershell
+
+   cf email-routing settings get -z eventkreater.com          # status が ready、synced が true
+   cf email-routing rules list-account -z eventkreater.com    # support が enabled
+   Resolve-DnsName eventkreater.com -Type MX -Server 1.1.1.1  # route1..3.mx.cloudflare.net が返る
+
+最後に、外部（Gmail など）から ``support@eventkreater.com`` へ 1 通送り、転送先に届くことを確かめます。
+MX が引けないうちは送信側で即座に bounce するので、**届くのを確認するまで特商法ページにアドレスを書かないでください**。
+
+返信は転送先のメールボックスから行います。``support@`` 名義で返したいときは、転送先の Gmail で
+「次のアドレスから送信」に ``support@eventkreater.com`` を足します（SMTP は ``smtp.gmail.com:587``）。
+ただしこの経路は SPF が Gmail のものになり、DMARC は ``p=none`` なので落ちはしませんが、
+迷惑メール判定は弱くなります。問い合わせが多いようなら、返信も Resend 側の仕組みへ寄せてください。
 
 SMS 配送（Twilio と Worker）
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -799,16 +850,45 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
 4. Stripe を本番に向ける
 ------------------------
 
-1. Stripe の Dashboard で本番モードに切り替え、Price を 3 つ作ります（8件まで公開プラン 980 円、公開し放題プラン 2,980 円、単発 299 円）。
-2. Webhook のエンドポイントを ``https://eventkreater.com/api/v1/webhooks/stripe`` にします。
-3. 受け取るイベントは、テストモードで使ったものと同じにします。署名シークレットを ``STRIPE_WEBHOOK_SECRET`` に入れます。
+テストモードの設定は live に引き継がれません。Product、Price、Webhook、Customer Portal の既定を
+live でもう一度作ります。手順の正は :doc:`stripe` の「本番（live）の準備」で、次で揃います。
+
+.. code-block:: powershell
+
+   $env:STRIPE_SECRET_KEY = "sk_live_..."   # .env には置かない
+   $env:NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
+   npm run stripe:setup -- --dry-run        # 何を作るかを先に見る
+   npm run stripe:setup                     # Product 3 つ、Price 3 つ、Webhook、Portal の既定
+   npm run stripe:setup -- verify           # ずれがあれば終了コード 1
+
+1. 金額はスクリプトが ``/api/v1/public/pricing`` から読みます（8件まで公開プラン 980 円、
+   公開し放題プラン 2,980 円、単発 299 円。いずれも税込）。Dashboard で手作りする必要はありません。
+2. Webhook は ``https://eventkreater.com/api/v1/webhooks/stripe`` の 1 本に、処理する 7 つのイベントが入ります。
+   署名シークレットは API から取り出せないので、既にある端点は作り直しません。
+   値が分からないときは Dashboard で **Roll secret** を押します。
+3. Customer Portal は ``is_default`` の設定を作り、日割り計算を ``none``、解約を期間終了時にします。
+   利用規約 第3条・第9条と食い違わせないためです。
 4. 返金は Dashboard から行います。アプリに返金の口はありません。
 
 .. note::
 
    価格キャンペーンの 0 円販売はアプリ側の設定で切り替えます。詳しくは :doc:`pricing_campaign_requirements` を見てください。
 
-5. デプロイ後の確認
+5. 無料期間の終了前のお知らせを回す
+------------------------------------
+
+初月無料と 0 円プランの終了が近い契約へ、3 日前と 1 日前にメールを送ります。
+``.github/workflows/billing-notices.yml`` が 1 日 1 回（10:00 JST）叩きます。
+
+1. Fly の ``BILLING_NOTICE_SECRET`` と同じ値を、GitHub の **Settings → Secrets and variables → Actions**
+   に ``BILLING_NOTICE_SECRET`` として入れます。``production`` environment の秘密には入れません。
+   レビュー待ちで止まると、定時の通知が届かなくなるためです。
+2. **Actions → 無料期間の終了前のお知らせ → Run workflow** で 1 回手で流し、ログに ``{"sent":...}`` が出ることを確かめます。
+   秘密が未設定のときは、ジョブは失敗せず警告だけを出して終わります。
+
+詳しくは :doc:`stripe` の「無料期間の終了前のお知らせ（本番の cron）」を見てください。
+
+6. デプロイ後の確認
 -------------------
 
 上から順に、失敗したらそこで止めます。
@@ -834,6 +914,9 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    # 6. staging は Access に止められているか（302 が正しい）
    curl.exe -s -o NUL -w "%{http_code}`n" https://staging.eventkreater.com/
 
+   # 7. live の Stripe が揃っているか（.env ではなく環境変数で鍵を渡す）
+   npm run stripe:setup -- verify
+
 .. list-table::
    :header-rows: 1
    :widths: 40 60
@@ -855,11 +938,11 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - 音声の文字起こし
      - ``POST /api/v1/voice/transcriptions`` が 200。``model`` が ``gpt-transcribe`` （控えに落ちたときは ``gpt-4o-mini-transcribe`` ）ならモックではない
    * - Stripe
-     - テストカードで 1 件通し、Webhook が 200 で返っている
+     - 実カードで 1 件通し、Webhook が 200 で返っている（ ``npm run stripe:setup -- verify`` が通る）
 
 チラシ画像が 500 になる場合は、ボリュームの所有者を疑ってください（手順 2.2 の ``chown``）。
 
-6. 更新と切り戻し
+7. 更新と切り戻し
 -----------------
 
 ふだんの更新は、作業ブランチを ``main`` へマージするだけです。CI が緑で終わると ``Deploy`` が staging → production の順に流れます（2.4）。流れを待たずに切り分けたいときだけ、下の手作業を使います。
@@ -889,7 +972,7 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
    * - DB の変更が入って戻せない
      - マイグレーションは前方のみです。戻すときは打ち消しのマイグレーションを足します
 
-7. いまの制約
+8. いまの制約
 -------------
 
 本番構成で先に知っておくべき制約です。いずれもコード側の変更が要ります。

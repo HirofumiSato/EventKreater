@@ -335,6 +335,14 @@ export function PricingModal({
         )}
         {error && <Alert tone="error" style={{ marginTop: "1rem" }}>{error}</Alert>}
         <p className="help" style={{ marginTop: "1rem" }}>
+          解約は
+          <Link href="/organizer/plan" className="text-link">
+            {" "}
+            プラン・カード管理{" "}
+          </Link>
+          からいつでもできます。次の更新で止まります。
+        </p>
+        <p className="help" style={{ marginTop: "0.5rem" }}>
           初月無料の終了後は、登録したカードへ自動で請求します。3日前と1日前にメールでお知らせします。詳しくは
           <Link href="/terms" className="text-link">
             利用規約

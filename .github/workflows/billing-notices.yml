@@ -1,0 +1,48 @@
+name: 無料期間の終了前のお知らせ
+
+# 初月無料・0円プランの終了が近い契約へ、3日前と1日前のメールを送る。
+# アプリ側（src/modules/billing/lib/notices.ts）が BillingNotice で重複を防ぐので、
+# 1 日に何度走っても同じ人へ二重に送らない。
+#
+# GitHub の Environment（production）は使わない。Environment はレビュー待ちで
+# 止まることがあり、定時の通知が届かなくなる。リポジトリの Secrets に置く。
+#   BILLING_NOTICE_SECRET … Fly の BILLING_NOTICE_SECRET と同じ値
+#
+# 手順の正は docs/stripe.rst の「無料期間の終了前のお知らせ（本番の cron）」。
+
+on:
+  schedule:
+    # 10:00 JST。UTC の 01:00。GitHub の cron は遅れることがあるが、
+    # その日のうちに送れればよいので 1 日 1 回で足りる。
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: billing-notices
+  cancel-in-progress: false
+
+jobs:
+  notices:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    env:
+      BILLING_NOTICE_SECRET: ${{ secrets.BILLING_NOTICE_SECRET }}
+      NEXT_PUBLIC_APP_URL: https://eventkreater.com
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: 秘密が未設定なら止まらずに知らせる
+        if: env.BILLING_NOTICE_SECRET == ''
+        run: |
+          echo "::warning::BILLING_NOTICE_SECRET が未設定です。リポジトリの Secrets に追加してください。"
+          echo "docs/stripe.rst の「無料期間の終了前のお知らせ（本番の cron）」を見てください。"
+
+      - name: 案内を送る
+        if: env.BILLING_NOTICE_SECRET != ''
+        run: node scripts/billing-notices.mjs

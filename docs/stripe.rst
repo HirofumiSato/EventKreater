@@ -260,3 +260,83 @@ CLI が表示する ``whsec_...`` を ``STRIPE_WEBHOOK_SECRET`` に書き、開�
      - Checkout 画面、Portal 画面、Webhook の転送、テストカード
 
 CI に ``STRIPE_SECRET_KEY`` を登録する必要はありません。説明は :doc:`testing/ci` です。
+
+本番（live）の準備
+------------------
+
+テストモードの設定は live へ引き継がれません。Product、Price、Webhook、Customer Portal の既定を
+live でもう一度作ります。Dashboard を手で触らずに同じ状態へ揃えるため、
+``scripts/stripe-live-setup.mjs`` が作り、``verify`` が食い違いを検査します。
+
+金額はスクリプトに書きません。アプリの ``GET /api/v1/public/pricing`` が返す定価を読み、
+その額で Price を作ります。``plans.ts`` を値上げして片方だけ直す、というずれを防ぐためです。
+
+.. code-block:: powershell
+
+   $env:STRIPE_SECRET_KEY = "sk_live_..."   # .env には置かない
+   $env:NEXT_PUBLIC_APP_URL = "https://eventkreater.com"
+   npm run stripe:setup -- --dry-run        # 何を作るかを先に見る
+   npm run stripe:setup                     # 作る。再実行しても増えない
+   npm run stripe:setup -- verify           # 読むだけ。ずれがあれば終了コード 1
+
+スクリプトが決めること:
+
+* Product は ``metadata.eventkreaterPlan``（ ``MONTHLY_8`` / ``UNLIMITED`` / ``ONE_TIME`` ）で見分ける。名前では見分けない
+* Price は ``lookup_key``（ ``eventkreater_monthly_8`` など）で見分ける。金額か周期が変わっていたら、古い Price の lookup key を外して止め、新しい Price を作る
+* 金額はすべて税込みの JPY。``unit_amount`` にそのまま入れる
+* Webhook は ``/api/v1/webhooks/stripe`` の 1 本に、処理する 7 つのイベントを全部入れる
+* Customer Portal は ``is_default`` の 1 本を作る。``route.ts`` が configuration を渡さないので、これがそのまま使われる
+
+.. warning::
+
+   Webhook の署名シークレットは API から取り出せません。既にあるエンドポイントを作り直すと、
+   その瞬間の配信が落ちます。値が分からないときは Dashboard で **Roll secret** を押すか、
+   承知のうえで ``npm run stripe:setup -- --rotate-webhook-secret`` を使ってください
+   （削除して作り直し、新しい ``whsec_`` を表示します）。
+
+Customer Portal の既定は、次の 3 点をアプリの約束に合わせます。ずれると、利用規約と画面の表示が嘘になります。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 66
+
+   * - 設定
+     - 理由
+   * - ``proration_behavior = none``
+     - 利用規約 第3条「日割りでの精算は行いません」。差額の返金も追加請求もしない
+   * - ``subscription_cancel.mode = at_period_end``
+     - 解約しても、支払った期間の終わりまでは使える（第9条）
+   * - ``default_allowed_updates = ["price"]``
+     - プラン変更だけを許す。数量や周期は画面から変えられない
+
+最後に Fly の秘密を差し替えます。スクリプトが 1 行で出します。
+
+.. code-block:: powershell
+
+   fly secrets set STRIPE_SECRET_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..." `
+     STRIPE_PRICE_ID_MONTHLY_8="price_..." STRIPE_PRICE_ID_UNLIMITED="price_..." `
+     STRIPE_PRICE_ID_ONE_TIME="price_..." --app event-creater-web
+
+``STRIPE_PRICE_ID_MONTHLY_980_LEGACY`` は空のままにします。値上げ前に加入した 980 円の公開し放題プランを
+検証するときだけ、その Price を入れます。
+
+無料期間の終了前のお知らせ（本番の cron）
+------------------------------------------
+
+初月無料と 0 円プランの終了が近い契約へ、3 日前と 1 日前にメールを送ります。送るのは
+``POST /api/v1/internal/billing/notices`` で、``x-billing-secret`` が要ります。重複は
+``billing_notices`` の一意制約が防ぐので、1 日に何度走っても同じ人へ二重に送りません。
+
+本番は ``.github/workflows/billing-notices.yml`` が 1 日 1 回（10:00 JST）叩きます。
+
+1. Fly の ``BILLING_NOTICE_SECRET`` と同じ値を、GitHub の **Settings → Secrets and variables → Actions**
+   に ``BILLING_NOTICE_SECRET`` として入れます。**Environment の秘密には入れません。**
+   ``production`` environment はレビュー待ちで止まることがあり、定時の通知が届かなくなるためです。
+2. **Actions → 無料期間の終了前のお知らせ → Run workflow** で 1 回手で流し、ログに
+   ``{"sent":...}`` が出ることを確かめます。秘密が未設定なら、ジョブは失敗せず警告だけを出して終わります。
+3. 時刻を変えるときは ``cron`` を直します。JST は UTC+9 です。GitHub の cron は混雑時に数分から
+   十数分遅れることがありますが、その日のうちに送れれば足ります。
+
+手元から同じ処理を試すときは ``npm run billing:notices`` です（ ``.env`` の
+``BILLING_NOTICE_SECRET`` と ``NEXT_PUBLIC_APP_URL`` を読みます）。
+

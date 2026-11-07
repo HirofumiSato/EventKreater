@@ -39,6 +39,7 @@
     "mock:check": "node scripts/check-mock-sync.mjs",
     "mock:serve": "node scripts/mock-serve.mjs",
     "billing:notices": "node scripts/billing-notices.mjs",
+    "stripe:setup": "node scripts/stripe-live-setup.mjs",
     "icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
