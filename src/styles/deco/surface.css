@@ -196,6 +196,12 @@
   line-height: 1.6;
 }
 
+/* 補足の下に操作（札・リンク）が続く行は、間を空けて詰まって見せない。
+   補足が行の最後（操作の無い行）のときは、下の余白を増やさない。 */
+.rows__meta:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+
 .rows__value {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -1570,8 +1576,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  /* 押せる的は 40px を下回らせない（--tap-target は 2.5rem）。 */
+  width: var(--tap-target);
+  height: var(--tap-target);
   padding: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 999px;
@@ -1594,6 +1601,9 @@
   color: var(--color-text-muted);
   font-size: 0.875rem;
   line-height: 1.9;
+  /* 自己紹介の改行はそのまま見せ、長い URL は枠からはみ出さずに折る。 */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* 主催者の催しの一覧で、絞り込みと並べ替えを 1 行に置く。 */

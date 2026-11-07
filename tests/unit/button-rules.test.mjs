@@ -156,6 +156,12 @@ describe("入力欄と小さな操作", () => {
     expect(close.height).toBe("var(--tap-target)");
   });
 
+  it("SNS のリンクは 40×40px を下回らない", () => {
+    const link = declarations(block(surface, ".profile-links a"));
+    expect(link.width).toBe("var(--tap-target)");
+    expect(link.height).toBe("var(--tap-target)");
+  });
+
   it("暦の移動ボタンは 40×40・15px", () => {
     const nav = declarations(block(surface, ".cal__nav button"));
     expect(nav["min-width"]).toBe("var(--tap-target)");

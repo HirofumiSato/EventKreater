@@ -147,7 +147,7 @@
 
 .. count-start
 
-134 ファイル、``it`` は 1934 件です。内訳は ``tests/unit/`` が 97 ファイル 1630 件、``tests/integration/`` が 26 ファイル 195 件です。結合の 195 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+134 ファイル、``it`` は 1935 件です。内訳は ``tests/unit/`` が 97 ファイル 1631 件、``tests/integration/`` が 26 ファイル 195 件です。結合の 195 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -560,7 +560,7 @@
      - 画面の幅の段（``min-width`` が 640 / 768 / 900 / 1024、``max-width`` が 360 / 400 / 480 / 540 と 1px 手前の対）と、幅の指定が px 付きの ``min-width`` / ``max-width`` だけで書かれていることを確かめる
      - 全画面の共通レイアウト
    * - ``tests/unit/button-rules.test.mjs``
-     - 14
+     - 15
      - 押せる的とボタンの文字の大きさ（``--tap-target`` の 40px・``--font-action`` の 15px）、``.btn--sm`` が左右の余白だけを詰めて高さと文字を変えないこと、``.btn--lg`` の 52px・16px、装飾のある画面が高さを打ち消さないこと、入力欄の 16px と広い画面の 14px、ダイアログと暦の小さな操作、小ささの例外が 2 つだけであること（画面下に固定する帯 ``.action-dock`` は高さ 40px のまま文字だけ 14px、札の折りたたみ ``.event-card__more-body .btn`` は開いたときだけ 32px・13px で、常設の「申込/出欠一覧」「編集」は 40px・15px）、イベント札（スマホ 2 列・640px で 4 列・900px で 2 列）と名簿の行（スマホ 2 列）の並び
      - 全画面の共通レイアウト
    * - ``tests/unit/site-chrome.test.ts``
@@ -698,7 +698,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1630、``tests/integration/`` が 195 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1630 件を実行して 195 件を skip します。
+件数の内訳は ``tests/unit/`` が 1631、``tests/integration/`` が 195 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1631 件を実行して 195 件を skip します。
 
 .. breakdown-end
 
