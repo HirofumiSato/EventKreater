@@ -40,7 +40,7 @@ flowchart TD
 
 | エンドポイント | メソッド | 対象画面ID | 認証・認可 | 概要 |
 | :---- | :---- | :---- | :---- | :---- |
-| `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・チケット消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する。未登録の幹事は作れない |
+| `/api/v1/public/events` | POST | SCR-ORG-02 | 会員JWT必須（未ログインは 403 `REGISTER_REQUIRED`） | イベント新規作成（課金認可チェック・チケット消費連携）。`visibility` は受け取らず、常に `UNLISTED`。任意の `referrerEventId` を検証して `referrer_event_id` に保存。`status` は既定 `PUBLISHED`。`DRAFT` を指定すると課金判定を通さず下書きとして保存する（下書きの件数上限に達していれば 403 `DRAFT_LIMIT_REACHED`）。未登録の幹事は作れない |
 | `/api/v1/public/events/[id]` | GET | SCR-PUB-01 | 不要（Cookie照会） | 告知ページ取得。URL 直開き。下書きと削除済みは 404。自出欠自動照会と、勧誘カード用の `viewer` を含む |
 | `/api/v1/public/events/[id]/rsvp` | POST | SCR-PUB-01 | 不要（Cookie発行。IP と端末の回数制限あり） | 未登録出欠登録および更新。ログイン中は `userId` でも対象行を探す。上限は 429（5.3） |
 | `/api/v1/public/events/[id]/rsvp` | DELETE | SCR-PUB-01 | Cookie または会員 | 出欠の取り消し（キャンセル）。申し込み期限後も可 |
@@ -69,7 +69,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/organizers/[organizerId]` | DELETE | SCR-ORG-05、SCR-ORG-07 | 主催者（OWNER・会員のみ） | 共同主催・幹事を外す。主催者は 409 `OWNER_NOT_REMOVABLE`。外れる人が持つ編集ロックも同じトランザクションで解放する（5.20） |
 | `/api/v1/invitations/[code]` | GET | SCR-ORG-07 | 任意 | 共同主催・幹事の招待コードの検証。催しの概要と `loggedIn` を返す。権限は付与しない（5.21） |
 | `/api/v1/invitations/[code]` | POST | SCR-ORG-07 | 会員必須（未登録は 403 `REGISTER_REQUIRED`） | 招待コードを受諾して共同主催・幹事になる。コードは受諾時に失効させる（5.21） |
-| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。開催日（`sort_date`）・各日程（`event_schedules.event_date`）・申込締切（`rsvp_deadline`）は1か月後へずらし、月末はその月の末日へ丸める（1月31日 → 2月28日、閏年は2月29日。申込締切の時刻は JST のまま保つ）。応答は適用した月を `shiftedMonths: 1` で返す。`publicUrl` は `null` |
+| `/api/v1/organizer/events/[id]/clone` | POST | SCR-ORG-01 | 幹事（会員/ゲスト） | 過去イベントの複製作成。`DRAFT` で作り、チケットは消費しない（`quota_charged_at` と `quota_source` は `NULL`）。公開したときに消費する。下書きの件数上限に達していれば 403 `DRAFT_LIMIT_REACHED`。開催日（`sort_date`）・各日程（`event_schedules.event_date`）・申込締切（`rsvp_deadline`）は1か月後へずらし、月末はその月の末日へ丸める（1月31日 → 2月28日、閏年は2月29日。申込締切の時刻は JST のまま保つ）。応答は適用した月を `shiftedMonths: 1` で返す。`publicUrl` は `null` |
 | `/api/v1/organizer/events/[id]/publish` | POST | SCR-ORG-02、SCR-ORG-15、SCR-ORG-16 | 主催者（OWNER・会員のみ）。編集ロック不要 | 下書きの公開。`quota_charged_at` が未設定ならチケットを1枚消費し、入力内容も同時に保存して `PUBLISHED` にする。チケット不足は 402、公開済みは 409 |
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 主催者（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・料金プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催者（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
@@ -131,7 +131,7 @@ flowchart TD
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-transcribe` へ中継し、`text/event-stream` で `delta` / `done` / `error` を返す。`VOICE_TRANSCRIBE_MODEL` で差し替え、モデルが使えないときは `VOICE_TRANSCRIBE_FALLBACK_MODEL` で 1 度だけ再試行する。未設定なら 503 `TRANSCRIBE_DISABLED` |
 | `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。文字起こしは 1 回だけで、決定的に節を割り当て、未割当の節だけ `VOICE_BATCH_MODEL`（既定 `gpt-4.1-mini`）で割当を推定する。`text/event-stream` で `delta` / `cell` / `done` / `error` を返し、`cell` は読めたマスだけ（値は `done` にまとめる）。`VOICE_BATCH_LLM=0` で LLM を使わない |
-| `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）を返す |
+| `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）、下書きの件数（`draftEventCount` / `draftEventLimit` / `remainingDrafts` / `canSaveDraft`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
 | `/api/v1/billing/checkout/verify` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | Stripe Checkout 完了後の即時同期検証・チケット反映。検証済みセッションの `metadata` から `draftId` と `returnTo` を返す |
@@ -680,7 +680,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は既定で `PUBLISHED` である。
 
 - **認可:** 会員のみ（`userId` が解決できないときは 403 `REGISTER_REQUIRED`、`type: probs/register-required`）。未登録の幹事はイベントを作れない。作成画面は入力を `sessionStorage` に退避してログインへ送り、戻ってから続きを保存する。
-- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent` を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。チケットは消費しない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
+- **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent`（公開の課金判定）を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。チケットは消費しない。ただし下書きの件数上限（無料 3 / 8件まで公開プラン 10 / 公開し放題プラン 30 / 単発クレジットを持つ未加入者 10）は別に判定し、上限に達していれば 403 `DRAFT_LIMIT_REACHED`（`type: probs/draft-limit-reached`）を返す。数えるのは自分の `OWNER` の下書きだけで、開催日は問わない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
 - **リクエストスキーマ (Zod):**
 
 ```ts
@@ -1671,6 +1671,10 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
   "remainingPublished": null,
   "currentPeriodEnd": null,
   "canCreate": true,
+  "draftEventCount": 2,
+  "draftEventLimit": 10,
+  "remainingDrafts": 8,
+  "canSaveDraft": true,
   "planType": "FREE_TRIAL",
   "phoneVerified": true,
   "trial": null,
@@ -1679,6 +1683,8 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 ```
 
 `publishedEventCount` は、どのプランでも公開中のイベント数（開催日が今日以降で、自分が筆頭幹事のもの）を返す。8件まで公開プランだけは件数の上限の判定と同じく定額から公開したものに限る。`remainingPublished` は8件まで公開プランのときだけ数値で、公開し放題プランと未加入は `null`。
+
+`draftEventCount` は、自分の下書き（`status = 'DRAFT'`、`is_deleted = false`、`role = 'OWNER'` の `EventOrganizer` を持つもの）を開催日を問わず数えた値である。`CO_HOST` の下書きは数えない。`draftEventLimit` は契約から決まる下書きの上限（無料 3 / 8件まで公開プラン 10 / 公開し放題プラン 30、未加入で単発クレジットが 1 枚以上あれば 10）で、`remainingDrafts` は `max(0, draftEventLimit - draftEventCount)`。`canSaveDraft` は「ログイン済みか」ではなく「下書きの枠が空いているか」で、新規作成（`POST /api/v1/public/events` の `status: "DRAFT"`）と複製（`POST /api/v1/organizer/events/[id]/clone`）が通るかを示す。`canCreate` は公開の可否のままで、下書きの上限とは独立している。
 
 `trial` は初月無料の無料期間中（`trial_ends_at > now`）だけ `{ "endsAt": "<ISO 8601>" }` を返し、終われば `null` に戻る。`trialEligible` は `resolveTrial` の結果で、`trial_used_at` が NULL、`stripe_subscription_id` が NULL、支払済み（`SUCCEEDED`）の月額取引が 0 件のときだけ `true` になる。加入中は新しい初月無料を使えないので `false` を返す。無料期間中はクーポンを使わないため `discount` は `null` のままである。
 
@@ -1690,10 +1696,12 @@ import { prisma } from '@/lib/prisma';
 import {
   FREE_EVENT_LIMIT,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
+  countDraftEvents,
   countPublishedEvents,
   countPublishedSubscriptionEvents,
   isSubscriptionActive,
 } from '@/modules/billing/lib/quota';
+import { draftEventLimitOf, type DraftPlanId } from '@/modules/billing/lib/plans';
 import { resolveTrial } from '@/modules/billing/lib/trial';
 
 export async function GET(req: NextRequest) {
@@ -1729,6 +1737,13 @@ export async function GET(req: NextRequest) {
     ((isSubActive && !capped) ||
       quota.paidCredits > 0 ||
       (!isSubActive && remainingFree > 0 && phoneVerified));
+  // 下書きの上限は公開の可否とは別。canCreate の意味は変えない。
+  const draftPlan: DraftPlanId = isSubActive
+    ? quota.subscriptionPlan === 'MONTHLY_8' ? 'monthly-8' : 'unlimited'
+    : 'free';
+  const draftEventLimit = draftEventLimitOf(draftPlan, quota.paidCredits > 0);
+  const draftEventCount = await countDraftEvents(prisma, userId);
+  const remainingDrafts = Math.max(0, draftEventLimit - draftEventCount);
   let planType = 'NONE';
   if (isSubActive) {
     planType = quota.subscriptionPlan === 'MONTHLY_8' ? 'SUBSCRIPTION_MONTHLY_8' : 'SUBSCRIPTION_UNLIMITED';
@@ -1746,6 +1761,10 @@ export async function GET(req: NextRequest) {
     remainingPublished,
     currentPeriodEnd: quota.currentPeriodEnd,
     canCreate,
+    draftEventCount,
+    draftEventLimit,
+    remainingDrafts,
+    canSaveDraft: remainingDrafts > 0,
     planType,
     phoneVerified,
     // 初月無料の無料期間中だけ `trial` を持つ。加入中は新しい初月無料を使えない。
@@ -2284,6 +2303,7 @@ export interface ProblemDetails {
 | **402** | `probs/quota-exceeded` | 無料チケット消化（2枚）に伴う課金誘導（単発299円/8件まで公開プラン980円/公開し放題プラン2980円）。公開中のイベントが8件に達しただけなら `PUBLISHED_EVENTS_FULL` |
 | **403** | `probs/forbidden` | 他人のイベントの編集・削除試行、不正なセッション照会、電話未確認の無料チケット消費（`PHONE_REQUIRED`） |
 | **403** | `probs/register-required` | 未登録のゲスト幹事が、出欠の管理（名簿・集金・共同幹事の招待）または作成から 24 時間を過ぎた編集・ロック取得を試した（`error: "REGISTER_REQUIRED"`）。未登録で 2 件目のイベントを作ろうとした場合も同じ。画面は `/organizer/register-required?eventId=<id>`（作成画面ではその場の登録案内）へ送る |
+| **403** | `probs/draft-limit-reached` | 下書きの上限に達した状態で、新規作成（`POST /api/v1/public/events` の `status: "DRAFT"`）または複製（`POST /api/v1/organizer/events/[id]/clone`）を試した（`error: "DRAFT_LIMIT_REACHED"`）。既存の下書きの保存と公開は通す。枠は削除で空くため 402 は使わない |
 | **404** | `probs/not-found` | 存在しないイベント、論理削除済み、クォータ未登録、会員不在、または保存済みチラシの不在 |
 | **409** | `probs/lock-conflict` | 他幹事による排他ロック保持中（編集中） |
 | **409** | `probs/conflict` | 別の Google アカウントに結び付いたメールアドレス、または別の会員が使う確認済み電話番号 |

@@ -2,7 +2,12 @@ import { Prisma } from "@prisma/client";
 import type { QuotaSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
-import { assertCanCreateEvent, consumeEventQuota, quotaSourceOf } from "@/modules/billing/lib/quota";
+import {
+  assertCanCreateEvent,
+  assertCanSaveDraft,
+  consumeEventQuota,
+  quotaSourceOf,
+} from "@/modules/billing/lib/quota";
 import { grantReferralTickets, type ReferralGrant } from "@/modules/billing/lib/referral";
 import { notifyReferralGranted } from "@/modules/notifications/lib/notify";
 import {
@@ -437,6 +442,9 @@ export async function createEventForUser(userId: string, input: CreateEventInput
   const decision = isDraft ? null : await assertCanCreateEvent(userId);
   try {
     const { event, referralGrant } = await prisma.$transaction(async (tx) => {
+      // 下書きは課金しないが、件数の上限は見る。数えてから作るまでを同じトランザクションに閉じ、
+      // 同時押しで上限を超えないようにする。既存の下書きの保存はこの判定を通さない。
+      if (isDraft) await assertCanSaveDraft(tx, userId);
       // チケットを消費する。消費そのものが目的で、種別は応答に使わない（下書きは消費しない）。
       const consumption = decision ? await decision.consume(tx) : null;
       const quotaSource = consumption ? quotaSourceOf(consumption.type) : null;

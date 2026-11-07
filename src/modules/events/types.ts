@@ -99,6 +99,17 @@ export interface UserQuota {
   remainingPublished?: number | null;
   currentPeriodEnd: string | null;
   canCreate: boolean;
+  /** いま持っている下書きの件数。筆頭幹事のものだけを数え、開催日は問わない。 */
+  draftEventCount?: number;
+  /** 下書きの上限（無料3 / 980円10 / 放題30）。 */
+  draftEventLimit?: number;
+  /** あと何件下書きを増やせるか。 */
+  remainingDrafts?: number;
+  /**
+   * 新しい下書きを保存できる枠が空いているか。
+   * ログイン済みかどうかではない。既存の下書きの保存は枠に関係なく通る。
+   */
+  canSaveDraft?: boolean;
   planType:
     | "FREE_TRIAL"
     | "PAID_CREDIT"

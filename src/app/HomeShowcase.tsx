@@ -16,8 +16,9 @@ import type { CSSProperties, KeyboardEvent, PointerEvent, UIEvent } from "react"
  * 横の手動スクロール（ドラッグ・スワイプ・矢印キー）だけを JS が受け持つ。
  *
  * 画像の原本は `storage/lp-shots/` にある（このディレクトリは追跡しない）。
- * 撮り直したときは `-full.webp` の 4 枚を同じ名前で `public/lp-shots/` へ
- * 上書きコピーする。`-hero` / `-rsvp-modal` は画面 1 枚分の切り抜きなので使わない。
+ * 撮り直したときは下の `SHOTS` が指す `-full.webp` を同じ名前で
+ * `public/lp-shots/` へ上書きコピーする。`-hero` / `-rsvp-modal` は
+ * 画面 1 枚分の切り抜きなので使わない。
  */
 type Shot = {
   src: string;
@@ -32,6 +33,18 @@ const SHOTS: readonly Shot[] = [
     alt: "ライブイベントの告知ページ（見本）",
     width: 780,
     height: 3264,
+  },
+  {
+    src: "/lp-shots/event-akari-full.webp",
+    alt: "舞台の告知ページ（見本）",
+    width: 780,
+    height: 3310,
+  },
+  {
+    src: "/lp-shots/event-bar-tsukiakari-full.webp",
+    alt: "バーのクリスマス会の告知ページ（見本）",
+    width: 780,
+    height: 3464,
   },
   {
     src: "/lp-shots/organizer-events-list.webp",

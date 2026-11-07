@@ -11,6 +11,21 @@ export const FIRST_MONTH_FREE_MONTHS = 1;
 /** 初月無料の札に出す短い言葉。 */
 export const FIRST_MONTH_FREE_LABEL = "初月0円";
 
+/** 下書きの上限。無料は体験の最小限、980円は翌月の仕込み、放題は安全弁。 */
+export const DRAFT_EVENT_LIMIT_FREE = 3;
+export const DRAFT_EVENT_LIMIT_MONTHLY_8 = 10;
+export const DRAFT_EVENT_LIMIT_UNLIMITED = 30;
+
+/** 下書きの上限を引くためのプラン。DB の SubscriptionPlan をこの3つへ写して使う。 */
+export type DraftPlanId = "free" | "monthly-8" | "unlimited";
+
+/** 単発クレジットを持つ人は 980円と同じ作業台にする。 */
+export function draftEventLimitOf(plan: DraftPlanId, hasPaidCredit = false): number {
+  if (plan === "unlimited") return DRAFT_EVENT_LIMIT_UNLIMITED;
+  if (plan === "monthly-8" || hasPaidCredit) return DRAFT_EVENT_LIMIT_MONTHLY_8;
+  return DRAFT_EVENT_LIMIT_FREE;
+}
+
 /** 定額プランの種類。DB の SubscriptionPlan と揃える（NONE は未加入）。 */
 export type ServicePlanId = "free" | "single" | "subscription-8" | "subscription-unlimited";
 

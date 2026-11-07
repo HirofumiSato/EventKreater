@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { Toast } from "@/components/common/Toast";
+import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { readProblem } from "@/lib/problem";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
 import { SITE } from "@/lib/site";
@@ -17,12 +18,27 @@ import { Alert, Badge, EmptyState, Loading, PageHeader } from "@/components/ui";
  * 出欠の統計が常に 0 のカードが並ぶと、公開中のイベントの状況が読み取りにくくなるため。
  */
 export default function OrganizerDraftsPage() {
+  const quotaState = useEventQuota();
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // 並び順。過去日の下書きも枠を食うので、消す候補（古いもの）へ 1 押しで行けるようにする。
+  const [sort, setSort] = useState<"new" | "old">("new");
+
+  const quota = quotaState.quota;
+  const draftCount = quota?.draftEventCount;
+  const draftLimit = quota?.draftEventLimit;
+  // 件数が届くまでは今までのリードのままにして、届いた瞬間に帯の高さが変わらないようにする。
+  const counted = typeof draftCount === "number" && typeof draftLimit === "number";
+  const atLimit = quota?.remainingDrafts === 0;
+  const lead = atLimit
+    ? "下書きが上限に達しました。削除すると枠が空きます。"
+    : counted
+      ? `下書き ${draftCount} / ${draftLimit} 件。公開するまでチケットは減りません。`
+      : "公開するまでチケットは減りません。プレビューで確かめてから公開できます。";
 
   const load = useCallback(async () => {
     const res = await fetch("/api/v1/organizer/events", { cache: "no-store" });
@@ -45,6 +61,15 @@ export default function OrganizerDraftsPage() {
     void load().finally(() => setLoading(false));
   }, [load]);
 
+  /**
+   * 一覧は API の順（作った新しい順）で返る。`createdAt` を文字列のまま比べ、
+   * 古い順を選んだときだけ反転する。日付を `Date` に戻すと時差でずれる余地が生まれる。
+   */
+  const visibleEvents = useMemo(() => {
+    const rows = [...events].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    return sort === "old" ? rows : rows.reverse();
+  }, [events, sort]);
+
   const removeDraft = async (id: string) => {
     setBusyId(id);
     try {
@@ -53,6 +78,8 @@ export default function OrganizerDraftsPage() {
       setToast("下書きを削除しました");
       setDeletingId(null);
       await load();
+      // 削除で枠が空く。件数と上限の案内を出し直す。
+      void quotaState.refreshQuota();
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : "削除に失敗しました");
     } finally {
@@ -62,7 +89,13 @@ export default function OrganizerDraftsPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="下書き一覧" lead="公開するまでチケットは減りません。プレビューで確かめてから公開できます。" />
+      <PageHeader title="下書き一覧" lead={lead} />
+
+      {atLimit && (
+        <Alert tone="warning">
+          下書きを削除すると枠が空きます。下の「削除」から消せます。
+        </Alert>
+      )}
 
       {loading && (
         <Loading>
@@ -88,8 +121,25 @@ export default function OrganizerDraftsPage() {
         </EmptyState>
       )}
 
+      {/*
+        2 件以上あるときだけ出す。押すたびに新しい順と古い順が入れ替わる。
+        押されている（`aria-pressed`）は古い順が有効という意味で、消す候補が上に来る。
+      */}
+      {!loading && !error && events.length > 1 && (
+        <div className="roster-toolbar">
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            aria-pressed={sort === "old"}
+            onClick={() => setSort((current) => (current === "new" ? "old" : "new"))}
+          >
+            {sort === "old" ? "古い順" : "新しい順"}
+          </button>
+        </div>
+      )}
+
       <div className="stack">
-        {events.map((event) => (
+        {visibleEvents.map((event) => (
           <article key={event.id} className="draft-card">
             <div>
               <p className="draft-card__title">
@@ -129,7 +179,11 @@ export default function OrganizerDraftsPage() {
       </p>
 
       <div className="panel__actions">
-        <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+        {/* 上限に達している間は主操作を下げる。押せないわけではなく、押すと 403 の案内が返る。 */}
+        <Link
+          href={SITE.nav.createEvent.href}
+          className={`btn ${atLimit ? "btn--outline" : "btn--primary"} btn--sm`}
+        >
           新しく作る
         </Link>
         <Link href="/organizer/events" className="btn btn--outline btn--sm">

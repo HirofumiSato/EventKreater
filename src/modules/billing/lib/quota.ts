@@ -8,6 +8,8 @@ import {
   SUBSCRIPTION_8_PRICE_JPY,
   SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,
   SUBSCRIPTION_UNLIMITED_PRICE_JPY,
+  draftEventLimitOf,
+  type DraftPlanId,
 } from "@/modules/billing/lib/plans";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
@@ -201,6 +203,68 @@ export async function countPublishedEvents(
       schedules: { some: { eventDate: { gte: jstToday(now) } } },
       organizers: { some: { userId, role: "OWNER" } },
     },
+  });
+}
+
+/**
+ * 自分の下書きの件数。
+ *
+ * 数えるのは、下書きで、削除されておらず、自分が筆頭幹事（OWNER）のもの。
+ * 開催日は問わない（過去日の下書きも枠を食う）。共同主催だけの下書きは数えない
+ * （一覧には出るが、削除は筆頭幹事しかできないため、数えると消せない枠になる）。
+ */
+export async function countDraftEvents(
+  db: Prisma.TransactionClient | typeof prisma,
+  userId: string,
+): Promise<number> {
+  return db.event.count({
+    where: {
+      status: "DRAFT",
+      isDeleted: false,
+      organizers: { some: { userId, role: "OWNER" } },
+    },
+  });
+}
+
+/**
+ * 新しい下書きを保存できるか。上限に達していたら 403 を投げる。
+ *
+ * 402 は使わない。402 は課金で解ける合図として `PricingModal` が受けており、
+ * 下書きの枠は削除で解けるため。既存の下書きの保存・復元はこの判定を通さない。
+ */
+export async function assertCanSaveDraft(
+  db: Prisma.TransactionClient | typeof prisma,
+  userId: string,
+  now = new Date(),
+): Promise<void> {
+  const quota = await db.userUsageQuota.findUnique({
+    where: { userId },
+    select: {
+      subscriptionStatus: true,
+      subscriptionPlan: true,
+      currentPeriodEnd: true,
+      paidCredits: true,
+    },
+  });
+  const subscriptionActive = quota
+    ? isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now)
+    : false;
+  const plan: DraftPlanId = subscriptionActive
+    ? quota?.subscriptionPlan === "MONTHLY_8"
+      ? "monthly-8"
+      : "unlimited"
+    : "free";
+  const limit = draftEventLimitOf(plan, (quota?.paidCredits ?? 0) > 0);
+  const count = await countDraftEvents(db, userId);
+  if (count < limit) return;
+  throw new ProblemDetailException({
+    status: 403,
+    title: "Forbidden",
+    type: "probs/draft-limit-reached",
+    detail: `下書きは${limit}件までです。公開するか、いらない下書きを削除してください。`,
+    error: "DRAFT_LIMIT_REACHED",
+    // 画面が上限の件数を出すために添える。
+    draftLimit: limit,
   });
 }
 

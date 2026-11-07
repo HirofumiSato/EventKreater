@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EventStepForm } from "@/modules/events/components/EventStepForm";
 import { VoiceInputDock } from "@/modules/events/components/VoiceInputDock";
@@ -94,7 +95,11 @@ function NewEventScreen() {
     : SITE.nav.createEvent.href;
 
   // 下書きは会員だけが保存できる。未登録の幹事には登録・ログインの 2 択を出す。
-  const canSaveDraft = !quotaState.isLoading && Boolean(quotaState.quota);
+  // 下書きの枠が空いているか（`quota.canSaveDraft`）とは別の意味なので、名前を分ける。
+  const signedIn = !quotaState.isLoading && Boolean(quotaState.quota);
+  // 下書きの枠が空いていないか。復元（`draftId`）で来た人は既存の下書きを直すので、枠を見ない。
+  const draftQuotaFull =
+    !draftIdParam && !restoring && quotaState.quota?.canSaveDraft === false;
 
   /**
    * 初回ガイドを出す条件。下書きの復元で来た人には出さない（続きを書く邪魔になる）。
@@ -280,6 +285,19 @@ function NewEventScreen() {
         onGranted={() => void quotaState.refreshQuota()}
         nextPath={nextPath}
       />
+      {/*
+        下書きの枠が空いていないことを、保存を試す前に 1 度だけ伝える。
+        ボタンは止めない（保存できるかの正はサーバーの 403 で、Toast が受ける）。
+        復元で来た人は既存の下書きを直すので、枠を見ない。
+      */}
+      {draftQuotaFull && (
+        <Alert tone="warning">
+          下書きが上限（{quotaState.quota?.draftEventLimit}件）です。下書き一覧で削除してください。{" "}
+          <Link href="/organizer/events/drafts" className="text-link">
+            下書き一覧を開く
+          </Link>
+        </Alert>
+      )}
       <EventStepForm
         value={form}
         onChange={setForm}
@@ -287,7 +305,7 @@ function NewEventScreen() {
         onSubmit={() => void saveDraft(true)}
         submitting={savingDraft}
         savingDraft={savingDraft}
-        canSaveDraft={canSaveDraft}
+        canSaveDraft={signedIn}
         onSaveDraft={() => void saveDraft(false)}
         onRequireAuth={goAuth}
         actionsDisabled={quotaState.isLoading}
@@ -297,7 +315,7 @@ function NewEventScreen() {
         flyerPreviewUrl={flyerPreview}
         tour={{
           enabled: tourEnabled,
-          signedIn: canSaveDraft,
+          signedIn,
           onClose: () => setTourClosed(true),
         }}
         flyerSlot={
@@ -309,7 +327,7 @@ function NewEventScreen() {
               flyerAssetId={form.flyerAssetId}
               draftScope="new"
               // 未ログインではチラシの作成も行き先が同じ認証。`goAuth` が入力を退避する。
-              requireAuth={!canSaveDraft}
+              requireAuth={!signedIn}
               onRequireAuth={goAuth}
               onGenerated={(asset) => {
                 setForm((current) => ({ ...current, flyerAssetId: asset.id }));

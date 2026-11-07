@@ -2032,7 +2032,7 @@
       "title": "チラシファースト型 イベント紹介ページ生成・出欠管理 兼 チケット・課金決済基盤（Next.js App Router, Prisma & Stripe）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3005,
+      "lineCount": 3025,
       "headings": [
         {
           "level": 2,
@@ -2677,7 +2677,7 @@
       "title": "Stripe 決済設定",
       "summary": "STRIPE_PUBLISHABLE_KEY=\"pk_test_...\" STRIPE_WEBHOOK_SECRET=\"whsec_...\" STRIPE_PRICE_ID_MONTHLY_8=\"price_...\" STRIPE_PRICE_ID_UNLIMITED=\"price_...\"",
       "preImplementation": false,
-      "lineCount": 671,
+      "lineCount": 689,
       "headings": [
         {
           "level": 2,
@@ -2702,6 +2702,10 @@
         {
           "level": 4,
           "text": "2.2. 共同幹事のチケット消費ルール"
+        },
+        {
+          "level": 4,
+          "text": "2.3. 下書きの件数上限"
         },
         {
           "level": 3,
@@ -11795,7 +11799,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 806,
+      "lineCount": 814,
       "headings": [
         {
           "level": 1,
@@ -11902,6 +11906,10 @@
         },
         {
           "path": "tests/integration/collection.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/draft-limit.test.ts",
           "exists": true
         },
         {
@@ -12058,6 +12066,10 @@
         },
         {
           "path": "tests/unit/draft-lifecycle.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/draft-limit.test.ts",
           "exists": true
         },
         {
@@ -12684,7 +12696,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 560,
+      "lineCount": 568,
       "headings": [
         {
           "level": 1,
@@ -12935,6 +12947,22 @@
         },
         {
           "path": "public/samples/flyer-halloween.jpg",
+          "exists": true
+        },
+        {
+          "path": "public/samples/flyer-neon-magenta.jpg",
+          "exists": true
+        },
+        {
+          "path": "public/samples/flyer-poster.jpg",
+          "exists": true
+        },
+        {
+          "path": "public/samples/flyer-spotlight.jpg",
+          "exists": true
+        },
+        {
+          "path": "public/samples/flyer-tavern-christmas.jpg",
           "exists": true
         },
         {

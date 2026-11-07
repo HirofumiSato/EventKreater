@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 111（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 491
+- 文書から参照されているコードパス: 497
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -39,6 +39,10 @@
 | `public/samples/flyer-dj.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-gohan.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/samples/flyer-halloween.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-neon-magenta.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-poster.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-spotlight.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `public/samples/flyer-tavern-christmas.jpg` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `public/voice/pcm-worklet.js` | [docs/voice-input.rst](voice-input.rst) |
 | `scripts/billing-notices.mjs` | [docs/DBschema.md](DBschema.md) |
 | `scripts/build-icons.mjs` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -383,6 +387,7 @@
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/collection.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/draft-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-publish.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-save-preview-publish.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/event-discounts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -424,6 +429,7 @@
 | `tests/unit/design-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/dev-stuck.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-lifecycle.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/draft-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/draft-save.test.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
