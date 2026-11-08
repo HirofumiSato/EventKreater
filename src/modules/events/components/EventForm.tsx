@@ -34,6 +34,8 @@ interface EventFormProps {
   pricingModeLocked?: boolean;
   /** 未登録の幹事にだけ、公開ページへ出す主催者名を聞く。 */
   showOrganizerName?: boolean;
+  /** 保存ボタンを画面下の帯（`.action-dock`）へ移すときは true。 */
+  hideSubmit?: boolean;
   flyerSlot?: ReactNode;
 }
 
@@ -51,6 +53,7 @@ export function EventForm({
   showStatus = false,
   pricingModeLocked = false,
   showOrganizerName = false,
+  hideSubmit = false,
   flyerSlot,
 }: EventFormProps) {
   const locked = disabled || submitting;
@@ -108,9 +111,14 @@ export function EventForm({
           </EventStepFrame>
         )}
       </ol>
-      <button type="submit" disabled={locked} className="btn btn--primary btn--block">
-        {submitting ? "保存しています…" : submitLabel}
-      </button>
+      {hideSubmit ? (
+        // 帯のボタンはフォームの外にある。Enter でも保存できるよう、隠した送信ボタンを残す。
+        <button type="submit" hidden disabled={locked} />
+      ) : (
+        <button type="submit" disabled={locked} className="btn btn--primary btn--block">
+          {submitting ? "保存しています…" : submitLabel}
+        </button>
+      )}
     </form>
   );
 }
