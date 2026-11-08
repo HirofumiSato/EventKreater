@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 111（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 499
+- 文書から参照されているコードパス: 504
 - API ルート: 83（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -283,6 +283,7 @@
 | `src/modules/events/components/EventGuideTour.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
 | `src/modules/events/components/EventMetaCard.tsx` | [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
 | `src/modules/events/components/EventStepForm.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/components/EventSummaryEditor.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/OrganizerInviteCard.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/PostalCodeField.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/components/VenueSelectModal.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
@@ -299,6 +300,8 @@
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/modules/events/lib/summary-html.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
+| `src/modules/events/lib/summary.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/events/lib/tour/memory.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
 | `src/modules/events/lib/tour/place.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/tour/steps.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
@@ -377,6 +380,7 @@
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-entry-screen.test.tsx` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/event-summary-editor.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/password-reset-screen.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -444,6 +448,7 @@
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-summary.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/first-month-free.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-candidates.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
