@@ -16,11 +16,21 @@ import type {
   FlyerQuota,
   FlyerWizardStep,
 } from "@/modules/flyers/types";
-import { Alert } from "@/components/ui";
+import { Alert, Loading } from "@/components/ui";
 
 const STEP_TITLES: Record<FlyerWizardStep, string> = {
   1: "背景",
   2: "紙面の性格",
+};
+
+/**
+ * 作成中の 1 行と、待ち時間の目安。
+ * ステップ 1 は背景の絵を AI が描き（資料の NFR-P01 で 15〜25 秒）、
+ * ステップ 2 は同じ背景に文字を載せ直すだけなので数秒で終わる。
+ */
+const STEP_LOADING: Record<FlyerWizardStep, { label: string; note: string }> = {
+  1: { label: "AIが背景を描いています", note: "15〜30秒ほどかかります。" },
+  2: { label: "紙面を整えています", note: "数秒で終わります。" },
 };
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
@@ -79,6 +89,11 @@ export function FlyerCandidateModal({
   const [quota, setQuota] = useState<FlyerQuota | null>(null);
   const [aiFallback, setAiFallback] = useState(false);
   const [loading, setLoading] = useState(false);
+  /**
+   * 作成中の段。`step` は候補が返ってから進むので、待っている間は
+   * どちらの段を作っているかをここで持つ。
+   */
+  const [loadingStep, setLoadingStep] = useState<FlyerWizardStep | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<FlyerCandidate | null>(null);
@@ -108,6 +123,7 @@ export function FlyerCandidateModal({
   const load = useCallback(
     async (target: FlyerWizardStep, current: Record<FlyerWizardStep, FlyerCandidate | null>) => {
       setLoading(true);
+      setLoadingStep(target);
       setError(null);
       setSessionExpired(false);
       try {
@@ -157,6 +173,7 @@ export function FlyerCandidateModal({
         setError(cause instanceof Error ? cause.message : "候補を作れませんでした");
       } finally {
         setLoading(false);
+        setLoadingStep(null);
       }
     },
     [base, draftKey, eventId, onQuotaChange],
@@ -331,6 +348,8 @@ export function FlyerCandidateModal({
   };
 
   const busy = loading || saving || uploading;
+  // 作成中の段。待っている間は step がまだ進んでいないので、取得先で見分ける。
+  const loadingTarget = loadingStep ?? step;
   const visible = useMemo(() => candidates[step], [candidates, step]);
   const uploadSelected = Boolean(
     uploaded && selected[1]?.candidateId === uploaded.candidateId,
@@ -456,13 +475,23 @@ export function FlyerCandidateModal({
           )}
 
           {loading ? (
-            <div className="candidate-grid" aria-busy="true" aria-label="候補を準備しています">
-              {Array.from({ length: step === 2 ? 3 : BACKGROUND_COUNT }).map(
-                (_, index) => (
-                  <div key={index} className="candidate-skeleton" />
-                ),
-              )}
-            </div>
+            <>
+              <div className="candidate-status" role="status" aria-live="polite">
+                <Loading>{STEP_LOADING[loadingTarget].label}</Loading>
+                <p className="candidate-status__note">{STEP_LOADING[loadingTarget].note}</p>
+              </div>
+              <div className="candidate-grid" aria-busy="true" aria-label="候補を準備しています">
+                {Array.from({ length: loadingTarget === 2 ? 3 : BACKGROUND_COUNT }).map(
+                  (_, index) => (
+                    <div key={index} className="candidate-skeleton">
+                      <span className="candidate-skeleton__label" aria-hidden="true">
+                        作成中
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            </>
           ) : (
             <div className="candidate-grid">
               {visible.map((candidate) => {
