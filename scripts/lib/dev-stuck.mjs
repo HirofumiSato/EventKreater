@@ -11,6 +11,13 @@
 //
 // 起動し直すのは、この「掴まれていて読めなかった」失敗のときだけにする。
 // 構文エラーなど、直すべき原因が手元にある失敗で再起動を繰り返さないため。
+//
+// もう 1 つ、`.next` の作りが食い違ったときの失敗がある。git で枝を切り替えたり
+// マージしたあと、Turbopack が覚えている解決の表だけが古く残り、ディスクにある
+// ファイルを「無い」と言い続ける。これも再起動だけでは直らず、`.next` を消す必要がある。
+// ただし「無い」と言われた import が本当に無いなら手元の誤りなので、そこは見分ける。
+
+import { join } from "node:path";
 
 /** 一時的なファイルの掴み合いでビルドが落ちたことを示す行。 */
 const STUCK_PATTERNS = [
@@ -30,6 +37,70 @@ const STUCK_PATTERNS = [
 export function isStuckBuildLine(line) {
   if (typeof line !== "string" || line === "") return false;
   return STUCK_PATTERNS.some((pattern) => pattern.test(line));
+}
+
+/**
+ * `.next` の作りが食い違ったときだけ出る行。
+ *
+ * どれも「コードは正しいのにビルドキャッシュが古い」失敗で、`.next` を消して
+ * 起動し直すまで直らない。構文や import の誤りでは出ないので、再起動してよい。
+ */
+const STALE_CACHE_PATTERNS = [
+  // Turbopack で作った `.next` を Webpack で（またはその逆で）起動したとき。
+  /Cannot find module '\.\.\/chunks\/ssr\/\[turbopack\]_runtime\.js'/,
+  // 世代の違うチャンクが混ざったとき（React の vendor だけ古い、など）。
+  /Cannot read properties of null \(reading 'useContext'\)/,
+  /Cannot read property 'useContext' of null/,
+];
+
+/** その行が、`.next` を作り直せば直る失敗か。 */
+export function isStaleCacheLine(line) {
+  if (typeof line !== "string" || line === "") return false;
+  return STALE_CACHE_PATTERNS.some((pattern) => pattern.test(line));
+}
+
+/**
+ * `Module not found: Can't resolve 'X'` の `X` を取り出す。
+ * Webpack の `Cannot find module 'X'` も同じ形で扱う。
+ */
+export function unresolvedSpecifier(line) {
+  if (typeof line !== "string") return null;
+  const match = /(?:Can't resolve|Cannot find module) '([^']+)'/.exec(line);
+  return match ? match[1] : null;
+}
+
+/**
+ * `@/foo/bar` を、実際に置かれているはずのパスへ開く。
+ *
+ * パッケージ名（`react` など）と相対パスは、ここでは見ない。前者は `.next` ではなく
+ * `node_modules` の話で、後者は基準のディレクトリが行からは決まらないため。
+ */
+export function resolveCandidates(specifier, root) {
+  if (typeof specifier !== "string" || !specifier.startsWith("@/")) return [];
+  const base = join(root, "src", specifier.slice(2));
+  return [
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.js`,
+    `${base}.jsx`,
+    `${base}.mjs`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ];
+}
+
+/**
+ * 「解決できない」と言われた import が、実際にはディスクにあるか。
+ *
+ * あるなら、Turbopack が覚えている解決の表が古いだけ（git の切り替えやマージのあとに
+ * 起きやすい）。`.next` を消して起動し直せば直る。無いなら、本当に import の誤りか
+ * ファイルの作り忘れなので、再起動せずにエラーをそのまま見せる。
+ */
+export function isStaleResolution(line, { root, exists }) {
+  const specifier = unresolvedSpecifier(line);
+  const candidates = resolveCandidates(specifier, root);
+  if (candidates.length === 0) return false;
+  return candidates.some((file) => exists(file));
 }
 
 /** 失敗の行を見てから、実際に立て直すまでの待ち。掴んでいた側が離すのを待つ。 */

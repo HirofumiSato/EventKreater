@@ -147,7 +147,7 @@
 
 .. count-start
 
-136 ファイル、``it`` は 2080 件です。内訳は ``tests/unit/`` が 98 ファイル 1767 件、``tests/integration/`` が 26 ファイル 198 件です。結合の 198 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+136 ファイル、``it`` は 2088 件です。内訳は ``tests/unit/`` が 98 ファイル 1775 件、``tests/integration/`` が 26 ファイル 198 件です。結合の 198 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -604,7 +604,7 @@
      - SMS 中継の Worker。``POST`` 以外は 405、``GET /health`` は 200 で ``ok`` だけ、トークンが違うパスと未設定は 404、JSON が読めないは 400 ``INVALID_JSON``、配列と ``null`` は 400 ``INVALID_PAYLOAD``、``to`` が E.164 でなければ 400 ``INVALID_RECIPIENT``、``body`` が空か空白だけなら 400 ``MISSING_FIELD``、``body`` が 1000 文字を超えたら 413 ``TOO_LARGE``（1000 文字ちょうどは通す）、許可リストは完全一致だけを通し、空なら全拒否、``*`` は任意の宛先を通すが電話番号の検証は効き、許可外の宛先は 403 ``RECIPIENT_NOT_ALLOWED`` で Twilio も ``fetch`` も呼ばない、成功は 202 で SID・トークン・From・宛先・本文と打ち切り用の ``signal`` を渡し、Twilio が失敗を返したら 502 ``UPSTREAM_REJECTED``、例外なら 502 ``UPSTREAM_ERROR``、拒否と失敗のログは理由コードだけで宛先と本文を出さない
      - 該当なし（検査）
    * - ``tests/unit/dev-stuck.test.mjs``
-     - 10
+     - 18
      - 開発サーバーが「ビルドに失敗したまま」固まったことを見つける判定。``EBUSY``・``Failed to read source code``・``os error 32`` を拾い、構文エラーやビルド成功の行は拾わない。立て直しの間隔（直前なら見送る）と、立て直した直後に前のプロセスの失敗を読み飛ばす時間の関係
      - 該当なし（検査）
    * - ``tests/unit/publish-confirm.test.ts``
@@ -706,7 +706,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1767、``tests/integration/`` が 198 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1767 件を実行して 198 件を skip します。
+件数の内訳は ``tests/unit/`` が 1775、``tests/integration/`` が 198 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1775 件を実行して 198 件を skip します。
 
 .. breakdown-end
 
