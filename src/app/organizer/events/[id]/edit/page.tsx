@@ -81,8 +81,11 @@ function EditEventScreen({ params }: { params: { id: string } }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 押された保存の種類。帯のボタンの文言を、押した側だけに出す。 */
+  const [saveIntent, setSaveIntent] = useState<"draft" | "preview" | null>(null);
   const [takingOver, setTakingOver] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastTone, setToastTone] = useState<"success" | "error">("error");
   const [pickerOpen, setPickerOpen] = useState(false);
   const lock = useEditLock(params.id, holderName, ready && holderName.length > 0);
 
@@ -149,15 +152,28 @@ function EditEventScreen({ params }: { params: { id: string } }) {
   useEffect(() => {
     if (searchParams.get("cloned") !== "1") return;
     setToast(CLONE_NOTICE);
+    setToastTone("success");
     router.replace(`/organizer/events/${params.id}/edit`);
   }, [searchParams, router, params.id]);
 
-  const save = async () => {
-    // 概要は任意だが、200 字を超えると保存できない。送る前に画面で知らせる。
+  /** トーストは色も一緒に持つ。文言だけで成功・失敗を推測させない。 */
+  const showToast = (message: string, tone: "success" | "error") => {
+    setToast(message);
+    setToastTone(tone);
+  };
+
+  /** 概要は任意だが、200 字を超えると保存できない。送る前に画面で知らせる。 */
+  const summaryIsValid = () => {
     if (summaryTextLength(form.summary) > EVENT_SUMMARY_MAX_LENGTH) {
-      setToast(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`);
-      return;
+      showToast(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`, "error");
+      return false;
     }
+    return true;
+  };
+
+  /** 公開済み・受付停止の保存。保存したらロックを解いて主催一覧へ戻る。 */
+  const save = async () => {
+    if (!summaryIsValid()) return;
     setSaving(true);
     try {
       await lock.saveWithLock(toEventRequest(form));
@@ -170,9 +186,54 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         quotaState.openPricingModal({ draftId: params.id, returnTo });
         return;
       }
-      setToast(cause instanceof Error ? cause.message : "保存に失敗しました");
+      showToast(cause instanceof Error ? cause.message : "保存に失敗しました", "error");
       setSaving(false);
     }
+  };
+
+  /**
+   * 下書きの保存。保存しても画面に留まり、そのままプレビューへ進める。
+   * `goPreview` が true のときは、入力した内容を保存してから SCR-ORG-16 へ移る
+   * （古い保存内容を確認して公開してしまわないように）。
+   */
+  const saveDraft = async (goPreview: boolean) => {
+    if (!summaryIsValid()) return;
+    setSaving(true);
+    setSaveIntent(goPreview ? "preview" : "draft");
+    try {
+      const saved = (await lock.saveWithLock(toEventRequest(form))) as {
+        event: { status: EventStatus } & Pick<DetailResponse["event"], "schedules" | "pricePlans" | "discounts">;
+      };
+      // 新しく足した開催日・料金プランには ID が無い。保存の応答で入れ替えて、
+      // もう一度保存したときに作り直されないようにする。
+      setForm((current) => ({
+        ...current,
+        ...draftsFromOptions(saved.event),
+        status: saved.event.status,
+      }));
+      if (goPreview) {
+        // 遷移するまでボタンは止めたまま（二重保存を防ぐ）。
+        router.push(`/organizer/events/${params.id}/preview`);
+        return;
+      }
+      if (saved.event.status !== "DRAFT") {
+        // 公開状態を「公開中」に変えて保存した。公開の完了なので一覧へ移る。
+        await lock.releaseAwait();
+        router.push("/organizer/events");
+        return;
+      }
+      showToast("下書きを保存しました。プレビューで確かめてから公開できます。", "success");
+    } catch (cause) {
+      if (cause instanceof RequestProblemError && cause.status === 402) {
+        setSaving(false);
+        setSaveIntent(null);
+        quotaState.openPricingModal({ draftId: params.id, returnTo });
+        return;
+      }
+      showToast(cause instanceof Error ? cause.message : "保存に失敗しました", "error");
+    }
+    setSaving(false);
+    setSaveIntent(null);
   };
 
   const applyFlyer = (flyer: SelectableFlyer) => {
@@ -189,8 +250,10 @@ function EditEventScreen({ params }: { params: { id: string } }) {
     );
   }
 
+  const isDraft = form.status === "DRAFT";
+
   return (
-    <div className="page--form stack">
+    <div className={`page--form stack${isDraft ? " has-action-dock" : ""}`}>
       <div>
         <h1 className="page-title">イベントの編集</h1>
         {form.title ? (
@@ -199,9 +262,13 @@ function EditEventScreen({ params }: { params: { id: string } }) {
           </p>
         ) : null}
         <div className="panel__actions">
-          <Link href={`/organizer/events/${params.id}/preview`} className="btn btn--outline btn--sm">
-            プレビュー
-          </Link>
+          {/* 下書きのプレビューは、下の帯の「プレビューを確認して公開」が受ける。
+              ここに残すと、保存していない内容で確認してしまう入口が二重になる。 */}
+          {!isDraft && (
+            <Link href={`/organizer/events/${params.id}/preview`} className="btn btn--outline btn--sm">
+              プレビュー
+            </Link>
+          )}
           <Link href="/organizer/events" className="btn btn--ghost btn--sm">
             一覧へ戻る
           </Link>
@@ -221,7 +288,7 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         </Alert>
       )}
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
-      {form.status === "DRAFT" && (
+      {isDraft && (
         <QuotaStatusBanner
           quota={quotaState.quota}
           loading={quotaState.isLoading}
@@ -240,10 +307,11 @@ function EditEventScreen({ params }: { params: { id: string } }) {
       <EventForm
         value={form}
         onChange={setForm}
-        onSubmit={() => void save()}
+        onSubmit={() => void (isDraft ? saveDraft(false) : save())}
         submitting={saving}
         disabled={!lock.hasLock}
         showStatus
+        hideSubmit={isDraft}
         submitLabel="保存して一覧へ戻る"
         pricingModeLocked={pricingModeLocked}
         flyerSlot={
@@ -272,6 +340,31 @@ function EditEventScreen({ params }: { params: { id: string } }) {
           </>
         }
       />
+      {/* 下書きの操作は画面下に固定する。長いフォームを読み終えても、
+          保存とプレビューまで戻らずに押せるようにするため。主操作（朱）は
+          「プレビューを確認して公開」の 1 つだけにする。 */}
+      {isDraft && (
+        <div className="action-dock">
+          <div className="action-dock__inner">
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              disabled={!lock.hasLock || saving}
+              onClick={() => void saveDraft(false)}
+            >
+              {saving && saveIntent === "draft" ? "保存しています…" : "下書き保存"}
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={!lock.hasLock || saving}
+              onClick={() => void saveDraft(true)}
+            >
+              {saving && saveIntent === "preview" ? "保存しています…" : "プレビューを確認して公開"}
+            </button>
+          </div>
+        </div>
+      )}
       <LockConflictModal
         isOpen={lock.conflictVisible}
         holderName={lock.conflict?.holderName ?? ""}
@@ -296,16 +389,10 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         onUseTicket={() => void save()}
         onGranted={() => {
           void quotaState.refreshQuota();
-          setToast("0円チケットを受け取りました。もう一度保存してください。");
+          showToast("0円チケットを受け取りました。もう一度保存してください。", "success");
         }}
       />
-      {toast && (
-        <Toast
-          message={toast}
-          tone={toast === "保存しました" || toast === CLONE_NOTICE ? "success" : "error"}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}
     </div>
   );
 }
