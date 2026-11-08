@@ -87,15 +87,14 @@ describe("下書きの入力条件", () => {
     ).toBe(true);
   });
 
-  it("チラシ回数の下書きキーは任意で、UUID だけを受け付ける", () => {
-    expect(SaveEventDraftSchema.safeParse(draftPayload()).success).toBe(true);
-    expect(SaveEventDraftSchema.safeParse(draftPayload({ flyerDraftKey: null })).success).toBe(true);
-    expect(
-      SaveEventDraftSchema.safeParse(
-        draftPayload({ flyerDraftKey: "11111111-1111-4111-8111-111111111111" }),
-      ).success,
-    ).toBe(true);
-    expect(SaveEventDraftSchema.safeParse(draftPayload({ flyerDraftKey: "new" })).success).toBe(false);
+  it("旧クライアントの flyerDraftKey は捨て、回数の単位に使わない", () => {
+    const parsed = SaveEventDraftSchema.parse(
+      draftPayload({ flyerDraftKey: "11111111-1111-4111-8111-111111111111" }),
+    );
+    // 回数はサーバーが所有者から決める。クライアントが指定した値は残さない。
+    expect("flyerDraftKey" in parsed).toBe(false);
+    // 形が違う値でも、読み捨てるだけで保存は通る。
+    expect(SaveEventDraftSchema.safeParse(draftPayload({ flyerDraftKey: "new" })).success).toBe(true);
   });
 });
 

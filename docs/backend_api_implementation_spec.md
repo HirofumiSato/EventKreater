@@ -32,7 +32,7 @@ flowchart TD
 5. **RFC 7807 準拠のエラーレスポンス:**
    - すべてのエラーレスポンスを `application/problem+json` 構造に統一。
 6. **チラシ生成は外部サービスへ委譲し、結果だけを自前で保存する:**
-   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` で背景と紙面の性格の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。手元の完成済み画像を上げる `POST /api/v1/flyer-assets` も同じ `flyer_assets` 行を作り、原本の形式のまま `storage/flyers/{id}.{jpg|png|webp}` に置く（回数は消費しない）。回数は `flyer_generation_logs` で数え、保存済みイベントはイベント単位（共同主催者で共有）、公開前の新規作成は下書き単位とする。候補の作り直しでは減らさない。
+   - `POST /api/v1/flyers/generate` はチラシ生成サービス（`FLYER_API_URL`、既定 `http://127.0.0.1:8000`）の同じパスを呼ぶ。画面は先に `/api/v1/flyers/candidates/...` で背景と紙面の性格の候補を作り、選ばれた候補 ID を確定時に渡す。サービスは候補の完成画像をそのまま返すので、本アプリはそれを `storage/flyers/{id}.jpg` に書き、`flyer_assets` 行の `imageUrl` を `GET /api/v1/flyer-assets/{id}/image` にする。生成途中のデータは本データベースに置かない。手元の完成済み画像を上げる `POST /api/v1/flyer-assets` も同じ `flyer_assets` 行を作り、原本の形式のまま `storage/flyers/{id}.{jpg|png|webp}` に置く（回数は消費しない）。回数は AI 背景の候補を作ったときに `flyer_generation_logs` へ 1 行残して消費する。単位は保存済みイベントがイベント（共同主催者で共有）、公開前は会員または端末で数え、イベントを新規に作った時点で会員の未確定分をそのイベントへ付け替える（端末の分は引き継がない）。保存と紙面の性格の選び直しでは減らない。
 
 ---
 
@@ -798,10 +798,10 @@ SCR-ORG-02 の購入後の復元と、SCR-ORG-05 の「公開する」から呼�
 SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ。2 回目以降の保存はこの入口を使う。編集画面の `PUT` は排他ロックを要求するが、作成画面はロックを持たず競合モーダルも置いていないため、ロック不要の入口を分ける。状態（`status`）は変えない。
 
 1. `assertOrganizer` で幹事権限を確認し、`role` が `OWNER` かつ会員であること。未登録のゲスト幹事は 403 `REGISTER_REQUIRED`、`CO_HOST` は 403、未ログインは 401。
-2. 本文は `SaveEventDraftSchema`（`UpdateEventSchema` に `flyerDraftKey` を足したもの）で検証する。`status` は省略するか `"DRAFT"` だけを許し、それ以外は 400 `STATUS_CHANGE_NOT_ALLOWED`。公開は `publish` に任せる。
+2. 本文は `SaveEventDraftSchema`（`UpdateEventSchema` と同じ形）で検証する。`status` は省略するか `"DRAFT"` だけを許し、それ以外は 400 `STATUS_CHANGE_NOT_ALLOWED`。公開は `publish` に任せる。
 3. `events` の行を `SELECT ... FOR UPDATE` で取る。無い、または削除済みは 404。`DRAFT` でなければ 409 `ALREADY_PUBLISHED`。
 4. `syncEventOptions` と `eventUpdateData` で内容を入れ替える。日時が変われば `sort_date` も更新する。
-5. `flyerDraftKey` が付いていれば `attributeFlyerLogsToEvent` で、作成中のチラシ回数をこのイベントへ付け替える。
+5. チラシ回数の付け替えはここでは行わない。イベントを新規に作ったとき（`POST /api/v1/public/events`）に、ログイン中の会員の未確定の生成履歴（`user_id` が同じで `event_id` が NULL）をそのイベントへ付け替える。未ログインの端末の履歴は付け替えない（会員になった時点で新しい枠になる）。
 6. `{ event }` を返す。
 
 - **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
@@ -2664,32 +2664,32 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 ### 9.2. ウィザード候補 API（本アプリ）
 
-画面はチラシをいきなり作らない。「背景 → 紙面の性格」の 2 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**確定の回数は候補を作るだけでは消費しない。** ただしステップ 1 の背景候補は、AI が有効なときに画像生成 API を呼ぶため、flyer サービスが 1 端末・1 時間あたり 3 枚で数える（`ai_remaining` で残りを返す）。上限に達したときと失敗時は、テーマ色で描いたサンプル紙面で 200 を返す。
+画面はチラシをいきなり作らない。「背景 → 紙面の性格」の 2 ステップで候補を選び、最後に確定する。候補画像は使い捨てで、サービスの `candidate_ttl_seconds`（既定 3600 秒）で消える。**回数は AI の背景候補を 1 枚作るたびに消費する。** ステップ 1 の `POST /api/v1/flyers/candidates` が AI の候補を返した時点で、`flyer_generation_logs` に `source = "ai"` の行を 1 枚ずつ残す。「別の背景を作る」も 1 回である。紙面の性格の選び直し（`/types`）、背景のアップロード、完成画像のアップロード、保存（`/generate`）は消費しない。数えるときは `source = "ai"` の行だけを見て、`placeholder`（代替背景）と `upload` は監査用に残す。ステップ 1 の背景候補は、AI が有効なときに画像生成 API を呼ぶため、flyer サービスも 1 端末・1 時間あたり 3 枚で数える（`ai_remaining` で残りを返す）。上限に達したときと失敗時は、テーマ色で描いたサンプル紙面で 200 を返す。
 
 文字配置・配色・タイトル色は選ばせない。配置は生成時の構図（題は上、明細は下）と食い違い、配色は日付と罫線の 2 箇所だけ、タイトル色は描画側が写真の明るさから決めるためである。利用者に選ばせると、選んだ見た目と完成品がずれるか、可読性の判断を押し付けることになる。
 
 | パス | メソッド | 認証 | 内容 |
 | :---- | :---- | :---- | :---- |
-| `/api/v1/flyers/quota?draftKey={uuid}` | GET | 不要 | 残り回数。公開前は下書き、`eventId` を添えたときはイベント単位。未ログインは端末通算 |
-| `/api/v1/flyers/candidates` | POST | 不要 | ステップ 1。背景タイル 1 枚（作り直しは 1 時間 3 枚まで） |
-| `/api/v1/flyers/uploads` | POST | 不要 | ステップ 1。自分の写真 1 枚を背景候補にする（multipart） |
+| `/api/v1/flyers/quota?eventId={uuid}` | GET | 不要 | AI 背景の残り回数。`eventId` は任意で、付けたときはイベント単位。付けないときは会員（未ログインは端末）の未確定分 |
+| `/api/v1/flyers/candidates` | POST | 不要 | ステップ 1。AI 背景 1 枚（作るたびに 1 回消費。作り直しは 1 時間 3 枚まで） |
+| `/api/v1/flyers/uploads` | POST | 不要 | ステップ 1。自分の写真 1 枚を背景候補にする（multipart）。回数は消費しない |
 | `/api/v1/flyers/candidates/[id]/types` | POST | 不要 | ステップ 2。同じ背景の上で 3 種の紙面の性格（静けさ / やわらかさ / にぎやかさ） |
 | `/api/v1/flyers/candidates/[id]` | GET | 不要 | 候補 JPEG の中継 |
 
-ボディはステップ 1 が 9.1 の 7 項目に `draftKey`（UUID）を足したもの、背景の作り直しはさらに `count`（1〜16、既定 8）を足す。保存済みイベントの編集では `eventId` も添える。ステップ 2 は本文不要で、親候補の ID だけをパスに置く。画像生成も LLM も呼ばず、親候補の背景バイト列と `context` を使い回すため、何度焼き直しても課金は増えない。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha` を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。`layoutId` は描画の互換のための値で、常に `classic` である。
+ボディはステップ 1 が 9.1 の 7 項目で、背景の作り直しはさらに `count`（1〜16、既定 8）を足す。保存済みイベントの編集では `eventId` も添える。`draftKey` は廃止し、回数の単位はサーバーが所有者（会員または端末）から決める。ステップ 2 は本文不要で、親候補の ID だけをパスに置く。画像生成も LLM も呼ばず、親候補の背景バイト列と `context` を使い回すため、何度焼き直しても課金は増えない。応答は `{ "candidates": [...], "quota": {...} }` で、各候補は `candidateId`、`kind`、`label`、`description`、`imageUrl`、`templateId`、`layoutId`、`paletteId`、`accentColor`、`overlayAlpha`、`source`（`ai` / `placeholder` / `upload`）を持つ。`imageUrl` は本アプリの中継 URL であり、サービスの URL をそのまま返さない。`layoutId` は描画の互換のための値で、常に `classic` である。応答の `quota` は記録後（消費後）の値である。
 
-アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目に `draftKey` を足したフォーム項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、A4 縦（1080×1528）の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
+アップロードは `multipart/form-data` で、`file`（画像）と、9.1 の 7 項目（保存済みイベントの編集では `eventId` も）を送る。JPEG / PNG / WebP の 8 MiB までを受け付け、先頭バイトで形式を確認する。応答は `{ "candidate": {...}, "quota": {...} }` の 201 で、`candidate` は上の候補 1 件と同じ形である。画像のデコード、EXIF の除去、A4 縦（1080×1528）の中央クロップはサービス側が行う。アップロードだけでは回数を消費しない。成功した背景は `source = "upload"` で 1 行残すが、回数には数えない。同じ端末は 10 分に 5 回までとし、超えたら 429 を返す。
 
 候補の参照範囲は端末で絞る。BFF は候補 API と画像取得に `X-Flyer-Owner`（`owner_token_hash`）を付け、サービスは候補メタに記録した値と照合する。一致しない候補は、期限切れと同じ 404 `CANDIDATE_EXPIRED` にする。ログイン済みでも未ログインでも、Cookie `flyer_owner` の端末トークンが単位である。
 
 残り回数は次の規則で数える。
 
-- **保存済みイベント。** `flyer_generation_logs.event_id` が同じ行を数え、3 回で打ち止め。誰が保存したかは問わないため、筆頭幹事・共同主催者・ゲスト幹事の全員で 1 つの枠を共有する。`eventId` を送れるのはそのイベントの幹事だけである。
-- **新規作成（公開前）。** イベント行がまだ無いため、ログイン済みは `draft_key` が同じで `event_id` が NULL の行を数え、3 回で打ち止め。公開時に `event_id` を埋め、公開後の編集はイベントの枠へ引き継ぐ。
-- **未ログイン。** 新規作成では `owner_token_hash` が同じ行を数え、1 回で打ち止め。2 回目は 403 `REGISTER_REQUIRED`。ゲスト幹事として保存済みイベントを編集するときはイベントの枠（3 回）を使う。
-- 下書き ID はブラウザの `localStorage`（`flyer:draft:{scope}`）に置く。`scope` は新規が `new`、編集が `event:{id}`。編集画面は `draftKey` に加えて `eventId` を送る。
-- 上限に達したら、新規作成中は「新しい下書きで作り直す」でキーを差し替える。未ログインは会員登録へ送る。保存済みイベントは新しいイベントを作る以外に枠を増やせない。
-- 共同主催者の同時保存で 4 回目が通らないよう、回数の数え直しとログの作成は直列化可能トランザクションで行う。
+- **数える行。** `flyer_generation_logs` のうち `source = 'ai'` の行だけを数える。`placeholder`（代替背景）と `upload` は監査用に残すが、回数には数えない。
+- **保存済みイベント。** `event_id` が同じ行を数え、3 枚で打ち止め。誰が保存したかは問わないため、筆頭幹事・共同主催者・ゲスト幹事の全員で 1 つの枠を共有する。`eventId` を送れるのはそのイベントの幹事だけである。
+- **公開前（新規作成）。** イベント行がまだ無いため、ログイン済みは `user_id` が同じで `event_id` が NULL の行、未ログインは `owner_token_hash` が同じで `event_id` が NULL の行を数える。ログイン済みは 3 枚、未ログインは 1 枚で打ち止め。未ログインの 2 枚目は 403 `REGISTER_REQUIRED`。イベントを新規に作った時点で、ログイン中の会員の `event_id` が NULL の行をそのイベントへ付け替える（次の新しいイベントは新しい枠になる）。未ログインの端末の行は付け替えない。
+- **`draftKey` は使わない。** 回数の単位はサーバーが所有者から決める。クライアントが送った値では枠を増やせない。
+- **上限に達したら。** AI 背景の作成を 403 `FLYER_QUOTA_EXCEEDED` で止める。新規作成中はイベントを新しく作ると次の枠になる。未ログインは会員登録へ送る。保存済みイベントは新しいイベントを作る以外に枠を増やせない。
+- 同じイベントで同時に作っても 4 枚目が通らないよう、候補の記録と上限の数え直しは直列化可能トランザクションで行う（P2034 は 2 回まで再試行）。
 
 ### 9.3. POST `/api/v1/flyers/generate`（本アプリ）
 
@@ -2697,13 +2697,13 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 | フィールド | 制約 |
 | :---- | :---- |
-| `draftKey` | UUID。下書きの識別子 |
 | `eventId` | UUID（任意）。保存済みイベントを編集するときの対象。付けた場合はそのイベントの幹事だけが使える |
-| `candidateId` | UUID。ウィザードで選んだ候補 |
+| `candidateId` | UUID。ウィザードで選んだ紙面の候補 |
+| `backgroundCandidateId` | UUID（任意）。ステップ 1 で選んだ背景候補。付けたときは、その候補の生成履歴に保存したチラシを結ぶ |
 | `paletteId` | 1〜32 文字。記録用 |
 | `layoutId` | `classic`、`top_stack`、`center_stack`、`bottom_stack` |
 
-直接生成は廃止した。`candidateId` は必須である。
+直接生成は廃止した。`candidateId` は必須である。`draftKey` も廃止した（旧クライアントの値は無視する）。
 
 成功時は 201 と、次の JSON を返す。
 
@@ -2720,7 +2720,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 }
 ```
 
-`generationStatus` はサービスが返した `status` をそのまま載せる。フォールバックなら `fallback_used` である。`quota` は保存後の残り回数で、画面はこれで表示を更新する。
+`generationStatus` はサービスが返した `status` をそのまま載せる。フォールバックなら `fallback_used` である。`quota` は現在の残り枚数で、保存では減らない。画面はこれで表示を更新する。
 
 保存は次の順である。
 
@@ -2729,12 +2729,12 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 3. 新しい UUID を `flyer_assets.id` とファイル名に使う。
 4. `storage/flyers/{id}.jpg` に JPEG を書く。
 5. `flyer_assets` を作る。`externalFlyerId` はサービスの `generation_id`、`imageUrl` は `/api/v1/flyer-assets/{id}/image`、`aspectRatio` は `A4`。
-6. `flyer_generation_logs` に 1 行足す。`draft_key`、`event_id`（保存済みイベントを編集しているとき。新規作成は NULL）、`user_id`、`owner_token_hash`、`template_id`、`layout_id`、`palette_id`、`flyer_asset_id`。
-7. 行の作成に失敗したら、書いたファイルを削除する。
+6. `backgroundCandidateId` があるとき、同じトランザクションで `flyer_generation_logs` の該当行（`candidate_id` と所有者が一致し、`flyer_asset_id` が NULL）を新しい `flyer_asset_id` で更新する。0 件なら 409（`CANDIDATE_NOT_FOUND` / `CANDIDATE_ALREADY_SAVED`）とし、書いたファイルを削除する。回数は生成時に消費済みで、ここでは増やさない。
+7. `flyer_assets` の作成か生成履歴の更新に失敗したら、書いたファイルを削除する。
 
-回数は確定したときだけ数える。候補の作り直しでは減らない。
+回数は AI 背景の候補を作ったときに消費済みである。保存と紙面の性格の選び直しでは減らない。
 
-接続できない、応答が契約と違う、画像を取得できない場合は 502。サービスが 422 を返したときはそのステータスとメッセージをそのまま返す。候補が期限切れなら 404 `CANDIDATE_EXPIRED`。入力違反は 400。上限超過は 403 `FLYER_QUOTA_EXCEEDED`、未ログインの 2 回目は 403 `REGISTER_REQUIRED`。
+接続できない、応答が契約と違う、画像を取得できない場合は 502。サービスが 422 を返したときはそのステータスとメッセージをそのまま返す。候補が期限切れなら 404 `CANDIDATE_EXPIRED`。入力違反は 400。保存の対象が無い、または保存済みなら 409 `CANDIDATE_NOT_FOUND` / `CANDIDATE_ALREADY_SAVED`。回数の上限超過（403 `FLYER_QUOTA_EXCEEDED`）と未ログインの 2 枚目（403 `REGISTER_REQUIRED`）は、背景を作る `POST /api/v1/flyers/candidates` で返す。保存は回数を消費しないため、ここでは返さない。
 
 ### 9.4. GET `/api/v1/flyer-assets/[id]/image`（画像取得）
 

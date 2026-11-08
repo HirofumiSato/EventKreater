@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 112（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 514
+- 対象文書: 113（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 521
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -14,7 +14,7 @@
 
 | コード | 参照する文書 |
 | --- | --- |
-| `prisma/migrations` | `AGENTS.md` / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / `llms.txt` |
+| `prisma/migrations` | `AGENTS.md` / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / `llms.txt` |
 | `prisma/migrations/20261020053000_visibility_flyers_reminders/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `prisma/migrations/20261021150000_pricing_campaigns/migration.sql` | [docs/DBschema.md](DBschema.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
@@ -28,7 +28,7 @@
 | `prisma/migrations/20261103090000_referral_notifications/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261105120000_password_reset_tokens/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261108200000_participant_soft_delete/migration.sql` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) |
-| `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
+| `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
 | `public/favicon.ico` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `public/icons` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `public/icons/app-icon-source.jpg` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -122,6 +122,9 @@
 | `src/app/api/v1/billing/checkout/verify/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/app/api/v1/billing/portal/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/app/api/v1/billing/quota/route.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/app/api/v1/flyers/candidates/route.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
+| `src/app/api/v1/flyers/generate/route.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
+| `src/app/api/v1/flyers/uploads/route.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
 | `src/app/api/v1/image-assets/[id]/image/route.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/app/api/v1/internal/billing/notices/route.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/app/api/v1/invitations/[code]/route.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
@@ -228,7 +231,7 @@
 | `src/lib/mail.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/staging.rst](staging.rst) |
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/lib/problem.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/onboarding.md](onboarding.md) |
-| `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
+| `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
 | `src/lib/semantic-themes.ts` | [docs/DBschema.md](DBschema.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/lib/serializers.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/site-chrome.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -295,7 +298,7 @@
 | `src/modules/events/lib/capacity.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/draft.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/event-filters.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
-| `src/modules/events/lib/events.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
+| `src/modules/events/lib/events.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/lifecycle.ts` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/events/lib/pending-form.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/postal-code-search.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
@@ -330,11 +333,14 @@
 | `src/modules/events/lib/voice/utterance.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/types.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/modules/flyers` | [docs/onboarding.md](onboarding.md) |
+| `src/modules/flyers/components/FlyerGeneratePanel.tsx` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
 | `src/modules/flyers/lib/flyer.ts` | [docs/deploy.rst](deploy.rst) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `src/modules/flyers/lib/form.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) |
 | `src/modules/flyers/lib/ownership.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/flyers/lib/pdf.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
-| `src/modules/flyers/lib/quota.ts` | [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/modules/flyers/lib/quota-label.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
+| `src/modules/flyers/lib/quota.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
+| `src/modules/flyers/lib/scope.ts` | [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) |
 | `src/modules/flyers/lib/upload.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/modules/media/lib/listings.ts` | [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
 | `src/modules/notifications/components/NotificationList.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
@@ -462,6 +468,7 @@
 | `tests/unit/first-month-free.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-candidates.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-download.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/flyer-generation-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-payload.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-pdf.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

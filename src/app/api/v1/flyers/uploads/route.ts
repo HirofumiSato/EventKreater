@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/http";
 import { UploadFlyerBackgroundSchema } from "@/lib/schemas";
 import { uploadBackgroundCandidate } from "@/modules/flyers/lib/flyer";
 import { resolveFlyerOwner, writeFlyerOwnerCookie } from "@/modules/flyers/lib/ownership";
-import { readFlyerQuota } from "@/modules/flyers/lib/quota";
+import { recordFlyerCandidates } from "@/modules/flyers/lib/quota";
 import { resolveFlyerQuotaScope } from "@/modules/flyers/lib/scope";
 import {
   MAX_IMAGE_BYTES,
@@ -22,7 +22,7 @@ function field(form: FormData, name: string): string {
 }
 
 /**
- * ステップ 2。自分の写真を背景候補にする。
+ * ステップ 1。自分の写真を背景候補にする。
  * 候補を作るだけなので、生成回数（quota）は消費しない。
  */
 export async function POST(req: NextRequest) {
@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
 
     const capacityText = field(form, "capacity").trim();
     const input = UploadFlyerBackgroundSchema.parse({
-      draftKey: field(form, "draftKey"),
       title: field(form, "title"),
       eventDate: field(form, "eventDate"),
       eventTime: field(form, "eventTime"),
@@ -89,14 +88,27 @@ export async function POST(req: NextRequest) {
     }
 
     consumeUploadAttempt(owner.ownerTokenHash);
-    const scope = await resolveFlyerQuotaScope(req, input.draftKey, input.eventId);
+    const scope = await resolveFlyerQuotaScope(req, input.eventId);
     const candidate = await uploadBackgroundCandidate({
       bytes,
       contentType: imageContentType(kind),
       payload: input,
       ownerTokenHash: owner.ownerTokenHash,
     });
-    const quota = await readFlyerQuota(scope, owner);
+    // 背景のアップロードは回数を消費しない。保存時の紐付けに使う履歴だけ残す。
+    const quota = await recordFlyerCandidates({
+      scope,
+      owner,
+      candidates: [
+        {
+          candidateId: candidate.candidateId,
+          templateId: candidate.templateId,
+          layoutId: candidate.layoutId,
+          paletteId: candidate.paletteId,
+          source: "upload",
+        },
+      ],
+    });
     const response = NextResponse.json({ candidate, quota }, { status: 201 });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);
     return response;

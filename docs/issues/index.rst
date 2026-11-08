@@ -28,3 +28,4 @@
    free-ticket-and-referral
    abuse-and-crawler-hardening
    manual-participant-adding
+   flyer-generation-quota

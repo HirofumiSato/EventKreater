@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const input = SaveEventDraftSchema.parse(await req.json());
     assertDraftSaveStatus(input.status);
 
-    const event = await saveEventDraft(params.id, input, input.flyerDraftKey);
+    const event = await saveEventDraft(params.id, input);
     const response = NextResponse.json({ event: serializeEvent(event) });
     // 下書きの保存でも、入力した会場は候補として覚える（公開前に入力を助けるため）。
     const venueCookie = await rememberVenueQuietly(req, input);

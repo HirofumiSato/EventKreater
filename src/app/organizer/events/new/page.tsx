@@ -17,7 +17,6 @@ import { normalizeSemanticThemeId } from "@/lib/semantic-themes";
 import { SITE } from "@/lib/site";
 import { phoneVerifyUrl, registerUrl } from "@/lib/auth-links";
 import { formatRsvpDeadlineInput } from "@/lib/serializers";
-import { readFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { savePendingForm, takePendingForm } from "@/modules/events/lib/pending-form";
 import { isEventGuideDismissed } from "@/modules/events/lib/tour/memory";
 import {
@@ -202,8 +201,6 @@ function NewEventScreen() {
     const payload = {
       ...toEventRequest(form, referrerEventId),
       status: "DRAFT" as const,
-      // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。既存の下書きでは付け替え済み。
-      ...(draftId ? {} : { flyerDraftKey: readFlyerDraftKey("new") }),
     };
     try {
       let id = draftId;
@@ -328,7 +325,8 @@ function NewEventScreen() {
               disabled={savingDraft || restoring}
               previewUrl={flyerPreview}
               flyerAssetId={form.flyerAssetId}
-              draftScope="new"
+              // 下書き保存後はイベントの枠で数える。保存前は会員（未ログインは端末）の枠。
+              eventId={draftId}
               // 未ログインではチラシの作成も行き先が同じ認証。`goAuth` が入力を退避する。
               requireAuth={!signedIn}
               onRequireAuth={goAuth}

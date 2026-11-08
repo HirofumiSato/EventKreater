@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 122,
+    "docs": 123,
     "preImplementation": 15,
-    "markdown": 55,
+    "markdown": 56,
     "rst": 67,
     "orphan": 1
   },
@@ -2943,7 +2943,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 2022,
+      "lineCount": 2037,
       "headings": [
         {
           "level": 2,
@@ -4040,7 +4040,7 @@
       "title": "HTTP API",
       "summary": "起動すると Swagger UI が /docs に出ます。画面の操作は swagger、サーバーの立ち上げは local_run です。",
       "preImplementation": false,
-      "lineCount": 203,
+      "lineCount": 205,
       "headings": [
         {
           "level": 1,
@@ -5882,7 +5882,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2189,
+      "lineCount": 2190,
       "headings": [
         {
           "level": 1,
@@ -8061,6 +8061,119 @@
       ]
     },
     {
+      "path": "docs/issues/flyer-generation-quota.md",
+      "sphinxDoc": "issues/flyer-generation-quota",
+      "format": "markdown",
+      "title": "チラシ生成の回数を生成時に消費し、途中離脱で戻らないようにする",
+      "summary": "> チラシの回数を保存時ではなく AI 背景の生成時に消費し、数える単位をクライアントの下書き ID から会員・端末へ移す issue。途中で閉じても、下書き ID を作り直しても回数が戻らないようにする。",
+      "preImplementation": false,
+      "lineCount": 91,
+      "headings": [
+        {
+          "level": 1,
+          "text": "チラシ生成の回数を生成時に消費し、途中離脱で戻らないようにする"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "決定"
+        },
+        {
+          "level": 2,
+          "text": "フロー"
+        },
+        {
+          "level": 2,
+          "text": "実装方針"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "docs/backend_api_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "docs/billing_and_quota_system_requirements.md",
+          "exists": true
+        },
+        {
+          "path": "docs/DBschema.md",
+          "exists": true
+        },
+        {
+          "path": "docs/flyer/http_api.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/front_implementation_spec.md",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/flyers/candidates/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/flyers/generate/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/flyers/uploads/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/schemas.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/events.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/components/FlyerGeneratePanel.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/quota-label.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/quota.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/flyers/lib/scope.ts",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
+      ]
+    },
+    {
       "path": "docs/issues/free-ticket-and-referral.md",
       "sphinxDoc": "issues/free-ticket-and-referral",
       "format": "markdown",
@@ -8332,7 +8445,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 31,
+      "lineCount": 32,
       "headings": [
         {
           "level": 1,
@@ -8360,7 +8473,8 @@
         "docs/issues/venue-suggestions.md",
         "docs/issues/free-ticket-and-referral.md",
         "docs/issues/abuse-and-crawler-hardening.md",
-        "docs/issues/manual-participant-adding.md"
+        "docs/issues/manual-participant-adding.md",
+        "docs/issues/flyer-generation-quota.md"
       ],
       "codePaths": [],
       "includedBy": [
@@ -11969,7 +12083,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 838,
+      "lineCount": 842,
       "headings": [
         {
           "level": 1,
@@ -12324,6 +12438,10 @@
         },
         {
           "path": "tests/unit/flyer-download.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/flyer-generation-quota.test.ts",
           "exists": true
         },
         {
