@@ -7,6 +7,7 @@ import {
   createDiscountDraft,
   createPricePlanDraft,
   createScheduleDraft,
+  duplicatePricePlanNames,
   groupNamesDiffer,
   groupPricePlanPairs,
   MAX_EVENT_OPTIONS,
@@ -221,6 +222,8 @@ export function PricePlansSection({
   // 男女別では男性用・女性用が1組なので、プラン名の入力も削除も組単位で行う。
   const planGroups = groupPricePlanPairs(value.pricePlans);
   const canRemovePlan = planGroups.length > 1;
+  /** 保存してから 400 で知るのではなく、入力中に重複を知らせる。 */
+  const duplicatedPlanNames = duplicatePricePlanNames(value.pricePlans);
   const hasLegacyCommonPlan =
     pricingMode === "GENDER" && value.pricePlans.some((row) => row.audience === "ANY");
 
@@ -363,6 +366,11 @@ export function PricePlansSection({
               {pricingModeLocked
                 ? "出席者がいるため共通料金に戻せません。名簿でプランを選び直してから戻してください。"
                 : "チェックを外して戻し、入れ直すと組に揃えられます。"}
+            </Alert>
+          )}
+          {duplicatedPlanNames.length > 0 && (
+            <Alert tone="warning">
+              {`プラン名${duplicatedPlanNames.map((name) => `「${name}」`).join("")}が重複しています。変えてください。`}
             </Alert>
           )}
           {pricingMode === "GENDER"

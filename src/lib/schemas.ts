@@ -2,7 +2,7 @@ import { z } from "zod";
 import { normalizePostalCode } from "@/lib/postal-code";
 import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
 import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
-import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
+import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS, duplicatePricePlanNames } from "@/modules/events/types";
 import { EVENT_SUMMARY_MAX_LENGTH, summaryTextLength } from "@/modules/events/lib/summary";
 import { sanitizeEventSummary } from "@/modules/events/lib/summary-html";
 import {
@@ -102,18 +102,15 @@ function refineEventOptions(
     }
     dates.add(key);
   }
-  const names = new Set<string>();
-  for (const row of value.pricePlans) {
-    const key = `${row.audience}\u0000${row.name}`;
-    if (names.has(key)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["pricePlans"],
-        message: "同じ対象のプラン名は重複できません",
-      });
-      break;
-    }
-    names.add(key);
+  // 空のプラン名は pricePlanInputSchema が「プラン名を入力してください」で返す。
+  // ここで数えると、行を足しただけの空行が「重複」として扱われるため、入力済みの名前だけを見る。
+  const duplicatedPlanNames = duplicatePricePlanNames(value.pricePlans);
+  if (duplicatedPlanNames.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["pricePlans"],
+      message: `同じ対象でプラン名「${duplicatedPlanNames[0]}」が重複しています`,
+    });
   }
   // 割引名は 1 イベントの中で重複させない。参加者が選ぶときの見分けが付かなくなる。
   const discountNames = new Set<string>();

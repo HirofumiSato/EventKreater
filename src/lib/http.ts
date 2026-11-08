@@ -28,11 +28,14 @@ export function toErrorResponse(error: unknown, instance?: string): NextResponse
     return problemResponse(error, instance);
   }
   if (error instanceof ZodError) {
+    // 同じ文言が並ぶと（空の行をいくつも足したときなど）読み手が最初の 1 つを見落とす。
+    // 直す場所はパスで分かるので、本文は同じ文言を 1 回だけにする。
+    const messages = [...new Set(error.issues.map((issue) => issue.message))];
     return problemResponse(
       new ProblemDetailException({
         status: 400,
         title: "Validation Error",
-        detail: error.issues.map((issue) => issue.message).join(" / "),
+        detail: messages.join(" / "),
         errors: error.issues.map((issue) => ({
           path: issue.path.join("."),
           message: issue.message,

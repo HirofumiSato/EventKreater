@@ -147,6 +147,89 @@ describe("割引の送信形", () => {
   });
 });
 
+describe("料金プランの送信形", () => {
+  const base = {
+    ...EMPTY_EVENT_FORM,
+    title: "料金テスト",
+    schedules: [
+      {
+        ...EMPTY_EVENT_FORM.schedules[0],
+        eventDate: "2026-11-20",
+        startTime: "19:00",
+        endTime: "21:00",
+      },
+    ],
+    pricePlans: [createPricePlanDraft({ name: "一般", amount: "3000" })],
+    venueName: "テスト会場",
+  };
+
+  it("行を足しただけの空行は送らない", () => {
+    const payload = toEventRequest({
+      ...base,
+      pricePlans: [...base.pricePlans, createPricePlanDraft(), createPricePlanDraft()],
+    });
+    expect(payload.pricePlans.map((row) => row.name)).toEqual(["一般"]);
+    expect(CreateEventSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("すべて空なら1件だけ送り、重複ではなくプラン名の入力を促す", () => {
+    const payload = toEventRequest({
+      ...base,
+      pricePlans: [createPricePlanDraft(), createPricePlanDraft()],
+    });
+    expect(payload.pricePlans).toHaveLength(1);
+    const result = CreateEventSchema.safeParse(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.message)).toEqual(["プラン名を入力してください"]);
+    }
+  });
+
+  it("空行が残っていても「同じ対象のプラン名は重複できません」で止めない", () => {
+    const payload = {
+      ...toEventRequest(base),
+      pricePlans: [
+        { name: "一般", audience: "MALE", amount: 3000, note: null },
+        { name: "", audience: "MALE", amount: 0, note: null },
+        { name: "", audience: "MALE", amount: 0, note: null },
+      ],
+    };
+    const result = CreateEventSchema.safeParse(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.every((issue) => issue.message === "プラン名を入力してください")).toBe(true);
+    }
+  });
+
+  it("同じ対象でプラン名が重複したら、名前を添えて落ちる", () => {
+    const payload = toEventRequest({
+      ...base,
+      pricePlans: [
+        createPricePlanDraft({ name: "一般", amount: "3000" }),
+        createPricePlanDraft({ name: "一般", amount: "2500" }),
+      ],
+    });
+    const result = CreateEventSchema.safeParse(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((issue) => issue.message === "同じ対象でプラン名「一般」が重複しています"),
+      ).toBe(true);
+    }
+  });
+
+  it("男女別では同じプラン名でも対象が違えば通る", () => {
+    const payload = toEventRequest({
+      ...base,
+      pricePlans: [
+        createPricePlanDraft({ name: "一般", audience: "MALE", amount: "3000" }),
+        createPricePlanDraft({ name: "一般", audience: "FEMALE", amount: "2500" }),
+      ],
+    });
+    expect(CreateEventSchema.safeParse(payload).success).toBe(true);
+  });
+});
+
 describe("イベント概要の送信形", () => {
   const base = {
     ...EMPTY_EVENT_FORM,
