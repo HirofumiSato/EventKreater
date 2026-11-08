@@ -961,6 +961,29 @@
   display: block;
 }
 
+/* 料金のプラン 1 組。組どうしは詰めすぎず、どこで分かれるかを目で追えるようにする。 */
+.event-facts__plan {
+  display: block;
+  margin-top: 0.375rem;
+}
+
+.event-facts__plan:first-child {
+  margin-top: 0;
+}
+
+/* 編集画面の「プラン1」と対応する番号。読ませる文字ではなく、組の目印として控えめに置く。 */
+.event-facts__plan-number {
+  display: inline-block;
+  margin-right: 0.375rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+/* 男女別の金額。組の見出し（プラン名）の下で一段下げ、対象と金額の対で読めるようにする。 */
+.event-facts__plan-price {
+  padding-left: 0.75rem;
+}
+
 /* 場所の下の地図リンク。アイコンと文字を 1 段に並べ、指で押せる高さを保つ。 */
 .event-facts__map {
   display: inline-flex;
