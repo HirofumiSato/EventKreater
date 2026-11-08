@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 /**
  * 将来のメディアサイト向けの掲載判定と一覧取得。
@@ -54,8 +55,11 @@ export async function listListableEvents(input: MediaListingQuery) {
         flyerAsset: true,
         ...eventOptionsInclude,
         // 席を取っている人だけ。人数は行数ではなく `partySize` の合計で数える
-        // （1 行が 3 人ぶんのことがある）。
-        participants: { where: { status: "ATTENDING" }, select: { partySize: true } },
+        // （1 行が 3 人ぶんのことがある）。削除済みは席を取っていない。
+        participants: {
+          where: { status: "ATTENDING", ...ACTIVE_PARTICIPANT_WHERE },
+          select: { partySize: true },
+        },
       },
     }),
   ]);

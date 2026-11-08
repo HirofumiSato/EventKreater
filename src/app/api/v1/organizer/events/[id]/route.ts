@@ -16,6 +16,7 @@ import {
   rememberVenueQuietly,
   writeVenueOwnerCookie,
 } from "@/modules/events/lib/venue-suggestions";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +31,11 @@ async function loadManagedEvent(eventId: string) {
     include: {
       flyerAsset: true,
       ...eventOptionsInclude,
-      participants: { select: { status: true, partySize: true, pricePlanId: true } },
+      // 出欠の集計と定員の判定は名簿に残っている行だけを見る。
+      participants: {
+        where: { ...ACTIVE_PARTICIPANT_WHERE },
+        select: { status: true, partySize: true, pricePlanId: true },
+      },
       organizers: {
         select: {
           id: true,

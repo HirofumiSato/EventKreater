@@ -2,9 +2,9 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 121,
+    "docs": 122,
     "preImplementation": 15,
-    "markdown": 54,
+    "markdown": 55,
     "rst": 67,
     "orphan": 1
   },
@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3032,
+      "lineCount": 3058,
       "headings": [
         {
           "level": 1,
@@ -2133,6 +2133,14 @@
         {
           "level": 3,
           "text": "5.4. GET /api/v1/organizer/events（主催イベント一覧取得）"
+        },
+        {
+          "level": 3,
+          "text": "5.4.1. POST /api/v1/organizer/events/[id]/participants（参加者の追加）"
+        },
+        {
+          "level": 3,
+          "text": "5.4.2. DELETE /api/v1/organizer/events/[id]/participants/[participantId]（名簿からの論理削除）と復元"
         },
         {
           "level": 3,
@@ -2935,7 +2943,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 2012,
+      "lineCount": 2022,
       "headings": [
         {
           "level": 2,
@@ -3359,9 +3367,9 @@
       "sphinxDoc": "event-guide-tour",
       "format": "rst",
       "title": "新規イベント作成画面の初回ガイド",
-      "summary": "イベント作成画面（ /organizer/events/new ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 8 枚のツアーです。 入力の全体像を先に渡し、どこから手を付けるかで迷わせないために置きます。",
+      "summary": "イベント作成画面（ /organizer/events/new ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 9 枚のツアーです。 入力の全体像を先に渡し、どこから手を付けるかで迷わせないために置きます。",
       "preImplementation": false,
-      "lineCount": 332,
+      "lineCount": 336,
       "headings": [
         {
           "level": 1,
@@ -3373,7 +3381,7 @@
         },
         {
           "level": 2,
-          "text": "8 枚の手順"
+          "text": "9 枚の手順"
         },
         {
           "level": 2,
@@ -8324,7 +8332,7 @@
       "title": "課題（issue）",
       "summary": "画面遷移、課金、運営まわりの課題を 1 課題 1 ファイルで残します。 背景・決定・実装の当たり・受け入れ条件を 1 か所にまとめ、完了したものも履歴として残します。",
       "preImplementation": false,
-      "lineCount": 30,
+      "lineCount": 31,
       "headings": [
         {
           "level": 1,
@@ -8351,11 +8359,133 @@
         "docs/issues/signup-resume-and-password-save.md",
         "docs/issues/venue-suggestions.md",
         "docs/issues/free-ticket-and-referral.md",
-        "docs/issues/abuse-and-crawler-hardening.md"
+        "docs/issues/abuse-and-crawler-hardening.md",
+        "docs/issues/manual-participant-adding.md"
       ],
       "codePaths": [],
       "includedBy": [
         "docs/index.rst"
+      ]
+    },
+    {
+      "path": "docs/issues/manual-participant-adding.md",
+      "sphinxDoc": "issues/manual-participant-adding",
+      "format": "markdown",
+      "title": "主催者が名簿へ参加者を手動で追加し、削除は論理削除で名簿の末尾に残す",
+      "summary": "名簿（SCR-ORG-06）に載るのは、参加者が告知ページから送った出欠だけである。電話や口頭で受けた予約、当日の飛び込み、主催者の知り合いを後から名簿へ入れる手段が無く、幹事は集金と当日の受付を名簿だけで済ませられない。出欠の行を作れるのは参加者本人の送信だけで、幹事が代わりに送ると userId と rsvpTokenHash が本人の端末と食い違う。",
+      "preImplementation": false,
+      "lineCount": 143,
+      "headings": [
+        {
+          "level": 1,
+          "text": "主催者が名簿へ参加者を手動で追加し、削除は論理削除で名簿の末尾に残す"
+        },
+        {
+          "level": 2,
+          "text": "背景"
+        },
+        {
+          "level": 2,
+          "text": "決定事項"
+        },
+        {
+          "level": 2,
+          "text": "スコープ外"
+        },
+        {
+          "level": 2,
+          "text": "実装方針"
+        },
+        {
+          "level": 3,
+          "text": "1. DB"
+        },
+        {
+          "level": 3,
+          "text": "2. API"
+        },
+        {
+          "level": 3,
+          "text": "3. 画面"
+        },
+        {
+          "level": 2,
+          "text": "受け入れ条件"
+        },
+        {
+          "level": 3,
+          "text": "追加"
+        },
+        {
+          "level": 3,
+          "text": "論理削除と復元"
+        },
+        {
+          "level": 3,
+          "text": "データ"
+        },
+        {
+          "level": 2,
+          "text": "参考"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "prisma/migrations/20261108200000_participant_soft_delete/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/schema.prisma",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/restore/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/api/v1/organizer/events/[id]/participants/route.ts",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/participants/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/attendance/components/ParticipantListTable.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/attendance/components/ParticipantSheet.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/events.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/participants/lib/serialize.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/participants/lib/where.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/deco/surface.css",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/issues/index.rst"
       ]
     },
     {
@@ -10656,7 +10786,7 @@
       "title": "1. 文書概要・目的",
       "summary": "ファイル名: overall_system_requirements_common.md システム名称: チラシファースト型イベント告知・出欠＆プラットフォーム基盤 版数: 第1.20版（主対象の確定・ペルソナの序列）",
       "preImplementation": false,
-      "lineCount": 1136,
+      "lineCount": 1137,
       "headings": [
         {
           "level": 2,
@@ -11466,7 +11596,7 @@
       "title": "CI への接続",
       "summary": "読む順の 11 番です。前は local-run です。このページは、.github/workflows/ci.yml が何をして、どこまでを約束するかを書きます。",
       "preImplementation": false,
-      "lineCount": 239,
+      "lineCount": 241,
       "headings": [
         {
           "level": 1,
@@ -11839,7 +11969,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 822,
+      "lineCount": 830,
       "headings": [
         {
           "level": 1,
@@ -11989,6 +12119,10 @@
           "exists": true
         },
         {
+          "path": "tests/integration/organizer-participant-create.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/organizer-profile.test.ts",
           "exists": true
         },
@@ -11998,6 +12132,10 @@
         },
         {
           "path": "tests/integration/participant-party-size.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/participant-soft-delete.test.ts",
           "exists": true
         },
         {

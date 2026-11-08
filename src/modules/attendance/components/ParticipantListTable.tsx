@@ -31,13 +31,18 @@ interface ParticipantListTableProps {
   attendingCount: number;
   declinedCount: number;
   waitlistedCount: number;
+  /** 定員。追加の 1 枚で「定員に達しています」を出すために使う。 */
+  capacity?: number | null;
   onSave?: (draft: ParticipantDraft) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  /** 削除済みの行を名簿に戻す。 */
+  onRestore?: (id: string) => Promise<void>;
   /** 集金の切り替えを親へ伝える。名簿の列と売上の数字を同じ値にするため。 */
   onCollectionChange?: (id: string, collectedAt: string | null) => void;
 }
 
-type Filter = "ALL" | RsvpStatus;
+/** `DELETED` は削除済みだけを出す札。`ALL` では末尾に混ぜる。 */
+type Filter = "ALL" | RsvpStatus | "DELETED";
 
 function csvCell(value: string): string {
   if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -78,14 +83,18 @@ export function ParticipantListTable({
   attendingCount,
   declinedCount,
   waitlistedCount,
+  capacity = null,
   onSave,
   onDelete,
+  onRestore,
   onCollectionChange,
 }: ParticipantListTableProps) {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
   /** 1 行を開いているか。直すときだけ層を出す（表には操作の列を置かない）。 */
   const [openRow, setOpenRow] = useState<ParticipantRow | null>(null);
+  /** 追加の 1 枚を開いているか。行がまだ無いので `openRow` とは別に持つ。 */
+  const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   /**
    * 表示する列。この表は参加者を読み終えてから描かれるので、初期化のときに
@@ -109,30 +118,54 @@ export function ParticipantListTable({
 
   const visible = useMemo(() => {
     const filtered = rows.filter((row) => {
-      if (filter !== "ALL" && row.status !== filter) return false;
       if (query && !row.name.includes(query) && !(row.comment ?? "").includes(query)) return false;
+      // 削除済みは「すべて」の末尾と「削除済み」にだけ出す（出欠の絞り込みには混ぜない）。
+      if (filter === "DELETED") return row.deletedAt !== null;
+      if (filter !== "ALL") return row.deletedAt === null && row.status === filter;
       return true;
     });
-    // 参加要望どうしは待ち順で並べる。sort は安定なので他の状態の並びは変えない。
+    // 削除済みは常に最後へ寄せる。それ以外は参加要望どうしを待ち順で並べる（sort は安定）。
     return filtered.sort((left, right) => {
+      if (left.deletedAt !== null || right.deletedAt !== null) {
+        if (left.deletedAt === null) return -1;
+        if (right.deletedAt === null) return 1;
+        return 0;
+      }
       if (left.status !== "WAITLISTED" || right.status !== "WAITLISTED") return 0;
       return (left.waitlistPosition ?? 0) - (right.waitlistPosition ?? 0);
     });
   }, [filter, query, rows]);
 
-  const filters = [
+  /** 削除済みの件数。「すべて」の末尾に残る行の数と、札の数を同じにする。 */
+  const deletedCount = rows.filter((row) => row.deletedAt !== null).length;
+
+  const filters: [Filter, string][] = [
     ["ALL", `すべて ${rows.length}`],
     ["ATTENDING", `参加 ${attendingCount}`],
     ["WAITLISTED", `参加要望 ${waitlistedCount}`],
     ["DECLINED", `欠席 ${declinedCount}`],
-  ] as const;
+  ];
+  // 削除済みがあるときだけ札を出す。無いときは 0 件の札を並べない。
+  if (deletedCount > 0) filters.push(["DELETED", `削除済み ${deletedCount}`]);
+
+  /** CSV は集金や当日の受付に使う一覧なので、削除済みは出さない。 */
+  const csvRows = rows.filter((row) => row.deletedAt === null);
+
+  /** 1 枚を閉じる。追加の 1 枚と行の 1 枚は同時に開かない。 */
+  const closeSheet = () => {
+    setOpenRow(null);
+    setAdding(false);
+  };
+
+  /** 開いている 1 枚の行。追加のときは null（`ParticipantSheet` が追加として描く）。 */
+  const sheetRow = adding ? null : openRow;
 
   const saveRow = async (draft: ParticipantDraft) => {
     if (!onSave) return;
     setSaving(true);
     try {
       await onSave(draft);
-      setOpenRow(null);
+      closeSheet();
     } catch {
       // 失敗の案内は呼び出し元（Toast）が持つ。開いたまま直せるようにする。
     } finally {
@@ -145,9 +178,22 @@ export function ParticipantListTable({
     setSaving(true);
     try {
       await onDelete(id);
-      setOpenRow(null);
+      closeSheet();
     } catch {
       // 失敗の案内は呼び出し元（Toast）が持つ。
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreRow = async (id: string) => {
+    if (!onRestore) return;
+    setSaving(true);
+    try {
+      await onRestore(id);
+      closeSheet();
+    } catch {
+      // 失敗の案内（定員が埋まっているときの 409 など）は呼び出し元が持つ。
     } finally {
       setSaving(false);
     }
@@ -161,10 +207,13 @@ export function ParticipantListTable({
       <div className="table-card__head">
         <h2 className="table-card__title">回答 {rows.length}件</h2>
         <div className="panel__actions">
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => setAdding(true)}>
+            参加者を追加
+          </button>
           <button type="button" className="btn btn--outline btn--sm" onClick={() => setColumnPickerOpen(true)}>
             表示列
           </button>
-          <button type="button" className="btn btn--outline btn--sm" onClick={() => downloadCsv(rows)}>
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => downloadCsv(csvRows)}>
             CSVで書き出す
           </button>
         </div>
@@ -216,101 +265,123 @@ export function ParticipantListTable({
                 </td>
               </tr>
             )}
-            {visible.map((row) => (
-              <tr
-                key={row.id}
-                className={onSave ? "roster__row roster__row--open" : "roster__row"}
-                onClick={onSave ? () => setOpenRow(row) : undefined}
-              >
-                <td data-column="name" hidden={!showsColumn("name")}>
-                  {onSave ? (
-                    // 行そのものを押せるが、キーボードと読み上げにはこのボタンを使う。
-                    <button
-                      type="button"
-                      className="roster__open"
-                      aria-label={`${row.name} の出欠を変更`}
-                      onClick={() => setOpenRow(row)}
-                    >
-                      <span className="roster__name">{row.name}</span>
-                      {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
-                        <Badge tone="waitlist" small inline>
-                          待ち {row.waitlistPosition}番目
-                        </Badge>
-                      )}
-                    </button>
-                  ) : (
-                    <>
-                      <span className="roster__name">{row.name}</span>
-                      {row.status === "WAITLISTED" && row.waitlistPosition !== null && (
-                        <Badge tone="waitlist" small inline>
-                          待ち {row.waitlistPosition}番目
-                        </Badge>
-                      )}
-                    </>
-                  )}
-                </td>
-                <td className="roster__meta" data-column="gender" hidden={!showsColumn("gender")}>
-                  {row.gender ? GENDER_LABELS[row.gender] : "未設定"}
-                </td>
-                <td data-column="status" hidden={!showsColumn("status")}>
-                  <Badge tone={rsvpStatusTone(row.status)} small>
-                    {rsvpStatusLabel(row.status)}
-                  </Badge>
-                </td>
-                <td className="roster__meta" data-column="partySize" hidden={!showsColumn("partySize")}>
-                  {row.status === "ATTENDING" ? `${row.partySize}人` : "—"}
-                </td>
-                <td className="roster__meta" data-column="schedule" hidden={!showsColumn("schedule")}>
-                  {row.scheduleLabel || "—"}
-                </td>
-                <td className="roster__meta" data-column="pricePlan" hidden={!showsColumn("pricePlan")}>
-                  {row.pricePlanLabel || "—"}
-                  {row.status === "ATTENDING" && row.discounts.length > 0 && (
-                    <span className="roster__discounts">
-                      {row.discounts.map((discount, index) => (
-                        <span key={`${discount.name}-${index}`} className="roster__discount">
-                          {discount.label}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                  {row.status === "ATTENDING" &&
-                    row.payableAmount !== null &&
-                    (row.discountAmount > 0 || row.partySize > 1) && (
-                      <>
-                        {/* 集金は 1 人ずつ記録する。1 人ぶんを先に、人数ぶんの合計を次に出す。 */}
-                        {row.partySize > 1 && (
-                          <span className="roster__payable">
-                            1人 {yen(row.unitPayableAmount ?? row.payableAmount)}
-                          </span>
+            {visible.map((row) => {
+              const deleted = row.deletedAt !== null;
+              // 削除済みの行も押せる（削除済みモードの 1 枚が開き、名簿へ戻せる）。
+              const openable = Boolean(onSave || onRestore);
+              const rowClass = ["roster__row"];
+              if (openable) rowClass.push("roster__row--open");
+              if (deleted) rowClass.push("roster__row--deleted");
+              return (
+                <tr
+                  key={row.id}
+                  className={rowClass.join(" ")}
+                  onClick={openable ? () => setOpenRow(row) : undefined}
+                >
+                  <td data-column="name" hidden={!showsColumn("name")}>
+                    {openable ? (
+                      // 行そのものを押せるが、キーボードと読み上げにはこのボタンを使う。
+                      <button
+                        type="button"
+                        className="roster__open"
+                        aria-label={
+                          deleted ? `${row.name} の削除を取り消す` : `${row.name} の出欠を変更`
+                        }
+                        onClick={() => setOpenRow(row)}
+                      >
+                        <span className="roster__name">{row.name}</span>
+                        {!deleted && row.status === "WAITLISTED" && row.waitlistPosition !== null && (
+                          <Badge tone="waitlist" small inline>
+                            待ち {row.waitlistPosition}番目
+                          </Badge>
                         )}
-                        <span className="roster__payable">
-                          {row.partySize > 1
-                            ? `${row.partySize}人 合計 ${yen(row.payableAmount)}`
-                            : `支払額 ${yen(row.payableAmount)}`}
-                        </span>
+                      </button>
+                    ) : (
+                      <>
+                        <span className="roster__name">{row.name}</span>
+                        {!deleted && row.status === "WAITLISTED" && row.waitlistPosition !== null && (
+                          <Badge tone="waitlist" small inline>
+                            待ち {row.waitlistPosition}番目
+                          </Badge>
+                        )}
                       </>
                     )}
-                </td>
-                <td className="roster__meta" data-column="collected" hidden={!showsColumn("collected")}>
-                  {row.status === "ATTENDING" && row.collectedAt ? (
-                    <Badge tone="success" small>
-                      済
-                    </Badge>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="roster__meta" data-column="comment" hidden={!showsColumn("comment")}>
-                  {row.comment || "—"}
-                </td>
-                <td className="roster__meta" data-column="createdAt" hidden={!showsColumn("createdAt")}>
-                  {row.status === "WAITLISTED" && row.waitlistedAt
-                    ? `要望 ${formatDateTimeJa(row.waitlistedAt)}`
-                    : formatDateTimeJa(row.createdAt)}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="roster__meta" data-column="gender" hidden={!showsColumn("gender")}>
+                    {row.gender ? GENDER_LABELS[row.gender] : "未設定"}
+                  </td>
+                  <td data-column="status" hidden={!showsColumn("status")}>
+                    {deleted ? (
+                      <Badge tone="neutral" small>
+                        削除済み
+                      </Badge>
+                    ) : (
+                      <Badge tone={rsvpStatusTone(row.status)} small>
+                        {rsvpStatusLabel(row.status)}
+                      </Badge>
+                    )}
+                  </td>
+                  <td className="roster__meta" data-column="partySize" hidden={!showsColumn("partySize")}>
+                    {!deleted && row.status === "ATTENDING" ? `${row.partySize}人` : "—"}
+                  </td>
+                  <td className="roster__meta" data-column="schedule" hidden={!showsColumn("schedule")}>
+                    {row.scheduleLabel || "—"}
+                  </td>
+                  <td className="roster__meta" data-column="pricePlan" hidden={!showsColumn("pricePlan")}>
+                    {deleted ? (
+                      "—"
+                    ) : (
+                      <>
+                        {row.pricePlanLabel || "—"}
+                        {row.status === "ATTENDING" && row.discounts.length > 0 && (
+                          <span className="roster__discounts">
+                            {row.discounts.map((discount, index) => (
+                              <span key={`${discount.name}-${index}`} className="roster__discount">
+                                {discount.label}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                        {row.status === "ATTENDING" &&
+                          row.payableAmount !== null &&
+                          (row.discountAmount > 0 || row.partySize > 1) && (
+                            <>
+                              {/* 集金は 1 人ずつ記録する。1 人ぶんを先に、人数ぶんの合計を次に出す。 */}
+                              {row.partySize > 1 && (
+                                <span className="roster__payable">
+                                  1人 {yen(row.unitPayableAmount ?? row.payableAmount)}
+                                </span>
+                              )}
+                              <span className="roster__payable">
+                                {row.partySize > 1
+                                  ? `${row.partySize}人 合計 ${yen(row.payableAmount)}`
+                                  : `支払額 ${yen(row.payableAmount)}`}
+                              </span>
+                            </>
+                          )}
+                      </>
+                    )}
+                  </td>
+                  <td className="roster__meta" data-column="collected" hidden={!showsColumn("collected")}>
+                    {!deleted && row.status === "ATTENDING" && row.collectedAt ? (
+                      <Badge tone="success" small>
+                        済
+                      </Badge>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="roster__meta" data-column="comment" hidden={!showsColumn("comment")}>
+                    {row.comment || "—"}
+                  </td>
+                  <td className="roster__meta" data-column="createdAt" hidden={!showsColumn("createdAt")}>
+                    {row.status === "WAITLISTED" && row.waitlistedAt
+                      ? `要望 ${formatDateTimeJa(row.waitlistedAt)}`
+                      : formatDateTimeJa(row.createdAt)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -352,17 +423,21 @@ export function ParticipantListTable({
           </div>
         </Dialog>
       )}
-      {openRow && onSave && (
+      {(adding || sheetRow) && onSave && (
         <ParticipantSheet
-          key={openRow.id}
+          // 追加と行の編集で初期値を取り違えないよう、開くたびに作り直す。
+          key={sheetRow ? sheetRow.id : "participant-new"}
           eventId={eventId}
-          row={openRow}
+          row={sheetRow}
           schedules={schedules}
           pricePlans={pricePlans}
+          capacity={capacity}
+          attendingCount={attendingCount}
           busy={saving}
-          onClose={() => setOpenRow(null)}
+          onClose={closeSheet}
           onSave={saveRow}
           onDelete={onDelete ? deleteRow : undefined}
+          onRestore={onRestore ? restoreRow : undefined}
           onCollectedChange={onCollectionChange}
         />
       )}

@@ -1,7 +1,7 @@
 import { EVENT_STEPS, type EventStepKey } from "@/modules/events/lib/steps";
 
 /**
- * 新規イベント作成画面の初回ガイド（スポットライトツアー）の 8 枚。
+ * 新規イベント作成画面の初回ガイド（スポットライトツアー）の 9 枚。
  *
  * 文言と対象をここ 1 か所に置く。画面（`EventGuideTour`）は並べ方と測り方だけを持ち、
  * 文を直すときに TSX を触らなくて済むようにする。DOM には触れない。
@@ -11,6 +11,7 @@ import { EVENT_STEPS, type EventStepKey } from "@/modules/events/lib/steps";
 export type EventGuideKey =
   | "welcome"
   | "required"
+  | "summary"
   | "schedule"
   | "pricing"
   | "target"
@@ -95,18 +96,18 @@ export interface EventGuideStep {
 }
 
 /**
- * 8 枚の並び。
+ * 9 枚の並び。
  *
  * 1 枚目は入口の挨拶で、画面の見出し（`h1.page-title`）を指す。何の画面で、これから
  * 何が始まるかだけを伝え、アコーディオンは触らない（開いている「基本」はそのまま）。
  * 2 枚目で必須 3 ステップの見出しをまとめて指し、アコーディオンの開閉もここで伝える。
  * このときは全ステップを畳む。開いたままだと見出しのあいだが入力欄で埋まり、
  * 1 つの穴が画面の大半を覆ってしまう。3 つの見出しは 1 つずつ別の穴で囲む。
- * 3 枚目で全部を開き、以降はそのまま（`"all"`）で対象だけを移す。
+ * 3 枚目で全部を開き、概要の欄を指す。以降はそのまま（`"all"`）で対象だけを移す。
  * 「次へ」のたびに 1 つ開いて他を畳むと、押すたびに画面が組み替わって落ち着かない。
  * 開いたままだと縦に長くなるが、穴は 1 つに絞れるので、どこを見ているかは失われない。
  * 最後に画面下の帯（公開・保存）へ降りる。テーマとチラシは同じステップの別の欄なので、
- * 6・7 枚目は開いたまま対象だけを移す。
+ * 7・8 枚目は開いたまま対象だけを移す。
  */
 export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
   {
@@ -141,9 +142,20 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     final: false,
   },
   {
+    key: "summary",
+    targets: ['[data-guide-target="event-summary"]'],
+    // ここで全部開く。以降の枚も開いたまま（`"all"`）。
+    openStep: "all",
+    copy: {
+      title: "概要は公開ページの冒頭に出ます",
+      body: "200文字まで。空のままでも進めます。",
+    },
+    final: false,
+  },
+  {
     key: "schedule",
     targets: ['[data-guide-target="add-schedule"]'],
-    // ここで全部開く。以降の枚も開いたまま（`"all"`）。
+    // 前の枚で全部開いた。ここも開いたまま対象だけを移す。
     openStep: "all",
     copy: {
       title: "開催日はこのボタンで、複数設定できます",

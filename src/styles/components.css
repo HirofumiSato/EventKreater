@@ -2333,6 +2333,13 @@ fieldset.field {
   font-weight: 700;
 }
 
+/* 名簿の見出しに置く「参加者を追加」。表示列・CSV と横に並べたいので、
+   `.panel__actions > .btn--primary` のスマホ既定（幅いっぱい）を打ち消す。
+   入りきらない幅では `.table-card__head` の `flex-wrap` が折り返す。 */
+.table-card__head .panel__actions > .btn--primary {
+  flex: 0 0 auto;
+}
+
 .table-card__search {
   padding: 0.75rem 1.25rem;
 }

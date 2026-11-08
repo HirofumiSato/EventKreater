@@ -21,6 +21,7 @@ import { resolveOptionalUserId } from "@/modules/auth/lib/guards";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
 import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { chooseRsvpTarget, findMyParticipant, participantScheduleIds } from "@/modules/participants/lib/rsvp";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 import { notifyRsvpSubmitted } from "@/modules/notifications/lib/notify";
 
 export const runtime = "nodejs";
@@ -247,7 +248,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistRows = await prisma.participant.findMany({
-      where: { eventId: event.id, status: "WAITLISTED" },
+      // 名簿から外した要望は待ち順に数えない。
+      where: { eventId: event.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
       select: { id: true, status: true, waitlistedAt: true, createdAt: true },
     });
     const response = NextResponse.json(
@@ -321,7 +323,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 
     const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistCount = await prisma.participant.count({
-      where: { eventId: event.id, status: "WAITLISTED" },
+      where: { eventId: event.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
     });
     const response = NextResponse.json({ success: true, myRsvp: null, attendingCount, waitlistCount });
     clearCookie(response, req, cookieName);

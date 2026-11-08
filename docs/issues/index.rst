@@ -27,3 +27,4 @@
    venue-suggestions
    free-ticket-and-referral
    abuse-and-crawler-hardening
+   manual-participant-adding

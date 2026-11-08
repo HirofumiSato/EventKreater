@@ -942,6 +942,9 @@ model Participant {
   /// 領収書の画面を外した代わりに、幹事が名簿で 1 タップして記録する。
   /// 事前決済を入れるときは、決済の成功でここを埋めれば同じ集計が使える。
   collectedAt   DateTime?      @map("collected_at") @db.Timestamptz
+  /// 名簿から外した日時。NULL は有効。
+  /// 幹事が名簿から削除しても行は残し、名簿の末尾に薄く出す（元に戻せる）。
+  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -956,6 +959,7 @@ model Participant {
 
   @@unique([eventId, userId])
   @@index([eventId, status])
+  @@index([eventId, deletedAt])
   @@index([eventId, status, waitlistedAt])
   @@index([userId, updatedAt])
   @@index([scheduleId])

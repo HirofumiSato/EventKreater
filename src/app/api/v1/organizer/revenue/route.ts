@@ -7,6 +7,7 @@ import { toErrorResponse } from "@/lib/http";
 import { formatEventDate, parseEventDate } from "@/lib/serializers";
 import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
 import { allocateRevenue } from "@/modules/revenue/lib/allocation";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,6 +81,8 @@ export async function GET(req: NextRequest) {
               select: { organizerId: true, shareBps: true, headcount: true },
             },
             participants: {
+              // 売上は名簿に残っている行だけで数える。削除済みの集金は戻しても数えない。
+              where: { ...ACTIVE_PARTICIPANT_WHERE },
               select: {
                 status: true,
                 priceAmount: true,

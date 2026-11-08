@@ -6,6 +6,7 @@ import {
   participationInclude,
   serializeCalendarEntries,
 } from "@/modules/participants/lib/participations";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId(req);
     const rows = await prisma.participant.findMany({
-      where: { userId, event: { isDeleted: false } },
+      where: { userId, event: { isDeleted: false }, ...ACTIVE_PARTICIPANT_WHERE },
       include: participationInclude,
       orderBy: [{ event: { sortDate: "asc" } }, { updatedAt: "desc" }],
     });

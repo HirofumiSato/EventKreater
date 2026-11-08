@@ -60,7 +60,10 @@ flowchart TD
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催者（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
-| `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。未登録の幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]/participants` | GET | SCR-ORG-06 | 幹事（会員のみ） | 参加者一覧・出欠ステータス・コメント詳細閲覧。売上サマリも返す。削除済みも含めて返し、未削除（`createdAt` 昇順）→ 削除済み（`deletedAt` 降順）の順に並べる。未登録の幹事は 403 `REGISTER_REQUIRED`（5.4.2） |
+| `/api/v1/organizer/events/[id]/participants` | POST | SCR-ORG-06 | 幹事（会員のみ） | 参加者を名簿へ手動で追加する。受付状態と申し込み期限は見ず、端末 Cookie も通知も出さない。出席が定員を超えるときは 409 `CAPACITY_REACHED`（5.4.1） |
+| `/api/v1/organizer/events/[id]/participants/[participantId]` | DELETE | SCR-ORG-06 | 幹事（会員のみ） | 名簿から外す（論理削除）。行は残して名簿の末尾に出す。`userId` を `NULL` にし、`rsvpTokenHash` を差し替える（5.4.2） |
+| `/api/v1/organizer/events/[id]/participants/[participantId]/restore` | POST | SCR-ORG-06 | 幹事（会員のみ） | 削除済みの参加者を名簿へ戻す。出席は定員を数え直し、埋まっていれば 409 `CAPACITY_REACHED`。`userId` は戻さない（5.4.2） |
 | `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・集金済み・未集金・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催者（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
@@ -551,6 +554,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 | 対象 | ルート |
 | :--- | :--- |
 | 参加者名簿 | `GET /api/v1/organizer/events/[id]/participants` |
+| 参加者の追加・復元 | `POST /api/v1/organizer/events/[id]/participants`、`POST /api/v1/organizer/events/[id]/participants/[participantId]/restore` |
 | 出欠の変更・削除 | `PATCH` / `DELETE /api/v1/organizer/events/[id]/participants/[participantId]` |
 | 集金の記録 | `PUT /api/v1/organizer/events/[id]/participants/[participantId]/collection` |
 | 売上の内訳 | `GET /api/v1/organizer/events/[id]/revenue` |
@@ -960,6 +964,28 @@ export const SubmitRsvpSchema = z.object({
 
 ---
 
+### 5.4.1. POST `/api/v1/organizer/events/[id]/participants`（参加者の追加）
+
+幹事が名簿へ参加者を直接足す。電話や口頭で受けた予約、当日の飛び込みを後から名簿へ入れるための入口で、参加者側の申込（5.3）とは資源を分ける。
+
+- **認可:** `assertRegisteredOrganizer`。未登録のゲスト幹事は 403 `REGISTER_REQUIRED`（名簿・集金と同じ扱い）。
+- **リクエスト:** 出欠の変更（`PATCH .../participants/[participantId]`）と同じ `OrganizerParticipantSchema`。`name` は必須（1〜50 文字）、`status` は `ATTENDING` / `DECLINED` / `WAITLISTED`。`gender`・`comment`・`partySize`・`scheduleId` / `scheduleIds`・`pricePlanId`・`discountIds` は任意で、出席のときは日時と料金プランが要る（`refineAttendanceChoice`）。`discountIds` を省略した行は割引を持たない。
+- **受付状態を見ない:** `event.status` と `rsvpDeadline` は判定に使わない。受付停止中（`CLOSED`）でも申し込み期限後でも追加できる。5.3 の 403 は参加者側の申込だけに掛かる。削除済みの催しは 404。
+- **定員:** 出席を足すときは、`lockEventForCapacity` でイベント行をロックしてから `assertCapacityAllows` を通す。席が足りなければ 409 `CAPACITY_REACHED` を返し、行は作らない（名簿の承認と同じ）。参加要望は席を取らないので、満員でも 201 で受け付け、待ち順の末尾に入る。
+- **Cookie と通知:** 端末の `rsvp_token_<id>` は発行しない。`rsvpTokenHash` には照合に使わない使い捨ての乱数（SHA-256）だけを入れ、`userId` は `NULL` にする。参加表明の通知（`notifyRsvpSubmitted`）は送らない。幹事自身の操作なので知らせる相手がいないため。
+- **応答:** 201。本文は `{ participant }` で、名簿の行（5.4.2）と同じ形。追加した行は名簿の末尾（未削除の最後）に並ぶ。
+- **400:** 出欠の変更と同じ（出席で日時か料金プランが無い、`discountIds` がイベントに属さない等）。**404:** イベントが無い・削除済み。
+
+### 5.4.2. DELETE `/api/v1/organizer/events/[id]/participants/[participantId]`（名簿からの論理削除）と復元
+
+**名簿の応答（GET）。** 削除済みも含めて引き、未削除を作成順（`createdAt` 昇順）、削除済みを削除した新しい順（`deletedAt` 降順）に並べて返す。各行は `deletedAt`（ISO 8601 の文字列か `null`）を持ち、`stats` は未削除の行だけで数えて `deletedCount` を足す。`stats.attendingCount` / `declinedCount` / `waitlistedCount` / `totalResponses`、`revenue`、`waitlistPosition` は削除済みを含めない。絞り込みの札「削除済み N」は `stats.deletedCount` を使う。
+
+**DELETE（論理削除）。** 認可は `assertRegisteredOrganizer`。行は消さず、`deleted_at` に現在時刻を入れ、あわせて `user_id` を `NULL`、`rsvp_token_hash` を新しい乱数へ差し替える。`(event_id, user_id)` の一意制約と端末照合から外すためで、同じ人がもう一度申し込むと新しい行として名簿に戻る。応答は 200 `{ "success": true, "participant": { "id": "...", "deletedAt": "..." } }`。既に削除済みの行をもう一度消したときは 404 にせず、同じ `deletedAt` を 200 で返す（二重押しで失敗させない）。**404:** イベントか参加者が無い。
+
+**POST `.../participants/[participantId]/restore`（復元）。** 認可は `assertRegisteredOrganizer`。削除済みでなければ 409「この参加者は削除されていません。」。`ATTENDING` の行を戻すときは `lockEventForCapacity` → `assertCapacityAllows` を通し、埋まっていれば 409 `CAPACITY_REACHED`。`deleted_at` を `NULL` に戻すだけで、削除のときに切った `userId` は戻さない（会員との紐づけは切ったままにする）。応答は 200 `{ "success": true, "participant": { "id": "...", "deletedAt": null } }`。**404:** イベントか参加者が無い。
+
+**削除済みの行。** `PATCH .../participants/[participantId]` と `PUT .../collection` は、削除済みの行を 404 にする（`deletedAt: null` を条件に加える）。削除済みは参加人数・売上・集金・待ち順・公開ページの件数・会員の参加履歴に入れず、名簿の最下部に灰色で残すだけである。CSV にも出さない（集金と当日の受付に使う一覧のため）。参加者自身の取り消し（公開 API の `DELETE /api/v1/public/events/[id]/rsvp`）は今までどおり行を消し、幹事の削除だけが論理削除である。
+
 ### 5.5. PUT `/api/v1/organizer/events/[id]/participants/[participantId]/collection`（集金の記録）
 
 出席者から参加費を受け取ったかどうかを、1 人ずつ記録する。`participants.collected_at` に日時を入れ、戻すときは `NULL` にする。金額は受け取らない。集計は見込みと同じ支払額（`payableAmount`）を使い、金額の二重管理を作らない。
@@ -984,7 +1010,7 @@ export const SubmitRsvpSchema = z.object({
 
 **400:** 出席（`ATTENDING`）以外。参加要望には「参加要望中の参加者には集金を記録できません。先に参加を承認してください。」、欠席には「欠席の参加者には集金を記録できません。」を返す。**404:** 参加者かイベントが無い（削除済みを含む）。
 
-出欠・割引・人数は送らない。`PATCH /api/v1/organizer/events/[id]/participants/[participantId]` は出欠・割引・人数を丸ごと書き直すため、集金の 1 タップで参加者の選択を触らせないよう資源を分ける。
+出欠・割引・人数は送らない。`PATCH /api/v1/organizer/events/[id]/participants/[participantId]` は出欠・割引・人数を丸ごと書き直すため、集金の 1 タップで参加者の選択を触らせないよう資源を分ける。削除済みの行（`deleted_at` が入った行）は 404 にし、名簿に戻してから記録する（5.4.2）。
 
 ### 5.6. POST `/api/v1/organizer/events/[id]/lock`（排他ロック取得・延長・引き継ぎ）
 
@@ -1540,7 +1566,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 }
 ```
 
-`kind` は `RSVP_ATTENDING`、`RSVP_WAITLISTED`、`REFERRAL_GRANTED`、`COHOST_JOINED`、`COHOST_REMOVED` のいずれか。`participantId` は出欠行が消えると `null` になる（文面に誰の表明かは残る。共同主催・幹事の通知では常に `null`）。`href` は種別で分かれ、出欠は名簿（`/organizer/events/<eventId>/participants`）、紹介はマイページ（`/mypage`）、共同主催・幹事の受諾は編集画面（`/organizer/events/<eventId>/edit`）、解除は主催一覧（`/organizer/events`）。どれもサーバーが組み立てる。
+`kind` は `RSVP_ATTENDING`、`RSVP_WAITLISTED`、`REFERRAL_GRANTED`、`COHOST_JOINED`、`COHOST_REMOVED` のいずれか。`participantId` は、幹事が名簿から削除しても行が残るため `null` にならない。参加者自身の取り消しなどで行そのものが消えたときだけ `null` になる（文面に誰の表明かは残る。共同主催・幹事の通知では常に `null`）。`href` は種別で分かれ、出欠は名簿（`/organizer/events/<eventId>/participants`）、紹介はマイページ（`/mypage`）、共同主催・幹事の受諾は編集画面（`/organizer/events/<eventId>/edit`）、解除は主催一覧（`/organizer/events`）。どれもサーバーが組み立てる。
 
 紹介の通知は催しを持たないため、`eventId` は `null` になる。
 

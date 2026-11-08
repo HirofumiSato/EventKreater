@@ -23,6 +23,7 @@ import type { CreateEventInput, UpdateEventInput } from "@/lib/schemas";
 import { isEligibleReferrer } from "@/modules/events/lib/referrer";
 import { attributeFlyerLogsToEvent } from "@/modules/flyers/lib/quota";
 import { partySizeOf } from "@/modules/revenue/lib/revenue";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 
@@ -704,6 +705,8 @@ export async function sumAttendingHeadcount(
     where: {
       eventId,
       status: "ATTENDING",
+      // 名簿から外した行は席を取っていない。定員・公開ページ・一覧の人数から外す。
+      ...ACTIVE_PARTICIPANT_WHERE,
       ...(ignoreParticipantId ? { id: { not: ignoreParticipantId } } : {}),
     },
     _sum: { partySize: true },

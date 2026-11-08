@@ -12,6 +12,7 @@ import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { rsvpStatusLabel } from "@/modules/events/lib/rsvp-status";
 import { payableAmount } from "@/modules/revenue/lib/revenue";
 import type { ParticipantCalendarEntry } from "@/modules/participants/types";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export type ParticipationScope = "all" | "upcoming" | "past";
 
@@ -49,6 +50,8 @@ export function participationWhere(
   return {
     userId,
     event: { isDeleted: false },
+    // 幹事が名簿から外した行は参加履歴に出さない。
+    ...ACTIVE_PARTICIPANT_WHERE,
     ...(query.status ? { status: query.status } : {}),
     ...scopeFilter(query.scope, today),
   };
