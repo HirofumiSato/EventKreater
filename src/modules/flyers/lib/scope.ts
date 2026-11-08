@@ -4,18 +4,20 @@ import { resolveAuthContext } from "@/modules/auth/lib/guards";
 import type { FlyerQuotaScope } from "@/modules/flyers/lib/quota";
 
 /**
- * 回数を数える単位を決める。
+ * 枚数を数える単位を決める。
  *
  * 保存済みイベントの枠は共同主催者で共有するため、`eventId` を送る場合は
  * そのイベントの幹事（会員・ゲストのどちらも）であることを確かめる。
- * 他人のイベント ID を指定して枠を消費させたり、残り回数を覗いたりできない。
+ * 他人のイベント ID を指定して枠を消費させたり、残り枚数を覗いたりできない。
+ *
+ * 保存前は `eventId: null` を返し、会員・端末はリクエストの cookie から決める。
+ * クライアントが指定できる値ではないので、下書きを作り直しても枚数は戻らない。
  */
 export async function resolveFlyerQuotaScope(
   req: NextRequest,
-  draftKey: string,
   eventId: string | null | undefined,
 ): Promise<FlyerQuotaScope> {
-  if (!eventId) return { draftKey, eventId: null };
+  if (!eventId) return { eventId: null };
   const ctx = await resolveAuthContext(req, eventId);
   if (!ctx.role) {
     throw new ProblemDetailException({
@@ -24,5 +26,5 @@ export async function resolveFlyerQuotaScope(
       detail: "このイベントの幹事権限がありません。",
     });
   }
-  return { draftKey, eventId };
+  return { eventId };
 }

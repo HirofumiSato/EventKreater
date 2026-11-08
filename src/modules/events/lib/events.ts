@@ -21,7 +21,7 @@ import {
 } from "@/lib/serializers";
 import type { CreateEventInput, UpdateEventInput } from "@/lib/schemas";
 import { isEligibleReferrer } from "@/modules/events/lib/referrer";
-import { attributeFlyerLogsToEvent } from "@/modules/flyers/lib/quota";
+import { attributePendingFlyerLogs } from "@/modules/flyers/lib/quota";
 import { partySizeOf } from "@/modules/revenue/lib/revenue";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
@@ -489,10 +489,9 @@ export async function createEventForUser(userId: string, input: CreateEventInput
           role: "OWNER",
         },
       });
-      // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。
-      if (input.flyerDraftKey) {
-        await attributeFlyerLogsToEvent(input.flyerDraftKey, event.id, tx);
-      }
+      // 作成中に作った AI 背景を、保存したイベントの枠へ引き継ぐ。
+      // これがないと、保存直後の編集で 3 枚を最初から使えてしまう。
+      await attributePendingFlyerLogs(userId, event.id, tx);
       // 作成したイベントだけを返す。未登録の幹事トークンは発行しない（応答では常に null）。
       return { event, referralGrant };
     });
@@ -640,7 +639,6 @@ export async function publishDraftEvent(
 export async function saveEventDraft(
   eventId: string,
   input: UpdateEventInput,
-  flyerDraftKey?: string | null,
 ) {
   return prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<Array<{ status: string }>>`
@@ -666,15 +664,13 @@ export async function saveEventDraft(
     }
 
     await syncEventOptions(tx, eventId, input);
+    // 生成履歴の付け替えは、イベントを作った `createEventForUser` で済んでいる。
+    // 下書きの保存では動かさない（別のイベントの履歴を巻き込まないため）。
     const event = await tx.event.update({
       where: { id: eventId },
       data: eventUpdateData(input),
       include: { flyerAsset: true, ...eventOptionsInclude },
     });
-    // 作成中に作ったチラシの回数を、公開後のイベントの枠へ引き継ぐ。
-    if (flyerDraftKey) {
-      await attributeFlyerLogsToEvent(flyerDraftKey, eventId, tx);
-    }
     return event;
   });
 }

@@ -34,8 +34,8 @@ const STEP_LOADING: Record<FlyerWizardStep, { label: string; note: string }> = {
 };
 
 const STEP_HINTS: Record<FlyerWizardStep, string> = {
-  1: "背景を選んでください。題と場所から、何が起きるイベントか、どの場かを残して絵柄を決めます。題の語は落としません。人が出るときは後ろ姿や横顔で、顔は描きません。対象世代は居る人の年代の手がかりで、空でも題が人を含めば出ます。1枚ずつ作り、気に入らなければ作り直せます。",
-  2: "同じ写真の上で、書体と余白の取り方を比べます。紙も差し色も 3 枚で同じです。選んだ内容でチラシを保存します。",
+  1: "背景を選んでください。題と場所から、何が起きるイベントか、どの場かを残して絵柄を決めます。題の語は落としません。人が出るときは後ろ姿や横顔で、顔は描きません。対象世代は居る人の年代の手がかりで、空でも題が人を含めば出ます。1枚ずつ作り、作り直すたびに 1 回消費します。",
+  2: "同じ写真の上で、書体と余白の取り方を比べます。選び直しは消費しません。選んだ内容でチラシを保存します。",
 };
 
 /**
@@ -56,7 +56,6 @@ const EMPTY_SELECTION: Record<FlyerWizardStep, FlyerCandidate | null> = {
 
 interface FlyerCandidateModalProps {
   open: boolean;
-  draftKey: string;
   /** 保存済みイベントの ID。共同主催者と回数枠を共有する。 */
   eventId?: string | null;
   base: FlyerFormPayload;
@@ -74,7 +73,6 @@ interface CandidateResponse {
 
 export function FlyerCandidateModal({
   open,
-  draftKey,
   eventId = null,
   base,
   onClose,
@@ -133,7 +131,6 @@ export function FlyerCandidateModal({
           url = "/api/v1/flyers/candidates";
           body = {
             ...base,
-            draftKey,
             eventId,
             // この段の書体は仮。次の段で同じ背景の上に 3 種を焼き直す。
             templateId: FLYER_TEMPLATE_IDS[0],
@@ -176,7 +173,7 @@ export function FlyerCandidateModal({
         setLoadingStep(null);
       }
     },
-    [base, draftKey, eventId, onQuotaChange],
+    [base, eventId, onQuotaChange],
   );
 
   /** 自分の写真を 1 枚だけ背景候補にする。成功したらその 1 枚を選択状態にする。 */
@@ -190,7 +187,6 @@ export function FlyerCandidateModal({
 
     const form = new FormData();
     form.append("file", file);
-    form.append("draftKey", draftKey);
     if (eventId) form.append("eventId", eventId);
     form.append("title", base.title);
     form.append("eventDate", base.eventDate);
@@ -314,9 +310,10 @@ export function FlyerCandidateModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...base,
-          draftKey,
           eventId,
           candidateId: chosen.candidateId,
+          // 選んだ背景の候補。保存時に生成ログと結び付け、二重保存を防ぐ。
+          backgroundCandidateId: selected[1]?.candidateId ?? null,
           templateId: chosen.templateId,
           layoutId: chosen.layoutId,
           paletteId: chosen.paletteId,
@@ -359,6 +356,8 @@ export function FlyerCandidateModal({
   const backgroundFromAi = backgroundCandidate?.source === "ai";
   const aiRemaining = backgroundCandidate?.aiRemaining ?? null;
   const aiExhausted = aiRemaining === 0;
+  // アプリ側の回数枠（イベント・会員・端末）を使い切ったか。作り直しを止める。
+  const quotaExhausted = quota !== null && quota.remaining <= 0;
 
   if (!open) return null;
 
@@ -544,7 +543,7 @@ export function FlyerCandidateModal({
               <button
                 type="button"
                 className="btn btn--ghost btn--sm"
-                disabled={busy || aiExhausted}
+                disabled={busy || aiExhausted || quotaExhausted}
                 onClick={() => void load(1, selected)}
               >
                 別の背景を作る
@@ -553,6 +552,8 @@ export function FlyerCandidateModal({
                 <span className="candidate-retry__note">
                   AIで作れるのは1時間に3枚までです。しばらく待つと回復します。
                 </span>
+              ) : quotaExhausted ? (
+                <span className="candidate-retry__note">作成回数を使い切りました。</span>
               ) : (
                 backgroundFromAi &&
                 aiRemaining !== null && (
@@ -573,7 +574,7 @@ export function FlyerCandidateModal({
           )}
           {registerRequired && (
             <Alert tone="warning">
-              未ログインで作れるチラシは 1 回までです。
+              背景の作成は会員登録後です。
               <a href="/auth/register?mode=register">会員登録して続ける</a>
             </Alert>
           )}

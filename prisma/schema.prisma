@@ -637,14 +637,18 @@ model FlyerAsset {
   @@map("flyer_assets")
 }
 
-/// チラシ生成 1 回分の記録。回数制限と監査に使う。
+/// チラシ生成 1 枚分の記録。回数制限と監査に使う。
 /// 候補画像そのものは保存しない（使い捨てのため、サービス側の TTL で消える）。
 model FlyerGenerationLog {
   id             String   @id @default(uuid()) @db.Uuid
-  /// フォーム 1 つ分の識別子。ブラウザが localStorage に保持する。
-  draftKey       String   @map("draft_key") @db.Uuid
+  /// 旧仕様（ブラウザの下書き ID）。新規行は NULL で、履歴としてだけ残す。
+  draftKey       String?  @map("draft_key") @db.Uuid
+  /// 生成した候補の ID。保存時に `flyer_asset_id` を結び、同じ候補の二重保存を防ぐ。
+  candidateId    String?  @map("candidate_id") @db.VarChar(64)
+  /// 背景の供給元（`ai` / `placeholder` / `upload`）。`ai` の行だけが 1 枚 1 回。
+  source         String   @default("ai") @map("source") @db.VarChar(16)
   /// 回数を数えるイベント。共同主催者が共有する単位。
-  /// 公開前の新規作成では NULL で、公開時にこの列へ付け替える。
+  /// イベントを保存する前は NULL で、保存した時点でこの列へ付け替える。
   eventId        String?  @map("event_id") @db.Uuid
   userId         String?  @map("user_id") @db.Uuid
   ownerTokenHash String?  @map("owner_token_hash") @db.VarChar(64)
@@ -657,6 +661,7 @@ model FlyerGenerationLog {
   event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   @@index([draftKey, createdAt])
+  @@index([candidateId])
   @@index([eventId, createdAt])
   @@index([ownerTokenHash, createdAt])
   @@index([userId, createdAt])

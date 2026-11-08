@@ -196,9 +196,10 @@ export const GenerateFlyerSchema = z.object({
     .optional(),
 });
 
-/** ウィザードのステップ 1・2。下書き ID はブラウザが localStorage に持つ。 */
+/**
+ * ウィザードのステップ 1・2。回数は会員・端末に結び付くので、クライアントは指定しない。
+ */
 export const ProposeCandidatesSchema = GenerateFlyerSchema.extend({
-  draftKey: z.string().uuid("下書きIDが不正です"),
   /** 保存済みイベントを編集しているときの対象。新規作成では省略する。 */
   eventId: z.string().uuid("イベントIDが不正です").nullish(),
   count: z.number().int().min(1).max(16).optional(),
@@ -206,18 +207,18 @@ export const ProposeCandidatesSchema = GenerateFlyerSchema.extend({
 
 /** ウィザードのステップ 2（自分の写真）。multipart のフォーム項目を検証する。 */
 export const UploadFlyerBackgroundSchema = GenerateFlyerSchema.extend({
-  draftKey: z.string().uuid("下書きIDが不正です"),
   eventId: z.string().uuid("イベントIDが不正です").nullish(),
 });
 
 /**
  * ウィザードの確定。選んだ候補と、記録用の配置・配色を受け取る。
  * 画面は配置を選ばないので `layoutId` は常に `classic`、`paletteId` は候補の値。
+ * `backgroundCandidateId` は選んだ背景の候補で、生成履歴にチラシを結ぶために使う。
  */
 export const SelectFlyerCandidateSchema = GenerateFlyerSchema.extend({
-  draftKey: z.string().uuid("下書きIDが不正です"),
   eventId: z.string().uuid("イベントIDが不正です").nullish(),
   candidateId: z.string().uuid("候補IDが不正です"),
+  backgroundCandidateId: z.string().uuid("背景の候補IDが不正です").nullish(),
   paletteId: z.string().trim().min(1).max(32),
 });
 
@@ -350,11 +351,6 @@ export const CreateEventSchema = eventBodySchema
   .extend({
     /** 告知ページの勧誘から来たときの参照元。存在しない・削除済みなら保存時に捨てる。 */
     referrerEventId: z.string().uuid().nullish(),
-    /**
-     * 作成中に使ったチラシ回数の下書き ID。公開時にイベントへ付け替え、
-     * 共同主催者を含めた 3 回の枠に引き継ぐ。保存はしない。
-     */
-    flyerDraftKey: z.string().uuid().nullish(),
     /** 未登録の幹事が公開ページに出す名前。会員のときは無視する。 */
     organizerDisplayName: z
       .string()
@@ -381,13 +377,9 @@ export const UpdateEventSchema = eventBodySchema
 /**
  * 作成画面からの下書き保存。
  * 下書きの時点では定員・申し込み期限・チラシが空でもよい（`eventBodySchema` が元から任意）。
- * 作成中に使ったチラシ回数を引き継ぐ `flyerDraftKey` は保存しない。
+ * 旧クライアントが送る `flyerDraftKey` は、zod が未定義キーとして捨てる。
  */
-export const SaveEventDraftSchema = UpdateEventSchema.and(
-  z.object({
-    flyerDraftKey: z.string().uuid().nullish(),
-  }),
-);
+export const SaveEventDraftSchema = UpdateEventSchema;
 
 export const OrganizerParticipantSchema = z
   .object({

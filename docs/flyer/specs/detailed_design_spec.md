@@ -308,7 +308,7 @@ static/candidates/
 
 *   **TTL:** `candidate_ttl_seconds`（既定 3600 秒）。画像・背景・メタのいずれかが古ければ 3 つまとめて消す。
 *   **確定:** `POST /api/v1/flyers/generate` に `candidate_id` を渡す。完成 JPEG をそのまま一時保存へ複写するだけで、再描画しない。選んだタイルと保存結果がバイト単位で一致する。
-*   **課金・回数:** ステップ 2 と写真の取り込みは消費しない。ステップ 1 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、テーマ色の紙面（`source` は `placeholder`）で 200 を返す。確定時の回数は従来どおり Next.js の BFF が `flyer_generation_logs` で数える。
+*   **課金・回数:** ステップ 2 と写真の取り込みは消費しない。ステップ 1 の背景候補だけは、AI が有効なときに画像生成 API を呼ぶため、`AiGenerationQuotaPort` が 1 端末・1 時間あたり `ai_candidate_max_per_hour`（既定 3 枚）で数える。上限に達したときと生成に失敗したときは、テーマ色の紙面（`source` は `placeholder`）で 200 を返す。確定時の回数は消費しない。BFF が背景候補を返した時点で `flyer_generation_logs` に `source = 'ai'` の行を残して 1 枚消費する。
 *   **自分の写真:** `POST /api/v1/backgrounds` が `CandidateKind.BACKGROUND` の候補を 1 件作る。`ImageUploadPort` が JPEG / PNG / WebP の 8 MiB までを受け入れ、`Image.MAX_IMAGE_PIXELS` を 40,000,000 に固定してデコード爆弾を防ぐ。EXIF は向きだけ反映し、PNG へ書き直すときに落とす。背景は 1080×1528（A4 縦）の中央クロップで、`CandidateMeta.source` は `upload` になる。SVG・GIF・アニメーションは 422 `INVALID_IMAGE`、上限超過は 413 `UPLOAD_TOO_LARGE`。
 *   **所有者:** `CandidateMeta.owner_token_hash` に BFF の端末トークンの SHA-256 を残す。画像取得・紙面の性格・確定では `X-Flyer-Owner` と照合し、違えば 404 `CANDIDATE_EXPIRED` にする。所有者を持たないデプロイ前の候補は、TTL が切れるまで従来どおり読める。
 
@@ -377,7 +377,7 @@ facts → note）、文字の目盛り、群の中の間隔は 4 つで共通に
 | 例外クラス | 発生契機 | HTTP Status | エラーコード | システム側アクション | クライアント向け通知文言 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `RequestValidationError` | 入力文字数超過、型不一致 | `422` | `INVALID_INPUT` | エラーフィールドをログ出力 | 入力内容を確認してください（文字数超過など） |
-| `RateLimitExceeded` | ~~同一IPから短時間の連続リクエスト~~ **廃止** | ~~`429`~~ | ~~`RATE_LIMIT`~~ | 回数制限は BFF がイベント単位（公開前は下書き）で持つ | — |
+| `RateLimitExceeded` | ~~同一IPから短時間の連続リクエスト~~ **廃止** | ~~`429`~~ | ~~`RATE_LIMIT`~~ | 回数制限は BFF が AI 背景の候補を作った時点で持つ（保存済みイベントはイベント、公開前は会員・端末） | — |
 | `CandidateNotFoundError` | 候補が無い、TTL 切れ、または所有者の不一致 | `404` | `CANDIDATE_EXPIRED` | 候補ファイルと所有者の照合 | 候補の有効期限が切れました。選び直してください。 |
 | `ImageUploadError` | 未対応形式、破損、アニメーション画像 | `422` | `INVALID_IMAGE` | 形式と画素数の確認 | 画像を読み込めませんでした。JPEG / PNG / WebP の画像を選んでください。 |
 | `ImageTooLargeError` | アップロード画像が 8 MiB 超 | `413` | `UPLOAD_TOO_LARGE` | 受信バイト数の確認 | 画像は8MB以下にしてください。 |

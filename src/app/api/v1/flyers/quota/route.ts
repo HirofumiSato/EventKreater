@@ -12,14 +12,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(req: NextRequest) {
   try {
-    const draftKey = req.nextUrl.searchParams.get("draftKey") ?? "";
-    if (!UUID.test(draftKey)) {
-      throw new ProblemDetailException({
-        status: 400,
-        title: "Validation Error",
-        detail: "下書きIDが不正です。",
-      });
-    }
+    // 旧クライアントが送る `draftKey` は読まない。数える単位はサーバーが所有者から決める。
     const rawEventId = req.nextUrl.searchParams.get("eventId");
     if (rawEventId !== null && rawEventId !== "" && !UUID.test(rawEventId)) {
       throw new ProblemDetailException({
@@ -29,7 +22,7 @@ export async function GET(req: NextRequest) {
       });
     }
     const owner = await resolveFlyerOwner(req);
-    const scope = await resolveFlyerQuotaScope(req, draftKey, rawEventId || null);
+    const scope = await resolveFlyerQuotaScope(req, rawEventId || null);
     const quota = await readFlyerQuota(scope, owner);
     const response = NextResponse.json({ quota });
     if (owner.issueCookie) writeFlyerOwnerCookie(response, req, owner.rawToken);

@@ -147,7 +147,7 @@
 
 .. count-start
 
-140 ファイル、``it`` は 2138 件です。内訳は ``tests/unit/`` が 98 ファイル 1788 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+141 ファイル、``it`` は 2156 件です。内訳は ``tests/unit/`` が 99 ファイル 1803 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -184,7 +184,7 @@
      - ``REGISTER_REQUIRED`` の判定、文言の優先順、イベント ID の UUID 判定
      - 403 の共通処理
    * - ``tests/unit/flyer-quota.test.ts``
-     - 14
+     - 21
      - 背景を作る回数の判定。数える単位（イベント・会員・端末に結び付け、``source='ai'`` だけを数える）、上限と未ログインの案内、候補の記録（AI は消費・``placeholder`` は記録のみ）、保存したチラシとの結び付け（二重保存は 409）、保存時のイベントへの付け替え、残り枚数の文言
      - SCR-ORG-08
    * - ``tests/unit/subscription-plans.test.ts``
@@ -400,8 +400,12 @@
      - サービスへ渡す値。日付は紙面に焼ける日本語（年と曜日）へ直し、雨の扱いは表示用の札にする
      - SCR-ORG-08
    * - ``tests/unit/flyer-scope.test.ts``
-     - 3
+     - 4
      - チラシの利用枠の対象判定。保存前の枠、幹事以外は 403、ゲスト幹事のトークン
+     - SCR-ORG-08
+   * - ``tests/unit/flyer-generation-quota.test.ts``
+     - 7
+     - 生成のルートが回数を守ること。残り 0 なら AI を呼ばず 403（未ログインは ``REGISTER_REQUIRED``）、AI は 1 枚 1 回、``placeholder`` は消費しない、残りを超えてサービスを呼ばない、保存では消費せず選んだ背景をチラシへ結ぶ
      - SCR-ORG-08
    * - ``tests/unit/flyer-upload.test.ts``
      - 8
@@ -640,7 +644,7 @@
      - 公開前の確認の層。チケット・単発は「チケットを消費して公開します」で枚、無料チケットは「無料チケットを使って公開します」で枚。本文に使うものと残りの枚数を出す。「公開する」で ``onConfirm``、「やめる」で ``onClose``、送信中は 2 つのボタンを押せず主操作を「公開中…」にする
      - SCR-ORG-16
    * - ``tests/components/flyer-generate-panel-auth.test.tsx``
-     - 4
+     - 7
      - 未ログインのチラシ作成。ボタンが「新規登録/ログインしてチラシ作成」で、押すと認証の導線を呼ぶこと。プレビューがあるときの「作り直す」も認証へ送ること。回数枠を使い切っていても押せること。残り枚数の問い合わせに ``draftKey`` を載せないこと。使い切りの案内に下書きの作り直しを置かないこと。会員は従来どおり「チラシを新規作成」であること
      - SCR-ORG-02
    * - ``tests/components/event-summary-editor.test.tsx``
@@ -722,7 +726,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1788、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1788 件を実行して 216 件を skip します。
+件数の内訳は ``tests/unit/`` が 1803、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1803 件を実行して 216 件を skip します。
 
 .. breakdown-end
 

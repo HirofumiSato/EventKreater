@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EventFormValues } from "@/modules/events/types";
 import { buildFlyerFormPayload, validateFlyerForm } from "@/modules/flyers/lib/form";
-import { readFlyerDraftKey, resetFlyerDraftKey } from "@/modules/flyers/lib/draft";
 import { flyerDownloadHref } from "@/modules/flyers/lib/download";
 import { flyerPdfDownloadHref } from "@/modules/flyers/lib/pdf-link";
 import { flyerQuotaLabel } from "@/modules/flyers/lib/quota-label";
@@ -18,9 +17,9 @@ interface FlyerGeneratePanelProps {
   previewUrl: string | null;
   /** アップロード済み・生成済みのチラシ ID。ダウンロードの宛先に使う。 */
   flyerAssetId?: string | null;
-  /** 下書きの単位。新規は "new"、編集はイベント ID。 */
-  draftScope: string;
-  /** 保存済みイベントの ID。共同主催者と同じ回数枠を数えるために送る。 */
+  /**
+   * 保存済みイベントの ID。あればイベントの枠で数え、無ければ会員（未ログインは端末）の枠で数える。
+   */
   eventId?: string | null;
   /**
    * チラシを掲載しているイベントが公開済みか。
@@ -43,7 +42,6 @@ export function FlyerGeneratePanel({
   disabled = false,
   previewUrl,
   flyerAssetId = null,
-  draftScope,
   eventId = null,
   published = false,
   onGenerated,
@@ -51,24 +49,20 @@ export function FlyerGeneratePanel({
   requireAuth = false,
   onRequireAuth,
 }: FlyerGeneratePanelProps) {
-  const [draftKey, setDraftKey] = useState<string | null>(null);
   const [quota, setQuota] = useState<FlyerQuota | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusNote, setStatusNote] = useState<string | null>(null);
 
   useEffect(() => {
-    setDraftKey(readFlyerDraftKey(draftScope));
-  }, [draftScope]);
-
-  useEffect(() => {
-    if (!draftKey) return;
     let cancelled = false;
     void (async () => {
       try {
-        const query = new URLSearchParams({ draftKey });
-        if (eventId) query.set("eventId", eventId);
-        const response = await fetch(`/api/v1/flyers/quota?${query.toString()}`);
+        // 数える単位はサーバーが所有者から決める。イベントが決まっていればその枠で数える。
+        const query = eventId
+          ? `?${new URLSearchParams({ eventId }).toString()}`
+          : "";
+        const response = await fetch(`/api/v1/flyers/quota${query}`);
         if (!response.ok) return;
         const data = (await response.json()) as { quota: FlyerQuota };
         if (!cancelled) setQuota(data.quota);
@@ -79,7 +73,7 @@ export function FlyerGeneratePanel({
     return () => {
       cancelled = true;
     };
-  }, [draftKey, eventId]);
+  }, [eventId]);
 
   const base = useMemo(() => buildFlyerFormPayload(value), [value]);
   const exhausted = quota !== null && quota.remaining <= 0;
@@ -115,12 +109,6 @@ export function FlyerGeneratePanel({
     [onGenerated],
   );
 
-  const startOver = () => {
-    const next = resetFlyerDraftKey(draftScope);
-    setDraftKey(next);
-    setQuota(null);
-  };
-
   /**
    * チラシの作成を始める。未ログインでは回数枠で止めず、認証へ送る。
    * 入力を退避するのは呼び出し元（作成画面の `goAuth`）の仕事。
@@ -145,9 +133,8 @@ export function FlyerGeneratePanel({
         <p className="label">チラシ生成orアップロード</p>
         <p className="help">
           背景と紙面の性格の 2 ステップで選んでから保存します。文字の配置・配色・題名色は、
-          写真に合わせて自動で決まります。候補を作り直しても回数は減りません。チラシを
-          作成・変更して保存したときだけ 1 回消費します。手元の画像をアップロードする場合は
-          回数を消費しません。
+          写真に合わせて自動で決まります。背景を AI で作るたびに 1 回消費します。保存と
+          紙面の選び直しは消費しません。手元の画像をアップロードする場合は回数を消費しません。
         </p>
       </div>
 
@@ -166,8 +153,8 @@ export function FlyerGeneratePanel({
       <div className="btn-row">
         <button
           type="button"
-          // 未ログインでは回数枠（`draftKey` / `exhausted`）ではなく認証で判断する。
-          disabled={requireAuth ? disabled : disabled || !draftKey || exhausted}
+          // 未ログインでは回数枠ではなく認証で判断する。
+          disabled={requireAuth ? disabled : disabled || exhausted}
           onClick={startCreate}
           className="btn btn--outline btn--sm"
         >
@@ -202,6 +189,7 @@ export function FlyerGeneratePanel({
           </button>
         )}
       </div>
+      <p className="help">作成を始めると 1 回消費します。</p>
 
       <div className="btn-row">
         <FlyerUploadButton
@@ -224,37 +212,31 @@ export function FlyerGeneratePanel({
         <Alert tone="warning" as="div">
           {quota?.anonymous ? (
             <p>
-              未ログインで作れるチラシは 1 回までです。
+              未ログインで作れる背景は 1 枚までです。
               <a href="/auth/register?mode=register">会員登録して続ける</a>
             </p>
           ) : eventId ? (
             <p>
-              このイベントで作れるチラシは {quota?.limit} 回までです。共同主催・幹事を含めた回数です。
+              このイベントで作れる背景は {quota?.limit} 枚までです。共同主催・幹事を含めた枚数です。
             </p>
           ) : (
-            <>
-              <p>この下書きで作れるチラシは {quota?.limit} 回までです。</p>
-              <button type="button" className="btn btn--ghost btn--sm" onClick={startOver}>
-                新しい下書きで作り直す
-              </button>
-            </>
+            <p>
+              作れる背景は {quota?.limit} 枚までです。イベントを保存すると、次のイベントでは新しく作れます。
+            </p>
           )}
         </Alert>
       )}
       {statusNote && <Alert tone="warning">{statusNote}</Alert>}
       {error && <Alert tone="error">{error}</Alert>}
 
-      {draftKey && (
-        <FlyerCandidateModal
-          open={open}
-          draftKey={draftKey}
-          eventId={eventId}
-          base={base}
-          onClose={() => setOpen(false)}
-          onGenerated={handleGenerated}
-          onQuotaChange={setQuota}
-        />
-      )}
+      <FlyerCandidateModal
+        open={open}
+        eventId={eventId}
+        base={base}
+        onClose={() => setOpen(false)}
+        onGenerated={handleGenerated}
+        onQuotaChange={setQuota}
+      />
     </div>
   );
 }

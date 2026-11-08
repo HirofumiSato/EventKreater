@@ -316,7 +316,6 @@ function EditEventScreen({ params }: { params: { id: string } }) {
               disabled={!lock.hasLock || saving}
               previewUrl={flyerPreview}
               flyerAssetId={form.flyerAssetId}
-              draftScope={`event:${params.id}`}
               eventId={params.id}
               published={form.status === "PUBLISHED"}
               onGenerated={(asset) => {

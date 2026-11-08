@@ -1,12 +1,11 @@
 import type { FlyerQuota } from "@/modules/flyers/types";
 
 /**
- * 残り回数の表示文言。
+ * 残り枚数の表示文言。
  *
- * 消費するのは保存の瞬間だが、利用者にとって制限されているのは
- * 「チラシを作り直す・変更する」ことなので、そう読める文にする。
- * 上限も必ず添える。クライアントからも呼べるよう、prisma を触る
- * `quota.ts` とは分けている。
+ * 消費するのは AI の背景を作った瞬間なので、利用者にとって制限されているのは
+ * 「背景を作る」ことだと読み取れる文にする。上限も必ず添える。
+ * クライアントからも呼べるよう、prisma を触る `quota.ts` とは分けている。
  */
 export function flyerQuotaLabel(
   quota: FlyerQuota,
@@ -16,6 +15,6 @@ export function flyerQuotaLabel(
     ? "未ログインで"
     : options?.eventScoped
       ? "このイベントで"
-      : "この下書きで";
-  return `${scope}チラシを作成・変更できるのは、残り ${quota.remaining} 回（最大 ${quota.limit} 回）`;
+      : "";
+  return `${scope}背景を作れるのは、残り ${quota.remaining} 枚（最大 ${quota.limit} 枚）`;
 }
