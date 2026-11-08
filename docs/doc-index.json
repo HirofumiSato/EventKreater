@@ -5882,7 +5882,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2181,
+      "lineCount": 2188,
       "headings": [
         {
           "level": 1,
@@ -11969,7 +11969,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 830,
+      "lineCount": 834,
       "headings": [
         {
           "level": 1,
@@ -12028,6 +12028,10 @@
         },
         {
           "path": "tests/components/auth-entry-screen.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/event-form-pricing-labels.test.tsx",
           "exists": true
         },
         {
@@ -12882,7 +12886,7 @@
       "title": "ホーム画面（SCR-PUB-00）UI/UX 監査",
       "summary": "対象: /（src/app/page.tsx） 計測日時: 2026-10-21 12:27 JST 計測方法: DevTools Protocol による実測（レイアウト・書式・要素数）と、実装コードおよび style-guide/index.html との突き合わせ 証拠画像: 監査時の比較画像（before/・after/）は parity 廃止に伴って削除しました。同じ絵は npm run mock:sync -- --only=1 で撮り直せます（storage/mock-shots/ の 390 / 1280）。",
       "preImplementation": false,
-      "lineCount": 609,
+      "lineCount": 617,
       "headings": [
         {
           "level": 1,
@@ -13107,6 +13111,10 @@
         {
           "level": 3,
           "text": "15.3. 実測"
+        },
+        {
+          "level": 2,
+          "text": "16. テーマ付き公開ページのフッターと読み幅（2026-11-09）"
         }
       ],
       "toctree": [],
@@ -13208,6 +13216,10 @@
           "exists": true
         },
         {
+          "path": "src/components/common/PublicThemeShell.tsx",
+          "exists": true
+        },
+        {
           "path": "src/components/common/SiteChrome.tsx",
           "exists": true
         },
@@ -13241,6 +13253,10 @@
         },
         {
           "path": "src/styles/screens/public.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/themes.css",
           "exists": true
         },
         {

@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 112（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 511
+- 文書から参照されているコードパス: 513
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -205,6 +205,7 @@
 | `src/components/common/CalendarMonth.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
 | `src/components/common/GoogleAnalytics.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
 | `src/components/common/Navbar.tsx` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/components/common/PublicThemeShell.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/common/SiteChrome.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/components/ui` | `AGENTS.md` / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/components/ui/Badge.tsx` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -381,10 +382,11 @@
 | `src/styles/index.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
 | `src/styles/screens/organizer.css` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/styles/screens/public.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
-| `src/styles/themes.css` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
+| `src/styles/themes.css` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-entry-screen.test.tsx` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/event-form-pricing-labels.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-summary-editor.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
