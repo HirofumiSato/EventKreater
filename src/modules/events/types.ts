@@ -513,11 +513,10 @@ export function pricingModeOf(plans: { audience: PriceAudience }[]): PricingMode
  * 男女別モードの行を、追加した順のペアへまとめる。
  * 「プランを追加」は常に男性用・女性用の順で足すため、隣り合う男性用と女性用を1組とみなす。
  * 相手が見つからない行（移行前のデータや、片方だけ残った行）は1行だけの組になる。
- * DB には保存しない、画面の削除単位を決めるためだけの関数である。
+ * DB には保存しない、画面の削除単位（編集画面）と、告知ページの料金の区切りを決めるための関数である。
+ * 入力の行は `key`（編集中）でも `id`（公開済み）でもよい。
  */
-export function groupPricePlanPairs<T extends { key: string; audience: PriceAudience }>(
-  plans: T[],
-): T[][] {
+export function groupPricePlanPairs<T extends { audience: PriceAudience }>(plans: T[]): T[][] {
   const groups: T[][] = [];
   for (let index = 0; index < plans.length; index += 1) {
     const row = plans[index];

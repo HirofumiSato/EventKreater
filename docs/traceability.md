@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 112（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 513
+- 文書から参照されているコードパス: 514
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -387,6 +387,7 @@
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-entry-screen.test.tsx` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-form-pricing-labels.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/event-meta-card-pricing.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-summary-editor.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
