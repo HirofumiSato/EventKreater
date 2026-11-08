@@ -945,6 +945,16 @@
   color: var(--st-content-primary);
 }
 
+/* 主催者への誘い。`.org-invite` も面を白で固定しているので、暗いテーマでは
+   白い紙が浮き、地と同じ明るさの見出し（--color-text）が白地に同化して読めない。
+   入力欄と同じく、面も字も紙面の色に合わせる。 */
+:where(.deco) .semantic-theme[data-semantic-theme] .org-invite {
+  border: var(--st-border-width) solid var(--st-border-color);
+  background: var(--st-surface-raised);
+  color: var(--st-content-primary);
+  box-shadow: var(--st-shadow-elevation);
+}
+
 /* 見出しの書体。要素（h1〜h6）と、見出しの役をするクラスの両方へ当てる。
    クラスだけの見出し（`<p class="panel__title">` など）を外すと、同じ画面の中で
    書体が混ざる。 */
