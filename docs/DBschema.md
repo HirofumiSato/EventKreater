@@ -634,6 +634,9 @@ model Participant {
   /// 参加費を受け取った日時。NULL は未集金。金額は `priceAmount` から割引を引いた額
   /// （0 円で止める）× `partySize` で、幹事が名簿で 1 人ずつ切り替える。
   collectedAt   DateTime?  @map("collected_at") @db.Timestamptz
+  /// 名簿から外した日時。NULL は有効。
+  /// 幹事が名簿から削除しても行は残し、名簿の末尾に薄く出す（元に戻せる）。
+  deletedAt     DateTime?  @map("deleted_at") @db.Timestamptz
   ipHash        String?    @map("ip_hash") @db.VarChar(64)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
@@ -642,6 +645,7 @@ model Participant {
   /// 会員 1 人につきイベント 1 行。匿名行（userId が NULL）は重複を許す。
   @@unique([eventId, userId])
   @@index([eventId, status])
+  @@index([eventId, deletedAt])
   @@index([userId, updatedAt])
   @@map("participants")
 }
@@ -1183,12 +1187,18 @@ CREATE TABLE participants (
     -- 参加費を受け取った日時。NULL は未集金。金額は price_amount から割引を引いた額
     -- （0 円で止める）× party_size で、幹事が名簿で 1 人ずつ切り替える。
     collected_at TIMESTAMPTZ NULL,
+    -- 名簿から外した日時。NULL は有効。幹事が名簿から削除しても行は残し、
+    -- 名簿の末尾に薄く出す（元に戻せる）。
+    deleted_at TIMESTAMPTZ NULL,
     ip_hash VARCHAR(64) NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_participants_event_status ON participants(event_id, status);
+
+-- 名簿は未削除の行だけを催しごとに引くため。
+CREATE INDEX participants_event_id_deleted_at_idx ON participants(event_id, deleted_at);
 
 -- 会員 1 人につきイベント 1 行。匿名行（user_id が NULL）は PostgreSQL の一意制約では重複を許す。
 CREATE UNIQUE INDEX participants_event_id_user_id_key ON participants(event_id, user_id);

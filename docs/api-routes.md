@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 83
-- エンドポイント（メソッド × パス）: 101
-- 仕様書に記載: 101
+- ルートファイル: 84
+- エンドポイント（メソッド × パス）: 103
+- 仕様書に記載: 103
 - 実装のみ（仕様書に記載なし）: 0
 - 仕様書のみ（実装なし）: 0
 
@@ -77,9 +77,11 @@
 | GET | `/api/v1/organizer/events/[id]/organizers` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/organizers/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/organizers/[organizerId]` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/organizers/[organizerId]/route.ts` |
 | GET | `/api/v1/organizer/events/[id]/participants` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/route.ts` |
+| POST | `/api/v1/organizer/events/[id]/participants` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/route.ts` |
 | PATCH | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
 | DELETE | `/api/v1/organizer/events/[id]/participants/[participantId]` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/route.ts` |
 | PUT | `/api/v1/organizer/events/[id]/participants/[participantId]/collection` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/collection/route.ts` |
+| POST | `/api/v1/organizer/events/[id]/participants/[participantId]/restore` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/participants/[participantId]/restore/route.ts` |
 | POST | `/api/v1/organizer/events/[id]/publish` | 条件付き（assertOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/publish/route.ts` |
 | GET | `/api/v1/organizer/events/[id]/revenue` | 条件付き（assertRegisteredOrganizer） | あり | `src/app/api/v1/organizer/events/[id]/revenue/route.ts` |
 | PUT | `/api/v1/organizer/events/[id]/revenue/allocation` | 条件付き（assertRegisteredOwner） | あり | `src/app/api/v1/organizer/events/[id]/revenue/allocation/route.ts` |

@@ -54,20 +54,8 @@ export function BasicSection({
 
   return (
     <>
-      {/* 概要は基本情報の先頭に置く。公開ページの冒頭に出る文なので、
-          イベント名より先に、どんな催しかを書けるようにする。 */}
-      <Field
-        label="イベント概要（任意）"
-        htmlFor="event-summary"
-        help="公開ページの冒頭に出ます。200文字まで。"
-      >
-        <EventSummaryEditor
-          id="event-summary"
-          value={value.summary}
-          onChange={(html) => set("summary", html)}
-          disabled={disabled}
-        />
-      </Field>
+      {/* 名前を先に決め、その下で概要を書く。公開ページも催し名の直下に概要を出すので、
+          書く順と出る順をそろえる。 */}
       <Field label="イベント名" htmlFor="event-title">
         <input
           id="event-title"
@@ -80,6 +68,22 @@ export function BasicSection({
           className="input"
         />
       </Field>
+      {/* 初回ガイドの 3 枚目がこの欄を指す。`Field` は外側の骨格だけを持つので、
+          目印は包む側へ置き、ラベル・入力・補足をまとめて 1 つの穴に入れる。 */}
+      <div data-guide-target="event-summary">
+        <Field
+          label="イベント概要（任意）"
+          htmlFor="event-summary"
+          help="公開ページの冒頭に出ます。200文字まで。"
+        >
+          <EventSummaryEditor
+            id="event-summary"
+            value={value.summary}
+            onChange={(html) => set("summary", html)}
+            disabled={disabled}
+          />
+        </Field>
+      </div>
       {showOrganizerName && (
         <Field label="主催者名（公開されます）" htmlFor="event-organizer-name">
           <input
@@ -177,7 +181,7 @@ export function BasicSection({
               </div>
             );
           })}
-          {/* 初回ガイドの 2 枚目がこのボタンを指す。見出しではなく操作そのものを
+          {/* 初回ガイドの 4 枚目がこのボタンを指す。見出しではなく操作そのものを
               見せたいので、対象はここに置く。 */}
           <button
             type="button"
@@ -817,7 +821,7 @@ export function CapacitySection({
           <p className="help">51人以上を入れてください。空欄では次へ進めません。</p>
         </Field>
       )}
-      {/* 初回ガイドの 4 枚目はこの欄を指す。`Field` は外側の骨格だけを持つので、
+      {/* 初回ガイドの 6 枚目はこの欄を指す。`Field` は外側の骨格だけを持つので、
           目印は包む側へ置き、ラベル・入力・補足をまとめて 1 つの穴に入れる。 */}
       <div data-guide-target="target-generation">
         <Field label="対象世代（任意）" htmlFor="event-target-generation">

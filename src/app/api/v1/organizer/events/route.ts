@@ -6,6 +6,7 @@ import { toErrorResponse } from "@/lib/http";
 import { serializeOrganizerListItem, summarizeStatuses } from "@/lib/serializers";
 import { eventOptionsInclude } from "@/modules/events/lib/events";
 import { organizerLabel } from "@/modules/organizers/lib/names";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,8 @@ export async function GET(req: NextRequest) {
           include: {
             flyerAsset: true,
             ...eventOptionsInclude,
-            participants: { select: { status: true, partySize: true } },
+            // 一覧の人数は名簿に残っている行だけで数える。
+            participants: { where: { ...ACTIVE_PARTICIPANT_WHERE }, select: { status: true, partySize: true } },
             organizers: {
               select: {
                 id: true,

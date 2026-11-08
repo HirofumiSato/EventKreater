@@ -1,5 +1,6 @@
 import type { Participant, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -19,13 +20,14 @@ export async function findMyParticipant(
 ): Promise<FoundParticipant | null> {
   if (input.tokenHash) {
     const byToken = await db.participant.findFirst({
-      where: { eventId: input.eventId, rsvpTokenHash: input.tokenHash },
+      // 名簿から外した行は「自分の回答」ではない。端末のクッキーが残っていても拾わない。
+      where: { eventId: input.eventId, rsvpTokenHash: input.tokenHash, ...ACTIVE_PARTICIPANT_WHERE },
     });
     if (byToken) return { participant: byToken, matchedBy: "token" };
   }
   if (input.userId) {
     const byUser = await db.participant.findFirst({
-      where: { eventId: input.eventId, userId: input.userId },
+      where: { eventId: input.eventId, userId: input.userId, ...ACTIVE_PARTICIPANT_WHERE },
     });
     if (byUser) return { participant: byUser, matchedBy: "user" };
   }
@@ -72,7 +74,10 @@ export async function chooseRsvpTarget(
   const owner =
     current.userId === userId
       ? current
-      : await tx.participant.findFirst({ where: { eventId: current.eventId, userId } });
+      // 削除のときに `userId` を切るので当たらないが、同じ「この人の行」を探す条件として揃える。
+      : await tx.participant.findFirst({
+          where: { eventId: current.eventId, userId, ...ACTIVE_PARTICIPANT_WHERE },
+        });
 
   if (!owner || owner.id === current.id) return { participant: current, stale: null };
   return { participant: owner, stale: current.userId ? null : current };

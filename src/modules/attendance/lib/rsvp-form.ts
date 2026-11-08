@@ -155,6 +155,13 @@ export function rsvpScheduleLabels(
     .map((row) => rsvpScheduleShortLabel(row.eventDate));
 }
 
+/**
+ * 名前とコメントの上限。API の入力検査（`OrganizerParticipantSchema` / `SubmitRsvpSchema`）と
+ * 画面の `maxLength` で同じ値を使う。片方だけ直すと、画面は通るのに 400 で断られる。
+ */
+export const RSVP_NAME_MAX = 50;
+export const RSVP_COMMENT_MAX = 500;
+
 /** 自分を含む参加人数の下限・上限。 */
 export const RSVP_PARTY_SIZE_MIN = 1;
 export const RSVP_PARTY_SIZE_MAX = 20;

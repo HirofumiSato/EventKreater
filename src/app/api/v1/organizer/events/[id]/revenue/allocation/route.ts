@@ -12,6 +12,7 @@ import {
 } from "@/modules/revenue/lib/allocation";
 import { buildAllocationView } from "@/modules/revenue/lib/allocation-view";
 import { saveAllocationSetting } from "@/modules/revenue/lib/allocation-store";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +100,8 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
           },
         },
         participants: {
+          // 按分の元になる売上は、名簿に残っている行だけで数える。
+          where: { ...ACTIVE_PARTICIPANT_WHERE },
           select: {
             status: true,
             priceAmount: true,

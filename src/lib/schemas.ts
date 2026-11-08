@@ -5,7 +5,11 @@ import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
 import { EVENT_SUMMARY_MAX_LENGTH, summaryTextLength } from "@/modules/events/lib/summary";
 import { sanitizeEventSummary } from "@/modules/events/lib/summary-html";
-import { RSVP_PARTY_SIZE_MAX } from "@/modules/attendance/lib/rsvp-form";
+import {
+  RSVP_COMMENT_MAX,
+  RSVP_NAME_MAX,
+  RSVP_PARTY_SIZE_MAX,
+} from "@/modules/attendance/lib/rsvp-form";
 import { profileUrlProblem } from "@/modules/organizers/lib/profile";
 import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
 import { isAllowedCheckoutReturnTo } from "@/modules/billing/lib/checkout-return";
@@ -390,10 +394,10 @@ export const SaveEventDraftSchema = UpdateEventSchema.and(
 
 export const OrganizerParticipantSchema = z
   .object({
-    name: z.string().trim().min(1, "名前を入力してください").max(50),
+    name: z.string().trim().min(1, "名前を入力してください").max(RSVP_NAME_MAX),
     status: z.enum(["ATTENDING", "DECLINED", "WAITLISTED"]),
     gender: z.enum(["MALE", "FEMALE"]).optional(),
-    comment: z.string().trim().max(500).optional(),
+    comment: z.string().trim().max(RSVP_COMMENT_MAX).optional(),
     scheduleId: z.string().uuid().optional(),
     /** 複数日を選ぶときの日時。省略すると `scheduleId` 1 件として扱う。 */
     scheduleIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).optional(),
@@ -420,10 +424,10 @@ export const ParticipantCollectionSchema = z.object({
 
 export const SubmitRsvpSchema = z
   .object({
-    name: z.string().trim().min(1, "名前を入力してください").max(50),
+    name: z.string().trim().min(1, "名前を入力してください").max(RSVP_NAME_MAX),
     status: z.enum(["ATTENDING", "DECLINED", "WAITLISTED"]),
     gender: z.enum(["MALE", "FEMALE"]).optional(),
-    comment: z.string().trim().max(500).optional(),
+    comment: z.string().trim().max(RSVP_COMMENT_MAX).optional(),
     scheduleId: z.string().uuid().optional(),
     /** 複数日を選ぶときの日時。省略すると `scheduleId` 1 件として扱う。 */
     scheduleIds: z.array(z.string().uuid()).max(MAX_EVENT_OPTIONS).optional(),

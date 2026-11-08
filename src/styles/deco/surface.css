@@ -2213,6 +2213,17 @@
   white-space: nowrap;
 }
 
+/* 削除済みは行を消さず、名簿の最後に薄く残す（元に戻せる）。
+   名前だけは取り消し線を引き、押すと「名簿に戻す」の 1 枚が開く。 */
+.roster__row--deleted td {
+  color: var(--color-text-subtle);
+}
+
+.roster__row--deleted .roster__name {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+
 /* 行を押して 1 枚を開く。指の当たりを広げるため、行そのものにも同じ動きを持たせる。
    キーボードと読み上げの入口は、名前のセルの中のボタン（`.roster__open`）である。 */
 .roster__row--open {

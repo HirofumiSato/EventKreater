@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ParticipantListTable } from "@/modules/attendance/components/ParticipantListTable";
+import type { ParticipantDraft } from "@/modules/attendance/components/ParticipantSheet";
 import { Toast } from "@/components/common/Toast";
 import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequired } from "@/lib/problem";
 import type { EventPricePlanOption, EventScheduleOption, ParticipantRow } from "@/modules/events/types";
@@ -53,33 +54,27 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
     };
   }, [load]);
 
-  const saveRow = async (
-    row: Pick<
-      ParticipantRow,
-      | "id"
-      | "name"
-      | "status"
-      | "gender"
-      | "comment"
-      | "scheduleId"
-      | "scheduleIds"
-      | "partySize"
-      | "pricePlanId"
-    >,
-  ) => {
-    const res = await fetch(`/api/v1/organizer/events/${params.id}/participants/${row.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: row.name,
-        status: row.status,
-        partySize: row.partySize,
-        ...(row.gender ? { gender: row.gender } : {}),
-        comment: row.comment ?? "",
-        ...(row.scheduleIds.length > 0 ? { scheduleIds: row.scheduleIds } : {}),
-        ...(row.pricePlanId ? { pricePlanId: row.pricePlanId } : {}),
-      }),
-    });
+  const saveRow = async (draft: ParticipantDraft) => {
+    // 追加は行がまだ無い（id が null）。編集は既存の行へ送る。
+    const creating = draft.id === null;
+    const res = await fetch(
+      creating
+        ? `/api/v1/organizer/events/${params.id}/participants`
+        : `/api/v1/organizer/events/${params.id}/participants/${draft.id}`,
+      {
+        method: creating ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: draft.name,
+          status: draft.status,
+          partySize: draft.partySize,
+          ...(draft.gender ? { gender: draft.gender } : {}),
+          comment: draft.comment ?? "",
+          ...(draft.scheduleIds.length > 0 ? { scheduleIds: draft.scheduleIds } : {}),
+          ...(draft.pricePlanId ? { pricePlanId: draft.pricePlanId } : {}),
+        }),
+      },
+    );
     if (!res.ok) {
       const message = await readProblem(res);
       setToastTone("error");
@@ -88,7 +83,7 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
     }
     await load();
     setToastTone("success");
-    setToast("出欠を更新しました");
+    setToast(creating ? "参加者を追加しました" : "出欠を更新しました");
   };
 
   const deleteRow = async (id: string) => {
@@ -101,9 +96,25 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
     }
     await load();
     setToastTone("success");
-    setToast("参加者を削除しました");
+    setToast("名簿から削除しました。一番下に残ります。");
   };
 
+  /** 削除済みの行を名簿へ戻す。定員が埋まっていれば 409 の文言をそのまま出す。 */
+  const restoreRow = async (id: string) => {
+    const res = await fetch(
+      `/api/v1/organizer/events/${params.id}/participants/${id}/restore`,
+      { method: "POST" },
+    );
+    if (!res.ok) {
+      const message = await readProblem(res);
+      setToastTone("error");
+      setToast(message);
+      throw new Error(message);
+    }
+    await load();
+    setToastTone("success");
+    setToast("名簿に戻しました");
+  };
 
   /**
    * 集金を切り替えたあとの帳尻合わせ。
@@ -194,8 +205,10 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         attendingCount={data.stats.attendingCount}
         declinedCount={data.stats.declinedCount}
         waitlistedCount={data.stats.waitlistedCount}
+        capacity={data.event.capacity}
         onSave={saveRow}
         onDelete={deleteRow}
+        onRestore={restoreRow}
         onCollectionChange={reloadAfterCollection}
       />
       {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}

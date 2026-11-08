@@ -1,4 +1,4 @@
-// 初回ガイドの 8 枚の並びと文言。
+// 初回ガイドの 9 枚の並びと文言。
 //
 // 画面（`EventGuideTour`）はこの定義をそのまま描くので、順番・対象・開くステップが
 // 変わると、ガイドの意味が変わる。文言も含めてここで固定する。
@@ -15,11 +15,12 @@ import {
   type EventGuideKey,
 } from "@/modules/events/lib/tour/steps";
 
-describe("8 枚の並び", () => {
+describe("9 枚の並び", () => {
   it("画面名の挨拶から始まり、最後に画面下の帯で終わる", () => {
     expect(EVENT_GUIDE_STEPS.map((step) => step.key)).toEqual([
       "welcome",
       "required",
+      "summary",
       "schedule",
       "pricing",
       "target",
@@ -91,14 +92,22 @@ describe("8 枚の並び", () => {
     }
   });
 
-  it("3 枚目と 5 枚目は、画面に足した目印を指す", () => {
+  it("3 枚目・4 枚目・6 枚目は、画面に足した目印を指す", () => {
+    expect(eventGuideStep("summary").targets).toEqual(['[data-guide-target="event-summary"]']);
     expect(eventGuideStep("schedule").targets).toEqual(['[data-guide-target="add-schedule"]']);
     expect(eventGuideStep("target").targets).toEqual([
       '[data-guide-target="target-generation"]',
     ]);
   });
 
-  it("6 枚目と 7 枚目は、同じステップの中の別の欄を指す", () => {
+  it("3 枚目は、概要が公開ページの冒頭に出ることを伝える", () => {
+    const copy = eventGuideStep("summary").copy;
+
+    expect(copy.title).toBe("概要は公開ページの冒頭に出ます");
+    expect(copy.body).toContain("200文字");
+  });
+
+  it("7 枚目と 8 枚目は、同じステップの中の別の欄を指す", () => {
     expect(eventGuideStep("theme").targets).toEqual([
       "#event-step-flyer .event-step__block--theme",
     ]);
@@ -122,6 +131,7 @@ describe("開くステップの移り変わり", () => {
       "all",
       "all",
       "all",
+      "all",
       null,
     ]);
   });
@@ -130,6 +140,7 @@ describe("開くステップの移り変わり", () => {
     const opened = EVENT_GUIDE_STEPS.filter((step) => step.openStep === "all");
 
     expect(opened.map((step) => step.key)).toEqual([
+      "summary",
       "schedule",
       "pricing",
       "target",

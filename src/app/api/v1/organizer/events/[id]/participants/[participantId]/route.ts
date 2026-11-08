@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generateSecureToken, sha256 } from "@/lib/crypto";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
@@ -12,16 +13,12 @@ import {
   resolveAttendanceChoice,
   resolveDiscountChoice,
 } from "@/modules/events/lib/events";
-import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
 import {
-  composeScheduleLabels,
-  formatEventDate,
-  formatEventDateLabel,
-  participantPriceDisplay,
-  serializeParticipantDiscounts,
-} from "@/lib/serializers";
-import { participantScheduleIds } from "@/modules/participants/lib/rsvp";
-import { discountTotal, payableAmount, unitPayableAmount } from "@/modules/revenue/lib/revenue";
+  participantRecordInclude,
+  participantWaitlistSelect,
+  serializeParticipantRow,
+} from "@/modules/participants/lib/serialize";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +27,10 @@ interface RouteContext {
   params: { id: string; participantId: string };
 }
 
-async function loadParticipant(eventId: string, participantId: string) {
+/** 削除済みの行を編集しようとしたときの案内。404 でも理由が分かるようにする。 */
+const DELETED_PARTICIPANT_DETAIL = "削除済みの参加者です。名簿に戻してから編集してください。";
+
+async function assertEventExists(eventId: string): Promise<void> {
   const event = await prisma.event.findFirst({
     where: { id: eventId, isDeleted: false },
     select: { id: true },
@@ -42,6 +42,29 @@ async function loadParticipant(eventId: string, participantId: string) {
       detail: "イベントが見つかりません。",
     });
   }
+}
+
+/** 名簿に残っている行だけを返す。削除済みは名簿に戻してから直してもらう。 */
+async function loadActiveParticipant(eventId: string, participantId: string) {
+  await assertEventExists(eventId);
+  const participant = await prisma.participant.findFirst({
+    where: { id: participantId, eventId, ...ACTIVE_PARTICIPANT_WHERE },
+  });
+  if (participant) return participant;
+  const deleted = await prisma.participant.findFirst({
+    where: { id: participantId, eventId },
+    select: { id: true },
+  });
+  throw new ProblemDetailException({
+    status: 404,
+    title: "Not Found",
+    detail: deleted ? DELETED_PARTICIPANT_DETAIL : "参加者が見つかりません。",
+  });
+}
+
+/** 削除済みも含めて返す。DELETE の二重押しを 404 にしないため。 */
+async function loadParticipantIncludingDeleted(eventId: string, participantId: string) {
+  await assertEventExists(eventId);
   const participant = await prisma.participant.findFirst({
     where: { id: participantId, eventId },
   });
@@ -59,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
     await assertRegisteredOrganizer(req, params.id);
     const input = OrganizerParticipantSchema.parse(await req.json());
-    const current = await loadParticipant(params.id, params.participantId);
+    const current = await loadActiveParticipant(params.id, params.participantId);
     // 人数は省略されたら今の値を保つ（名前だけの修正で席の数が変わらない）。
     // 出席でなければ人数は持たない。参加要望は席を取らないので、承認したときに名簿で入れる。
     const partySize =
@@ -131,73 +154,51 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           ...snapshot,
           ...(discountsData ? { discounts: discountsData } : {}),
         },
-        include: {
-          schedule: true,
-          pricePlan: true,
-          discounts: { orderBy: { sortOrder: "asc" } },
-          schedules: {
-            select: {
-              scheduleId: true,
-              schedule: { select: { eventDate: true, eventTime: true, sortOrder: true } },
-            },
-          },
-        },
+        include: participantRecordInclude,
       });
     });
     const waitlistRows = await prisma.participant.findMany({
-      where: { eventId: params.id, status: "WAITLISTED" },
-      select: { id: true, status: true, waitlistedAt: true, createdAt: true },
+      where: { eventId: params.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
+      select: participantWaitlistSelect,
     });
-    const price = participantPriceDisplay(updated);
     return NextResponse.json({
-      participant: {
-        id: updated.id,
-        name: updated.name,
-        status: updated.status,
-        gender: updated.gender,
-        comment: updated.comment,
-        scheduleId: updated.scheduleId,
-        scheduleIds: participantScheduleIds(updated.schedules, updated.scheduleId),
-        partySize: updated.partySize,
-        pricePlanId: updated.pricePlanId,
-        scheduleLabel:
-          updated.schedules.length > 0
-            ? composeScheduleLabels(updated.schedules.map((link) => link.schedule))
-            : updated.schedule
-              ? `${formatEventDateLabel(formatEventDate(updated.schedule.eventDate))} ${updated.schedule.eventTime}`
-              : null,
-        pricePlanLabel: price.label,
-        pricePlanAmount: price.amount,
-        discounts: serializeParticipantDiscounts(updated.discounts),
-        discountAmount: discountTotal(updated.discounts) * updated.partySize,
-        payableAmount: payableAmount({
-          priceAmount: price.amount,
-          discounts: updated.discounts,
-          partySize: updated.partySize,
-        }),
-        // 集金は 1 人ずつ記録する。目安は人数を掛けない 1 人ぶんにする。
-        unitPayableAmount: unitPayableAmount({
-          priceAmount: price.amount,
-          discounts: updated.discounts,
-        }),
-        createdAt: updated.createdAt.toISOString(),
-        updatedAt: updated.updatedAt.toISOString(),
-        waitlistedAt: updated.waitlistedAt ? updated.waitlistedAt.toISOString() : null,
-        waitlistPosition: waitlistPosition(waitlistRows, updated.id),
-        collectedAt: updated.collectedAt ? updated.collectedAt.toISOString() : null,
-      },
+      participant: serializeParticipantRow(updated, waitlistRows),
     });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/participants/${params.participantId}`);
   }
 }
 
+/**
+ * 名簿から外す。行は消さずに論理削除し、名簿の末尾に薄く残す（元に戻せる）。
+ *
+ * 会員との紐づけ（`userId`）を切り、`rsvpTokenHash` を新しい乱数へ差し替える。
+ * こうすると `(event_id, user_id)` の一意制約に当たらず、同じ人がもう一度申し込むと
+ * 新しい行として名簿に戻る。削除済みの行をもう一度消しても 404 にせず同じ結果を返す。
+ */
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
     await assertRegisteredOrganizer(req, params.id);
-    const current = await loadParticipant(params.id, params.participantId);
-    await prisma.participant.delete({ where: { id: current.id } });
-    return NextResponse.json({ success: true });
+    const current = await loadParticipantIncludingDeleted(params.id, params.participantId);
+    if (current.deletedAt) {
+      return NextResponse.json({
+        success: true,
+        participant: { id: current.id, deletedAt: current.deletedAt.toISOString() },
+      });
+    }
+    const deletedAt = new Date();
+    await prisma.participant.update({
+      where: { id: current.id },
+      data: {
+        deletedAt,
+        userId: null,
+        rsvpTokenHash: sha256(generateSecureToken(32)),
+      },
+    });
+    return NextResponse.json({
+      success: true,
+      participant: { id: current.id, deletedAt: deletedAt.toISOString() },
+    });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/participants/${params.participantId}`);
   }

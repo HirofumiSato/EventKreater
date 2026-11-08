@@ -7,10 +7,14 @@
 //   3. 参加要望の承認は人数の入力から始まる（要望のままでは人数を出さない）
 //   4. 出席なのに日時が 0 件なら保存させない
 //   5. 集金の列は既定では出さず、表示列から選んだときと CSV にだけ出す
-
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+//   6. 「参加者を追加」は行の無い 1 枚を開き、保存は `id: null`（POST）で送る
+//   7. 削除済みは最下部に残して「名簿に戻す」だけを出し、絞り込み・CSV からは外す
+//   8. 名前とコメントの上限は API と同じ値。定員の案内は編集中の行の人数を引いて数える
+//
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ParticipantListTable } from "@/modules/attendance/components/ParticipantListTable";
+import { RSVP_COMMENT_MAX, RSVP_NAME_MAX } from "@/modules/attendance/lib/rsvp-form";
 import type {
   EventPricePlanOption,
   EventScheduleOption,
@@ -66,6 +70,7 @@ function participant(overrides: Partial<ParticipantRow> & { id: string }): Parti
     waitlistedAt: null,
     waitlistPosition: null,
     collectedAt: null,
+    deletedAt: null,
     ...rest,
   };
 }
@@ -73,7 +78,16 @@ function participant(overrides: Partial<ParticipantRow> & { id: string }): Parti
 const SCHEDULES = [schedule("s1", "2026-11-21"), schedule("s2", "2026-11-22")];
 const PLANS = [plan("p1", 3000)];
 
-function renderTable(rows: ParticipantRow[], onSave = vi.fn<(input: unknown) => Promise<void>>(async () => {})) {
+function renderTable(
+  rows: ParticipantRow[],
+  onSave = vi.fn<(input: unknown) => Promise<void>>(async () => {}),
+  extra: {
+    capacity?: number | null;
+    /** 定員の案内は行の人数で数えるので、人数を明示したいときに使う。 */
+    attendingCount?: number;
+    onRestore?: (id: string) => Promise<void>;
+  } = {},
+) {
   return {
     onSave,
     ...render(
@@ -82,10 +96,14 @@ function renderTable(rows: ParticipantRow[], onSave = vi.fn<(input: unknown) => 
         rows={rows}
         schedules={SCHEDULES}
         pricePlans={PLANS}
-        attendingCount={rows.filter((row) => row.status === "ATTENDING").length}
+        attendingCount={
+          extra.attendingCount ?? rows.filter((row) => row.status === "ATTENDING").length
+        }
         declinedCount={rows.filter((row) => row.status === "DECLINED").length}
         waitlistedCount={rows.filter((row) => row.status === "WAITLISTED").length}
+        capacity={extra.capacity ?? null}
         onSave={onSave}
+        onRestore={extra.onRestore}
       />,
     ),
   };
@@ -241,6 +259,190 @@ describe("集金の列", () => {
       expect(column).toBeGreaterThanOrEqual(0);
       expect(lines[1]!.split(",")[column]).toBe("済");
       expect(lines[2]!.split(",")[column]).toBe("");
+    } finally {
+      click.mockRestore();
+      Object.assign(URL, { createObjectURL: originalCreate, revokeObjectURL: originalRevoke });
+    }
+  });
+});
+
+describe("参加者の追加", () => {
+  it("「参加者を追加」を押すと、名簿に載せる人の 1 枚が開く", () => {
+    renderTable([participant({ id: "a" })]);
+
+    fireEvent.click(screen.getByRole("button", { name: "参加者を追加" }));
+
+    expect(screen.getByRole("heading", { name: "参加者を追加" })).toBeTruthy();
+    expect(screen.getByText("名簿に載せたい人を追加します。")).toBeTruthy();
+    // 追加ではまだ名簿に無いので、集金も削除も出さない。
+    expect(screen.queryByRole("button", { name: "集金済みにする" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "名簿から削除" })).toBeNull();
+  });
+
+  it("名前と人数を入れて保存すると、行の無い `id: null` で送る", async () => {
+    const { onSave } = renderTable([participant({ id: "a" })]);
+
+    fireEvent.click(screen.getByRole("button", { name: "参加者を追加" }));
+    fireEvent.change(screen.getByLabelText("名前"), { target: { value: "田中 太郎" } });
+    // 出席のまま。人数だけ 2 人へ変える。
+    fireEvent.change(screen.getByLabelText("人数"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      id: null,
+      name: "田中 太郎",
+      status: "ATTENDING",
+      partySize: 2,
+    });
+  });
+
+  it("名前が空なら保存できず、押しても送らない", () => {
+    const { onSave } = renderTable([participant({ id: "a" })]);
+
+    fireEvent.click(screen.getByRole("button", { name: "参加者を追加" }));
+    const save = screen.getByRole("button", { name: "保存する" }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+describe("入力の上限", () => {
+  it("名前とコメントの maxLength は API の上限と同じ値を使う", () => {
+    renderTable([participant({ id: "a" })]);
+
+    fireEvent.click(screen.getByRole("button", { name: "参加者を追加" }));
+
+    // 画面だけ 100 文字まで通すと、51〜100 文字の名前がサーバーで 400 になる。
+    expect((screen.getByLabelText("名前") as HTMLInputElement).maxLength).toBe(RSVP_NAME_MAX);
+    expect((screen.getByLabelText("コメント") as HTMLInputElement).maxLength).toBe(
+      RSVP_COMMENT_MAX,
+    );
+  });
+});
+
+describe("定員の案内", () => {
+  const HINT = "定員に達しています。参加要望で追加できます。";
+
+  it("編集で席がちょうど収まる行には案内を出さない", () => {
+    // 3 人で定員 3。編集対象の 3 人は attendingCount に既に含まれている。
+    renderTable([participant({ id: "a", partySize: 3 })], undefined, {
+      capacity: 3,
+      attendingCount: 3,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "佐藤 みのり の出欠を変更" }));
+
+    expect(screen.queryByText(HINT)).toBeNull();
+  });
+
+  it("人数を増やして定員を超えると案内を出す", () => {
+    renderTable([participant({ id: "a", partySize: 2 })], undefined, {
+      capacity: 2,
+      attendingCount: 2,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "佐藤 みのり の出欠を変更" }));
+    fireEvent.change(screen.getByLabelText("人数"), { target: { value: "3" } });
+
+    expect(screen.getByText(HINT)).toBeTruthy();
+  });
+});
+
+describe("削除済みの行", () => {
+  const deleted = participant({
+    id: "d1",
+    name: "削除さん",
+    partySize: 3,
+    deletedAt: new Date("2026-11-05T03:00:00.000Z").toISOString(),
+  });
+
+  it("入力の配列で先頭でも最下部に並び、出欠の札の代わりに「削除済み」を出す", () => {
+    const { container } = renderTable([deleted, participant({ id: "a" })]);
+
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tbody tr"));
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.querySelector(".roster__name")?.textContent).toBe("佐藤 みのり");
+    expect(rows[1]!.querySelector(".roster__name")?.textContent).toBe("削除さん");
+
+    const deletedRow = rows[1]!;
+    expect(deletedRow.classList.contains("roster__row--deleted")).toBe(true);
+    expect(deletedRow.querySelector('[data-column="status"]')?.textContent).toBe("削除済み");
+    // 削除済みは席を取らないので、出席のままでも人数は「—」にする。
+    expect(deletedRow.querySelectorAll("td")[3]!.textContent).toBe("—");
+  });
+
+  it("押すと「名簿に戻す」だけの 1 枚が開き、押すと onRestore に id を渡す", async () => {
+    const onRestore = vi.fn<(id: string) => Promise<void>>(async () => {});
+    renderTable([deleted], undefined, { onRestore });
+
+    fireEvent.click(screen.getByRole("button", { name: "削除さん の削除を取り消す" }));
+
+    expect(screen.getByRole("heading", { name: "削除さん" })).toBeTruthy();
+    expect(screen.getByText("削除さん を名簿から削除しました。")).toBeTruthy();
+    // 入力欄は出さない。直すなら先に名簿へ戻す。
+    expect(screen.queryByLabelText("名前")).toBeNull();
+    expect(screen.queryByLabelText("出欠")).toBeNull();
+    expect(screen.queryByRole("button", { name: "保存する" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "名簿に戻す" }));
+
+    await waitFor(() => expect(onRestore).toHaveBeenCalledWith("d1"));
+  });
+});
+
+describe("削除済みの絞り込み", () => {
+  it("削除済みが 1 件も無ければ札を出さない", () => {
+    renderTable([participant({ id: "a" })]);
+
+    expect(screen.queryByLabelText(/^削除済み/)).toBeNull();
+  });
+
+  it("削除済みがあると札が出て、選ぶと削除済みだけになる", () => {
+    const { container } = renderTable([
+      participant({ id: "a" }),
+      participant({
+        id: "d1",
+        name: "削除さん",
+        deletedAt: new Date("2026-11-05T03:00:00.000Z").toISOString(),
+      }),
+    ]);
+
+    fireEvent.click(screen.getByLabelText("削除済み 1"));
+
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tbody tr"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.querySelector(".roster__name")?.textContent).toBe("削除さん");
+    expect(screen.queryByRole("button", { name: "佐藤 みのり の出欠を変更" })).toBeNull();
+  });
+});
+
+describe("CSV の削除済み", () => {
+  it("CSV は削除済みを出さない", async () => {
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => "blob:participants.csv");
+    const revokeObjectURL = vi.fn();
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+
+    try {
+      renderTable([
+        participant({ id: "a", name: "残るさん" }),
+        participant({
+          id: "d1",
+          name: "消えたさん",
+          deletedAt: new Date("2026-11-05T03:00:00.000Z").toISOString(),
+        }),
+      ]);
+
+      fireEvent.click(screen.getByRole("button", { name: "CSVで書き出す" }));
+
+      const text = await readBlobAsText(createObjectURL.mock.calls[0]![0]);
+      expect(text).toContain("残るさん");
+      expect(text).not.toContain("消えたさん");
     } finally {
       click.mockRestore();
       Object.assign(URL, { createObjectURL: originalCreate, revokeObjectURL: originalRevoke });

@@ -6,6 +6,8 @@ import { ChevronDown } from "lucide-react";
 import { useRsvp } from "@/modules/attendance/hooks/useRsvp";
 import { RsvpSummary } from "@/modules/attendance/components/RsvpSummary";
 import {
+  RSVP_COMMENT_MAX,
+  RSVP_NAME_MAX,
   RSVP_PARTY_SIZE_MAX,
   RSVP_PARTY_SIZE_MIN,
   clampRsvpPartySize,
@@ -575,7 +577,7 @@ export function DynamicRsvpBox({
               <input
                 id="rsvp-name"
                 required
-                maxLength={50}
+                maxLength={RSVP_NAME_MAX}
                 value={name}
                 disabled={locked}
                 onChange={(event) => setName(event.target.value)}
@@ -634,7 +636,7 @@ export function DynamicRsvpBox({
               <textarea
                 id="rsvp-comment"
                 aria-label="コメント"
-                maxLength={500}
+                maxLength={RSVP_COMMENT_MAX}
                 value={comment}
                 disabled={locked}
                 onChange={(event) => setComment(event.target.value)}

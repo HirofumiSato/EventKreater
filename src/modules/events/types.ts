@@ -460,6 +460,11 @@ export interface ParticipantRow {
   waitlistPosition: number | null;
   /** 参加費を受け取った日時。未集金なら null。 */
   collectedAt: string | null;
+  /**
+   * 名簿から外した日時。NULL は有効。
+   * 幹事が名簿から削除しても行は残り、名簿の末尾に薄く出る（元に戻せる）。
+   */
+  deletedAt: string | null;
 }
 
 export function createScheduleDraft(partial?: Partial<ScheduleDraft>): ScheduleDraft {

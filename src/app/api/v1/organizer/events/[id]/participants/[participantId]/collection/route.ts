@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { ParticipantCollectionSchema } from "@/lib/schemas";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,13 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     await assertRegisteredOrganizer(req, params.id);
     const input = ParticipantCollectionSchema.parse(await req.json().catch(() => null));
     const participant = await prisma.participant.findFirst({
-      where: { id: params.participantId, eventId: params.id, event: { isDeleted: false } },
+      // 削除済みは集金できない。名簿に戻してから記録する。
+      where: {
+        id: params.participantId,
+        eventId: params.id,
+        event: { isDeleted: false },
+        ...ACTIVE_PARTICIPANT_WHERE,
+      },
       select: { id: true, status: true },
     });
     if (!participant) {

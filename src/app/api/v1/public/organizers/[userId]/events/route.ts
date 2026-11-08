@@ -14,6 +14,7 @@ import { todayInTokyo } from "@/lib/calendar";
 import { isFull, remainingSeats } from "@/modules/events/lib/rsvp-status";
 import { sortOrganizerEvents } from "@/modules/organizers/lib/public-page";
 import type { PublicOrganizerEvent } from "@/modules/events/types";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
             pricePlans: { orderBy: { sortOrder: "asc" } },
             discounts: { orderBy: { sortOrder: "asc" } },
             participants: {
-              where: { status: { in: ["ATTENDING", "WAITLISTED"] } },
+              // 公開ページの人数・残席は名簿に残っている行だけで数える。
+              where: { status: { in: ["ATTENDING", "WAITLISTED"] }, ...ACTIVE_PARTICIPANT_WHERE },
               select: { status: true, partySize: true },
             },
           },

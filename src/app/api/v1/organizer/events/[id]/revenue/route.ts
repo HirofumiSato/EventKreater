@@ -6,6 +6,7 @@ import { toErrorResponse } from "@/lib/http";
 import { formatEventDate, formatEventDateLabel } from "@/lib/serializers";
 import { groupByPlan, groupBySchedule, summarizeRevenue } from "@/modules/revenue/lib/revenue";
 import { buildAllocationView } from "@/modules/revenue/lib/allocation-view";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         revenueShares: { select: { organizerId: true, shareBps: true, headcount: true } },
         schedules: { orderBy: { sortOrder: "asc" } },
         participants: {
+          // 削除済みは売上・内訳・按分のどれにも数えない。
+          where: { ...ACTIVE_PARTICIPANT_WHERE },
           orderBy: { createdAt: "asc" },
           select: {
             id: true,

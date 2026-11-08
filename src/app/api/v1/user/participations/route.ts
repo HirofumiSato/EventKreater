@@ -9,6 +9,7 @@ import {
   serializeParticipation,
   todayInTokyo,
 } from "@/modules/participants/lib/participations";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,10 +51,17 @@ export async function GET(req: NextRequest) {
         take: query.limit,
       }),
       prisma.participant.count({ where }),
-      prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "ATTENDING" } }),
-      prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "DECLINED" } }),
+      // 要約の 3 つも名簿から外した行を数えない（履歴の `where` と同じ条件）。
+      prisma.participant.count({
+        where: { userId, event: { isDeleted: false }, status: "ATTENDING", ...ACTIVE_PARTICIPANT_WHERE },
+      }),
+      prisma.participant.count({
+        where: { userId, event: { isDeleted: false }, status: "DECLINED", ...ACTIVE_PARTICIPANT_WHERE },
+      }),
       // 参加要望は参加人数にも欠席にも数えない。待ち順で承認されるまで別枠で持つ。
-      prisma.participant.count({ where: { userId, event: { isDeleted: false }, status: "WAITLISTED" } }),
+      prisma.participant.count({
+        where: { userId, event: { isDeleted: false }, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
+      }),
       prisma.participant.count({
         where: participationWhere(userId, { scope: "upcoming" }, today),
       }),

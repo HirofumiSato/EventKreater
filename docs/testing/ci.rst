@@ -128,6 +128,8 @@ check ジョブ
 
 ``tests/setup/db.ts`` は ``TEST_DATABASE_URL`` があるときだけ ``DATABASE_URL`` を差し替えます。``check`` は ``TEST_DATABASE_URL`` を渡さないので、``tests/integration/`` はすべて skip され、DB へは接続しません。``DATABASE_URL`` は Prisma Client の生成が参照するだけです。
 
+ただし Prisma Client は読み込み時に ``.env`` を ``process.env`` へ入れるため、``TEST_DATABASE_URL`` が未設定のまま放置すると、各テストの ``describe.skip`` を評価する頃には ``.env`` の値が見えてしまいます。その状態では skip が解け、``DATABASE_URL``（開発用）のまま結合テストが走ります。``tests/setup/db.ts`` は無いときに空で固定して、これを止めています（Prisma は既にあるキーを上書きしません）。
+
 Stripe の秘密鍵、Webhook の署名鍵、Google のクライアント、OpenAI のキーは要りません。ジョブの秘密として登録する必要もありません。署名の試験は、テスト内のダミー鍵で完結します。
 
 flyer ジョブ

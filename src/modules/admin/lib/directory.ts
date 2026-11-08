@@ -4,6 +4,7 @@ import { formatEventDate } from "@/lib/serializers";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { maskPhone } from "@/modules/auth/lib/login-challenge";
 import { organizerLabel } from "@/modules/organizers/lib/names";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const ADMIN_PAGE_SIZE = 30;
 
@@ -41,7 +42,10 @@ export async function searchAdminUsers(q: string, offset: number) {
         phoneVerifiedAt: true,
         deletedAt: true,
         createdAt: true,
-        _count: { select: { organizers: true, participants: true } },
+        // 名簿から外した行は参加の件数に数えない。
+        _count: {
+          select: { organizers: true, participants: { where: { ...ACTIVE_PARTICIPANT_WHERE } } },
+        },
       },
     }),
   ]);
@@ -142,7 +146,10 @@ export async function searchAdminEvents(q: string, offset: number) {
         isDeleted: true,
         sortDate: true,
         createdAt: true,
-        _count: { select: { participants: true, organizers: true } },
+        // 参加者の件数は名簿に残っている行だけを数える。
+        _count: {
+          select: { participants: { where: { ...ACTIVE_PARTICIPANT_WHERE } }, organizers: true },
+        },
         organizers: {
           select: {
             role: true,

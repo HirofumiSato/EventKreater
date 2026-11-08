@@ -9,6 +9,7 @@ import { findMyParticipant, participantScheduleIds } from "@/modules/participant
 import { serializeEvent, serializeParticipantDiscounts, serializePublicOrganizerList } from "@/lib/serializers";
 import { eventOptionsInclude, sumAttendingHeadcount } from "@/modules/events/lib/events";
 import { isFull as isFullOf, remainingSeats, waitlistPosition } from "@/modules/events/lib/rsvp-status";
+import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +51,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
     const attendingCount = await sumAttendingHeadcount(prisma, event.id);
     const waitlistRows = await prisma.participant.findMany({
-      where: { eventId: event.id, status: "WAITLISTED" },
+      // 名簿から外した要望は待ち順に数えない。
+      where: { eventId: event.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
       select: { id: true, status: true, waitlistedAt: true, createdAt: true },
       orderBy: [{ waitlistedAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     });
