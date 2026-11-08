@@ -440,7 +440,7 @@ export function participantPriceDisplay(row: {
   };
 }
 
-/** チラシの料金を 30 文字までに収める。入りきらないときは先頭の金額に「〜」を付ける。 */
+/** チラシの料金を 30 文字までに収める。入りきらないときは最安値に「〜」を付ける。 */
 export function flyerPriceLabel(
   rows: { name: string; audience?: PriceAudience; amount: number; note?: string | null }[],
 ): string {
@@ -454,7 +454,9 @@ export function flyerPriceLabel(
   }
   const joined = rows.map(short).join(" / ");
   if (joined.length <= 30) return joined;
-  return `${short(rows[0]).slice(0, 29)}〜`;
+  // 入りきらないときは最安値を代表にする。同額の行が複数あれば先に並んでいる行を選ぶ。
+  const cheapest = rows.reduce((lowest, row) => (row.amount < lowest.amount ? row : lowest), rows[0]);
+  return `${short(cheapest).slice(0, 29)}〜`;
 }
 
 /** チラシは 60 文字まで。会場名と市区町村に絞る。 */

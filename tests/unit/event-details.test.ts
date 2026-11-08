@@ -124,6 +124,18 @@ describe("flyerPriceLabel", () => {
     expect(label.length).toBeLessThanOrEqual(30);
   });
 
+  it("入りきらないときは最安値に「〜」を付ける", () => {
+    const label = flyerPriceLabel([
+      { name: "一般", audience: "MALE", amount: 6500, note: null },
+      { name: "一般", audience: "FEMALE", amount: 4500, note: null },
+      { name: "学生", audience: "MALE", amount: 6000, note: null },
+      { name: "学生", audience: "FEMALE", amount: 4500, note: null },
+    ]);
+    expect(label.length).toBeLessThanOrEqual(30);
+    expect(label.endsWith("4,500円〜")).toBe(true);
+    expect(label).not.toContain("6,500円〜");
+  });
+
   it("単一プランは補足も含める", () => {
     expect(flyerPriceLabel([{ name: "一般", audience: "ANY", amount: 3000, note: "1ドリンク付" }])).toBe(
       "3,000円（1ドリンク付）",

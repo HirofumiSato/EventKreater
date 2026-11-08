@@ -302,7 +302,33 @@
   line-height: 1.5;
 }
 
+/* 作成中の状態。シマーだけでは何が起きているか伝わらないので、
+   スピナーと 1 行の文言をグリッドの上に置く。読み上げは role="status" が持つ。 */
+.candidate-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+/* 共通の `.loading` は 0.875rem の控えめな行なので、ここだけ少し強くする。 */
+.candidate-status .loading {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* 待ち時間の目安。押せる的ではないので、注記と同じ細さで足りる。 */
+.candidate-status__note {
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
 .candidate-skeleton {
+  /* 中の「作成中」の札を真ん中に置く。 */
+  display: grid;
+  place-items: center;
   aspect-ratio: 210 / 297;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
@@ -314,6 +340,19 @@
   );
   background-size: 220% 100%;
   animation: candidate-shimmer 1.3s ease-in-out infinite;
+}
+
+/* スケルトンの中の「作成中」の札。状態は role="status" が読み上げるので、
+   この札は読み上げない（aria-hidden）。 */
+.candidate-skeleton__label {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 2px;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 @keyframes candidate-shimmer {
