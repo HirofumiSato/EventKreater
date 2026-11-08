@@ -3,6 +3,8 @@ import { normalizePostalCode } from "@/lib/postal-code";
 import { parseRsvpDeadline, TIME_PATTERN } from "@/lib/serializers";
 import { SEMANTIC_THEME_IDS } from "@/lib/semantic-themes";
 import { FLYER_LAYOUT_IDS, FLYER_TEMPLATE_IDS, MAX_EVENT_OPTIONS } from "@/modules/events/types";
+import { EVENT_SUMMARY_MAX_LENGTH, summaryTextLength } from "@/modules/events/lib/summary";
+import { sanitizeEventSummary } from "@/modules/events/lib/summary-html";
 import { RSVP_PARTY_SIZE_MAX } from "@/modules/attendance/lib/rsvp-form";
 import { profileUrlProblem } from "@/modules/organizers/lib/profile";
 import { MAX_PROFILE_TAGS, PROFILE_TAGS } from "@/modules/organizers/types";
@@ -250,6 +252,22 @@ const postalCodeSchema = z
 
 const eventBodySchema = z.object({
   title: z.string().trim().min(1, "イベント名を入力してください").max(100),
+  /**
+   * 公開ページ冒頭の概要。許可タグだけの HTML で、空なら null。
+   * 文字数はタグと改行を除いた表示文字数で数える（`summaryTextLength`）。
+   */
+  summary: z
+    .string()
+    .max(5000)
+    .nullish()
+    .transform((value) => {
+      const clean = value ? sanitizeEventSummary(value) : "";
+      return summaryTextLength(clean) > 0 ? clean : null;
+    })
+    .refine(
+      (value) => value === null || summaryTextLength(value) <= EVENT_SUMMARY_MAX_LENGTH,
+      "イベント概要は200文字以内にしてください",
+    ),
   schedules: z.array(scheduleInputSchema).min(1, "開催日時を1件以上入力してください").max(MAX_EVENT_OPTIONS),
   pricePlans: z.array(pricePlanInputSchema).min(1, "料金プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),
   /** 参加者が申込時に選べる割引。任意で、省略した既存クライアントは 0 件として扱う。 */

@@ -527,6 +527,7 @@ try {
         building: input.building ?? null,
         venueName: input.venueName ?? null,
         targetGeneration: input.targetGeneration ?? null,
+        summary: input.summary ?? null,
         themeId: input.themeId ?? null,
         rainPolicy: input.rainPolicy ?? "RAIN_OR_SHINE",
         capacity: input.capacity ?? null,
@@ -652,6 +653,7 @@ try {
 
   const main = await createEvent({
     title: "秋の芋煮会",
+    summary: "<b>今年も河原で芋煮を炊きます。</b><br>鍋を囲んで、ゆっくり過ごしてください。",
     sortDate: nextMonth,
     location: "河川敷公園 第2広場（東京都世田谷区）",
     venueName: "河川敷公園 第2広場",
@@ -861,6 +863,7 @@ try {
 
   const craftMarket = await createEvent({
     title: "手しごとの市 秋の道具市",
+    summary: "<b>作り手が自分の道具を並べます。</b><br>手に取って、話を聞いて選べます。",
     sortDate: craftDate,
     location: "旧校舎ギャラリー（東京都世田谷区）",
     venueName: "旧校舎ギャラリー",

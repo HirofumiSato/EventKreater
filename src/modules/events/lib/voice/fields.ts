@@ -158,6 +158,9 @@ function priceRowLabel(base: string, row: number): string {
  *
  * これは定義の一覧で、行の展開は `voiceFieldOrder` が行う。
  * `label` は行を持たないときの名前である。
+ *
+ * 概要（`summary`）はここに入れない。リッチテキストで 1 つの入力欄として読み書きできないため、
+ * 音声の巡回では聞かず（`domId` も `data-voice-target` も持たせない）、スポットライトでも示さない。
  */
 export const VOICE_FIELDS: readonly VoiceField[] = [
   {

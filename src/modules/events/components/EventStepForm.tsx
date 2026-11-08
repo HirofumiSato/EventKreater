@@ -20,6 +20,10 @@ import {
 } from "@/modules/events/lib/steps";
 import { guideOpenKeys, type EventGuideOpenMode } from "@/modules/events/lib/tour/steps";
 import {
+  EVENT_SUMMARY_MAX_LENGTH,
+  summaryTextLength,
+} from "@/modules/events/lib/summary";
+import {
   BasicSection,
   CapacitySection,
   DiscountSection,
@@ -277,6 +281,13 @@ export function EventStepForm({
   /** 必須のステップが埋まっているか確かめる。下書き保存とプレビューの両方で使う。 */
   const validate = (): boolean => {
     setError(null);
+    // 概要は任意だが、200 字を超えたままでは保存できない。
+    // 直す場所が分かるよう、基本情報を開いてから止める。
+    if (summaryTextLength(value.summary) > EVENT_SUMMARY_MAX_LENGTH) {
+      setError(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`);
+      openStep("basic");
+      return false;
+    }
     const blocked = EVENT_STEPS.find((step) => step.mandatory && !isComplete(step.key));
     if (blocked) {
       setError(`「${blocked.title}」を入れてから保存してください。`);

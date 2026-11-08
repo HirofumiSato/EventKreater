@@ -84,6 +84,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         const created = await tx.event.create({
           data: {
             title,
+            summary: source.summary,
             // 複製は次の回を作るためのもの。開催日と並び日を1か月後へずらす。
             sortDate: parseEventDate(
               shiftDateByMonths(formatEventDate(source.sortDate), CLONE_SHIFT_MONTHS),

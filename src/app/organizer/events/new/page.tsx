@@ -37,6 +37,8 @@ import { Alert, Loading, PageHeader } from "@/components/ui";
 interface DraftDetailResponse {
   event: {
     title: string;
+    /** 公開ページの冒頭に出す概要。許可タグだけの HTML。 */
+    summary: string | null;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
     discounts: EventDiscountOption[];
@@ -142,6 +144,7 @@ function NewEventScreen() {
       if (!active) return;
       setForm({
         title: detail.event.title,
+        summary: detail.event.summary ?? "",
         // 会員の表示名はサーバーが解決するので、復元では使わない。
         organizerDisplayName: "",
         ...draftsFromOptions(detail.event),

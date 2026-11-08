@@ -3,6 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isSemanticThemeId } from "@/lib/semantic-themes";
 import { findSample, SAMPLE_EVENTS } from "@/app/sample/samples";
+import { EVENT_SUMMARY_MAX_LENGTH, summaryTextLength } from "@/modules/events/lib/summary";
+import { sanitizeEventSummary } from "@/modules/events/lib/summary-html";
 
 const ROOT = process.cwd();
 
@@ -53,5 +55,24 @@ describe("告知ページの見本", () => {
   it("slug から 1 件を引ける。知らない slug は undefined", () => {
     expect(findSample(SAMPLE_EVENTS[0].slug)?.title).toBe(SAMPLE_EVENTS[0].title);
     expect(findSample("unknown")).toBeUndefined();
+  });
+});
+
+describe("見本の概要", () => {
+  it("どの見本にも概要があり、200 文字以内に収まっている", () => {
+    expect(SAMPLE_EVENTS).toHaveLength(5);
+    for (const event of SAMPLE_EVENTS) {
+      expect(event.summary).not.toBeNull();
+      const summary = event.summary ?? "";
+      expect(summaryTextLength(summary)).toBeGreaterThan(0);
+      expect(summaryTextLength(summary)).toBeLessThanOrEqual(EVENT_SUMMARY_MAX_LENGTH);
+    }
+  });
+
+  it("概要は許可タグだけで書かれている（無害化しても形が変わらない）", () => {
+    for (const event of SAMPLE_EVENTS) {
+      const summary = event.summary ?? "";
+      expect(sanitizeEventSummary(summary)).toBe(summary);
+    }
   });
 });

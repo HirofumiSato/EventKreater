@@ -460,6 +460,8 @@ model Event {
   targetGeneration String? @map("target_generation") @db.VarChar(50)
   /// 告知ページのセマンティックテーマ。NULL は標準。ID の一覧は `src/lib/semantic-themes.ts`。
   themeId      String?     @map("theme_id") @db.VarChar(32)
+  /// 告知ページ冒頭の概要。許可タグだけの HTML で、表示文字数（タグ・改行を除く）は 200 字まで。NULL は未設定で、何も出さない。
+  summary      String?     @map("summary") @db.Text
   flyerAssetId String?     @map("flyer_asset_id") @db.Uuid
   status       EventStatus @default(DRAFT)
   /// 将来のメディアサイト向けの掲載フラグ。いまのアプリは一覧を持たないため常に UNLISTED（紹介制）。
@@ -1065,6 +1067,7 @@ CREATE TABLE events (
     capacity INT NULL CHECK (capacity > 0),
     target_generation VARCHAR(50) NULL,
     theme_id VARCHAR(32) NULL,
+    summary TEXT NULL, -- 任意。許可タグだけの HTML。表示文字数（タグ・改行を除く）は 200 字まで
     flyer_asset_id UUID NULL REFERENCES flyer_assets(id) ON DELETE SET NULL,
     status event_status_enum NOT NULL DEFAULT 'DRAFT',
     visibility event_visibility_enum NOT NULL DEFAULT 'UNLISTED',

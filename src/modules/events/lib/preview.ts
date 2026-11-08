@@ -1,5 +1,6 @@
 import { composeDiscountText, composeEventTime, composeLocation, composePriceText } from "@/lib/serializers";
 import type { EventFormValues, FlyerAsset } from "@/modules/events/types";
+import { summaryTextLength } from "@/modules/events/lib/summary";
 
 /**
  * 入力途中のフォームを、告知ページの部品（`PosterHero` / `EventMetaCard`）が
@@ -10,6 +11,8 @@ import type { EventFormValues, FlyerAsset } from "@/modules/events/types";
  */
 export interface EventFormPreview {
   title: string;
+  /** 題名の下に出す概要。空なら null（欄ごと出さない）。 */
+  summary: string | null;
   schedules: { id: string; eventDate: string; startTime: string | null; endTime: string | null; eventTime: string }[];
   pricePlans: {
     id: string;
@@ -51,6 +54,7 @@ export function eventFormToPreview(
   const location = composeLocation(value) || "場所未定";
   return {
     title: value.title.trim() || "（イベント名は未入力）",
+    summary: summaryTextLength(value.summary) > 0 ? value.summary : null,
     schedules: value.schedules.map((row) => ({
       id: row.key,
       eventDate: row.eventDate || "日付未定",

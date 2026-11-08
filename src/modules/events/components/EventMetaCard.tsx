@@ -6,11 +6,13 @@ import { formatDateWithWeekdayJa } from "@/lib/format";
 import { formatRsvpDeadlineLabel } from "@/lib/serializers";
 import { PRICE_AUDIENCE_LABELS, RAIN_POLICY_LABELS, type PublicEvent } from "@/modules/events/types";
 import { Badge } from "@/components/ui";
+import { EventSummary } from "@/modules/events/components/EventSummary";
 
 interface EventMetaCardProps {
   event: Pick<
     PublicEvent,
     | "title"
+    | "summary"
     | "schedules"
     | "pricePlans"
     | "discounts"
@@ -37,6 +39,7 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
   return (
     <section className="event-sheet">
       <h1 className="event-sheet__title">{event.title}</h1>
+      <EventSummary html={event.summary} />
       {(owner || coHosts.length > 0) && (
         <p className="event-sheet__host">
           主催者:{" "}

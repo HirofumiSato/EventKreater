@@ -25,6 +25,7 @@ import {
   type CapacitySelection,
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
+import { EventSummaryEditor } from "@/modules/events/components/EventSummaryEditor";
 import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
 import { Alert, Dialog, Field, ThemePicker } from "@/components/ui";
 
@@ -53,6 +54,20 @@ export function BasicSection({
 
   return (
     <>
+      {/* 概要は基本情報の先頭に置く。公開ページの冒頭に出る文なので、
+          イベント名より先に、どんな催しかを書けるようにする。 */}
+      <Field
+        label="イベント概要（任意）"
+        htmlFor="event-summary"
+        help="公開ページの冒頭に出ます。200文字まで。"
+      >
+        <EventSummaryEditor
+          id="event-summary"
+          value={value.summary}
+          onChange={(html) => set("summary", html)}
+          disabled={disabled}
+        />
+      </Field>
       <Field label="イベント名" htmlFor="event-title">
         <input
           id="event-title"

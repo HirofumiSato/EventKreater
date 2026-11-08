@@ -1676,6 +1676,150 @@ fieldset.field {
   background: var(--color-slate-100);
 }
 
+/* 概要のリッチテキスト。枠・焦点・無効の見た目は `.input` にそろえる。
+   枠は「ツールバー・本文・文字数」の 3 段をまとめて囲む。 */
+.rich-text {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.rich-text:focus-within {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.rich-text.is-invalid {
+  border-color: var(--color-danger-line);
+}
+
+.rich-text__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 押せる的は 40px を下回らせない。アイコンだけを 15px にして、余白で押しやすくする。 */
+.rich-text__tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-strong);
+  cursor: pointer;
+}
+
+.rich-text__tool .icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.rich-text__tool:hover:not(:disabled) {
+  background: var(--color-slate-100);
+}
+
+.rich-text__tool:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* 効いている書式は、押された札として朱の薄地で示す。 */
+.rich-text__tool[aria-pressed="true"] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.rich-text__tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* スマホでは 16px にして、iOS が押したときに画面を拡大しないようにする。 */
+.rich-text__body {
+  min-height: 6.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  /* URL のような切れ目の無い文字でも、枠の外へはみ出さない。 */
+  overflow-wrap: anywhere;
+}
+
+.rich-text__body:focus {
+  outline: none;
+}
+
+/* 空のときだけ、何を書く欄かを 1 行で出す。 */
+.rich-text__body:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-placeholder);
+}
+
+@media (min-width: 640px) {
+  .rich-text__body {
+    font-size: 0.875rem;
+  }
+}
+
+.rich-text__body p,
+.rich-text__body ul,
+.rich-text__body ol {
+  margin: 0 0 0.5rem;
+}
+
+.rich-text__body > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text__body ul,
+.rich-text__body ol {
+  padding-left: 1.25rem;
+}
+
+.rich-text__body li {
+  margin: 0.125rem 0;
+}
+
+.rich-text__body a {
+  color: var(--color-primary-text);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.rich-text__body b,
+.rich-text__body strong {
+  font-weight: 700;
+}
+
+.rich-text__body i,
+.rich-text__body em {
+  font-style: italic;
+}
+
+.rich-text__body u {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.rich-text__count {
+  margin: 0 0.75rem 0.5rem;
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.rich-text__count.is-over {
+  color: var(--color-danger-text);
+}
+
 .help,
 .field-error {
   font-size: 0.75rem;
