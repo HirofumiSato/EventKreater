@@ -10337,7 +10337,7 @@
       "title": "ローカルでの操作",
       "summary": "手元で動かすために、次を用意します。",
       "preImplementation": false,
-      "lineCount": 359,
+      "lineCount": 385,
       "headings": [
         {
           "level": 1,
@@ -10361,7 +10361,7 @@
         },
         {
           "level": 3,
-          "text": "保存した直後に、どの URL も 500 になることがあります（ npm run dev で起動した場合のみ自動で戻ります）"
+          "text": "保存した直後や git の操作のあとに、どの URL も 500 になることがあります（ npm run dev で起動した場合のみ自動で戻ります）"
         },
         {
           "level": 3,

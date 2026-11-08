@@ -5,13 +5,18 @@
 // 狭すぎると、OneDrive の掴みでサーバーが 500 を返し続ける状態を見逃す。
 
 import { describe, expect, it } from "vitest";
+import path from "node:path";
 
 import {
+  isStaleCacheLine,
+  isStaleResolution,
   isStuckBuildLine,
+  resolveCandidates,
   shouldRestartNow,
   STUCK_RESTART_DELAY_MS,
   STUCK_RESTART_GRACE_MS,
   STUCK_RESTART_MIN_INTERVAL_MS,
+  unresolvedSpecifier,
 } from "../../scripts/lib/dev-stuck.mjs";
 
 describe("isStuckBuildLine", () => {
@@ -42,6 +47,71 @@ describe("isStuckBuildLine", () => {
     expect(isStuckBuildLine("")).toBe(false);
     expect(isStuckBuildLine(undefined)).toBe(false);
     expect(isStuckBuildLine(null)).toBe(false);
+  });
+});
+
+describe("isStaleCacheLine", () => {
+  it("Turbopack と Webpack の .next を取り違えたときの行を拾う", () => {
+    expect(
+      isStaleCacheLine("Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'"),
+    ).toBe(true);
+  });
+
+  it("世代の違うチャンクが混ざったときの行を拾う", () => {
+    expect(isStaleCacheLine("TypeError: Cannot read properties of null (reading 'useContext')")).toBe(
+      true,
+    );
+  });
+
+  it("手元のコードの誤りは拾わない", () => {
+    expect(isStaleCacheLine("TypeError: Cannot read properties of undefined (reading 'id')")).toBe(
+      false,
+    );
+    expect(isStaleCacheLine(" ✓ Compiled /service in 320ms")).toBe(false);
+    expect(isStaleCacheLine("")).toBe(false);
+  });
+});
+
+describe("unresolvedSpecifier / resolveCandidates", () => {
+  it("解決できないと言われた名前を取り出す", () => {
+    expect(
+      unresolvedSpecifier("Module not found: Can't resolve '@/modules/events/lib/summary'"),
+    ).toBe("@/modules/events/lib/summary");
+    expect(unresolvedSpecifier("Cannot find module './foo'")).toBe("./foo");
+    expect(unresolvedSpecifier(" ✓ Compiled /service in 320ms")).toBeNull();
+  });
+
+  it("@/ は src の下へ開き、パッケージ名と相対は見ない", () => {
+    const root = "C:/work";
+    expect(resolveCandidates("@/modules/events/lib/summary", root)).toContain(
+      path.join(root, "src", "modules", "events", "lib", "summary.ts"),
+    );
+    expect(resolveCandidates("react", root)).toEqual([]);
+    expect(resolveCandidates("./foo", root)).toEqual([]);
+    expect(resolveCandidates(null, root)).toEqual([]);
+  });
+});
+
+describe("isStaleResolution", () => {
+  const root = "C:/work";
+  const line = "Module not found: Can't resolve '@/modules/events/lib/summary'";
+  const candidates = resolveCandidates("@/modules/events/lib/summary", root);
+
+  it("ディスクにあるファイルを「無い」と言われたら、キャッシュが古いだけ", () => {
+    expect(isStaleResolution(line, { root, exists: (file) => file === candidates[0] })).toBe(true);
+  });
+
+  it("本当に無いファイルなら、再起動せずにエラーをそのまま見せる", () => {
+    expect(isStaleResolution(line, { root, exists: () => false })).toBe(false);
+  });
+
+  it("パッケージ名や、そもそも解決の話でない行は拾わない", () => {
+    expect(isStaleResolution("Module not found: Can't resolve 'react'", { root, exists: () => true })).toBe(
+      false,
+    );
+    expect(isStaleResolution(" ✓ Compiled /service in 320ms", { root, exists: () => true })).toBe(
+      false,
+    );
   });
 });
 
