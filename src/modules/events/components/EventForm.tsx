@@ -137,7 +137,7 @@ function EventStepFrame({
   return (
     <li className="event-step event-step--open">
       <h2 className="event-step__heading">
-        <div className="event-step__toggle event-step__toggle--static">
+        <div className="event-step__heading-inner">
           <span className="event-step__number" aria-hidden="true">
             {number}
           </span>

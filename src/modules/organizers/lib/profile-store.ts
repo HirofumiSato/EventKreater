@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { formatEventDate } from "@/lib/serializers";
@@ -183,6 +184,27 @@ export async function loadPublicOrganizerProfile(userId: string): Promise<Loaded
     name: user.name,
     profile: profileContentFromRow(user.organizerProfile, stats),
   };
+}
+
+/**
+ * 公開プロフィールの読み取りをリクエスト内で 1 回にまとめる。
+ *
+ * 公開ページは器（`layout.tsx`）と本文（`page.tsx`）の両方が同じ値を要る。
+ * 器はテーマを、本文は名前とプロフィールを読むので、素で呼ぶと同じ問い合わせが
+ * 2 度走る。`cache()` は同じ引数なら同じ結果を返すので、ここで 1 度に寄せる。
+ */
+export const loadPublicOrganizerProfileCached = withRequestCache(loadPublicOrganizerProfile);
+
+/**
+ * `React.cache()` を当てる。同じ引数の呼び出しを、リクエスト内で 1 度にまとめる。
+ *
+ * 素の `react`（18 系）は `cache()` を持たない。単体テストはそちらを読むため、
+ * 無いときは素の関数をそのまま返す（結果は同じで、まとめる相手がいないだけ）。
+ * まとめるのは Next.js のサーバー実行時だけでよい。
+ */
+function withRequestCache<F extends (userId: string) => Promise<unknown>>(fn: F): F {
+  const apply = cache as unknown as ((target: F) => F) | undefined;
+  return typeof apply === "function" ? apply(fn) : fn;
 }
 
 /** 自分のイベントから実績を数える。編集画面のプレビューに使う。 */

@@ -10,7 +10,7 @@ import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInvite
 import { showsOrganizerInvite } from "@/modules/events/lib/organizer-invite";
 import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
-import { Alert, Loading, SemanticThemeScope } from "@/components/ui";
+import { Alert, Loading } from "@/components/ui";
 
 export default function PublicEventPage({ params }: { params: { id: string } }) {
   const [event, setEvent] = useState<PublicEvent | null>(null);
@@ -53,11 +53,10 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
   const full = event.capacity !== null && event.attendingCount >= event.capacity;
   const hasAnswered = answered ?? Boolean(event.myRsvp);
 
+  // テーマはページ側の器（`PublicThemeShell`）が持つ。ここでは中身だけを描く。
   return (
-    // テーマ未選択なら何も包まない。既存イベントの DOM と見た目を変えない。
-    <SemanticThemeScope themeId={event.themeId} page>
-      <div className="page--narrow event-page">
-        <PosterHero
+    <div className="page--narrow event-page">
+      <PosterHero
         title={event.title}
         flyer={event.flyerAsset}
         stamp={!event.rsvpOpen ? "受付終了" : full ? "満員" : "受付中"}
@@ -117,7 +116,6 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
         }
         showInvite={showsOrganizerInvite(event.viewer)}
       />
-      </div>
-    </SemanticThemeScope>
+    </div>
   );
 }

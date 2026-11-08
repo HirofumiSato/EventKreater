@@ -3,56 +3,77 @@ import { showOrganizerTabs, showParticipantTabs, siteChrome } from "@/lib/site-c
 
 describe("公開クロムの出し分け", () => {
   it("ホームは LP として扱い、ヘッダーを出さず上端の余白も落とす", () => {
-    expect(siteChrome("/")).toEqual({ header: false, footer: true, flushTop: true });
+    expect(siteChrome("/")).toEqual({ header: false, footer: true, main: true, flushTop: true });
   });
 
   it("管理コンソールはヘッダーもフッターも出さない", () => {
-    expect(siteChrome("/console")).toEqual({ header: false, footer: false, flushTop: false });
+    expect(siteChrome("/console")).toEqual({
+      header: false,
+      footer: false,
+      main: true,
+      flushTop: false,
+    });
     expect(siteChrome("/console/users")).toEqual({
       header: false,
       footer: false,
+      main: true,
       flushTop: false,
     });
   });
 
-  it("その他の画面はヘッダーとフッターを出し、余白は普段どおり", () => {
-    expect(siteChrome("/service")).toEqual({ header: true, footer: true, flushTop: false });
+  it("その他の画面はヘッダーとフッターを出し、main も SiteChrome が描く", () => {
+    expect(siteChrome("/service")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
     expect(siteChrome("/organizer/events")).toEqual({
       header: true,
       footer: true,
+      main: true,
       flushTop: false,
     });
   });
 
-  it("主催者の公開ページは共通ヘッダーを出さない", () => {
-    expect(siteChrome("/organizers/abc")).toEqual({
+  it("主催者の公開ページの一覧は共通ヘッダーを出さず、main とフッターを残す", () => {
+    expect(siteChrome("/organizers")).toEqual({
       header: false,
       footer: true,
+      main: true,
       flushTop: false,
     });
-    expect(siteChrome("/organizers")).toEqual({ header: false, footer: true, flushTop: false });
   });
 
-  it("告知ページは共通ヘッダーを出さず、チラシを画面の上端から始める", () => {
-    expect(siteChrome("/events/abc")).toEqual({ header: false, footer: true, flushTop: true });
-    expect(siteChrome("/events")).toEqual({ header: false, footer: true, flushTop: false });
+  it("告知ページの一覧は共通ヘッダーを出さず、main とフッターを残す", () => {
+    expect(siteChrome("/events")).toEqual({
+      header: false,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
   });
 
-  it("告知ページの見本は共通ヘッダーを出さず、帯を画面の上端から始める", () => {
-    expect(siteChrome("/sample")).toEqual({ header: false, footer: true, flushTop: true });
-    expect(siteChrome("/sample/dj")).toEqual({ header: false, footer: true, flushTop: true });
-    expect(siteChrome("/sample/dj/")).toEqual({ header: false, footer: true, flushTop: true });
+  it("告知ページの見本の一覧は main とフッターを残し、帯を画面の上端から始める", () => {
+    expect(siteChrome("/sample")).toEqual({
+      header: false,
+      footer: true,
+      main: true,
+      flushTop: true,
+    });
   });
 
   it("下書きプレビューはヘッダーを出したまま上端の余白を落とす", () => {
     expect(siteChrome("/organizer/events/abc/preview")).toEqual({
       header: true,
       footer: true,
+      main: true,
       flushTop: true,
     });
     expect(siteChrome("/organizer/events/abc/preview/")).toEqual({
       header: true,
       footer: true,
+      main: true,
       flushTop: true,
     });
   });
@@ -61,24 +82,110 @@ describe("公開クロムの出し分け", () => {
     expect(siteChrome("/organizer/events/abc/edit")).toEqual({
       header: true,
       footer: true,
+      main: true,
       flushTop: false,
     });
     expect(siteChrome("/organizer/events/preview")).toEqual({
       header: true,
       footer: true,
+      main: true,
       flushTop: false,
     });
   });
 
   it("区切りを跨いだ前方一致をしない", () => {
-    expect(siteChrome("/consolelike")).toEqual({ header: true, footer: true, flushTop: false });
-    expect(siteChrome("/organizerslike")).toEqual({ header: true, footer: true, flushTop: false });
-    expect(siteChrome("/eventslike")).toEqual({ header: true, footer: true, flushTop: false });
-    expect(siteChrome("/samplelike")).toEqual({ header: true, footer: true, flushTop: false });
+    expect(siteChrome("/consolelike")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/organizerslike")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/eventslike")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/samplelike")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
   });
 
   it("パスが空でも通常の画面として扱う", () => {
-    expect(siteChrome("")).toEqual({ header: true, footer: true, flushTop: false });
+    expect(siteChrome("")).toEqual({ header: true, footer: true, main: true, flushTop: false });
+  });
+
+  it("テーマ付きの公開ページは main とフッターをページ側の器へ渡す", () => {
+    // フッターをテーマの地の内側へ置くため、SiteChrome は main もフッターも描かない。
+    expect(siteChrome("/events/abc")).toEqual({
+      header: false,
+      footer: false,
+      main: false,
+      flushTop: true,
+    });
+    expect(siteChrome("/organizers/abc")).toEqual({
+      header: false,
+      footer: false,
+      main: false,
+      flushTop: false,
+    });
+    expect(siteChrome("/sample/dj")).toEqual({
+      header: false,
+      footer: false,
+      main: false,
+      flushTop: true,
+    });
+    expect(siteChrome("/sample/profile/abc")).toEqual({
+      header: false,
+      footer: false,
+      main: false,
+      flushTop: true,
+    });
+    // 招待だけは共通ヘッダーを残す（案内の入口なので、行き先を見せる）。
+    expect(siteChrome("/invite/abc")).toEqual({
+      header: true,
+      footer: false,
+      main: false,
+      flushTop: false,
+    });
+  });
+
+  it("テーマ付きの公開ページでも末尾のスラッシュは同じ段として扱う", () => {
+    expect(siteChrome("/events/abc/").main).toBe(false);
+    expect(siteChrome("/organizers/abc/").main).toBe(false);
+    expect(siteChrome("/invite/abc/").main).toBe(false);
+    expect(siteChrome("/sample/dj/").main).toBe(false);
+    expect(siteChrome("/sample/profile/abc/").main).toBe(false);
+  });
+
+  it("段が無い・深すぎるパスはテーマ付きの公開ページにしない", () => {
+    // 段の無い一覧は main とフッターを残す。
+    expect(siteChrome("/invite")).toEqual({
+      header: true,
+      footer: true,
+      main: true,
+      flushTop: false,
+    });
+    expect(siteChrome("/sample/profile")).toEqual({
+      header: false,
+      footer: true,
+      main: true,
+      flushTop: true,
+    });
+    // 配下の画面（2 段目以降）も main とフッターを残す。
+    expect(siteChrome("/organizers/abc/events").main).toBe(true);
+    expect(siteChrome("/events/abc/edit").main).toBe(true);
+    expect(siteChrome("/sample/dj/extra").main).toBe(true);
+    expect(siteChrome("/sample/profile/abc/extra").main).toBe(true);
   });
 });
 

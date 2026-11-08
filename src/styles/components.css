@@ -1171,7 +1171,8 @@ fieldset.field {
   font-weight: 700;
 }
 
-.event-step__toggle {
+.event-step__toggle,
+.event-step__heading-inner {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -1184,6 +1185,12 @@ fieldset.field {
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* 編集画面の見出しは開閉しない。本文を押しても、ここへは何も起きない。
+   `.event-step__toggle` を付けないので、押せる見た目にもならない。 */
+.event-step__heading-inner {
+  cursor: default;
 }
 
 .event-step__toggle:hover .event-step__title {
@@ -1361,7 +1368,8 @@ fieldset.field {
 }
 
 @media (max-width: 639px) {
-  .event-step__toggle {
+  .event-step__toggle,
+  .event-step__heading-inner {
     padding: 0.875rem 1rem;
   }
 

@@ -33,7 +33,7 @@ import {
   EVENT_SUMMARY_MAX_LENGTH,
   summaryTextLength,
 } from "@/modules/events/lib/summary";
-import { Alert, Loading } from "@/components/ui";
+import { Alert, Dialog, Loading } from "@/components/ui";
 
 interface DetailResponse {
   event: {
@@ -88,6 +88,8 @@ function EditEventScreen({ params }: { params: { id: string } }) {
   const [takingOver, setTakingOver] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
+  /** 公開済みの内容を更新した直後に出す層。閉じたらプレビューへ進む。 */
+  const [updatedOpen, setUpdatedOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const lock = useEditLock(params.id, holderName, ready && holderName.length > 0);
 
@@ -194,6 +196,14 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         status: saved.event.status,
       }));
       if (intent === "preview") {
+        // 公開済みの更新は、まず「更新しました」を出してからプレビューへ進む。
+        // 下書きは公開の確認になるので、そのままプレビューへ移る。
+        if (saved.event.status !== "DRAFT") {
+          setSaving(false);
+          setSaveIntent(null);
+          setUpdatedOpen(true);
+          return;
+        }
         // 遷移するまでボタンは止めたまま（二重保存を防ぐ）。
         router.push(`/organizer/events/${params.id}/preview`);
         return;
@@ -219,6 +229,12 @@ function EditEventScreen({ params }: { params: { id: string } }) {
     }
     setSaving(false);
     setSaveIntent(null);
+  };
+
+  /** 「更新しました」を閉じたら、保存した内容のプレビューへ進む。 */
+  const goPreviewAfterUpdate = () => {
+    setUpdatedOpen(false);
+    router.push(`/organizer/events/${params.id}/preview`);
   };
 
   const applyFlyer = (flyer: SelectableFlyer) => {
@@ -320,8 +336,8 @@ function EditEventScreen({ params }: { params: { id: string } }) {
         }
       />
       {/* 保存とプレビューは画面下に固定する。長いフォームを読み終えても、
-          戻らずに押せるようにするため。主操作（朱）は「プレビューを確認して公開」の
-          1 つだけにする。 */}
+          戻らずに押せるようにするため。主操作（朱）は 1 つだけにする。
+          公開済みは「更新」、下書きは「プレビューを確認して公開」。 */}
       <div className="action-dock">
         <div className="action-dock__inner">
           <button
@@ -338,7 +354,11 @@ function EditEventScreen({ params }: { params: { id: string } }) {
             disabled={!lock.hasLock || saving}
             onClick={() => void saveEdit("preview")}
           >
-            {saving && saveIntent === "preview" ? "保存しています…" : "プレビューを確認して公開"}
+            {saving && saveIntent === "preview"
+              ? "保存しています…"
+              : isDraft
+                ? "プレビューを確認して公開"
+                : "公開内容を更新"}
           </button>
         </div>
       </div>
@@ -356,6 +376,20 @@ function EditEventScreen({ params }: { params: { id: string } }) {
           }
         }}
       />
+      {updatedOpen && (
+        <Dialog
+          title="更新しました"
+          titleId="event-updated-title"
+          onClose={goPreviewAfterUpdate}
+          actions={
+            <button type="button" className="btn btn--primary btn--block" onClick={goPreviewAfterUpdate}>
+              プレビューを見る
+            </button>
+          }
+        >
+          <p className="dialog__body">公開内容を更新しました。</p>
+        </Dialog>
+      )}
       <PricingModal
         isOpen={quotaState.isPricingModalOpen}
         onClose={quotaState.closePricingModal}

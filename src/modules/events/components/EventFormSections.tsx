@@ -234,11 +234,14 @@ export function PricePlansSection({
     );
   };
 
-  /** 共通料金のプラン名。男女別では組の見出しに1つだけ出すので、行の中では使わない。 */
-  const planNameField = (row: PricePlanDraft) => (
+  /**
+   * 共通料金のプラン名。見出しは「プラン1」「プラン2」と並び順で示す。
+   * 男女別では組の見出しに1つだけ出すので、行の中では使わない。
+   */
+  const planNameField = (row: PricePlanDraft, index: number) => (
     <div className="field">
       <label className="label" htmlFor={`plan-name-${row.key}`}>
-        プラン名
+        プラン{index + 1}
       </label>
       <input
         id={`plan-name-${row.key}`}
@@ -374,7 +377,7 @@ export function PricePlansSection({
             </Alert>
           )}
           {pricingMode === "GENDER"
-            ? planGroups.map((group) => {
+            ? planGroups.map((group, index) => {
                 // 1組＝1プランなので、プラン名は組の見出しに1つだけ置く。
                 const head = group[0];
                 return (
@@ -382,7 +385,7 @@ export function PricePlansSection({
                     <div className="price-group__head">
                       <div className="field">
                         <label className="label" htmlFor={`plan-name-${head.key}`}>
-                          プラン名
+                          プラン{index + 1}
                         </label>
                         <input
                           id={`plan-name-${head.key}`}
@@ -420,9 +423,9 @@ export function PricePlansSection({
                   </div>
                 );
               })
-            : value.pricePlans.map((row) => (
+            : value.pricePlans.map((row, index) => (
                 <div key={row.key} className="repeat-row repeat-row--plan-common">
-                  {planNameField(row)}
+                  {planNameField(row, index)}
                   {planAmountAndNoteFields(row)}
                   <button
                     type="button"

@@ -627,6 +627,16 @@ svg {
   margin-inline: auto;
 }
 
+/* 器（`PublicThemeShell`）の `main` に付ける読み幅。テーマ付きの公開ページは
+   ページ側が `main` を持つため、`.page`（64rem）のままだと読み幅が他の公開ページ
+   （`.page--narrow` の 42rem）と揃わない。
+   `.page` の左右余白（1rem × 2）は box-sizing で幅に含まれるので、中の
+   `.page--narrow` が 42rem を保てるよう余白の分を足す。テーマを選んでいるときは
+   themes.css の器の節が `--st-content-width` に差し替える（層の順で後ろが勝つ）。 */
+.page--content {
+  width: min(100%, calc(var(--width-content) + 2rem));
+}
+
 .page--form {
   width: min(100%, var(--width-form));
   margin-inline: auto;

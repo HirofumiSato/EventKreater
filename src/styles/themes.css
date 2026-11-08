@@ -1091,11 +1091,52 @@
 }
 
 /* --------------------------------------------------------------------------
-   21. 印刷。テーマは画面のためのもの。紙に出すときは地を塗らない。
+   21. 器（シェル）
+
+   テーマ付きの公開ページは、ページ側の器（`PublicThemeShell`）が `main` と
+   フッターを持つ。フッターまでテーマの地を続けるため、地を敷くのは `main` では
+   なく器にする。`.semantic-theme--page` は編集画面のプレビュー用に残す。
+   -------------------------------------------------------------------------- */
+
+.semantic-theme--shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--st-surface-base);
+  background-image: var(--st-surface-image, none);
+  background-size: var(--st-surface-image-size, auto);
+  background-repeat: var(--st-surface-image-repeat, repeat);
+}
+
+/* 本文が短いページでも、フッターを画面の下へ寄せる。 */
+.semantic-theme--shell > main {
+  flex: 1 0 auto;
+}
+
+/* 読み幅はテーマの値で決める（`.page--narrow` は余白で作っていた）。 */
+.semantic-theme--shell .page--narrow {
+  width: min(100%, var(--st-content-width));
+}
+
+/* 器の `main` の読み幅もテーマの値へ差し替える（既定は base.css の
+   `.page--content`）。`main` の左右余白（1rem × 2）は幅に含まれるので、中の
+   `.page--narrow` が `--st-content-width` を保てるよう余白の分を足す。 */
+.semantic-theme--shell .page--content {
+  width: min(100%, calc(var(--st-content-width) + 2rem));
+}
+
+/* フッターは面の色のまま（`--color-surface`）。書体だけは共通へ戻す。 */
+.semantic-theme--shell .site-footer {
+  font-family: var(--font);
+}
+
+/* --------------------------------------------------------------------------
+   22. 印刷。テーマは画面のためのもの。紙に出すときは地を塗らない。
    -------------------------------------------------------------------------- */
 
 @media print {
-  .semantic-theme--page {
+  .semantic-theme--page,
+  .semantic-theme--shell {
     margin: 0;
     padding: 0;
     background: none;
