@@ -700,6 +700,8 @@ model VenueSuggestion {
 model Event {
   id               String          @id @default(uuid()) @db.Uuid
   title            String          @db.VarChar(100)
+  /// 公開ページ冒頭の概要。許可タグだけの HTML。表示文字数は 200 字まで。
+  summary          String?         @map("summary") @db.Text
   /// 開催候補のうち最も早い日。一覧の並びと検索インデックス用。
   sortDate         DateTime        @map("sort_date") @db.Date
   /// 表示用に合成した開催場所。構造化住所があればそこから作り、無ければ入力された文字列をそのまま使う。

@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3028,
+      "lineCount": 3032,
       "headings": [
         {
           "level": 1,
@@ -2530,6 +2530,14 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/summary-html.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/summary.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/venue-suggestions.ts",
           "exists": true
         },
@@ -2927,7 +2935,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 2009,
+      "lineCount": 2012,
       "headings": [
         {
           "level": 2,
@@ -3353,7 +3361,7 @@
       "title": "新規イベント作成画面の初回ガイド",
       "summary": "イベント作成画面（ /organizer/events/new ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 8 枚のツアーです。 入力の全体像を先に渡し、どこから手を付けるかで迷わせないために置きます。",
       "preImplementation": false,
-      "lineCount": 328,
+      "lineCount": 332,
       "headings": [
         {
           "level": 1,
@@ -6389,6 +6397,10 @@
         },
         {
           "path": "src/modules/events/components/EventStepForm.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/components/EventSummaryEditor.tsx",
           "exists": true
         },
         {
@@ -11827,7 +11839,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 814,
+      "lineCount": 822,
       "headings": [
         {
           "level": 1,
@@ -11886,6 +11898,10 @@
         },
         {
           "path": "tests/components/auth-entry-screen.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/event-summary-editor.test.tsx",
           "exists": true
         },
         {
@@ -12146,6 +12162,10 @@
         },
         {
           "path": "tests/unit/event-steps.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-summary.test.ts",
           "exists": true
         },
         {

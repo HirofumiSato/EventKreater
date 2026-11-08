@@ -452,6 +452,7 @@ export async function createEventForUser(userId: string, input: CreateEventInput
       const event = await tx.event.create({
         data: {
           title: input.title,
+          summary: input.summary ?? null,
           ...optionCreateData(input),
           ...addressData(input),
           rainPolicy: input.rainPolicy,
@@ -545,6 +546,7 @@ export function createdEventBody(
 export function eventUpdateData(input: UpdateEventInput) {
   return {
     title: input.title,
+    summary: input.summary ?? null,
     location: resolveEventLocation(input),
     postalCode: input.postalCode ?? null,
     prefecture: input.prefecture ?? null,

@@ -98,6 +98,26 @@ describe("eventFormToPreview", () => {
   it("割引が 0 件ならプレビューも空配列", () => {
     expect(eventFormToPreview(form()).discounts).toEqual([]);
   });
+
+  it("入力した概要をそのままプレビューへ写す", () => {
+    const summary = "<b>夕暮れの音楽</b><br>小さな店で、静かに聴きます。";
+    expect(eventFormToPreview(form({ summary })).summary).toBe(summary);
+  });
+
+  it("概要が空・空白だけなら null（欄ごと出さない）", () => {
+    expect(eventFormToPreview(form({ summary: "" })).summary).toBeNull();
+    expect(eventFormToPreview(form({ summary: "   " })).summary).toBeNull();
+    expect(eventFormToPreview(form({ summary: "<p>   </p>" })).summary).toBeNull();
+  });
+
+  it("空の概要は送信時に null で送る", () => {
+    expect(form().summary).toBe("");
+    expect(toEventRequest(form()).summary).toBeNull();
+    expect(toEventRequest(form({ summary: "   " })).summary).toBeNull();
+    expect(toEventRequest(form({ summary: "<b>夕暮れの音楽</b>" })).summary).toBe(
+      "<b>夕暮れの音楽</b>",
+    );
+  });
 });
 
 describe("チラシ生成へテーマを渡す", () => {

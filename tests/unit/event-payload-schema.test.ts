@@ -7,6 +7,7 @@ import {
   MAX_EVENT_OPTIONS,
   toEventRequest,
 } from "@/modules/events/types";
+import { EVENT_SUMMARY_MAX_LENGTH, summaryTextLength } from "@/modules/events/lib/summary";
 
 /**
  * 画面のフォーム値をAPIへ送る形にしたとき、サーバー側のスキーマで必ず通ることを確かめる。
@@ -143,5 +144,74 @@ describe("割引の送信形", () => {
     });
     expect(payload.discounts).toEqual([{ name: "友達と参加", amount: 0, note: null }]);
     expect(CreateEventSchema.safeParse(payload).success).toBe(false);
+  });
+});
+
+describe("イベント概要の送信形", () => {
+  const base = {
+    ...EMPTY_EVENT_FORM,
+    title: "概要テスト",
+    schedules: [
+      {
+        ...EMPTY_EVENT_FORM.schedules[0],
+        eventDate: "2026-11-20",
+        startTime: "19:00",
+        endTime: "21:00",
+      },
+    ],
+    pricePlans: [createPricePlanDraft({ name: "一般", amount: "3000" })],
+    venueName: "テスト会場",
+  };
+
+  /** 概要だけを差し替えた送信データ。他の項目は保存できる形にそろえてある。 */
+  function payload(summary?: unknown) {
+    return { ...toEventRequest(base), summary };
+  }
+
+  it("省略した概要は null（概要なし）になる", () => {
+    const { summary: _summary, ...withoutSummary } = toEventRequest(base);
+    const parsed = CreateEventSchema.parse(withoutSummary);
+    expect(parsed.summary).toBeNull();
+  });
+
+  it("空文字と空白だけの概要は null になる", () => {
+    expect(CreateEventSchema.parse(payload("")).summary).toBeNull();
+    expect(CreateEventSchema.parse(payload("   ")).summary).toBeNull();
+    expect(CreateEventSchema.parse(payload("<p>   </p>")).summary).toBeNull();
+  });
+
+  it("タグを除いて 200 文字ちょうどなら通る", () => {
+    const html = `<b>${"あ".repeat(EVENT_SUMMARY_MAX_LENGTH)}</b>`;
+    const parsed = CreateEventSchema.parse(payload(html));
+    expect(parsed.summary).toBe(html);
+    expect(summaryTextLength(parsed.summary ?? "")).toBe(EVENT_SUMMARY_MAX_LENGTH);
+  });
+
+  it("201 文字は「イベント概要は200文字以内にしてください」で落ちる", () => {
+    const result = CreateEventSchema.safeParse(payload("あ".repeat(EVENT_SUMMARY_MAX_LENGTH + 1)));
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.message === "イベント概要は200文字以内にしてください")).toBe(
+        true,
+      );
+    }
+  });
+
+  it("script は弾かずに落とし、残りの概要は保存できる", () => {
+    const result = CreateEventSchema.safeParse(payload('<b>安全</b><script>alert("x")</script>'));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.summary).toBe("<b>安全</b>");
+    }
+  });
+
+  it("javascript: のリンクは無害化して文字だけを残す", () => {
+    const result = CreateEventSchema.safeParse(payload('<a href="javascript:alert(1)">こちら</a>'));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.summary).not.toContain("javascript");
+      expect(result.data.summary).not.toContain("<a");
+      expect(result.data.summary).toBe("<span>こちら</span>");
+    }
   });
 });

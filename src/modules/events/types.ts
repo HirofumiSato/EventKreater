@@ -228,6 +228,8 @@ export interface DiscountDraft {
 
 export interface EventFormValues {
   title: string;
+  /** 公開ページ冒頭の概要。許可タグだけの HTML。空文字は概要なし。 */
+  summary: string;
   schedules: ScheduleDraft[];
   pricePlans: PricePlanDraft[];
   /** 参加者が申込時に選べる割引。0 件でもよい。 */
@@ -299,6 +301,8 @@ export interface EventOrganizerList {
 export interface PublicEvent {
   id: string;
   title: string;
+  /** 公開ページ冒頭の概要。許可タグだけの HTML。NULL は概要なし。 */
+  summary: string | null;
   sortDate: string;
   schedules: EventScheduleOption[];
   pricePlans: EventPricePlanOption[];
@@ -656,6 +660,8 @@ export function toEventRequest(form: EventFormValues, referrerEventId?: string |
   );
   return {
     title: form.title,
+    // 空の概要は null で送る。前後の空白だけの概要も「なし」として扱う。
+    summary: form.summary.trim() ? form.summary : null,
     ...(form.organizerDisplayName.trim()
       ? { organizerDisplayName: form.organizerDisplayName.trim() }
       : {}),
@@ -820,6 +826,7 @@ export { GENDER_LABELS, PRICE_AUDIENCE_LABELS } from "@/lib/serializers";
 
 export const EMPTY_EVENT_FORM: EventFormValues = {
   title: "",
+  summary: "",
   organizerDisplayName: "",
   schedules: [createScheduleDraft({ key: "schedule-initial" })],
   pricePlans: [createPricePlanDraft({ key: "plan-initial" })],

@@ -38,6 +38,8 @@ interface PreviewResponse {
   event: {
     id: string;
     title: string;
+    /** 題名の下に出す概要。未入力なら null。 */
+    summary: string | null;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
     discounts: EventDiscountOption[];
@@ -296,6 +298,7 @@ export default function PreviewClient({ params }: { params: { id: string } }) {
         <EventMetaCard
           event={{
             title: event.title,
+            summary: event.summary,
             schedules: event.schedules,
             pricePlans: event.pricePlans,
             discounts: event.discounts,

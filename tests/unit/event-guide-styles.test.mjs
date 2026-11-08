@@ -138,6 +138,17 @@ describe("最終枚のチェックと確認", () => {
     expect(TOUR).toContain("if (noticeRef.current) return;");
     expect(TOUR).toContain("noticeRef.current = noticeOpen;");
   });
+
+  it("確認の × ・背景 ・ Esc は取り消しだけで、記憶しない", () => {
+    // キャンセルのつもりの 1 回が「次回から表示しない」になると、ガイドが消えた理由が
+    // 本人にも分からなくなる。`onClose` は取り消しへ繋ぎ、記憶は OK の 1 本だけにする。
+    expect(TOUR).toContain("onClose={cancelNotice}");
+    expect(TOUR).not.toContain("onClose={finishGuide}");
+    const cancel = TOUR.match(/const cancelNotice = useCallback\(\(\) => \{([\s\S]*?)\}, \[\]\);/);
+    expect(cancel).not.toBeNull();
+    expect(cancel[1]).not.toContain("dismissEventGuide");
+    expect(cancel[1]).toContain("setNoticeOpen(false)");
+  });
 });
 
 describe("紙の幅", () => {

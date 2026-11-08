@@ -844,6 +844,52 @@
   line-height: 1.35;
 }
 
+/* 題名の下に置く概要。本文と同じ色で読み、リンクだけ下線で示す。
+   主催者行のリンクとは意味が違う（あちらはプロフィールへの入口）ので、矢印は付けない。 */
+.event-sheet__summary {
+  margin-top: 0.5rem;
+  /* 貼り付けた長い URL で紙面を押し広げない。 */
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+/* 先頭の段落は題名との間だけで足りる。上下で二重に空けない。 */
+.event-sheet__summary > :first-child {
+  margin-top: 0;
+}
+
+.event-sheet__summary p,
+.event-sheet__summary ul,
+.event-sheet__summary ol {
+  margin-top: 0.5rem;
+}
+
+.event-sheet__summary ul,
+.event-sheet__summary ol {
+  padding-left: 1.25rem;
+}
+
+.event-sheet__summary li + li {
+  margin-top: 0.25rem;
+}
+
+.event-sheet__summary a,
+.event-sheet__summary a:visited {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.22em;
+}
+
+/* 主催者行のリンクは末尾に矢印を付けるが、概要のリンクは文の途中にも置ける。
+   同じ紙面でも矢印は付けない（`content: none` で明示的に打ち消す）。 */
+.event-sheet__summary a::after {
+  content: none;
+}
+
 /* 主催者名はプロフィールへの入口。リンクだと分かるよう、青文字にする。
    クリーム地でも読める濃さを選び、色だけでなく下線も残す。 */
 .event-sheet__host {
@@ -1293,6 +1339,10 @@
 
   .event-sheet__title {
     font-size: 1.875rem;
+  }
+
+  .event-sheet__summary {
+    font-size: 1rem;
   }
 
   .poster-hero__image {

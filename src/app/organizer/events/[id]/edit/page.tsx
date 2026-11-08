@@ -29,12 +29,18 @@ import {
   type EventStatus,
   type FlyerAsset,
 } from "@/modules/events/types";
+import {
+  EVENT_SUMMARY_MAX_LENGTH,
+  summaryTextLength,
+} from "@/modules/events/lib/summary";
 import { Alert, Loading } from "@/components/ui";
 
 interface DetailResponse {
   event: {
     id: string;
     title: string;
+    /** 公開ページの冒頭に出す概要。許可タグだけの HTML。 */
+    summary: string | null;
     schedules: EventScheduleOption[];
     pricePlans: EventPricePlanOption[];
     discounts: EventDiscountOption[];
@@ -107,6 +113,7 @@ function EditEventScreen({ params }: { params: { id: string } }) {
       );
       setForm({
         title: detail.event.title,
+        summary: detail.event.summary ?? "",
         // 会員の表示名はサーバーが解決するので、編集では使わない。
         organizerDisplayName: "",
         ...draftsFromOptions(detail.event),
@@ -146,6 +153,11 @@ function EditEventScreen({ params }: { params: { id: string } }) {
   }, [searchParams, router, params.id]);
 
   const save = async () => {
+    // 概要は任意だが、200 字を超えると保存できない。送る前に画面で知らせる。
+    if (summaryTextLength(form.summary) > EVENT_SUMMARY_MAX_LENGTH) {
+      setToast(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`);
+      return;
+    }
     setSaving(true);
     try {
       await lock.saveWithLock(toEventRequest(form));

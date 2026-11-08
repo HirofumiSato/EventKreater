@@ -97,3 +97,29 @@ describe("登録前の入力の退避", () => {
     expect(() => savePendingForm(filledForm(), null, broken)).not.toThrow();
   });
 });
+
+describe("概要の復元", () => {
+  it("概要を足す前に退避した内容は、summary を空文字にそろえて復元する", () => {
+    // 概要の列を足す前のブラウザが書いた退避データ。`summary` のキー自体が無い。
+    const { summary: _summary, ...legacyForm } = filledForm();
+    const storage = memoryStorage({
+      "event:pending-form": JSON.stringify({
+        form: legacyForm,
+        flyerPreview: null,
+        savedAt: new Date().toISOString(),
+      }),
+    });
+
+    const pending = readPendingForm(storage);
+    expect(pending?.form.title).toBe("秋のご飯会");
+    expect(pending?.form.summary).toBe("");
+  });
+
+  it("概要つきの退避データは、概要を保ったまま復元する", () => {
+    const summary = "<b>河原で炊きます。</b><br>鍋を囲みましょう。";
+    const storage = memoryStorage();
+    savePendingForm({ ...filledForm(), summary }, null, storage);
+
+    expect(readPendingForm(storage)?.form.summary).toBe(summary);
+  });
+});

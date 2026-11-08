@@ -233,11 +233,20 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
   /**
    * 最終枚の「はじめる」。チェックが入っていれば、次回から出さないことを 1 枚で確かめてから
    * 閉じる。確かめずに閉じると、次に開いたときにガイドが無い理由が分からない。
+   *
+   * 記憶するのはこの「OK」だけ。× ・背景 ・ Esc は確認を取り消すだけにして、最終枚へ戻します。
+   * 確認の閉じ方をそのまま `finishGuide` に繋ぐと、キャンセルのつもりで押した 1 回が
+   * 「次回から表示しない」になり、ガイドが出ない理由が本人にも分からなくなります。
    */
   const finishGuide = useCallback(() => {
     dismissEventGuide(true);
     setNoticeOpen(false);
     closeRef.current();
+  }, []);
+
+  /** 確認をやめる。ツアーは閉じず、最終枚のまま戻す（記憶も変えない）。 */
+  const cancelNotice = useCallback(() => {
+    setNoticeOpen(false);
   }, []);
 
   // この枚の対象が DOM に出るよう、アコーディオンを整える（1 つだけ・全部・全部畳む）。
@@ -821,12 +830,14 @@ export function EventGuideTour({ signedIn, onClose, onOpenStep }: EventGuideTour
         </button>
       </div>
       {/* 最終枚で「次回から表示しない」を選んで閉じるときの確認。
-          黒い面と紙の上に出し、閉じたあとに音声入力の案内へ渡す。 */}
+          黒い面と紙の上に出し、閉じたあとに音声入力の案内へ渡す。
+          `onClose`（× ・背景 ・ Esc）は取り消しだけにする。押した 1 回で記憶すると、
+          「やめる」つもりが「次回から表示しない」になり、理由が分からないまま消える。 */}
       {noticeOpen ? (
         <Dialog
           title={EVENT_GUIDE_DISMISS_NOTICE.title}
           titleId="event-guide-dismiss-title"
-          onClose={finishGuide}
+          onClose={cancelNotice}
           actions={
             <button type="button" className="btn btn--primary btn--block" onClick={finishGuide}>
               {EVENT_GUIDE_DISMISS_NOTICE.confirm}

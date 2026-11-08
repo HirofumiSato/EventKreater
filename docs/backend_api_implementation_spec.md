@@ -710,6 +710,9 @@ export const CreateEventSchema = z.object({
   targetGeneration: z.string().trim().max(50).nullable().optional(),
   /** 告知ページのセマンティックテーマ。null は標準。未知の ID は 400。 */
   themeId: z.enum(['modern-slate', 'enterprise-clean', 'parchment', 'neo-brutalism', 'neon', 'washi', 'sage', 'candy', 'dusk', 'neon-magenta', 'tavern', 'kraft', 'poster', 'spotlight']).nullable().default(null),
+  /** 公開ページ冒頭の概要。許可タグだけに無害化した HTML。表示文字数（タグ・改行を除く）は 200 字まで、空は null。 */
+  summary: z.string().max(5000).nullish()
+    .refine((value) => !value || summaryTextLength(value) <= 200, 'イベント概要は200文字以内にしてください'),
   flyerAssetId: z.string().uuid().nullable().optional(),
   rsvpDeadline: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
   /** 告知ページの勧誘カードから来たときの参照元。存在しない・削除済み・下書きなら NULL として保存する。 */
@@ -799,6 +802,7 @@ SCR-ORG-02 の「下書き保存」と「プレビューを見る」から呼ぶ
 
 - **必須項目:** `title`、`schedules` 1 件以上、`pricePlans` 1 件以上、開催場所（構造化住所か `venueName`・`location`）。定員・申し込み期限・チラシは空でよい。下書きの作成（`POST /api/v1/public/events` に `status: "DRAFT"`）も同じ条件である。
 - **対象世代とテーマ:** `targetGeneration`（50 文字まで）と `themeId` はどちらも任意で、`events.target_generation`・`events.theme_id` に保存する。`themeId` は `null`（標準）または 14 テーマのいずれかで、未知の値は 400 にする。更新（`PUT .../organizer/events/[id]`）と下書き保存（`POST .../draft`）も同じ 2 項目を受け取る。
+- **概要 (`summary`):** 公開ページの冒頭に出す任意の HTML である。受け取るのは 5000 文字までで、`sanitizeEventSummary`（`src/modules/events/lib/summary-html.ts`）が許可タグ（`b` `strong` `i` `em` `u` `p` `div` `br` `ul` `ol` `li` `a` `span`）だけを残す。`a` の `href` は `http` / `https` だけを許し、`target="_blank"` と `rel="noopener noreferrer nofollow"` を必ず付ける（それ以外の URL は文字だけ残す）。文字数は `summaryTextLength`（`src/modules/events/lib/summary.ts`）がタグと改行を除いた表示文字数で数え、200 字を超えたら 400（`errors[].path` は `summary`）。表示文字数が 0 なら `null` を保存する。`POST /api/v1/public/events`・`PUT /api/v1/organizer/events/[id]`・`POST /api/v1/organizer/events/[id]/draft` が受け取り、`GET /api/v1/public/events/[id]` と `GET /api/v1/organizer/events/[id]` が `summary`（無ければ `null`）を返す。
 - **チケット:** 消費しない。公開時に 1 枚だけ消費する。
 - **行ロック:** 公開と同時に走っても、後から来た保存が公開済みの催しを上書きしない。
 

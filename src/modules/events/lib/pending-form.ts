@@ -70,7 +70,13 @@ export function readPendingForm(
     // 送信時に undefined を触るので、ここで空配列に正規化する。
     const form = parsed.form as EventFormValues;
     return {
-      form: { ...form, discounts: Array.isArray(form.discounts) ? form.discounts : [] },
+      form: {
+        ...form,
+        discounts: Array.isArray(form.discounts) ? form.discounts : [],
+        // 概要を足す前に退避した内容には `summary` が無い。無いまま復元すると
+        // 概要欄が undefined になるので、空文字に正規化する。
+        summary: typeof form.summary === "string" ? form.summary : "",
+      },
       flyerPreview: typeof parsed.flyerPreview === "string" ? parsed.flyerPreview : null,
       savedAt: parsed.savedAt,
     };

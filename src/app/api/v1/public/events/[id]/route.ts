@@ -142,6 +142,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({
       id: serialized.id,
       title: serialized.title,
+      summary: serialized.summary,
       sortDate: serialized.sortDate,
       schedules: serialized.schedules,
       pricePlans: serialized.pricePlans,

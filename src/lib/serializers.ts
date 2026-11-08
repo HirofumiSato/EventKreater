@@ -269,6 +269,8 @@ export interface ParticipantDiscountRecord {
 export interface EventRecordShape {
   id: string;
   title: string;
+  /** 公開ページ冒頭の概要。許可タグだけの HTML。NULL は概要なし。 */
+  summary?: string | null;
   sortDate: Date;
   location: string;
   postalCode?: string | null;
@@ -475,6 +477,7 @@ export function serializeEvent(event: EventRecordShape) {
   return {
     id: event.id,
     title: event.title,
+    summary: event.summary ?? null,
     sortDate: formatEventDate(event.sortDate),
     schedules,
     pricePlans,

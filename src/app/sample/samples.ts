@@ -25,6 +25,11 @@ export interface SampleEvent {
   /** 催しの型。一覧のカードで、題より先に読む札。 */
   kind: string;
   title: string;
+  /**
+   * 告知ページの題名直下に出す概要。許可タグだけの HTML。
+   * 保存済みの概要は `sanitize-html` を通るため、`<br>` は `<br />` で持つ。
+   */
+  summary: string | null;
   /** 一覧のカードに置く 1 文。どんな集まりかを、題の次に伝える。 */
   intro: string;
   /** `public/samples/` のチラシ画像。 */
@@ -88,6 +93,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     slug: "autumn",
     kind: "外ごはん",
     title: "秋の芋煮会",
+    summary: "<b>今年も河原で芋煮を炊きます。</b><br />鍋を囲んで、ゆっくり過ごしてください。",
     intro: "河原で鍋を囲む、毎年恒例の集まり。子ども連れも歓迎です。",
     flyerSrc: "/samples/flyer-autumn.jpg",
     themeId: "parchment",
@@ -114,6 +120,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     slug: "market",
     kind: "マーケット",
     title: "手しごとの市 秋の道具市",
+    summary: "<b>作り手が自分の道具を並べます。</b><br />手に取って、話を聞いて選べます。",
     intro: "木の器と布の道具が並ぶ、一日だけの小さな市です。",
     flyerSrc: "/samples/flyer-craft-market.jpg",
     themeId: "washi",
@@ -133,6 +140,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     slug: "halloween",
     kind: "子ども連れ",
     title: "ハロウィン おやこマルシェ",
+    summary: "<b>仮装はしたままで大丈夫です。</b><br />おやつと工作を用意して待っています。",
     intro: "仮装したまま遊べる、おやつと工作の広場です。",
     flyerSrc: "/samples/flyer-halloween.jpg",
     themeId: "candy",
@@ -155,6 +163,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     slug: "bonfire",
     kind: "アウトドア",
     title: "川辺の焚き火ナイト",
+    summary: "<b>夜の河原に火をともします。</b><br />薪をくべて、汁物が温まるまで待ちます。",
     intro: "薪をくべて、汁物を煮る。夜の河原で過ごす 3 時間です。",
     flyerSrc: "/samples/flyer-bonfire.jpg",
     themeId: "dusk",
@@ -174,6 +183,7 @@ export const SAMPLE_EVENTS: readonly SampleEvent[] = [
     slug: "dj",
     kind: "ナイト",
     title: "DJナイト Vol.7",
+    summary: "<b>今夜はレコードだけを回します。</b><br />踊っても、聴いても、朝までどうぞ。",
     intro: "下北沢のバーで、朝まで続くレコード中心の一夜です。",
     flyerSrc: "/samples/flyer-dj.jpg",
     themeId: "neon",
