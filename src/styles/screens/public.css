@@ -459,39 +459,50 @@ a.card,
    そのため見出しと中身の間に余白が無いと、題と本文が 1 つの塊に見える。
    余白は --space-head（14px）/ --space-block（16px）/ --space-section（56px）の
    3 段だけを使い、`.stack` の gap とは足さない（二重取りをしない）。
-   効くのは公開ページ・参加者ホーム・見本・告知ページ（`.page--narrow`）だけ。
+   効くのは公開ページ・参加者ホーム・見本・告知ページだけ。
    ホーム LP と主催者管理（`.page--form`）は変えない。
+
+   器のクラスは 2 つある。告知・招待・見本の告知は本文が内側に `.page--narrow`
+   を持つが、主催者の公開ページ（`/organizers/[userId]`）と見本のプロフィール
+   （`/sample/profile/[slug]`）は器（`PublicThemeShell` の `main`）が
+   `.page--content` を持つだけで `.page--narrow` を持たない。同じ余白を当てるため、
+   各セレクタに `.page--content` 版を併記する（規則は増やさず、詳細度も変えない）。
    ========================================================================== */
 
 /* 見出しと中身の間を 14px 空ける。deco は見出しの下線を消すので、
    余白が無いと題と本文が接して見える。 */
-.page--narrow .section__head {
+.page--narrow .section__head,
+.page--content .section__head {
   margin-bottom: var(--space-head);
   row-gap: 0.5rem;
 }
 
 /* 注記の上の余白は gap の 8px だけにする。`.deco .section__note` の
    margin-top 8px と足すと、幅によって 16px / 12px に変わっていた。 */
-.page--narrow .section__head .section__note {
+.page--narrow .section__head .section__note,
+.page--content .section__head .section__note {
   margin-top: 0;
 }
 
 /* 同じ節の 2 つ目の見出し（カレンダーの下の選択日など）は、上も 16px 空ける。
    0 のままだと、直前の枠に題が貼り付く。 */
-.page--narrow .section > * + .section__head {
+.page--narrow .section > * + .section__head,
+.page--content .section > * + .section__head {
   margin-top: var(--space-block);
 }
 
 /* 「見出しの下」を 1 つの値にそろえる。`.section > .empty` の 12px を打ち消し、
    panel / cal / rows と同じ 14px にする。 */
-.page--narrow .section > .section__head + .empty {
+.page--narrow .section > .section__head + .empty,
+.page--content .section > .section__head + .empty {
   margin-top: 0;
 }
 
 /* セクション間は --space-section の 56px にそろえる。`.stack` の gap は
    親が持つので、その分を引いて足し算にしない（テーマ未選択のときは
    `.stack` の既定 1.25rem に合わせる）。 */
-.page--narrow .section:not(.section--tight) {
+.page--narrow .section:not(.section--tight),
+.page--content .section:not(.section--tight) {
   margin-top: calc(var(--space-section) - var(--st-stack-gap, 1.25rem));
 }
 
@@ -503,7 +514,8 @@ a.card,
    `.deco .section__title`（0,2,0）より強くするため、`.deco` を前置する。
    ========================================================================== */
 
-.deco .page--narrow .section__title {
+.deco .page--narrow .section__title,
+.deco .page--content .section__title {
   padding-bottom: 0;
   text-decoration: none;
 }

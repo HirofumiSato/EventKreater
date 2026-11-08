@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense, cache } from "react";
-import { Loading, SemanticThemeScope } from "@/components/ui";
+import { Suspense } from "react";
+import { Loading } from "@/components/ui";
 import { isUserId } from "@/lib/ids";
 import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileBioExcerpt } from "@/modules/organizers/lib/profile";
-import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-store";
+import { loadPublicOrganizerProfileCached } from "@/modules/organizers/lib/profile-store";
 
 /**
  * 主催者の公開ページ（SCR-PUB-14）。プロフィールとイベントを1画面に置く。
@@ -18,8 +18,8 @@ import { loadPublicOrganizerProfile } from "@/modules/organizers/lib/profile-sto
 
 export const dynamic = "force-dynamic";
 
-/** metadata と本文で同じ問い合わせを繰り返さないよう、リクエスト内で1回にまとめる。 */
-const loadProfile = cache(loadPublicOrganizerProfile);
+// metadata・本文・器（`layout.tsx`）で同じ問い合わせを繰り返さないよう、
+// 読み取りは `profile-store.ts` の `cache()` 済みの 1 本を使う。
 
 interface PageProps {
   params: { userId: string };
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isUserId(params.userId)) {
     return { title: "主催者が見つかりません", robots: { index: false, follow: false } };
   }
-  const loaded = await loadProfile(params.userId);
+  const loaded = await loadPublicOrganizerProfileCached(params.userId);
   if (!loaded) {
     return { title: "主催者が見つかりません", robots: { index: false, follow: false } };
   }
@@ -54,27 +54,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function OrganizerProfilePage({ params }: PageProps) {
   if (!isUserId(params.userId)) notFound();
-  const loaded = await loadProfile(params.userId);
+  const loaded = await loadPublicOrganizerProfileCached(params.userId);
   if (!loaded) notFound();
 
+  // 読み幅とテーマは器（`layout.tsx`）が持つ。ここは中身だけを並べる。
   return (
-    <div className="page--narrow">
-      {/* テーマ未選択なら何も包まない（現行の DOM と見た目のまま）。 */}
-      <SemanticThemeScope themeId={loaded.profile.themeId} page>
-        <div className="stack">
-          <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
-          {/* イベントは useSearchParams を読むため、Suspense で包む。 */}
-          <Suspense
-            fallback={
-              <Loading>
-                読み込んでいます
-              </Loading>
-            }
-          >
-            <OrganizerPageView userId={loaded.userId} />
-          </Suspense>
-        </div>
-      </SemanticThemeScope>
+    <div className="stack">
+      <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
+      {/* イベントは useSearchParams を読むため、Suspense で包む。 */}
+      <Suspense
+        fallback={
+          <Loading>
+            読み込んでいます
+          </Loading>
+        }
+      >
+        <OrganizerPageView userId={loaded.userId} />
+      </Suspense>
     </div>
   );
 }

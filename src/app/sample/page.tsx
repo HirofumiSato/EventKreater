@@ -4,6 +4,7 @@ import { formatDateWithWeekdayJa } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { PageHeader, Section, SectionHead } from "@/components/ui";
 import { profileInitial } from "@/modules/organizers/lib/profile";
+import { SampleBand } from "./SampleBand";
 import { SAMPLE_PROFILES } from "./profiles";
 import { SAMPLE_EVENTS } from "./samples";
 
@@ -22,89 +23,97 @@ export const metadata: Metadata = {
  * 主催者の型（個人・演者・店）を並べる。プロフィールの詳細は `/sample/profile/[slug]`。
  */
 export default function SampleIndexPage() {
+  // 一覧は共通の `main` の中に描かれる（`siteChrome()` はこのパスで `main: true`）。
+  // 帯はその `main` の直下へ置き、本文より先に「見本である」ことを伝える。
   return (
-    <div className="stack">
-      <PageHeader
-        eyebrow="サンプル"
-        title="サンプルのページ"
-        lead="実際に作ったページの見本です。催しと主催者の型ごとに並べています。"
-      />
-      <ul className="sample-list">
-        {SAMPLE_EVENTS.map((event) => {
-          const first = event.schedules[0];
-          return (
-            <li key={event.slug}>
-              <Link href={`${SITE.nav.sample.href}/${event.slug}`} className="sample-card">
-                <img
-                  className="sample-card__flyer"
-                  src={event.flyerSrc}
-                  alt={`${event.title}のチラシ`}
-                  width={1080}
-                  height={1528}
-                  loading="lazy"
-                />
-                <div className="sample-card__body">
-                  <p className="sample-card__kind">{event.kind}</p>
-                  <p className="sample-card__title">{event.title}</p>
-                  <p className="sample-card__intro">{event.intro}</p>
-                  {first && (
-                    <p className="sample-card__meta">
-                      {formatDateWithWeekdayJa(first.eventDate)} {first.eventTime}
-                    </p>
-                  )}
-                  <p className="sample-card__meta">{event.venueName}</p>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      <Section id="sample-profiles">
-        <SectionHead title="主催者のプロフィール" note="公開したときに、参加者の目に映る姿です。" />
+    <>
+      <SampleBand />
+      <div className="stack">
+        <PageHeader
+          eyebrow="サンプル"
+          title="サンプルのページ"
+          lead="実際に作ったページの見本です。催しと主催者の型ごとに並べています。"
+        />
         <ul className="sample-list">
-          {SAMPLE_PROFILES.map((profile) => (
-            <li key={profile.slug}>
-              <Link
-                href={`${SITE.nav.sample.href}/profile/${profile.slug}`}
-                className="sample-card"
-              >
-                <span className="sample-card__avatar" aria-hidden="true">
-                  {profileInitial(profile.name)}
-                </span>
-                <div className="sample-card__body">
-                  <p className="sample-card__kind">{profile.kind}</p>
-                  <p className="sample-card__title">{profile.name}</p>
-                  {profile.profile.headline && (
-                    <p className="sample-card__intro">{profile.profile.headline}</p>
-                  )}
-                  {profile.profile.area && (
-                    <p className="sample-card__meta">{profile.profile.area}</p>
-                  )}
-                  {profile.profile.stats && (
-                    <p className="sample-card__meta">
-                      これまで {profile.profile.stats.eventCount}回 ／{" "}
-                      {profile.profile.stats.sinceYear}年から
-                    </p>
-                  )}
-                </div>
-              </Link>
-            </li>
-          ))}
+          {SAMPLE_EVENTS.map((event) => {
+            const first = event.schedules[0];
+            return (
+              <li key={event.slug}>
+                <Link href={`${SITE.nav.sample.href}/${event.slug}`} className="sample-card">
+                  <img
+                    className="sample-card__flyer"
+                    src={event.flyerSrc}
+                    alt={`${event.title}のチラシ`}
+                    width={1080}
+                    height={1528}
+                    loading="lazy"
+                  />
+                  <div className="sample-card__body">
+                    <p className="sample-card__kind">{event.kind}</p>
+                    <p className="sample-card__title">{event.title}</p>
+                    <p className="sample-card__intro">{event.intro}</p>
+                    {first && (
+                      <p className="sample-card__meta">
+                        {formatDateWithWeekdayJa(first.eventDate)} {first.eventTime}
+                      </p>
+                    )}
+                    <p className="sample-card__meta">{event.venueName}</p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
-      </Section>
 
-      <div className="panel__actions">
-        <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
-          {SITE.cta.createEventFree}
-        </Link>
+        <Section id="sample-profiles">
+          <SectionHead
+            title="主催者のプロフィール"
+            note="公開したときに、参加者の目に映る姿です。"
+          />
+          <ul className="sample-list">
+            {SAMPLE_PROFILES.map((profile) => (
+              <li key={profile.slug}>
+                <Link
+                  href={`${SITE.nav.sample.href}/profile/${profile.slug}`}
+                  className="sample-card"
+                >
+                  <span className="sample-card__avatar" aria-hidden="true">
+                    {profileInitial(profile.name)}
+                  </span>
+                  <div className="sample-card__body">
+                    <p className="sample-card__kind">{profile.kind}</p>
+                    <p className="sample-card__title">{profile.name}</p>
+                    {profile.profile.headline && (
+                      <p className="sample-card__intro">{profile.profile.headline}</p>
+                    )}
+                    {profile.profile.area && (
+                      <p className="sample-card__meta">{profile.profile.area}</p>
+                    )}
+                    {profile.profile.stats && (
+                      <p className="sample-card__meta">
+                        これまで {profile.profile.stats.eventCount}回 ／{" "}
+                        {profile.profile.stats.sinceYear}年から
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <div className="panel__actions">
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary">
+            {SITE.cta.createEventFree}
+          </Link>
+        </div>
+        <p className="screen-note">
+          <span aria-hidden="true">※</span>
+          {SITE.cta.freeNote}
+          <br />
+          サンプルの催しと主催者は架空です。
+        </p>
       </div>
-      <p className="screen-note">
-        <span aria-hidden="true">※</span>
-        {SITE.cta.freeNote}
-        <br />
-        サンプルの催しと主催者は架空です。
-      </p>
-    </div>
+    </>
   );
 }

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
-import { PageHeader, SemanticThemeScope } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
+import { PublicThemeShell } from "@/components/common/PublicThemeShell";
 import { ReferralInviteCard } from "@/modules/account/components/ReferralInviteCard";
 import { loadReferralInvite } from "@/modules/account/lib/referral-invite";
 import { REFERRAL_TICKET_GRANT, REFERRAL_TICKET_MONTHS } from "@/modules/billing/lib/tickets";
@@ -52,25 +53,29 @@ export default async function ReferralInvitePage({ params }: PageProps) {
   const invite = await loadInvite(code);
 
   if (!invite) {
+    // 無効なコードでもパスは同じで、`siteChrome()` はここで `main: false` を返す。
+    // テーマは無いが、器に `<main>` とフッターを任せて素の画面に戻さない。
     return (
-      <div className="page--narrow">
-        <div className="stack">
-          <PageHeader title="紹介リンクが無効です" />
-          <div className="panel__actions">
-            <Link href="/auth/register" className="btn btn--primary btn--block">
-              登録してはじめる
-            </Link>
+      <PublicThemeShell themeId={null}>
+        <div className="page--narrow">
+          <div className="stack">
+            <PageHeader title="紹介リンクが無効です" />
+            <div className="panel__actions">
+              <Link href="/auth/register" className="btn btn--primary btn--block">
+                登録してはじめる
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </PublicThemeShell>
     );
   }
 
   const registerHref = `/auth/register?ref=${encodeURIComponent(code)}`;
 
   return (
-    <div className="page--narrow">
-      <SemanticThemeScope themeId={invite.themeId} page>
+    <PublicThemeShell themeId={invite.themeId}>
+      <div className="page--narrow">
         <div className="stack">
           <PageHeader title={`${invite.name}さんからの紹介`} />
           <ReferralInviteCard
@@ -92,7 +97,7 @@ export default async function ReferralInvitePage({ params }: PageProps) {
             </Link>
           </div>
         </div>
-      </SemanticThemeScope>
-    </div>
+      </div>
+    </PublicThemeShell>
   );
 }

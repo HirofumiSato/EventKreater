@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SemanticThemeScope } from "@/components/ui";
 import { SITE } from "@/lib/site";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileBioExcerpt } from "@/modules/organizers/lib/profile";
@@ -14,6 +13,7 @@ import { findProfile, SAMPLE_PROFILES } from "../../profiles";
  * 違いは 2 つだけ。催しの一覧を載せないことと、末尾に「見本である」ことを書くこと。
  * 一覧（`/sample/profile`）は作らず、`/sample` のカードからだけ開く。
  * 見本を検索結果に載せない（本物の主催者と紛れるため）。
+ * テーマと読み幅は器（`layout.tsx`）が持つ。
  */
 interface PageProps {
   params: { slug: string };
@@ -44,21 +44,17 @@ export default function SampleProfilePage({ params }: PageProps) {
   if (!profile) notFound();
 
   return (
-    <div className="page--narrow">
-      <SemanticThemeScope themeId={profile.profile.themeId} page>
-        <div className="stack">
-          {/* 製品向けの注記は、見本では意味が変わるので出さない。 */}
-          <OrganizerProfileView name={profile.name} profile={profile.profile} showNote={false} />
-          <p className="screen-note">
-            見本のため、主催者は架空です。催しの一覧は省いています。
-          </p>
-          <p className="page-lead">
-            <Link href={`${SITE.nav.sample.href}#sample-profiles`} className="text-link">
-              ほかのプロフィールを見る
-            </Link>
-          </p>
-        </div>
-      </SemanticThemeScope>
+    <div className="stack">
+      {/* 製品向けの注記は、見本では意味が変わるので出さない。 */}
+      <OrganizerProfileView name={profile.name} profile={profile.profile} showNote={false} />
+      <p className="screen-note">
+        見本のため、主催者は架空です。催しの一覧は省いています。
+      </p>
+      <p className="page-lead">
+        <Link href={`${SITE.nav.sample.href}#sample-profiles`} className="text-link">
+          ほかのプロフィールを見る
+        </Link>
+      </p>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { formatDateWithWeekdayJa } from "@/lib/format";
 import { formatEventDate } from "@/lib/serializers";
+import { PublicThemeShell } from "@/components/common/PublicThemeShell";
 import PublicEventPage from "./EventPageClient";
 
 /**
@@ -15,10 +17,15 @@ interface PageProps {
   params: { id: string };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const event = await prisma.event.findFirst({
+/**
+ * metadata と本文で同じ問い合わせを繰り返さないよう、リクエスト内で 1 回にまとめる。
+ * `themeId` は本体が `/api/v1/public/events/[id]` から読む値と同じ `Event.themeId` なので、
+ * 器のテーマと中の見た目は食い違わない。
+ */
+const loadEvent = cache(async (id: string) => {
+  return prisma.event.findFirst({
     where: {
-      id: params.id,
+      id,
       isDeleted: false,
       status: { in: ["PUBLISHED", "CLOSED"] },
     },
@@ -26,9 +33,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: true,
       location: true,
       sortDate: true,
+      themeId: true,
       flyerAsset: { select: { imageUrl: true, isDeleted: true } },
     },
   });
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const event = await loadEvent(params.id);
 
   if (!event) {
     return {
@@ -60,6 +72,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default function Page({ params }: PageProps) {
-  return <PublicEventPage params={params} />;
+export default async function Page({ params }: PageProps) {
+  const event = await loadEvent(params.id);
+
+  // 見つからないときも器が `<main>` とフッターを持つ（`siteChrome()` はこのパスで
+  // `main: false` を返す）。テーマが無ければ器は要素を増やさない。
+  return (
+    <PublicThemeShell themeId={event?.themeId ?? null} flush>
+      <PublicEventPage params={params} />
+    </PublicThemeShell>
+  );
 }

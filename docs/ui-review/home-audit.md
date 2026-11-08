@@ -606,3 +606,11 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 
 
 
+## 16. テーマ付き公開ページのフッターと読み幅（2026-11-09）
+
+| 日付 | 変更 | 正 |
+| --- | --- | --- |
+| 2026-11-09 | テーマ付きの公開ページ 5 系統（`/events/[id]`・`/organizers/[userId]`・`/invite/[code]`・`/sample/[slug]`・`/sample/profile/[slug]`）で、フッターをテーマの地（`--st-surface-base`）の内側へ移し、器の `main` に読み幅（テーマ無し 42rem・テーマ有り `--st-content-width`）を持たせた | `src/components/common/PublicThemeShell.tsx` / `SiteFooter.tsx` / `SiteChrome.tsx` / `src/lib/site-chrome.ts` / `src/styles/base.css` / `src/styles/themes.css` |
+
+
+
