@@ -555,6 +555,26 @@ export function groupNamesDiffer(group: readonly { name: string }[]): boolean {
 }
 
 /**
+ * 同じ対象で重複しているプラン名を、現れた順に返す。
+ * 未入力の名前は数えない。空欄は「プラン名を入力してください」で別に案内するため、
+ * ここで数えると行を足しただけの空行が「重複」として扱われ、直す場所が分からなくなる。
+ */
+export function duplicatePricePlanNames(
+  plans: readonly { name: string; audience: string }[],
+): string[] {
+  const seen = new Set<string>();
+  const duplicated: string[] = [];
+  for (const row of plans) {
+    const name = row.name.trim();
+    if (name === "") continue;
+    const key = `${row.audience}\u0000${name}`;
+    if (seen.has(key) && !duplicated.includes(name)) duplicated.push(name);
+    seen.add(key);
+  }
+  return duplicated;
+}
+
+/**
  * 共通プランを男性用・女性用のペアへ展開する。
  * 元の行は id を保ったまま男性用にし、女性用は新しい行として足す
  * （(event_id, audience, name) の一意制約があるので同名で並べられる）。
@@ -659,6 +679,19 @@ export function draftsFromOptions(event: {
   };
 }
 
+/**
+ * 送る料金プランを決める。名前・金額・補足がすべて空の行は送らず、割引と同じ扱いにする。
+ * 行を足したまま保存しても、空行が「同じ対象のプラン名は重複できません」で止めないため。
+ * すべての行が空のときは 1 件だけ残し、サーバーにプラン名の入力を促させる
+ * （プランは 1 件以上必要なので、0 件では理由が伝わらない）。
+ */
+function planRowsToSend(rows: PricePlanDraft[]): PricePlanDraft[] {
+  const filled = rows.filter(
+    (row) => row.name.trim() !== "" || row.amount.trim() !== "" || row.note.trim() !== "",
+  );
+  return filled.length > 0 ? filled : rows.slice(0, 1);
+}
+
 export function toEventRequest(form: EventFormValues, referrerEventId?: string | null) {
   const structured = Boolean(
     form.prefecture || form.city || form.town || form.addressLine || form.building,
@@ -676,7 +709,7 @@ export function toEventRequest(form: EventFormValues, referrerEventId?: string |
       startTime,
       endTime,
     })),
-    pricePlans: form.pricePlans.map(({ id, name, audience, amount, note }) => ({
+    pricePlans: planRowsToSend(form.pricePlans).map(({ id, name, audience, amount, note }) => ({
       ...(id ? { id } : {}),
       name,
       audience,

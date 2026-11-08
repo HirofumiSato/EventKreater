@@ -12,6 +12,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertPricingEditable } from "@/modules/events/lib/pricing-mode";
 import {
   createPricePlanDraft,
+  duplicatePricePlanNames,
   groupNamesDiffer,
   groupPricePlanPairs,
   pricingModeOf,
@@ -300,6 +301,34 @@ describe("groupNamesDiffer", () => {
 
   it("1行だけの組は比較しない", () => {
     expect(groupNamesDiffer([createPricePlanDraft({ audience: "ANY", name: "一般" })])).toBe(false);
+  });
+});
+
+describe("duplicatePricePlanNames", () => {
+  it("同じ対象で重複した名前を現れた順に返す", () => {
+    const plans = [
+      createPricePlanDraft({ name: "一般", amount: "3000" }),
+      createPricePlanDraft({ name: "学生", amount: "2000" }),
+      createPricePlanDraft({ name: "学生", amount: "1500" }),
+    ];
+    expect(duplicatePricePlanNames(plans)).toEqual(["学生"]);
+  });
+
+  it("対象が違えば重複にしない", () => {
+    const plans = [
+      createPricePlanDraft({ audience: "MALE", name: "一般" }),
+      createPricePlanDraft({ audience: "FEMALE", name: "一般" }),
+    ];
+    expect(duplicatePricePlanNames(plans)).toEqual([]);
+  });
+
+  it("未入力の名前は数えない（行を足しただけの空行を重複にしない）", () => {
+    const plans = [
+      createPricePlanDraft({ audience: "MALE", name: "" }),
+      createPricePlanDraft({ audience: "FEMALE", name: "" }),
+      createPricePlanDraft({ audience: "MALE", name: "  " }),
+    ];
+    expect(duplicatePricePlanNames(plans)).toEqual([]);
   });
 });
 
