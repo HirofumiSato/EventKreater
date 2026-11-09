@@ -38,6 +38,8 @@
      - :doc:`voice-input` 。右下のマイクボタンと OpenAI の音声認識、導入と上限
    * - イベント作成の初回ガイド
      - :doc:`event-guide-tour` 。新規作成画面の 9 枚のツアー、起動の条件、くり抜きの計算
+   * - マイページの操作ガイド
+     - :doc:`mypage-guide-tour` 。主催者マイページの 7 枚のツアー、画面またぎ、右上「使い方」からの再表示
    * - チラシ生成 API
      - :doc:`flyer/index` 。章の地図は :doc:`flyer/sphinx_structure`
    * - 以前の要件と設計
@@ -77,6 +79,7 @@
       Features --> Event["event-page"]
       Features --> Voice["音声入力"]
       Features --> Tour["初回ガイド"]
+      Features --> MyTour["マイページのガイド"]
       Features --> Flyer["flyer"]
       Root --> Archive["archive 実装前の設計"]
 
@@ -228,6 +231,18 @@ Next.js 側の自動テストです。読む順は :doc:`testing/index` が正�
      - 中身
    * - :doc:`event-guide-tour`
      - 新規作成画面（SCR-ORG-02）の初回ガイド。9 枚の手順、起動の条件、音声入力の案内との排他、くり抜きの計算
+
+マイページの操作ガイド
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - ページ
+     - 中身
+   * - :doc:`mypage-guide-tour`
+     - 主催者マイページ（SCR-PUB-03）の初回ガイド。7 枚の手順、起動の条件、 ``sessionStorage`` での画面またぎ、右上「使い方」からの再表示、公開ページの紙に寄せた見た目
 
 AI チラシ自動生成
 ^^^^^^^^^^^^^^^^^^

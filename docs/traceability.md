@@ -5,8 +5,8 @@
 原稿に書かれたリポジトリ内パスを逆引きし、どのコードをどの文書が説明しているかを並べます。
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
-- 対象文書: 113（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 521
+- 対象文書: 114（実装前の設計 15 件は除外）
+- 文書から参照されているコードパス: 529
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -174,7 +174,7 @@
 | `src/app/invitations/[code]/layout.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
 | `src/app/invitations/[code]/page.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/app/layout.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
-| `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/app/mypage/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/app/notifications/page.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/app/organizer/events/[id]/edit/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
@@ -183,7 +183,7 @@
 | `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) |
 | `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/app/organizer/events/new/page.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/organizer/events/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
+| `src/app/organizer/events/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/app/organizer/profile/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/app/organizer/register-required/layout.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
 | `src/app/organizer/register-required/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
@@ -236,6 +236,7 @@
 | `src/lib/serializers.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/lib/site-chrome.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/lib/site-nav.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) |
+| `src/lib/site-user-menu.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/lib/site.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/local.rst](local.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/lib/sms.ts` | [docs/deploy.rst](deploy.rst) |
 | `src/lib/upload-limit.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/deploy.rst](deploy.rst) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
@@ -310,7 +311,7 @@
 | `src/modules/events/lib/summary-html.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/events/lib/summary.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/events/lib/tour/memory.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
-| `src/modules/events/lib/tour/place.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/modules/events/lib/tour/place.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/modules/events/lib/tour/steps.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) |
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
@@ -351,6 +352,7 @@
 | `src/modules/notifications/lib/referral-notification.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/notifications/lib/rsvp-notification.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/modules/notifications/lib/unread.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/modules/organizers/components` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/modules/organizers/components/CalendarView.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/modules/organizers/components/EventLifecycleModal.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/organizers/components/ImageCropDialog.tsx` | [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
@@ -367,6 +369,9 @@
 | `src/modules/organizers/lib/profile-store.ts` | [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/modules/organizers/lib/profile.ts` | [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/modules/organizers/lib/public-page.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
+| `src/modules/organizers/lib/tour/memory.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
+| `src/modules/organizers/lib/tour/session.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
+| `src/modules/organizers/lib/tour/steps.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/modules/organizers/types.ts` | [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/modules/participants/components/ParticipantCalendarView.tsx` | [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) |
 | `src/modules/participants/lib/calendar.ts` | [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
@@ -386,7 +391,7 @@
 | `src/styles/deco/surface.css` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/styles/deco/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/index.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) |
-| `src/styles/screens/organizer.css` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
+| `src/styles/screens/organizer.css` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/styles/screens/public.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/themes.css` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -483,6 +488,9 @@
 | `tests/unit/line-share.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/mail-webhook.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/mock-sync.test.mjs` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
+| `tests/unit/mypage-guide-memory.test.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/mypage-guide-steps.test.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/mypage-guide-styles.test.mjs` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-calendar.test.ts` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-invite.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-names.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

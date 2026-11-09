@@ -147,7 +147,7 @@
 
 .. count-start
 
-141 ファイル、``it`` は 2154 件です。内訳は ``tests/unit/`` が 99 ファイル 1801 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+144 ファイル、``it`` は 2197 件です。内訳は ``tests/unit/`` が 102 ファイル 1844 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -459,6 +459,18 @@
      - 37
      - 初回ガイドの重なりと押しやすさ。黒面 48・吹き出し 49 の順、画面下の帯とダイアログのあいだにあること、押せる的の 40px、文字の 15px、紙の朱の輪を常に出すこと
      - SCR-ORG-02
+   * - ``tests/unit/mypage-guide-steps.test.ts``
+     - 17
+     - マイページの操作ガイドの 7 枚。並び、キー、``path``（招待と公開プロフだけ ``/organizer/events``）、対象のセレクタ、最終枚が 1 つだけで見出しが「ここから操作は再度確認できます」であること、本文と箇条書きを同じ枚に置かないこと、``openUserMenu`` が通知一覧の枚だけ・``openDetails`` が招待の枚だけであること、操作の文言、``myPageGuideIndex()``、知らないキーの扱い
+     - SCR-PUB-03
+   * - ``tests/unit/mypage-guide-memory.test.ts``
+     - 17
+     - マイページの操作ガイドの記憶。初回表示の記憶の読み書き、キーが ``eventkreater.mypage-guide.dismissed`` でほかのガイドと別であること、``localStorage`` が無い・参照や読み書きで例外になる環境、``sessionStorage`` の書き込みと読み戻し、10 分の失効、壊れた JSON・知らないキー・数値でない ``at`` を捨てること、``clearMyPageGuideSession()``
+     - SCR-PUB-03
+   * - ``tests/unit/mypage-guide-styles.test.mjs``
+     - 9
+     - マイページの操作ガイドの見た目。紙が ``--color-surface`` を使うこと、``::before`` のテープ、何枚目かの札が ``--pop-warm`` と ``--tape-ink`` であること、見出しの下線、黒面は 48 のままで紙だけが 3 枚目に開くユーザーメニュー（60）より上（61）であること、紙が ``position`` を上書きしないこと
+     - SCR-PUB-03
    * - ``tests/unit/voice-prompt.test.ts``
      - 11
      - 認識モデルへ渡すプロンプト。聞いている欄を短い文脈 1 文だけ置く、女性の金額は性別で呼ぶ、入力済みの催し名と会場名を当て字の手掛かりにする、手掛かりが無ければ行ごと落とす、指示文と数字表記の命令を含めない、欄の語彙は混ぜない、改行と制御文字を空白へ潰す、700 文字を超える手掛かりを落とす、欄が決まらないときの汎用の文
@@ -726,7 +738,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1801、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1801 件を実行して 216 件を skip します。
+件数の内訳は ``tests/unit/`` が 1844、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1844 件を実行して 216 件を skip します。
 
 .. breakdown-end
 

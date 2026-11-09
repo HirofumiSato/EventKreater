@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { ReferralPanel } from "@/modules/account/components/ReferralPanel";
+import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
 import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
 import { NotificationList } from "@/modules/notifications/components/NotificationList";
 import { announceNotificationsChanged } from "@/modules/notifications/hooks/useNotifications";
@@ -42,6 +43,10 @@ export default function MyPage() {
   const [notifications, setNotifications] = useState<RsvpNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [marking, setMarking] = useState(false);
+  // 紹介の取得が終わるまで、ガイドの対象（紹介の紙）は測れない。
+  const [referralReady, setReferralReady] = useState(false);
+  // 右上の「使い方」。値を変えるとガイドが 1 枚目から開く。
+  const [guideStart, setGuideStart] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -150,6 +155,21 @@ export default function MyPage() {
       <PageHeader
         title="主催者マイページ"
         lead={<>{profile.user.name} さん。イベントは {events.length}件です。</>}
+        actions={
+          // 操作ガイドは主催者にだけ意味がある（参加者には紹介も新着も無い）。
+          // 初回は自動で開き、閉じたあともここから何度でも開き直せる。
+          profile.isOrganizer ? (
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              data-guide-target="mypage-guide"
+              aria-label="操作ガイドを開く"
+              onClick={() => setGuideStart((current) => current + 1)}
+            >
+              使い方
+            </button>
+          ) : undefined
+        }
       />
 
       <div className="roster-summary roster-summary--pairs">
@@ -177,8 +197,11 @@ export default function MyPage() {
       />
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
-      {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線を同じ場所で見せる。 */}
-      <ReferralPanel />
+      {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線を同じ場所で見せる。
+          ガイドの 1 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
+      <div data-guide-target="mypage-referral">
+        <ReferralPanel onReady={() => setReferralReady(true)} />
+      </div>
 
       {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。
           マイページは 4 件までにし、続きは通知一覧（/notifications）が受ける。 */}
@@ -280,6 +303,13 @@ export default function MyPage() {
           </div>
         </Section>
       )}
+
+      {/* 操作ガイド。ポータルで `document.body` の直下へ描くので、ここでは起動だけを渡す。 */}
+      <MyPageGuideTour
+        ready={referralReady}
+        autoStart={profile.isOrganizer}
+        startSignal={guideStart}
+      />
     </div>
   );
 }

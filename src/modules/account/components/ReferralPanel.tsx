@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LineShareDialog } from "@/modules/organizers/components/LineShareDialog";
 import { lineShareUrl } from "@/modules/organizers/lib/share";
 import { Panel, PanelHead } from "@/components/ui";
@@ -13,6 +13,14 @@ interface ReferralResponse {
   limit: number;
 }
 
+type ReferralPanelProps = {
+  /**
+   * 紹介の取得が終わった（成功・失敗のどちらでも 1 回）。
+   * 操作ガイドは、この紙の高さが決まってから対象を測る。
+   */
+  onReady?: () => void;
+};
+
 /**
  * 紹介リンクの配布と実績。
  *
@@ -20,10 +28,13 @@ interface ReferralResponse {
  * 開いたときに1回だけ取る。紹介した人が公開するまで枚数は増えないので、
  * 画面を出しっぱなしでも取りこぼしは起きない。
  */
-export function ReferralPanel() {
+export function ReferralPanel({ onReady }: ReferralPanelProps) {
   const [summary, setSummary] = useState<ReferralResponse | null>(null);
   const [copied, setCopied] = useState(false);
   const [shareHref, setShareHref] = useState<string | null>(null);
+  // 親は描画のたびに新しい関数を渡しうる。依存配列を増やさず、最新の 1 つだけを ref で持つ。
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
 
   useEffect(() => {
     let active = true;
@@ -34,6 +45,10 @@ export function ReferralPanel() {
       })
       .catch(() => {
         // 取れなくても、この紙を出さないだけで他の操作は続けられる。
+      })
+      .finally(() => {
+        // 成功・失敗のどちらでも、取得が終わったことを 1 回だけ知らせる。
+        if (active) onReadyRef.current?.();
       });
     return () => {
       active = false;

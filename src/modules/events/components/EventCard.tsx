@@ -159,7 +159,12 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete, on
             />
           )}
           {/* URL のコピーは札の右上の印が受ける。ここには置かない（同じ行き先を重ねない）。 */}
-          <button type="button" onClick={onInvite} className="btn btn--outline btn--sm">
+          <button
+            type="button"
+            onClick={onInvite}
+            className="btn btn--outline btn--sm"
+            data-guide-target="invite-cohost"
+          >
             共同主催・幹事を招待
             <UserPlus className="icon" aria-hidden="true" />
           </button>

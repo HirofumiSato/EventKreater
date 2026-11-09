@@ -1938,6 +1938,64 @@ body:has(.deco.is-motion-off) .guide-tap__ripple {
   }
 }
 
+/* 公開ページの紙面に寄せた説明の紙（主催者マイページの操作ガイド）。
+   骨格（黒い面・穴・朱の輪・硬い影・40px の的）はイベント作成のガイドと同じで、
+   地だけを公開ページの白い紙（`--color-surface`）にする。参加者が見る告知ページと
+   同じ紙に見せることで、案内している画面が「公開される側」だと伝わる。
+   `position` は足さない。`.guide-bubble` の `position: fixed` がそのまま
+   `::before`（テープ）の基準になる。 */
+.guide-bubble--paper {
+  /* 3 枚目はヘッダーのユーザーメニュー（60）を開いて通知を指す。紙を 49 のままにすると
+     メニューに重なり、文が読めないうえ「次へ」の押下もメニューが受け止める。
+     紙だけをメニューより上へ上げる（黒面 48・枠 49・モーダル 50 より上の 61）。 */
+  z-index: 61;
+  background: var(--color-surface);
+}
+
+/* 上辺のテープ。公開ページの紙面に貼った見立てで、山吹（`--pop-warm`）を薄く敷く。
+   紙の外へ少しはみ出させるが、幅は中央の 5.5rem に収めるので横スクロールは出ない。
+   指の当たりは持たせない（テープを押しても対象の操作を邪魔しない）。 */
+.guide-bubble--paper::before {
+  content: "";
+  position: absolute;
+  top: -0.625rem;
+  left: 50%;
+  width: 5.5rem;
+  height: 1.25rem;
+  background: rgb(224 155 22 / 0.3);
+  transform: translateX(-50%) rotate(-2deg);
+  pointer-events: none;
+}
+
+/* 何枚目かの札。公開ページの印（`poster-hero__stamp`）と同じく、山吹の地に墨を載せる。
+   山吹に白は読めないので、文字は必ず `--tape-ink` にする。
+   既存の `padding-inline-end: 2.25rem` は活かし、閉じる印（右上）の下へ文字を潜らせない。
+   詳細度が `.guide-bubble__step` より高いので、ここで上書きできる。 */
+.guide-bubble--paper .guide-bubble__step {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.0625rem 0.5rem;
+  /* 終了側だけは既存の値を残す。閉じる印（右上・40px）の下へ文字を潜らせない。
+     short-hand のままだと 0.5rem に戻り、文字が × の真下まで伸びる。 */
+  padding-inline-end: 2.25rem;
+  border-radius: 2px;
+  background: var(--pop-warm);
+  color: var(--tape-ink);
+  font-weight: 700;
+}
+
+/* 見出しの下線も山吹にする。公開ページの見出し線と同じ 2px にそろえ、
+   文字とのあいだだけを詰める（既存の font 指定はそのまま使う）。 */
+.guide-bubble--paper .guide-bubble__title {
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid var(--pop-warm);
+}
+
+/* 箇条書きの点は、見出し線より 1 段濃い山吹にする。淡いままだと白地に沈む。 */
+.guide-bubble--paper .guide-bubble__list li::marker {
+  color: var(--pop-warm-deep);
+}
+
 /* 音声が対象にしている入力欄。DOM フォーカスは動かさず、枠だけで示す。 */
 [data-voice-target="true"] {
   position: relative;

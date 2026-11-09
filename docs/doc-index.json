@@ -2,10 +2,10 @@
   "generatedBy": "scripts/gen-doc-index.mjs",
   "note": "npm run docs:gen で再生成する。手で編集しない。",
   "stats": {
-    "docs": 123,
+    "docs": 124,
     "preImplementation": 15,
     "markdown": 56,
-    "rst": 67,
+    "rst": 68,
     "orphan": 1
   },
   "docs": [
@@ -5882,7 +5882,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2190,
+      "lineCount": 2214,
       "headings": [
         {
           "level": 1,
@@ -6073,6 +6073,10 @@
           "text": "12.12. 新規作成画面の初回ガイド"
         },
         {
+          "level": 3,
+          "text": "12.13. 主催者マイページの操作ガイド"
+        },
+        {
           "level": 2,
           "text": "13. 売上ダッシュボード（SCR-ORG-11 / SCR-ORG-12 / SCR-ORG-06）"
         },
@@ -6181,6 +6185,10 @@
         },
         {
           "path": "docs/event-guide-tour.rst",
+          "exists": true
+        },
+        {
+          "path": "docs/mypage-guide-tour.rst",
           "exists": true
         },
         {
@@ -6488,6 +6496,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/organizers/lib/tour/session.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/revenue/components/RevenueSummaryLedger.tsx",
           "exists": true
         },
@@ -6599,7 +6611,7 @@
       "title": "チケット管理・課金決済基盤",
       "summary": "イベント告知・出欠と、主催者のチケット・Stripe 決済を扱う Next.js アプリケーションの手順書です。 店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会などを開く主催者が、参加者へ直接URLを届ける用途を主対象にします。飯フェス、タコパ、占い、撮影会などの主催者も同じ立場です。 ソースは docs/ にあり、HTML は Sphinx で生成します。",
       "preImplementation": false,
-      "lineCount": 177,
+      "lineCount": 178,
       "headings": [
         {
           "level": 1,
@@ -6633,6 +6645,7 @@
         "docs/flyer/index.rst",
         "docs/voice-input.rst",
         "docs/event-guide-tour.rst",
+        "docs/mypage-guide-tour.rst",
         "docs/archive/index.rst",
         "docs/issues/index.rst",
         "docs/ui-review/home-audit.md",
@@ -10652,6 +10665,107 @@
       ]
     },
     {
+      "path": "docs/mypage-guide-tour.rst",
+      "sphinxDoc": "mypage-guide-tour",
+      "format": "rst",
+      "title": "主催者マイページの操作ガイド",
+      "summary": "主催者マイページ（ /mypage ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 7 枚のツアーです。 主催者が毎日使う画面のどこに何があるかを先に渡し、紹介・新着・主催一覧・招待・公開プロフィールへ迷わず行けるようにします。",
+      "preImplementation": false,
+      "lineCount": 178,
+      "headings": [
+        {
+          "level": 1,
+          "text": "主催者マイページの操作ガイド"
+        },
+        {
+          "level": 2,
+          "text": "目的"
+        },
+        {
+          "level": 2,
+          "text": "初回の起動条件"
+        },
+        {
+          "level": 2,
+          "text": "7 枚の手順"
+        },
+        {
+          "level": 2,
+          "text": "画面をまたぐ続き"
+        },
+        {
+          "level": 2,
+          "text": "再表示の入口と記憶"
+        },
+        {
+          "level": 2,
+          "text": "配置の考え方"
+        },
+        {
+          "level": 2,
+          "text": "テスト"
+        },
+        {
+          "level": 2,
+          "text": "ガイドを作っているファイル"
+        }
+      ],
+      "toctree": [],
+      "codePaths": [
+        {
+          "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/site-user-menu.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/tour/place.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/components",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/tour/memory.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/tour/session.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/organizers/lib/tour/steps.ts",
+          "exists": true
+        },
+        {
+          "path": "src/styles/screens/organizer.css",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-memory.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-steps.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-styles.test.mjs",
+          "exists": true
+        }
+      ],
+      "includedBy": [
+        "docs/index.rst"
+      ]
+    },
+    {
       "path": "docs/onboarding.md",
       "sphinxDoc": "onboarding",
       "format": "markdown",
@@ -11443,7 +11557,7 @@
       "title": "ドキュメントの見取り図",
       "summary": "このページは、Sphinx が生成する HTML 全体の入口です。左メニューは docs/index.rst の toctree から作ります。toctree に無いファイルはメニューにも検索対象の本文にも入りません。",
       "preImplementation": false,
-      "lineCount": 329,
+      "lineCount": 344,
       "headings": [
         {
           "level": 1,
@@ -11488,6 +11602,10 @@
         {
           "level": 3,
           "text": "新規作成の初回ガイド"
+        },
+        {
+          "level": 3,
+          "text": "マイページの操作ガイド"
         },
         {
           "level": 3,
@@ -12083,7 +12201,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 842,
+      "lineCount": 854,
       "headings": [
         {
           "level": 1,
@@ -12498,6 +12616,18 @@
         },
         {
           "path": "tests/unit/mock-sync.test.mjs",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-memory.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-steps.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/mypage-guide-styles.test.mjs",
           "exists": true
         },
         {
