@@ -7,6 +7,7 @@ import { ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-react";
 import { EventCard } from "@/modules/events/components/EventCard";
 import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
 import { InviteCoHostModal } from "@/modules/organizers/components/InviteCoHostModal";
+import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
 import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
 import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
 import { PricingModal } from "@/modules/billing/components/PricingModal";
@@ -521,6 +522,10 @@ function OrganizerEventsScreen() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* マイページの操作ガイドの 5・6 枚目はこの画面で出す。自動では開かず、
+          前の画面が `sessionStorage` に残した続きがあるときだけ続きから出す。 */}
+      <MyPageGuideTour ready={!loading && !error} autoStart={false} />
     </div>
   );
 }

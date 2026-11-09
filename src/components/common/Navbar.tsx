@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SITE } from "@/lib/site";
+import { SITE_USER_MENU_EVENT, type SiteUserMenuDetail } from "@/lib/site-user-menu";
 import {
   type Viewer,
   siteNavConfig,
@@ -95,6 +96,9 @@ export function Navbar() {
       setUserMenuOpen(false);
     };
     const onPointerDown = (event: PointerEvent) => {
+      // 操作ガイドが開いているあいだは閉じない。ガイドの「次へ」を押した pointerdown で
+      // メニューが閉じ、次の枚が指す対象（通知リンク）が消えてしまうため。
+      if (document.body.dataset.guideActive === "true") return;
       const header = headerRef.current;
       if (header && !header.contains(event.target as Node)) {
         setMenuOpen(false);
@@ -108,6 +112,21 @@ export function Navbar() {
       document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [menuOpen, userMenuOpen]);
+
+  // 操作ガイドからメニューを開く合図。ガイドはヘッダーとは別の木にあり、props を
+  // 引き回すと `SiteChrome` が太るので、`window` のイベントを 1 方向に受ける
+  // （`src/lib/site-user-menu.ts`）。setState は安定なので購読は 1 度だけ張る。
+  useEffect(() => {
+    const onUserMenu = (event: Event) => {
+      const { detail } = event as CustomEvent<SiteUserMenuDetail | undefined>;
+      setMenuOpen(false);
+      setUserMenuOpen(Boolean(detail?.open));
+    };
+    window.addEventListener(SITE_USER_MENU_EVENT, onUserMenu);
+    return () => {
+      window.removeEventListener(SITE_USER_MENU_EVENT, onUserMenu);
+    };
+  }, []);
 
   const { links, primary, action } = siteNavConfig(pathname, viewer);
   const role = viewer ? viewerRole(pathname, viewer) : null;
