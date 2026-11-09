@@ -523,7 +523,7 @@ function OrganizerEventsScreen() {
         />
       )}
 
-      {/* マイページの操作ガイドの 5・6 枚目はこの画面で出す。自動では開かず、
+      {/* マイページの操作ガイドの 6・7 枚目はこの画面で出す。自動では開かず、
           前の画面が `sessionStorage` に残した続きがあるときだけ続きから出す。 */}
       <MyPageGuideTour ready={!loading && !error} autoStart={false} />
     </div>
