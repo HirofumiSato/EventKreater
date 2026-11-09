@@ -166,7 +166,7 @@ function EditEventScreen({ params }: { params: { id: string } }) {
     setToastTone(tone);
   };
 
-  /** 概要は任意だが、200 字を超えると保存できない。送る前に画面で知らせる。 */
+  /** 概要は任意だが、1000 字を超えると保存できない。送る前に画面で知らせる。 */
   const summaryIsValid = () => {
     if (summaryTextLength(form.summary) > EVENT_SUMMARY_MAX_LENGTH) {
       showToast(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`, "error");

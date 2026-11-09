@@ -209,11 +209,11 @@
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-payload-schema.test.ts``
      - 22
-     - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る。概要は省略・空・空白だけで null になり、タグを除いて 200 文字ちょうどは通り 201 文字は落ちる。``script`` は落とし、``javascript:`` のリンクは文字だけを残す。料金プランは名前・金額・補足がすべて空の行を送らず（全部空なら1件だけ送る）、重複の判定は入力済みの名前だけを見て、重複した名前を添えて落とす
+     - 画面のフォーム値が API のペイロードになって ``CreateEventSchema`` を通る。補足・住所の空欄は null で送る。概要は省略・空・空白だけで null になり、タグを除いて 1000 文字ちょうどは通り 1001 文字は落ちる。``script`` は落とし、``javascript:`` のリンクは文字だけを残す。料金プランは名前・金額・補足がすべて空の行を送らず（全部空なら1件だけ送る）、重複の判定は入力済みの名前だけを見て、重複した名前を添えて落とす
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/unit/event-summary.test.ts``
      - 21
-     - 概要の表示文字数（タグ・``<br>``・ブロックの境界を数えず、``&amp;`` は 1 文字）、空白のそろえ方、200 文字ちょうどの通過と 201 文字の超過、リンク先の検証（``http`` / ``https`` だけを通し、``javascript:``・``data:``・``mailto:``・``tel:``・``ftp:`` を拒否し、スキーム省略に ``https://`` を補う）、無害化（許可タグの保持、``script`` と ``style`` の要素・``style`` 属性・``on*`` の除去、不正な ``href`` の文字だけの残し方、``target`` と ``rel`` の強制）、貼り付け用の実体参照の変換
+     - 概要の表示文字数（タグ・``<br>``・ブロックの境界を数えず、``&amp;`` は 1 文字）、空白のそろえ方、1000 文字ちょうどの通過と 1001 文字の超過、リンク先の検証（``http`` / ``https`` だけを通し、``javascript:``・``data:``・``mailto:``・``tel:``・``ftp:`` を拒否し、スキーム省略に ``https://`` を補う）、無害化（許可タグの保持、``script`` と ``style`` の要素・``style`` 属性・``on*`` の除去、不正な ``href`` の文字だけの残し方、``target`` と ``rel`` の強制）、貼り付け用の実体参照の変換
      - SCR-ORG-02 / SCR-PUB-01
    * - ``tests/unit/event-steps.test.ts``
      - 35
@@ -541,7 +541,7 @@
      - SCR-PUB-01
    * - ``tests/unit/sample-events.test.ts``
      - 8
-     - 告知ページの見本 5 件の slug が一意であること、チラシが ``public/samples`` に実在すること、テーマが既知の ID であること、日程と料金プランを 1 件以上持ち人数が定員を超えないこと、主催者を公開プロフィールへのリンクにしないこと、各見本の概要が 200 文字以内で許可タグだけであること、``findSample`` が未知の slug で undefined を返すこと
+     - 告知ページの見本 5 件の slug が一意であること、チラシが ``public/samples`` に実在すること、テーマが既知の ID であること、日程と料金プランを 1 件以上持ち人数が定員を超えないこと、主催者を公開プロフィールへのリンクにしないこと、各見本の概要が 1000 文字以内で許可タグだけであること、``findSample`` が未知の slug で undefined を返すこと
      - SCR-PUB-16 / SCR-PUB-17
    * - ``tests/unit/sample-profiles.test.ts``
      - 6
@@ -649,7 +649,7 @@
      - SCR-ORG-02
    * - ``tests/components/event-summary-editor.test.tsx``
      - 6
-     - 概要の入力欄（``EventSummaryEditor``）。空のときは ``0 / 200`` を出して超過の印を付けないこと、入力済みの値を本文に描いてタグを除いた文字数を出すこと、本文を打つと innerHTML を ``onChange`` で返すこと、200 文字ちょうどは超過にせず 201 文字は ``aria-invalid`` と超過の 1 文を出すこと、``disabled`` では本文を編集できないこと
+     - 概要の入力欄（``EventSummaryEditor``）。空のときは ``0 / 1000`` を出して超過の印を付けないこと、入力済みの値を本文に描いてタグを除いた文字数を出すこと、本文を打つと innerHTML を ``onChange`` で返すこと、1000 文字ちょうどは超過にせず 1001 文字は ``aria-invalid`` と超過の 1 文を出すこと、``disabled`` では本文を編集できないこと
      - SCR-ORG-02 / SCR-ORG-05
    * - ``tests/components/event-meta-card-pricing.test.tsx``
      - 5

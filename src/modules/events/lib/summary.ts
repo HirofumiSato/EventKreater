@@ -7,7 +7,7 @@
  */
 
 /** 概要の表示文字数の上限。タグと改行は数えない。 */
-export const EVENT_SUMMARY_MAX_LENGTH = 200;
+export const EVENT_SUMMARY_MAX_LENGTH = 1000;
 
 /** 改行に置き換えるブロック要素。段落・リスト・見出しの境界で行を分ける。 */
 const BLOCK_BOUNDARY_PATTERN = /<\/?\s*(?:p|div|li|ul|ol|blockquote|h[1-6])\b[^>]*>/gi;

@@ -268,7 +268,7 @@ const eventBodySchema = z.object({
     })
     .refine(
       (value) => value === null || summaryTextLength(value) <= EVENT_SUMMARY_MAX_LENGTH,
-      "イベント概要は200文字以内にしてください",
+      `イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください`,
     ),
   schedules: z.array(scheduleInputSchema).min(1, "開催日時を1件以上入力してください").max(MAX_EVENT_OPTIONS),
   pricePlans: z.array(pricePlanInputSchema).min(1, "料金プランを1件以上入力してください").max(MAX_EVENT_OPTIONS),

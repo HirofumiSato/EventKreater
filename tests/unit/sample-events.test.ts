@@ -59,7 +59,7 @@ describe("告知ページの見本", () => {
 });
 
 describe("見本の概要", () => {
-  it("どの見本にも概要があり、200 文字以内に収まっている", () => {
+  it("どの見本にも概要があり、1000 文字以内に収まっている", () => {
     expect(SAMPLE_EVENTS).toHaveLength(5);
     for (const event of SAMPLE_EVENTS) {
       expect(event.summary).not.toBeNull();

@@ -27,6 +27,7 @@ import {
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
 import { EventSummaryEditor } from "@/modules/events/components/EventSummaryEditor";
+import { EVENT_SUMMARY_MAX_LENGTH } from "@/modules/events/lib/summary";
 import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
 import { Alert, Dialog, Field, ThemePicker } from "@/components/ui";
 
@@ -75,7 +76,7 @@ export function BasicSection({
         <Field
           label="イベント概要（任意）"
           htmlFor="event-summary"
-          help="公開ページの冒頭に出ます。200文字まで。"
+          help={`公開ページの冒頭に出ます。${EVENT_SUMMARY_MAX_LENGTH}文字まで。`}
         >
           <EventSummaryEditor
             id="event-summary"
