@@ -77,7 +77,9 @@ export const SITE = {
     tokushoho: { href: "/tokushoho", label: "特定商取引法に基づく表記" },
     // ヘッダーの出し分け用。参加者画面と主催者画面の行き来はこの 2 本だけにする。
     organizerSwitch: { href: "/organizer/events", label: "主催者として使う" },
-    participantSwitch: { href: "/participant", label: "参加者ログイン" },
+    // 「ログイン」ではなく「使う」にする。押してもログインはせず、いまの会員のまま
+    // 見る画面を切り替えるだけである（`organizerSwitch` と対にする）。
+    participantSwitch: { href: "/participant", label: "参加者として使う" },
     // 管理者だけに出す。公開画面からは辿れない（`/console` は noindex）。
     console: { href: "/console", label: "管理コンソール" },
   },
