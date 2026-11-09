@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogIn } from "lucide-react";
 import { SITE } from "@/lib/site";
 import { yen } from "@/lib/format";
 import { FREE_EVENT_LIMIT, ONE_TIME_PRICE_JPY, SERVICE_PLANS } from "@/modules/billing/lib/plans";
@@ -43,11 +44,12 @@ const HERO_CALLOUTS = [
 /**
  * ヒーローのログイン導線。`SITE.nav.*.label` はヘッダー・フッターも読むので変えず、
  * ホームだけ「登録」も選べる言い方に上書きする。
+ * 参加者の登録・ログインは、主催者が共有した告知URLから入る想定なので、ここには置かない。
  */
-const HERO_LOGIN_LINKS = [
-  { href: SITE.nav.organizerLogin.href, prefix: "主催者", suffix: "登録/ログイン" },
-  { href: SITE.nav.participantLogin.href, prefix: "参加者", suffix: "登録/ログイン" },
-] as const;
+const HERO_LOGIN = {
+  href: SITE.nav.organizerLogin.href,
+  label: "アカウントを作る/ログイン",
+} as const;
 
 /**
  * h1 の 1 つ目の文。見出しは白の 1 色にそろえ、冒頭の「イベント告知&申込」だけを
@@ -181,14 +183,13 @@ export default function HomePage() {
                   </span>
                 </span>
               </div>
-              {/* ホームは共通ヘッダーを出さない。主催者と参加者の入口はヒーローに残す。 */}
+              {/* ホームは共通ヘッダーを出さない。主催者の入口だけをヒーローに置く。
+                  参加者は主催者が共有した告知URLから登録・ログインする想定なので、ここには置かない。 */}
               <p className="hero__links">
-                {HERO_LOGIN_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className="text-link">
-                    {link.prefix}
-                    <span className="hero__link-suffix">{link.suffix}</span>
-                  </Link>
-                ))}
+                <Link href={HERO_LOGIN.href} className="text-link">
+                  <LogIn className="icon" aria-hidden="true" />
+                  {HERO_LOGIN.label}
+                </Link>
               </p>
             </div>
           </div>

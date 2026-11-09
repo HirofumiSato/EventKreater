@@ -198,19 +198,30 @@
 
 .hero--stage .hero__actions {
   /* 主操作の段と補助のリンクの段を、上から 1 段ずつ積む。
-     横に混ぜると、52px のボタンと 23px のリンクが同じ行で上下にずれる。 */
+     横に混ぜると、52px のボタンと 23px のリンクが同じ行で上下にずれる。
+     下の段もボタンと同じ丸の札なので、息継ぎとして 1rem 空ける（12px だと
+     2 つの札が触れて見え、押し間違いにも見える）。 */
   display: grid;
   justify-items: start;
-  gap: 0.5rem;
+  gap: 1rem;
   margin-top: 2rem;
 }
 
 /* 主操作と副のボタンを 1 段に並べる。札が上へはみ出すので、折り返したとき
-   上の段と触れないだけの行間を空ける。 */
+   上の段と触れないだけの行間を空ける。
+   スマホは 2 つを等分し、下のログインの札と幅をそろえる。3 つとも同じ位置で
+   両端が終わるので、角の丸がそろっても段ごとに幅が違って見えない。 */
 .hero__buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.hero__buttons > .btn,
+.hero__sample,
+.hero__sample > .btn {
+  width: 100%;
 }
 
 /* 見本は準備中。押せない見た目と当たり判定は `.btn:disabled` が受ける。
@@ -228,33 +239,54 @@
   pointer-events: none;
 }
 
-/* 主操作の下に並べるテキストリンク。狭い幅では折り返す。
-   行の高さは押せる的（40px）を確保し、字の位置は中央に置く。
-   主操作（`--font-action` の 15px）より二段小さくする。料金の注記（12px）とは
-   分ける添え書きなので、その間の 13px にする。押せる的は下げない。 */
+/* 主操作の下に置くログインの入口。墨地の上では字だけだと主操作に負けて見落とすので、
+   白の罫線と淡い地を持つ札にして、押す前に入口だと分かるようにする。塗りは主操作（白）に
+   1 つだけ使うので、こちらは透かしの地と罫線で受ける。
+   角は主操作と同じ丸（`.deco .btn` の 999px）にそろえる。幅はいちばん下の段として
+   コピー列いっぱいに取り、字は中央に置く。札の右端がリードの右端にそろうので、
+   幅が内容で決まるボタンの段と違って、下の段が中途半端な位置で終わらない。
+   押せる的は 44px（主操作の 52px より一段低いが、40px の下限は上回る）。 */
 .hero__links {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0 0.75rem;
+  width: 100%;
   margin: 0;
 }
 
 .hero__links .text-link {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
-  min-height: var(--tap-target);
-  font-size: 0.8125rem;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid color-mix(in srgb, #fff 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 8%, transparent);
+  font-size: var(--font-action);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* 印は山吹にする。墨地に白の字だけだと入口が沈むので、色を 1 点だけ足す。 */
+.hero__links .text-link .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--pop-warm);
 }
 
 .hero--stage .text-link {
-  color: var(--color-ink-soft);
-  text-decoration: underline;
-  text-underline-offset: 0.25em;
+  color: #fff;
 }
 
+/* 札なので下線は付けない。押している間だけ地を濃くして返す。 */
 .hero--stage .text-link:hover {
-  color: #fff;
+  border-color: #fff;
+  background: color-mix(in srgb, #fff 16%, transparent);
+  text-decoration: none;
 }
 
 /* 墨地では朱のボタンが形として弱い。白地に墨文字で受ける。 */
@@ -450,6 +482,32 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.8125rem;
     line-height: 1.35;
+  }
+
+  /* 広い画面はコピー列が広いので、ボタンは中身の幅で止め、折り返して並べる。
+     等分のままだと 2 つの札が横に間延びし、主操作が強く見えなくなる。 */
+  .hero__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem 0.75rem;
+    width: auto;
+  }
+
+  .hero__buttons > .btn,
+  .hero__sample,
+  .hero__sample > .btn {
+    width: auto;
+  }
+
+  /* 広い画面はコピー列が広いので、ログインの札も列いっぱいに伸ばさず中身の幅で止める。
+     伸ばすと 1 本だけの帯が主操作より重く見え、ボタンの段とも釣り合わない。 */
+  .hero__links {
+    width: auto;
+  }
+
+  .hero__links .text-link {
+    flex: 0 0 auto;
+    justify-content: flex-start;
   }
 }
 

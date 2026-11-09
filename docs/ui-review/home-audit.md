@@ -473,11 +473,11 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 | --- | --- | --- |
 | 主操作 | 「無料でイベント告知ページを作る」を **「無料ではじめる」** に短くした（7 文字） | `SITE.cta.createEventFree` |
 | 注記 | 主操作の直下の注記（`.hero__note`）は置かない（2026-11-06 に削除） | `src/app/page.tsx` |
-| 並び | `.hero__actions` は主操作・補助リンクの 2 段。補助リンクは 1 段に 2 本（390px） | `src/styles/components.css` の `.hero__links` |
+| 並び | `.hero__actions` は主操作・補助リンクの 2 段。390px は上の段を等分し、下の札と両端をそろえる（§17） | `src/styles/components.css` の `.hero__buttons` / `.hero__links` |
 | サンプル | 主操作の隣に副のボタン「サンプルを見る」（`/sample`）。白の罫線・透明の地で受け、新しいタブで開く（`target="_blank"` / `rel="noopener noreferrer"`） | `SITE.nav.sample` / `src/app/page.tsx` / `.hero--stage .btn--outline` |
-| ログイン | 主催者ログイン・参加者ログインはそのまま後ろ（テキストリンク 2 本） | `SITE.nav.organizerLogin` / `SITE.nav.participantLogin` |
+| ログイン | 主催者ログイン・参加者ログインはそのまま後ろ（テキストリンク 2 本。2026-11-09 に §17 で 1 本へ変更） | `SITE.nav.organizerLogin` / `SITE.nav.participantLogin` |
 
-並びは **無料ではじめる ／ サンプルを見る（ボタン 2 つ）→ 主催者ログイン ／ 参加者ログイン** です。
+並びは **無料ではじめる ／ サンプルを見る（ボタン 2 つ）→ アカウントを作る/ログイン（1 本）** です（2026-11-09 に §17 で 1 本へ変更）。
 ボタンの目安（10 文字以内）は `tests/unit/site-copy.test.ts` が固定します。無料の条件を伝える注記（`SITE.cta.freeNote`、30 文字以内）はホームには置かず、`/sample` が読みます（2026-11-06 にホームから削除）。
 
 ボタン 2 つ・リンクは横に混ぜず、上から 1 段ずつ積みます。横に並べると 52px のボタンと
@@ -612,5 +612,22 @@ FE-PUB-01 の「ヘッダーに 2 本」は「ホームはヒーローとフッ�
 | --- | --- | --- |
 | 2026-11-09 | テーマ付きの公開ページ 5 系統（`/events/[id]`・`/organizers/[userId]`・`/invite/[code]`・`/sample/[slug]`・`/sample/profile/[slug]`）で、フッターをテーマの地（`--st-surface-base`）の内側へ移し、器の `main` に読み幅（テーマ無し 42rem・テーマ有り `--st-content-width`）を持たせた | `src/components/common/PublicThemeShell.tsx` / `SiteFooter.tsx` / `SiteChrome.tsx` / `src/lib/site-chrome.ts` / `src/styles/base.css` / `src/styles/themes.css` |
 
+## 17. ヒーローのログイン導線を 1 本に（2026-11-09）
 
+| 日付 | 変更 | 正 |
+| --- | --- | --- |
+| 2026-11-09 | ヒーローのテキストリンクを主催者の 1 本にまとめ、文言を「アカウントを作る/ログイン」へ変え、`LogIn` の印を字の頭に置いた。参加者は主催者が共有した告知URLから登録・ログインする想定なので、ホームから参加者の入口を外した（フッターの 2 本は残す） | `src/app/page.tsx` の `HERO_LOGIN` / `docs/front_implementation_spec.md` |
+| 2026-11-09 | 墨地に沈まないよう、入口を白 40% の罫線と白 8% の地を持つ札にし、字を 15px・白、印を山吹（`--pop-warm`）に変えた。押せる的高さは 44px。上の段（ボタン）との間は 12px に広げた | `src/styles/components.css` の `.hero__links` / `.hero--stage .hero__actions` |
+| 2026-11-09 | 札の幅を 640px 未満ではコピー列いっぱい（字は中央）に取り、リードの右端とそろえた。640px 以上は中身の幅で止める（広い列で帯に伸ばすと、主操作 2 つより重く見える）。390px で 244 × 40px → 350 × 44px | `src/styles/components.css` の `.hero__links`（640px の `min-width` 節） |
 
+## 18. ヒーローの 3 つの札の形と余白（2026-11-09）
+
+| 日付 | 変更 | 正 |
+| --- | --- | --- |
+| 2026-11-09 | ログインの札の角を `--radius-lg`（8px）から 999px に変え、主操作・副のボタンと同じ丸にそろえた。`.deco .btn` が 999px なので、下の段だけ四角く見えていた | `src/styles/components.css` の `.hero__links .text-link` |
+| 2026-11-09 | ボタンの段と札の間を 12px → 16px に広げた（2 つの札が触れて、押し間違いにも見えた） | `src/styles/components.css` の `.hero--stage .hero__actions` |
+| 2026-11-09 | 640px 未満はボタンの段を `grid` の等分（`1fr 1fr`）にし、下の札と両端をそろえた。従来は幅が文字で決まり、上の段 306px・下の段 350px で右端がずれていた。640px 以上は中身の幅で止める（間延びさせない） | `src/styles/components.css` の `.hero__buttons`（640px の `min-width` 節） |
+
+390px の実測は、主操作 169×52px・サンプル 169×52px・ログイン 350×44px で、
+3 つとも左端 20px・右端 370px にそろう（段の間は 16px）。
+360px は 154×52px が 2 つと 320×44px。どちらも横スクロールは出ない。
