@@ -1,4 +1,5 @@
 import { EVENT_STEPS, type EventStepKey } from "@/modules/events/lib/steps";
+import { EVENT_SUMMARY_MAX_LENGTH } from "@/modules/events/lib/summary";
 
 /**
  * 新規イベント作成画面の初回ガイド（スポットライトツアー）の 9 枚。
@@ -148,7 +149,7 @@ export const EVENT_GUIDE_STEPS: readonly EventGuideStep[] = [
     openStep: "all",
     copy: {
       title: "概要は公開ページの冒頭に出ます",
-      body: "200文字まで。空のままでも進めます。",
+      body: `${EVENT_SUMMARY_MAX_LENGTH}文字まで。空のままでも進めます。`,
     },
     final: false,
   },

@@ -281,7 +281,7 @@ export function EventStepForm({
   /** 必須のステップが埋まっているか確かめる。下書き保存とプレビューの両方で使う。 */
   const validate = (): boolean => {
     setError(null);
-    // 概要は任意だが、200 字を超えたままでは保存できない。
+    // 概要は任意だが、1000 字を超えたままでは保存できない。
     // 直す場所が分かるよう、基本情報を開いてから止める。
     if (summaryTextLength(value.summary) > EVENT_SUMMARY_MAX_LENGTH) {
       setError(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`);

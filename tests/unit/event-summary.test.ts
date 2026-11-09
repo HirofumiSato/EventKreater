@@ -45,14 +45,14 @@ describe("summaryTextLength の数え方", () => {
     expect(summaryTextLength("\tあ\tい\t")).toBe(3);
   });
 
-  it("上限は 200 文字で、ちょうど 200 は通り 201 は超える", () => {
-    expect(EVENT_SUMMARY_MAX_LENGTH).toBe(200);
-    expect(summaryTextLength("あ".repeat(200))).toBe(200);
-    expect(summaryTextLength("あ".repeat(200)) <= EVENT_SUMMARY_MAX_LENGTH).toBe(true);
-    expect(summaryTextLength("あ".repeat(201))).toBe(201);
-    expect(summaryTextLength("あ".repeat(201)) <= EVENT_SUMMARY_MAX_LENGTH).toBe(false);
+  it("上限は 1000 文字で、ちょうど 1000 は通り 1001 は超える", () => {
+    expect(EVENT_SUMMARY_MAX_LENGTH).toBe(1000);
+    expect(summaryTextLength("あ".repeat(1000))).toBe(1000);
+    expect(summaryTextLength("あ".repeat(1000)) <= EVENT_SUMMARY_MAX_LENGTH).toBe(true);
+    expect(summaryTextLength("あ".repeat(1001))).toBe(1001);
+    expect(summaryTextLength("あ".repeat(1001)) <= EVENT_SUMMARY_MAX_LENGTH).toBe(false);
     // タグを付けても表示文字数は変わらない。
-    expect(summaryTextLength(`<b>${"あ".repeat(200)}</b>`)).toBe(200);
+    expect(summaryTextLength(`<b>${"あ".repeat(1000)}</b>`)).toBe(1000);
   });
 
   it("空文字は 0 文字", () => {

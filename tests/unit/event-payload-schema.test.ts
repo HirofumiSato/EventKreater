@@ -263,20 +263,22 @@ describe("イベント概要の送信形", () => {
     expect(CreateEventSchema.parse(payload("<p>   </p>")).summary).toBeNull();
   });
 
-  it("タグを除いて 200 文字ちょうどなら通る", () => {
+  it("タグを除いて 1000 文字ちょうどなら通る", () => {
     const html = `<b>${"あ".repeat(EVENT_SUMMARY_MAX_LENGTH)}</b>`;
     const parsed = CreateEventSchema.parse(payload(html));
     expect(parsed.summary).toBe(html);
     expect(summaryTextLength(parsed.summary ?? "")).toBe(EVENT_SUMMARY_MAX_LENGTH);
   });
 
-  it("201 文字は「イベント概要は200文字以内にしてください」で落ちる", () => {
+  it("1001 文字は「イベント概要は1000文字以内にしてください」で落ちる", () => {
     const result = CreateEventSchema.safeParse(payload("あ".repeat(EVENT_SUMMARY_MAX_LENGTH + 1)));
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((issue) => issue.message === "イベント概要は200文字以内にしてください")).toBe(
-        true,
-      );
+      expect(
+        result.error.issues.some(
+          (issue) => issue.message === `イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください`,
+        ),
+      ).toBe(true);
     }
   });
 

@@ -104,7 +104,7 @@ describe("9 枚の並び", () => {
     const copy = eventGuideStep("summary").copy;
 
     expect(copy.title).toBe("概要は公開ページの冒頭に出ます");
-    expect(copy.body).toContain("200文字");
+    expect(copy.body).toContain("1000文字");
   });
 
   it("7 枚目と 8 枚目は、同じステップの中の別の欄を指す", () => {
