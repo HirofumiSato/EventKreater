@@ -15,8 +15,9 @@
  * 移動を担う。バーに残るのはブランド・役割の札・頭文字の札だけになる。
  *
  * バーの並びに加えて、頭文字の札を押して開くメニュー（`userMenuConfig`）も
- * ここが決める。節（`OrganizerTabs` / `ParticipantTabs`）と重なる行き先は、
- * 節があるあいだはメニューに出さない。
+ * ここが決める。メニューの並びは 1 本で固定し、画面で変わるのは「主催者の行き先を
+ * 出すか」だけにする。節（`OrganizerTabs` / `ParticipantTabs`）と重なる行き先も
+ * 消さない（現在地は `aria-current` が示す）。
  *
  * いまどちらの画面にいるかは、ヘッダーの地の色（`data-viewer-role`）と、
  * ブランド名の下に出す 1 語（`viewerRoleCaption`）の 2 つで示す。並びが
@@ -27,7 +28,7 @@
  * ものなので、そこは今までどおり 1 本の切り替えリンクに留める。
  */
 import { SITE } from "@/lib/site";
-import { showOrganizerTabs, siteChrome } from "@/lib/site-chrome";
+import { siteChrome } from "@/lib/site-chrome";
 
 export interface Viewer {
   name: string;
@@ -177,7 +178,7 @@ function participantConfig(): NavConfig {
  *
  * `action` は主催者エリアの戻り道として持つが、主催者エリアでは `viewerRole()` が
  * 常に `organizer` になるため `Navbar` は出さない（`organizerView`）。催し 0 件の
- * 会員も同じ扱いで、戻る道は頭文字のメニューの「参加者ログイン」が受ける。
+ * 会員も同じ扱いで、戻る道は頭文字のメニューの「参加者として使う」が受ける。
  */
 function organizerConfig(): NavConfig {
   return {
@@ -233,45 +234,45 @@ export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfi
 /**
  * 頭文字の札を押して開くメニューの中身。バーの並びと同じく、ここ 1 か所で決める。
  *
- * 参加者画面では節（`ParticipantTabs`）が参加者の画面を持つので、同じ行き先を重ねない。
- * 代わりに、主催者としても使える会員の入口（「主催者マイページ」。主催イベントを持たない
- * 会員には「主催者として使う」）をここが受ける。バーに置くと、390px ではブランド・
- * 役割の札・頭文字の札と並んで 1 段に収まらない。
+ * 並びは 1 本で固定する。画面ごとに組み替えると、同じ会員が画面を移るたびに並びを
+ * 読み直すことになり、項目が消えたときは権限を失ったようにも見える。画面で変わるのは
+ * 「主催者の行き先を出すか」だけにする（通知は催しを持つ会員だけ、ほかの 4 本は
+ * 主催者として扱う会員に共通）。
  *
- * 主催者画面では節（`OrganizerTabs`）が行き先を持つので、同じ行き先を重ねない。
- * ただし節を出さない作業画面（作成・編集・プレビュー・招待）では
- * マイページへの入口が消えるため、そのときだけ「主催者マイページ」をここに残す。
- * 下書き（SCR-ORG-15）はイベントの一覧の一種で、節からは外してここが受ける。
+ * 順は「立場の切り替え → 主催者マイページ → 通知 → 下書き → プラン・カード管理 →
+ * アカウント」。切り替えを先頭に置くのは、参加者と主催者を行き来する 1 本を、
+ * どちらの立場でも同じ位置で押せるようにするためである。
  *
- * プランとカードの管理（SCR-ORG-17）は主催者だけの設定なので、主催者として見ている
- * あいだだけ「アカウント」の直前に置く（`/account` を主催者が開いたときも organizer に
- * なるため、そこで出るのが正しい）。参加者画面と管理者には出さない。
+ * 節（`OrganizerTabs` / `ParticipantTabs`）と同じ行き先も消さない。節と重なるのは
+ * 開いているバーの中だけで、押したときしか開かないメニューでは 2 つ並ばない。
+ * 消すと、作業画面（作成・編集・プレビュー・招待）で「主催者マイページ」が
+ * 現れ、`/participant` では「下書き」「プラン・カード管理」が消える。現在地は
+ * `Navbar` が付ける `aria-current` が示す。
+ *
+ * 主催者としての入口を出すかは、`viewerRole()` と同じ材料（`isOrganizer` と主催者
+ * エリアか）で決める。登録直後は催しが 0 件で `isOrganizer` が false になるが、
+ * 主催者エリアでは主催者として扱う。通知だけは `isOrganizer` が true になるまで
+ * 出さない（通知は主催者にしか作られない）。
+ *
+ * プランとカードの管理（SCR-ORG-17）は主催者だけの設定なので、主催者として扱う
+ * あいだだけ置く（`/account` を主催者が開いたときも出る）。管理者には出さない。
  */
 export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
   // 管理者は管理コンソールしか持たない。会員向けの行き先を出さない。
   if (viewer.platformRole === "ADMIN") return [];
-  const links: NavLink[] = [];
-  if (inOrganizerArea(pathname)) {
-    // 主催者エリアでは、まだ催しを持たない会員も主催者として扱う（viewerRole と同じ理由）。
-    links.push(SITE.nav.participantSwitch);
-    if (!showOrganizerTabs(pathname)) links.push(SITE.nav.mypage);
-    // 通知は主催者にしか作られない。催し 0 件のあいだは端末にも出さない。
-    if (viewer.isOrganizer) links.push(SITE.nav.notifications);
-    links.push(SITE.nav.organizerDrafts);
-  } else if (viewer.isOrganizer) {
-    // 共有画面（/account 配下）もここに入る。参加者側の並びに主催者の行を足す現在の
-    // 挙動が正解で、ヘッダーの立場（viewerRole）が organizer になることと一致する。
-    // 主催者でもある会員の入口。参加者画面から主催者マイページへ戻る道はここだけになる。
-    links.push(SITE.nav.mypage);
-    // 通知は主催者にしか作られない。参加者の端末には出さない。
-    links.push(SITE.nav.notifications);
-  } else {
+  // 主催者エリアでは、まだ催しを持たない会員も主催者として扱う（viewerRole と同じ理由）。
+  const organizerMode = viewer.isOrganizer || inOrganizerArea(pathname);
+  if (!organizerMode) {
     // 主催イベントを持たない会員にも、主催者として使えることを 1 本だけ示す。
-    links.push(SITE.nav.organizerSwitch);
+    return [SITE.nav.organizerSwitch, SITE.nav.account];
   }
-  // プラン画面は主催者だけの設定。参加者画面と管理者には出さない。
-  // 主催者が `/account` を開いたときも organizer になるので、そこで出るのが正しい。
-  if (viewerRole(pathname, viewer) === "organizer") links.push(SITE.nav.plan);
-  links.push(SITE.nav.account);
-  return links;
+  return [
+    SITE.nav.participantSwitch,
+    SITE.nav.mypage,
+    // 通知は主催者にしか作られない。催し 0 件のあいだは端末にも出さない。
+    ...(viewer.isOrganizer ? [SITE.nav.notifications] : []),
+    SITE.nav.organizerDrafts,
+    SITE.nav.plan,
+    SITE.nav.account,
+  ];
 }

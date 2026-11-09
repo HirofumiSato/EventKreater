@@ -124,9 +124,9 @@ export function Navbar() {
 
   /**
    * 頭文字の札を押して開くメニューの中身。並びは `site-nav.ts` の `userMenuConfig` が決める。
-   * 参加者画面では、バーから外した「主催者マイページ」（主催イベントを持たない会員には
-   * 「主催者として使う」）をここが受ける。主催者画面では「参加者として見る」と、節に
-   * 重ならない「下書き」をここが受ける。
+   * 画面が変わっても並びは動かさない。主催者として見ているあいだは、節（`OrganizerTabs`）
+   * や作業画面（作成・編集・プレビュー・招待）と同じ行き先もここに入る。現在地は
+   * `aria-current` で示す。
    */
   const userMenuLinks = viewer ? userMenuConfig(pathname, viewer) : [];
 

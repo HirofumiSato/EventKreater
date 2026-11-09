@@ -104,100 +104,69 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
 });
 
 /**
- * 頭文字の札を押して開くメニュー。節（`OrganizerTabs`）と同じ行き先を重ねない。
+ * 頭文字の札を押して開くメニュー。並びは 1 本で固定し、画面で変わるのは
+ * 「主催者の行き先を出すか」だけにする。節（`OrganizerTabs`）と同じ行き先も
+ * 消さない（現在地は `aria-current` が示す）。
  */
 describe("頭文字のメニューの並び", () => {
-  it("参加者はアカウントと、主催者として使う切り替えだけを持つ", () => {
-    expect(userMenuConfig("/participant", participant)).toEqual([
-      SITE.nav.organizerSwitch,
-      SITE.nav.account,
-    ]);
-  });
-
-  it("主催者でも参加者画面では、主催者マイページと通知を足す", () => {
-    expect(userMenuConfig("/participant", organizer)).toEqual([
+  it("主催者は、どの画面でも同じ並びになる", () => {
+    const expected = [
+      SITE.nav.participantSwitch,
       SITE.nav.mypage,
       SITE.nav.notifications,
-      SITE.nav.account,
-    ]);
-  });
-
-  it("主催イベントを持たない会員でも、主催者画面では主催者のメニューになる", () => {
-    // 通知は主催者にしか作られないので、催し 0 件のあいだは出さない。
-    const links = userMenuConfig("/mypage", participant);
-
-    expect(links).toEqual([
-      SITE.nav.participantSwitch,
       SITE.nav.organizerDrafts,
       SITE.nav.plan,
       SITE.nav.account,
-    ]);
-    expect(links).not.toContainEqual(SITE.nav.notifications);
-    // 節を出さない作業画面では、マイページへの入口をメニューに残す。
-    expect(userMenuConfig("/organizer/events/new", participant)).toEqual([
-      SITE.nav.participantSwitch,
-      SITE.nav.mypage,
-      SITE.nav.organizerDrafts,
-      SITE.nav.plan,
-      SITE.nav.account,
-    ]);
-  });
+    ];
 
-  it("節がある主催者画面では、マイページを重ねず下書きを受ける", () => {
     for (const pathname of [
+      "/participant",
+      "/participant/calendar",
+      "/service",
+      "/account",
       "/mypage",
       "/notifications",
       "/organizer/events",
       "/organizer/calendar",
       "/organizer/revenue",
       "/organizer/profile",
-    ]) {
-      const links = userMenuConfig(pathname, organizer);
-
-      expect(links).toEqual([
-        SITE.nav.participantSwitch,
-        SITE.nav.notifications,
-        SITE.nav.organizerDrafts,
-        SITE.nav.plan,
-        SITE.nav.account,
-      ]);
-      // ホーム（`/mypage`）は節が持つ。メニューに同じ行き先を重ねない。
-      expect(links).not.toContainEqual(SITE.nav.mypage);
-    }
-  });
-
-  it("節を出さない作業画面では、マイページへの入口をメニューに残す", () => {
-    for (const pathname of [
       "/organizer/events/new",
       "/organizer/events/abc/edit",
       "/organizer/events/abc/preview",
-      "/organizer/events/abc/new",
       "/invitations/abc",
     ]) {
-      expect(userMenuConfig(pathname, organizer)).toEqual([
-        SITE.nav.participantSwitch,
-        SITE.nav.mypage,
-        SITE.nav.notifications,
-        SITE.nav.organizerDrafts,
-        SITE.nav.plan,
+      expect(userMenuConfig(pathname, organizer)).toEqual(expected);
+    }
+  });
+
+  it("参加者はアカウントと、主催者として使う切り替えだけを持つ", () => {
+    for (const pathname of ["/participant", "/participant/history", "/service", "/account"]) {
+      expect(userMenuConfig(pathname, participant)).toEqual([
+        SITE.nav.organizerSwitch,
         SITE.nav.account,
       ]);
     }
   });
 
-  it("アカウント設定では、主催者のときだけプラン・カード管理を足す", () => {
-    // 共有画面でも、主催者として見ているあいだはプランの入口が要る。
-    expect(userMenuConfig("/account", organizer)).toEqual([
+  it("催し 0 件の会員でも、主催者画面では主催者の並びになる（通知だけ出さない）", () => {
+    const expected = [
+      SITE.nav.participantSwitch,
       SITE.nav.mypage,
-      SITE.nav.notifications,
+      SITE.nav.organizerDrafts,
       SITE.nav.plan,
       SITE.nav.account,
-    ]);
-    // 参加者には主催者だけの設定を出さない。
-    expect(userMenuConfig("/account", participant)).toEqual([
-      SITE.nav.organizerSwitch,
-      SITE.nav.account,
-    ]);
+    ];
+
+    for (const pathname of [
+      "/mypage",
+      "/organizer/events",
+      "/organizer/events/new",
+      "/invitations/abc",
+    ]) {
+      expect(userMenuConfig(pathname, participant)).toEqual(expected);
+    }
+    // 通知は主催者にしか作られない。催し 0 件のあいだは出さない。
+    expect(userMenuConfig("/mypage", participant)).not.toContainEqual(SITE.nav.notifications);
   });
 
   it("管理者は会員向けの行き先を持たない", () => {
