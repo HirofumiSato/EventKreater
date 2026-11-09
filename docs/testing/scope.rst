@@ -147,7 +147,7 @@
 
 .. count-start
 
-141 ファイル、``it`` は 2156 件です。内訳は ``tests/unit/`` が 99 ファイル 1803 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+141 ファイル、``it`` は 2157 件です。内訳は ``tests/unit/`` が 99 ファイル 1804 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -172,7 +172,7 @@
      - 公開中・受付終了は参照元になれる。下書き・削除済み・不正な ID はなれない
      - SCR-PUB-01 → SCR-ORG-02
    * - ``tests/unit/organizer-invite.test.ts``
-     - 4
+     - 5
      - 主催者への誘い（本文のカードと追従バーの帯）を出す条件。未ログインの参加者と主催イベントを持たない会員には出し、この催しの幹事と主催イベント持ちの会員には出さない
      - SCR-PUB-01
    * - ``tests/unit/hydration-quota.test.ts``
@@ -726,7 +726,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1803、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1803 件を実行して 216 件を skip します。
+件数の内訳は ``tests/unit/`` が 1804、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1804 件を実行して 216 件を skip します。
 
 .. breakdown-end
 

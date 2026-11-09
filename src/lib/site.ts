@@ -136,5 +136,11 @@ export const SITE = {
     freeNote: "まずは2枚まで無料。月額プランは初月0円。",
     /** 主催イベントが 0 件のときの空状態。 */
     createEventFirst: `最初の${CREATE_EVENT.label}`,
+    /**
+     * 告知ページの末尾に置く主催者への誘い（`OrganizerInviteCard`）の見出し。
+     * ラベルをそのまま繋ぐと「〜を作るをしませんか」になる。誘いの文では動詞が
+     * 「作りませんか」に変わるので、ラベルから組み立てず、ここに 1 つだけ持つ。
+     */
+    organizerInviteTitle: "あなたもイベント告知ページを作りませんか？",
   },
 } as const;
