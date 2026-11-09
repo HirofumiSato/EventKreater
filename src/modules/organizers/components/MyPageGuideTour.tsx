@@ -737,7 +737,11 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
   const content = (
     <>
       {resting ? (
-        <div className="guide-scrim" aria-hidden="true" style={{ clipPath: clip }} />
+        <div
+          className={step.scrim === false ? "guide-scrim guide-scrim--clear" : "guide-scrim"}
+          aria-hidden="true"
+          style={{ clipPath: clip }}
+        />
       ) : null}
       {resting
         ? holes.map((hole, holeIndex) => (

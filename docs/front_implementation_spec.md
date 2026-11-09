@@ -1806,19 +1806,20 @@ interface OrganizerInviteCardProps {
 
 ### 12.13. 主催者マイページの操作ガイド
 
-`/mypage`（SCR-PUB-03）の初回だけ、黒透過の面で対象をくり抜く 7 枚のツアーを出す。目的、7 枚の文言、テストは `docs/mypage-guide-tour.rst` を正とする。イベント作成のガイド（第12.12節）とは配列も記憶も分ける。ここには実装が守る条件だけを置く。
+`/mypage`（SCR-PUB-03）の初回だけ、黒透過の面で対象をくり抜く 8 枚のツアーを出す。目的、8 枚の文言、テストは `docs/mypage-guide-tour.rst` を正とする。イベント作成のガイド（第12.12節）とは配列も記憶も分ける。ここには実装が守る条件だけを置く。
 
-7 枚は、紹介 → 新着 → 通知一覧 → 主催一覧（以上 `/mypage`）→ 招待 → 公開プロフィール（以上 `/organizer/events`）→ 右上の「使い方」（`/mypage`）の順である。画面の並びと同じ順に降り、最後に再表示の入口を指して終わる。
+8 枚は、ようこそ（見出し）→ 紹介 → 新着 → 通知一覧 → 主催一覧（以上 `/mypage`）→ 招待 → 公開プロフィール（以上 `/organizer/events`）→ 右上の「使い方」（`/mypage`）の順である。画面の並びと同じ順に降り、最後に再表示の入口を指して終わる。
 
 | 枚 | 画面 | 対象 | その枚だけの下ごしらえ |
 | :--- | :--- | :--- | :--- |
-| 1 | `/mypage` | `[data-guide-target="mypage-referral"]` | なし |
-| 2 | `/mypage` | `#notifications` | なし |
-| 3 | `/mypage` | `#site-user-menu a[href="/notifications"]` | ユーザーメニューを開く（`openUserMenu`） |
-| 4 | `/mypage` | `nav.subnav a[href="/organizer/events"]` | 節の中なら横スクロールで見せる |
-| 5 | `/organizer/events` | `article.event-card:first-of-type [data-guide-target="invite-cohost"]` | 最初の札の「その他の操作」を開く（`openDetails`） |
-| 6 | `/organizer/events` | `nav.subnav a[href="/organizer/profile"]` | 節の中なら横スクロールで見せる |
-| 7 | `/mypage` | `[data-guide-target="mypage-guide"]` | なし（最終枚。「わかった」だけを出す） |
+| 1 | `/mypage` | `h1.page-title` | 黒い面の地を塗らない（`scrim: false`）。何の画面かを先に見せるため。層は残す |
+| 2 | `/mypage` | `[data-guide-target="mypage-referral"]` | なし |
+| 3 | `/mypage` | `#notifications` | なし |
+| 4 | `/mypage` | `#site-user-menu a[href="/notifications"]` | ユーザーメニューを開く（`openUserMenu`） |
+| 5 | `/mypage` | `nav.subnav a[href="/organizer/events"]` | 節の中なら横スクロールで見せる |
+| 6 | `/organizer/events` | `article.event-card:first-of-type [data-guide-target="invite-cohost"]` | 最初の札の「その他の操作」を開く（`openDetails`） |
+| 7 | `/organizer/events` | `nav.subnav a[href="/organizer/profile"]` | 節の中なら横スクロールで見せる |
+| 8 | `/mypage` | `[data-guide-target="mypage-guide"]` | なし（最終枚。「わかった」だけを出す） |
 
 - 対象の目印は画面側で足す。`data-guide-target="mypage-referral"` は紹介の紙を包む `div`、`data-guide-target="mypage-guide"` は見出しの右の「使い方」ボタン（`aria-label="操作ガイドを開く"`）、`data-guide-target="invite-cohost"` は `EventCard` の「共同主催・幹事を招待」ボタンである。通知一覧と節のリンクは、既にある要素のセレクタで指す
 - 出す条件は 4 つ。主催者であること（`profile.isOrganizer`）、紹介の読み込みが終わっていること（`ready`）、`sessionStorage` に続きが無いこと、端末の記憶（`eventkreater.mypage-guide.dismissed`）が無いこと。`/organizer/events` では自動で始めない（`autoStart={false}`）。記憶を読めない環境では落ちずに毎回出す

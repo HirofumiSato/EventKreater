@@ -1,10 +1,10 @@
-// 主催者マイページの操作ガイドの 7 枚。
+// 主催者マイページの操作ガイドの 8 枚。
 //
 // 画面（`MyPageGuideTour`）はこの定義をそのまま描くので、順番・対象・開く印が
 // 変わるとガイドの意味が変わる。文言も含めてここで固定する。
 //
 // イベント作成のガイド（`tests/unit/event-guide-steps.test.ts`）とは別の配列である。
-// 枚数も対象の画面も違うため、片方に枚を足してももう片方の「3 / 7」がずれない。
+// 枚数も対象の画面も違うため、片方に枚を足してももう片方の「3 / 8」がずれない。
 
 import { describe, expect, it } from "vitest";
 import {
@@ -15,9 +15,10 @@ import {
   type MyPageGuideKey,
 } from "@/modules/organizers/lib/tour/steps";
 
-describe("7 枚の並び", () => {
-  it("紹介から始まり、右上の「使い方」で終わる", () => {
+describe("8 枚の並び", () => {
+  it("ようこそから始まり、右上の「使い方」で終わる", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => step.key)).toEqual([
+      "welcome",
       "referral",
       "notifications",
       "notificationLink",
@@ -30,6 +31,7 @@ describe("7 枚の並び", () => {
 
   it("画面をまたぐ招待と公開プロフだけ /organizer/events を指す", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => step.path)).toEqual([
+      "/mypage",
       "/mypage",
       "/mypage",
       "/mypage",
@@ -47,7 +49,8 @@ describe("7 枚の並び", () => {
     }
   });
 
-  it("7 枚の対象を、画面に足した目印か既にある要素で指す", () => {
+  it("8 枚の対象を、画面に足した目印か既にある要素で指す", () => {
+    expect(myPageGuideStep("welcome").targets).toEqual(["h1.page-title"]);
     expect(myPageGuideStep("referral").targets).toEqual([
       '[data-guide-target="mypage-referral"]',
     ]);
@@ -67,6 +70,22 @@ describe("7 枚の並び", () => {
     expect(myPageGuideStep("final").targets).toEqual([
       '[data-guide-target="mypage-guide"]',
     ]);
+  });
+
+  it("ようこそは見出しで始まり、まだ何も操作させない", () => {
+    const welcome = myPageGuideStep("welcome");
+
+    expect(welcome.copy.title).toBe("主催者ページのガイドにようこそ");
+    expect(welcome.copy.body).toContain("順に案内します");
+    expect(welcome.final).toBe(false);
+    expect(welcome.openUserMenu).toBeUndefined();
+    expect(welcome.openDetails).toBeUndefined();
+  });
+
+  it("黒い面を塗らないのは、ようこその枚だけ", () => {
+    const clear = MYPAGE_GUIDE_STEPS.filter((step) => step.scrim === false);
+
+    expect(clear.map((step) => step.key)).toEqual(["welcome"]);
   });
 
   it("紹介の枚は、もらえる枚数と上限を 1 か所で伝える", () => {
@@ -159,10 +178,11 @@ describe("操作の文言", () => {
 describe("キーから枚を引く", () => {
   it("キーから 0 始まりの位置を引ける（再開に使う）", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => myPageGuideIndex(step.key))).toEqual([
-      0, 1, 2, 3, 4, 5, 6,
+      0, 1, 2, 3, 4, 5, 6, 7,
     ]);
-    expect(myPageGuideIndex("inviteCoHost")).toBe(4);
-    expect(myPageGuideIndex("final")).toBe(6);
+    expect(myPageGuideIndex("welcome")).toBe(0);
+    expect(myPageGuideIndex("inviteCoHost")).toBe(5);
+    expect(myPageGuideIndex("final")).toBe(7);
   });
 
   it("知らないキーは黙って別の枚を返さず、例外にする", () => {

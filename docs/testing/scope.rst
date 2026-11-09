@@ -147,7 +147,7 @@
 
 .. count-start
 
-144 ファイル、``it`` は 2197 件です。内訳は ``tests/unit/`` が 102 ファイル 1844 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+144 ファイル、``it`` は 2199 件です。内訳は ``tests/unit/`` が 102 ファイル 1846 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -460,8 +460,8 @@
      - 初回ガイドの重なりと押しやすさ。黒面 48・吹き出し 49 の順、画面下の帯とダイアログのあいだにあること、押せる的の 40px、文字の 15px、紙の朱の輪を常に出すこと
      - SCR-ORG-02
    * - ``tests/unit/mypage-guide-steps.test.ts``
-     - 17
-     - マイページの操作ガイドの 7 枚。並び、キー、``path``（招待と公開プロフだけ ``/organizer/events``）、対象のセレクタ、最終枚が 1 つだけで見出しが「ここから操作は再度確認できます」であること、本文と箇条書きを同じ枚に置かないこと、``openUserMenu`` が通知一覧の枚だけ・``openDetails`` が招待の枚だけであること、操作の文言、``myPageGuideIndex()``、知らないキーの扱い
+     - 19
+     - マイページの操作ガイドの 8 枚。並び、キー、``path``（招待と公開プロフだけ ``/organizer/events``）、対象のセレクタ、ようこその見出しと ``scrim: false`` が 1 枚目だけであること、最終枚が 1 つだけで見出しが「ここから操作は再度確認できます」であること、本文と箇条書きを同じ枚に置かないこと、``openUserMenu`` が通知一覧の枚だけ・``openDetails`` が招待の枚だけであること、操作の文言、``myPageGuideIndex()``、知らないキーの扱い
      - SCR-PUB-03
    * - ``tests/unit/mypage-guide-memory.test.ts``
      - 17
@@ -738,7 +738,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1844、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1844 件を実行して 216 件を skip します。
+件数の内訳は ``tests/unit/`` が 1846、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1846 件を実行して 216 件を skip します。
 
 .. breakdown-end
 

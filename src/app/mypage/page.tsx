@@ -198,7 +198,7 @@ export default function MyPage() {
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
       {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線を同じ場所で見せる。
-          ガイドの 1 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
+          ガイドの 2 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
       <div data-guide-target="mypage-referral">
         <ReferralPanel onReady={() => setReferralReady(true)} />
       </div>
