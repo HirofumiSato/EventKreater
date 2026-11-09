@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SITE } from "@/lib/site";
 import { showsOrganizerInvite } from "@/modules/events/lib/organizer-invite";
 
 /** 誘いを出すかの判定に要る項目だけを、既定値つきで作る。 */
@@ -33,5 +34,13 @@ describe("主催者への誘いを出すか", () => {
   it("主催イベントを持たない共同主催には出す", () => {
     // 共同主催でも、自分ではまだ開いていない会員には次の催しを勧めてよい。
     expect(showsOrganizerInvite(viewer({ loggedIn: true, name: "高橋 直樹" }))).toBe(true);
+  });
+});
+
+describe("主催者への誘いの見出し", () => {
+  it("誘いの動詞で言い切る", () => {
+    // ラベル（「〜を作る」）をそのまま繋ぐと「〜を作るをしませんか」になる。
+    expect(SITE.cta.organizerInviteTitle).toBe("あなたもイベント告知ページを作りませんか？");
+    expect(SITE.cta.organizerInviteTitle).not.toContain("を作るを");
   });
 });

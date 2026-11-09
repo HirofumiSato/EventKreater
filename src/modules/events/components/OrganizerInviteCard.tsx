@@ -20,7 +20,7 @@ export function OrganizerInviteCard({ eventId, viewer }: OrganizerInviteCardProp
     <section className="org-invite" aria-labelledby="org-invite-title">
       <p className="org-invite__tag">無料ではじめられます</p>
       <h2 className="org-invite__title" id="org-invite-title">
-        あなたも{SITE.nav.createEvent.label}をしませんか？
+        {SITE.cta.organizerInviteTitle}
       </h2>
       <p className="org-invite__note">
         このページと同じチラシと告知ページを、5 分で作れます。最初の 2 枚は無料です。

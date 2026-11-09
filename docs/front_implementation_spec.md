@@ -1642,7 +1642,7 @@ interface OrganizerInviteCardProps {
 ```
 
 * `viewer.isThisEventsOrganizer || viewer.hasOrganizerRole` のとき `null` を返す。幹事本人（ゲスト幹事の端末 Cookie を含む）と、すでに主催イベントを持つ会員には出さない。
-* 見出しは「あなたもイベントを作りませんか？」、リンクは `/organizer/events/new?ref=${encodeURIComponent(eventId)}` の 1 本だけ。料金や登録の説明はここに置かない。
+* 見出しは `SITE.cta.organizerInviteTitle`（「あなたもイベント告知ページを作りませんか？」）、リンクは `/organizer/events/new?ref=${encodeURIComponent(eventId)}` の 1 本だけ。料金や登録の説明はここに置かない。見出しはラベル（`SITE.nav.createEvent.label`）から組み立てない（「〜を作るをしませんか」になるため）。
 * 催しが `CLOSED` でも出す。出欠の受付を止めても、次の主催者を拾う線は残す。
 * 出し分けは API の `viewer` だけで決める。画面側で Cookie や会員情報を推測しない。
 
