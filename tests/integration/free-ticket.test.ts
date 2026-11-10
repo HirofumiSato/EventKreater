@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { prisma } from "@/lib/prisma";
+import { sha256 } from "@/lib/crypto";
 import { CreateEventSchema } from "@/lib/schemas";
 import { signLocalToken } from "@/modules/auth/lib/auth";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/modules/billing/lib/tickets";
 import { createEventForUser, publishDraftEvent } from "@/modules/events/lib/events";
 import { GET as getQuota } from "@/app/api/v1/billing/quota/route";
+import { PUT as putEvent } from "@/app/api/v1/organizer/events/[id]/route";
 import { GET as getReferral } from "@/app/api/v1/user/referral/route";
 import { cleanup, seedEvent, uniqueEmail } from "./helpers";
 
@@ -550,6 +552,49 @@ describeDb("紹介の付与（結合）", () => {
     const { event } = await createEventForUser(guest.id, input);
     eventIds.push(event.id);
 
+    expect(await grantedTo(referrer.id)).toHaveLength(2);
+  });
+
+  it("編集画面の保存から公開しても、紹介者に2枚付く", async () => {
+    const referrer = await member();
+    const guest = await member(referrer.id);
+    const target = await draft(guest.id);
+
+    // 編集画面は排他ロックを取ってから PUT する。
+    const lockToken = "referral-edit-lock";
+    await prisma.eventLock.create({
+      data: {
+        eventId: target.id,
+        lockedByUserId: guest.id,
+        lockHolderName: "紹介の会員",
+        lockTokenHash: sha256(lockToken),
+      },
+    });
+
+    const response = await putEvent(
+      new NextRequest(`http://localhost/api/v1/organizer/events/${target.id}`, {
+        method: "PUT",
+        headers: {
+          cookie: `auth_token=${await signLocalToken({ userId: guest.id, email: guest.email })}`,
+          "x-lock-token": lockToken,
+        },
+        body: JSON.stringify({
+          title: "編集画面から公開する催し",
+          schedules: [{ eventDate: "2026-12-15", startTime: "18:00", endTime: "20:00" }],
+          pricePlans: [{ name: "一般", amount: 3000 }],
+          location: "テスト会場",
+          rainPolicy: "RAIN_OR_SHINE",
+          status: "PUBLISHED",
+        }),
+      }),
+      { params: { id: target.id } },
+    );
+
+    expect(response.status).toBe(200);
+    const published = await prisma.event.findUniqueOrThrow({ where: { id: target.id } });
+    expect(published.status).toBe("PUBLISHED");
+    // 公開の副作用は `publishDraftEvent` に集約されている（quotaSource も残る）。
+    expect(published.quotaSource).toBe("FREE_TRIAL");
     expect(await grantedTo(referrer.id)).toHaveLength(2);
   });
 

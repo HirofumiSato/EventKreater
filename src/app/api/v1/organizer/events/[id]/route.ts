@@ -7,9 +7,9 @@ import { UpdateEventSchema } from "@/lib/schemas";
 import { serializeEvent, serializeOrganizerList, summarizeStatuses } from "@/lib/serializers";
 import {
   assertPricingEditable,
-  consumeQuotaForDraftPublish,
   eventOptionsInclude,
   eventUpdateData,
+  publishDraftEvent,
   syncEventOptions,
 } from "@/modules/events/lib/events";
 import {
@@ -128,22 +128,21 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       });
     }
 
-    const event = await prisma.$transaction(async (tx) => {
-      // 下書きの公開は、複製で消費済みのチケットを二重に引かない。
-      const charged = publishingDraft
-        ? (await consumeQuotaForDraftPublish(tx, ctx.userId as string, existing.id)).charged
-        : false;
-      await syncEventOptions(tx, existing.id, input);
-      return tx.event.update({
-        where: { id: existing.id },
-        data: {
-          ...eventUpdateData(input),
-          ...(input.status ? { status: input.status } : {}),
-          ...(charged ? { quotaChargedAt: new Date() } : {}),
-        },
-        include: { flyerAsset: true, ...eventOptionsInclude },
-      });
-    });
+    // 下書きの公開は `publishDraftEvent` に寄せる。チケットの消費・`quotaSource`・
+    // 紹介の付与（と通知）が1か所にそろう。編集画面から公開しても券が付く。
+    const event = publishingDraft
+      ? await publishDraftEvent(ctx.userId as string, existing.id, input)
+      : await prisma.$transaction(async (tx) => {
+          await syncEventOptions(tx, existing.id, input);
+          return tx.event.update({
+            where: { id: existing.id },
+            data: {
+              ...eventUpdateData(input),
+              ...(input.status ? { status: input.status } : {}),
+            },
+            include: { flyerAsset: true, ...eventOptionsInclude },
+          });
+        });
 
     const response = NextResponse.json({ event: serializeEvent(event) });
     // 編集画面の保存でも、変えた会場を候補として覚える。
