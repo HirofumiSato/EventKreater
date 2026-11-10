@@ -34,6 +34,7 @@ import {
 import { EventPreviewModal } from "@/modules/events/components/EventPreviewModal";
 import { EventGuideTour } from "@/modules/events/components/EventGuideTour";
 import { Alert } from "@/components/ui";
+import { isImeEnter } from "@/lib/ime";
 
 interface EventStepFormProps {
   value: EventFormValues;
@@ -384,6 +385,8 @@ export function EventStepForm({
       onKeyDown={(event) => {
         // 入力中の Enter で公開まで進まないようにする。進むのはボタンで行う。
         if (event.key !== "Enter") return;
+        // 日本語入力の変換確定 Enter は IME のもの。打ち消すと変換を確定できないので素通しする。
+        if (isImeEnter(event.nativeEvent)) return;
         const tag = (event.target as HTMLElement).tagName;
         if (tag === "INPUT" || tag === "SELECT") event.preventDefault();
       }}

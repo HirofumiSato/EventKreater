@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Bold, Italic, Link2, List, Underline, Unlink } from "lucide-react";
 import { Dialog } from "@/components/ui";
+import { isImeEnter } from "@/lib/ime";
 import {
   EVENT_SUMMARY_MAX_LENGTH,
   escapeSummaryHtml,
@@ -336,6 +337,8 @@ export function EventSummaryEditor({
               onKeyDown={(event) => {
                 // 入力中の Enter でフォームを送らない。ここでリンクを入れる。
                 if (event.key !== "Enter") return;
+                // 変換確定の Enter では確定しない。IME の確定を奪わない。
+                if (isImeEnter(event)) return;
                 event.preventDefault();
                 applyLink();
               }}

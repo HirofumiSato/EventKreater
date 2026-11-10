@@ -17,6 +17,7 @@ import type {
   FlyerWizardStep,
 } from "@/modules/flyers/types";
 import { Alert, Loading } from "@/components/ui";
+import { isImeEscape } from "@/lib/ime";
 
 const STEP_TITLES: Record<FlyerWizardStep, string> = {
   1: "背景",
@@ -249,7 +250,11 @@ export function FlyerCandidateModal({
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !saving) onClose();
+      if (event.key === "Escape") {
+        // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+        if (isImeEscape(event)) return;
+        if (!saving) onClose();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);

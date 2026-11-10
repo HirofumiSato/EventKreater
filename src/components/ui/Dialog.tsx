@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { isImeEscape } from "@/lib/ime";
 
 type DialogProps = {
   /** `dialog__title` に出す題。 */
@@ -99,6 +100,8 @@ export function Dialog({
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+        if (isImeEscape(event)) return;
         event.preventDefault();
         closeRef.current?.();
         return;

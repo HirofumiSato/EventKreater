@@ -83,6 +83,18 @@ flowchart TD
 - 省略記号は `…`。処理中は「保存しています…」の形にそろえる。
 - 通知の本文のように、サーバーが作って画面に出す文言も同じ規則に従う（`src/modules/notifications/lib/rsvp-notification.ts`）。
 
+### 1.4. 入力欄と日本語入力（IME）
+
+入力欄のある画面では、変換中のキーを画面の操作にしない。日本語入力の変換確定は Enter、変換取り消しは Escape で、どちらも IME のものだからだ。
+
+- 変換中の Enter / Escape は、ステップを進める・ダイアログを閉じるなどの操作に使わない。確定は IME に渡し、画面は変換していない Enter / Escape を受けたときだけ動く。
+- 判定は `src/lib/ime.ts` の `isImeEnter` / `isImeEscape` を必ず通す。`keyCode === 229` は「IME が処理したキー」の印なので、`key` が Enter / Escape と一致する分岐の内側でだけ見る（無条件に見ると、IME を有効にしただけの状態で Escape が効かなくなる）。
+- 変換中は `preventDefault()` を呼ばない。呼ぶと変換の確定そのものが打ち消される。
+- ガードはハンドラの先頭ではなく、対象キーの分岐の中に置く。先頭で `return` すると、同じハンドラが持つ Tab の循環まで止まる。
+- `onSubmit` だけで受けるフォーム（ログイン、出欠、プロフィール、`EventForm` など）は触らない。ブラウザが変換中の暗黙送信を抑止する。
+- 矢印キーだけの画面（`HomeShowcase`、`ImageCropDialog`）は入力欄が無く変換が起きないので対象外とする。
+- 再発防止は `tests/unit/ime-guard.test.mjs` が持つ。`keydown` を握るファイルが `@/lib/ime` を通し、Enter / Escape の分岐でガードが `preventDefault()` より前に来ることを確かめる。
+
 ---
 
 ## 2. 画面ルーティング・画面一覧・画面遷移図（Mermaid）
