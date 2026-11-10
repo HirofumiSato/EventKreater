@@ -56,7 +56,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/participants/[participantId]/collection` | PUT | SCR-ORG-06 | 幹事（会員のみ） | 出席者の集金を記録する（`collected_at`）。未登録の幹事は 403 `REGISTER_REQUIRED`。出席以外は 400 |
 | `/api/v1/organizer/events` | GET | SCR-ORG-01 | 幹事（会員/ゲスト） | 主催イベント一覧取得（出欠数集計含む） |
 | `/api/v1/organizer/events/[id]` | GET | SCR-ORG-05 | 幹事（会員/ゲスト） | 幹事用イベント詳細取得 |
-| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点でチケットを1枚消費する（公開中の件数で判定）。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
+| `/api/v1/organizer/events/[id]` | PUT | SCR-ORG-05 | 幹事＋有効ロック。未登録の幹事は作成から 24 時間以内 | イベント情報更新（排他ロック保護）。`visibility` は受け付けない。`status` は下書きから公開中への変更だけ許可し、`quota_charged_at` が未設定ならこの時点でチケットを1枚消費する（公開中の件数で判定）。公開は `publishDraftEvent` を通すので、`quota_source` の記録と紹介のチケット付与もここで起きる。猶予を過ぎたゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]` | DELETE | SCR-ORG-01 | 主催者（OWNER） | イベントの論理削除。未登録の幹事も実行できる |
 | `/api/v1/organizer/events/[id]/lock` | POST | SCR-ORG-05 | 幹事（会員/ゲスト）。ゲストは作成から 24 時間以内 | 排他ロック取得・保持確認・強制引き継ぎ。猶予を過ぎたゲスト幹事の取得は 403 `REGISTER_REQUIRED`。解放は常に可 |
 | `/api/v1/organizer/events/[id]/lock` | DELETE | SCR-ORG-05 | ロック保持幹事 | 排他ロックの明示的解放 |
@@ -2605,6 +2605,8 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 - 書き込んだあと、登録画面は `window.history.replaceState` で URL から `ref` を落とす。`router.replace` は使わない（再取得と着地判定を動かさず、表示中の紹介者名も消さないため）。
 
 紹介された人がはじめて公開したとき、紹介者へ 2 枚（3 か月有効）を配る。付与は `reason_key = referral:<紹介された人の userId>:<0|1>` の UNIQUE で冪等にし、生涯 10 枚を上限にする。9 枚で 1 枚、10 枚で 0 枚。付与は公開のトランザクションの中で行い、コミット後に紹介者へ `REFERRAL_GRANTED` の通知を作る（5.18）。通知の失敗で公開は失敗させない。
+
+公開の入口は、プレビューの `POST /api/v1/organizer/events/[id]/publish` と、編集画面の `PUT /api/v1/organizer/events/[id]`（下書きを `PUBLISHED` にする保存）の2つがある。どちらも `src/modules/events/lib/events.ts` の `publishDraftEvent` を通し、チケットの消費・`quota_source` の記録・紹介の付与・通知を1か所にそろえる。入口ごとに付与を書き分けると、編集画面から公開したときだけ券が付かない。
 
 ### 8.18. POST `/api/v1/auth/password/reset` / `/api/v1/auth/password/reset/confirm`（パスワード再設定）
 

@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3058,
+      "lineCount": 3060,
       "headings": [
         {
           "level": 1,
@@ -2535,6 +2535,10 @@
         },
         {
           "path": "src/modules/billing/lib/referral.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/events.ts",
           "exists": true
         },
         {
