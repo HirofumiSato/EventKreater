@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isImeEnter } from "@/lib/ime";
 import { formatPostalCode, normalizePostalCode } from "@/lib/postal-code";
 import { Alert } from "@/components/ui";
 import {
@@ -134,6 +135,8 @@ export function PostalCodeField({
           }}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return;
+            // 変換確定の Enter では検索しない。IME の確定を奪わない。
+            if (isImeEnter(event)) return;
             event.preventDefault();
             void search(query);
           }}

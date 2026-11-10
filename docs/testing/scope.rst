@@ -147,7 +147,7 @@
 
 .. count-start
 
-144 ファイル、``it`` は 2199 件です。内訳は ``tests/unit/`` が 102 ファイル 1846 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+146 ファイル、``it`` は 2223 件です。内訳は ``tests/unit/`` が 104 ファイル 1870 件、``tests/integration/`` が 28 ファイル 216 件です。結合の 216 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -583,6 +583,14 @@
      - 15
      - 押せる的とボタンの文字の大きさ（``--tap-target`` の 40px・``--font-action`` の 15px）、``.btn--sm`` が左右の余白だけを詰めて高さと文字を変えないこと、``.btn--lg`` の 52px・16px、装飾のある画面が高さを打ち消さないこと、入力欄の 16px と広い画面の 14px、ダイアログと暦の小さな操作、小ささの例外が 2 つだけであること（画面下に固定する帯 ``.action-dock`` は高さ 40px のまま文字だけ 14px、札の折りたたみ ``.event-card__more-body .btn`` は開いたときだけ 32px・13px で、常設の「申込/出欠一覧」「編集」は 40px・15px）、イベント札（スマホ 2 列・640px で 4 列・900px で 2 列）と名簿の行（スマホ 2 列）の並び
      - 全画面の共通レイアウト
+   * - ``tests/unit/ime.test.ts``
+     - 17
+     - ``src/lib/ime.ts`` の判定。変換中の Enter と変換取り消しの Escape、確定 Enter で ``isComposing`` が戻っても ``keyCode === 229`` で拾えること（Safari の経路）、IME を有効にしただけの Escape は偽（取り違えるとダイアログが閉じなくなる）、``key`` が一致するときだけ 229 を見ること、React の ``nativeEvent`` 経由でも同じ結果になること
+     - 全画面の共通操作
+   * - ``tests/unit/ime-guard.test.mjs``
+     - 7
+     - ``keydown`` を握る ``src/**`` のファイルを走査し、すべてが ``@/lib/ime`` を通すこと、Enter を扱うファイルは ``isImeEnter``、Escape を扱うファイルは ``isImeEscape`` で見ること、ガードが同じ分岐の ``preventDefault()`` より前に来ること、例外を持たないこと、対象外は矢印キーだけで入力欄の無い 2 画面であること
+     - 全画面の共通操作
    * - ``tests/unit/site-chrome.test.ts``
      - 20
      - パスから公開クロムの出し分けを決める。``siteChrome()`` は ``header``・``footer`` に加えて ``main`` も返し、``main`` の判定とテーマ付きの公開ページ 5 系統（``/events/<id>``・``/organizers/<userId>``・``/invite/<code>``・``/sample/<slug>``・``/sample/profile/<slug>``）の境界を固定する。テーマ付きの 5 系統は ``main: false``（``<main>`` とフッターはページ側の器が持ち、``/invite/<code>`` だけは共通ヘッダーを残す）、一覧と深いパスは ``main: true`` のまま。ホームはヘッダーを出さず上端の余白も落とす、``/console`` はヘッダーもフッターも出さない、主催者の公開ページはヘッダーだけ出さない、告知ページはヘッダーを出さずチラシを上端から始める、告知ページの見本（``/sample`` と ``/sample/<slug>``）はヘッダーを出さず上端の余白も落とす、下書きプレビューはヘッダーを出したまま上端の余白だけ落とす、その他は両方出す、``/consolelike`` や ``/samplelike`` を誤認しない。主催者の節（``OrganizerTabs``）を主催者管理の入口画面とイベント単位の名簿・売上だけに出し、作成・編集・プレビュー・登録案内には出さない。参加者の節（``ParticipantTabs``）を参加者ホーム・カレンダー・参加履歴だけに出し、参加者ログインの入口には出さない
@@ -738,7 +746,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1846、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1846 件を実行して 216 件を skip します。
+件数の内訳は ``tests/unit/`` が 1870、``tests/integration/`` が 216 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1870 件を実行して 216 件を skip します。
 
 .. breakdown-end
 

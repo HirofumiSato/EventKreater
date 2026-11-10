@@ -35,6 +35,7 @@ import {
   type VoiceMode,
 } from "@/modules/events/lib/voice/batch-guide";
 import { trackEvent } from "@/lib/analytics";
+import { isImeEscape } from "@/lib/ime";
 import {
   fieldScrollDelta,
   panelBoxFor,
@@ -1568,6 +1569,8 @@ export function VoiceInputDock({
     if (!active) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || dialogOpenRef.current) return;
+      // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+      if (isImeEscape(event)) return;
       event.stopPropagation();
       stopSession();
     };
@@ -2053,6 +2056,8 @@ export function VoiceInputDock({
     if (!guideOpen) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+      if (isImeEscape(event)) return;
       event.stopPropagation();
       closeGuide();
     };

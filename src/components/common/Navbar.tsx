@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SITE } from "@/lib/site";
+import { isImeEscape } from "@/lib/ime";
 import { SITE_USER_MENU_EVENT, type SiteUserMenuDetail } from "@/lib/site-user-menu";
 import {
   type Viewer,
@@ -92,6 +93,8 @@ export function Navbar() {
     if (!menuOpen && !userMenuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+      if (isImeEscape(event)) return;
       setMenuOpen(false);
       setUserMenuOpen(false);
     };

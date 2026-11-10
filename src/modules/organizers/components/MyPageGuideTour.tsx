@@ -18,6 +18,7 @@ import {
 } from "@/modules/organizers/lib/tour/session";
 import { dismissMyPageGuide, isMyPageGuideDismissed } from "@/modules/organizers/lib/tour/memory";
 import { setSiteUserMenuOpen } from "@/lib/site-user-menu";
+import { isImeEscape } from "@/lib/ime";
 import {
   anchorForBubble,
   clampHole,
@@ -686,6 +687,8 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
     if (!active) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+        if (isImeEscape(event)) return;
         event.preventDefault();
         event.stopPropagation();
         closeRef.current();

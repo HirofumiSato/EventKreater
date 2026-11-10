@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { formatDayHeading, type CalendarCellItem } from "@/lib/calendar";
+import { isImeEscape } from "@/lib/ime";
 
 interface CalendarEventModalProps {
   /** 開く予定。`null` のときは何も出さない。 */
@@ -31,6 +32,8 @@ export function CalendarEventModal({ item, date, onClose }: CalendarEventModalPr
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+        if (isImeEscape(event)) return;
         event.preventDefault();
         onClose();
         return;

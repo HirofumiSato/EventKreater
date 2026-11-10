@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Alert } from "@/components/ui";
+import { isImeEscape } from "@/lib/ime";
 
 interface LineShareDialogProps {
   /** 押した時点で本文から組み立てた LINE の共有 URL。 */
@@ -36,6 +37,8 @@ export function LineShareDialog({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // 変換中の Escape は IME に渡す。ここで閉じると変換の取り消しが効かない。
+        if (isImeEscape(event)) return;
         event.preventDefault();
         onClose();
         return;

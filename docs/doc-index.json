@@ -5882,7 +5882,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2215,
+      "lineCount": 2227,
       "headings": [
         {
           "level": 1,
@@ -5907,6 +5907,10 @@
         {
           "level": 3,
           "text": "1.3. 操作の置き場所と文言"
+        },
+        {
+          "level": 3,
+          "text": "1.4. 入力欄と日本語入力（IME）"
         },
         {
           "level": 2,
@@ -6356,6 +6360,10 @@
           "exists": true
         },
         {
+          "path": "src/lib/ime.ts",
+          "exists": true
+        },
+        {
           "path": "src/lib/problem.ts",
           "exists": true
         },
@@ -6569,6 +6577,10 @@
         },
         {
           "path": "tests/unit/image-crop.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ime-guard.test.mjs",
           "exists": true
         },
         {
@@ -12201,7 +12213,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 854,
+      "lineCount": 862,
       "headings": [
         {
           "level": 1,
@@ -12252,6 +12264,10 @@
         },
         {
           "path": "src/app/error.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/lib/ime.ts",
           "exists": true
         },
         {
@@ -12604,6 +12620,14 @@
         },
         {
           "path": "tests/unit/image-crop.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ime-guard.test.mjs",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/ime.test.ts",
           "exists": true
         },
         {
