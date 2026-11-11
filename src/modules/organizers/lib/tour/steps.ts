@@ -1,11 +1,11 @@
 /**
- * 主催者マイページの操作ガイド（スポットライトツアー）の 8 枚。
+ * 主催者マイページの操作ガイド（スポットライトツアー）の 9 枚。
  *
  * 文言と対象をここ 1 か所に置く。画面（`MyPageGuideTour`）は並べ方と測り方だけを持ち、
  * 文を直すときに TSX を触らなくて済むようにする。DOM には触れない。
  *
  * イベント作成のガイド（`src/modules/events/lib/tour/steps.ts`）とは配列を分ける。
- * 対象も文言も違い、こちらは画面をまたぐ（`/mypage` と `/organizer/events`）ため、
+ * 対象も文言も違い、こちらは画面をまたぐ（`/mypage` と `/organizer/events`、名簿）ため、
  * 片方に枚数を足したときにもう片方の「3 / 9」がずれないようにする。
  */
 
@@ -18,7 +18,20 @@ export type MyPageGuideKey =
   | "organizerEvents"
   | "inviteCoHost"
   | "organizerProfile"
+  | "roster"
   | "final";
+
+/**
+ * ガイドが移る画面。催しの画面（名簿）は id が決まらないと開けないので、
+ * `[id]` を置いた型紙で持ち、進むときに最初の催しの id で埋める。
+ */
+export type MyPageGuidePath =
+  | "/mypage"
+  | "/organizer/events"
+  | "/organizer/events/[id]/participants";
+
+/** 型紙の中で、催しの id に置き換わる区切り。 */
+export const MY_PAGE_GUIDE_EVENT_ID = "[id]";
 
 /** 吹き出しに出す文。1 文 1 用件で書く（AGENTS.md「規約」）。 */
 export interface MyPageGuideCopy {
@@ -43,9 +56,10 @@ export interface MyPageGuideStep {
    * この枚を出す画面。
    *
    * 進む先が今の画面と違うときは、画面がこのパスへ移り、移った先で同じガイドが
-   * 保存した続きから出す（`/mypage` → `/organizer/events` → `/mypage`）。
+   * 保存した続きから出す（`/mypage` → `/organizer/events` → 名簿 → `/mypage`）。
+   * `[id]` を含む型紙は、進むときに最初の催しの id で埋める（`guidePathWithEventId`）。
    */
-  path: "/mypage" | "/organizer/events";
+  path: MyPageGuidePath;
   /**
    * 穴を空ける対象。複数あるときは外接矩形を 1 つにまとめる。
    * 見つからない枚は画面が前方へ飛ばす（後退はしない）。
@@ -70,7 +84,7 @@ export interface MyPageGuideStep {
 }
 
 /**
- * 8 枚の並び。
+ * 9 枚の並び。
  *
  * 1 枚目は見出し（`h1.page-title`）を指す「ようこそ」で、何の案内かを先に告げる。
  * 2〜5 枚目は `/mypage` で、紹介・新着・通知・主催一覧を上から順に指す。画面の並びと
@@ -78,7 +92,9 @@ export interface MyPageGuideStep {
  * 通知一覧を指すため、ユーザーメニューを開いてから穴を空ける。
  * 6・7 枚目は `/organizer/events` へ移る。6 枚目は最初の札の「その他の操作」を開いて
  * 招待の入口を見せ（畳んだままだと対象が DOM に無い）、7 枚目は同じ画面の副メニューで
- * 公開プロフィールを指す。8 枚目は `/mypage` に戻り、右上の「使い方」を指して終わる。
+ * 公開プロフィールを指す。8 枚目は最初の催しの名簿へ移り、一番左の「集金」を指す
+ * （集金はその場のトグルで記録する）。9 枚目は `/mypage` に戻り、右上の「使い方」を
+ * 指して終わる。
  */
 export const MYPAGE_GUIDE_STEPS: readonly MyPageGuideStep[] = [
   {
@@ -163,6 +179,17 @@ export const MYPAGE_GUIDE_STEPS: readonly MyPageGuideStep[] = [
     final: false,
   },
   {
+    key: "roster",
+    path: "/organizer/events/[id]/participants",
+    targets: ['[data-guide-target="roster-collected"]'],
+    copy: {
+      title: "集金は名簿の左端で残せます",
+      body: "一番左の「集金」を入れると、受け取った記録が残ります。",
+      note: "売上は「売上を見る」で確かめられます。",
+    },
+    final: false,
+  },
+  {
     key: "final",
     path: "/mypage",
     targets: ['[data-guide-target="mypage-guide"]'],
@@ -202,4 +229,32 @@ export function myPageGuideStep(key: MyPageGuideKey): MyPageGuideStep {
  */
 export function myPageGuideIndex(key: MyPageGuideKey): number {
   return MYPAGE_GUIDE_STEPS.indexOf(myPageGuideStep(key));
+}
+
+/**
+ * いまの画面が、その枚の画面か。
+ *
+ * `[id]` は 1 区間ぶんの何にでも当たる（催しの id は画面ごとに違う）。
+ * 末尾の `/` は無視する。枚の数と区切りの数が違えば別の画面として扱う。
+ */
+export function guidePathMatches(template: string, pathname: string): boolean {
+  const expected = template.replace(/\/+$/, "").split("/").filter(Boolean);
+  const actual = pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+  if (expected.length !== actual.length) return false;
+  return expected.every(
+    (segment, index) => segment === MY_PAGE_GUIDE_EVENT_ID || segment === actual[index],
+  );
+}
+
+/** 型紙に催しの id が入るか。入る枚は、進む前に id を調べる。 */
+export function guidePathNeedsEventId(template: string): boolean {
+  return template.split("/").includes(MY_PAGE_GUIDE_EVENT_ID);
+}
+
+/** 型紙の `[id]` を催しの id で埋める。入る場所が無ければそのまま返す。 */
+export function guidePathWithEventId(template: string, eventId: string): string {
+  return template
+    .split("/")
+    .map((segment) => (segment === MY_PAGE_GUIDE_EVENT_ID ? eventId : segment))
+    .join("/");
 }

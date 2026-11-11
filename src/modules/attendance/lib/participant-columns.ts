@@ -21,48 +21,62 @@ export type ParticipantColumnKey =
   | "comment"
   | "createdAt";
 
-/** 表に並べる順。表示列を選んでもこの順から動かさない。 */
+/**
+ * 表に並べる順。表示列を選んでもこの順から動かさない。
+ *
+ * 集金を一番左に置く。当日の受付では、来た人を見ながら「誰が払ったか」を先に確かめるので、
+ * 名前より先に指が届く位置に置く。名前の隣にあるので、どの行の集金かは見失わない。
+ */
 export const PARTICIPANT_COLUMN_ORDER: readonly ParticipantColumnKey[] = [
+  "collected",
   "name",
   "gender",
   "status",
   "partySize",
   "schedule",
   "pricePlan",
-  "collected",
   "comment",
   "createdAt",
 ];
 
 /** 表示列の選択に出す日本語のラベル。`th` の見出しと同じ言葉を使う。 */
 export const PARTICIPANT_COLUMN_LABELS: Record<ParticipantColumnKey, string> = {
+  collected: "集金",
   name: "名前",
   gender: "性別",
   status: "出欠",
   partySize: "人数",
   schedule: "日時",
   pricePlan: "料金プラン",
-  collected: "集金",
   comment: "コメント",
   createdAt: "回答日時",
 };
 
 /**
- * 外せない列。名前が無いと誰の行か分からなくなる。
+ * 外せない列。集金が無いと受け取ったかをその場で記録できず、名前が無いと
+ * 誰の行か分からなくなる（どちらも名簿を開く理由そのものである）。
  * 表示列の選択では無効にし、保存値からも落とさない。
  */
-export const LOCKED_PARTICIPANT_COLUMNS: readonly ParticipantColumnKey[] = ["name"];
+export const LOCKED_PARTICIPANT_COLUMNS: readonly ParticipantColumnKey[] = ["collected", "name"];
 
-/** 何も選んでいない人の既定。スマホで 1 段に収まる主要列だけにする。 */
+/**
+ * 何も選んでいない人の既定。スマホで 1 段に収まる主要列だけにする。
+ * 集金は一番左に必ず出す（当日の受付で使う列なので、隠すと意味が無い）。
+ */
 export const DEFAULT_PARTICIPANT_COLUMNS: readonly ParticipantColumnKey[] = [
+  "collected",
   "name",
   "status",
   "partySize",
   "pricePlan",
 ];
 
-/** 選んだ列を覚える鍵。形を変えるときは `:v2` のように上げる。 */
-export const PARTICIPANT_COLUMNS_STORAGE_KEY = "eventkreater:participants:columns:v2";
+/**
+ * 選んだ列を覚える鍵。形を変えるときは `:v2` のように上げる。
+ * 集金を既定の列にしたときに `v2` から上げた（古い保存値のままだと、
+ * この端末だけ集金の列が出ない）。
+ */
+export const PARTICIPANT_COLUMNS_STORAGE_KEY = "eventkreater:participants:columns:v3";
 
 function isParticipantColumnKey(value: unknown): value is ParticipantColumnKey {
   return typeof value === "string" && (PARTICIPANT_COLUMN_ORDER as readonly string[]).includes(value);

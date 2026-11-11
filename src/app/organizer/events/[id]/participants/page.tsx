@@ -8,7 +8,8 @@ import { isRegisterRequired, readProblem, readProblemBody, sendToRegisterRequire
 import type { EventPricePlanOption, EventScheduleOption, ParticipantRow } from "@/modules/events/types";
 import type { RevenueSummary } from "@/modules/revenue/lib/revenue";
 import { RevenueSummaryLedger } from "@/modules/revenue/components/RevenueSummaryLedger";
-import { Alert, Loading, PageHeader, Panel } from "@/components/ui";
+import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
+import { Alert, Dialog, Loading, PageHeader } from "@/components/ui";
 
 interface ParticipantsResponse {
   event: {
@@ -28,6 +29,8 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
+  /** 見込み売上の内訳を出しているか。既定は閉じ、名簿を先に見せる。 */
+  const [revenueOpen, setRevenueOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/v1/organizer/events/${params.id}/participants`);
@@ -148,7 +151,20 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
 
   return (
     <div className="stack">
-      <PageHeader eyebrow="参加者名簿" title={data.event.title} />
+      <PageHeader
+        eyebrow="参加者名簿"
+        title={data.event.title}
+        actions={
+          // 売上の内訳は名簿の前に置くと表を押し下げるので、押したときだけ層で出す。
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={() => setRevenueOpen(true)}
+          >
+            売上を見る
+          </button>
+        }
+      />
 
       <div className="roster-summary roster-summary--five">
         <div className="roster-summary__item">
@@ -188,10 +204,6 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      <Panel>
-        <RevenueSummaryLedger summary={data.revenue} omit={["collected", "difference"]} dense />
-      </Panel>
-
       {data.revenue.unassignedPlanCount > 0 && (
         <Alert tone="warning">
           料金プラン未選択の参加者が {data.revenue.unassignedPlanCount} 人います。名簿で選ぶと売上に入ります。
@@ -210,7 +222,30 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
         onDelete={deleteRow}
         onRestore={restoreRow}
         onCollectionChange={reloadAfterCollection}
+        onCollectionError={(message) => {
+          setToastTone("error");
+          setToast(message);
+        }}
       />
+
+      {/* 売上の内訳。名簿の表を押し下げないよう、押したときだけ出す。 */}
+      {revenueOpen && (
+        <Dialog
+          title="売上"
+          titleId="participants-revenue-title"
+          onClose={() => setRevenueOpen(false)}
+          actions={
+            <button type="button" className="btn btn--sm" onClick={() => setRevenueOpen(false)}>
+              閉じる
+            </button>
+          }
+        >
+          <RevenueSummaryLedger summary={data.revenue} />
+        </Dialog>
+      )}
+
+      {/* 主催者ページの操作ガイド。名簿の枚はこの画面で出す（`steps.ts` の `roster`）。 */}
+      <MyPageGuideTour ready autoStart={false} />
       {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast(null)} />}
     </div>
   );

@@ -1,21 +1,24 @@
-// 主催者マイページの操作ガイドの 8 枚。
+// 主催者マイページの操作ガイドの 9 枚。
 //
 // 画面（`MyPageGuideTour`）はこの定義をそのまま描くので、順番・対象・開く印が
 // 変わるとガイドの意味が変わる。文言も含めてここで固定する。
 //
 // イベント作成のガイド（`tests/unit/event-guide-steps.test.ts`）とは別の配列である。
-// 枚数も対象の画面も違うため、片方に枚を足してももう片方の「3 / 8」がずれない。
+// 枚数も対象の画面も違うため、片方に枚を足してももう片方の「3 / 9」がずれない。
 
 import { describe, expect, it } from "vitest";
 import {
   MYPAGE_GUIDE_ACTION_COPY,
   MYPAGE_GUIDE_STEPS,
+  guidePathMatches,
+  guidePathNeedsEventId,
+  guidePathWithEventId,
   myPageGuideIndex,
   myPageGuideStep,
   type MyPageGuideKey,
 } from "@/modules/organizers/lib/tour/steps";
 
-describe("8 枚の並び", () => {
+describe("9 枚の並び", () => {
   it("ようこそから始まり、右上の「使い方」で終わる", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => step.key)).toEqual([
       "welcome",
@@ -25,11 +28,12 @@ describe("8 枚の並び", () => {
       "organizerEvents",
       "inviteCoHost",
       "organizerProfile",
+      "roster",
       "final",
     ]);
   });
 
-  it("画面をまたぐ招待と公開プロフだけ /organizer/events を指す", () => {
+  it("画面をまたぐ招待・公開プロフ・名簿だけ別の画面を指す", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => step.path)).toEqual([
       "/mypage",
       "/mypage",
@@ -38,6 +42,7 @@ describe("8 枚の並び", () => {
       "/mypage",
       "/organizer/events",
       "/organizer/events",
+      "/organizer/events/[id]/participants",
       "/mypage",
     ]);
   });
@@ -49,7 +54,7 @@ describe("8 枚の並び", () => {
     }
   });
 
-  it("8 枚の対象を、画面に足した目印か既にある要素で指す", () => {
+  it("9 枚の対象を、画面に足した目印か既にある要素で指す", () => {
     expect(myPageGuideStep("welcome").targets).toEqual(["h1.page-title"]);
     expect(myPageGuideStep("referral").targets).toEqual([
       '[data-guide-target="mypage-referral"]',
@@ -67,6 +72,7 @@ describe("8 枚の並び", () => {
     expect(myPageGuideStep("organizerProfile").targets).toEqual([
       'nav.subnav a[href="/organizer/profile"]',
     ]);
+    expect(myPageGuideStep("roster").targets).toEqual(['[data-guide-target="roster-collected"]']);
     expect(myPageGuideStep("final").targets).toEqual([
       '[data-guide-target="mypage-guide"]',
     ]);
@@ -106,6 +112,47 @@ describe("8 枚の並び", () => {
 
     expect(copy.title).toBe("共同主催・幹事を招待できます");
     expect(copy.body).toContain("その他の操作");
+  });
+});
+
+describe("名簿の枚", () => {
+  it("集金は名簿の左端のトグルで記録することを伝える", () => {
+    const copy = myPageGuideStep("roster").copy;
+
+    expect(copy.title).toContain("集金");
+    expect(copy.body).toContain("一番左");
+    expect(copy.note).toContain("売上を見る");
+  });
+
+  it("催しの id を含む型紙を持ち、進む前に最初の催しで埋める", () => {
+    const path = myPageGuideStep("roster").path;
+
+    expect(guidePathNeedsEventId(path)).toBe(true);
+    expect(guidePathWithEventId(path, "evt_123")).toBe(
+      "/organizer/events/evt_123/participants",
+    );
+    expect(guidePathNeedsEventId(myPageGuideStep("organizerEvents").path)).toBe(false);
+  });
+
+  it("id の違う名簿でも同じ枚として当たる（末尾の / も同じ）", () => {
+    expect(
+      guidePathMatches("/organizer/events/[id]/participants", "/organizer/events/abc/participants"),
+    ).toBe(true);
+    expect(
+      guidePathMatches(
+        "/organizer/events/[id]/participants",
+        "/organizer/events/abc/participants/",
+      ),
+    ).toBe(true);
+    // 1 区間ぶんだけ。深い画面や別の画面には当たらない。
+    expect(
+      guidePathMatches("/organizer/events/[id]/participants", "/organizer/events/abc/edit"),
+    ).toBe(false);
+    expect(
+      guidePathMatches("/organizer/events/[id]/participants", "/organizer/events/abc/participants/x"),
+    ).toBe(false);
+    expect(guidePathMatches("/mypage", "/mypage/")).toBe(true);
+    expect(guidePathMatches("/mypage", "/organizer/events")).toBe(false);
   });
 });
 
@@ -178,11 +225,12 @@ describe("操作の文言", () => {
 describe("キーから枚を引く", () => {
   it("キーから 0 始まりの位置を引ける（再開に使う）", () => {
     expect(MYPAGE_GUIDE_STEPS.map((step) => myPageGuideIndex(step.key))).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7,
+      0, 1, 2, 3, 4, 5, 6, 7, 8,
     ]);
     expect(myPageGuideIndex("welcome")).toBe(0);
     expect(myPageGuideIndex("inviteCoHost")).toBe(5);
-    expect(myPageGuideIndex("final")).toBe(7);
+    expect(myPageGuideIndex("roster")).toBe(7);
+    expect(myPageGuideIndex("final")).toBe(8);
   });
 
   it("知らないキーは黙って別の枚を返さず、例外にする", () => {

@@ -5886,7 +5886,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2227,
+      "lineCount": 2228,
       "headings": [
         {
           "level": 1,
@@ -10685,9 +10685,9 @@
       "sphinxDoc": "mypage-guide-tour",
       "format": "rst",
       "title": "主催者マイページの操作ガイド",
-      "summary": "主催者マイページ（ /mypage ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 8 枚のツアーです。 主催者が毎日使う画面のどこに何があるかを先に渡し、紹介・新着・主催一覧・招待・公開プロフィールへ迷わず行けるようにします。",
+      "summary": "主催者マイページ（ /mypage ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、 その上に説明の吹き出しを出す、手で進む 9 枚のツアーです。 主催者が毎日使う画面のどこに何があるかを先に渡し、紹介・新着・主催一覧・招待・公開プロフィール・ 名簿の集金へ迷わず行けるようにします。",
       "preImplementation": false,
-      "lineCount": 183,
+      "lineCount": 188,
       "headings": [
         {
           "level": 1,
@@ -10703,7 +10703,7 @@
         },
         {
           "level": 2,
-          "text": "8 枚の手順"
+          "text": "9 枚の手順"
         },
         {
           "level": 2,
@@ -10730,6 +10730,10 @@
       "codePaths": [
         {
           "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/participants/page.tsx",
           "exists": true
         },
         {

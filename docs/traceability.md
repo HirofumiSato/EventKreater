@@ -178,7 +178,7 @@
 | `src/app/notifications/page.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/app/organizer/events/[id]/edit/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
-| `src/app/organizer/events/[id]/participants/page.tsx` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
+| `src/app/organizer/events/[id]/participants/page.tsx` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/app/organizer/events/[id]/preview/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) |
 | `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |

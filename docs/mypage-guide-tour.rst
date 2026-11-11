@@ -2,14 +2,15 @@
 ============================
 
 主催者マイページ（ ``/mypage`` ）を初めて開いたとき、黒透過の面で対象だけをくり抜き、
-その上に説明の吹き出しを出す、手で進む 8 枚のツアーです。
-主催者が毎日使う画面のどこに何があるかを先に渡し、紹介・新着・主催一覧・招待・公開プロフィールへ迷わず行けるようにします。
+その上に説明の吹き出しを出す、手で進む 9 枚のツアーです。
+主催者が毎日使う画面のどこに何があるかを先に渡し、紹介・新着・主催一覧・招待・公開プロフィール・
+名簿の集金へ迷わず行けるようにします。
 
 イベント作成画面のガイド（ :doc:`event-guide-tour` ）とは別の配列です。対象も文言も違い、
-こちらは ``/mypage`` と ``/organizer/events`` の 2 画面をまたぎます。
+こちらは ``/mypage`` ・ ``/organizer/events`` ・名簿（ ``/organizer/events/[id]/participants`` ）をまたぎます。
 見た目は既存の ``.guide-*`` をそのまま使い、紙だけを公開ページの白い面に寄せます。
 
-このページは、ガイドの目的・8 枚の並び・起動の条件・画面またぎ・再表示・配置の考え方をまとめます。
+このページは、ガイドの目的・9 枚の並び・起動の条件・画面またぎ・再表示・配置の考え方をまとめます。
 実装の正はコードです。差分を見つけたら、コードとこのページを同じ PR で直します。
 
 目的
@@ -20,7 +21,7 @@
 
 ガイドは「主催者ページのガイドにようこそ」から始め、何の案内かを見出しで先に告げます。
 続いて「紹介リンクはここからコピー」、新着、通知一覧、主催一覧と、画面の並びと同じ順に降ります。
-その後、招待の入口と公開プロフィールを見せ、最後に右上の「使い方」を指して
+その後、招待の入口と公開プロフィールを見せ、名簿の一番左の「集金」のトグルへ導き、最後に右上の「使い方」を指して
 「ここから操作は再度確認できます」と伝えます。読み終えた人が、閉じたその場から操作へ入れることを狙います。
 
 初回の起動条件
@@ -43,12 +44,11 @@
    * - 記憶が無い
      - 一度閉じた端末では自動で出さない（下の「再表示の入口と記憶」）
 
-``/organizer/events`` では自動で始めません（ ``autoStart={false}`` ）。
-招待と公開プロフィールの枚は、 ``/mypage`` から進んだときだけ、保存した続きを読んで出します。
+``/organizer/events`` と名簿では自動で始めません（ ``autoStart={false}`` ）。
+招待・公開プロフィール・名簿の枚は、 ``/mypage`` から進んだときだけ、保存した続きを読んで出します。
 
-8 枚の手順
+9 枚の手順
 ----------
-
 .. list-table::
    :header-rows: 1
    :widths: 6 40 54
@@ -78,6 +78,9 @@
      - ``/organizer/events`` の主催者の節（ ``nav.subnav a[href="/organizer/profile"]`` ）
      - 見出し「公開プロフィールはここから」／本文「プロフィールページには、主催イベントのカレンダーも掲載されます。」
    * - 8
+     - 名簿（ ``/organizer/events/[id]/participants`` ）の「集金」の見出し（ ``[data-guide-target="roster-collected"]`` ）
+     - 見出し「集金は名簿の左端で残せます」／本文「一番左の「集金」を入れると、受け取った記録が残ります。」／注記「売上は「売上を見る」で確かめられます。」。名簿は催しごとに URL が違うので、この枚は最初の催しの名簿で開く（下の「画面をまたぐ続き」）
+   * - 9
      - ``/mypage`` の右上の「使い方」（ ``[data-guide-target="mypage-guide"]`` ）
      - 見出し「ここから操作は再度確認できます」／本文「右上の「使い方」を押すと、この案内をいつでも開き直せます。」。最終枚はここだけで、操作は「わかった」だけ
 
@@ -92,13 +95,14 @@
 画面をまたぐ続き
 ----------------
 
-6 枚目と 7 枚目は ``/organizer/events`` にあります。ページを移ると部品も作り直されるので、
+6 枚目と 7 枚目は ``/organizer/events`` 、8 枚目は最初の催しの名簿にあります。ページを移ると部品も作り直されるので、
 どの枚まで進んだかを ``sessionStorage`` に残し、移った先の同じ部品が続きから出します。
 
 * キーは ``eventkreater.mypage-guide.session`` （ ``src/modules/organizers/lib/tour/session.ts`` ）
 * 値は ``{ step: <キー>, at: <ミリ秒> }`` 。枚を進めるたびに上書きし、 ``at`` もその都度新しくする
 * 寿命は 10 分（ ``MYPAGE_GUIDE_SESSION_TTL_MS`` ）。過ぎた続きは捨て、最初から出し直す。途中でやめたまま別の用事をして戻ってきたときに、何の案内か分からないまま画面が動かないようにする
 * 読んだ続きの枚の ``path`` が今のパスと一致しなければ捨てる。別の画面へ移ったときに、ガイドが勝手に引き戻さないため
+* 名簿の枚は催しごとに URL が違うので、枚の ``path`` は ``/organizer/events/[id]/participants`` の型紙で持つ。比べるときは ``guidePathMatches()`` が ``[id]`` を 1 区間ぶんの何にでも当て、進むときは ``guidePathWithEventId()`` で最初の催しの id を埋める（ ``/api/v1/organizer/events`` の先頭）。開ける催しが無いときは、その枚を飛ばして次へ進む
 * 壊れた JSON ・知らないキー（枚を減らしたあとの古い続き）・数値でない ``at`` は捨てる。捨てるときはキーも消す
 * ``localStorage`` ではなく ``sessionStorage`` を使う。続きはタブを閉じるまでの一時的なものだから。タブを閉じれば消える
 * ``sessionStorage`` が無い環境や、参照しただけで例外になる環境でも落とさない（画面をまたぐ続きが出せないだけ）
@@ -145,7 +149,7 @@ DOM を読むのは画面側だけで、位置の決め方は 1 か所にそろ�
    * - ファイル
      - 確かめていること
    * - ``tests/unit/mypage-guide-steps.test.ts``
-     - 8 枚の並び、キー、 ``path`` （招待と公開プロフだけ ``/organizer/events`` ）、対象のセレクタ、ようこその見出しと黒い面を塗らないこと（ ``scrim: false`` は 1 枚目だけ）、最終枚が 1 つだけであること、最終枚の見出しが「ここから操作は再度確認できます」であること、本文と箇条書きを同じ枚に置かないこと、 ``openUserMenu`` が通知一覧の枚だけ・ ``openDetails`` が招待の枚だけであること、操作の文言、キーから枚を引くこと（ ``myPageGuideIndex()`` ）、知らないキーで例外になること
+     - 9 枚の並び、キー、 ``path`` （招待と公開プロフは ``/organizer/events`` 、名簿は ``[id]`` の型紙）、対象のセレクタ、ようこその見出しと黒い面を塗らないこと（ ``scrim: false`` は 1 枚目だけ）、最終枚が 1 つだけであること、最終枚の見出しが「ここから操作は再度確認できます」であること、本文と箇条書きを同じ枚に置かないこと、 ``openUserMenu`` が通知一覧の枚だけ・ ``openDetails`` が招待の枚だけであること、操作の文言、キーから枚を引くこと（ ``myPageGuideIndex()`` ）、 ``guidePathMatches()`` と ``guidePathWithEventId()`` 、知らないキーで例外になること
    * - ``tests/unit/mypage-guide-memory.test.ts``
      - 初回表示の記憶の読み書き、キーが ``eventkreater.mypage-guide.dismissed`` でほかのガイドと別であること、 ``localStorage`` が無い・参照や読み書きで例外になる環境、 ``sessionStorage`` の書き込みと読み戻し、10 分の失効、壊れた JSON ・知らないキー・数値でない ``at`` を捨てること、 ``clearMyPageGuideSession()``
    * - ``tests/unit/mypage-guide-styles.test.mjs``
@@ -164,7 +168,7 @@ DOM を読むのは画面側だけで、位置の決め方は 1 か所にそろ�
    * - ファイル
      - 役割
    * - ``src/modules/organizers/lib/tour/steps.ts``
-     - 8 枚の定義。 ``path`` ・対象のセレクタ・文言・最終枚・開く印（ ``openUserMenu`` ・ ``openDetails`` ・ ``scrim`` ）と、操作の文言（ ``MYPAGE_GUIDE_ACTION_COPY`` ）。文字列はここ 1 か所に置く
+     - 9 枚の定義。 ``path`` ・対象のセレクタ・文言・最終枚・開く印（ ``openUserMenu`` ・ ``openDetails`` ・ ``scrim`` ）、 ``[id]`` の型紙を扱う ``guidePathMatches()`` ・ ``guidePathWithEventId()`` 、操作の文言（ ``MYPAGE_GUIDE_ACTION_COPY`` ）。文字列はここ 1 か所に置く
    * - ``src/modules/organizers/lib/tour/memory.ts``
      - 閉じたことの記憶（ ``localStorage`` ）
    * - ``src/modules/organizers/lib/tour/session.ts``
@@ -178,5 +182,6 @@ DOM を読むのは画面側だけで、位置の決め方は 1 か所にそろ�
    * - ``src/styles/screens/organizer.css``
      - 黒面・穴・吹き出しの見た目。 ``.guide-bubble--paper`` が公開ページの紙に寄せる差分を持つ
 
-画面への組み込みは ``src/app/mypage/page.tsx`` と ``src/app/organizer/events/page.tsx`` です。
+画面への組み込みは ``src/app/mypage/page.tsx`` ・ ``src/app/organizer/events/page.tsx`` ・
+ ``src/app/organizer/events/[id]/participants/page.tsx`` です。
 仕様は :doc:`front_implementation_spec` の §12.13 を正とします。
