@@ -7,8 +7,12 @@ import { X } from "lucide-react";
 import {
   MYPAGE_GUIDE_ACTION_COPY,
   MYPAGE_GUIDE_STEPS,
+  guidePathMatches,
+  guidePathNeedsEventId,
+  guidePathWithEventId,
   myPageGuideIndex,
   myPageGuideStep,
+  type MyPageGuidePath,
   type MyPageGuideStep,
 } from "@/modules/organizers/lib/tour/steps";
 import {
@@ -95,6 +99,24 @@ function collectTargets(selectors: readonly string[]): HTMLElement[] {
     document.querySelectorAll<HTMLElement>(selector).forEach((node) => found.push(node));
   }
   return found;
+}
+
+/**
+ * 枚の画面のパス。催しの画面（`[id]`）は id が決まっていないので、最初の催しの名簿で開く。
+ * 開ける催しが無い・一覧を読めないときは `null` を返し、呼び出し元がその枚を飛ばす
+ * （名簿の無い主催者に、空の名簿を見せない）。
+ */
+async function resolveStepPath(template: MyPageGuidePath): Promise<string | null> {
+  if (!guidePathNeedsEventId(template)) return template;
+  try {
+    const res = await fetch("/api/v1/organizer/events");
+    if (!res.ok) return null;
+    const body = (await res.json()) as { events?: { id?: string }[] };
+    const first = body.events?.find((event) => typeof event.id === "string" && event.id !== "");
+    return first?.id ? guidePathWithEventId(template, first.id) : null;
+  } catch {
+    return null;
+  }
 }
 
 function toRect(element: Element): GuideRect {
@@ -221,6 +243,8 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
   /** 閉じる道は毎回作り直される。計測の effect を張り直さないよう ref 経由で呼ぶ。 */
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  /** 枚を移している最中か。催しの id を問い合わせている間に、二度押しを重ねない。 */
+  const movingRef = useRef(false);
 
   const active = index !== null;
   const step: MyPageGuideStep | null = index === null ? null : MYPAGE_GUIDE_STEPS[index] ?? null;
@@ -266,9 +290,40 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
   }, []);
 
   /**
-   * 次の枚へ。セッションへ次のキーを書いてから、画面が違えば移る。
-   * 移った先では同じ部品がセッションを読んで続きを出す（この画面では何も描かない）。
+   * 1 枚を開く。画面が違えば移り、移った先で同じ部品が続きから出す。
+   *
+   * 催しの画面（`[id]`）は、進む向きに沿って最初の催しで開く。開ける催しが無い枚は
+   * 飛ばし、そのまま次（前）を見る。飛ばす向きは進む向きにそろえる（戻るで先へ飛ばさない）。
    */
+  const move = useCallback(
+    async (from: number, direction: 1 | -1) => {
+      // 続けて押されても、2 枚ぶん進めない（id の問い合わせが返る前に次が来る）。
+      if (movingRef.current) return;
+      movingRef.current = true;
+      try {
+        for (let i = from; i >= 0 && i < MYPAGE_GUIDE_STEPS.length; i += direction) {
+          const target = MYPAGE_GUIDE_STEPS[i];
+          const path = await resolveStepPath(target.path);
+          if (path === null) continue;
+          writeMyPageGuideSession(target.key);
+          if (!guidePathMatches(target.path, pathname)) {
+            setIndex(null);
+            router.push(path);
+            return;
+          }
+          setPhase("prepare");
+          setIndex(i);
+          return;
+        }
+        // 開ける枚がもう無い（最後まで来た・戻る先が無い）。閉じる。
+        close();
+      } finally {
+        movingRef.current = false;
+      }
+    },
+    [pathname, router, close],
+  );
+
   const goNext = useCallback(() => {
     if (index === null) return;
     const current = MYPAGE_GUIDE_STEPS[index];
@@ -276,35 +331,14 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
       close();
       return;
     }
-    const next = MYPAGE_GUIDE_STEPS[index + 1];
-    if (!next) {
-      close();
-      return;
-    }
-    writeMyPageGuideSession(next.key);
-
-    if (next.path !== pathname) {
-      setIndex(null);
-      router.push(next.path);
-      return;
-    }
-    setPhase("prepare");
-    setIndex(index + 1);
-  }, [index, pathname, router, close]);
+    void move(index + 1, 1);
+  }, [index, close, move]);
 
   /** 前の枚へ。同じく、画面が違えば移ってから続きを出す。 */
   const goBack = useCallback(() => {
     if (index === null || index === 0) return;
-    const previous = MYPAGE_GUIDE_STEPS[index - 1];
-    writeMyPageGuideSession(previous.key);
-    if (previous.path !== pathname) {
-      setIndex(null);
-      router.push(previous.path);
-      return;
-    }
-    setPhase("prepare");
-    setIndex(index - 1);
-  }, [index, pathname, router]);
+    void move(index - 1, -1);
+  }, [index, move]);
 
   /** 対象が見つからないまま待ちきれなかったときも、同じ「次へ」を使う。 */
   const goNextRef = useRef(goNext);
@@ -324,7 +358,7 @@ export function MyPageGuideTour({ ready, autoStart, startSignal, onClose }: MyPa
     const session = readMyPageGuideSession();
     if (session) {
       const resumed = myPageGuideStep(session.step);
-      if (resumed.path === pathname) {
+      if (guidePathMatches(resumed.path, pathname)) {
         setIndex(myPageGuideIndex(session.step));
         return;
       }

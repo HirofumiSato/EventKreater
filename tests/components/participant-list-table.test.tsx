@@ -6,7 +6,7 @@
 //   2. 支払額は 1 人ぶんと人数ぶんの合計を並べる（集金は 1 人ずつ記録する）
 //   3. 参加要望の承認は人数の入力から始まる（要望のままでは人数を出さない）
 //   4. 出席なのに日時が 0 件なら保存させない
-//   5. 集金の列は既定では出さず、表示列から選んだときと CSV にだけ出す
+//   5. 集金の列は一番左に既定で出し、行のトグルでその場で記録する
 //   6. 「参加者を追加」は行の無い 1 枚を開き、保存は `id: null`（POST）で送る
 //   7. 削除済みは最下部に残して「名簿に戻す」だけを出し、絞り込み・CSV からは外す
 //   8. 名前とコメントの上限は API と同じ値。定員の案内は編集中の行の人数を引いて数える
@@ -86,6 +86,7 @@ function renderTable(
     /** 定員の案内は行の人数で数えるので、人数を明示したいときに使う。 */
     attendingCount?: number;
     onRestore?: (id: string) => Promise<void>;
+    onCollectionChange?: (id: string, collectedAt: string | null) => void;
   } = {},
 ) {
   return {
@@ -104,6 +105,7 @@ function renderTable(
         capacity={extra.capacity ?? null}
         onSave={onSave}
         onRestore={extra.onRestore}
+        onCollectionChange={extra.onCollectionChange}
       />,
     ),
   };
@@ -123,7 +125,7 @@ describe("人数の列", () => {
       participant({ id: "c", name: "要望さん", status: "WAITLISTED", partySize: 1 }),
     ]);
     const partyCells = Array.from(container.querySelectorAll("tbody tr")).map(
-      (tr) => tr.querySelectorAll("td")[3].textContent,
+      (tr) => tr.querySelector('[data-column="partySize"]')?.textContent,
     );
     expect(partyCells).toEqual(["3人", "—", "—"]);
   });
@@ -182,7 +184,8 @@ describe("日時の選択", () => {
     renderTable([row]);
 
     fireEvent.click(screen.getByRole("button", { name: "佐藤 みのり の出欠を変更" }));
-    const first = document.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    // 名簿の日時の欄は複数のチェックを持つので、1 枚（層）の中だけを見る。
+    const first = document.querySelector<HTMLInputElement>('.dialog input[type="checkbox"]');
     expect(first?.checked).toBe(true);
 
     fireEvent.click(first!);
@@ -216,24 +219,77 @@ function readBlobAsText(blob: Blob): Promise<string> {
 describe("集金の列", () => {
   const collected = new Date("2026-11-01T03:00:00.000Z").toISOString();
 
-  it("既定では出ず、表示列から集金を選ぶと出る", () => {
+  it("既定で一番左に出て、集金済みの行だけトグルが入る", () => {
     const { container } = renderTable([
       participant({ id: "a", collectedAt: collected }),
       participant({ id: "b", name: "未集金さん", collectedAt: null }),
     ]);
 
-    // 既定の 4 列（名前・出欠・人数・料金プラン）には集金を入れない。
-    expect(screen.queryByRole("columnheader", { name: "集金" })).toBeNull();
+    // 既定の 5 列は集金・名前・出欠・人数・料金プラン。集金は一番左。
+    const headers = Array.from(container.querySelectorAll("thead th")).map((th) => th.textContent);
+    expect(headers.slice(0, 2)).toEqual(["集金", "名前"]);
 
-    fireEvent.click(screen.getByRole("button", { name: "表示列" }));
-    fireEvent.click(screen.getByLabelText("集金"));
+    const switches = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(
+        'tbody td[data-column="collected"] button[role="switch"]',
+      ),
+    );
+    expect(switches.map((button) => button.getAttribute("aria-checked"))).toEqual(["true", "false"]);
+    expect(switches[0]!.getAttribute("aria-label")).toBe("佐藤 みのり の集金");
+  });
 
-    expect(screen.getByRole("columnheader", { name: "集金" })).toBeTruthy();
-    const cells = Array.from(
-      container.querySelectorAll<HTMLTableCellElement>('tbody td[data-column="collected"]'),
-    ).map((cell) => cell.textContent);
-    // 出席かつ集金日時がある行だけ「済」。未集金は「—」。
-    expect(cells).toEqual(["済", "—"]);
+  it("見出しと行のセルの列順がそろう（同じ列の下に同じ値が出る）", () => {
+    const { container } = renderTable([participant({ id: "a" })]);
+
+    const headerKeys = Array.from(container.querySelectorAll("thead th")).map(
+      (th) => (th as HTMLElement).dataset.column,
+    );
+    const cellKeys = Array.from(container.querySelectorAll("tbody tr")[0]!.children).map(
+      (td) => (td as HTMLElement).dataset.column,
+    );
+    expect(cellKeys).toEqual(headerKeys);
+  });
+
+  it("出席でない行にはトグルを出さず「—」にする", () => {
+    const { container } = renderTable([
+      participant({ id: "b", name: "要望さん", status: "WAITLISTED", collectedAt: null }),
+    ]);
+
+    const cell = container.querySelector('tbody td[data-column="collected"]');
+    expect(cell?.textContent).toBe("—");
+    expect(cell?.querySelector("button")).toBeNull();
+  });
+
+  it("トグルを押すとその場で集金を送り、1 枚は開かない", async () => {
+    const onCollectionChange = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ participant: { id: "a", collectedAt: "2026-11-02T00:00:00.000Z" } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    try {
+      const { container } = renderTable([participant({ id: "a", collectedAt: null })], undefined, {
+        onCollectionChange,
+      });
+      const toggle = container.querySelector<HTMLButtonElement>(
+        'tbody td[data-column="collected"] button[role="switch"]',
+      );
+
+      fireEvent.click(toggle!);
+
+      await waitFor(() =>
+        expect(onCollectionChange).toHaveBeenCalledWith("a", "2026-11-02T00:00:00.000Z"),
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/v1/organizer/events/ev-1/participants/a/collection",
+        expect.objectContaining({ method: "PUT" }),
+      );
+      // 行を押したときの 1 枚は開かない（その場で記録する）。
+      expect(screen.queryByRole("heading", { name: "佐藤 みのり" })).toBeNull();
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it("CSV に集金の列が入り、集金済みの行だけ「済」になる", async () => {
@@ -371,7 +427,7 @@ describe("削除済みの行", () => {
     expect(deletedRow.classList.contains("roster__row--deleted")).toBe(true);
     expect(deletedRow.querySelector('[data-column="status"]')?.textContent).toBe("削除済み");
     // 削除済みは席を取らないので、出席のままでも人数は「—」にする。
-    expect(deletedRow.querySelectorAll("td")[3]!.textContent).toBe("—");
+    expect(deletedRow.querySelector('[data-column="partySize"]')!.textContent).toBe("—");
   });
 
   it("押すと「名簿に戻す」だけの 1 枚が開き、押すと onRestore に id を渡す", async () => {

@@ -10,6 +10,7 @@ import {
 } from "@/modules/events/types";
 import { rsvpStatusLabel, rsvpStatusTone } from "@/modules/events/lib/rsvp-status";
 import { formatDateTimeJa, yen } from "@/lib/format";
+import { readProblem } from "@/lib/problem";
 import { Badge, Dialog } from "@/components/ui";
 import {
   DEFAULT_PARTICIPANT_COLUMNS,
@@ -39,6 +40,11 @@ interface ParticipantListTableProps {
   onRestore?: (id: string) => Promise<void>;
   /** 集金の切り替えを親へ伝える。名簿の列と売上の数字を同じ値にするため。 */
   onCollectionChange?: (id: string, collectedAt: string | null) => void;
+  /**
+   * 集金の記録に失敗したことを親へ伝える。名簿は表だけなので、案内は画面の Toast が持つ。
+   * 静かに失敗すると、チェックが入らない理由が分からない。
+   */
+  onCollectionError?: (message: string) => void;
 }
 
 /** `DELETED` は削除済みだけを出す札。`ALL` では末尾に混ぜる。 */
@@ -88,9 +94,12 @@ export function ParticipantListTable({
   onDelete,
   onRestore,
   onCollectionChange,
+  onCollectionError,
 }: ParticipantListTableProps) {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [query, setQuery] = useState("");
+  /** 集金を送っている行。二重に押させないよう、その行のチェックだけ止める。 */
+  const [collectingId, setCollectingId] = useState<string | null>(null);
   /** 1 行を開いているか。直すときだけ層を出す（表には操作の列を置かない）。 */
   const [openRow, setOpenRow] = useState<ParticipantRow | null>(null);
   /** 追加の 1 枚を開いているか。行がまだ無いので `openRow` とは別に持つ。 */
@@ -202,6 +211,33 @@ export function ParticipantListTable({
   const showsColumn = (key: ParticipantColumnKey) => columns.includes(key);
   const shownColumnCount = PARTICIPANT_COLUMN_ORDER.filter(showsColumn).length;
 
+  /**
+   * 集金のトグル。押した瞬間に記録し、出欠・人数・プランは送らない
+   * （1 枚の「集金済みにする」と同じ扱い）。出席の行だけ押せる。
+   */
+  const toggleCollection = async (row: ParticipantRow) => {
+    setCollectingId(row.id);
+    try {
+      const res = await fetch(
+        `/api/v1/organizer/events/${eventId}/participants/${row.id}/collection`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ collected: row.collectedAt === null }),
+        },
+      );
+      if (!res.ok) throw new Error(await readProblem(res));
+      const body = (await res.json()) as { participant: { collectedAt: string | null } };
+      onCollectionChange?.(row.id, body.participant.collectedAt);
+    } catch (cause) {
+      onCollectionError?.(
+        cause instanceof Error ? cause.message : "集金を記録できませんでした。",
+      );
+    } finally {
+      setCollectingId(null);
+    }
+  };
+
   return (
     <div className="table-card">
       <div className="table-card__head">
@@ -251,7 +287,14 @@ export function ParticipantListTable({
           <thead>
             <tr>
               {PARTICIPANT_COLUMN_ORDER.map((key) => (
-                <th key={key} scope="col" data-column={key} hidden={!showsColumn(key)}>
+                <th
+                  key={key}
+                  scope="col"
+                  data-column={key}
+                  // 操作ガイドの「集金はここで記録する」の枚が指す。
+                  data-guide-target={key === "collected" ? "roster-collected" : undefined}
+                  hidden={!showsColumn(key)}
+                >
                   {PARTICIPANT_COLUMN_LABELS[key]}
                 </th>
               ))}
@@ -278,6 +321,26 @@ export function ParticipantListTable({
                   className={rowClass.join(" ")}
                   onClick={openable ? () => setOpenRow(row) : undefined}
                 >
+                  <td className="roster__meta" data-column="collected" hidden={!showsColumn("collected")}>
+                    {/* 集金はその場で切り替える。行を押すと 1 枚が開くので、
+                        押下は行へ伝えない（開いてしまうと、その場で記録できない）。 */}
+                    {!deleted && row.status === "ATTENDING" ? (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={row.collectedAt !== null}
+                        aria-label={`${row.name} の集金`}
+                        className="roster__switch"
+                        disabled={collectingId === row.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void toggleCollection(row);
+                        }}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td data-column="name" hidden={!showsColumn("name")}>
                     {openable ? (
                       // 行そのものを押せるが、キーボードと読み上げにはこのボタンを使う。
@@ -362,15 +425,6 @@ export function ParticipantListTable({
                       </>
                     )}
                   </td>
-                  <td className="roster__meta" data-column="collected" hidden={!showsColumn("collected")}>
-                    {!deleted && row.status === "ATTENDING" && row.collectedAt ? (
-                      <Badge tone="success" small>
-                        済
-                      </Badge>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
                   <td className="roster__meta" data-column="comment" hidden={!showsColumn("comment")}>
                     {row.comment || "—"}
                   </td>
@@ -412,7 +466,7 @@ export function ParticipantListTable({
                   <input
                     type="checkbox"
                     checked={locked || columns.includes(key)}
-                    // 名前は外せない（誰の行か分からなくなるため）。
+                    // 集金と名前は外せない（受け取ったか、誰の行かは名簿の目的そのものである）。
                     disabled={locked}
                     onChange={() => toggleColumn(key)}
                   />
