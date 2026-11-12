@@ -6,6 +6,7 @@ import {
   remainingSeats,
   rsvpStatusLabel,
   rsvpStatusTone,
+  showsAttendingCount,
   sortWaitlistRows,
   waitlistPosition,
 } from "@/modules/events/lib/rsvp-status";
@@ -22,6 +23,32 @@ describe("remainingSeats / isFull", () => {
     expect(remainingSeats(5, 8)).toBe(0);
     expect(isFull(5, 5)).toBe(true);
     expect(isFull(5, 4)).toBe(false);
+  });
+});
+
+describe("showsAttendingCount", () => {
+  it("定員の半分を超えるまでは参加人数を出さない", () => {
+    expect(showsAttendingCount(10, 4)).toBe(false);
+    expect(showsAttendingCount(10, 5)).toBe(false);
+    expect(showsAttendingCount(10, 6)).toBe(true);
+  });
+
+  it("定員が奇数のときも、半分を超えたら出す", () => {
+    expect(showsAttendingCount(5, 2)).toBe(false);
+    expect(showsAttendingCount(5, 3)).toBe(true);
+  });
+
+  it("0 名のときは出さない", () => {
+    expect(showsAttendingCount(10, 0)).toBe(false);
+    expect(showsAttendingCount(null, 0)).toBe(false);
+  });
+
+  it("定員が無い催しは比べる半分が無いので、1 名でもいれば出す", () => {
+    expect(showsAttendingCount(null, 1)).toBe(true);
+  });
+
+  it("満員なら必ず出す", () => {
+    expect(showsAttendingCount(10, 10)).toBe(true);
   });
 });
 

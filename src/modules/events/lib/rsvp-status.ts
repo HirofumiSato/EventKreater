@@ -44,6 +44,19 @@ export function isFull(capacity: number | null, attendingCount: number): boolean
   return remaining !== null && remaining === 0;
 }
 
+/**
+ * 告知ページに参加人数（と残席）を出すか。
+ *
+ * 集まりはじめの少ない人数を見せると「まだ空いている」と映り、申し込みの腰を折る。
+ * 定員の半分を超えてから出す。0 名は定員の有無にかかわらず出さない。
+ * 定員の無い催しは比べる半分が無いので、1 名でもいれば出す。
+ */
+export function showsAttendingCount(capacity: number | null, attendingCount: number): boolean {
+  if (attendingCount <= 0) return false;
+  if (capacity === null) return true;
+  return attendingCount > capacity / 2;
+}
+
 export interface WaitlistRow {
   id: string;
   status: RsvpStatus;

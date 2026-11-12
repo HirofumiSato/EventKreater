@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { formatDateWithWeekdayJa } from "@/lib/format";
 import { formatRsvpDeadlineLabel } from "@/lib/serializers";
+import { showsAttendingCount } from "@/modules/events/lib/rsvp-status";
 import { PRICE_AUDIENCE_LABELS, RAIN_POLICY_LABELS, groupPricePlanPairs, type PublicEvent } from "@/modules/events/types";
 import { Badge } from "@/components/ui";
 import { EventSummary } from "@/modules/events/components/EventSummary";
@@ -33,6 +34,9 @@ interface EventMetaCardProps {
 export function EventMetaCard({ event }: EventMetaCardProps) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
   const remaining = event.capacity === null ? null : Math.max(0, event.capacity - event.attendingCount);
+  // 集まりはじめの少ない人数は、申し込む人の腰を折る。定員の半分を超えるまで行ごと出さない
+  // （残席も同じ数を裏返したものなので、一緒に隠す）。定員そのものは札（Badge）が示す。
+  const showCount = showsAttendingCount(event.capacity, event.attendingCount);
   const owner = event.organizers.owner;
   const coHosts = event.organizers.coHosts;
   // 料金は編集画面と同じ組（男女別は男性用・女性用で 1 組）にまとめて出す。
@@ -183,15 +187,17 @@ export function EventMetaCard({ event }: EventMetaCardProps) {
             </dd>
           </div>
         )}
-        <div className="event-facts__row">
-          <dt>参加</dt>
-          <dd>
-            {event.attendingCount}名
-            {event.capacity !== null && ` / 定員 ${event.capacity}名`}
-            {remaining !== null && remaining > 0 && `（残り ${remaining}名）`}
-            {remaining === 0 && "（満員）"}
-          </dd>
-        </div>
+        {showCount && (
+          <div className="event-facts__row">
+            <dt>参加</dt>
+            <dd>
+              {event.attendingCount}名
+              {event.capacity !== null && ` / 定員 ${event.capacity}名`}
+              {remaining !== null && remaining > 0 && `（残り ${remaining}名）`}
+              {remaining === 0 && "（満員）"}
+            </dd>
+          </div>
+        )}
         {/* 対象世代は未設定のことがある。空の行を出さず、告知ページの見た目を変えない。 */}
         {event.targetGeneration && (
           <div className="event-facts__row">

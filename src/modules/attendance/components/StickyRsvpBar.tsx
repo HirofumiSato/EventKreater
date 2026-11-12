@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { showsAttendingCount } from "@/modules/events/lib/rsvp-status";
 
 interface StickyRsvpBarProps {
   attendingCount: number;
@@ -36,14 +37,23 @@ export function StickyRsvpBar({
   showInvite = false,
 }: StickyRsvpBarProps) {
   const full = capacity !== null && attendingCount >= capacity;
+  /**
+   * 本文の札（`EventMetaCard`）と同じ境目で参加人数を出す。
+   * 定員の半分を超えるまでは「定員 N名」だけにし、少ない人数を見せない。
+   */
+  const countLabel = showsAttendingCount(capacity, attendingCount)
+    ? `参加 ${attendingCount}名${capacity !== null ? ` / 定員 ${capacity}名` : ""}`
+    : capacity !== null
+      ? `定員 ${capacity}名`
+      : null;
+  const notes = [
+    waitlistCount > 0 ? `要望 ${waitlistCount}名` : null,
+    answered ? "回答済み" : null,
+  ].filter((part): part is string => part !== null);
+  const summary = [...(countLabel ? [countLabel] : []), ...notes].join(" · ");
   return (
     <div className="sticky-rsvp">
-      <p className="help">
-        参加 {attendingCount}名
-        {capacity !== null && ` / 定員 ${capacity}名`}
-        {waitlistCount > 0 && ` · 要望 ${waitlistCount}名`}
-        {answered ? " · 回答済み" : ""}
-      </p>
+      {summary && <p className="help">{summary}</p>}
       {organizerHref && (
         <Link href={organizerHref} className="btn btn--outline btn--sm">
           主催者を見る
