@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 532
+- 文書から参照されているコードパス: 533
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -404,6 +404,7 @@
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/password-reset-screen.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/public-event-attendance-count.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/publish-confirm-modal.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/quota-status-banner.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
