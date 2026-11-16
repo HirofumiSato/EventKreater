@@ -48,34 +48,45 @@ export async function loadOrganizerEvents(
     });
   }
 
-  const organizers = await prisma.eventOrganizer.findMany({
-    where: {
-      event: { isDeleted: false },
-      OR: [
-        ...(userId ? [{ userId }] : []),
-        ...(guestTokenHashes.length > 0 ? [{ guestTokenHash: { in: [...guestTokenHashes] } }] : []),
-      ],
-    },
-    include: {
-      event: {
-        include: {
-          // 一覧に出すチラシの列だけを引く（`lqipDataUrl` などは使わない）。
-          flyerAsset: { select: flyerAssetSelect },
-          ...eventOptionsInclude,
-          organizers: {
-            select: {
-              id: true,
-              role: true,
-              userId: true,
-              displayName: true,
-              user: { select: { name: true } },
+  // 自分の公開ページ（/organizers/[userId]）の導線に使う。ゲスト幹事は null。
+  // 一覧とは独立なので、同じウェーブで引いて往復を 1 回減らす。
+  const viewerLookup = userId
+    ? prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+    : Promise.resolve(null);
+
+  const [organizers, viewer] = await Promise.all([
+    prisma.eventOrganizer.findMany({
+      where: {
+        event: { isDeleted: false },
+        OR: [
+          ...(userId ? [{ userId }] : []),
+          ...(guestTokenHashes.length > 0
+            ? [{ guestTokenHash: { in: [...guestTokenHashes] } }]
+            : []),
+        ],
+      },
+      include: {
+        event: {
+          include: {
+            // 一覧に出すチラシの列だけを引く（`lqipDataUrl` などは使わない）。
+            flyerAsset: { select: flyerAssetSelect },
+            ...eventOptionsInclude,
+            organizers: {
+              select: {
+                id: true,
+                role: true,
+                userId: true,
+                displayName: true,
+                user: { select: { name: true } },
+              },
             },
           },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    viewerLookup,
+  ]);
 
   // 人数は参加者の行を運ばず、状態ごとの集計で数える。一覧のペイロードが
   // 参加者の件数に比例しなくなる（250 名の催しでも 3 行）。
@@ -116,11 +127,6 @@ export async function loadOrganizerEvents(
       ),
     );
   }
-
-  // 自分の公開ページ（/organizers/[userId]）の導線に使う。ゲスト幹事は null。
-  const viewer = userId
-    ? await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
-    : null;
 
   return { events, viewer: { userId, name: viewer?.name ?? null } };
 }

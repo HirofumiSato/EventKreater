@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { UserQuota } from "@/modules/events/types";
+import type { QuotaSeed, UserQuota } from "@/modules/events/types";
 import { trackEvent } from "@/lib/analytics";
 import { problemMessage, readProblemBody } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
@@ -21,9 +21,21 @@ function checkoutBody(intent?: CheckoutIntent): string {
   return JSON.stringify(intent ?? {});
 }
 
-export function useEventQuota() {
-  const [quota, setQuota] = useState<UserQuota | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * チケット・プランの残りと、購入の導線を持つ。
+ *
+ * `seed` はサーバーコンポーネントが読んだ初期値。`ready` なら最初の HTML に帯が載り、
+ * ハイドレーション後に `/api/v1/billing/quota` を取りに行かない。`signed-out` も
+ * 取りに行かない（応答は 401 で、帯は出ない）。`unknown` と未指定だけ従来どおり取りに行く。
+ * 付与・公開・決済の確認のあとの `refreshQuota()` は、初期値の有無に関わらず飛ばす。
+ */
+export function useEventQuota(seed?: QuotaSeed) {
+  // サーバーが読んだ初期値。`ready` はそのまま、`signed-out` は「無い」で確定。
+  // `unknown` と未指定だけ、今までどおりマウント後に取りに行く。
+  const seeded = seed?.status === "ready" ? seed.quota : null;
+  const settled = seed?.status === "ready" || seed?.status === "signed-out";
+  const [quota, setQuota] = useState<UserQuota | null>(seeded);
+  const [isLoading, setIsLoading] = useState(!settled);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   // モーダルを開いた画面の文脈。購入後の戻り先と、復元する下書きを引き継ぐ。
   const intentRef = useRef<CheckoutIntent | undefined>(undefined);
@@ -67,8 +79,10 @@ export function useEventQuota() {
   const refreshQuota = useCallback(() => loadQuota(true), [loadQuota]);
 
   useEffect(() => {
+    // サーバーが初期値を渡した画面は、ハイドレーション後に取りに行かない。
+    if (settled) return;
     void fetchQuota();
-  }, [fetchQuota]);
+  }, [fetchQuota, settled]);
 
   const openPricingModal = useCallback(
     (intent?: CheckoutIntent) => {

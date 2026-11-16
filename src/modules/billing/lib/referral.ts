@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { appBaseUrl } from "@/lib/http";
 import { ProblemDetailException, isUniqueViolation } from "@/lib/exceptions";
 import {
   REFERRAL_TICKET_LIMIT,
@@ -11,6 +12,7 @@ import {
   generateReferralCode,
   isSelfReferral,
   referralReasonKey,
+  referralUrl,
 } from "@/modules/billing/lib/referral-code";
 
 /**
@@ -127,6 +129,39 @@ export async function grantReferralTickets(
   // すでに配った相手なら 0 枚。通知も作らない（呼び出し側は null で判断する）。
   if (created.count === 0) return null;
   return { referrerId, granted: created.count };
+}
+
+/** 紹介リンクと実績。API の応答と、マイページの初期値で同じ形を使う。 */
+export interface ReferralSummary {
+  code: string;
+  url: string;
+  invited: number;
+  granted: number;
+  limit: number;
+}
+
+/**
+ * 自分の紹介リンクと実績。
+ *
+ * `code` は初めて開いたときに作る（既存の会員をまとめて埋めない）。
+ * `invited` は紹介リンクから登録した人数、`granted` は受け取ったチケットの枚数。
+ *
+ * API（`GET /api/v1/user/referral`）とマイページのサーバーコンポーネントが同じ 1 本を読む。
+ * `ensureReferralCode` は未発行のときだけ書くので、描画中に呼んでも 2 回目以降は読み取りだけ。
+ */
+export async function loadReferralSummary(userId: string): Promise<ReferralSummary> {
+  const [code, invited, granted] = await Promise.all([
+    ensureReferralCode(userId),
+    prisma.user.count({ where: { referredByUserId: userId, deletedAt: null } }),
+    prisma.freeTicket.count({ where: { userId, source: "REFERRAL" } }),
+  ]);
+  return {
+    code,
+    url: referralUrl(appBaseUrl(), code),
+    invited,
+    granted,
+    limit: REFERRAL_TICKET_LIMIT,
+  };
 }
 
 export interface TicketSummary {

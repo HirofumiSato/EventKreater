@@ -147,7 +147,7 @@
 
 .. count-start
 
-149 ファイル、``it`` は 2247 件です。内訳は ``tests/unit/`` が 105 ファイル 1881 件、``tests/integration/`` が 29 ファイル 221 件です。結合の 221 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+152 ファイル、``it`` は 2258 件です。内訳は ``tests/unit/`` が 105 ファイル 1881 件、``tests/integration/`` が 31 ファイル 228 件です。結合の 228 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -755,10 +755,22 @@
      - 2
      - 未登録の端末の候補を覚えて次回そのまま選べる。同じ会場は行を増やさず使用日時だけ進む。会員の候補は本人にだけ見え、他人は削除できない
      - SCR-ORG-02 / SCR-ORG-05
+   * - ``tests/components/quota-seed.test.tsx``
+     - 4
+     - クォータの初期値（``QuotaSeed``）の扱い。``ready`` は渡した値で始まり ``fetch`` を呼ばず、``signed-out`` も呼ばずに帯を出さない（読み込み中の場所取りもしない）。初期値なしと ``unknown`` だけマウント後に ``GET /api/v1/billing/quota`` を読む
+     - SCR-ORG-01 / SCR-ORG-02 / SCR-ORG-05 / SCR-ORG-15 / SCR-ORG-16 / SCR-ORG-17 / SCR-PUB-03
+   * - ``tests/integration/quota-view.test.ts``
+     - 2
+     - ``loadQuotaView(userId)`` の戻りが ``GET /api/v1/billing/quota`` の応答と形も値も一致し、``Cache-Control: private, max-age=30`` を保つこと。クォータ行の無い会員は API と同じく 404 ``QUOTA_NOT_FOUND`` で止まること
+     - SCR-ORG-01 / SCR-ORG-02 / SCR-ORG-17
+   * - ``tests/integration/roster-page.test.ts``
+     - 5
+     - ``loadRosterForPage`` の出し分け。幹事の会員は ``ok`` で名簿まで 1 クエリ、幹事でない会員と身元なしは ``forbidden``、ゲスト幹事は ``register-required``、削除済みの催しは会員なら ``not-found``・ゲストなら ``register-required``
+     - SCR-ORG-06
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1881、``tests/integration/`` が 221 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1881 件を実行して 221 件を skip します。
+件数の内訳は ``tests/unit/`` が 1881、``tests/integration/`` が 228 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1881 件を実行して 228 件を skip します。
 
 .. breakdown-end
 

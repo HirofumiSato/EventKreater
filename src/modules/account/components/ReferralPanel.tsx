@@ -3,19 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { LineShareDialog } from "@/modules/organizers/components/LineShareDialog";
 import { lineShareUrl } from "@/modules/organizers/lib/share";
+import type { ReferralSummary } from "@/modules/billing/lib/referral";
 import { Panel, PanelHead } from "@/components/ui";
-
-interface ReferralResponse {
-  code: string;
-  url: string;
-  invited: number;
-  granted: number;
-  limit: number;
-}
 
 type ReferralPanelProps = {
   /**
-   * 紹介の取得が終わった（成功・失敗のどちらでも 1 回）。
+   * サーバーで読んだ紹介リンクと実績。マイページのサーバーコンポーネントが渡す。
+   * 読めなかったときは null で、紙を出さない（他の操作は続けられる）。
+   */
+  initial: ReferralSummary | null;
+  /**
+   * 紙を描き終えた（出さないときも 1 回）。
    * 操作ガイドは、この紙の高さが決まってから対象を測る。
    */
   onReady?: () => void;
@@ -24,12 +22,11 @@ type ReferralPanelProps = {
 /**
  * 紹介リンクの配布と実績。
  *
- * 数え上げはサーバー（`/api/v1/user/referral`）が持つ。ここは数を持たず、
- * 開いたときに1回だけ取る。紹介した人が公開するまで枚数は増えないので、
- * 画面を出しっぱなしでも取りこぼしは起きない。
+ * 数え上げはサーバー（`/api/v1/user/referral` と `loadReferralSummary`）が持つ。
+ * ここは数を持たず、渡された初期値をそのまま描く。紹介した人が公開するまで
+ * 枚数は増えないので、画面を出しっぱなしでも取りこぼしは起きない。
  */
-export function ReferralPanel({ onReady }: ReferralPanelProps) {
-  const [summary, setSummary] = useState<ReferralResponse | null>(null);
+export function ReferralPanel({ initial, onReady }: ReferralPanelProps) {
   const [copied, setCopied] = useState(false);
   const [shareHref, setShareHref] = useState<string | null>(null);
   // 親は描画のたびに新しい関数を渡しうる。依存配列を増やさず、最新の 1 つだけを ref で持つ。
@@ -37,29 +34,16 @@ export function ReferralPanel({ onReady }: ReferralPanelProps) {
   onReadyRef.current = onReady;
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/v1/user/referral", { cache: "no-store" })
-      .then(async (res) => (res.ok ? ((await res.json()) as ReferralResponse) : null))
-      .then((body) => {
-        if (active) setSummary(body);
-      })
-      .catch(() => {
-        // 取れなくても、この紙を出さないだけで他の操作は続けられる。
-      })
-      .finally(() => {
-        // 成功・失敗のどちらでも、取得が終わったことを 1 回だけ知らせる。
-        if (active) onReadyRef.current?.();
-      });
-    return () => {
-      active = false;
-    };
+    // 紙は最初の HTML に載っているので、測れるようになった時点で 1 回だけ知らせる。
+    onReadyRef.current?.();
   }, []);
 
-  if (!summary) return null;
+  // サーバーで読めなかったときは、取れなかった今までと同じく紙を出さない。
+  if (!initial) return null;
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(summary.url);
+      await navigator.clipboard.writeText(initial.url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -78,7 +62,7 @@ export function ReferralPanel({ onReady }: ReferralPanelProps) {
         <input
           className="input"
           readOnly
-          value={summary.url}
+          value={initial.url}
           aria-label="紹介リンク"
           onFocus={(event) => event.currentTarget.select()}
         />
@@ -89,12 +73,12 @@ export function ReferralPanel({ onReady }: ReferralPanelProps) {
       <dl className="kv">
         <div className="kv__row">
           <dt>紹介した人</dt>
-          <dd>{summary.invited}人</dd>
+          <dd>{initial.invited}人</dd>
         </div>
         <div className="kv__row">
           <dt>もらった枚数</dt>
           <dd>
-            {summary.granted}枚 / {summary.limit}枚
+            {initial.granted}枚 / {initial.limit}枚
           </dd>
         </div>
       </dl>
@@ -102,7 +86,7 @@ export function ReferralPanel({ onReady }: ReferralPanelProps) {
         <button
           type="button"
           className="line-share btn btn--outline btn--sm"
-          onClick={() => setShareHref(lineShareUrl(`紹介リンクです。\n${summary.url}`))}
+          onClick={() => setShareHref(lineShareUrl(`紹介リンクです。\n${initial.url}`))}
         >
           招待リンクをLINEで送る
         </button>

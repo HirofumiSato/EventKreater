@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 541
+- 文書から参照されているコードパス: 546
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -178,13 +178,14 @@
 | `src/app/mypage/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
 | `src/app/notifications/page.tsx` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) |
 | `src/app/organizer/calendar/page.tsx` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
-| `src/app/organizer/events/[id]/edit/page.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
+| `src/app/organizer/events/[id]/edit/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/app/organizer/events/[id]/participants/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
-| `src/app/organizer/events/[id]/preview/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/app/organizer/events/[id]/preview/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/app/organizer/events/[id]/revenue/page.tsx` | [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) |
-| `src/app/organizer/events/drafts/page.tsx` | [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
+| `src/app/organizer/events/drafts/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/app/organizer/events/new/page.tsx` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/app/organizer/events/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) |
+| `src/app/organizer/plan/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/app/organizer/profile/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) |
 | `src/app/organizer/register-required/layout.tsx` | [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) |
 | `src/app/organizer/register-required/page.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) |
@@ -285,6 +286,7 @@
 | `src/modules/billing/lib/notices.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
 | `src/modules/billing/lib/plans.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/billing/lib/pricing.ts` | [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
+| `src/modules/billing/lib/quota-view.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/billing/lib/quota.ts` | [docs/billing_and_quota_system_requirements.md](billing_and_quota_system_requirements.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/local.rst](local.rst) / [docs/onboarding.md](onboarding.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/modules/billing/lib/referral.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
 | `src/modules/billing/lib/stripe.ts` | [docs/staging.rst](staging.rst) / [docs/stripe.rst](stripe.rst) |
@@ -412,6 +414,7 @@
 | `tests/components/password-reset-screen.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/public-event-attendance-count.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/publish-confirm-modal.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/quota-seed.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/quota-status-banner.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/voice-address-search.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -438,9 +441,11 @@
 | `tests/integration/password-reset.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/public-event-api.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/public-organizer-page.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/public-organizer-page.md](issues/public-organizer-page.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/quota-view.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/referral-invite.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/referral-notification.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/revenue.test.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/integration/roster-page.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-notifications.test.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/rsvp-rate-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/signup-resume.test.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |

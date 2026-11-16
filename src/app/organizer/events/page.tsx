@@ -3,7 +3,8 @@ import { unstable_noStore as noStore } from "next/cache";
 import { PageHeader, Section, SectionHead, Skeleton } from "@/components/ui";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { readPageIdentity } from "@/lib/server-session";
-import type { OrganizerEvent } from "@/modules/events/types";
+import { loadQuotaSeed } from "@/modules/billing/lib/quota-view";
+import type { OrganizerEvent, QuotaSeed } from "@/modules/events/types";
 import { loadOrganizerEvents, splitDraftEvents } from "@/modules/organizers/lib/event-list";
 import { OrganizerEventsScreen } from "./OrganizerEventsClient";
 
@@ -16,7 +17,7 @@ const LOGIN_REQUIRED = "ログインするか、幹事用の端末で開いて�
  * 主催イベント一覧（SCR-ORG-01）。
  *
  * 一覧はサーバーで読んでクライアントへ渡す。見出し・帯・札が最初の HTML に載り、
- * ハイドレーション後に同じ一覧を取りに行かない（`useEventQuota` の残数だけは別）。
+ * ハイドレーション後に同じ一覧やチケットの残数を取りに行かない。
  * `useSearchParams` を読むクライアントを包むため、Suspense は残す。
  */
 export default async function OrganizerEventsPage() {
@@ -30,13 +31,19 @@ export default async function OrganizerEventsPage() {
     name: null,
   };
   let initialError: string | null = null;
+  // チケットの残りも同じウェーブで読む。読めなかったときは今までどおりクライアントで取る。
+  let initialQuota: QuotaSeed = identity.userId ? { status: "unknown" } : { status: "signed-out" };
 
   try {
-    const payload = await loadOrganizerEvents(identity);
+    const [payload, quota] = await Promise.all([
+      loadOrganizerEvents(identity),
+      loadQuotaSeed(identity.userId),
+    ]);
     const split = splitDraftEvents(payload.events);
     initialEvents = split.events;
     initialDraftCount = split.draftCount;
     initialViewer = payload.viewer;
+    initialQuota = quota;
   } catch (cause) {
     initialError =
       cause instanceof ProblemDetailException
@@ -55,6 +62,7 @@ export default async function OrganizerEventsPage() {
         initialViewer={initialViewer}
         initialDraftCount={initialDraftCount}
         initialError={initialError}
+        initialQuota={initialQuota}
       />
     </Suspense>
   );

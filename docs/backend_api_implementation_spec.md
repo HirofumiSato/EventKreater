@@ -1722,6 +1722,8 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 - **キャッシュ:** 200 の応答に `Cache-Control: private, max-age=30` を付ける。画面を開くたびに同じ値を取りに行くので、30 秒だけブラウザに持たせる。応答は会員ごとに違うため `private` で、共有キャッシュには載せない。付与・公開・決済の確認の直後に読み直す呼び出し（`useEventQuota` の `refreshQuota`）は `cache: "no-store"` で飛ばす。素の `fetch` のままだと、0円で付与したチケットが最大 30 秒ぶん画面に出ない。
 
+応答の組み立ては `src/modules/billing/lib/quota-view.ts` の `loadQuotaView(userId, now)` が持ち、このルート（`requireUserId` → `loadQuotaView` → `NextResponse.json`）と画面のサーバーコンポーネント（`loadQuotaSeed`）が同じ 1 本を読む。
+
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
 ```ts
@@ -2603,6 +2605,8 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 対象画面は SCR-PUB-03（主催者マイページ）の「紹介」の紙。認証は会員 Cookie。
 
 応答は `{ "code": "x7Kd2mQp", "url": "https://.../invite/x7Kd2mQp", "invited": 2, "granted": 4, "limit": 10 }`。
+
+応答の組み立ては `src/modules/billing/lib/referral.ts` の `loadReferralSummary(userId)` が持ち、この API とマイページのサーバーコンポーネントが同じ 1 本を読む。
 
 - `code` は `users.referral_code`。**まだ無ければこの呼び出しで作る**（8 文字の英数。`0`・`O`・`1`・`l` は使わない）。既にあるコードは変えない。
 - `invited` は `users.referred_by_user_id` が自分で、退会していない会員の数。

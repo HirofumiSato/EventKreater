@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   serializePricePlans,
@@ -48,12 +49,17 @@ export interface RosterPayload {
 }
 
 /**
- * 名簿を 1 回で読む。催しが無ければ null（API は 404、画面は案内を出す）。
- * 権限の確認は呼び出し側が持つ（API は `assertRegisteredOrganizer`）。
+ * 名簿を `where` で 1 回読む。催しが条件に合わなければ null。
+ *
+ * API（`loadRoster`）と画面（`loadRosterForPage`）が同じ整形を使う。画面は幹事の条件を
+ * 催しの where に畳んで渡すので、権限の確認と名簿の読み取りが 1 往復で終わる。
+ * 権限の確認は API 側が持つ（`assertRegisteredOrganizer`）。
  */
-export async function loadRoster(eventId: string): Promise<RosterPayload | null> {
+export async function loadRosterWhere(
+  where: Prisma.EventWhereInput,
+): Promise<RosterPayload | null> {
   const event = await prisma.event.findFirst({
-    where: { id: eventId, isDeleted: false },
+    where,
     include: {
       // 名簿の見出しが使うのは日程と料金プランだけ。割引は名簿に出さないので引かない。
       schedules: { orderBy: { sortOrder: "asc" } },
@@ -89,6 +95,14 @@ export async function loadRoster(eventId: string): Promise<RosterPayload | null>
   };
 }
 
+/**
+ * 名簿を 1 回で読む。催しが無ければ null（API は 404、画面は案内を出す）。
+ * 権限の確認は呼び出し側が持つ（API は `assertRegisteredOrganizer`）。
+ */
+export async function loadRoster(eventId: string): Promise<RosterPayload | null> {
+  return loadRosterWhere({ id: eventId, isDeleted: false });
+}
+
 /** 名簿の画面が使う身元。会員のセッションと、ゲスト幹事の Cookie のハッシュ。 */
 export interface RosterIdentity {
   userId: string | null;
@@ -113,24 +127,24 @@ export async function loadRosterForPage(
   identity: RosterIdentity,
 ): Promise<RosterPageResult> {
   const { userId, guestTokenHashes } = identity;
-  if (!userId && guestTokenHashes.length === 0) return { status: "forbidden" };
+  const organizers: Prisma.EventOrganizerWhereInput[] = [
+    ...(userId ? [{ userId }] : []),
+    ...(guestTokenHashes.length > 0 ? [{ guestTokenHash: { in: [...guestTokenHashes] } }] : []),
+  ];
+  if (organizers.length === 0) return { status: "forbidden" };
 
-  const organizer = await prisma.eventOrganizer.findFirst({
-    where: {
-      eventId,
-      OR: [
-        ...(userId ? [{ userId }] : []),
-        ...(guestTokenHashes.length > 0
-          ? [{ guestTokenHash: { in: [...guestTokenHashes] } }]
-          : []),
-      ],
-    },
-    select: { id: true },
+  // 幹事の条件を催しの where に畳む。権限の確認と名簿の読み取りを 1 往復で済ませる。
+  const data = await loadRosterWhere({
+    id: eventId,
+    isDeleted: false,
+    organizers: { some: { OR: organizers } },
   });
-  if (!organizer) return { status: "forbidden" };
-  // ゲスト幹事は名簿を開けない（API と同じく会員登録の案内へ送る）。
-  if (!userId) return { status: "register-required" };
+  if (data) return userId ? { status: "ok", data } : { status: "register-required" };
 
-  const data = await loadRoster(eventId);
-  return data ? { status: "ok", data } : { status: "not-found" };
+  // 読めなかった理由だけを 1 回引く（成功した画面は 1 クエリで終わる）。
+  // 幹事の行が残っていれば催しが無い・削除済み。無ければ幹事でない第三者。
+  const member = await prisma.eventOrganizer.count({ where: { eventId, OR: organizers } });
+  if (member === 0) return { status: "forbidden" };
+  // ゲスト幹事は名簿を開けない（API と同じく会員登録の案内へ送る）。
+  return userId ? { status: "not-found" } : { status: "register-required" };
 }
