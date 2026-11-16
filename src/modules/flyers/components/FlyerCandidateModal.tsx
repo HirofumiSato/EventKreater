@@ -422,7 +422,12 @@ export function FlyerCandidateModal({
             >
               <div className="candidate-upload__preview">
                 {uploaded ? (
-                  <img src={uploaded.imageUrl} alt={uploaded.label} />
+                  <img
+                    src={uploaded.imageUrl}
+                    alt={uploaded.label}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <span className="candidate-upload__empty" aria-hidden="true">
                     A4

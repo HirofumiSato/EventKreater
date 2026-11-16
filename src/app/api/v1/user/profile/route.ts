@@ -5,6 +5,7 @@ import { requireUserId } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { maskPhone } from "@/modules/auth/lib/login-challenge";
 import { requestIpHash, updateDisplayName } from "@/modules/account/lib/account";
+import { revalidatePublicOrganizer } from "@/modules/organizers/lib/public-organizer";
 import { UpdateProfileSchema } from "@/lib/schemas";
 
 export const runtime = "nodejs";
@@ -17,20 +18,27 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireUserId(req);
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        passwordHash: true,
-        phoneE164: true,
-        phoneVerifiedAt: true,
-        // 共通ヘッダーの出し分けに使う。管理者は主催者・参加者とは別の並びにする。
-        platformRole: true,
-      },
-    });
+    // 会員の行と幹事の件数は互いに依存しない。1 ウェーブで引く。
+    const [user, organizerCount] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+          passwordHash: true,
+          phoneE164: true,
+          phoneVerifiedAt: true,
+          // 共通ヘッダーの出し分けに使う。管理者は主催者・参加者とは別の並びにする。
+          platformRole: true,
+        },
+      }),
+      // 幹事として 1 件でもイベントを持っているか。ヘッダーの役割切り替えに使う。
+      prisma.eventOrganizer.count({
+        where: { userId, event: { isDeleted: false } },
+      }),
+    ]);
     if (!user) {
       throw new ProblemDetailException({
         status: 404,
@@ -39,10 +47,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 幹事として 1 件でもイベントを持っているか。ヘッダーの役割切り替えに使う。
-    const organizerCount = await prisma.eventOrganizer.count({
-      where: { userId, event: { isDeleted: false } },
-    });
+    // 端末だけの出欠・幹事トークンが残っている端末だけ、引き継ぎ（/user/hydrate）を呼ばせる。
+    // httpOnly なので画面からは読めない。ここで 1 度だけ確かめて応答に載せる。
+    const needsHydrate = req.cookies
+      .getAll()
+      .some((cookie) => cookie.name.startsWith("rsvp_token_") || cookie.name.startsWith("org_token_"));
 
     return NextResponse.json({
       user: {
@@ -59,6 +68,8 @@ export async function GET(req: NextRequest) {
       },
       isOrganizer: organizerCount > 0,
       organizerCount,
+      /** 端末だけの出欠・幹事を会員へ引き継ぐ必要があるか。 */
+      needsHydrate,
     });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/user/profile");
@@ -75,6 +86,8 @@ export async function PATCH(req: NextRequest) {
       name: input.name,
       ipHash: requestIpHash(req),
     });
+    // 公開ページの催し一覧にも主催者名が入っている。改名を次の閲覧から反映する。
+    revalidatePublicOrganizer(userId);
     return NextResponse.json({ user });
   } catch (error) {
     return toErrorResponse(error, "/api/v1/user/profile");

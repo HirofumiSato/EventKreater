@@ -140,7 +140,8 @@ export function FlyerGeneratePanel({
 
       {previewUrl && (
         <div className="poster">
-          <img src={previewUrl} alt="生成したチラシ" />
+          {/* 紙面は A4 縦（1080×1528）。原寸の比を先に伝え、届くまで下の操作を動かさない。 */}
+          <img src={previewUrl} alt="生成したチラシ" width={1080} height={1528} decoding="async" />
         </div>
       )}
 

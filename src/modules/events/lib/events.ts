@@ -33,6 +33,23 @@ export const eventOptionsInclude = {
   discounts: { orderBy: { sortOrder: "asc" as const } },
 } satisfies Prisma.EventInclude;
 
+/**
+ * チラシの行から引く列。`serializeFlyer` が返す項目だけを選ぶ。
+ * `lqipDataUrl` は作る経路が無く（常に NULL）Text なので引かない。応答のキーは残る。
+ */
+export const flyerAssetSelect = {
+  id: true,
+  imageUrl: true,
+  aspectRatio: true,
+  title: true,
+  eventDate: true,
+  eventTime: true,
+  price: true,
+  location: true,
+  rainPolicy: true,
+  capacity: true,
+} satisfies Prisma.FlyerAssetSelect;
+
 type OptionInput = {
   schedules: { id?: string; eventDate: string; startTime: string; endTime: string }[];
   pricePlans: {
@@ -160,11 +177,55 @@ function optionCreateData(input: OptionInput) {
   };
 }
 
+/** 日程の保存形。既存行と突き合わせて、変わった行だけ update するために使う。 */
+type ScheduleWrite = {
+  eventDate: Date;
+  startTime: string;
+  endTime: string;
+  eventTime: string;
+  sortOrder: number;
+};
+
+type PricePlanWrite = {
+  name: string;
+  audience: "ANY" | "MALE" | "FEMALE";
+  amount: number;
+  note: string | null;
+  sortOrder: number;
+};
+
+type DiscountWrite = {
+  name: string;
+  amount: number;
+  note: string | null;
+  sortOrder: number;
+};
+
+/**
+ * 日程・料金プラン・割引を、送られてきた内容へ揃える。
+ *
+ * 画面は編集のたびに全行を送るので、行ごとに `update` を直列で投げると待ち時間が積み上がる。
+ * 消す行はまとめて `deleteMany`、増える行は `createMany` で 1 回にし、ID を保つ必要がある行
+ * （`Participant.scheduleId` / `pricePlanId` が参照している）だけを `update` する。
+ * 内容も並びも変わっていない行は触らない。
+ *
+ * 消す行を先に消すのは、料金プランの `@@unique([eventId, audience, name])` に当たらないため。
+ * 増える行は最後にまとめる（同じ名前へ付け替える行を先に update できる）。
+ */
 export async function syncEventOptions(tx: Prisma.TransactionClient, eventId: string, input: OptionInput) {
   const [schedules, pricePlans, discounts] = await Promise.all([
-    tx.eventSchedule.findMany({ where: { eventId }, select: { id: true } }),
-    tx.eventPricePlan.findMany({ where: { eventId }, select: { id: true } }),
-    tx.eventDiscount.findMany({ where: { eventId }, select: { id: true } }),
+    tx.eventSchedule.findMany({
+      where: { eventId },
+      select: { id: true, eventDate: true, startTime: true, endTime: true, eventTime: true, sortOrder: true },
+    }),
+    tx.eventPricePlan.findMany({
+      where: { eventId },
+      select: { id: true, name: true, audience: true, amount: true, note: true, sortOrder: true },
+    }),
+    tx.eventDiscount.findMany({
+      where: { eventId },
+      select: { id: true, name: true, amount: true, note: true, sortOrder: true },
+    }),
   ]);
   const scheduleIds = new Set(schedules.map((row) => row.id));
   const planIds = new Set(pricePlans.map((row) => row.id));
@@ -187,47 +248,105 @@ export async function syncEventOptions(tx: Prisma.TransactionClient, eventId: st
     // 参加者が選んだ写しは残る（ParticipantDiscount.discountId は SetNull）。
     await tx.eventDiscount.deleteMany({ where: { id: { in: removeDiscounts } } });
   }
+
+  const scheduleById = new Map(schedules.map((row) => [row.id, row]));
+  const planById = new Map(pricePlans.map((row) => [row.id, row]));
+  const discountById = new Map(discounts.map((row) => [row.id, row]));
+
+  const changedSchedules: { id: string; data: ScheduleWrite }[] = [];
+  const createdSchedules: Prisma.EventScheduleCreateManyInput[] = [];
   for (const [sortOrder, row] of input.schedules.entries()) {
-    const data = {
+    const data: ScheduleWrite = {
       eventDate: parseEventDate(row.eventDate),
       startTime: row.startTime,
       endTime: row.endTime,
       eventTime: composeEventTime(row.startTime, row.endTime),
       sortOrder,
     };
-    if (row.id && scheduleIds.has(row.id)) {
-      await tx.eventSchedule.update({ where: { id: row.id }, data });
-    } else {
-      await tx.eventSchedule.create({ data: { eventId, ...data } });
+    const current = row.id ? scheduleById.get(row.id) : undefined;
+    if (!current) {
+      createdSchedules.push({ eventId, ...data });
+      continue;
+    }
+    if (
+      current.eventDate.getTime() !== data.eventDate.getTime() ||
+      current.startTime !== data.startTime ||
+      current.endTime !== data.endTime ||
+      current.eventTime !== data.eventTime ||
+      current.sortOrder !== data.sortOrder
+    ) {
+      changedSchedules.push({ id: current.id, data });
     }
   }
+  for (const row of changedSchedules) {
+    await tx.eventSchedule.update({ where: { id: row.id }, data: row.data });
+  }
+  if (createdSchedules.length > 0) {
+    await tx.eventSchedule.createMany({ data: createdSchedules });
+  }
+
+  const changedPlans: { id: string; data: PricePlanWrite }[] = [];
+  const createdPlans: Prisma.EventPricePlanCreateManyInput[] = [];
   for (const [sortOrder, row] of input.pricePlans.entries()) {
-    const data = {
+    const data: PricePlanWrite = {
       name: row.name,
       audience: row.audience,
       amount: row.amount,
       note: row.note,
       sortOrder,
     };
-    if (row.id && planIds.has(row.id)) {
-      await tx.eventPricePlan.update({ where: { id: row.id }, data });
-    } else {
-      await tx.eventPricePlan.create({ data: { eventId, ...data } });
+    const current = row.id ? planById.get(row.id) : undefined;
+    if (!current) {
+      createdPlans.push({ eventId, ...data });
+      continue;
+    }
+    if (
+      current.name !== data.name ||
+      current.audience !== data.audience ||
+      current.amount !== data.amount ||
+      current.note !== data.note ||
+      current.sortOrder !== data.sortOrder
+    ) {
+      changedPlans.push({ id: current.id, data });
     }
   }
+  for (const row of changedPlans) {
+    await tx.eventPricePlan.update({ where: { id: row.id }, data: row.data });
+  }
+  if (createdPlans.length > 0) {
+    await tx.eventPricePlan.createMany({ data: createdPlans });
+  }
+
+  const changedDiscounts: { id: string; data: DiscountWrite }[] = [];
+  const createdDiscounts: Prisma.EventDiscountCreateManyInput[] = [];
   for (const [sortOrder, row] of (input.discounts ?? []).entries()) {
-    const data = {
+    const data: DiscountWrite = {
       name: row.name,
       amount: row.amount,
       note: row.note,
       sortOrder,
     };
-    if (row.id && discountIds.has(row.id)) {
-      await tx.eventDiscount.update({ where: { id: row.id }, data });
-    } else {
-      await tx.eventDiscount.create({ data: { eventId, ...data } });
+    const current = row.id ? discountById.get(row.id) : undefined;
+    if (!current) {
+      createdDiscounts.push({ eventId, ...data });
+      continue;
+    }
+    if (
+      current.name !== data.name ||
+      current.amount !== data.amount ||
+      current.note !== data.note ||
+      current.sortOrder !== data.sortOrder
+    ) {
+      changedDiscounts.push({ id: current.id, data });
     }
   }
+  for (const row of changedDiscounts) {
+    await tx.eventDiscount.update({ where: { id: row.id }, data: row.data });
+  }
+  if (createdDiscounts.length > 0) {
+    await tx.eventDiscount.createMany({ data: createdDiscounts });
+  }
+
   await tx.event.update({
     where: { id: eventId },
     data: { sortDate: earliestSortDate(input.schedules) },

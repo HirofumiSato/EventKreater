@@ -23,6 +23,7 @@ import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
 import { chooseRsvpTarget, findMyParticipant, participantScheduleIds } from "@/modules/participants/lib/rsvp";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 import { notifyRsvpSubmitted } from "@/modules/notifications/lib/notify";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -228,6 +229,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return submit();
     });
 
+    // 出欠は人数（写真の下の札と画面下の帯）に出る。次の表示が古い人数を出さないよう、
+    // 告知ページのキャッシュを捨てる。
+    revalidatePublicEvent(event.id);
+
     // 主催者へアプリ内通知を残す。通知はおまけなので、失敗しても出欠は成立させる。
     try {
       await notifyRsvpSubmitted({
@@ -325,6 +330,8 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     const waitlistCount = await prisma.participant.count({
       where: { eventId: event.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
     });
+    // 取り消しも人数に出る。告知ページのキャッシュを捨てる。
+    revalidatePublicEvent(event.id);
     const response = NextResponse.json({ success: true, myRsvp: null, attendingCount, waitlistCount });
     clearCookie(response, req, cookieName);
     return response;

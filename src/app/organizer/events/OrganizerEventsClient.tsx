@@ -1,0 +1,547 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-react";
+import { EventCard } from "@/modules/events/components/EventCard";
+import { EventLifecycleModal } from "@/modules/organizers/components/EventLifecycleModal";
+import { InviteCoHostModal } from "@/modules/organizers/components/InviteCoHostModal";
+import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
+import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
+import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
+import { PricingModal } from "@/modules/billing/components/PricingModal";
+import { Toast } from "@/components/common/Toast";
+import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { trackEvent } from "@/lib/analytics";
+import { readProblem } from "@/lib/problem";
+import { phoneVerifyUrl } from "@/lib/auth-links";
+import { SITE } from "@/lib/site";
+import type { OrganizerEvent } from "@/modules/events/types";
+import {
+  activeFilterCount,
+  clampPage,
+  DEFAULT_ORGANIZER_FILTER,
+  DEFAULT_ORGANIZER_SORT,
+  filterOrganizerEvents,
+  hasActiveFilter,
+  pageCountOf,
+  pageRangeLabel,
+  paginate,
+  sortOrganizerEvents,
+  todayInTokyo,
+  type OrganizerSortOrder,
+  type OrganizerStatusFilter,
+} from "@/modules/events/lib/event-filters";
+import { Alert, Dialog, EmptyState, Field, PageHeader, Section, SectionHead } from "@/components/ui";
+
+type LifecycleAction = "close" | "reopen" | "delete";
+
+/** 一覧 API が返す閲覧者。招待リンクを発行できるのは会員の主催者だけ。 */
+type Viewer = { userId: string | null; name: string | null };
+
+/** モーダルの中だけで動かす控え。閉じたときに捨てれば、一覧は元の条件のまま。 */
+type FilterDraft = { status: OrganizerStatusFilter; from: string; to: string };
+
+type OrganizerEventsScreenProps = {
+  /**
+   * サーバーで読んだ一覧（下書きを除く）。マウント後の取得を飛ばすため、
+   * 画面はこの値をそのまま最初の状態にする。
+   */
+  initialEvents: OrganizerEvent[];
+  initialViewer: Viewer;
+  /** 下書きの件数。一覧には出さず、帯の「下書き一覧（N）」にだけ使う。 */
+  initialDraftCount: number;
+  /**
+   * サーバーで身元が無かったときの案内。null なら一覧は取れている。
+   * 401 の扱いは手動の取り直し（`load`）にも残す。
+   */
+  initialError: string | null;
+};
+
+export function OrganizerEventsScreen({
+  initialEvents,
+  initialViewer,
+  initialDraftCount,
+  initialError,
+}: OrganizerEventsScreenProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const quotaState = useEventQuota();
+  const [events, setEvents] = useState<OrganizerEvent[]>(initialEvents);
+  // 招待リンクを発行できるかは、役割だけでなく「会員か」でも決まる（ゲスト主催者は登録が要る）。
+  const [viewer, setViewer] = useState<Viewer | null>(initialViewer);
+  // 札ごとにモーダルを持たせず、一覧に 1 枚だけ置く。閉じたら null に戻す。
+  const [inviteTarget, setInviteTarget] = useState<OrganizerEvent | null>(null);
+  // 下書きは専用の一覧（/organizer/events/drafts）へ分ける。出欠の統計が常に 0 のため。
+  const [draftCount, setDraftCount] = useState(initialDraftCount);
+  const [error, setError] = useState<string | null>(initialError);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  // チケットが足りずに止まった複製。チケットで公開し直すとき、同じ催しをもう一度押させる。
+  const [pendingCloneId, setPendingCloneId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 絞り込みとページ割りは画面側で持つ。一覧 API は全件を返し（マイページと
+  // カレンダーが全件前提）、イベントは年を跨いで溜まり続けるため。
+  const [statusFilter, setStatusFilter] = useState<OrganizerStatusFilter>("ALL");
+  const [excludePast, setExcludePast] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  // 状態と開催日は、スマホではモーダルに畳む。開いた時点の確定値を控えへ写し、
+  // 「この条件で絞り込む」を押すまで一覧は動かさない（背景を押せば元の条件に戻る）。
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftFilter, setDraftFilter] = useState<FilterDraft>({ status: "ALL", from: "", to: "" });
+  // 並べ替えは絞り込みとは別に持つ。「条件を戻す」でも触らない（見たい順は残す）。
+  const [sortOrder, setSortOrder] = useState<OrganizerSortOrder>(DEFAULT_ORGANIZER_SORT);
+  const [page, setPage] = useState(1);
+  const today = todayInTokyo();
+
+  const filter = useMemo(
+    () => ({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, excludePast, from: dateFrom, to: dateTo }),
+    [statusFilter, excludePast, dateFrom, dateTo],
+  );
+  const filtered = useMemo(
+    () => sortOrganizerEvents(filterOrganizerEvents(events, filter, today), sortOrder),
+    [events, filter, today, sortOrder],
+  );
+  const currentPage = clampPage(page, filtered.length);
+  const totalPages = pageCountOf(filtered.length);
+  const visible = paginate(filtered, currentPage);
+
+  // 条件か並び順を変えたら 1 ページ目へ戻す。3 ページ目を見たまま絞ると、
+  // 並べ替えで別のイベントが着地して、見ていたイベントを見失う。
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, excludePast, dateFrom, dateTo, sortOrder]);
+
+  /**
+   * 一覧を取り直す。初回はサーバーが渡した初期データを使うので呼ばない。
+   * 複製・公開の一時停止・決済の確認など、一覧の中身が変わったときだけ呼ぶ。
+   */
+  const load = useCallback(async () => {
+    const res = await fetch("/api/v1/organizer/events");
+    if (res.status === 401) {
+      setError("ログインするか、幹事用の端末で開いてください。");
+      setEvents([]);
+      return;
+    }
+    if (!res.ok) {
+      setError(await readProblem(res));
+      return;
+    }
+    const data = (await res.json()) as { events: OrganizerEvent[]; viewer?: Viewer | null };
+    // 下書きは別の一覧へ分ける。並びは API のまま（作った新しい順）で変えない。
+    setEvents(data.events.filter((event) => event.status !== "DRAFT"));
+    setViewer(data.viewer ?? null);
+    setDraftCount(data.events.filter((event) => event.status === "DRAFT").length);
+    setError(null);
+  }, []);
+
+  // 会員登録から戻ってきたときの完了トースト。URL からは印を消して、再読み込みで繰り返さない。
+  useEffect(() => {
+    if (searchParams.get("registered") !== "1") return;
+    setToast("会員登録が完了しました。イベントは一覧から管理できます。");
+    router.replace("/organizer/events");
+  }, [searchParams, router]);
+
+  const cloneEvent = async (id: string) => {
+    setBusyId(id);
+    setPendingCloneId(null);
+    try {
+      const res = await fetch(`/api/v1/organizer/events/${id}/clone`, { method: "POST" });
+      if (res.status === 402) {
+        setPendingCloneId(id);
+        quotaState.openPricingModal({ returnTo: "/organizer/events" });
+        return;
+      }
+      if (res.status === 403) {
+        const problem = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
+        if (problem.error === "PHONE_REQUIRED") {
+          window.location.href = phoneVerifyUrl("/organizer/events");
+          return;
+        }
+        throw new Error(problem.detail || "複製に失敗しました");
+      }
+      if (!res.ok) throw new Error(await readProblem(res));
+      const data = (await res.json()) as { event: { id: string }; shiftedMonths?: number };
+      // 複製の実行回数。日付をずらした月数も載せ、複製から公開へ進んだかを追えるようにする。
+      trackEvent("event_clone", { shiftedMonths: data.shiftedMonths ?? 1 });
+      // 編集画面で「日付をずらした」と案内する。印は遷移先で消す。
+      router.push(`/organizer/events/${data.event.id}/edit?cloned=1`);
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : "複製に失敗しました");
+    } finally {
+      setBusyId(null);
+      void quotaState.refreshQuota();
+    }
+  };
+
+  /** チケットで公開する。チケットが足りずに止まった複製を、同じ催しのままやり直す。 */
+  const retryClone = () => {
+    const id = pendingCloneId;
+    setPendingCloneId(null);
+    if (id) void cloneEvent(id);
+  };
+
+  const runLifecycle = async (id: string, action: LifecycleAction) => {
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/v1/organizer/events/${id}/lifecycle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error(await readProblem(res));
+      setToast(
+        action === "delete"
+          ? "イベントを削除しました"
+          : action === "close"
+            ? "一時停止しました。告知ページは残ります。"
+            : "公開を再開しました。",
+      );
+      setDeletingId(null);
+      await load();
+    } catch (cause) {
+      setToast(cause instanceof Error ? cause.message : "操作に失敗しました");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resetFilter = () => {
+    setStatusFilter("ALL");
+    setExcludePast(false);
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  const openFilterDialog = () => {
+    setDraftFilter({ status: statusFilter, from: dateFrom, to: dateTo });
+    setFilterOpen(true);
+  };
+
+  const applyFilterDialog = () => {
+    setStatusFilter(draftFilter.status);
+    setDateFrom(draftFilter.from);
+    setDateTo(draftFilter.to);
+    setFilterOpen(false);
+  };
+
+  // ボタンに添える件数。外に出している「過去のイベントを除く」は数えない。
+  const filterCount = activeFilterCount({ ...DEFAULT_ORGANIZER_FILTER, status: statusFilter, from: dateFrom, to: dateTo });
+
+  // 並べ替えはアイコンだけなので、押すと何が起きるかを読み上げとツールチップで補う。
+  // いまの並び（昇順か降順か）はアイコンの向きで示す。
+  const sortLabel = sortOrder === "asc" ? "新しい順に並べ替え" : "古い順に並べ替え";
+
+  return (
+    <div className="stack has-action-dock">
+      <PageHeader title="主催イベント一覧" />
+
+      <QuotaStatusBanner
+        quota={quotaState.quota}
+        loading={quotaState.isLoading}
+        onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/organizer/events" })}
+        onGranted={() => void quotaState.refreshQuota()}
+      />
+      <VerifyPaymentBanner
+        onVerified={() => {
+          void quotaState.refreshQuota();
+          void load();
+        }}
+      />
+
+      {error && (
+        <Alert tone="warning">
+          {error}{" "}
+          <Link href={SITE.nav.organizerLogin.href} className="text-link">
+            {SITE.nav.organizerLogin.label}
+          </Link>
+        </Alert>
+      )}
+
+      <Section className="section--tight">
+        <SectionHead title="一覧" />
+
+        {/* 溜まったイベントから目当てを探すための 3 つ。状態・過去・開催日で絞る。
+            640px 未満では状態と開催日をモーダルへ畳み、一覧の場所を空ける。
+            過去の除外だけは外に残し、並び順（開催日の昇順降順）も 1 押しで切り替える。 */}
+        <div className="list-filters">
+          <button
+            type="button"
+            className="btn btn--outline btn--sm list-filters__open"
+            aria-haspopup="dialog"
+            aria-expanded={filterOpen}
+            onClick={openFilterDialog}
+          >
+            絞り込む{filterCount > 0 ? `（${filterCount}）` : ""}
+          </button>
+          <label className="list-filters__field" htmlFor="organizer-filter-status">
+            <span className="list-filters__label">状態</span>
+            <select
+              id="organizer-filter-status"
+              className="select"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.currentTarget.value as OrganizerStatusFilter)}
+            >
+              <option value="ALL">すべて</option>
+              <option value="PUBLISHED">公開中のみ</option>
+              <option value="CLOSED">受付停止のみ</option>
+            </select>
+          </label>
+          <label className="list-filters__field" htmlFor="organizer-filter-from">
+            <span className="list-filters__label">開始日</span>
+            <input
+              id="organizer-filter-from"
+              type="date"
+              className="input"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(event) => setDateFrom(event.currentTarget.value)}
+            />
+          </label>
+          <label className="list-filters__field" htmlFor="organizer-filter-to">
+            <span className="list-filters__label">終了日</span>
+            <input
+              id="organizer-filter-to"
+              type="date"
+              className="input"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(event) => setDateTo(event.currentTarget.value)}
+            />
+          </label>
+          {/* 開催日の昇順降順。スマホでは「絞り込む」の隣に並び、640px 以上では
+              日付の入力の後ろに付く。DOM の順のまま置けるので、読み上げと焦点の順も変わらない。 */}
+          <button
+            type="button"
+            className="btn btn--outline btn--sm list-filters__sort"
+            aria-label={sortLabel}
+            title={sortLabel}
+            onClick={() => setSortOrder((current) => (current === "asc" ? "desc" : "asc"))}
+          >
+            {sortOrder === "asc" ? (
+              <ArrowUpNarrowWide className="icon" aria-hidden="true" />
+            ) : (
+              <ArrowDownNarrowWide className="icon" aria-hidden="true" />
+            )}
+          </button>
+          <label className="check list-filters__check">
+            <input
+              type="checkbox"
+              checked={excludePast}
+              onChange={(event) => setExcludePast(event.currentTarget.checked)}
+            />
+            <span>過去のイベントを除く</span>
+          </label>
+        </div>
+
+        {!error && events.length === 0 && (
+          <EmptyState as="div">
+            <p className="empty__title">
+              {draftCount > 0
+                ? `公開中・受付停止のイベントはありません（下書き ${draftCount}件）。`
+                : "まだ主催イベントがありません。"}
+            </p>
+            {draftCount > 0 && (
+              <p className="empty__body">
+                内容を確かめてから公開できます。{" "}
+                <Link href="/organizer/events/drafts" className="text-link">
+                  下書き一覧を開く
+                </Link>
+              </p>
+            )}
+          </EmptyState>
+        )}
+
+        {!error && events.length > 0 && filtered.length === 0 && (
+          <EmptyState as="div">
+            <p className="empty__title">条件に合うイベントはありません。</p>
+            <p className="empty__body">
+              条件を広げると見つかります。{" "}
+              <button type="button" className="btn btn--ghost btn--sm" onClick={resetFilter}>
+                条件を戻す
+              </button>
+            </p>
+          </EmptyState>
+        )}
+
+        <div className="event-card-grid">
+          {visible.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              busy={busyId === event.id}
+              onClone={() => void cloneEvent(event.id)}
+              onStop={() => void runLifecycle(event.id, "close")}
+              onResume={() => void runLifecycle(event.id, "reopen")}
+              onDelete={() => setDeletingId(event.id)}
+              onInvite={() => setInviteTarget(event)}
+            />
+          ))}
+        </div>
+
+        {filtered.length > 0 && (
+          <div className="pager">
+            <p className="pager__status">{pageRangeLabel(filtered.length, currentPage)}</p>
+            {totalPages > 1 && (
+              <div className="pager__buttons">
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(currentPage - 1)}
+                >
+                  前へ
+                </button>
+                <span className="pager__count">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(currentPage + 1)}
+                >
+                  次へ
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* スマホの絞り込み。640px 以上ではインラインの入力が出るので、このモーダルは開かない
+          （開いたまま幅を広げたときだけ二重に見えるが、条件は同じなので実害は無い）。 */}
+      {filterOpen && (
+        <Dialog
+          title="絞り込む"
+          titleId="organizer-filter-title"
+          onClose={() => setFilterOpen(false)}
+          closeLabel="絞り込みを閉じる"
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={applyFilterDialog}
+              >
+                この条件で絞り込む
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                onClick={() => setDraftFilter({ status: "ALL", from: "", to: "" })}
+              >
+                条件を戻す
+              </button>
+            </>
+          }
+        >
+          <div className="filter-dialog">
+            <Field label="状態" htmlFor="organizer-filter-status-modal">
+              <select
+                id="organizer-filter-status-modal"
+                className="select"
+                value={draftFilter.status}
+                onChange={(event) => {
+                  // 値を先に取り出す。更新関数は描画のときに走るので、
+                  // その時点の `currentTarget` は null になっている。
+                  const status = event.currentTarget.value as OrganizerStatusFilter;
+                  setDraftFilter((current) => ({ ...current, status }));
+                }}
+              >
+                <option value="ALL">すべて</option>
+                <option value="PUBLISHED">公開中のみ</option>
+                <option value="CLOSED">受付停止のみ</option>
+              </select>
+            </Field>
+            <Field label="開始日" htmlFor="organizer-filter-from-modal">
+              <input
+                id="organizer-filter-from-modal"
+                type="date"
+                className="input"
+                value={draftFilter.from}
+                max={draftFilter.to || undefined}
+                onChange={(event) => {
+                  const from = event.currentTarget.value;
+                  setDraftFilter((current) => ({ ...current, from }));
+                }}
+              />
+            </Field>
+            <Field label="終了日" htmlFor="organizer-filter-to-modal">
+              <input
+                id="organizer-filter-to-modal"
+                type="date"
+                className="input"
+                value={draftFilter.to}
+                min={draftFilter.from || undefined}
+                onChange={(event) => {
+                  const to = event.currentTarget.value;
+                  setDraftFilter((current) => ({ ...current, to }));
+                }}
+              />
+            </Field>
+            <p className="help">開催日が範囲内のイベントだけを表示します。</p>
+          </div>
+        </Dialog>
+      )}
+
+      {/* 招待は札ごとではなく一覧に 1 枚だけ置く。中身は開いた札の ID で作り直す。 */}
+      {inviteTarget && (
+        <InviteCoHostModal
+          eventId={inviteTarget.id}
+          eventTitle={inviteTarget.title}
+          canInvite={inviteTarget.role === "OWNER" && viewer !== null && viewer.userId !== null}
+          registerRequired={inviteTarget.role === "OWNER" && (viewer === null || viewer.userId === null)}
+          onClose={() => setInviteTarget(null)}
+        />
+      )}
+
+      {/* 一覧の主要な操作は、どこまでスクロールしても押せるよう画面下に固定する。
+          上に置くと、件数が増えたときに最初の 1 画面を操作だけが占める。 */}
+      <div className="action-dock">
+        <div className="action-dock__inner">
+          <Link href="/organizer/events/drafts" className="btn btn--outline btn--sm">
+            下書き一覧{draftCount > 0 ? `（${draftCount}）` : ""}
+          </Link>
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+            新規作成
+          </Link>
+        </div>
+      </div>
+
+      <PricingModal
+        isOpen={quotaState.isPricingModalOpen}
+        onClose={quotaState.closePricingModal}
+        onSelectOneTime={quotaState.startOneTimeCheckout}
+        onSelectSubscription={quotaState.startSubscriptionCheckout}
+        quota={quotaState.quota}
+        context="list"
+        onUseTicket={() => void retryClone()}
+        onGranted={() => setToast("0円チケットを受け取りました。もう一度「コピー作成」を押してください。")}
+      />
+      {deletingId && (
+        <EventLifecycleModal
+          title={events.find((event) => event.id === deletingId)?.title ?? "イベント"}
+          status={events.find((event) => event.id === deletingId)?.status ?? "PUBLISHED"}
+          busy={busyId === deletingId}
+          onClose={() => setDeletingId(null)}
+          onDelete={() => void runLifecycle(deletingId, "delete")}
+        />
+      )}
+      {toast && (
+        <Toast
+          message={toast}
+          tone={toast.includes("失敗") ? "error" : "success"}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* マイページの操作ガイドの 6・7 枚目はこの画面で出す。自動では開かず、
+          前の画面が `sessionStorage` に残した続きがあるときだけ続きから出す。 */}
+      <MyPageGuideTour ready={!error} autoStart={false} />
+    </div>
+  );
+}

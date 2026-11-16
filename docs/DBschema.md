@@ -249,6 +249,8 @@ model User {
   accountChangeLogs   AccountChangeLog[]
   emailChangeRequests EmailChangeRequest[]
   @@index([deletedAt])
+  @@index([referredByUserId])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -367,6 +369,7 @@ model BillingTransaction {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
   @@index([stripeCheckoutSessionId])
+  @@index([createdAt])
   @@map("billing_transactions")
 }
 
@@ -502,6 +505,7 @@ model Event {
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
   @@index([referrerEventId])
+  @@index([createdAt])
   @@map("events")
 }
 
@@ -580,6 +584,7 @@ model EventOrganizer {
   revenueShare EventRevenueShare?
   @@unique([eventId, userId])
   @@index([userId])
+  @@index([userId, createdAt])
   @@map("event_organizers")
 }
 
@@ -655,6 +660,7 @@ model Participant {
   @@index([eventId, status])
   @@index([eventId, deletedAt])
   @@index([userId, updatedAt])
+  @@index([userId, status, deletedAt])
   @@map("participants")
 }
 
@@ -1719,6 +1725,87 @@ ALTER TABLE "reminder_deliveries" ADD CONSTRAINT "reminder_deliveries_event_id_f
 
 - 同じ宛先へ二重に送らないための UNIQUE は無い。重複の抑制は実装側で持つ。
 - `recipient_email` は `users` を参照しない。退会やアドレス変更で、過去に送った記録が書き換わらないようにするため。
+
+---
+
+### 4.8. パフォーマンス索引（追加マイグレーション）
+
+`prisma/migrations/20261116120000_perf_indexes/migration.sql` で索引を 8 本足す。列・制約・既存の索引には触らない（追加のみ）。
+
+#### 追加する索引
+
+| # | テーブル | 列 | 効かせる問い合わせ |
+| :---- | :---- | :---- | :---- |
+| 1 | `users` | `referred_by_user_id` | 紹介した人数の数え上げ（`where: { referredByUserId, deletedAt: null }`）。 |
+| 2 | `users` | `created_at` | 管理画面の会員一覧（`orderBy: { createdAt: "desc" }` + `skip` / `take`）。 |
+| 3 | `billing_transactions` | `created_at` | 管理画面の支払い一覧（同じ並び + ページ送り）。 |
+| 4 | `events` | `created_at` | 管理画面のイベント一覧（同じ並び + ページ送り）。 |
+| 5 | `participants` | `user_id`, `status`, `deleted_at` | 参加者の履歴の見出し（本人の出席・欠席・参加要望を、名簿に残っている行だけで数える）。 |
+| 6 | `auth_attempts` | `created_at` | 1 日より古い行の掃除（`where: { createdAt: { lt: cutoff } }`）。 |
+| 7 | `event_organizers` | `user_id`, `created_at` | 主催イベント一覧（本人のぶんを `orderBy: { createdAt: "desc" }` で引く）。 |
+| 8 | `flyer_assets` | `user_id`, `is_deleted`, `created_at` | チラシ選択の一覧（本人 × 未削除を新しい順に 60 件）。 |
+
+#### なぜこの 8 本か
+
+- 2〜4 と 7・8 は、いずれも「絞り込み + 新しい順 + ページ送り（または `take`）」で、既存の索引は絞り込み列までしか持たない。`users.created_at`、`billing_transactions.created_at`、`events.created_at`、`event_organizers(user_id, created_at)`、`flyer_assets(user_id, is_deleted, created_at)` が無いため、Postgres は候補を全部読んでから並べ替える（`Sort` が付く）。
+- 1 は `users` に `referred_by_user_id` の索引が無く、紹介の数え上げが会員数に比例して全表を読む。
+- 6 は `auth_attempts(bucket, created_at)` しか無く、`created_at` だけの条件（掃除）には前方一致で使えない。`CREATE INDEX` の対象は「1 日より古い行」だけで、この索引が無いと掃除のたびに全表を読む。
+- 5 は「無いから」ではなく「被覆していないから」足す。`participants` は既に `(event_id, status)`、`(event_id, deleted_at)`、`(event_id, status, waitlisted_at)`、`(user_id, updated_at)`、`(schedule_id)`、`(price_plan_id)` を持つが、参加者の履歴の数え上げは `event_id` で絞らないので催し側の 3 本は使えず、`(user_id, updated_at)` は先頭の `user_id` までしか効かない。`status` と `deleted_at` を同じ索引に載せると、数え上げが索引だけで閉じる。一覧の並び（`updated_at`）は既存の `(user_id, updated_at)` が受け持つので、こちらに `updated_at` は足さない（並びのためだけに 4 列目を足すと索引が太る）。
+- 前方一致で使える索引は残す。`event_organizers(user_id)` は `(user_id, created_at)` の先頭で代替できるが、`participants(event_id, status)` と `(event_id, status, waitlisted_at)` を並べて持っている既存の方針に合わせ、消さずに併存させる（消すと書き込みは軽くなるが、今回の目的は読みの改善で、削除は別の判断にする）。
+
+#### 適用（`migrate deploy` で当たる）
+
+通常の `CREATE INDEX` で作る。1 つのマイグレーションの中で 8 本を作るので、途中で失敗すれば全部巻き戻る。
+
+以前は `CREATE INDEX CONCURRENTLY` で張っていた。書き込みを止めない代わりにトランザクションの中で実行できないため、Prisma Migrate がマイグレーションを包むトランザクションと衝突し、`npx prisma migrate deploy` では
+`CREATE INDEX CONCURRENTLY cannot run inside a transaction block` で止まっていた。CI の `db` ジョブ、`docker compose`、新しい開発環境、Neon の作り直しは、どれも `migrate deploy` で履歴を再生するので、空の DB からスキーマを作れなくなっていた。
+
+`CREATE INDEX` はビルドのあいだそのテーブルの書き込みを止めるが、この規模では 1 本あたり数十ミリ秒で済む。他のマイグレーションと同じく、次の 1 本で当たる。
+
+```powershell
+$env:DATABASE_URL = "postgresql://...direct..."
+npx prisma migrate deploy
+npx prisma migrate status
+```
+
+- 索引は `IF NOT EXISTS` を付けているので、手で先に張った索引があっても衝突しない。
+- 行数が大きく、書き込みを止めたくない環境では、当てる直前にアプリの書き込みを止めるか、手作業で `CONCURRENTLY` を流してから `prisma migrate resolve --applied 20261116120000_perf_indexes` で履歴だけ記録する（記録済みなら `migrate deploy` はこのファイルを流さない）。
+- 既存の索引・制約は変えない。
+
+#### `auth_attempts` の掃除をリクエストから外した
+
+索引 6 は掃除のために足すが、掃除そのものも `src/modules/auth/lib/rate-limit.ts` で書き込みの共通経路から外した。以前は試行を 1 行書くたびに「そのバケットの件数」を数え、条件を満たすと 1 日より古い行を全表から消していた。RSVP もこの関数を通るため、出欠の送信のたびに索引の効かない `DELETE` が走り得た。
+
+いまは次のとおり。
+
+- 掃除を試すのは試行の記録の 1% だけ（`CLEANUP_PROBABILITY`）。
+- 同じプロセスは 1 時間に 1 回までしか試さない（`CLEANUP_MIN_INTERVAL_MS`）。
+- `deleteMany` は応答を待たない。失敗しても警告を残すだけで、送信はそのまま成功する。
+- 窓・上限・`Retry-After` の数え方は変えない（掃除の有無で判定は変わらない）。
+
+そのため古い行は、最大で 1 日ぶん掃除が遅れることがある。試行回数は窓（分〜時間）で見るので、遅れは判定に影響しない。
+
+#### SQL
+
+```sql
+-- 適用は `npx prisma migrate deploy`（上の「適用」を参照）。
+CREATE INDEX IF NOT EXISTS "users_referred_by_user_id_idx"
+  ON "users"("referred_by_user_id");
+CREATE INDEX IF NOT EXISTS "users_created_at_idx"
+  ON "users"("created_at");
+CREATE INDEX IF NOT EXISTS "billing_transactions_created_at_idx"
+  ON "billing_transactions"("created_at");
+CREATE INDEX IF NOT EXISTS "events_created_at_idx"
+  ON "events"("created_at");
+CREATE INDEX IF NOT EXISTS "participants_user_id_status_deleted_at_idx"
+  ON "participants"("user_id", "status", "deleted_at");
+CREATE INDEX IF NOT EXISTS "event_organizers_user_id_created_at_idx"
+  ON "event_organizers"("user_id", "created_at");
+CREATE INDEX IF NOT EXISTS "flyer_assets_user_id_is_deleted_created_at_idx"
+  ON "flyer_assets"("user_id", "is_deleted", "created_at");
+CREATE INDEX IF NOT EXISTS "auth_attempts_created_at_idx"
+  ON "auth_attempts"("created_at");
+```
 
 ---
 

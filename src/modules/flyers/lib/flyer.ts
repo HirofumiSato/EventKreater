@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { formatFullDateJa } from "@/lib/format";
 import type { GenerateFlyerInput } from "@/lib/schemas";
@@ -98,6 +99,99 @@ export async function removeFlyerImage(id: string): Promise<void> {
   await Promise.all(
     STORED_EXTENSIONS.map((extension) => rm(imagePath(id, extension), { force: true })),
   );
+}
+
+/**
+ * 縮小配信で受け付ける幅。画面の枠に合わせて 4 段だけにする。
+ *
+ * - 240  … 一覧の札（72×96px の枠。いまはここだけが要求する）
+ * - 480  … 名簿の 1 枚と、画面幅いっぱいの下見
+ * - 780  … 告知ページを幅 390px の 2 倍で見る大きさ
+ * - 1080 … 原寸。A4 縦の紙面をそのまま配る
+ *
+ * 一覧に無い値は縮小せず原寸を返す。任意の幅を受け付けると、1 枚の紙面から
+ * 際限なく変換を作れてしまう（控えも効かない）。
+ */
+export const FLYER_IMAGE_WIDTHS = [240, 480, 780, 1080] as const;
+
+export type FlyerImageWidth = (typeof FLYER_IMAGE_WIDTHS)[number];
+
+/** `?w=` を読む。一覧に無い値・数でない値は null（原寸で配る）。 */
+export function parseFlyerImageWidth(raw: string | null | undefined): FlyerImageWidth | null {
+  if (!raw) return null;
+  const width = Number(raw);
+  if (!Number.isInteger(width)) return null;
+  return (FLYER_IMAGE_WIDTHS as readonly number[]).includes(width)
+    ? (width as FlyerImageWidth)
+    : null;
+}
+
+/**
+ * 縮小版のプロセス内の控え。ブラウザと CDN が `Cache-Control: immutable` で持つので、
+ * ここは「同じ一覧を開き直した」「複数の参加者が同じ告知を見た」ときの短い助けでよい。
+ * 枚数とバイト数の両方に上限を置き、超えたら古い順に捨てる（メモリを食い尽くさない）。
+ */
+const RESIZE_CACHE_MAX_ENTRIES = 48;
+const RESIZE_CACHE_MAX_BYTES = 24 * 1024 * 1024;
+const resizedImages = new Map<string, Buffer>();
+let resizedImageBytes = 0;
+
+function rememberResized(key: string, bytes: Buffer): void {
+  // 1 枚で控えを埋めない。大きな原寸は控えずに捨てる。
+  if (bytes.byteLength * 4 > RESIZE_CACHE_MAX_BYTES) return;
+  const previous = resizedImages.get(key);
+  if (previous) {
+    resizedImages.delete(key);
+    resizedImageBytes -= previous.byteLength;
+  }
+  resizedImages.set(key, bytes);
+  resizedImageBytes += bytes.byteLength;
+  while (
+    resizedImages.size > RESIZE_CACHE_MAX_ENTRIES ||
+    resizedImageBytes > RESIZE_CACHE_MAX_BYTES
+  ) {
+    const oldest = resizedImages.keys().next();
+    if (oldest.done) break;
+    const evicted = resizedImages.get(oldest.value);
+    resizedImages.delete(oldest.value);
+    if (evicted) resizedImageBytes -= evicted.byteLength;
+  }
+}
+
+/** 元の幅が指定より大きいときだけ縮める。拡大はしない。形式は元のまま保つ。 */
+async function shrinkFlyerImage(bytes: Buffer, width: number): Promise<Buffer> {
+  try {
+    const image = sharp(bytes, { failOn: "error" });
+    const meta = await image.metadata();
+    if (!meta.width || meta.width <= width) return bytes;
+    const resized = image.resize({ width, withoutEnlargement: true });
+    const kind = detectImageKind(bytes) ?? "jpeg";
+    if (kind === "png") return await resized.png().toBuffer();
+    if (kind === "webp") return await resized.webp({ quality: 82 }).toBuffer();
+    return await resized.jpeg({ quality: 82 }).toBuffer();
+  } catch {
+    // 縮められない画像は原寸で配る。表示できないよりは大きい方がよい。
+    return bytes;
+  }
+}
+
+/**
+ * 表示用に縮めたバイト列。元が指定の幅以下なら、そのまま返す（拡大しない）。
+ * 縮めたときだけ同じ形式で作り直すので、先頭バイトからの形式判定は原寸と同じ結果になる。
+ */
+export async function readFlyerImageAtWidth(id: string, width: FlyerImageWidth): Promise<Buffer> {
+  const key = `${id}:${width}`;
+  const cached = resizedImages.get(key);
+  if (cached) {
+    // 使ったものを新しい扱いにする（Map の末尾へ入れ直す）。
+    resizedImages.delete(key);
+    resizedImages.set(key, cached);
+    return cached;
+  }
+  const bytes = await readFlyerImage(id);
+  const resized = await shrinkFlyerImage(bytes, width);
+  if (resized !== bytes) rememberResized(key, resized);
+  return resized;
 }
 
 interface FlyerGenerateResponse {

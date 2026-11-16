@@ -121,7 +121,11 @@ export function parseLegacyEventTime(source: string): { startTime: string; endTi
 export interface FlyerShape {
   id: string;
   imageUrl: string;
-  lqipDataUrl: string | null;
+  /**
+   * 低解像度のプレビュー。作る経路が無く、DB でも常に NULL。
+   * 応答の形は変えないので、キーは残して null を返す（DB からは引かない）。
+   */
+  lqipDataUrl?: string | null;
   aspectRatio: string;
   title?: string | null;
   eventDate?: Date | null;
@@ -219,7 +223,7 @@ export function serializeFlyer(
   return {
     id: flyer.id,
     imageUrl: flyer.imageUrl,
-    lqipDataUrl: flyer.lqipDataUrl,
+    lqipDataUrl: flyer.lqipDataUrl ?? null,
     aspectRatio: flyer.aspectRatio,
     title: flyer.title ?? null,
     eventDate: flyer.eventDate ? formatEventDate(flyer.eventDate) : null,
@@ -552,8 +556,11 @@ export function serializeOrganizerListItem(
   ownerName: string,
   ownerUserId: string | null = null,
 ) {
+  // 主催一覧は催し名・日程・人数・画像だけを見る。概要（許可タグ入りの HTML）は
+  // 一覧では使わないので応答から落とし、ペイロードを催しの数だけ膨らませない。
+  const { summary: _summary, ...listing } = serializeEvent(event);
   return {
-    ...serializeEvent(event),
+    ...listing,
     role,
     // 公開ページの応答には出さない。マイページの要約がチケットごとの件数を出すためだけに持つ。
     quotaSource: event.quotaSource ?? null,

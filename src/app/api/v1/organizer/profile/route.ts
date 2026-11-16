@@ -4,6 +4,7 @@ import { toErrorResponse } from "@/lib/http";
 import { OrganizerProfileSchema } from "@/lib/schemas";
 import { requireOrganizerAccount } from "@/modules/auth/lib/guards";
 import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { revalidatePublicOrganizer } from "@/modules/organizers/lib/public-organizer";
 import {
   assertOrganizerMember,
   readOrganizerAvatarUrl,
@@ -57,6 +58,9 @@ export async function PUT(req: NextRequest) {
     await assertOrganizerMember(userId);
     const payload = OrganizerProfileSchema.parse(await req.json());
     await upsertOrganizerProfile(userId, payload);
+    // 公開ページのプロフィールは毎回読むが、催し一覧のキャッシュにも名前が入っている。
+    // 保存の直後から新しい名前で返す。
+    revalidatePublicOrganizer(userId);
     return NextResponse.json(await loadResponse(userId));
   } catch (error) {
     return toErrorResponse(error, "/api/v1/organizer/profile");

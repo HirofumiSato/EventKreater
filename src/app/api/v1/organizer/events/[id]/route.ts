@@ -16,6 +16,8 @@ import {
   rememberVenueQuietly,
   writeVenueOwnerCookie,
 } from "@/modules/events/lib/venue-suggestions";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
+import { revalidateOrganizerPagesOfEvent } from "@/modules/organizers/lib/public-organizer";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 export const runtime = "nodejs";
@@ -145,6 +147,10 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
         });
 
     const response = NextResponse.json({ event: serializeEvent(event) });
+    // 主催者の保存は、次の表示で必ず反映する（閲覧はキャッシュ、書き込みは即時）。
+    revalidatePublicEvent(event.id);
+    // 題・日程・会場・チラシは、主催者の公開ページの一覧にも出る。
+    await revalidateOrganizerPagesOfEvent(event.id);
     // 編集画面の保存でも、変えた会場を候補として覚える。
     const venueCookie = await rememberVenueQuietly(req, input);
     writeVenueOwnerCookie(response, req, venueCookie);
@@ -162,6 +168,9 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       prisma.eventLock.deleteMany({ where: { eventId: existing.id } }),
       prisma.event.update({ where: { id: existing.id }, data: { isDeleted: true } }),
     ]);
+    // 削除したら告知ページは 404 になる。古い本文を返さないよう捨てる。
+    revalidatePublicEvent(existing.id);
+    await revalidateOrganizerPagesOfEvent(existing.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}`);

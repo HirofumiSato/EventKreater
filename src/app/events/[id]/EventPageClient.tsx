@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { PosterHero } from "@/modules/events/components/PosterHero";
 import { EventMetaCard } from "@/modules/events/components/EventMetaCard";
@@ -8,47 +8,25 @@ import { DynamicRsvpBox } from "@/modules/attendance/components/DynamicRsvpBox";
 import { StickyRsvpBar } from "@/modules/attendance/components/StickyRsvpBar";
 import { OrganizerInviteCard } from "@/modules/events/components/OrganizerInviteCard";
 import { showsOrganizerInvite } from "@/modules/events/lib/organizer-invite";
-import { readProblem } from "@/lib/problem";
 import type { PublicEvent } from "@/modules/events/types";
-import { Alert, Loading } from "@/components/ui";
 
-export default function PublicEventPage({ params }: { params: { id: string } }) {
-  const [event, setEvent] = useState<PublicEvent | null>(null);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * 告知ページの中身。
+ *
+ * データはサーバーが引いて `initialEvent` で渡す（本文は HTML に載る）。
+ * この部品が持つのは、押した後だけ変わる状態（出欠の層・答えたか・人数）だけ。
+ * 読み込み直しはしない。出欠の送信結果は `DynamicRsvpBox` が受け取り、
+ * 人数だけを `onCountChange` でここへ返す。
+ */
+export default function PublicEventPage({ initialEvent }: { initialEvent: PublicEvent }) {
+  const [event, setEvent] = useState<PublicEvent>(initialEvent);
   /** 出欠の層を開いているか。面のボタンと画面下の帯が、同じ 1 枚を開く。 */
   const [rsvpOpen, setRsvpOpen] = useState(false);
   /**
-   * 答えたかどうか。`initialRsvp` は読み込み時の写しなので、答えた直後に帯の文言を
+   * 答えたかどうか。`myRsvp` は読み込み時の写しなので、答えた直後に帯の文言を
    * 切り替えるには、こちらで上書きする（null の間は読み込み時の値に従う）。
    */
   const [answered, setAnswered] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetch(`/api/v1/public/events/${params.id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(await readProblem(res));
-        return (await res.json()) as PublicEvent;
-      })
-      .then((data) => {
-        if (active) setEvent(data);
-      })
-      .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : "読み込みに失敗しました");
-      });
-    return () => {
-      active = false;
-    };
-  }, [params.id]);
-
-  if (error) return <Alert tone="error">{error}</Alert>;
-  if (!event) {
-    return (
-      <Loading>
-        イベントを読み込んでいます
-      </Loading>
-    );
-  }
 
   const full = event.capacity !== null && event.attendingCount >= event.capacity;
   const hasAnswered = answered ?? Boolean(event.myRsvp);
@@ -86,9 +64,9 @@ export default function PublicEventPage({ params }: { params: { id: string } }) 
           onOpenChange={setRsvpOpen}
           onAnsweredChange={setAnswered}
           barEntry
-          onCountChange={(count) => setEvent((current) => (current ? { ...current, attendingCount: count } : current))}
+          onCountChange={(count) => setEvent((current) => ({ ...current, attendingCount: count }))}
           onWaitlistCountChange={(count) =>
-            setEvent((current) => (current ? { ...current, waitlistCount: count } : current))
+            setEvent((current) => ({ ...current, waitlistCount: count }))
           }
         />
         <OrganizerInviteCard eventId={event.id} viewer={event.viewer} />

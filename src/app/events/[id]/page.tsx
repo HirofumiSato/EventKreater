@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { sha256 } from "@/lib/crypto";
+import { readPageIdentity } from "@/lib/server-session";
 import { formatDateWithWeekdayJa } from "@/lib/format";
-import { formatEventDate } from "@/lib/serializers";
 import { PublicThemeShell } from "@/components/common/PublicThemeShell";
+import { Alert } from "@/components/ui";
+import { rsvpCookieName } from "@/modules/auth/lib/cookies";
+import { loadPublicEvent, type PublicEventViewerInput } from "@/modules/events/lib/public-event";
 import PublicEventPage from "./EventPageClient";
 
 /**
  * 告知URLは主催者が共有した人だけに届く前提なので、検索エンジンには載せない。
  * SNS のプレビュー用に、イベント名・開催日・場所・チラシ画像を OGP として出す。
- * 画面本体は出欠の再訪照会を持つクライアントコンポーネントに分ける。
+ *
+ * 誰が見ても同じ部分（本文・題名・チラシ）は `loadPublicEvent` の中でキャッシュし、
+ * 人数と自分の回答だけをリクエストごとに引く。本文は HTML に載るので、
+ * ハイドレーションを待たずに読める。
  */
 export const dynamic = "force-dynamic";
 
@@ -18,29 +25,30 @@ interface PageProps {
 }
 
 /**
- * metadata と本文で同じ問い合わせを繰り返さないよう、リクエスト内で 1 回にまとめる。
- * `themeId` は本体が `/api/v1/public/events/[id]` から読む値と同じ `Event.themeId` なので、
- * 器のテーマと中の見た目は食い違わない。
+ * 閲覧者の入力を Cookie から読む。**キャッシュの外**でだけ呼ぶ。
+ *
+ * ここで読んだ値を `loadPublicEvent` へ渡し、キャッシュ側はイベント ID しか
+ * 受け取らない。こうしておくと、共有キャッシュに誰かの回答が混ざらない。
+ * 会員とゲスト幹事の見方は `readPageIdentity` に任せ、ここでは出欠の端末だけを足す。
  */
-const loadEvent = cache(async (id: string) => {
-  return prisma.event.findFirst({
-    where: {
-      id,
-      isDeleted: false,
-      status: { in: ["PUBLISHED", "CLOSED"] },
-    },
-    select: {
-      title: true,
-      location: true,
-      sortDate: true,
-      themeId: true,
-      flyerAsset: { select: { imageUrl: true, isDeleted: true } },
-    },
-  });
-});
+async function readViewer(eventId: string): Promise<PublicEventViewerInput> {
+  const identity = await readPageIdentity();
+  const rsvpToken = cookies().get(rsvpCookieName(eventId))?.value ?? null;
+  return {
+    tokenHash: rsvpToken ? sha256(rsvpToken) : null,
+    userId: identity.userId,
+    guestTokenHashes: identity.guestTokenHashes,
+  };
+}
+
+/**
+ * metadata と本文で同じ問い合わせを繰り返さないよう、リクエスト内で 1 回にまとめる。
+ * `themeId` は本文が描く器のテーマと同じ値なので、器と中の見た目は食い違わない。
+ */
+const loadPageEvent = cache(async (id: string) => loadPublicEvent(id, await readViewer(id)));
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const event = await loadEvent(params.id);
+  const event = await loadPageEvent(params.id);
 
   if (!event) {
     return {
@@ -49,9 +57,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const description = `${formatDateWithWeekdayJa(formatEventDate(event.sortDate))} ${event.location}`;
-  const image =
-    event.flyerAsset && !event.flyerAsset.isDeleted ? event.flyerAsset.imageUrl : null;
+  const description = `${formatDateWithWeekdayJa(event.sortDate)} ${event.location}`;
+  const image = event.flyerAsset?.imageUrl ?? null;
 
   return {
     title: event.title,
@@ -73,13 +80,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function Page({ params }: PageProps) {
-  const event = await loadEvent(params.id);
+  const event = await loadPageEvent(params.id);
 
   // 見つからないときも器が `<main>` とフッターを持つ（`siteChrome()` はこのパスで
   // `main: false` を返す）。テーマが無ければ器は要素を増やさない。
+  if (!event) {
+    return (
+      <PublicThemeShell themeId={null} flush>
+        <Alert tone="error">イベントが見つかりません。</Alert>
+      </PublicThemeShell>
+    );
+  }
+
   return (
-    <PublicThemeShell themeId={event?.themeId ?? null} flush>
-      <PublicEventPage params={params} />
+    <PublicThemeShell themeId={event.themeId} flush>
+      <PublicEventPage initialEvent={event} />
     </PublicThemeShell>
   );
 }

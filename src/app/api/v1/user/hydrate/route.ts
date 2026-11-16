@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
 import { requireUserId } from "@/modules/auth/lib/guards";
 import { migrateGuestOrganizers } from "@/modules/auth/lib/hydrate";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
+import { revalidateOrganizerPagesOfEvent } from "@/modules/organizers/lib/public-organizer";
 import { toErrorResponse } from "@/lib/http";
 import { HydrateSchema } from "@/lib/schemas";
 
@@ -51,6 +53,9 @@ export async function POST(req: NextRequest) {  try {
         .map((cookie) => cookie.value),
     );
 
+    // 参加行・幹事行に触れたイベント。出欠の人数と主催者一覧が変わるので、
+    // コミット後に告知ページのキャッシュを捨てる。
+    const touchedEventIds = new Set<string>();
     const result = await prisma.$transaction(async (tx) => {
       let migratedParticipants = 0;
       let migratedOrganizers = 0;
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest) {  try {
           include: { receipt: { select: { id: true } } },
         });
         for (const row of anonymousRows) {
+          touchedEventIds.add(row.eventId);
           const already = await tx.participant.findFirst({
             where: { eventId: row.eventId, userId },
             include: { receipt: { select: { id: true } } },
@@ -108,11 +114,18 @@ export async function POST(req: NextRequest) {  try {
         migratedOrganizers = guest.migratedOrganizers;
         promotedOwners = guest.promotedOwners;
         freeEventCount = guest.freeEventCount;
+        for (const eventId of guest.eventIds) touchedEventIds.add(eventId);
       }
 
       return { success: true, migratedParticipants, migratedOrganizers, promotedOwners, freeEventCount };
     });
 
+    // 移行した人数・幹事は告知ページに出る。コミット後に捨て、次の閲覧から反映する。
+    for (const eventId of touchedEventIds) {
+      revalidatePublicEvent(eventId);
+      // 端末だけの幹事から会員へ移ると、その会員の公開ページに催しが並ぶ。
+      await revalidateOrganizerPagesOfEvent(eventId);
+    }
     return NextResponse.json(result);
   } catch (error) {
     return toErrorResponse(error, "/api/v1/user/hydrate");

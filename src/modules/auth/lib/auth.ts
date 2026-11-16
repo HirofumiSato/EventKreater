@@ -56,21 +56,36 @@ export async function signLocalToken(payload: AuthTokenPayload): Promise<string>
     .sign(getJwtSecret());
 }
 
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function verifyLocalToken(token: string): Promise<AuthTokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getJwtSecret());
     const userId = typeof payload.userId === "string" ? payload.userId : payload.sub;
     const email = typeof payload.email === "string" ? payload.email : "";
-    if (!userId || !payload.jti) return null;
-    // 退会（論理削除）した会員のセッションは、失効前に発行されたものでも通さない。
-    const session = await prisma.authSession.findUnique({
-      where: { id: payload.jti },
-      include: { user: { select: { deletedAt: true } } },
-    });
-    if (!session || session.revokedAt || session.expiresAt <= new Date() || session.userId !== userId) {
+    if (!userId || !payload.jti || !SESSION_ID.test(payload.jti)) return null;
+    // セッションの失効と退会（論理削除）を 1 往復で確かめる。
+    // `include` で user を足すと Prisma は 2 往復になるので、ここだけ 1 文の JOIN で引く。
+    // キャッシュは持たない。退会の直後でも、失効したセッションを 1 秒も通さないため。
+    const rows = await prisma.$queryRaw<
+      { user_id: string; revoked_at: Date | null; expires_at: Date; deleted_at: Date | null }[]
+    >`
+      SELECT s."user_id", s."revoked_at", s."expires_at", u."deleted_at"
+      FROM "auth_sessions" s
+      INNER JOIN "users" u ON u."id" = s."user_id"
+      WHERE s."id" = ${payload.jti}::uuid
+      LIMIT 1
+    `;
+    const session = rows[0];
+    if (
+      !session ||
+      session.revoked_at !== null ||
+      session.expires_at <= new Date() ||
+      session.user_id !== userId ||
+      session.deleted_at !== null
+    ) {
       return null;
     }
-    if (!session.user || session.user.deletedAt) return null;
     return { userId, email };
   } catch {
     return null;

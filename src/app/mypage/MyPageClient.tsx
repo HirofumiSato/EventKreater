@@ -1,0 +1,268 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
+import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
+import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
+import { ReferralPanel } from "@/modules/account/components/ReferralPanel";
+import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
+import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
+import { NotificationList } from "@/modules/notifications/components/NotificationList";
+import { announceNotificationsChanged } from "@/modules/notifications/hooks/useNotifications";
+import type { RsvpNotification } from "@/modules/notifications/types";
+import { SITE } from "@/lib/site";
+import { priceLabel, scheduleLabel } from "@/lib/serializers";
+import type { OrganizerEvent } from "@/modules/events/types";
+import { todayInTokyo } from "@/modules/events/lib/event-filters";
+import { countPublishedBySource } from "@/modules/events/lib/published-counts";
+import { EmptyState, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
+
+/** ホームに出す主催イベントの件数。全件は主催一覧（SCR-ORG-01）が持つ。 */
+const SUMMARY_LIMIT = 3;
+
+export interface MyPageData {
+  profile: {
+    /** 表示名。呼びかけ（「〇〇 さん」）にだけ使う。 */
+    name: string;
+    isOrganizer: boolean;
+    /** 端末だけの出欠を会員へ引き継ぐ必要があるか。 */
+    needsHydrate: boolean;
+  };
+  /** 下書きを除いた主催イベント。並びは主催一覧と同じ（作った新しい順）。 */
+  events: OrganizerEvent[];
+  /** 主催者だけが持つ公開プロフィールの状態。参加者だけの会員は null。 */
+  ownProfile: { isPublished: boolean; homePath: string } | null;
+  /** 新しい順に 5 件。画面は 4 件までを出し、続きは通知一覧が受ける。 */
+  notifications: RsvpNotification[];
+  unreadCount: number;
+}
+
+/**
+ * 主催者（幹事）のマイページ（SCR-PUB-03）。
+ *
+ * 会員・主催イベント・公開プロフィール・新着はサーバーで 1 度に読み、ここへ渡す。
+ * この画面は既読の送信・操作ガイド・紹介の取得だけを持つ（初回の取り直しはしない）。
+ * 参加履歴はここへ混ぜず、参加者ホーム（/participant）と参加履歴（/participant/history）に分ける。
+ */
+export function MyPageScreen({ initial }: { initial: MyPageData }) {
+  const quotaState = useEventQuota();
+  const { profile, events, ownProfile } = initial;
+  // 新着（参加表明・参加要望・紹介でのチケット付与）。主催者だけが持つ。
+  const [notifications, setNotifications] = useState<RsvpNotification[]>(initial.notifications);
+  const [unreadCount, setUnreadCount] = useState(initial.unreadCount);
+  const [marking, setMarking] = useState(false);
+  // 紹介の取得が終わるまで、ガイドの対象（紹介の紙）は測れない。
+  const [referralReady, setReferralReady] = useState(false);
+  // 右上の「使い方」。値を変えるとガイドが 1 枚目から開く。
+  const [guideStart, setGuideStart] = useState(0);
+
+  // 端末だけの出欠を会員へ引き継ぐ。結果はこの画面に出さないので待たない。
+  useEffect(() => {
+    if (!profile.needsHydrate) return;
+    void fetch("/api/v1/user/hydrate", { method: "POST" }).catch(() => {});
+  }, [profile.needsHydrate]);
+
+  /** 既読の送信。応答の未読数をそのまま反映し、ヘッダーのバッジにも知らせる。 */
+  const markRead = async (ids?: string[]) => {
+    if (marking) return;
+    setMarking(true);
+    const readAt = new Date().toISOString();
+    try {
+      const res = await fetch("/api/v1/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ids && ids.length > 0 ? { ids } : { all: true }),
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as { unreadCount: number };
+      setUnreadCount(body.unreadCount);
+      // 楽観的にはせず、送れた分だけ既読にする（失敗したら未読のまま残す）。
+      const target = ids && ids.length > 0 ? new Set(ids) : null;
+      setNotifications((current) =>
+        current.map((row) =>
+          !target || target.has(row.id) ? { ...row, readAt: row.readAt ?? readAt } : row,
+        ),
+      );
+      announceNotificationsChanged();
+    } catch {
+      // 既読にできなかっただけ。未読のまま残し、次の読み込みで取り直す。
+    } finally {
+      setMarking(false);
+    }
+  };
+
+  /** 行を押したとき。名簿へ移る前に、その 1 件だけ既読にする。 */
+  const openNotification = (notification: RsvpNotification) => {
+    if (notification.readAt !== null) return;
+    void markRead([notification.id]);
+  };
+
+  // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
+  // 月額プラン（上限に数える）とチケット（単発・無料チケット。上限の外）に分ける。
+  // 参加の人数は出さない。直近のイベントの行と名簿が持ち、ここに置くと二重になる。
+  const publishedCounts = countPublishedBySource(events, todayInTokyo());
+
+  return (
+    <div className="stack">
+      <PageHeader
+        title="主催者マイページ"
+        lead={<>{profile.name} さん。イベントは {events.length}件です。</>}
+        actions={
+          // 操作ガイドは主催者にだけ意味がある（参加者には紹介も新着も無い）。
+          // 初回は自動で開き、閉じたあともここから何度でも開き直せる。
+          profile.isOrganizer ? (
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              data-guide-target="mypage-guide"
+              aria-label="操作ガイドを開く"
+              onClick={() => setGuideStart((current) => current + 1)}
+            >
+              使い方
+            </button>
+          ) : undefined
+        }
+      />
+
+      <div className="roster-summary roster-summary--pairs">
+        <div className="roster-summary__item roster-summary__item--plan">
+          <span className="roster-summary__label">プラン公開</span>
+          <span className="roster-summary__value">
+            {publishedCounts.plan}
+            <span>件</span>
+          </span>
+        </div>
+        <div className="roster-summary__item roster-summary__item--ticket">
+          <span className="roster-summary__label">チケット公開</span>
+          <span className="roster-summary__value">
+            {publishedCounts.ticket}
+            <span>件</span>
+          </span>
+        </div>
+      </div>
+
+      <QuotaStatusBanner
+        quota={quotaState.quota}
+        loading={quotaState.isLoading}
+        onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/mypage" })}
+        onGranted={() => void quotaState.refreshQuota()}
+      />
+      <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
+
+      {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線と同じ場所で見せる。
+          ガイドの 2 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
+      <div data-guide-target="mypage-referral">
+        <ReferralPanel onReady={() => setReferralReady(true)} />
+      </div>
+
+      {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。
+          マイページは 4 件までにし、続きは通知一覧（/notifications）が受ける。 */}
+      {profile.isOrganizer && (
+        <NotificationList
+          notifications={notifications}
+          unreadCount={unreadCount}
+          marking={marking}
+          onMarkAll={() => void markRead()}
+          onMarkOne={(notification) => void markRead([notification.id])}
+          onOpen={openNotification}
+          moreHref={SITE.nav.notifications.href}
+        />
+      )}
+
+      <Section>
+        <SectionHead title="直近のイベント" />
+        {events.length === 0 && (
+          <EmptyState>
+            まだ主催イベントはありません。{" "}
+            <Link href={SITE.nav.createEvent.href} className="text-link">
+              {SITE.cta.createEventFirst}
+            </Link>
+          </EmptyState>
+        )}
+        {events.length > 0 && (
+          <Rows>
+            {events.slice(0, SUMMARY_LIMIT).map((event) => (
+              <Row
+                title={<>{event.title}</>}
+                meta={<>{scheduleLabel(event.schedules)} ／ 参加 {event.stats.attendingCount}名
+                    {event.capacity === null ? " ／ 定員なし" : ` / ${event.capacity}名`} ／{" "}
+                    {priceLabel(event.pricePlans)}</>}
+                aside={<><div className="event-card__actions">
+                  <Link
+                    href={`/organizer/events/${event.id}/participants`}
+                    className="btn btn--ghost btn--sm"
+                  >
+                    出欠
+                  </Link>
+                  <Link
+                    href={`/organizer/events/${event.id}/edit`}
+                    className="btn btn--ghost btn--sm"
+                  >
+                    編集
+                  </Link>
+                </div></>}
+                key={event.id}
+              />
+            ))}
+          </Rows>
+        )}
+        {/* 見出しに件数を書かず、一覧を切ったことが行の下で分かるようにする。 */}
+        {events.length > SUMMARY_LIMIT && (
+          <p className="rows__omit">
+            {SUMMARY_LIMIT + 1}件目からは省略しています。
+          </p>
+        )}
+        <div className="panel__actions panel__actions--row">
+          <Link href="/organizer/events" className="btn btn--outline btn--sm">
+            すべて見る
+          </Link>
+          <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
+            {SITE.nav.createEvent.label}
+          </Link>
+        </div>
+      </Section>
+
+      {ownProfile && (
+        <Section>
+          <SectionHead title="公開プロフィール" />
+          <dl className="kv">
+            <div className="kv__row">
+              <dt>状態</dt>
+              <dd>{ownProfile.isPublished ? "公開中" : "非公開"}</dd>
+            </div>
+            <div className="kv__row">
+              <dt>見えている内容</dt>
+              <dd>肩書き、自己紹介、活動エリア、ジャンル、リンク</dd>
+            </div>
+          </dl>
+          {/* 編集と公開ページは、スマホでも 1 段に並べる（`--row`）。
+              縦に積むと紙が伸び、どちらが主か読みにくい。 */}
+          <div className="panel__actions panel__actions--row">
+            <Link href="/organizer/profile" className="btn btn--primary btn--sm">
+              編集する
+            </Link>
+            {/* 公開ページは別の窓で開く。貼り紙に留めたテープの飾り（`btn--peek`）と
+                「別の窓」の印を添え、編集（主ボタン）と役割の違いを見せる。 */}
+            <a
+              href={ownProfile.homePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline btn--sm btn--peek"
+            >
+              公開ページを見る
+              <ExternalLink className="icon" aria-hidden="true" />
+            </a>
+          </div>
+        </Section>
+      )}
+
+      {/* 操作ガイド。ポータルで `document.body` の直下へ描くので、ここでは起動だけを渡す。 */}
+      <MyPageGuideTour
+        ready={referralReady}
+        autoStart={profile.isOrganizer}
+        startSignal={guideStart}
+      />
+    </div>
+  );
+}

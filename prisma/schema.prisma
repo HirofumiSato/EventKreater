@@ -228,6 +228,10 @@ model User {
   grantedTickets          FreeTicket[]             @relation("FreeTicketGrantedBy")
 
   @@index([deletedAt])
+  // 紹介した人数の数え上げ（`referred_by_user_id` で絞る）。
+  @@index([referredByUserId])
+  // 管理画面の会員一覧（作成の新しい順に並べてページ送りする）。
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -376,6 +380,8 @@ model BillingTransaction {
   @@index([userId])
   @@index([stripeCheckoutSessionId])
   @@index([campaignId, userId, paymentType, paymentStatus])
+  // 管理画面の支払い一覧（作成の新しい順に並べてページ送りする）。
+  @@index([createdAt])
   @@map("billing_transactions")
 }
 
@@ -596,6 +602,8 @@ model AuthAttempt {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@index([bucket, createdAt])
+  // 1日より古い行の掃除（`created_at` だけで絞る）。
+  @@index([createdAt])
   @@map("auth_attempts")
 }
 
@@ -634,6 +642,8 @@ model FlyerAsset {
 
   @@index([userId, isDeleted])
   @@index([ownerTokenHash, isDeleted])
+  // チラシ選択の一覧（本人の未削除を新しい順に 60 件まで引く）。
+  @@index([userId, isDeleted, createdAt])
   @@map("flyer_assets")
 }
 
@@ -766,6 +776,8 @@ model Event {
   @@index([status, isDeleted, sortDate])
   @@index([visibility, status, isDeleted, sortDate])
   @@index([referrerEventId])
+  // 管理画面のイベント一覧（作成の新しい順に並べてページ送りする）。
+  @@index([createdAt])
   @@map("events")
 }
 
@@ -876,6 +888,8 @@ model EventOrganizer {
 
   @@unique([eventId, userId])
   @@index([userId])
+  // 主催イベント一覧（本人のぶんを新しい順に引く）。
+  @@index([userId, createdAt])
   @@map("event_organizers")
 }
 
@@ -967,6 +981,8 @@ model Participant {
   @@index([eventId, deletedAt])
   @@index([eventId, status, waitlistedAt])
   @@index([userId, updatedAt])
+  // 参加者の履歴の見出し（本人の出席・欠席・参加要望を名簿に残っている行だけで数える）。並びは `userId, updatedAt` 側が持つ。
+  @@index([userId, status, deletedAt])
   @@index([scheduleId])
   @@index([pricePlanId])
   @@map("participants")

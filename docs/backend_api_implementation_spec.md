@@ -66,7 +66,7 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/participants/[participantId]/restore` | POST | SCR-ORG-06 | 幹事（会員のみ） | 削除済みの参加者を名簿へ戻す。出席は定員を数え直し、埋まっていれば 409 `CAPACITY_REACHED`。`userId` は戻さない（5.4.2） |
 | `/api/v1/organizer/events/[id]/revenue` | GET | SCR-ORG-12 | 幹事（会員のみ） | イベント1件の売上内訳。見込み・集金済み・未集金・平均単価と、プラン別・開催回別の小計、主催者別の按分。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/revenue/allocation` | PUT | SCR-ORG-12 | 主催者（OWNER・会員のみ） | 按分の方式（割合／人数）と公開範囲、主催者ごとの配分を保存。未登録は 403 `REGISTER_REQUIRED` |
-| `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。初期表示は全期間。按分後の `myShare` を含む |
+| `/api/v1/organizer/revenue` | GET | SCR-ORG-11 | 会員必須（ゲスト幹事は 403 `REGISTER_REQUIRED`） | 主催イベント横断の売上。`from` / `to` は開催日（`sort_date`）で絞る。未指定なら直近 365 日を集計し、300 件を上限に新しい催しを残す。按分後の `myShare` を含む |
 | `/api/v1/organizer/events/[id]/invitations` | POST | SCR-ORG-01、SCR-ORG-05 | 主催者（OWNER・会員のみ） | 共同主催・幹事の招待コード発行。主催一覧（SCR-ORG-01）の札と編集画面の幹事パネルから発行する。未登録の幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/organizers` | GET | SCR-ORG-05、SCR-ORG-07 | 幹事（会員/ゲスト） | 幹事の一覧。主催者と共同主催・幹事に分け、閲覧者のロールと管理可否（`canManage`）を返す（5.19） |
 | `/api/v1/organizer/events/[id]/organizers/[organizerId]` | DELETE | SCR-ORG-05、SCR-ORG-07 | 主催者（OWNER・会員のみ） | 共同主催・幹事を外す。主催者は 409 `OWNER_NOT_REMOVABLE`。外れる人が持つ編集ロックも同じトランザクションで解放する（5.20） |
@@ -126,7 +126,7 @@ flowchart TD
 | `/api/v1/flyer-assets` | GET | SCR-ORG-03 | 不要 | この端末・会員が作ったチラシの一覧（削除済みを除き、新しい順に最大 60 件） |
 | `/api/v1/flyer-assets` | POST | SCR-ORG-03 | 不要 | 手元のチラシ画像をそのまま保存する（multipart、quota 非消費） |
 | `/api/v1/flyer-assets/[id]` | DELETE | SCR-ORG-03 | 不要（所有者のみ） | 自分（会員または端末 Cookie）が作ったチラシを論理削除する。他人のものは 404（9.7） |
-| `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存 |
+| `/api/v1/flyer-assets/[id]/image` | GET | SCR-PUB-01 | 不要 | 保存済みチラシの取得。`?download=1` で添付保存、`?w=` で一覧用の縮小版 |
 | `/api/v1/flyer-assets/[id]/pdf` | GET | SCR-ORG-05 / SCR-ORG-16 | 不要 | 公開済みイベントのチラシを A4 PDF で返す。`?eventId=` が公開済みで、そのチラシを掲載しているときだけ。告知ページの QR を右下に入れる |
 | `/api/v1/venues` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要 | 過去に入力した会場の候補（自分の会員分＋この端末分、新しい順に最大 20 件） |
 | `/api/v1/venues/[id]` | DELETE | SCR-ORG-02 / SCR-ORG-05 | 不要 | 会場の候補を削除（自分の候補のみ） |
@@ -960,7 +960,7 @@ export const SubmitRsvpSchema = z.object({
 }
 ```
 
-下書きも含めて全件を返す（絞り込みのクエリは持たない）。参加者を持つのは公開後の催しだけなので、下書きの `stats` はすべて 0 になる。`stats.attendingCount` は出席の人数の合計（`Σ party_size`）、`totalResponses` は回答の件数である。主催一覧（SCR-ORG-01）とマイページは `DRAFT` を除いて表示し、下書きは専用の一覧（SCR-ORG-15）が受け持つ。カレンダー（SCR-ORG-13）は全件を使い、下書きの予定から編集画面へ進む。
+下書きも含めて全件を返す（絞り込みのクエリは持たない）。参加者を持つのは公開後の催しだけなので、下書きの `stats` はすべて 0 になる。各催しの `summary`（概要の HTML）は一覧では使わないので応答に含めない（`serializeOrganizerListItem` が落とす）。`stats` は参加者の行を運ばず、`participant.groupBy` の状態別の件数と `partySize` の合計から組み立てる。`stats.attendingCount` は出席の人数の合計（`Σ party_size`）、`totalResponses` は回答の件数である。主催一覧（SCR-ORG-01）とマイページは `DRAFT` を除いて表示し、下書きは専用の一覧（SCR-ORG-15）が受け持つ。カレンダー（SCR-ORG-13）は全件を使い、下書きの予定から編集画面へ進む。
 
 ---
 
@@ -978,7 +978,7 @@ export const SubmitRsvpSchema = z.object({
 
 ### 5.4.2. DELETE `/api/v1/organizer/events/[id]/participants/[participantId]`（名簿からの論理削除）と復元
 
-**名簿の応答（GET）。** 削除済みも含めて引き、未削除を作成順（`createdAt` 昇順）、削除済みを削除した新しい順（`deletedAt` 降順）に並べて返す。各行は `deletedAt`（ISO 8601 の文字列か `null`）を持ち、`stats` は未削除の行だけで数えて `deletedCount` を足す。`stats.attendingCount` / `declinedCount` / `waitlistedCount` / `totalResponses`、`revenue`、`waitlistPosition` は削除済みを含めない。絞り込みの札「削除済み N」は `stats.deletedCount` を使う。
+**名簿の応答（GET）。** `event` は名簿の見出しが使う `id` / `title` / `capacity` / `schedules` / `pricePlans` だけを返す。割引（`discounts`）は名簿のどの列にも出さないので含めない（行ごとの適用中の割引は `participants[].discounts` が持つ）。削除済みも含めて引き、未削除を作成順（`createdAt` 昇順）、削除済みを削除した新しい順（`deletedAt` 降順）に並べて返す。各行は `deletedAt`（ISO 8601 の文字列か `null`）を持ち、`stats` は未削除の行だけで数えて `deletedCount` を足す。`stats.attendingCount` / `declinedCount` / `waitlistedCount` / `totalResponses`、`revenue`、`waitlistPosition` は削除済みを含めない。絞り込みの札「削除済み N」は `stats.deletedCount` を使う。
 
 **DELETE（論理削除）。** 認可は `assertRegisteredOrganizer`。行は消さず、`deleted_at` に現在時刻を入れ、あわせて `user_id` を `NULL`、`rsvp_token_hash` を新しい乱数へ差し替える。`(event_id, user_id)` の一意制約と端末照合から外すためで、同じ人がもう一度申し込むと新しい行として名簿に戻る。応答は 200 `{ "success": true, "participant": { "id": "...", "deletedAt": "..." } }`。既に削除済みの行をもう一度消したときは 404 にせず、同じ `deletedAt` を 200 で返す（二重押しで失敗させない）。**404:** イベントか参加者が無い。
 
@@ -1118,11 +1118,11 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 
 | 名前 | 既定 | 内容 |
 | :--- | :--- | :--- |
-| `from` | 指定なし | `events.sort_date` の下限（`YYYY-MM-DD`、含む） |
+| `from` | 直近 365 日（`to` を指定したときは指定なし） | `events.sort_date` の下限（`YYYY-MM-DD`、含む） |
 | `to` | 指定なし | `events.sort_date` の上限（`YYYY-MM-DD`、含む） |
 | `status` | 指定なし | `DRAFT` / `PUBLISHED` / `CLOSED` のいずれか |
 
-絞り込みの基準は開催日であり、回答日時や集金の日時ではない。初期表示は全期間なので、画面はどれも送らない。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
+絞り込みの基準は開催日であり、回答日時や集金の日時ではない。`from` を省略して `to` だけを送ったときは、`to` までの全期間になる（下限を勝手に足さない）。それ以外で `from` を省略したときは、古い催しの参加者を毎回すべて読まないよう、直近 365 日を下限にする。実際に集計した期間は `period` にそのまま返るので、画面は既定のときも「直近1年」ではなく `period.from` の日付を出す。日付の形式が違えば 400（`Validation Error`、`fromは YYYY-MM-DD の形式で指定してください。`）、`status` が 3 つ以外でも 400 を返す。
 
 レスポンスは `period`、`totals`、`myShare`、`events` の 4 つである。
 
@@ -1169,6 +1169,7 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 - `averagePerAttendee` は `round(expectedRevenue ÷ paidAttendingCount)`。`paidAttendingCount` が 0 なら 0。
 - 削除済みのイベントと、幹事として関与していないイベントは含めない。同じイベントに共同幹事として複数行があっても 1 件に畳む。
 - 並び順は `sort_date` の昇順（開催日が近い順）。過去の催しは後ろへ送る。
+- 1 回に集計するのは 300 件まで。期間で絞ったうえでも多いときは、読み込みを開催日の新しい順に 300 件で切り、応答はその 300 件を古い順に並べ直す（直近の催しを落とさないため）。上限で落ちた催しは `totals` にも入らず、`period` からは分からない。
 - `events[].sortDate` は `YYYY-MM-DD` の文字列である。
 - `myShare.expectedRevenue` は、各イベントの按分（5.10）で閲覧者自身の行になった見込み売上の合算である。未割当は含めない。`events[].myShare` と同じ値の合計になる。按分の設定が無いイベントは均等割で計算する。
 
@@ -1309,6 +1310,7 @@ export async function handleHydrate(userId: string, cookies: { rsvpTokens: strin
 対象画面は SCR-PUB-14（次の催し・カレンダー・一覧）。認証は要らない。Cookie の有無に関わらず同じ一覧を返し、Cookie が壊れていても 401・403 にはしない。
 
 - 筆頭幹事（`OWNER`）と共同主催（`CO_HOST`）の両方の催しを集める。
+- クエリでも `event.isDeleted = false` と `event.status = PUBLISHED` に絞る（下書き・受付停止・削除済みの行は読まない）。応答は元から掲載条件で絞っていたので、これは二重の守りである（匿名で読める入口なので、絞り込みは DB 側にも置く）。
 - 掲載条件は `isDeleted = false`、`status = PUBLISHED`、申し込み期限内、今日以降の開催日があること。満員でも返す（参加要望を受け付けるため）。
 - `attendingCount` は `ATTENDING` だけ。`WAITLISTED` は人数・残席に数えない。
 - 並びは次に開催される日が近い順、同日は催し名の五十音順、最後は `id`。
@@ -1517,7 +1519,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 アイコンなど、`image_assets` に保存した画像を返す。認証は不要（推測できない UUID を URL に持つ公開画像）。
 
-- `id` が UUID でない、行が無い、`is_deleted = true`、ファイルが無いときは 404。
+- `id` が UUID でない、ファイルが無いときは 404。**DB は引かない。** `retireImageAsset` が行を論理削除するときにファイルも消すので、ファイルの有無がそのまま配信可否になる（行だけ残る退役済みの画像は 404 になる）。
 - `Content-Type: image/webp`、`Cache-Control: public, max-age=31536000, immutable`、`X-Content-Type-Options: nosniff`。
 - ID は差し替えのたびに新しくなるため、内容は変わらない。長期キャッシュで安全。
 - 将来のイベント表紙（`kind = EVENT_COVER`）も同じ URL の形で配る。
@@ -1717,6 +1719,8 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 `draftEventCount` は、自分の下書き（`status = 'DRAFT'`、`is_deleted = false`、`role = 'OWNER'` の `EventOrganizer` を持つもの）を開催日を問わず数えた値である。`CO_HOST` の下書きは数えない。`draftEventLimit` は契約から決まる下書きの上限（無料 3 / 8件まで公開プラン 10 / 公開し放題プラン 30、未加入で単発クレジットが 1 枚以上あれば 10）で、`remainingDrafts` は `max(0, draftEventLimit - draftEventCount)`。`canSaveDraft` は「ログイン済みか」ではなく「下書きの枠が空いているか」で、新規作成（`POST /api/v1/public/events` の `status: "DRAFT"`）と複製（`POST /api/v1/organizer/events/[id]/clone`）が通るかを示す。`canCreate` は公開の可否のままで、下書きの上限とは独立している。
 
 `trial` は初月無料の無料期間中（`trial_ends_at > now`）だけ `{ "endsAt": "<ISO 8601>" }` を返し、終われば `null` に戻る。`trialEligible` は `resolveTrial` の結果で、`trial_used_at` が NULL、`stripe_subscription_id` が NULL、支払済み（`SUCCEEDED`）の月額取引が 0 件のときだけ `true` になる。加入中は新しい初月無料を使えないので `false` を返す。無料期間中はクーポンを使わないため `discount` は `null` のままである。
+
+- **キャッシュ:** 200 の応答に `Cache-Control: private, max-age=30` を付ける。画面を開くたびに同じ値を取りに行くので、30 秒だけブラウザに持たせる。応答は会員ごとに違うため `private` で、共有キャッシュには載せない。付与・公開・決済の確認の直後に読み直す呼び出し（`useEventQuota` の `refreshQuota`）は `cache: "no-store"` で飛ばす。素の `fetch` のままだと、0円で付与したチケットが最大 30 秒ぶん画面に出ない。
 
 - **実装ハンドラー (`src/app/api/v1/billing/quota/route.ts`):**
 
@@ -2393,7 +2397,9 @@ export interface ProblemDetails {
 
 ### 8.4. GET `/api/v1/user/profile`（プロフィール）
 
-`auth_token` から会員 ID を取る。会員が無ければ 404。レスポンスは `user`（`id`、`email`、`name`、`createdAt`、`phoneVerified`、`phoneMasked`、`hasPassword`、`platformRole`）と、幹事として 1 件でもイベントを持つか（`isOrganizer`）、その件数（`organizerCount`）である。主催者かどうかは `platformRole` ではなく、所有するイベントの有無で決める。`platformRole`（`MEMBER` / `ADMIN`）は、共通ヘッダーが管理者を別の並びにするためだけに返す。`phoneMasked` は下4桁だけを出し（例 `090****1234`）、生の番号は返さない。`hasPassword` は Google のみの会員と、パスワードを設定済みの会員を画面で分けるために使う。
+`auth_token` から会員 ID を取る。会員が無ければ 404。レスポンスは `user`（`id`、`email`、`name`、`createdAt`、`phoneVerified`、`phoneMasked`、`hasPassword`、`platformRole`）と、幹事として 1 件でもイベントを持つか（`isOrganizer`）、その件数（`organizerCount`）、端末だけの出欠・幹事が残っているか（`needsHydrate`）である。会員の行と `organizerCount` の数え上げは 1 ウェーブで投げる。
+
+`needsHydrate` は、リクエストの Cookie に `rsvp_token_*` か `org_token_*` があるときだけ `true` になる（httpOnly なので画面からは読めない）。真なら画面が `POST /api/v1/user/hydrate` を呼ぶ。`/mypage`（SCR-PUB-03）と `/participant`（SCR-PUB-08）はサーバー描画の初期データに同じ判定（`readNeedsHydrate()`）を載せるので、この API を待たずに引き継ぎを始められる。主催者かどうかは `platformRole` ではなく、所有するイベントの有無で決める。`platformRole`（`MEMBER` / `ADMIN`）は、共通ヘッダーが管理者を別の並びにするためだけに返す。`phoneMasked` は下4桁だけを出し（例 `090****1234`）、生の番号は返さない。`hasPassword` は Google のみの会員と、パスワードを設定済みの会員を画面で分けるために使う。
 
 このエンドポイントは参加履歴を返さない。主催者用の画面（SCR-PUB-03）に、他会主催イベントへの参加履歴が混ざるのを防ぐためで、参加履歴は 8.4.1 の専用エンドポイントから取得する。
 
@@ -2445,6 +2451,8 @@ export interface ProblemDetails {
 ```
 
 `summary` は `status` と `scope` の絞り込みに関係なく、その会員の全参加を数える。`scheduleLabel` は選んだ日時をすべて ` / ` でつなぎ、`payableAmount` は人数分の支払額になる。参加者カレンダー（`GET /api/v1/user/calendar`）は、複数日を選んだ回答を選んだ日ごとに 1 件返す。
+
+参加者カレンダーの `?month=YYYY-MM`（任意）は、その月に置かれる回答だけに絞る。日付は「選んだ日程（`participant_schedules`）→ 代表日（`participants.schedule_id`）→ イベントの代表日（`events.sort_date`）」の順に決まるので、どれかが月内に入る回答を残す。月の境界は `YYYY-MM` の文字列を UTC の月初で切り、`event_schedules.event_date` / `events.sort_date` の保存形（UTC 0 時の日付）と揃える。形式が違えば 400（`Validation Error`、`month は YYYY-MM の形式で指定してください。`）。省略すると従来どおり全件を返し、画面（SCR-PUB-12）が表示月だけを切り出す。画面はまだこのパラメータを送らない。
 
 ### 8.5. POST `/api/v1/auth/phone/start`（確認コード送信）
 
@@ -2744,6 +2752,7 @@ POST のボディは `{ "channel": "SMS" }` または `{ "channel": "EMAIL" }`�
 
 - `Content-Type` は保存バイト列の先頭から決める（`image/jpeg` / `image/png` / `image/webp`）。生成したチラシは JPEG、アップロードしたチラシは原本の形式である。
 - 既定の `Cache-Control` は `public, max-age=31536000, immutable`。
+- `?w=` を付けると、その幅へ縮小した画像を返す（`sharp`）。受け付けるのは `FLYER_IMAGE_WIDTHS` の 4 段だけで、一覧に無い値は無視して原寸を返す（勝手な幅で変換させない）。拡大はしない。一覧の札は `?w=240` を要求する。縮小版も URL ごとに 1 つなので `immutable` のままでよい。添付保存（`?download=1`）は縮小の対象にしない。
 - `?download=1` を付けると `Content-Disposition: attachment` を付け、`Cache-Control: private, no-store` にする。ファイル名は `flyer_assets.title` から `チラシ-{催し名}.{拡張子}` を作る。空なら `flyer-{id}.{拡張子}`。日本語は RFC 5987 の `filename*` で送り、ASCII の `filename` も併記する。
 
 ### 9.5. GET `/api/v1/flyer-assets/[id]/pdf`（QR 付き A4 PDF）

@@ -4,6 +4,7 @@ import { ProblemDetailException } from "@/lib/exceptions";
 import { assertRegisteredOrganizer } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { assertCapacityAllows, lockEventForCapacity } from "@/modules/events/lib/events";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       });
     });
 
+    // 名簿に戻すと席が埋まる。告知ページの人数を古いまま出さない。
+    revalidatePublicEvent(params.id);
     return NextResponse.json({
       success: true,
       participant: { id: restored.id, deletedAt: null },

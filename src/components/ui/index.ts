@@ -15,6 +15,7 @@ export { Panel, PanelHead } from "./Panel";
 export { PlanCard } from "./PlanCard";
 export { Row, Rows } from "./Rows";
 export { Section, SectionHead } from "./Section";
+export { Skeleton } from "./Skeleton";
 export { SemanticThemeScope } from "./SemanticThemeScope";
 export { Subnav, type SubnavItem } from "./Subnav";
 export { ThemePicker } from "./ThemePicker";

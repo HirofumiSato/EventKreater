@@ -7,23 +7,18 @@ import { toErrorResponse } from "@/lib/http";
 import { OrganizerParticipantSchema } from "@/lib/schemas";
 import {
   assertCapacityAllows,
-  eventOptionsInclude,
   lockEventForCapacity,
   resolveAttendanceChoice,
   resolveDiscountChoice,
 } from "@/modules/events/lib/events";
 import {
-  serializePricePlans,
-  serializeSchedules,
-  summarizeStatuses,
-} from "@/lib/serializers";
-import { summarizeRevenue } from "@/modules/revenue/lib/revenue";
-import {
   participantRecordInclude,
   participantWaitlistSelect,
   serializeParticipantRow,
 } from "@/modules/participants/lib/serialize";
+import { loadRoster } from "@/modules/participants/lib/roster";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,47 +30,16 @@ interface RouteContext {
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     await assertRegisteredOrganizer(req, params.id);
-    const event = await prisma.event.findFirst({
-      where: { id: params.id, isDeleted: false },
-      include: {
-        ...eventOptionsInclude,
-        // 削除済みも引く。名簿の末尾に薄く出して、元に戻せるようにするため。
-        participants: { include: participantRecordInclude },
-      },
-    });
-    if (!event) {
+    // 読み取りは名簿の画面（サーバーコンポーネント）と共有する。
+    const data = await loadRoster(params.id);
+    if (!data) {
       throw new ProblemDetailException({
         status: 404,
         title: "Not Found",
         detail: "イベントが見つかりません。",
       });
     }
-
-    // 集計・待ち順・売上は名簿に残っている行だけで数える。削除済みは末尾に並べるだけ。
-    const active = event.participants
-      .filter((row) => row.deletedAt === null)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    const deleted = event.participants
-      .filter((row) => row.deletedAt !== null)
-      .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
-    const waitlistRows = active.filter((row) => row.status === "WAITLISTED");
-    return NextResponse.json({
-      event: {
-        id: event.id,
-        title: event.title,
-        capacity: event.capacity,
-        schedules: serializeSchedules(event.schedules),
-        pricePlans: serializePricePlans(event.pricePlans),
-      },
-      // 削除済みの件数は絞り込みの札に使う。人数には数えない。
-      stats: { ...summarizeStatuses(active), deletedCount: deleted.length },
-      // 名簿を開いたついでに売上サマリも出す。内訳は /revenue で見る。
-      revenue: summarizeRevenue(active),
-      // 未削除（作成順）→ 削除済み（削除した新しい順）。画面はこの順でそのまま並べる。
-      participants: [...active, ...deleted].map((row) =>
-        serializeParticipantRow(row, waitlistRows),
-      ),
-    });
+    return NextResponse.json(data);
   } catch (error) {
     return toErrorResponse(error, `/api/v1/organizer/events/${params.id}/participants`);
   }
@@ -136,6 +100,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         include: participantRecordInclude,
       });
     });
+    // 幹事が足した行も告知ページの人数に出る。次の閲覧から反映する。
+    revalidatePublicEvent(params.id);
     // 追加した行は名簿の末尾（未削除の最後）に来る。待ち順も返す。
     const waitlistRows = await prisma.participant.findMany({
       where: { eventId: params.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },

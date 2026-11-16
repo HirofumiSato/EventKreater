@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarMonthGrid } from "@/components/common/CalendarMonth";
@@ -16,7 +16,6 @@ import {
 } from "@/lib/calendar";
 import { formatDateWithWeekdayJa } from "@/lib/format";
 import { priceLabel } from "@/lib/serializers";
-import { readProblem } from "@/lib/problem";
 import {
   clampMonth,
   groupOrganizerEventsByDate,
@@ -26,12 +25,11 @@ import {
   upcomingSchedules,
 } from "@/modules/organizers/lib/public-page";
 import type { PublicOrganizerEvent, PublicOrganizerPage } from "@/modules/events/types";
-import { Alert, Badge, EmptyState, Loading, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
-
-type LoadState = "loading" | "ready" | "error";
+import { Badge, EmptyState, Panel, Row, Rows, Section, SectionHead } from "@/components/ui";
 
 interface OrganizerPageViewProps {
-  userId: string;
+  /** サーバーで読んだ催し一覧。人数も含むので、開いた時点で中身が揃っている。 */
+  initialData: PublicOrganizerPage;
 }
 
 /**
@@ -41,9 +39,12 @@ interface OrganizerPageViewProps {
  * 誰でも読めるので、未ログイン用の骨組みは持たない。掲載条件は API と同じ
  * `sortOrganizerEvents` を通し、下書き・過去日・締め切った催しを画面でも落とす。
  *
+ * 催しはサーバー（`page.tsx`）が `loadPublicOrganizerEvents` で読んで渡す。ここから
+ * 取りに行かないので、ハイドレーション後に一覧が空になる瞬間がない。
+ *
  * 月だけを URL のクエリ（`month`）と連動させる。
  */
-export function OrganizerPageView({ userId }: OrganizerPageViewProps) {
+export function OrganizerPageView({ initialData }: OrganizerPageViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryMonth = searchParams.get("month");
@@ -52,29 +53,6 @@ export function OrganizerPageView({ userId }: OrganizerPageViewProps) {
 
   const [month, setMonth] = useState(() => clampMonth(queryMonth, minMonth));
   const [selectedDate, setSelectedDate] = useState(() => defaultSelectedDate(clampMonth(queryMonth, minMonth)));
-  const [data, setData] = useState<PublicOrganizerPage | null>(null);
-  const [state, setState] = useState<LoadState>("loading");
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/v1/public/organizers/${userId}/events`, { cache: "no-store" });
-    if (res.status === 404) {
-      setState("error");
-      setError("主催者が見つかりません。");
-      return;
-    }
-    if (!res.ok) {
-      setState("error");
-      setError(await readProblem(res));
-      return;
-    }
-    setData((await res.json()) as PublicOrganizerPage);
-    setState("ready");
-  }, [userId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   // ブラウザの戻る・進むでクエリが変わったとき、表示中の月も合わせる。
   useEffect(() => {
@@ -84,7 +62,7 @@ export function OrganizerPageView({ userId }: OrganizerPageViewProps) {
     setSelectedDate((current) => (current.slice(0, 7) === next ? current : defaultSelectedDate(next)));
   }, [queryMonth, minMonth]);
 
-  const events = useMemo(() => data?.events ?? [], [data]);
+  const events = useMemo(() => initialData.events, [initialData]);
   // API は削除済みを返さない。掲載判定に要る `isDeleted` だけ足し、API と同じ関数へ通す。
   const listedEvents = useMemo(
     () => sortOrganizerEvents(events.map((event) => ({ ...event, isDeleted: false })), today),
@@ -107,25 +85,6 @@ export function OrganizerPageView({ userId }: OrganizerPageViewProps) {
     params.set("month", next);
     router.replace(`?${params.toString()}`, { scroll: false });
   };
-
-  if (state === "error") {
-    return (
-      <div className="stack">
-        <Alert tone="error">{error}</Alert>
-        <Link href="/events" className="btn btn--outline">
-          イベントを探す
-        </Link>
-      </div>
-    );
-  }
-
-  if (state === "loading") {
-    return (
-      <Loading>
-        読み込んでいます
-      </Loading>
-    );
-  }
 
   if (listedEvents.length === 0) {
     return <EmptyState>これから開催されるイベントはありません。</EmptyState>;

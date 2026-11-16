@@ -5,6 +5,8 @@ import { toErrorResponse } from "@/lib/http";
 import { UpdateEventSchema } from "@/lib/schemas";
 import { serializeEvent } from "@/lib/serializers";
 import { publishDraftEvent } from "@/modules/events/lib/events";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
+import { revalidateOrganizerPagesOfEvent } from "@/modules/organizers/lib/public-organizer";
 import {
   rememberVenueQuietly,
   writeVenueOwnerCookie,
@@ -48,6 +50,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         : null;
 
     const event = await publishDraftEvent(ctx.userId, params.id, input);
+    // 公開した瞬間から、告知ページは新しい内容を返す。
+    revalidatePublicEvent(event.id);
+    // 主催者の公開ページの一覧にも、この催しが並ぶ。
+    await revalidateOrganizerPagesOfEvent(event.id);
     const response = NextResponse.json({
       event: serializeEvent(event),
       publicUrl: `/events/${event.id}`,

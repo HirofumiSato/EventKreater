@@ -47,7 +47,8 @@ export async function resolveOptionalUserId(req: NextRequest): Promise<string | 
   }
 }
 
-export async function requireUserId(req: NextRequest): Promise<string> {  const userId = await resolveUserId(req);
+export async function requireUserId(req: NextRequest): Promise<string> {
+  const userId = await resolveUserId(req);
   if (!userId) {
     throw new ProblemDetailException({
       status: 401,
@@ -214,7 +215,8 @@ export async function requireOrganizerAccount(req: NextRequest): Promise<string>
   });
 }
 
-/** 未登録の幹事がイベントを作成後に、誤字直しだけできる猶予。 */export const GUEST_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+/** 未登録の幹事がイベントを作成後に、誤字直しだけできる猶予。 */
+export const GUEST_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * ゲスト幹事の編集猶予を判定する。作成から24時間は編集を許し、それ以降は会員登録を求める。

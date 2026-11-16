@@ -15,13 +15,14 @@
 | モック（製品の写し） | `src/app/**`・`src/styles/**` などの UI ソース | [ui-review/mock-sync.md](ui-review/mock-sync.md) | `npm run mock:check`（任意。ソースの指紋と `mock-manifest.json` の一致）。追いつきは `npm run mock:catchup` |
 | テスト範囲 | `tests/**/*.test.ts` | [testing/scope.rst](testing/scope.rst) | `it` の件数の照合（`npm run docs:counts` が生成） |
 
-## 既知の乖離（2026-11-05 時点）
+## 既知の乖離（2026-11-16 時点）
 
 コードにあって文書に無いもの、文書が指すが実在しないものです。直したらこの行を消してください。未実装のまま残すと決めたものは「未実装（pending）」と書きます。
 
 | 種別 | 件数 | 内容 |
 | --- | --- | --- |
 | DB | 1 | `reminder_deliveries` は表と Prisma モデルだけがあり、リマインドの送信は**未実装（pending）**。[DBschema.md](DBschema.md) §4.7 に注記 |
+| 画面 | 1 | 売上（SCR-ORG-11）は API の既定で直近 365 日・300 件までを集計する。300 件を超えて落ちた催しは合計に入らず、`period` にも件数にも出ないため画面からは気づけない。主催者が 300 件を超えるのはまれで、注記を常設すると通常の読み手に不要な但し書きが増えるため、いまは画面に出さない（`docs/backend_api_implementation_spec.md` §5.8 にだけ書く）。`take` を外すと期間指定でも古い催しをすべて読むため、上限は残す |
 
 テスト件数は [testing/scope.rst](testing/scope.rst) だけが持ちます。`npm run docs:counts` が Vitest の結果から書き戻し、`npm run check:full` がずれを検出して止めます。原稿を足したりテストを書いたりしたら、この 1 コマンドで揃えてください。文書が指すパスの実在は [../scripts/lib/docs-util.mjs](../scripts/lib/docs-util.mjs) の `KNOWN_MISSING` で管理し、`npm run check:full` も見ます。空のまま保ち、増えたら仕様書か実装のどちらかを直してください。
 

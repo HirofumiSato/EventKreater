@@ -1,66 +1,51 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ProblemDetailException } from "@/lib/exceptions";
 import { formatDateWithWeekdayJa, formatDateTimeJa } from "@/lib/format";
-import { readProblem } from "@/lib/problem";
-import { RAIN_POLICY_LABELS, type RainPolicy } from "@/modules/events/types";
-import { Alert, Loading, PageHeader } from "@/components/ui";
+import { readPageIdentity } from "@/lib/server-session";
+import { previewInvitation } from "@/modules/organizers/lib/invitations";
+import { RAIN_POLICY_LABELS } from "@/modules/events/types";
+import { Alert, PageHeader } from "@/components/ui";
+import { AcceptInvitation } from "./AcceptInvitation";
 
-interface Preview {
-  event: {
-    id: string;
-    title: string;
-    schedules: { id: string; eventDate: string; eventTime: string }[];
-    pricePlans: { id: string; name: string; price: string }[];
-    location: string;
-    rainPolicy: RainPolicy;
-    organizer: { ownerName: string | null; coHostCount: number };
-  };
-  invitation: { expiresAt: string };
-  loggedIn: boolean;
+/**
+ * 共同主催・幹事の招待着地。
+ *
+ * 招待の中身はサーバーで引いて、そのまま HTML に載せる（`previewInvitation` を直接呼ぶ。
+ * 画面のために API を 1 往復しない）。クライアントに残すのは受諾の POST だけ。
+ *
+ * 無効・期限切れのコードでも 500 にしない。以前の画面と同じ文言と組み方で
+ * 「招待を表示できません」を出す。
+ */
+export const dynamic = "force-dynamic";
+
+type Preview = Awaited<ReturnType<typeof previewInvitation>>;
+
+/** 招待を読む。無効なコードは理由を文言として返し、それ以外の失敗は汎用の文言にする。 */
+async function readInvitation(code: string): Promise<{ preview: Preview | null; error: string | null }> {
+  try {
+    return { preview: await previewInvitation(code), error: null };
+  } catch (cause) {
+    if (cause instanceof ProblemDetailException) {
+      return { preview: null, error: cause.detail };
+    }
+    console.error("招待の読み取りに失敗しました", cause);
+    return { preview: null, error: "招待を確認できません" };
+  }
 }
 
-export default function InvitationPage({ params }: { params: { code: string } }) {
-  const router = useRouter();
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const loginHref = `/auth/register?next=${encodeURIComponent(`/invitations/${params.code}`)}`;
+/** 受諾のボタンと登録の導線を出し分けるためだけに、ログイン中かを見る。 */
+async function readLoggedIn(): Promise<boolean> {
+  const identity = await readPageIdentity();
+  return identity.userId !== null;
+}
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      const res = await fetch(`/api/v1/invitations/${params.code}`);
-      if (!res.ok) throw new Error(await readProblem(res));
-      const body = (await res.json()) as Preview;
-      if (active) setPreview(body);
-    };
-    void load().catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : "招待を確認できません");
-    });
-    return () => {
-      active = false;
-    };
-  }, [params.code]);
+export default async function InvitationPage({ params }: { params: { code: string } }) {
+  const [{ preview, error }, loggedIn] = await Promise.all([
+    readInvitation(params.code),
+    readLoggedIn(),
+  ]);
 
-  const accept = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/v1/invitations/${params.code}`, { method: "POST" });
-      if (!res.ok) throw new Error(await readProblem(res));
-      const result = (await res.json()) as { manageUrl: string };
-      router.push(result.manageUrl);
-      router.refresh();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "受諾に失敗しました");
-      setPending(false);
-    }
-  };
-
-  if (error && !preview) {
+  if (!preview) {
     return (
       <div className="page--form stack">
         <h1 className="page-title">共同主催・幹事の招待</h1>
@@ -69,18 +54,12 @@ export default function InvitationPage({ params }: { params: { code: string } })
       </div>
     );
   }
-  if (!preview) {
-    return (
-      <Loading>
-        招待を確認しています
-      </Loading>
-    );
-  }
+
+  const loginHref = `/auth/register?next=${encodeURIComponent(`/invitations/${params.code}`)}`;
 
   return (
     <div className="page--form stack">
       <PageHeader eyebrow="招待" title="共同主催・幹事に加わりますか" lead={<>{preview.event.title}</>} />
-      {error && <Alert tone="error">{error}</Alert>}
       <div className="auth-card">
         <h2 className="auth-card__title">{preview.event.organizer.ownerName ?? "主催者"} からの招待</h2>
         <p className="auth-card__note">
@@ -106,10 +85,8 @@ export default function InvitationPage({ params }: { params: { code: string } })
         </dl>
         <p className="help">有効期限 {formatDateTimeJa(preview.invitation.expiresAt)}</p>
         <div className="panel__actions">
-          {preview.loggedIn ? (
-            <button type="button" disabled={pending} onClick={() => void accept()} className="btn btn--primary btn--block">
-              {pending ? "参加処理中…" : "共同主催・幹事として参加する"}
-            </button>
+          {loggedIn ? (
+            <AcceptInvitation code={params.code} />
           ) : (
             <>
               <p className="help">

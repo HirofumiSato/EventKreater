@@ -1,79 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { ProblemDetailException } from "@/lib/exceptions";
 import { collectGuestTokenHashes, resolveUserId } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
-import { serializeOrganizerListItem, summarizeStatuses } from "@/lib/serializers";
-import { eventOptionsInclude } from "@/modules/events/lib/events";
-import { organizerLabel } from "@/modules/organizers/lib/names";
-import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
+import { loadOrganizerEvents } from "@/modules/organizers/lib/event-list";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * 主催イベントの一覧。読み取りは `loadOrganizerEvents` が持ち、
+ * 主催一覧の画面（サーバーコンポーネント）と共有する。
+ * 身元が無いときの 401 もローダーが返す。
+ */
 export async function GET(req: NextRequest) {
   try {
     const userId = await resolveUserId(req);
-    const guestHashes = collectGuestTokenHashes(req);
-    if (!userId && guestHashes.length === 0) {
-      throw new ProblemDetailException({
-        status: 401,
-        title: "Unauthorized",
-        detail: "主催イベントを表示するにはログインするか、幹事トークンが必要です。",
-      });
-    }
-
-    const organizers = await prisma.eventOrganizer.findMany({
-      where: {
-        event: { isDeleted: false },
-        OR: [
-          ...(userId ? [{ userId }] : []),
-          ...(guestHashes.length > 0 ? [{ guestTokenHash: { in: guestHashes } }] : []),
-        ],
-      },
-      include: {
-        event: {
-          include: {
-            flyerAsset: true,
-            ...eventOptionsInclude,
-            // 一覧の人数は名簿に残っている行だけで数える。
-            participants: { where: { ...ACTIVE_PARTICIPANT_WHERE }, select: { status: true, partySize: true } },
-            organizers: {
-              select: {
-                id: true,
-                role: true,
-                userId: true,
-                displayName: true,
-                user: { select: { name: true } },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const seen = new Set<string>();
-    const events = [];
-    for (const organizer of organizers) {
-      if (seen.has(organizer.eventId)) continue;
-      seen.add(organizer.eventId);
-      const owner = organizer.event.organizers.find((row) => row.role === "OWNER");
-      events.push(
-        serializeOrganizerListItem(
-          organizer.event,
-          organizer.role,
-          summarizeStatuses(organizer.event.participants),
-          owner ? organizerLabel(owner) : "主催者",
-          owner?.userId ?? null,
-        ),
-      );
-    }
-
-    // 自分の公開ページ（/organizers/[userId]）の導線に使う。ゲスト幹事は null。
-    const viewer = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }) : null;
-
-    return NextResponse.json({ events, viewer: { userId, name: viewer?.name ?? null } });
+    const guestTokenHashes = collectGuestTokenHashes(req);
+    return NextResponse.json(await loadOrganizerEvents({ userId, guestTokenHashes }));
   } catch (error) {
     return toErrorResponse(error, "/api/v1/organizer/events");
   }

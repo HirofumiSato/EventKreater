@@ -42,8 +42,18 @@ export function EventCard({ event, busy, onClone, onStop, onResume, onDelete, on
   };
 
   // チラシは告知ページへの入口も兼ねる。下書きには公開ページが無いので、絵のまま置く。
+  // 枠は 72×96px。原寸（1080×1528）を配る必要は無いので、`?w=240` で縮めた版を取る。
+  // 紙面は A4 縦（1080×1528）で作るので、`width`/`height` もその比で書く。
   const thumb = event.flyerThumbnailUrl ? (
-    <img className="event-card__thumb" src={event.flyerThumbnailUrl} alt="" width={1080} height={1920} />
+    <img
+      className="event-card__thumb"
+      src={`${event.flyerThumbnailUrl}?w=240`}
+      alt=""
+      width={1080}
+      height={1528}
+      loading="lazy"
+      decoding="async"
+    />
   ) : null;
 
   return (

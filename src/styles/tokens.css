@@ -74,7 +74,11 @@
   --width-page: 64rem;
   --width-content: 42rem;
   --width-form: 28rem;
-  --font: "Zen Kaku Gothic New", sans-serif;
+  /* 本文の書体。`src/app/layout.tsx` の `next/font` がビルド時に取り込み、`--font-zen-kaku`
+     に自己ホストの書体名を入れる。`var()` の控えに書体名を残すのは、モック
+     （`style-guide/*.html`）がこの変数を持たないまま同じファイルを読むため。
+     控えがあるので、モックでは今までどおりの書体名の並びに解決する。 */
+  --font: var(--font-zen-kaku, "Zen Kaku Gothic New"), sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   /* 見出し・数字・料金に使う書体。本文（--font）とは別に、1 段だけ間を置く。
      `.deco` が丸ゴシックを入れ、テーマ（themes.css）は `--st-font-heading` で
@@ -103,4 +107,14 @@
      文字のリンクには使わない（本文のリンクは墨のまま下線で示す）。
      地として敷き、マイクは同じ青を白で薄めて重ねる。 */
   --color-link-blue: #0b57d0;
+}
+
+/* 見出しの丸ゴシック。`deco/base.css` の `.deco` は書体名を literal（"Zen Maru Gothic"）で
+   持っているため、`next/font` の自己ホスト書体へ切り替えると名前が一致せず、
+   `var(--font)`（本文の Zen Kaku）へ落ちてしまう。ここで先に同じ変数を解決しておく。
+   モック（`style-guide/*.html`）は `--font-zen-maru` を持たないので、控えの literal に戻る。
+   `html .deco` と書くのは、この層より後ろの `deco/base.css` の `.deco` に詳細度で負けないため
+   （宣言順では後ろの層が勝つが、この 1 値だけは書体の正をここへ寄せる）。 */
+html .deco {
+  --font-maru: var(--font-zen-maru, "Zen Maru Gothic");
 }
