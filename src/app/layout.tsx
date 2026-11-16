@@ -23,6 +23,10 @@ const bodyFont = Zen_Kaku_Gothic_New({
   weight: ["400", "500", "700"],
   subsets: ["latin"],
   display: "swap",
+  /* 日本語は 1 ウェイトが 70 前後のサブセットに分かれる。既定のまま preload すると
+     全サブセット（実測 359 本・4.8MB）を描画前に取りに行き、LCP が帯域待ちになる。
+     描画に使う分だけを都度読む。 */
+  preload: false,
   variable: "--font-zen-kaku",
 });
 
@@ -30,6 +34,9 @@ const displayFont = Zen_Maru_Gothic({
   weight: ["500", "700"],
   subsets: ["latin"],
   display: "swap",
+  /* 本文と同じ理由。日本語のサブセットが多いので先読みしない。
+     ウェイトはテーマが前提にしているので減らさない。 */
+  preload: false,
   variable: "--font-zen-maru",
 });
 
