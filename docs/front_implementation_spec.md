@@ -2092,7 +2092,7 @@ SCR-ORG-11 の `イベント別` は、催し名、開催日、状態、出席 /
 
 * テーマは `data-semantic-theme` 属性と静的な CSS（`src/styles/themes.css`）だけで適用する。公開ページにテーマ用のクライアント JS は載せず、ハイドレーション後の色替えもしない。
 * `themeId` が null のときは `SemanticThemeScope` が children をそのまま返すので、DOM も見た目も現行のまま。
-* 追加する CSS は 14 テーマで数 KB（1 枚の `themes.css`）。`backdrop-filter` とアニメーションは使わない。追加の書体は 9 ファミリーで、1 テーマが読むのは見出しと本文の 2 ファミリーまで（同じファミリーならウェイト差で性格を出す）。`src/app/layout.tsx` が全ページで読む Zen Kaku Gothic New `400;500;700` と Zen Maru Gothic `500;700` を base とし、テーマの URL には base に無いウェイトだけを載せる（`neon` の見出し 900、`sage` / `tavern` / `kraft` の本文 400）。base の 2 ファミリーは `next/font/google` でビルド時に取り込み、同じ配信元から出す（`--font-zen-kaku` / `--font-zen-maru`）。外部ホストへの接続を描画の前に挟まないためで、書体そのものは変えない。`font-synthesis: none` なので、見出しの `--st-heading-weight` と本文 400 は必ず base かテーマの URL に載せる。
+* 追加する CSS は 14 テーマで数 KB（1 枚の `themes.css`）。`backdrop-filter` とアニメーションは使わない。追加の書体は 9 ファミリーで、1 テーマが読むのは見出しと本文の 2 ファミリーまで（同じファミリーならウェイト差で性格を出す）。`src/app/layout.tsx` が全ページで読む Zen Kaku Gothic New `400;500;700` と Zen Maru Gothic `500;700` を base とし、テーマの URL には base に無いウェイトだけを載せる（`neon` の見出し 900、`sage` / `tavern` / `kraft` の本文 400）。base の 2 ファミリーは `next/font/google` でビルド時に取り込み、同じ配信元から出す（`--font-zen-kaku` / `--font-zen-maru`）。外部ホストへの接続を描画の前に挟まないためで、書体そのものは変えない。日本語は 1 ウェイトが 70 前後のサブセットに分かれるので `preload: false` にし、描画に使う分だけを読む（全件を先読みすると、実測で 359 本・4.8MB を初期表示の帯域で待つ）。`font-synthesis: none` なので、見出しの `--st-heading-weight` と本文 400 は必ず base かテーマの URL に載せる。
 * 全幅の地は `margin-inline: calc(50% - 50vw)` と内側の余白で作り、本文の読み幅（既定 42rem、テーマによって 38〜44rem）は `--st-content-width` で決める。
 * 公開ページの縦の余白は `.page--narrow` をスコープにし、`--space-head`（見出しと中身）・`--space-block`（節の中の区切り）・`--space-section`（節と節）の 3 段だけで組む。`.section__head` の下は deco の見出しが下線を持たないぶん、`margin-bottom` で空ける。
 

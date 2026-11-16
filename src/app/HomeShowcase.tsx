@@ -195,13 +195,16 @@ export function HomeShowcase() {
                   style={{ "--showcase-duration": markerDuration(shot) } as CSSProperties}
                 >
                   <div className="hero__showcase-frame">
-                    {/* 同じ画像を 2 枚つなぎ、半分ずつ送って継ぎ目を消す。 */}
+                    {/* 同じ画像を 2 枚つなぎ、半分ずつ送って継ぎ目を消す。
+                        見本は初期表示の主役ではないので、画面に近づくまで読まない。
+                        lazy が付いた <img> には Next の image preload も出ない。 */}
                     <div className="hero__showcase-reel">
                       <img
                         src={shot.src}
                         alt={copy === 0 ? shot.alt : ""}
                         width={shot.width}
                         height={shot.height}
+                        loading="lazy"
                         draggable={false}
                         decoding="async"
                       />
@@ -210,6 +213,7 @@ export function HomeShowcase() {
                         alt=""
                         width={shot.width}
                         height={shot.height}
+                        loading="lazy"
                         draggable={false}
                         decoding="async"
                         aria-hidden="true"

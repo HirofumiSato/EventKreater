@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 546
+- 文書から参照されているコードパス: 547
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -493,6 +493,7 @@
 | `tests/unit/flyer-quota.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-upload.test.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/font-preload.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/format.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/free-ticket.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/guest-draft.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
