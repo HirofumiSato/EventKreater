@@ -141,6 +141,19 @@ export interface UserQuota {
   trialEligible?: boolean;
 }
 
+/**
+ * 画面へ渡すクォータの初期値。サーバーコンポーネントが読んで、`useEventQuota` へ渡す。
+ *
+ * `unknown` は「読めなかった」であって「無い」ではない。取りに行くかどうかが変わるので、
+ * `quota: null` ではなく 3 つの状態で持つ。
+ */
+export type QuotaSeed =
+  | { status: "ready"; quota: UserQuota }
+  /** 未ログイン。取りに行かない（API も 401 になる）。 */
+  | { status: "signed-out" }
+  /** 読めなかった。今までどおりクライアントで取る。 */
+  | { status: "unknown" };
+
 export interface PricingOption {
   type: "SINGLE" | "SUBSCRIPTION_8" | "SUBSCRIPTION_UNLIMITED";
   name: string;

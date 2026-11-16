@@ -13,7 +13,8 @@ import { announceNotificationsChanged } from "@/modules/notifications/hooks/useN
 import type { RsvpNotification } from "@/modules/notifications/types";
 import { SITE } from "@/lib/site";
 import { priceLabel, scheduleLabel } from "@/lib/serializers";
-import type { OrganizerEvent } from "@/modules/events/types";
+import type { OrganizerEvent, QuotaSeed } from "@/modules/events/types";
+import type { ReferralSummary } from "@/modules/billing/lib/referral";
 import { todayInTokyo } from "@/modules/events/lib/event-filters";
 import { countPublishedBySource } from "@/modules/events/lib/published-counts";
 import { EmptyState, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
@@ -36,23 +37,27 @@ export interface MyPageData {
   /** 新しい順に 5 件。画面は 4 件までを出し、続きは通知一覧が受ける。 */
   notifications: RsvpNotification[];
   unreadCount: number;
+  /** チケット・プランの残り。サーバーで読めなかったときは `unknown`。 */
+  quota: QuotaSeed;
+  /** 紹介リンクと実績。読めなかったときは null（紙を出さない）。 */
+  referral: ReferralSummary | null;
 }
 
 /**
  * 主催者（幹事）のマイページ（SCR-PUB-03）。
  *
- * 会員・主催イベント・公開プロフィール・新着はサーバーで 1 度に読み、ここへ渡す。
- * この画面は既読の送信・操作ガイド・紹介の取得だけを持つ（初回の取り直しはしない）。
+ * 会員・主催イベント・公開プロフィール・新着・クォータ・紹介はサーバーで 1 度に読み、ここへ渡す。
+ * この画面は既読の送信・操作ガイドだけを持つ（初回の取り直しはしない）。
  * 参加履歴はここへ混ぜず、参加者ホーム（/participant）と参加履歴（/participant/history）に分ける。
  */
 export function MyPageScreen({ initial }: { initial: MyPageData }) {
-  const quotaState = useEventQuota();
+  const quotaState = useEventQuota(initial.quota);
   const { profile, events, ownProfile } = initial;
   // 新着（参加表明・参加要望・紹介でのチケット付与）。主催者だけが持つ。
   const [notifications, setNotifications] = useState<RsvpNotification[]>(initial.notifications);
   const [unreadCount, setUnreadCount] = useState(initial.unreadCount);
   const [marking, setMarking] = useState(false);
-  // 紹介の取得が終わるまで、ガイドの対象（紹介の紙）は測れない。
+  // 紹介の紙は最初の HTML に載っている。ガイドは描き終えた印を受けてから測る。
   const [referralReady, setReferralReady] = useState(false);
   // 右上の「使い方」。値を変えるとガイドが 1 枚目から開く。
   const [guideStart, setGuideStart] = useState(0);
@@ -151,9 +156,10 @@ export function MyPageScreen({ initial }: { initial: MyPageData }) {
       <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
 
       {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線と同じ場所で見せる。
-          ガイドの 2 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
+          紙はサーバーで読んだ初期値から描く。ガイドの 2 枚目がこの紙を指すので、
+          描き終えたことを外へ知らせる。 */}
       <div data-guide-target="mypage-referral">
-        <ReferralPanel onReady={() => setReferralReady(true)} />
+        <ReferralPanel initial={initial.referral} onReady={() => setReferralReady(true)} />
       </div>
 
       {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。

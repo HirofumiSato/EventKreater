@@ -30,6 +30,7 @@ import type {
   EventStatus,
   FlyerAsset,
   OrganizerRole,
+  QuotaSeed,
   RainPolicy,
 } from "@/modules/events/types";
 import { Alert, Loading, SemanticThemeScope } from "@/components/ui";
@@ -73,10 +74,19 @@ const DRAFT_LIST_PATH = "/organizer/events/drafts";
  * 公開操作は共通ヘッダー直下の全幅バーから行う。チラシ以降は参加者が見る画面の
  * プレビューで、出欠フォームの見た目も出すが操作はできない。
  * 参加履歴・主催者の勧誘カードは出さない。公開が完了すると告知ページへ移る。
+ *
+ * チケットの残りはサーバーで読んだ `initialQuota` から始める。公開の直前と直後は、
+ * 残数が動くので `refreshQuota()` で取り直す（今までどおり）。
  */
-export default function PreviewClient({ params }: { params: { id: string } }) {
+export default function PreviewClient({
+  params,
+  initialQuota,
+}: {
+  params: { id: string };
+  initialQuota: QuotaSeed;
+}) {
   const router = useRouter();
-  const quotaState = useEventQuota();
+  const quotaState = useEventQuota(initialQuota);
   const returnTo = `/organizer/events/${params.id}/preview`;
   const [detail, setDetail] = useState<PreviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);

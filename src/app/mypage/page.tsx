@@ -4,6 +4,8 @@ import { Alert } from "@/components/ui";
 import { loginUrl } from "@/lib/auth-links";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { readNeedsHydrate, readPageIdentity } from "@/lib/server-session";
+import { loadQuotaSeed } from "@/modules/billing/lib/quota-view";
+import { loadReferralSummary } from "@/modules/billing/lib/referral";
 import { loadNotificationInbox } from "@/modules/notifications/lib/inbox";
 import { loadOrganizerEvents, splitDraftEvents } from "@/modules/organizers/lib/event-list";
 import { readOrganizerProfileDraft } from "@/modules/organizers/lib/profile-store";
@@ -52,14 +54,19 @@ export default async function MyPage() {
 /**
  * マイページの初期データ。
  *
- * 会員名・催し・公開プロフィール・新着は互いに依存しないので 1 ウェーブで引く。
+ * 会員名・催し・公開プロフィール・新着・クォータ・紹介は互いに依存しないので 1 ウェーブで引く。
  * 会員名は催しの一覧を引くときに一緒に読めるので、会員の行をもう一度読まない。
+ * クォータと紹介は、読めなくても残りを描けるよう、失敗をここで握る。
  */
 async function loadMyPage(userId: string): Promise<MyPageData> {
-  const [organizerEvents, ownDraft, inbox] = await Promise.all([
+  const [organizerEvents, ownDraft, inbox, quota, referral] = await Promise.all([
     loadOrganizerEvents({ userId, guestTokenHashes: [] }),
     readOrganizerProfileDraft(userId),
     loadNotificationInbox(userId, 5),
+    // 読めなかったら `unknown`。画面は今までどおり帯の位置にクライアントで取りに行く。
+    loadQuotaSeed(userId),
+    // 紹介が読めないときは紙を出さないだけ。マイページの他の操作は続けられる。
+    loadReferralSummary(userId).catch(() => null),
   ]);
 
   // 主催一覧は下書きも返す。マイページの要約と件数は、公開済みと受付停止だけを数える。
@@ -80,5 +87,7 @@ async function loadMyPage(userId: string): Promise<MyPageData> {
       : null,
     notifications: inbox.notifications,
     unreadCount: inbox.unreadCount,
+    quota,
+    referral,
   };
 }

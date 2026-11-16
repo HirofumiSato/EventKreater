@@ -17,7 +17,7 @@ import { trackEvent } from "@/lib/analytics";
 import { readProblem } from "@/lib/problem";
 import { phoneVerifyUrl } from "@/lib/auth-links";
 import { SITE } from "@/lib/site";
-import type { OrganizerEvent } from "@/modules/events/types";
+import type { OrganizerEvent, QuotaSeed } from "@/modules/events/types";
 import {
   activeFilterCount,
   clampPage,
@@ -57,6 +57,8 @@ type OrganizerEventsScreenProps = {
    * 401 の扱いは手動の取り直し（`load`）にも残す。
    */
   initialError: string | null;
+  /** サーバーで読んだチケットの残り。`unknown` のときだけクライアントで取りに行く。 */
+  initialQuota: QuotaSeed;
 };
 
 export function OrganizerEventsScreen({
@@ -64,10 +66,11 @@ export function OrganizerEventsScreen({
   initialViewer,
   initialDraftCount,
   initialError,
+  initialQuota,
 }: OrganizerEventsScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const quotaState = useEventQuota();
+  const quotaState = useEventQuota(initialQuota);
   const [events, setEvents] = useState<OrganizerEvent[]>(initialEvents);
   // 招待リンクを発行できるかは、役割だけでなく「会員か」でも決まる（ゲスト主催者は登録が要る）。
   const [viewer, setViewer] = useState<Viewer | null>(initialViewer);

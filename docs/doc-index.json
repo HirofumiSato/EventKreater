@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3069,
+      "lineCount": 3073,
       "headings": [
         {
           "level": 1,
@@ -2531,6 +2531,10 @@
         },
         {
           "path": "src/modules/auth/lib/signup-resume.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/quota-view.ts",
           "exists": true
         },
         {
@@ -5918,7 +5922,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2253,
+      "lineCount": 2258,
       "headings": [
         {
           "level": 1,
@@ -6332,7 +6336,19 @@
           "exists": true
         },
         {
+          "path": "src/app/organizer/events/[id]/edit/page.tsx",
+          "exists": true
+        },
+        {
           "path": "src/app/organizer/events/[id]/participants/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/preview/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/drafts/page.tsx",
           "exists": true
         },
         {
@@ -6341,6 +6357,10 @@
         },
         {
           "path": "src/app/organizer/events/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/plan/page.tsx",
           "exists": true
         },
         {
@@ -6477,6 +6497,10 @@
         },
         {
           "path": "src/modules/billing/lib/plans.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/billing/lib/quota-view.ts",
           "exists": true
         },
         {
@@ -12305,7 +12329,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 874,
+      "lineCount": 886,
       "headings": [
         {
           "level": 1,
@@ -12400,6 +12424,10 @@
         },
         {
           "path": "tests/components/publish-confirm-modal.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/quota-seed.test.tsx",
           "exists": true
         },
         {
@@ -12503,6 +12531,10 @@
           "exists": true
         },
         {
+          "path": "tests/integration/quota-view.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/integration/referral-invite.test.ts",
           "exists": true
         },
@@ -12512,6 +12544,10 @@
         },
         {
           "path": "tests/integration/revenue.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/roster-page.test.ts",
           "exists": true
         },
         {
