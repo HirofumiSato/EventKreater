@@ -6,6 +6,7 @@ import { SaveEventDraftSchema } from "@/lib/schemas";
 import { serializeEvent } from "@/lib/serializers";
 import { assertDraftSaveStatus } from "@/modules/events/lib/draft";
 import { saveEventDraft } from "@/modules/events/lib/events";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
 import {
   rememberVenueQuietly,
   writeVenueOwnerCookie,
@@ -58,6 +59,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     assertDraftSaveStatus(input.status);
 
     const event = await saveEventDraft(params.id, input);
+    // 下書きは告知ページに出ない（キャッシュにも載らない）。書き込みの経路では
+    // 同じ場所で捨てておき、公開の直前に読んだ古い内容が残らないようにする。
+    revalidatePublicEvent(event.id);
     const response = NextResponse.json({ event: serializeEvent(event) });
     // 下書きの保存でも、入力した会場は候補として覚える（公開前に入力を助けるため）。
     const venueCookie = await rememberVenueQuietly(req, input);

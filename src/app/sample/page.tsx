@@ -47,6 +47,7 @@ export default function SampleIndexPage() {
                     width={1080}
                     height={1528}
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="sample-card__body">
                     <p className="sample-card__kind">{event.kind}</p>

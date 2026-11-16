@@ -4,31 +4,50 @@ import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
-export interface FoundParticipant {
-  participant: Participant;
+export interface FoundParticipant<T = Participant> {
+  participant: T;
   /** 端末のクッキーで見つけたのか、ログイン中の会員として見つけたのか。 */
   matchedBy: "token" | "user";
 }
 
+export interface FindMyParticipantInput {
+  eventId: string;
+  tokenHash: string | null;
+  userId: string | null;
+}
+
+/** `select` を渡したときは、その列だけを持つ行として返す。 */
+type ParticipantWithSelect<S> = S extends Prisma.ParticipantSelect
+  ? Prisma.ParticipantGetPayload<{ select: S }>
+  : Participant;
+
 /**
  * 出欠ページを開いている人の参加行を探す。
  * まず端末のクッキー、無ければログイン中の会員。未ログインなら null。
+ *
+ * `select` には要る列だけを渡せる。呼び出し側が要る列だけを引くと、
+ * 同じ行を `findUnique` で取り直さずに済む（告知ページの「自分の回答」がそう）。
  */
-export async function findMyParticipant(
+export async function findMyParticipant<S extends Prisma.ParticipantSelect | undefined = undefined>(
   db: Db,
-  input: { eventId: string; tokenHash: string | null; userId: string | null },
-): Promise<FoundParticipant | null> {
+  input: FindMyParticipantInput,
+  select?: S,
+): Promise<FoundParticipant<ParticipantWithSelect<S>> | null> {
+  // `select` の有無で引く列が変わる。Prisma の型は引数の組み立てを追えないので、
+  // 戻り値だけを呼び出し側の `select` に合わせて読み替える。
+  const where = (base: Prisma.ParticipantWhereInput): Prisma.ParticipantFindFirstArgs =>
+    select ? { where: base, select } : { where: base };
   if (input.tokenHash) {
-    const byToken = await db.participant.findFirst({
+    const byToken = (await db.participant.findFirst(
       // 名簿から外した行は「自分の回答」ではない。端末のクッキーが残っていても拾わない。
-      where: { eventId: input.eventId, rsvpTokenHash: input.tokenHash, ...ACTIVE_PARTICIPANT_WHERE },
-    });
+      where({ eventId: input.eventId, rsvpTokenHash: input.tokenHash, ...ACTIVE_PARTICIPANT_WHERE }),
+    )) as unknown as ParticipantWithSelect<S> | null;
     if (byToken) return { participant: byToken, matchedBy: "token" };
   }
   if (input.userId) {
-    const byUser = await db.participant.findFirst({
-      where: { eventId: input.eventId, userId: input.userId, ...ACTIVE_PARTICIPANT_WHERE },
-    });
+    const byUser = (await db.participant.findFirst(
+      where({ eventId: input.eventId, userId: input.userId, ...ACTIVE_PARTICIPANT_WHERE }),
+    )) as unknown as ParticipantWithSelect<S> | null;
     if (byUser) return { participant: byUser, matchedBy: "user" };
   }
   return null;

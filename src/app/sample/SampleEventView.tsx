@@ -24,7 +24,8 @@ export function SampleEventView({ event }: { event: SampleEvent }) {
           id: `sample-${event.slug}`,
           imageUrl: event.flyerSrc,
           lqipDataUrl: null,
-          aspectRatio: "9:16",
+          // 見本の画像も 1080×1528（A4 縦）。比を間違えると、画像の下に余白ができる。
+          aspectRatio: "A4",
         }}
         stamp="受付中"
       />

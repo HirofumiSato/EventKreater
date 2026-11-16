@@ -6,6 +6,7 @@ import { isUserId } from "@/lib/ids";
 import { OrganizerPageView } from "@/modules/organizers/components/OrganizerPageView";
 import { OrganizerProfileView } from "@/modules/organizers/components/OrganizerProfileView";
 import { profileBioExcerpt } from "@/modules/organizers/lib/profile";
+import { loadPublicOrganizerEvents } from "@/modules/organizers/lib/public-organizer";
 import { loadPublicOrganizerProfileCached } from "@/modules/organizers/lib/profile-store";
 
 /**
@@ -54,14 +55,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function OrganizerProfilePage({ params }: PageProps) {
   if (!isUserId(params.userId)) notFound();
-  const loaded = await loadPublicOrganizerProfileCached(params.userId);
-  if (!loaded) notFound();
+  // プロフィールと催しは、どちらも本文の描画前に要る。互いに依存しないのでまとめて引く。
+  // 催しは `unstable_cache` から返る（人数だけはリクエストごとの集計）。
+  const [loaded, listing] = await Promise.all([
+    loadPublicOrganizerProfileCached(params.userId),
+    loadPublicOrganizerEvents(params.userId),
+  ]);
+  if (!loaded || !listing) notFound();
 
   // 読み幅とテーマは器（`layout.tsx`）が持つ。ここは中身だけを並べる。
   return (
     <div className="stack">
       <OrganizerProfileView name={loaded.name} profile={loaded.profile} />
-      {/* イベントは useSearchParams を読むため、Suspense で包む。 */}
+      {/* イベントは useSearchParams を読むため、Suspense で包む。
+          催しはサーバーで読んでいるので、ふだんはこの fallback は出ない。 */}
       <Suspense
         fallback={
           <Loading>
@@ -69,7 +76,7 @@ export default async function OrganizerProfilePage({ params }: PageProps) {
           </Loading>
         }
       >
-        <OrganizerPageView userId={loaded.userId} />
+        <OrganizerPageView initialData={listing} />
       </Suspense>
     </div>
   );

@@ -7,6 +7,8 @@ import { requireUserId } from "@/modules/auth/lib/guards";
 import { cancelSubscriptionForWithdrawal } from "@/modules/billing/lib/billing";
 import { requestIpHash, withdrawAccount } from "@/modules/account/lib/account";
 import { verifyPasswordOrCode } from "@/modules/account/lib/reauth";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
+import { revalidateOrganizerPagesOfEvent } from "@/modules/organizers/lib/public-organizer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,11 +30,17 @@ export async function DELETE(req: NextRequest) {
       code: input.code,
       ip,
     });
-    await withdrawAccount({
+    const affectedEventIds = await withdrawAccount({
       userId,
       ipHash: requestIpHash(req),
       cancelSubscription: cancelSubscriptionForWithdrawal,
     });
+    // 閉じたイベントは 404 に、外れた共同主催は一覧から消える。古い本文を返さない。
+    for (const eventId of affectedEventIds) {
+      revalidatePublicEvent(eventId);
+      // 共同主催の公開ページからも、閉じた催しが消える。
+      await revalidateOrganizerPagesOfEvent(eventId);
+    }
     const response = NextResponse.json({ success: true });
     clearAuthCookies(response, req);
     clearLoginChallengeCookies(response, req);

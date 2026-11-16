@@ -30,19 +30,20 @@ npm run dev
 
 ## 1. 1 画面を縦に貫く（25 分）
 
-`/events/[id]` を上から下へ 5 ファイル読むと、このリポジトリの標準形が分かります。
+`/events/[id]` を上から下へ 6 つ読むと、このリポジトリの標準形が分かります。
 
 ```text
-src/app/events/[id]/page.tsx           サーバー側。OGP のためだけに prisma を読む
-src/app/events/[id]/EventPageClient.tsx クライアント側。本文は API から取る
+src/app/events/[id]/page.tsx           サーバー側。本文と OGP を同じ読みで組む
+src/app/events/[id]/EventPageClient.tsx クライアント側。押した後だけを持つ
+src/modules/events/lib/public-event.ts  誰でも同じ部分をキャッシュし、人数と自分の回答を足す
 src/modules/events/components/         表示。ロジックを持たない
-src/app/api/v1/public/events/[id]/route.ts  認可・検証・シリアライズ
+src/app/api/v1/public/events/[id]/route.ts  認可・検証・シリアライズ（出欠の送信と再読込）
 src/modules/events/lib/rsvp-status.ts  純ロジック。テスト対象
 ```
 
 読むときの着眼点は 3 つです。
 
-- サーバー側は `generateMetadata` で OGP を作るために DB を読み、本文はクライアントが API を叩きます。`export const dynamic = "force-dynamic"` の理由もここにあります。
+- サーバー側は本文も OGP も同じ読みで組み、`generateMetadata` と `Page` は React の `cache()` で 1 回にまとめます。誰が見ても同じ部分（題名・チラシ・日程・料金）は `src/modules/events/lib/public-event.ts` が `unstable_cache` に載せ、人数と自分の回答だけをリクエストごとに引きます。`export const dynamic = "force-dynamic"` は、閲覧者を Cookie から読む側のために残しています。書き込み（公開・停止・削除・編集・下書き保存・出欠の送信、名簿の追加・編集・削除・復元、共同主催の解除・受諾、端末からの引き継ぎと退会）は `revalidatePublicEvent` で同じタグを捨てます。
 - クライアントは `src/lib/problem.ts` の `readProblem` で RFC 7807 のエラーを読みます。エラー表現は全 API で共通です。
 - 振る舞いの仕様はテスト名に書いてあります。[tests/unit/rsvp-status.test.ts](../tests/unit/rsvp-status.test.ts) の `describe` と `it` を読むだけで、満員・待機・残席の扱いが分かります。
 

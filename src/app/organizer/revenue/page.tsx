@@ -97,11 +97,12 @@ export default function OrganizerRevenuePage() {
       />
 
       <Panel>
-        <PanelHead title="期間" note="開催日で絞り込みます。初期表示は全期間です。" />
+        <PanelHead title="期間" note="開催日で絞り込みます。初期表示は直近1年です。" />
         <div className="chips" role="group" aria-label="集計する期間">
           {(
             [
-              ["ALL", "全期間"],
+              // 期間を送らないときの API の既定が直近1年なので、その名前で出す。
+              ["ALL", "直近1年"],
               ["MONTH", "今月"],
               ["CUSTOM", "期間を指定"],
             ] as const
@@ -175,7 +176,7 @@ export default function OrganizerRevenuePage() {
             <PanelHead
               title={<>{data.period.from || data.period.to
                   ? `${data.period.from ?? "指定なし"} 〜 ${data.period.to ?? "指定なし"}`
-                  : "全期間"}</>}
+                  : "直近1年"}</>}
               note="見込みと集金の差が、そのまま残りです。"
             />
             <RevenueSummaryLedger summary={totals} myShare={data.myShare} />
@@ -202,7 +203,7 @@ export default function OrganizerRevenuePage() {
           )}
 
           <Section>
-            <SectionHead title="イベント別" note="開催日の新しい順です。行を押すと内訳が出ます。" />
+            <SectionHead title="イベント別" note="開催日の古い順です。行を押すと内訳が出ます。" />
             {data.events.length === 0 ? (
               <EmptyState>
                 <span className="empty__title">この期間に主催イベントはありません。</span>

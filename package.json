@@ -21,6 +21,7 @@
     "check:full": "node scripts/check.mjs --full",
     "check:serial": "npm run lint && npm run typecheck && npm run test",
     "verify": "node scripts/verify.mjs",
+    "perf:audit": "node --env-file-if-exists=.env scripts/perf-audit.mjs",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
       "db:backfill": "node scripts/backfill-event-details.mjs",

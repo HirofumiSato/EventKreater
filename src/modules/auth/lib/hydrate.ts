@@ -19,6 +19,8 @@ export interface GuestMigrationResult {
   promotedOwners: number;
   /** 付け替え後に確定した無料チケットの消費数。移行が無ければ null。 */
   freeEventCount: number | null;
+  /** 幹事行に触れたイベント。告知ページのキャッシュを捨てるのに使う（重複なし）。 */
+  eventIds: string[];
 }
 
 /**
@@ -35,6 +37,7 @@ export async function migrateGuestOrganizers(
     migratedOrganizers: 0,
     promotedOwners: 0,
     freeEventCount: null,
+    eventIds: [],
   };
   if (guestTokens.length === 0) return result;
 
@@ -44,6 +47,10 @@ export async function migrateGuestOrganizers(
   });
 
   for (const organizer of organizers) {
+    // 付け替え・重複の削除のどちらでも、告知ページの主催者一覧は変わる。
+    if (!result.eventIds.includes(organizer.eventId)) {
+      result.eventIds.push(organizer.eventId);
+    }
     const already = await tx.eventOrganizer.findFirst({
       where: { eventId: organizer.eventId, userId },
     });

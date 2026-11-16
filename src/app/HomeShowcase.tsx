@@ -203,6 +203,7 @@ export function HomeShowcase() {
                         width={shot.width}
                         height={shot.height}
                         draggable={false}
+                        decoding="async"
                       />
                       <img
                         src={shot.src}
@@ -210,6 +211,7 @@ export function HomeShowcase() {
                         width={shot.width}
                         height={shot.height}
                         draggable={false}
+                        decoding="async"
                         aria-hidden="true"
                       />
                     </div>

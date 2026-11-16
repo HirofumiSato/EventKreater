@@ -287,12 +287,17 @@ export async function confirmEmailChange(token: string): Promise<{ userId: strin
   return { userId: row.userId, email: row.newEmail };
 }
 
-/** 退会。論理削除して、確認済みの電話番号だけは再登録の突き合わせのために残す。 */
+/**
+ * 退会。論理削除して、確認済みの電話番号だけは再登録の突き合わせのために残す。
+ *
+ * 戻り値は告知ページが変わるイベントの ID。閉じた自分のイベントと、
+ * 共同主催を外れた他人のイベントで、呼び出し側がキャッシュを捨てる。
+ */
 export async function withdrawAccount(input: {
   userId: string;
   ipHash: string | null;
   cancelSubscription: (subscriptionId: string) => Promise<void>;
-}): Promise<void> {
+}): Promise<string[]> {
   const user = await prisma.user.findUnique({
     where: { id: input.userId },
     select: {
@@ -329,10 +334,21 @@ export async function withdrawAccount(input: {
   }
 
   const now = new Date();
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
+    // 閉じるイベントと、幹事を外れるイベントは消す前に読む（後からは引けない）。
+    const [ownedEvents, coHostedEvents] = await Promise.all([
+      tx.event.findMany({
+        where: { isDeleted: false, organizers: { some: { userId: input.userId, role: "OWNER" } } },
+        select: { id: true },
+      }),
+      tx.eventOrganizer.findMany({
+        where: { userId: input.userId, role: "CO_HOST" },
+        select: { eventId: true },
+      }),
+    ]);
     // 筆頭幹事のイベントだけ閉じる。共同幹事として参加しているだけのイベントは残す。
     await tx.event.updateMany({
-      where: { isDeleted: false, organizers: { some: { userId: input.userId, role: "OWNER" } } },
+      where: { id: { in: ownedEvents.map((event) => event.id) } },
       data: { isDeleted: true, status: "CLOSED" },
     });
     await tx.eventOrganizer.deleteMany({ where: { userId: input.userId, role: "CO_HOST" } });
@@ -374,5 +390,11 @@ export async function withdrawAccount(input: {
       kind: "WITHDRAW",
       ipHash: input.ipHash,
     });
+    return [
+      ...new Set([
+        ...ownedEvents.map((event) => event.id),
+        ...coHostedEvents.map((row) => row.eventId),
+      ]),
+    ];
   });
 }

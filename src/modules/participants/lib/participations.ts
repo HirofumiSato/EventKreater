@@ -1,4 +1,4 @@
-import type { Prisma, PriceAudience, RsvpStatus } from "@prisma/client";
+import type { EventStatus, Prisma, PriceAudience, RsvpStatus } from "@prisma/client";
 import {
   composeDiscountText,
   composeScheduleLabels,
@@ -129,6 +129,16 @@ export function serializeParticipation(row: {
   };
 }
 
+/**
+ * 参加履歴・カレンダーが使うチラシの列。
+ * 画面に出すのはサムネイル（`imageUrl`）だけで、`lqipDataUrl` は作る経路が無い。
+ */
+const flyerThumbnailSelect = {
+  id: true,
+  imageUrl: true,
+  aspectRatio: true,
+} satisfies Prisma.FlyerAssetSelect;
+
 export const participationInclude = {
   schedule: true,
   schedules: {
@@ -141,7 +151,7 @@ export const participationInclude = {
   discounts: { orderBy: { sortOrder: "asc" } },
   event: {
     include: {
-      flyerAsset: true,
+      flyerAsset: { select: flyerThumbnailSelect },
       ...eventOptionsInclude,
       organizers: { select: { role: true, userId: true } },
     },
@@ -156,23 +166,64 @@ export function participationCalendarDate(row: {
   return formatEventDate(row.schedule?.eventDate ?? row.event.sortDate);
 }
 
+/**
+ * 参加者カレンダーが読む列だけを引く。
+ * 金額・割引・概要・住所はカレンダーに出さないので、`participationInclude` では引かない。
+ */
+export const calendarEntrySelect = {
+  id: true,
+  status: true,
+  schedule: { select: { eventDate: true, eventTime: true } },
+  schedules: {
+    select: { schedule: { select: { eventDate: true, eventTime: true, sortOrder: true } } },
+  },
+  event: {
+    select: {
+      id: true,
+      title: true,
+      location: true,
+      status: true,
+      sortDate: true,
+      flyerAsset: { select: flyerThumbnailSelect },
+    },
+  },
+} satisfies Prisma.ParticipantSelect;
+
+/** `calendarEntrySelect` で引いた参加行。 */
+export type CalendarEntryRecord = Prisma.ParticipantGetPayload<{
+  select: typeof calendarEntrySelect;
+}>;
+
+/** カレンダーの 1 件を組むのに要る形。純粋関数なので、テストは素のオブジェクトを渡せる。 */
+export interface CalendarEntryRow {
+  id: string;
+  status: RsvpStatus;
+  schedule: { eventDate: Date; eventTime: string } | null;
+  schedules?: { schedule: { eventDate: Date; eventTime: string; sortOrder: number } }[];
+  event: {
+    id: string;
+    title: string;
+    location: string;
+    status: EventStatus;
+    sortDate: Date;
+    flyerAsset?: { imageUrl: string } | null;
+  };
+}
+
 /** 参加者カレンダーの 1 件。日付の軸に置く項目だけを返す。 */
-export function serializeCalendarEntry(
-  row: Parameters<typeof serializeParticipation>[0],
-): ParticipantCalendarEntry {
-  const base = serializeParticipation(row);
+export function serializeCalendarEntry(row: CalendarEntryRow): ParticipantCalendarEntry {
   return {
-    participantId: base.id,
+    participantId: row.id,
     date: participationCalendarDate(row),
     eventTime: row.schedule?.eventTime ?? "",
-    status: base.status,
-    statusLabel: base.statusLabel,
+    status: row.status,
+    statusLabel: rsvpStatusLabel(row.status),
     event: {
-      id: base.event.id,
-      title: base.event.title,
-      location: base.event.location,
-      status: base.event.status,
-      flyerThumbnailUrl: base.event.flyerThumbnailUrl,
+      id: row.event.id,
+      title: row.event.title,
+      location: row.event.location,
+      status: row.event.status,
+      flyerThumbnailUrl: row.event.flyerAsset?.imageUrl ?? null,
     },
   };
 }
@@ -181,24 +232,58 @@ export function serializeCalendarEntry(
  * 参加者カレンダーの項目。日時を複数選んだ回答は、選んだ日ごとに 1 件返す。
  * 日程を選んでいない回答（欠席など）は、イベントの代表日に 1 件だけ置く。
  */
-export function serializeCalendarEntries(
-  row: Parameters<typeof serializeParticipation>[0],
-): ParticipantCalendarEntry[] {
-  const base = serializeParticipation(row);
+export function serializeCalendarEntries(row: CalendarEntryRow): ParticipantCalendarEntry[] {
   const schedules = participationSchedules(row);
   if (schedules.length === 0) return [serializeCalendarEntry(row)];
   return schedules.map((schedule) => ({
-    participantId: base.id,
+    participantId: row.id,
     date: formatEventDate(schedule.eventDate),
     eventTime: schedule.eventTime,
-    status: base.status,
-    statusLabel: base.statusLabel,
+    status: row.status,
+    statusLabel: rsvpStatusLabel(row.status),
     event: {
-      id: base.event.id,
-      title: base.event.title,
-      location: base.event.location,
-      status: base.event.status,
-      flyerThumbnailUrl: base.event.flyerThumbnailUrl,
+      id: row.event.id,
+      title: row.event.title,
+      location: row.event.location,
+      status: row.event.status,
+      flyerThumbnailUrl: row.event.flyerAsset?.imageUrl ?? null,
     },
   }));
+}
+
+const MONTH_KEY = /^(\d{4})-(0[1-9]|1[0-2])$/;
+
+/**
+ * `?month=YYYY-MM` の範囲。日本時間ではなく保存形（UTC 0 時の日付）で切る。
+ * `event_schedules.event_date` / `events.sort_date` は日付だけを持つので、UTC の月初で揃える。
+ */
+export function calendarMonthRange(month: string): { start: Date; end: Date } | null {
+  const matched = MONTH_KEY.exec(month);
+  if (!matched) return null;
+  const year = Number(matched[1]);
+  const index = Number(matched[2]) - 1;
+  return {
+    start: new Date(Date.UTC(year, index, 1)),
+    end: new Date(Date.UTC(year, index + 1, 1)),
+  };
+}
+
+/**
+ * 月で絞る条件。カレンダーは「選んだ日程 → 代表日 → イベントの代表日」の順に日付を決めるので、
+ * そのどれかが月内に入る回答を残す。
+ */
+export function calendarMonthFilter(month: string): Prisma.ParticipantWhereInput | null {
+  const range = calendarMonthRange(month);
+  if (!range) return null;
+  const inMonth = { gte: range.start, lt: range.end };
+  return {
+    OR: [
+      // 選んだ日程（join 行）が月内にある。
+      { schedules: { some: { schedule: { eventDate: inMonth } } } },
+      // join 行が無く、代表日だけを持つ古い回答。
+      { schedules: { none: {} }, schedule: { is: { eventDate: inMonth } } },
+      // 日程を選んでいない回答（欠席など）。イベントの代表日に置く。
+      { schedules: { none: {} }, scheduleId: null, event: { sortDate: inMonth } },
+    ],
+  };
 }

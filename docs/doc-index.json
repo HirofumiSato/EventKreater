@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3060,
+      "lineCount": 3069,
       "headings": [
         {
           "level": 1,
@@ -2947,7 +2947,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 2037,
+      "lineCount": 2124,
       "headings": [
         {
           "level": 2,
@@ -3070,6 +3070,30 @@
           "text": "列の意味"
         },
         {
+          "level": 3,
+          "text": "4.8. パフォーマンス索引（追加マイグレーション）"
+        },
+        {
+          "level": 4,
+          "text": "追加する索引"
+        },
+        {
+          "level": 4,
+          "text": "なぜこの 8 本か"
+        },
+        {
+          "level": 4,
+          "text": "適用（migrate deploy で当たる）"
+        },
+        {
+          "level": 4,
+          "text": "auth_attempts の掃除をリクエストから外した"
+        },
+        {
+          "level": 4,
+          "text": "SQL"
+        },
+        {
           "level": 2,
           "text": "5. CRUD操作詳細仕様（トランザクション＆アトミック処理）"
         },
@@ -3125,11 +3149,19 @@
           "exists": true
         },
         {
+          "path": "prisma/migrations/20261116120000_perf_indexes/migration.sql",
+          "exists": true
+        },
+        {
           "path": "scripts/billing-notices.mjs",
           "exists": true
         },
         {
           "path": "src/lib/semantic-themes.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/rate-limit.ts",
           "exists": true
         }
       ],
@@ -3144,7 +3176,7 @@
       "title": "本番デプロイ",
       "summary": "このページは、手元で動く状態から本番へ出すまでの手順です。対象は次の構成です。",
       "preImplementation": false,
-      "lineCount": 996,
+      "lineCount": 1010,
       "headings": [
         {
           "level": 1,
@@ -5886,7 +5918,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2228,
+      "lineCount": 2253,
       "headings": [
         {
           "level": 1,
@@ -6138,7 +6170,7 @@
         },
         {
           "level": 3,
-          "text": "14.5. 主催者側の導線"
+          "text": "14.5. 主催者側の導線とサーバー描画"
         },
         {
           "level": 3,
@@ -6280,7 +6312,15 @@
           "exists": true
         },
         {
+          "path": "src/app/events/[id]/page.tsx",
+          "exists": true
+        },
+        {
           "path": "src/app/global-error.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/invitations/[code]/page.tsx",
           "exists": true
         },
         {
@@ -6288,7 +6328,19 @@
           "exists": true
         },
         {
+          "path": "src/app/mypage/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/[id]/participants/page.tsx",
+          "exists": true
+        },
+        {
           "path": "src/app/organizer/events/new/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/organizer/events/page.tsx",
           "exists": true
         },
         {
@@ -6305,6 +6357,10 @@
         },
         {
           "path": "src/app/page.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/app/participant/page.tsx",
           "exists": true
         },
         {
@@ -6345,6 +6401,10 @@
         },
         {
           "path": "src/components/ui/PlanCard.tsx",
+          "exists": true
+        },
+        {
+          "path": "src/components/ui/Skeleton.tsx",
           "exists": true
         },
         {
@@ -6468,6 +6528,10 @@
           "exists": true
         },
         {
+          "path": "src/modules/events/lib/public-event.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/events/lib/published-counts.ts",
           "exists": true
         },
@@ -6504,11 +6568,23 @@
           "exists": true
         },
         {
+          "path": "src/modules/organizers/lib/event-list.ts",
+          "exists": true
+        },
+        {
           "path": "src/modules/organizers/lib/public-page.ts",
           "exists": true
         },
         {
           "path": "src/modules/organizers/lib/tour/session.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/participants/lib/home.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/participants/lib/roster.ts",
           "exists": true
         },
         {
@@ -6942,7 +7018,7 @@
       "title": "認証の試行回数を緩和し、上限と残り回数を必ず画面に表示する",
       "summary": "> 起票済み: [#25](https://github.com/HirofumiSato/EventKreater/issues/25)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 709,
+      "lineCount": 722,
       "headings": [
         {
           "level": 1,
@@ -9664,7 +9740,7 @@
       "title": "参加者にカレンダー画面を追加し、出欠した催しを日付で俯瞰できるようにする",
       "summary": "> 起票済み: [#19](https://github.com/HirofumiSato/EventKreater/issues/19)。このファイルは設計の記録として残す。",
       "preImplementation": false,
-      "lineCount": 252,
+      "lineCount": 253,
       "headings": [
         {
           "level": 1,
@@ -10792,7 +10868,7 @@
       "title": "全体を掴む 90 分",
       "summary": "このリポジトリは実装が正で、ドキュメントはその検証面です。 上から順に進めると、画面・API・DB・テストが 1 本に繋がります。所要は 90 分です。 店舗イベント、パフォーマーの企画ライブ、一日店長、マルシェ、ご飯会などを開く主催者が、参加者へ直接URLを届ける用途を主対象にします。飯フェス、タコパ、占い、撮影会などの主催者も同じ立場です。 主催者が自分のチャネルで参加者へ URL を届け、集客から出欠・予約の管理までを完結させる用途に絞ります。 主対象の定義は docs/overall_system_requirements_common.md の §2.1 を正とします。",
       "preImplementation": false,
-      "lineCount": 118,
+      "lineCount": 119,
       "headings": [
         {
           "level": 1,
@@ -10879,6 +10955,10 @@
         },
         {
           "path": "src/modules/events/lib/events.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/public-event.ts",
           "exists": true
         },
         {
@@ -11484,7 +11564,7 @@
       "title": "ドキュメントの派生・検証マップ",
       "summary": "正はコードです。このディレクトリの文書はコードの検証面であり、差分を見つけたら同じ PR で文書も直します。",
       "preImplementation": false,
-      "lineCount": 86,
+      "lineCount": 87,
       "headings": [
         {
           "level": 1,
@@ -11496,7 +11576,7 @@
         },
         {
           "level": 2,
-          "text": "既知の乖離（2026-11-05 時点）"
+          "text": "既知の乖離（2026-11-16 時点）"
         },
         {
           "level": 2,
@@ -11527,6 +11607,10 @@
       "codePaths": [
         {
           "path": "docs/archive",
+          "exists": true
+        },
+        {
+          "path": "docs/backend_api_implementation_spec.md",
           "exists": true
         },
         {
@@ -12221,7 +12305,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 866,
+      "lineCount": 874,
       "headings": [
         {
           "level": 1,
@@ -12408,6 +12492,10 @@
         },
         {
           "path": "tests/integration/password-reset.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/integration/public-event-api.test.ts",
           "exists": true
         },
         {
@@ -12648,6 +12736,10 @@
         },
         {
           "path": "tests/unit/mail-webhook.test.mjs",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/migrations.test.mjs",
           "exists": true
         },
         {

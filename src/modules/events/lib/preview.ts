@@ -103,7 +103,8 @@ export function eventFormToPreview(
           id: "preview",
           imageUrl: flyerPreviewUrl,
           lqipDataUrl: null,
-          aspectRatio: "9:16",
+          // 実物のチラシは 1080×1528（A4 縦）。9:16 で確保すると、下に余白ができる。
+          aspectRatio: "A4",
         }
       : null,
   };

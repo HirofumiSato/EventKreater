@@ -195,20 +195,15 @@ export async function createImageAsset({
   };
 }
 
-/** 配信するバイト列。論理削除済み・行が無い・ファイルが無いは、どれも 404。 */
+/**
+ * 配信するバイト列。論理削除済み・ファイルが無いは、どれも 404。
+ *
+ * DB は引かない。`retireImageAsset` が行を論理削除するときにファイルも消すので、
+ * ファイルの有無がそのまま配信可否になる（行だけ残る削除済みの画像は 404 になる）。
+ * 一覧から画像を出すたびに 1 往復していた固定コストを、読み取り 1 回に寄せる。
+ */
 export async function readImageAssetFile(id: string): Promise<Buffer> {
   assertImageAssetId(id);
-  const row = await prisma.imageAsset.findFirst({
-    where: { id, isDeleted: false },
-    select: { id: true },
-  });
-  if (!row) {
-    throw new ProblemDetailException({
-      status: 404,
-      title: "Not Found",
-      detail: "画像が見つかりません。",
-    });
-  }
   try {
     return await readFile(imagePath(id));
   } catch {

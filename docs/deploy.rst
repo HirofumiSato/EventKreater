@@ -128,6 +128,18 @@ Neon のコンソールでプロジェクトを作り、接続文字列を 2 つ
    ``prisma migrate deploy`` は既存のマイグレーションを順に適用するだけで、スキーマを差分から作り直しません。
    ``prisma db push`` は部分ユニーク索引（``event_organizers_one_owner`` など）や CHECK 制約を作らないので、本番では使いません。CI と同じ理由です。
 
+.. note::
+
+   ``20261116120000_perf_indexes`` は索引を 8 本足すだけのマイグレーションで、通常の
+   ``CREATE INDEX`` を使うため、上の ``prisma migrate deploy`` でそのまま当たります。
+   1 つのトランザクションで 8 本を作るので、途中で失敗すれば全部巻き戻ります。
+   ビルドのあいだは各テーブルの書き込みが短時間止まりますが、この規模では 1 本あたり
+   数十ミリ秒です。行数が大きく止めたくない環境では、当てる直前に書き込みを止めるか、
+   手作業で ``CONCURRENTLY`` を流してから ``prisma migrate resolve --applied
+   20261116120000_perf_indexes`` で履歴だけ記録してください（記録済みなら
+   ``migrate deploy`` はこのファイルを流しません）。
+
+
 2. Fly.io にアプリを 3 つ作る
 -----------------------------
 
@@ -784,6 +796,8 @@ staging のホスト名は Cloudflare Access で守ります。組織の **Acces
      - 選んだ環境だけ。``staging`` を選べば staging だけ、``production`` を選べば production だけ
 
 どちらの経路でも ``migrate`` → ``flyer`` → ``web`` の順に直列で流れ、マイグレーションが失敗すればアプリは上がりません。web は flyer の 6PN を引くので、flyer を先に上げます。メール中継の ``mail`` は DB を読まないので、この列とは別に並行で流れます。
+
+``migrate`` ジョブは ``prisma migrate deploy`` をそのまま呼びます。``20261116120000_perf_indexes`` も通常の ``CREATE INDEX`` なので、このジョブでそのまま当たります（当て方の注意は 1. の note）。
 
 ``workflow_run`` は ``paths`` で絞れないため、``docs/`` だけの変更でも連鎖は動きます。CI の対象判定（``scripts/ci-scope.mjs``）はデプロイには効きません。ビルドは走りますが、当てるマイグレーションが無ければ ``migrate`` は何もせずに通ります。
 

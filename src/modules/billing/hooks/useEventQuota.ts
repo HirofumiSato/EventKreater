@@ -29,13 +29,20 @@ export function useEventQuota() {
   const intentRef = useRef<CheckoutIntent | undefined>(undefined);
 
   /**
-   * チケットを取り直し、取れた値をそのまま返す。
+   * チケットを取得し、取れた値をそのまま返す。
    * 押した直後の判定に使えるよう、state を待たずに最新の残数を渡すため。
    * 取得に失敗したときは null を返し、呼び出し元は手元の値で判断する。
+   *
+   * `bypassHttpCache` は、書き込みの直後に読み直すときだけ true にする。
+   * 応答は `Cache-Control: private, max-age=30` なので、素の fetch は 30 秒ぶん
+   * ブラウザの HTTP キャッシュから返り、0円で付与したチケットが画面に出ない。
    */
-  const fetchQuota = useCallback(async (): Promise<UserQuota | null> => {
+  const loadQuota = useCallback(async (bypassHttpCache: boolean): Promise<UserQuota | null> => {
     try {
-      const res = await fetch("/api/v1/billing/quota");
+      const res = await fetch(
+        "/api/v1/billing/quota",
+        bypassHttpCache ? { cache: "no-store" } : undefined,
+      );
       if (!res.ok) {
         setQuota(null);
         return null;
@@ -50,6 +57,14 @@ export function useEventQuota() {
       setIsLoading(false);
     }
   }, []);
+
+  /** 画面を開いたときと、課金のモーダルを開いたとき。30 秒のキャッシュを使ってよい。 */
+  const fetchQuota = useCallback(() => loadQuota(false), [loadQuota]);
+  /**
+   * 付与・公開・決済の確認のあとに呼ばれる取り直し。HTTP キャッシュを飛ばして、
+   * 書き込み後の残数を必ず読む。
+   */
+  const refreshQuota = useCallback(() => loadQuota(true), [loadQuota]);
 
   useEffect(() => {
     void fetchQuota();
@@ -96,11 +111,12 @@ export function useEventQuota() {
       limited?: boolean;
     };
     if (data.limited) {
-      await fetchQuota();
+      // 0円の枠が尽きた・付与された直後は、HTTP キャッシュではなく書いた後の値を読む。
+      await refreshQuota();
       return "LIMITED";
     }
     if (data.granted) {
-      await fetchQuota();
+      await refreshQuota();
       return "GRANTED";
     }
     if (data.checkoutUrl) {
@@ -110,7 +126,7 @@ export function useEventQuota() {
       return "REDIRECT";
     }
     throw new Error("単発決済セッション作成に失敗しました");
-  }, [fetchQuota]);
+  }, [refreshQuota]);
 
   const startSubscriptionCheckout = useCallback(
     async (plan: "MONTHLY_8" | "UNLIMITED", override?: CheckoutIntent) => {
@@ -142,7 +158,7 @@ export function useEventQuota() {
     isPricingModalOpen,
     openPricingModal,
     closePricingModal: () => setIsPricingModalOpen(false),
-    refreshQuota: fetchQuota,
+    refreshQuota,
     startOneTimeCheckout,
     startSubscriptionCheckout,
   };

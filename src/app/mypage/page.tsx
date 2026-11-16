@@ -1,315 +1,84 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { QuotaStatusBanner } from "@/modules/billing/components/QuotaStatusBanner";
-import { VerifyPaymentBanner } from "@/modules/billing/components/VerifyPaymentBanner";
-import { ReferralPanel } from "@/modules/account/components/ReferralPanel";
-import { MyPageGuideTour } from "@/modules/organizers/components/MyPageGuideTour";
-import { useEventQuota } from "@/modules/billing/hooks/useEventQuota";
-import { NotificationList } from "@/modules/notifications/components/NotificationList";
-import { announceNotificationsChanged } from "@/modules/notifications/hooks/useNotifications";
-import type { NotificationsResponse, RsvpNotification } from "@/modules/notifications/types";
-import { readProblem } from "@/lib/problem";
+import { unstable_noStore as noStore } from "next/cache";
+import { Alert } from "@/components/ui";
 import { loginUrl } from "@/lib/auth-links";
-import { SITE } from "@/lib/site";
-import { priceLabel, scheduleLabel } from "@/lib/serializers";
-import type { OrganizerEvent } from "@/modules/events/types";
-import { todayInTokyo } from "@/modules/events/lib/event-filters";
-import { countPublishedBySource } from "@/modules/events/lib/published-counts";
-import type { OrganizerProfileDraftResponse } from "@/modules/organizers/types";
-import { Alert, EmptyState, Loading, PageHeader, Row, Rows, Section, SectionHead } from "@/components/ui";
+import { ProblemDetailException } from "@/lib/exceptions";
+import { readNeedsHydrate, readPageIdentity } from "@/lib/server-session";
+import { loadNotificationInbox } from "@/modules/notifications/lib/inbox";
+import { loadOrganizerEvents, splitDraftEvents } from "@/modules/organizers/lib/event-list";
+import { readOrganizerProfileDraft } from "@/modules/organizers/lib/profile-store";
+import { organizerProfilePath } from "@/modules/organizers/lib/public-page";
+import { MyPageScreen, type MyPageData } from "./MyPageClient";
 
-/** ホームに出す主催イベントの件数。全件は主催一覧（SCR-ORG-01）が持つ。 */
-const SUMMARY_LIMIT = 3;
+export const dynamic = "force-dynamic";
 
-interface ProfileResponse {
-  user: { id: string; email: string; name: string };
-  isOrganizer: boolean;
+/** ログインが要る画面の案内。参加履歴と違い、主催者マイページは会員だけが開ける。 */
+function LoginRequired({ message }: { message: string }) {
+  return (
+    <Alert tone="warning">
+      {message}{" "}
+      <Link href={loginUrl("/mypage")} className="text-link">
+        主催者ログイン
+      </Link>
+    </Alert>
+  );
 }
 
 /**
- * 主催者（幹事）のマイページ。
- * 参加履歴はここへ混ぜず、参加者ホーム（/participant）と参加履歴（/participant/history）に分ける。
+ * 主催者マイページ（SCR-PUB-03）。
+ *
+ * 会員・主催イベント・公開プロフィール・新着を 1 度に読み、クライアントへ 1 つの
+ * まとまりで渡す。ヘッダー・集計・直近の催しが最初の HTML に載る。
  */
-export default function MyPage() {
-  const quotaState = useEventQuota();
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [events, setEvents] = useState<OrganizerEvent[]>([]);
-  const [ownProfile, setOwnProfile] = useState<OrganizerProfileDraftResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // 新着（参加表明・参加要望・紹介でのチケット付与）。主催者だけが持つ。
-  const [notifications, setNotifications] = useState<RsvpNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [marking, setMarking] = useState(false);
-  // 紹介の取得が終わるまで、ガイドの対象（紹介の紙）は測れない。
-  const [referralReady, setReferralReady] = useState(false);
-  // 右上の「使い方」。値を変えるとガイドが 1 枚目から開く。
-  const [guideStart, setGuideStart] = useState(0);
+export default async function MyPage() {
+  noStore();
+  const { userId } = await readPageIdentity();
+  if (!userId) return <LoginRequired message="ログインが必要です。" />;
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      const profileRes = await fetch("/api/v1/user/profile");
-      if (profileRes.status === 401) {
-        if (active) setError("ログインが必要です。");
-        return;
-      }
-      if (!profileRes.ok) {
-        if (active) setError(await readProblem(profileRes));
-        return;
-      }
-      const profileBody = (await profileRes.json()) as ProfileResponse;
-      const eventsRes = await fetch("/api/v1/organizer/events");
-      const eventsBody = eventsRes.ok ? ((await eventsRes.json()) as { events: OrganizerEvent[] }) : { events: [] };
-      // 主催者だけが公開プロフィールを持つ。まだイベントが無い会員は 403 なので、その場合は節を出さない。
-      const ownRes = profileBody.isOrganizer ? await fetch("/api/v1/organizer/profile") : null;
-      const ownBody = ownRes?.ok ? ((await ownRes.json()) as OrganizerProfileDraftResponse) : null;
-      // 新着は主催者だけが持つ。参加者の端末では問い合わせない。
-      const notificationsBody = profileBody.isOrganizer
-        ? await fetch("/api/v1/notifications?limit=5").then(async (res) =>
-            res.ok ? ((await res.json()) as NotificationsResponse) : null,
-          )
-        : null;
-      if (!active) return;
-      setProfile(profileBody);
-      // 下書きは出欠の統計を持たないため、要約には公開済みと受付停止だけを出す。
-      // 下書きの管理は主催一覧の「下書き一覧」が受け持つ。
-      setEvents(eventsBody.events.filter((event) => event.status !== "DRAFT"));
-      setOwnProfile(ownBody);
-      if (notificationsBody) {
-        setNotifications(notificationsBody.notifications);
-        setUnreadCount(notificationsBody.unreadCount);
-      }
-      await fetch("/api/v1/user/hydrate", { method: "POST" });
-    };
-    void load().catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : "読み込みに失敗しました");
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  /** 既読の送信。応答の未読数をそのまま反映し、ヘッダーのバッジにも知らせる。 */
-  const markRead = async (ids?: string[]) => {
-    if (marking) return;
-    setMarking(true);
-    const readAt = new Date().toISOString();
-    try {
-      const res = await fetch("/api/v1/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ids && ids.length > 0 ? { ids } : { all: true }),
-      });
-      if (!res.ok) return;
-      const body = (await res.json()) as { unreadCount: number };
-      setUnreadCount(body.unreadCount);
-      // 楽観的にはせず、送れた分だけ既読にする（失敗したら未読のまま残す）。
-      const target = ids && ids.length > 0 ? new Set(ids) : null;
-      setNotifications((current) =>
-        current.map((row) =>
-          !target || target.has(row.id) ? { ...row, readAt: row.readAt ?? readAt } : row,
-        ),
-      );
-      announceNotificationsChanged();
-    } catch {
-      // 既読にできなかっただけ。未読のまま残し、次の読み込みで取り直す。
-    } finally {
-      setMarking(false);
-    }
-  };
-
-  /** 行を押したとき。名簿へ移る前に、その 1 件だけ既読にする。 */
-  const openNotification = (notification: RsvpNotification) => {
-    if (notification.readAt !== null) return;
-    void markRead([notification.id]);
-  };
-
-  if (error) {
-    return (
-      <Alert tone="warning">
-        {error}{" "}
-        <Link href={loginUrl("/mypage")} className="text-link">
-          主催者ログイン
-        </Link>
-      </Alert>
-    );
+  try {
+    const data = await loadMyPage(userId);
+    return <MyPageScreen initial={data} />;
+  } catch (cause) {
+    const message =
+      cause instanceof ProblemDetailException
+        ? cause.detail
+        : cause instanceof Error
+          ? cause.message
+          : "読み込みに失敗しました";
+    return <LoginRequired message={message} />;
   }
-  if (!profile) {
-    return (
-      <Loading>
-        マイページを読み込んでいます
-      </Loading>
-    );
-  }
+}
 
-  // 要約は帯と同じ数え方にする。公開済み・開催日が今日以降・自分の筆頭幹事のものだけを、
-  // 月額プラン（上限に数える）とチケット（単発・無料チケット。上限の外）に分ける。
-  // 参加の人数は出さない。直近のイベントの行と名簿が持ち、ここに置くと二重になる。
-  const publishedCounts = countPublishedBySource(events, todayInTokyo());
+/**
+ * マイページの初期データ。
+ *
+ * 会員名・催し・公開プロフィール・新着は互いに依存しないので 1 ウェーブで引く。
+ * 会員名は催しの一覧を引くときに一緒に読めるので、会員の行をもう一度読まない。
+ */
+async function loadMyPage(userId: string): Promise<MyPageData> {
+  const [organizerEvents, ownDraft, inbox] = await Promise.all([
+    loadOrganizerEvents({ userId, guestTokenHashes: [] }),
+    readOrganizerProfileDraft(userId),
+    loadNotificationInbox(userId, 5),
+  ]);
 
-  return (
-    <div className="stack">
-      <PageHeader
-        title="主催者マイページ"
-        lead={<>{profile.user.name} さん。イベントは {events.length}件です。</>}
-        actions={
-          // 操作ガイドは主催者にだけ意味がある（参加者には紹介も新着も無い）。
-          // 初回は自動で開き、閉じたあともここから何度でも開き直せる。
-          profile.isOrganizer ? (
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              data-guide-target="mypage-guide"
-              aria-label="操作ガイドを開く"
-              onClick={() => setGuideStart((current) => current + 1)}
-            >
-              使い方
-            </button>
-          ) : undefined
-        }
-      />
+  // 主催一覧は下書きも返す。マイページの要約と件数は、公開済みと受付停止だけを数える。
+  const { events } = splitDraftEvents(organizerEvents.events);
+  // 催しを 1 件でも持つ会員が主催者（/api/v1/user/profile の isOrganizer と同じ数え方）。
+  const isOrganizer = organizerEvents.events.length > 0;
 
-      <div className="roster-summary roster-summary--pairs">
-        <div className="roster-summary__item roster-summary__item--plan">
-          <span className="roster-summary__label">プラン公開</span>
-          <span className="roster-summary__value">
-            {publishedCounts.plan}
-            <span>件</span>
-          </span>
-        </div>
-        <div className="roster-summary__item roster-summary__item--ticket">
-          <span className="roster-summary__label">チケット公開</span>
-          <span className="roster-summary__value">
-            {publishedCounts.ticket}
-            <span>件</span>
-          </span>
-        </div>
-      </div>
-
-      <QuotaStatusBanner
-        quota={quotaState.quota}
-        loading={quotaState.isLoading}
-        onPurchaseTicket={() => quotaState.startOneTimeCheckout({ returnTo: "/mypage" })}
-        onGranted={() => void quotaState.refreshQuota()}
-      />
-      <VerifyPaymentBanner onVerified={() => void quotaState.refreshQuota()} />
-
-      {/* 紹介はチケットを増やす手段。帯のすぐ下に置き、数と導線を同じ場所で見せる。
-          ガイドの 2 枚目がこの紙を指すので、取得の完了を外へ知らせる。 */}
-      <div data-guide-target="mypage-referral">
-        <ReferralPanel onReady={() => setReferralReady(true)} />
-      </div>
-
-      {/* 新着は数字のすぐ下に置く。契約やイベントより先に、誰かが答えたことが目に入る。
-          マイページは 4 件までにし、続きは通知一覧（/notifications）が受ける。 */}
-      {profile.isOrganizer && (
-        <NotificationList
-          notifications={notifications}
-          unreadCount={unreadCount}
-          marking={marking}
-          onMarkAll={() => void markRead()}
-          onMarkOne={(notification) => void markRead([notification.id])}
-          onOpen={openNotification}
-          moreHref={SITE.nav.notifications.href}
-        />
-      )}
-
-      <Section>
-        <SectionHead title="直近のイベント" />
-        {events.length === 0 && (
-          <EmptyState>
-            まだ主催イベントはありません。{" "}
-            <Link href={SITE.nav.createEvent.href} className="text-link">
-              {SITE.cta.createEventFirst}
-            </Link>
-          </EmptyState>
-        )}
-        {events.length > 0 && (
-          <Rows>
-            {events.slice(0, SUMMARY_LIMIT).map((event) => (
-              <Row
-                title={<>{event.title}</>}
-                meta={<>{scheduleLabel(event.schedules)} ／ 参加 {event.stats.attendingCount}名
-                    {event.capacity === null ? " ／ 定員なし" : ` / ${event.capacity}名`} ／{" "}
-                    {priceLabel(event.pricePlans)}</>}
-                aside={<><div className="event-card__actions">
-                  <Link
-                    href={`/organizer/events/${event.id}/participants`}
-                    className="btn btn--ghost btn--sm"
-                  >
-                    出欠
-                  </Link>
-                  <Link
-                    href={`/organizer/events/${event.id}/edit`}
-                    className="btn btn--ghost btn--sm"
-                  >
-                    編集
-                  </Link>
-                </div></>}
-                key={event.id}
-              />
-            ))}
-          </Rows>
-        )}
-        {/* 見出しに件数を書かず、一覧を切ったことが行の下で分かるようにする。 */}
-        {events.length > SUMMARY_LIMIT && (
-          <p className="rows__omit">
-            {SUMMARY_LIMIT + 1}件目からは省略しています。
-          </p>
-        )}
-        <div className="panel__actions panel__actions--row">
-          <Link href="/organizer/events" className="btn btn--outline btn--sm">
-            すべて見る
-          </Link>
-          <Link href={SITE.nav.createEvent.href} className="btn btn--primary btn--sm">
-            {SITE.nav.createEvent.label}
-          </Link>
-        </div>
-      </Section>
-
-      {ownProfile && (
-        <Section>
-          <SectionHead title="公開プロフィール" />
-          <dl className="kv">
-            <div className="kv__row">
-              <dt>状態</dt>
-              <dd>{ownProfile.profile.isPublished ? "公開中" : "非公開"}</dd>
-            </div>
-            <div className="kv__row">
-              <dt>見えている内容</dt>
-              <dd>肩書き、自己紹介、活動エリア、ジャンル、リンク</dd>
-            </div>
-          </dl>
-          {/* 編集と公開ページは、スマホでも 1 段に並べる（`--row`）。
-              縦に積むと紙が伸び、どちらが主か読みにくい。 */}
-          <div className="panel__actions panel__actions--row">
-            <Link href="/organizer/profile" className="btn btn--primary btn--sm">
-              編集する
-            </Link>
-            {/* 公開ページは別の窓で開く。貼り紙に留めたテープの飾り（`btn--peek`）と
-                「別の窓」の印を添え、編集（主ボタン）と役割の違いを見せる。 */}
-            <a
-              href={ownProfile.homePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--outline btn--sm btn--peek"
-            >
-              公開ページを見る
-              <ExternalLink className="icon" aria-hidden="true" />
-            </a>
-          </div>
-        </Section>
-      )}
-
-      {/* 操作ガイド。ポータルで `document.body` の直下へ描くので、ここでは起動だけを渡す。 */}
-      <MyPageGuideTour
-        ready={referralReady}
-        autoStart={profile.isOrganizer}
-        startSignal={guideStart}
-      />
-    </div>
-  );
+  return {
+    profile: {
+      name: organizerEvents.viewer.name ?? "",
+      isOrganizer,
+      needsHydrate: readNeedsHydrate(),
+    },
+    events,
+    // 主催者だけが公開プロフィールを持つ。まだイベントが無い会員は節を出さない。
+    ownProfile: isOrganizer
+      ? { isPublished: ownDraft.isPublished, homePath: organizerProfilePath(userId) }
+      : null,
+    notifications: inbox.notifications,
+    unreadCount: inbox.unreadCount,
+  };
 }

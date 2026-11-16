@@ -16,6 +16,12 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const STATUSES = ["DRAFT", "PUBLISHED", "CLOSED"] as const;
 type EventStatusFilter = (typeof STATUSES)[number];
 
+/** 期間の指定が無いときに遡る長さ。過去の催しを全部読み直さないための既定。 */
+const DEFAULT_PAST_DAYS = 365;
+
+/** 1 回に集計する催しの上限。期間で絞ったうえでも、際限なく読まない。 */
+const MAX_EVENTS = 300;
+
 function readDate(value: string | null, label: string): Date | null {
   if (!value) return null;
   if (!DATE_PATTERN.test(value)) {
@@ -43,15 +49,20 @@ function readStatus(value: string | null): EventStatusFilter | null {
 
 /**
  * 主催イベントを横断した売上集計。
- * 期間は開催日（`Event.sortDate`）で絞る。初期表示は全期間。
+ * 期間は開催日（`Event.sortDate`）で絞る。指定が無ければ直近 1 年を集計し、
+ * 実際に集計した期間を `period` で返す（全期間と表示して 1 年分だけ数えない）。
  * 金額は出欠確定時点のスナップショットなので、料金プランを編集しても過去は動かない。
  */
 export async function GET(req: NextRequest) {
   try {
     const userId = await requireOrganizerAccount(req);
     const url = new URL(req.url);
-    const from = readDate(url.searchParams.get("from"), "from");
     const to = readDate(url.searchParams.get("to"), "to");
+    // 期間の指定が無いときは直近 1 年。古い催しの参加者を毎回すべて読まないための既定。
+    // `to` だけ指定されたときは、その日までの全期間（`from` は null のまま）にする。
+    const from =
+      readDate(url.searchParams.get("from"), "from") ??
+      (to ? null : new Date(Date.now() - DEFAULT_PAST_DAYS * 86_400_000));
     const status = readStatus(url.searchParams.get("status"));
 
     const eventWhere: Prisma.EventWhereInput = { isDeleted: false };
@@ -65,6 +76,10 @@ export async function GET(req: NextRequest) {
 
     const organizers = await prisma.eventOrganizer.findMany({
       where: { userId, event: eventWhere },
+      // 上限で切るときに新しい催しが残るよう、開催日の新しい順に読む。
+      // 応答の並びは読み込み後に開催日の古い順へ直す。
+      orderBy: { event: { sortDate: "desc" } },
+      take: MAX_EVENTS,
       select: {
         id: true,
         eventId: true,

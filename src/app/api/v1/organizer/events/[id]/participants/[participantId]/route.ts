@@ -19,6 +19,7 @@ import {
   serializeParticipantRow,
 } from "@/modules/participants/lib/serialize";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -157,6 +158,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         include: participantRecordInclude,
       });
     });
+    // 承認・辞退・人数の変更は告知ページの人数（写真の下の札）に出る。
+    // 名簿の保存はキャッシュを捨て、次の閲覧から新しい人数を返す。
+    revalidatePublicEvent(params.id);
     const waitlistRows = await prisma.participant.findMany({
       where: { eventId: params.id, status: "WAITLISTED", ...ACTIVE_PARTICIPANT_WHERE },
       select: participantWaitlistSelect,
@@ -195,6 +199,8 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
         rsvpTokenHash: sha256(generateSecureToken(32)),
       },
     });
+    // 名簿から外すと席が空く。告知ページの人数を古いまま出さない。
+    revalidatePublicEvent(params.id);
     return NextResponse.json({
       success: true,
       participant: { id: current.id, deletedAt: deletedAt.toISOString() },

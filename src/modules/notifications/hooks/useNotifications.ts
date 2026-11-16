@@ -1,18 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import type { NotificationsResponse } from "@/modules/notifications/types";
 
 /**
  * 未読数を取るフック。共通ヘッダーの札（頭文字）に出すバッジだけが使う。
  *
  * 通知は主催者にしか作られないので、主催者でない会員は呼ばない（`enabled`）。
- * 取り直す契機は 4 つ。
- * - 画面を移ったとき（主催一覧 → 名簿 など、見ている場所が変われば数も変わり得る）
+ * 取り直す契機は 3 つ。
  * - タブへ戻ったとき（別の端末で答えた出欠を拾う）
  * - 60 秒ごと（開きっぱなしの画面でも、そのうち気づける）
  * - `notifications:changed`（既読にした直後に、その場でバッジを消す）
+ *
+ * 画面を移ったときは取り直さない。未読数は画面ではなく会員に属するので、
+ * 移動のたびに 1 往復増やす理由が無い（`useUnreadNotifications` の呼び出し側は
+ * `src/components/common/Navbar.tsx` だけ）。
  *
  * 数を合わせるのは `PATCH /api/v1/notifications` の応答とこのイベントだけで、
  * 画面ごとに未読数を計算し直さない。
@@ -39,7 +41,6 @@ export function announceNotificationsChanged(): void {
 }
 
 export function useUnreadNotifications(enabled: boolean): UnreadNotificationsState {
-  const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const refresh = useCallback(async () => {
@@ -56,7 +57,7 @@ export function useUnreadNotifications(enabled: boolean): UnreadNotificationsSta
 
   useEffect(() => {
     void refresh();
-  }, [refresh, pathname]);
+  }, [refresh]);
 
   useEffect(() => {
     if (!enabled) return;

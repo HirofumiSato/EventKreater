@@ -95,16 +95,35 @@ export async function assertWithinAttemptLimit(rule: RateLimitRule, key: string)
   });
 }
 
+/**
+ * 古い行を掃除する確率。試行の記録のたびに必ず走らせると、RSVP の共通経路で
+ * 索引の効かない全表 DELETE が毎回走る。ごく一部の呼び出しだけに間引く。
+ */
+const CLEANUP_PROBABILITY = 0.01;
+/** 同じプロセスが掃除を続けて起こさないための最短間隔（1 時間）。 */
+const CLEANUP_MIN_INTERVAL_MS = 60 * 60 * 1000;
+let lastCleanupAt = 0;
+
+/**
+ * 1 日より古い行を掃除する。呼んだ側は待たない。
+ *
+ * 掃除は応答に要らないので、失敗しても握りつぶして警告だけ残す。
+ * 窓・上限の数え方は変えない（掃除の有無で試行の判定は変わらない）。
+ */
+function scheduleAttemptCleanup(): void {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_MIN_INTERVAL_MS) return;
+  if (Math.random() >= CLEANUP_PROBABILITY) return;
+  lastCleanupAt = now;
+  const cutoff = new Date(now - DAY_MS);
+  void prisma.authAttempt.deleteMany({ where: { createdAt: { lt: cutoff } } }).catch((error: unknown) => {
+    console.warn("[rate-limit] 古い試行の掃除に失敗しました。", error);
+  });
+}
+
 export async function recordAuthAttempt(rule: RateLimitRule, key: string): Promise<void> {
   await prisma.authAttempt.create({ data: { bucket: bucketOf(rule, key) } });
-  // 1 日より古い行を、書き込みのついでに掃除する。
-  const dayAgo = new Date(Date.now() - DAY_MS);
-  const recent = await prisma.authAttempt.count({
-    where: { bucket: bucketOf(rule, key), createdAt: { gte: dayAgo } },
-  });
-  if (recent <= 1) {
-    await prisma.authAttempt.deleteMany({ where: { createdAt: { lt: dayAgo } } });
-  }
+  scheduleAttemptCleanup();
 }
 
 /** 成功したときに、そのバケットの失敗回数を消す。 */

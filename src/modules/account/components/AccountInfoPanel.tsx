@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { readProblem } from "@/lib/problem";
+import { invalidateViewer } from "@/lib/viewer-store";
 import type { AccountProfile, ReauthChallenge } from "@/modules/account/types";
 import { Alert, Field, Panel } from "@/components/ui";
 
@@ -40,6 +41,8 @@ export function AccountInfoPanel({ profile, onChange }: Props) {
       if (!res.ok) throw new Error(await readProblem(res));
       const body = (await res.json()) as { user: { id: string; email: string; name: string } };
       onChange({ name: body.user.name });
+      // ヘッダーの名前は控えを使い回している。保存したら取り直させる。
+      invalidateViewer();
       setNameStatus("表示名を変更しました。");
     } catch (cause) {
       setNameError(cause instanceof Error ? cause.message : "変更に失敗しました");

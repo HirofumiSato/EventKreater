@@ -15,6 +15,7 @@ import {
   viewerRoleCaption,
   viewerRoleLabel,
 } from "@/lib/site-nav";
+import { invalidateViewer, loadViewer, subscribeViewer } from "@/lib/viewer-store";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/useNotifications";
 import { formatUnreadCount } from "@/modules/notifications/lib/unread";
 
@@ -52,35 +53,21 @@ export function Navbar() {
   const { unreadCount } = useUnreadNotifications(Boolean(viewer?.isOrganizer));
   const unreadLabel = formatUnreadCount(unreadCount);
 
+  // 閲覧者はモジュールの控えから 1 回だけ読む（`src/lib/viewer-store.ts`）。
+  // 画面を移るたびに `/user/profile` を叩くと、クリックごとに 1 往復増える。
+  // ログアウトと表示名の保存だけが `invalidateViewer()` で取り直す。
   useEffect(() => {
     let active = true;
-    void fetch("/api/v1/user/profile")
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return (await res.json()) as {
-          user: { name: string; platformRole?: string };
-          isOrganizer?: boolean;
-        };
-      })
-      .then((data) => {
-        if (!active) return;
-        setViewer(
-          data
-            ? {
-                name: data.user.name,
-                isOrganizer: Boolean(data.isOrganizer),
-                platformRole: data.user.platformRole === "ADMIN" ? "ADMIN" : "MEMBER",
-              }
-            : null,
-        );
-      })
-      .catch(() => {
-        if (active) setViewer(null);
-      });
+    const apply = (next: Viewer | null) => {
+      if (active) setViewer(next);
+    };
+    void loadViewer().then(apply);
+    const unsubscribe = subscribeViewer(apply);
     return () => {
       active = false;
+      unsubscribe();
     };
-  }, [pathname]);
+  }, []);
 
   // 画面を移ったらメニューは閉じる。
   useEffect(() => {
@@ -169,6 +156,8 @@ export function Navbar() {
     setLoggingOut(true);
     try {
       await fetch("/api/v1/auth/logout", { method: "POST" });
+      // 控えを捨てて取り直す。次の画面では未ログインの並びになる。
+      invalidateViewer();
       setViewer(null);
       setMenuOpen(false);
       setUserMenuOpen(false);

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { formatDateWithWeekdayJa } from "@/lib/format";

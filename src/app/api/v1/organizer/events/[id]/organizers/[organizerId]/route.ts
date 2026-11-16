@@ -5,6 +5,8 @@ import { assertRegisteredOwner } from "@/modules/auth/lib/guards";
 import { toErrorResponse } from "@/lib/http";
 import { organizerLabel } from "@/modules/organizers/lib/names";
 import { notifyCoHostRemoved } from "@/modules/notifications/lib/notify";
+import { revalidatePublicEvent } from "@/modules/events/lib/public-event";
+import { revalidateOrganizerPagesOfEvent } from "@/modules/organizers/lib/public-organizer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,6 +97,10 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       console.error("共同主催の解除通知に失敗しました", error);
     }
 
+    // 告知ページの主催者一覧から外れる。並びと名前を古いまま出さない。
+    revalidatePublicEvent(params.id);
+    // 外れた本人の公開ページからは、この催しが消える。
+    await revalidateOrganizerPagesOfEvent(params.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return toErrorResponse(

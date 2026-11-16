@@ -7,7 +7,7 @@ import {
   serializeParticipantDiscounts,
 } from "@/lib/serializers";
 import type { ParticipantRow } from "@/modules/events/types";
-import { waitlistPosition } from "@/modules/events/lib/rsvp-status";
+import { isWaitlisted, sortWaitlistRows } from "@/modules/events/lib/rsvp-status";
 import { participantScheduleIds } from "@/modules/participants/lib/rsvp";
 import { discountTotal, payableAmount, unitPayableAmount } from "@/modules/revenue/lib/revenue";
 
@@ -43,6 +43,26 @@ export const participantWaitlistSelect = {
 export type ParticipantWaitlistRow = Prisma.ParticipantGetPayload<{
   select: typeof participantWaitlistSelect;
 }>;
+
+/**
+ * 待ち順の Map（`participantId` → 1 始まりの順位）。
+ *
+ * 名簿は同じ待ち行列の配列を全行に渡すので、配列の同一性で覚えておけば 1 回で済む。
+ * 行ごとに `waitlistPosition` を呼ぶと、行数 × 要望数 の線形探索になっていた。
+ */
+const waitlistPositionsCache = new WeakMap<
+  readonly ParticipantWaitlistRow[],
+  Map<string, number>
+>();
+
+function waitlistPositions(rows: readonly ParticipantWaitlistRow[]): Map<string, number> {
+  const cached = waitlistPositionsCache.get(rows);
+  if (cached) return cached;
+  const waiting = sortWaitlistRows(rows.filter((row) => isWaitlisted(row.status)));
+  const positions = new Map(waiting.map((row, index) => [row.id, index + 1]));
+  waitlistPositionsCache.set(rows, positions);
+  return positions;
+}
 
 /**
  * 名簿の 1 行。GET・PATCH・追加の POST で同じ JSON の形を返す。
@@ -89,7 +109,7 @@ export function serializeParticipantRow(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     waitlistedAt: row.waitlistedAt ? row.waitlistedAt.toISOString() : null,
-    waitlistPosition: waitlistPosition([...waitlistRows], row.id),
+    waitlistPosition: waitlistPositions(waitlistRows).get(row.id) ?? null,
     collectedAt: row.collectedAt ? row.collectedAt.toISOString() : null,
     deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
   };

@@ -22,6 +22,8 @@ storage/mock-variants/
 # ホーム LP の素材にする画面控え（スマホ幅 390・DPR 2）。撮り直して使うだけで、コミットしない。
 storage/lp-shots/
 storage/mock-assets.json
+# perf:audit の基準値（before / after）。計測のたびに作り直すので、コミットしない。
+storage/perf/
 # 調査や切り分けで `storage/` に落とした一時ファイル。`storage/` 全体は ignore しない
 # （seed の置き場と追跡済みのものがあるため）。ログは上の `*.log` が拾う。
 storage/*.err

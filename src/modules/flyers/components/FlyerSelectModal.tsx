@@ -86,7 +86,16 @@ export function FlyerSelectModal({
         <div className="card-grid">
           {flyers.map((flyer) => (
             <article key={flyer.id} className="card">
-              <img src={flyer.imageUrl} alt="" style={{ width: "100%", height: "8rem", objectFit: "cover" }} />
+              {/* 一覧の下見。枠は 8rem の高さで切るので、原寸ではなく `?w=240` の縮小版を取る。 */}
+              <img
+                src={`${flyer.imageUrl}?w=240`}
+                alt=""
+                width={1080}
+                height={1528}
+                loading="lazy"
+                decoding="async"
+                style={{ width: "100%", height: "8rem", objectFit: "cover" }}
+              />
               <p className="card__title">{flyer.title || "無題のチラシ"}</p>
               <div className="btn-row">
                 <button
