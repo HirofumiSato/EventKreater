@@ -27,10 +27,10 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isUserId(params.userId)) {
-    return { title: "主催者が見つかりません", robots: { index: false, follow: false } };
-  }
-  const loaded = await loadPublicOrganizerProfileCached(params.userId);
+  // 見つからないときは器（`layout.tsx`）が 404 にする。ここは見つかったときの
+  // タイトルと OGP だけを持つ（ここで `notFound()` を投げても、骨格
+  // `loading.tsx` が先に流れていれば HTTP の状態は 200 のままになる）。
+  const loaded = isUserId(params.userId) ? await loadPublicOrganizerProfileCached(params.userId) : null;
   if (!loaded) {
     return { title: "主催者が見つかりません", robots: { index: false, follow: false } };
   }
