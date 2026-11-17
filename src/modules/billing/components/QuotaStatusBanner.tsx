@@ -18,6 +18,10 @@ export interface QuotaStatusBannerProps {
   onPurchaseTicket: () => Promise<OneTimeCheckoutResult>;
   /** 0 円で付与されたときに呼ぶ。 */
   onGranted?: () => void;
+  /**
+   * 電話番号の確認へ送る直前に呼ぶ。呼び出し元が入力を退避してから遷移する。
+   */
+  onBeforeAuth?: () => void;
   nextPath?: string;
 }
 
@@ -56,7 +60,7 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
   return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
-export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, onGranted, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
+export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, onGranted, onBeforeAuth, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
   const [ticketOpen, setTicketOpen] = useState(false);
   // まだ残数が分からない間は、未加入のいちばん多い形（本文 1 行 + 枠線ボタン 2 つ）で
   // 場所だけを取る。届いた瞬間に下のフォームが動かないようにするのが目的なので、
@@ -118,7 +122,11 @@ export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, on
       <p>
         {message}{" "}
         {needsPhone && (
-          <Link href={`/auth/register?step=phone&next=${encodeURIComponent(nextPath)}`} className="btn btn--outline btn--sm">
+          <Link
+            href={`/auth/register?step=phone&next=${encodeURIComponent(nextPath)}`}
+            onClick={onBeforeAuth}
+            className="btn btn--outline btn--sm"
+          >
             電話番号を確認する
           </Link>
         )}

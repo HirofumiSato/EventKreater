@@ -10,6 +10,7 @@ import {
 import {
   advanceOpenKeys,
   EVENT_STEPS,
+  eventStep,
   isBasicStepComplete,
   isCapacityStepComplete,
   isLocationStepComplete,
@@ -114,6 +115,28 @@ function isForward(from: EventStepKey | null, to: EventStepKey | null): boolean 
 }
 
 /**
+ * 打っている途中にステップを畳むと、入力欄ごと DOM から消えてフォーカスを失う入力。
+ * 日付・時刻・チェック・範囲・選択は、閉じても続きを打てないので今までどおり扱う。
+ */
+const TEXT_ENTRY_TYPES = new Set(["text", "number", "tel", "email", "url", "password", "search"]);
+
+function isTextEntry(element: Element | null): boolean {
+  if (!element) return false;
+  if (element.tagName === "TEXTAREA") return true;
+  if (element.tagName !== "INPUT") return false;
+  // type を省いた input も `type` は "text" を返す。
+  return TEXT_ENTRY_TYPES.has((element as HTMLInputElement).type);
+}
+
+/** ステップの本文か見出しボタンの中にある要素なら、そのステップのキーを返す。 */
+function stepKeyOfElement(element: Element | null): EventStepKey | null {
+  const holder = element?.closest('[id^="event-step-"]');
+  if (!holder) return null;
+  const key = holder.id.replace(/^event-step-/, "").replace(/-toggle$/, "");
+  return EVENT_STEPS.some((step) => step.key === key) ? (key as EventStepKey) : null;
+}
+
+/**
  * 新規イベント作成のステップ入力。
  * 入力項目は減らさず、開いているステップの入力欄だけを出す。
  * 必須のステップが埋まったら次を開き、済んだステップは要約 1 行に畳む。
@@ -150,11 +173,20 @@ export function EventStepForm({
     ? "custom"
     : capacitySelectionOf(value.capacity);
 
+  /**
+   * テキストの入力中に保留した自動展開。金額に 1 桁入っただけで料金ステップを
+   * 畳むと、打っている欄ごと DOM から消えてフォーカスを失う。フォーカスが
+   * ステップの外へ出るまで `{ from, to }` を控え、そのとき同じ計算で開く。
+   */
+  const deferredAdvance = useRef<{ from: EventStepKey; to: EventStepKey } | null>(null);
+
   // 復元した値が入ってから、続きのステップを開く。値が変わっても開き直さない。
   const seeded = useRef<string | null>(null);
   useEffect(() => {
     if (!ready || seeded.current === seedKey) return;
     seeded.current = seedKey;
+    // 値が入れ替わったので、前の値で保留した自動展開は捨てる。
+    deferredAdvance.current = null;
     setOpenKeys(new Set([resumeStepKey(value)]));
     setCustomCapacity(capacitySelectionOf(value.capacity) === "custom");
   }, [ready, seedKey, value]);
@@ -179,11 +211,62 @@ export function EventStepForm({
     if (before === null || before === frontier || !isForward(before, frontier)) return;
     const nextStep = EVENT_STEPS[(STEP_INDEX.get(before) ?? 0) + 1];
     if (!nextStep?.mandatory) return;
+    // 打っている途中なら、閉じずに控える。金額欄は 1 桁で「完了」になるため、
+    // ここで畳むとスマホの入力中に欄ごと消えてフォーカスを失う。
+    const focused = document.activeElement;
+    const typingInStep =
+      isTextEntry(focused) &&
+      Boolean(document.getElementById(`event-step-${before}`)?.contains(focused));
+    if (typingInStep) {
+      deferredAdvance.current = { from: before, to: nextStep.key };
+      return;
+    }
     setOpenKeys((current) =>
       advanceOpenKeys(current, before, nextStep.key, pinnedStep.current),
     );
     setAnnouncement(`「${nextStep.title}」に進みました。`);
   }, [frontier]);
+
+  // フォーカスがステップの外へ出たら、保留した自動展開を実行する。
+  // 自分で見出しを押したときと、別のステップへ移ったときは開き直さない。
+  useEffect(() => {
+    /** 保留があれば、いまのフォーカス先を見て開くか捨てるかを決める。 */
+    const settleDeferredAdvance = (target: Element | null): void => {
+      const deferred = deferredAdvance.current;
+      if (!deferred) return;
+      const { from, to } = deferred;
+      // 同じステップの本文の中で入力している（欄を移っただけ）。
+      const body = document.getElementById(`event-step-${from}`);
+      if (target && body?.contains(target)) return;
+      deferredAdvance.current = null;
+      // 自分で畳もうとしている（そのステップの見出し）か、別のステップへ移った。
+      // どちらも、勝手に開き直さない。
+      if (target?.closest(`#event-step-${from}-toggle`)) return;
+      const targetStep = stepKeyOfElement(target);
+      if (targetStep !== null && targetStep !== from) return;
+      setOpenKeys((current) =>
+        advanceOpenKeys(current, from, to, pinnedStep.current),
+      );
+      setAnnouncement(`「${eventStep(to).title}」に進みました。`);
+    };
+
+    const onFocusIn = (event: FocusEvent) => {
+      settleDeferredAdvance(event.target as Element | null);
+    };
+    // body へ blur した（キーボードを閉じた）ときは focusin が来ない。
+    // イベントが一段落してから、実際のフォーカス先で決め直す。
+    const onFocusOut = () => {
+      if (!deferredAdvance.current) return;
+      queueMicrotask(() => settleDeferredAdvance(document.activeElement));
+    };
+
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
+  }, []);
 
   // 開いたステップの見出しへフォーカスを移す。押した場所を見失わないようにする。
   const pendingFocus = useRef<EventStepKey | null>(null);
@@ -195,6 +278,8 @@ export function EventStepForm({
   });
 
   const openStep = (key: EventStepKey) => {
+    // 開く場所を決め直すので、前の値で保留した自動展開は捨てる。
+    deferredAdvance.current = null;
     pendingFocus.current = key;
     setOpenKeys((current) => {
       const next = new Set(current);
@@ -243,6 +328,8 @@ export function EventStepForm({
   }, []);
 
   const toggleStep = (key: EventStepKey) => {
+    // 利用者が自分で開閉したら、保留していた自動展開は捨てる。
+    deferredAdvance.current = null;
     setOpenKeys((current) => {
       const next = new Set(current);
       if (next.has(key)) {
@@ -265,6 +352,8 @@ export function EventStepForm({
   const goNext = (key: EventStepKey) => {
     const next = EVENT_STEPS[(STEP_INDEX.get(key) ?? 0) + 1];
     if (!next) return;
+    // 開閉を決め直すので、保留していた自動展開は捨てる。
+    deferredAdvance.current = null;
     closeStep(key);
     openStep(next.key);
   };
@@ -272,6 +361,8 @@ export function EventStepForm({
   const goBack = (key: EventStepKey) => {
     const previous = EVENT_STEPS[(STEP_INDEX.get(key) ?? 0) - 1];
     if (!previous) return;
+    // 開閉を決め直すので、保留していた自動展開は捨てる。
+    deferredAdvance.current = null;
     closeStep(key);
     openStep(previous.key);
   };

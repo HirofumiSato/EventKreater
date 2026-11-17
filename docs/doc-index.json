@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3073,
+      "lineCount": 3075,
       "headings": [
         {
           "level": 1,
@@ -2499,6 +2499,10 @@
         },
         {
           "path": "src/lib/image-upload.ts",
+          "exists": true
+        },
+        {
+          "path": "src/lib/next-path.ts",
           "exists": true
         },
         {
@@ -5922,7 +5926,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2258,
+      "lineCount": 2263,
       "headings": [
         {
           "level": 1,
@@ -6448,6 +6452,10 @@
           "exists": true
         },
         {
+          "path": "src/lib/next-path.ts",
+          "exists": true
+        },
+        {
           "path": "src/lib/problem.ts",
           "exists": true
         },
@@ -6493,6 +6501,10 @@
         },
         {
           "path": "src/modules/auth/lib/resend.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/auth/lib/verification-links.ts",
           "exists": true
         },
         {
@@ -6625,6 +6637,10 @@
         },
         {
           "path": "src/styles/base.css",
+          "exists": true
+        },
+        {
+          "path": "src/styles/components.css",
           "exists": true
         },
         {
@@ -12329,7 +12345,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 890,
+      "lineCount": 910,
       "headings": [
         {
           "level": 1,
@@ -12395,11 +12411,19 @@
           "exists": true
         },
         {
+          "path": "tests/components/auth-verify-next.test.tsx",
+          "exists": true
+        },
+        {
           "path": "tests/components/event-form-pricing-labels.test.tsx",
           "exists": true
         },
         {
           "path": "tests/components/event-meta-card-pricing.test.tsx",
+          "exists": true
+        },
+        {
+          "path": "tests/components/event-step-form-focus.test.tsx",
           "exists": true
         },
         {
@@ -12607,6 +12631,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/auth-verification-links.test.ts",
+          "exists": true
+        },
+        {
           "path": "tests/unit/button-rules.test.mjs",
           "exists": true
         },
@@ -12739,6 +12767,10 @@
           "exists": true
         },
         {
+          "path": "tests/unit/form-final-toast.test.mjs",
+          "exists": true
+        },
+        {
           "path": "tests/unit/format.test.ts",
           "exists": true
         },
@@ -12796,6 +12828,10 @@
         },
         {
           "path": "tests/unit/mypage-guide-styles.test.mjs",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/next-path.test.ts",
           "exists": true
         },
         {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, passwordMatches } from "@/modules/auth/lib/auth";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { toErrorResponse } from "@/lib/http";
+import { safeNextPath } from "@/lib/next-path";
 import { AuthSchema } from "@/lib/schemas";
 import {
   SIGNUP_INTENT_COOKIE,
@@ -63,6 +64,8 @@ export async function POST(req: NextRequest) {
     const input = AuthSchema.parse(await req.json());
     const email = input.email.toLowerCase();
     const ip = attemptIp(req);
+    // 確認メールの URL に載せる戻り先。許可していないパスは付けない。
+    const next = safeNextPath(input.next, "") || null;
 
     if (input.action === "register") {
       await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.registerIp, ip);
@@ -74,11 +77,11 @@ export async function POST(req: NextRequest) {
         select: { id: true, email: true, name: true, emailVerifiedAt: true, passwordHash: true },
       });
       if (existing?.emailVerifiedAt && existing.passwordHash) {
-        await sendAlreadyRegisteredEmail(existing.email);
+        await sendAlreadyRegisteredEmail(existing.email, next);
         return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });
       }
       if (existing && !existing.emailVerifiedAt) {
-        await sendVerificationEmail(existing);
+        await sendVerificationEmail(existing, next);
         return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });
       }
 
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
         // 紹介リンクから来ていれば、会員になるまで Cookie に残っている。
         referralCode: readReferralCookie(req),
       });
-      await sendIntentVerification(intent);
+      await sendIntentVerification(intent, next);
       return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });
     }
 
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
         await recordAuthAttempt(rules.verifyIp, ip);
         // パスワードは一致しているので、メール単位の失敗は数え直す（IP 単位は残す）。
         await clearRuleAttempts(rules.loginEmail, email);
-        await sendIntentVerification(resume.intent);
+        await sendIntentVerification(resume.intent, next);
         return NextResponse.json({
           verificationRequired: true,
           unverifiedEmail: true,

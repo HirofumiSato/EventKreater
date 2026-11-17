@@ -1,8 +1,8 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sha256 } from "@/lib/crypto";
-import { appBaseUrl } from "@/lib/http";
 import { deliverMail, logRecordedMail } from "@/lib/mail";
+import { alreadyRegisteredUrl, verificationUrl } from "@/modules/auth/lib/verification-links";
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
 const INTENT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -19,7 +19,10 @@ async function logIfUnsent(status: "SENT" | "RECORDED", line: string): Promise<v
   if (status === "RECORDED") logRecordedMail(line);
 }
 
-export async function sendVerificationEmail(user: { id: string; email: string; name: string }): Promise<void> {
+export async function sendVerificationEmail(
+  user: { id: string; email: string; name: string },
+  next?: string | null,
+): Promise<void> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + VERIFY_TTL_MS);
   await prisma.$transaction([
@@ -28,7 +31,7 @@ export async function sendVerificationEmail(user: { id: string; email: string; n
       data: { userId: user.id, tokenHash: sha256(token), expiresAt },
     }),
   ]);
-  const url = `${appBaseUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
+  const url = verificationUrl(token, "ORGANIZER", next);
   const status = await deliverMail({
     to: user.email,
     subject: "メールアドレスの確認",
@@ -37,8 +40,8 @@ export async function sendVerificationEmail(user: { id: string; email: string; n
   await logIfUnsent(status, `verification link for ${user.email}: ${url}`);
 }
 
-export async function sendAlreadyRegisteredEmail(email: string): Promise<void> {
-  const url = `${appBaseUrl()}/auth/register`;
+export async function sendAlreadyRegisteredEmail(email: string, next?: string | null): Promise<void> {
+  const url = alreadyRegisteredUrl(next);
   const status = await deliverMail({
     to: email,
     subject: "ログインのご案内",
@@ -77,17 +80,15 @@ export async function beginSignupIntent(input: {
 }
 
 /** 確認メールのリンク。参加者入口から始めた登録は、確認後の着地も参加者側へ寄せる。 */
-function verificationUrl(token: string, audience: "ORGANIZER" | "PARTICIPANT"): string {
-  const audienceQuery = audience === "PARTICIPANT" ? "&audience=participant" : "";
-  return `${appBaseUrl()}/auth/verify?token=${encodeURIComponent(token)}${audienceQuery}`;
-}
-
-export async function sendIntentVerification(intent: {
-  id: string;
-  email: string;
-  name: string;
-  audience: "ORGANIZER" | "PARTICIPANT";
-}): Promise<void> {
+export async function sendIntentVerification(
+  intent: {
+    id: string;
+    email: string;
+    name: string;
+    audience: "ORGANIZER" | "PARTICIPANT";
+  },
+  next?: string | null,
+): Promise<void> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + VERIFY_TTL_MS);
   await prisma.$transaction([
@@ -96,7 +97,7 @@ export async function sendIntentVerification(intent: {
       data: { signupIntentId: intent.id, tokenHash: sha256(token), expiresAt },
     }),
   ]);
-  const url = verificationUrl(token, intent.audience);
+  const url = verificationUrl(token, intent.audience, next);
   const status = await deliverMail({
     to: intent.email,
     subject: "メールアドレスの確認",

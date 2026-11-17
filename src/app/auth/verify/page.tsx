@@ -4,16 +4,30 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { readProblem } from "@/lib/problem";
+import { safeNextPath } from "@/lib/next-path";
+import { phoneStepHref } from "@/modules/auth/lib/auth-landing";
 import { Alert, Loading, PageHeader } from "@/components/ui";
 
 function VerifyScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+  // `token` と戻り先は、`replaceState` でクエリを消しても着地がぶれないよう、
+  // 最初の値だけを state の初期化関数で固定する（再描画のたびに読み直さない）。
+  const [token] = useState(() => searchParams.get("token") ?? "");
   // 参加者入口から始めた登録は、確認後の着地も参加者側へ寄せる。
-  // replaceState でクエリを消しても着地がぶれないよう、最初の値を固定する。
-  const [participant] = useState(() => searchParams.get("audience") === "participant");
+  // `audience` が無くても、戻り先が参加者の画面なら参加者として扱う。
+  const [participant] = useState(() => {
+    if (searchParams.get("audience") === "participant") return true;
+    return safeNextPath(searchParams.get("next"), "").startsWith("/participant");
+  });
+  const [hasExplicitNext] = useState(() => searchParams.has("next"));
+  const [nextPath] = useState(() =>
+    safeNextPath(searchParams.get("next"), participant ? "/participant" : "/mypage"),
+  );
   const basePath = participant ? "/participant/login" : "/auth/register";
+  // 電話番号の確認とログインの入口へ、戻り先があればそのまま引き回す。
+  const phoneHref = phoneStepHref(basePath, hasExplicitNext, nextPath);
+  const loginHref = `${basePath}?mode=login${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`;
   const [status, setStatus] = useState<"idle" | "pending" | "done" | "error">("idle");
   const [nextStep, setNextStep] = useState<"phone" | "login" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -34,7 +48,7 @@ function VerifyScreen() {
       setStatus("done");
       window.history.replaceState(null, "", "/auth/verify");
       if (next === "phone") {
-        router.push(`${basePath}?step=phone`);
+        router.push(phoneHref);
         return;
       }
     } catch (cause) {
@@ -74,7 +88,7 @@ function VerifyScreen() {
               {status === "pending" ? "確認しています…" : "確認を完了する"}
             </button>
           )}
-          <Link href={nextStep === "phone" ? `${basePath}?step=phone` : basePath} className="btn btn--ghost btn--block">
+          <Link href={nextStep === "phone" ? phoneHref : loginHref} className="btn btn--ghost btn--block">
             {nextStep === "phone" ? "電話番号の確認へ" : "ログイン画面へ"}
           </Link>
         </div>

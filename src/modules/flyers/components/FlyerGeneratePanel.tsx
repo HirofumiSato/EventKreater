@@ -214,7 +214,18 @@ export function FlyerGeneratePanel({
           {quota?.anonymous ? (
             <p>
               未ログインで作れる背景は 1 枚までです。
-              <a href="/auth/register?mode=register">会員登録して続ける</a>
+              {onRequireAuth ? (
+                // 生のリンクにしない。押した時点の入力を退避してから認証へ送る。
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => onRequireAuth()}
+                >
+                  会員登録して続ける
+                </button>
+              ) : (
+                <a href="/auth/register?mode=register">会員登録して続ける</a>
+              )}
             </p>
           ) : eventId ? (
             <p>
@@ -237,6 +248,7 @@ export function FlyerGeneratePanel({
         onClose={() => setOpen(false)}
         onGenerated={handleGenerated}
         onQuotaChange={setQuota}
+        onRequireAuth={onRequireAuth}
       />
     </div>
   );

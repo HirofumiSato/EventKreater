@@ -475,6 +475,12 @@ export const AdminRoleSchema = z.object({
 
 export const AuthAudienceSchema = z.enum(["organizer", "participant"]);
 
+/**
+ * ログイン後の戻り先。確認メールの URL に載せ、電話番号の確認まで引き回す。
+ * 許可するパスかどうかは `safeNextPath` が決める（ここでは長さだけ見る）。
+ */
+const AuthNextSchema = z.string().trim().max(2000).optional();
+
 export const AuthSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("register"),
@@ -483,6 +489,8 @@ export const AuthSchema = z.discriminatedUnion("action", [
     name: z.string().trim().min(1, "名前を入力してください").max(50),
     /// 登録を始めた入口。確認メール後の着地を分ける。
     audience: AuthAudienceSchema.optional(),
+    /// 登録を始めた画面。確認メールの URL に載せる。
+    next: AuthNextSchema,
   }),
   z.object({
     action: z.literal("login"),
@@ -490,6 +498,8 @@ export const AuthSchema = z.discriminatedUnion("action", [
     password: z.string().min(1, "パスワードを入力してください").max(128),
     /// 参加者入口からのログインなら participant。既定は主催者（MEMBER）。
     audience: AuthAudienceSchema.optional(),
+    /// 未確認の登録を再開したとき、確認メールの URL に載せる。
+    next: AuthNextSchema,
   }),
 ]);
 

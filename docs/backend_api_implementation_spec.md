@@ -77,12 +77,12 @@ flowchart TD
 | `/api/v1/organizer/events/[id]/draft` | POST | SCR-ORG-02 | 主催者（OWNER・会員のみ）。編集ロック不要 | 作成画面からの下書きの上書き保存。状態は変えず、日時・料金プラン・割引・住所・定員・期限・チラシを入れ替える。公開済みは 409、ゲスト幹事は 403 `REGISTER_REQUIRED` |
 | `/api/v1/organizer/events/[id]/lifecycle` | POST | SCR-ORG-01、SCR-ORG-15 | 主催者（OWNER） | `close`（受付停止）、`reopen`（公開の再開）、`delete`（論理削除）。`close` は `PUBLISHED` のみ、`reopen` は `CLOSED` のみ（それ以外は 409）。`DRAFT` への `close` は 409 `DRAFT_CANNOT_STOP`、`CLOSED` 以外への `reopen` は 409 `NOT_CLOSED`。`reopen` はチケットを消費し直し、満杯なら 402 `PUBLISHED_EVENTS_FULL` |
 | `/api/v1/user/hydrate` | POST | SCR-PUB-02 | 会員必須 | 端末の httpOnly Cookie にある出欠・ゲスト幹事トークンだけを会員へ統合する。本文のトークンは無視する |
-| `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。会員行が無いときは、登録途中の意向（`signup_intents`）をパスワードで引き当てて再開する。メール未確認なら確認メールを再送して `unverifiedEmail`、メール確認済み・電話未確認なら `signupPending` を返す。登録の成否はメールの有無で変えない |
+| `/api/v1/auth/local` | POST | SCR-PUB-02 | 不要 | パスワード登録は確認メールを送り、会員行はまだ作らない。ログインはメール確認済みの会員だけ。成功時はセッションではなく確認番号チャレンジ。会員行が無いときは、登録途中の意向（`signup_intents`）をパスワードで引き当てて再開する。メール未確認なら確認メールを再送して `unverifiedEmail`、メール確認済み・電話未確認なら `signupPending` を返す。登録の成否はメールの有無で変えない。任意の `next`（戻り先）を受け、確認メールと既登録メールの URL に載せる |
 | `/api/v1/auth/login-challenge` | GET | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 進行中の確認番号の経路とマスク済み宛先 |
 | `/api/v1/auth/login-challenge` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | SMSとメールの切り替え。同じチャネルを渡すと送り直しになる。前のチャレンジは無効にし、新しい番号を発行する |
 | `/api/v1/auth/login-challenge/confirm` | POST | SCR-PUB-02、SCR-ADM-00 | チャレンジ Cookie | 確認番号の照合。成功時だけ JWT を発行する |
 | `/api/v1/auth/session` | GET | SCR-PUB-02、SCR-PUB-07 | 不要 | 入口ページのセッション確認。有効な会員セッションがあれば `authenticated: true` と `user`（`phoneVerified` / `platformRole`）、確認番号の入力待ちなら `pendingChallenge: true` を返す。無ければ 401 |
-| `/api/v1/auth/verification` | POST | SCR-PUB-02 | 不要 | 未確認の登録意向またはレガシー未確認会員へ確認メールを再送する。応答はメールの有無で変えない |
+| `/api/v1/auth/verification` | POST | SCR-PUB-02 | 不要 | 未確認の登録意向またはレガシー未確認会員へ確認メールを再送する。応答はメールの有無で変えない。任意の `next` を受け、再送する確認メールの URL に載せる |
 | `/api/v1/auth/verify` | POST | SCR-PUB-05 | 不要 | 確認トークンを検証する。新規は電話番号確認へ進み、既存会員はログインへ戻す |
 | `/api/v1/auth/password/reset` | POST | SCR-PUB-02 | 不要 | パスワード再設定のリンクをメールで送る。会員（主催者・参加者）だけが対象で、管理者・退会済み・該当なしでも同じ応答を返す。上限は 429（8.18） |
 | `/api/v1/auth/password/reset/confirm` | POST | SCR-PUB-02 | 不要（再設定トークン） | リンクのトークンと新しいパスワードで確定する。成功でパスワードを入れ替え、全セッションを失効させる。失敗は 400 `RESET_TOKEN_INVALID`（8.18） |
@@ -573,7 +573,7 @@ export async function assertLockHolder(eventId: string, lockToken: string): Prom
 **未登録の端末はイベントを作れない。** `POST /api/v1/public/events` は `resolveUserId` が `null` を返した時点で、本文を読まずに 403 `REGISTER_REQUIRED`（`type: probs/register-required`）を返す。以前の「未登録でも1件だけ作れる」数え上げ（`assertGuestCanCreate`）は削除した。
 
 * 理由は 2 つある。出欠を見るには結局 `assertRegisteredOrganizer` が要るため、未登録で作っても直後に登録へ送られること。チケットの消費と下書きの復元がゲストだけ別扱いになり、`createEventForGuest` が `createEventForUser` とほぼ同じ処理を二重に持っていたこと。
-* 画面は 403 を受けたら入力を `sessionStorage` に退避してログインへ送る（`docs/front_implementation_spec.md` 12.3.1）。応答の `guestOrganizerToken` は常に `null` にする。
+* 画面は 403 を受けたら入力を `localStorage` に退避してログインへ送る（`docs/front_implementation_spec.md` 12.3.1）。応答の `guestOrganizerToken` は常に `null` にする。
 
 **登録・ログイン後の引き継ぎ。** `POST /api/v1/user/hydrate` は `migrateGuestOrganizers(tx, userId, guestTokens)`（`src/modules/auth/lib/hydrate.ts`）を呼ぶ。端末の `org_token_*` に一致し `user_id` が空の `event_organizers` を会員へ付け替え、`guest_token_hash` を `NULL` にする。付け替えた行のうち `OWNER` の数だけ `user_usage_quotas.free_event_count` に加算し、`FREE_EVENT_LIMIT` で頭打ちにする。`CO_HOST` は加算しない。応答は `{ success, migratedParticipants, migratedOrganizers, promotedOwners, freeEventCount }`。
 
@@ -683,7 +683,7 @@ export async function consumeEventQuota(tx: Prisma.TransactionClient, userId: st
 
 主催者が入力7項目とチラシIDを指定して新規イベントを作成する。イベントの一覧・検索は提供しないため、`visibility` はリクエストで受け取らず、常に `UNLISTED`（紹介制）で保存する。公開状態は既定で `PUBLISHED` である。
 
-- **認可:** 会員のみ（`userId` が解決できないときは 403 `REGISTER_REQUIRED`、`type: probs/register-required`）。未登録の幹事はイベントを作れない。作成画面は入力を `sessionStorage` に退避してログインへ送り、戻ってから続きを保存する。
+- **認可:** 会員のみ（`userId` が解決できないときは 403 `REGISTER_REQUIRED`、`type: probs/register-required`）。未登録の幹事はイベントを作れない。作成画面は入力を `localStorage`（24時間）に退避してログインへ送り、戻ってから続きを保存する。
 - **下書きの作成:** `status: "DRAFT"` のときは `assertCanCreateEvent`（公開の課金判定）を通さず、`status = DRAFT`、`quota_charged_at = NULL` で 1 行作る。チケットは消費しない。ただし下書きの件数上限（無料 3 / 8件まで公開プラン 10 / 公開し放題プラン 30 / 単発クレジットを持つ未加入者 10）は別に判定し、上限に達していれば 403 `DRAFT_LIMIT_REACHED`（`type: probs/draft-limit-reached`）を返す。数えるのは自分の `OWNER` の下書きだけで、開催日は問わない。SCR-ORG-02 は 402 を受けたときにこの経路で入力を退避する。
 - **リクエストスキーマ (Zod):**
 
@@ -2361,6 +2361,8 @@ export interface ProblemDetails {
 - メール確認済み・電話未確認: `200 { signupPending: true, next: "phone", audience }`。`audience` は `organizer` か `participant` で、意向の `audience`（`ORGANIZER` / `PARTICIPANT`）を小文字にして返す。同時に `signup_intent` Cookie を httpOnly・SameSite=Lax・24 時間で付け直す。
 
 どちらもパスワードが一致しているので、メールアドレス単位の失敗回数は消す。IP 単位は消さない。一致しないときの応答は従来どおり 401 で、登録途中の意向の有無も明かさない。期限切れの意向は、パスワードが一致したときだけ期限を 24 時間へ延ばす。延ばすのは期限だけで、`emailVerifiedAt`（メール確認済みの事実）は保持する。
+
+本文の `next` は任意で、ログイン後の戻り先である。`src/lib/next-path.ts` の `safeNextPath` を通したパスだけを、確認メール（`/auth/verify?token=...&next=...`）と既登録メール（`/auth/register?mode=login&next=...`）の URL に載せる。許可していないパスや外部サイトは付けない。`/auth/verify` は URL の `next` を電話番号の確認まで引き回す。`POST /api/v1/auth/verification` も同じ `next` を受け、再送する確認メールの URL に載せる。
 
 この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 

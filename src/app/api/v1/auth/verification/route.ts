@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { toErrorResponse } from "@/lib/http";
+import { safeNextPath } from "@/lib/next-path";
 import { clientIp } from "@/modules/auth/lib/cookies";
 import { assertWithinAttemptLimit, recordAuthAttempt } from "@/modules/auth/lib/rate-limit";
 import { AUTH_RATE_LIMITS } from "@/modules/auth/lib/rate-limits";
@@ -12,12 +13,15 @@ export const dynamic = "force-dynamic";
 
 const BodySchema = z.object({
   email: z.string().trim().email().max(255),
+  /** 再送のあとに戻る画面。許可したパスだけを確認メールの URL に載せる。 */
+  next: z.string().trim().max(2000).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const input = BodySchema.parse(await req.json());
     const email = input.email.toLowerCase();
+    const next = safeNextPath(input.next, "") || null;
     const ip = clientIp(req) ?? "local";
     await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.verifyEmail, email);
     await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.verifyIp, ip);
@@ -29,14 +33,14 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true, name: true, emailVerifiedAt: true, passwordHash: true },
     });
     if (user?.passwordHash && !user.emailVerifiedAt) {
-      await sendVerificationEmail(user);
+      await sendVerificationEmail(user, next);
     } else {
       const intent = await prisma.signupIntent.findFirst({
         where: { email, emailVerifiedAt: null, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
         select: { id: true, email: true, name: true, audience: true },
       });
-      if (intent) await sendIntentVerification(intent);
+      if (intent) await sendIntentVerification(intent, next);
     }
     return NextResponse.json({ verificationRequired: true, detail: VERIFICATION_NOTICE });
   } catch (error) {
