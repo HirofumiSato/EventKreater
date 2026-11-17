@@ -27,6 +27,7 @@ import {
 } from "@/modules/events/lib/capacity";
 import { PostalCodeField } from "@/modules/events/components/PostalCodeField";
 import { EventSummaryEditor } from "@/modules/events/components/EventSummaryEditor";
+import type { EventFieldErrors } from "@/modules/events/lib/field-errors";
 import { EVENT_SUMMARY_MAX_LENGTH } from "@/modules/events/lib/summary";
 import { VenueSelectModal } from "@/modules/events/components/VenueSelectModal";
 import { Alert, Dialog, Field, ThemePicker } from "@/components/ui";
@@ -39,15 +40,48 @@ export interface EventSectionProps {
   value: EventFormValues;
   onChange: (value: EventFormValues) => void;
   disabled?: boolean;
+  /**
+   * 欄ごとのエラー（入力欄の id → 文言）。保存・プレビューを押して足りない欄が
+   * あったときにだけ入る。入力して直ると消える。
+   */
+  errorFields?: EventFieldErrors;
 }
 
 const RAIN_POLICIES = Object.keys(RAIN_POLICY_LABELS) as RainPolicy[];
+
+/**
+ * 素の `<input>` を並べる行（日時・料金・住所）でも、`Field` と同じ位置と見た目で
+ * エラーを出すための 2 つ。`Field` を使う欄は `error` にそのまま渡す。
+ */
+function invalidProps(fieldId: string, errorFields: EventFieldErrors) {
+  return {
+    "aria-invalid": Boolean(errorFields[fieldId]),
+    "aria-describedby": errorFields[fieldId] ? `${fieldId}-error` : undefined,
+  };
+}
+
+function FieldError({
+  fieldId,
+  errorFields,
+}: {
+  fieldId: string;
+  errorFields: EventFieldErrors;
+}) {
+  const message = errorFields[fieldId];
+  if (!message) return null;
+  return (
+    <p className="field-error" id={`${fieldId}-error`}>
+      {message}
+    </p>
+  );
+}
 
 /** イベント名・主催者名・開催日時。 */
 export function BasicSection({
   value,
   onChange,
   disabled = false,
+  errorFields = {},
   showOrganizerName = false,
 }: EventSectionProps & { showOrganizerName?: boolean }) {
   const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
@@ -58,7 +92,15 @@ export function BasicSection({
     <>
       {/* 名前を先に決め、その下で概要を書く。公開ページも催し名の直下に概要を出すので、
           書く順と出る順をそろえる。 */}
-      <Field label="イベント名" htmlFor="event-title">
+      <Field
+        label={
+          <>
+            イベント名 <span className="req">*</span>
+          </>
+        }
+        htmlFor="event-title"
+        error={errorFields["event-title"]}
+      >
         <input
           id="event-title"
           required
@@ -68,6 +110,8 @@ export function BasicSection({
           onChange={(event) => set("title", event.target.value)}
           placeholder="例: 秋の芋煮会"
           className="input"
+          aria-invalid={Boolean(errorFields["event-title"])}
+          aria-describedby={errorFields["event-title"] ? "event-title-error" : undefined}
         />
       </Field>
       {/* 初回ガイドの 3 枚目がこの欄を指す。`Field` は外側の骨格だけを持つので、
@@ -77,6 +121,7 @@ export function BasicSection({
           label="イベント概要（任意）"
           htmlFor="event-summary"
           help={`公開ページの冒頭に出ます。${EVENT_SUMMARY_MAX_LENGTH}文字まで。`}
+          error={errorFields["event-summary"]}
         >
           <EventSummaryEditor
             id="event-summary"
@@ -103,7 +148,9 @@ export function BasicSection({
         </Field>
       )}
       <fieldset className="field" disabled={disabled}>
-        <legend className="label">開催日時</legend>
+        <legend className="label">
+          開催日時 <span className="req">*</span>
+        </legend>
         <div className="repeat-block">
           {value.schedules.map((row, index) => {
             const overnight = Boolean(row.startTime && row.endTime && row.endTime < row.startTime);
@@ -126,7 +173,9 @@ export function BasicSection({
                       set("schedules", schedules);
                     }}
                     className="input"
+                    {...invalidProps(`schedule-date-${row.key}`, errorFields)}
                   />
+                  <FieldError fieldId={`schedule-date-${row.key}`} errorFields={errorFields} />
                 </div>
                 <div className="field">
                   <label className="label" htmlFor={`schedule-start-${row.key}`}>
@@ -145,7 +194,9 @@ export function BasicSection({
                       set("schedules", schedules);
                     }}
                     className="input"
+                    {...invalidProps(`schedule-start-${row.key}`, errorFields)}
                   />
+                  <FieldError fieldId={`schedule-start-${row.key}`} errorFields={errorFields} />
                 </div>
                 <div className="field">
                   <label className="label" htmlFor={`schedule-end-${row.key}`}>
@@ -164,7 +215,9 @@ export function BasicSection({
                       set("schedules", schedules);
                     }}
                     className="input"
+                    {...invalidProps(`schedule-end-${row.key}`, errorFields)}
                   />
+                  <FieldError fieldId={`schedule-end-${row.key}`} errorFields={errorFields} />
                 </div>
                 <button
                   type="button"
@@ -208,6 +261,7 @@ export function PricePlansSection({
   value,
   onChange,
   disabled = false,
+  errorFields = {},
   pricingModeLocked = false,
 }: EventSectionProps & {
   /** 出席者がいるため、共通／男女別の切り替えを止める。 */
@@ -252,7 +306,9 @@ export function PricePlansSection({
         onChange={(event) => updatePlan(row.key, { name: event.target.value })}
         placeholder="一般"
         className="input"
+        {...invalidProps(`plan-name-${row.key}`, errorFields)}
       />
+      <FieldError fieldId={`plan-name-${row.key}`} errorFields={errorFields} />
     </div>
   );
 
@@ -275,7 +331,9 @@ export function PricePlansSection({
           onChange={(event) => updatePlan(row.key, { amount: event.target.value })}
           placeholder="3000"
           className="input"
+          {...invalidProps(`plan-amount-${row.key}`, errorFields)}
         />
+        <FieldError fieldId={`plan-amount-${row.key}`} errorFields={errorFields} />
       </div>
       <div className="field">
         <label className="label" htmlFor={`plan-note-${row.key}`}>
@@ -291,7 +349,11 @@ export function PricePlansSection({
         />
       </div>
       <p className="help repeat-row__note">
-        {row.amount === "" ? "金額を入れてください" : composePriceText({ amount: Number(row.amount), note: row.note })}
+        {row.amount === ""
+          ? errorFields[`plan-amount-${row.key}`]
+            ? null
+            : "金額を入れてください"
+          : composePriceText({ amount: Number(row.amount), note: row.note })}
       </p>
     </>
   );
@@ -335,22 +397,27 @@ export function PricePlansSection({
           料金プラン <span className="req">*</span>
         </legend>
         <div className="repeat-block">
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={pricingMode === "GENDER"}
-              disabled={genderLocked}
-              onChange={(event) => {
-                if (event.target.checked) {
-                  set("pricePlans", withGenderPricing(value.pricePlans));
-                  return;
-                }
-                // 女性用の行を消すと、選んでいた参加者のプランが外れるため確認する。
-                setConfirmCommonOpen(true);
-              }}
-            />
-            男女別の料金を設定する
-          </label>
+          {/* 押せるのは四角のまわりだけ。行の文字や余白を押しても切り替えない。
+              文字は `aria-label` で入力に結び、四角の周りに 40px の的を残す。 */}
+          <div className="check check--box-only">
+            <label className="check__box">
+              <input
+                type="checkbox"
+                aria-label="男女別の料金を設定する"
+                checked={pricingMode === "GENDER"}
+                disabled={genderLocked}
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    set("pricePlans", withGenderPricing(value.pricePlans));
+                    return;
+                  }
+                  // 女性用の行を消すと、選んでいた参加者のプランが外れるため確認する。
+                  setConfirmCommonOpen(true);
+                }}
+              />
+            </label>
+            <span>男女別の料金を設定する</span>
+          </div>
           {pricingModeLocked ? (
             <p className="help">
               出席者がいるため切り替えできません。金額とプラン名は変えられます。
@@ -398,7 +465,9 @@ export function PricePlansSection({
                           }
                           placeholder="一般"
                           className="input"
+                          {...invalidProps(`plan-name-${head.key}`, errorFields)}
                         />
+                        <FieldError fieldId={`plan-name-${head.key}`} errorFields={errorFields} />
                       </div>
                       <button
                         type="button"
@@ -614,7 +683,7 @@ export function DiscountSection({ value, onChange, disabled = false }: EventSect
 }
 
 /** 開催場所と雨天時の方針。 */
-export function LocationSection({ value, onChange, disabled = false }: EventSectionProps) {
+export function LocationSection({ value, onChange, disabled = false, errorFields = {} }: EventSectionProps) {
   const [venuePickerOpen, setVenuePickerOpen] = useState(false);
   const set = <K extends keyof EventFormValues>(key: K, next: EventFormValues[K]) => {
     onChange({ ...value, [key]: next });
@@ -636,7 +705,11 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
         <legend className="label">
           開催場所 <span className="req">*</span>
         </legend>
-        <Field label="会場名" htmlFor="event-venue-name">
+        <Field
+          label="会場名"
+          htmlFor="event-venue-name"
+          error={errorFields["event-venue-name"]}
+        >
           <input
             id="event-venue-name"
             maxLength={150}
@@ -644,6 +717,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
             onChange={(event) => set("venueName", event.target.value)}
             placeholder="○○ホール"
             className="input"
+            {...invalidProps("event-venue-name", errorFields)}
           />
           <div className="btn-row">
             <button
@@ -671,7 +745,11 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
           }}
         />
         <div className="repeat-row repeat-row--address">
-          <Field label="都道府県" htmlFor="event-prefecture">
+          <Field
+            label="都道府県"
+            htmlFor="event-prefecture"
+            error={errorFields["event-prefecture"]}
+          >
             <input
               id="event-prefecture"
               maxLength={20}
@@ -679,9 +757,10 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               onChange={(event) => set("prefecture", event.target.value)}
               placeholder="東京都"
               className="input"
+              {...invalidProps("event-prefecture", errorFields)}
             />
           </Field>
-          <Field label="市区町村" htmlFor="event-city">
+          <Field label="市区町村" htmlFor="event-city" error={errorFields["event-city"]}>
             <input
               id="event-city"
               maxLength={100}
@@ -689,6 +768,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               onChange={(event) => set("city", event.target.value)}
               placeholder="渋谷区"
               className="input"
+              {...invalidProps("event-city", errorFields)}
             />
           </Field>
         </div>
@@ -703,7 +783,11 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               className="input"
             />
           </Field>
-          <Field label="番地" htmlFor="event-address-line">
+          <Field
+            label="番地"
+            htmlFor="event-address-line"
+            error={errorFields["event-address-line"]}
+          >
             <input
               id="event-address-line"
               maxLength={200}
@@ -711,6 +795,7 @@ export function LocationSection({ value, onChange, disabled = false }: EventSect
               onChange={(event) => set("addressLine", event.target.value)}
               placeholder="1-2-3"
               className="input"
+              {...invalidProps("event-address-line", errorFields)}
             />
           </Field>
         </div>
@@ -782,6 +867,7 @@ export function CapacitySection({
   value,
   onChange,
   disabled = false,
+  errorFields = {},
   selection,
   onSelectionChange,
 }: EventSectionProps & {
@@ -817,7 +903,11 @@ export function CapacitySection({
         </select>
       </Field>
       {selection === "custom" && (
-        <Field label="人数" htmlFor="event-capacity-custom">
+        <Field
+          label="人数"
+          htmlFor="event-capacity-custom"
+          error={errorFields["event-capacity-custom"]}
+        >
           <input
             id="event-capacity-custom"
             type="number"
@@ -829,8 +919,11 @@ export function CapacitySection({
             onChange={(event) => set("capacity", capacityFromCustomInput(event.target.value))}
             placeholder="120"
             className="input"
+            {...invalidProps("event-capacity-custom", errorFields)}
           />
-          <p className="help">51人以上を入れてください。空欄では次へ進めません。</p>
+          {errorFields["event-capacity-custom"] ? null : (
+            <p className="help">51人以上を入れてください。空欄では次へ進めません。</p>
+          )}
         </Field>
       )}
       {/* 初回ガイドの 6 枚目はこの欄を指す。`Field` は外側の骨格だけを持つので、
