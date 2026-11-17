@@ -27,7 +27,12 @@ export function Field({ label, htmlFor, help, error, children }: FieldProps) {
       </label>
       {children}
       {help ? <p className="help">{help}</p> : null}
-      {error ? <p className="field-error">{error}</p> : null}
+      {/* エラーの id は入力欄の id から決める。入力側は `aria-describedby` で指せばよい。 */}
+      {error ? (
+        <p className="field-error" id={`${htmlFor}-error`}>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

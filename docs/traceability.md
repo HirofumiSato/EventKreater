@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 554
+- 文書から参照されているコードパス: 556
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -411,6 +411,7 @@
 | `tests/components/auth-verify-next.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-form-pricing-labels.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-meta-card-pricing.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/event-step-form-errors.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-step-form-focus.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-summary-editor.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -480,6 +481,7 @@
 | `tests/unit/event-capacity.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-details.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-discounts.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-field-errors.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-filters.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-guide-memory.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-guide-placement.test.ts` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |

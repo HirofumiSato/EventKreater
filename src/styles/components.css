@@ -1737,7 +1737,10 @@ fieldset.field {
 
 .input.is-invalid,
 .textarea.is-invalid,
-.select.is-invalid {
+.select.is-invalid,
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"],
+.select[aria-invalid="true"] {
   border-color: var(--color-danger-line);
 }
 
@@ -1920,6 +1923,29 @@ fieldset.field {
 
 .check input:disabled {
   cursor: not-allowed;
+}
+
+/* 行は読みやすい幅で置いたまま、指に反応するのは四角のまわりだけにする。
+   文字まで押せると、近くを押したつもりで意図せず切り替わる（男女別の料金など）。
+   四角そのものは小さく、まわりの余白で 40px の的にする。 */
+.check--box-only {
+  align-items: center;
+}
+
+.check--box-only .check__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 行の高さは 40px になる。四角のまわりを押せる的にする。 */
+  padding: 0.625rem;
+  cursor: pointer;
+}
+
+.check--box-only input {
+  margin: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
 }
 
 .choice-group {

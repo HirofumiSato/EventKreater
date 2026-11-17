@@ -5,10 +5,10 @@
 // 金額は最初の 1 桁で料金ステップが「完了」になる。そこで自動展開すると、打っている
 // 金額欄ごと DOM から消えて、スマホではフォーカスが外れていた。ここで見るのは 3 つ。
 //   1. 金額を打っているあいだは料金ステップを閉じず、フォーカスも金額欄に残る
-//   2. 金額欄からフォーカスが外れたら、保留していた開催場所を開く
+//   2. 金額欄からフォーカスが外れても、勝手に開催場所を開かない（キーボードを閉じただけ）
 //   3. 料金ステップの見出しへフォーカスしたときは、開催場所を開かずに自分で畳める
 
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -86,7 +86,7 @@ describe("ステップの自動開閉", () => {
     expect(document.activeElement).toBe(amount);
   });
 
-  it("金額欄からフォーカスが外れたら、保留していた開催場所を開く", async () => {
+  it("金額欄からフォーカスが外れても、勝手に開催場所を開かない", async () => {
     const user = userEvent.setup();
     const { amount, pricingToggle, locationToggle } = renderForm();
 
@@ -94,13 +94,11 @@ describe("ステップの自動開閉", () => {
     await user.type(amount, "3");
     expect(locationToggle.getAttribute("aria-expanded")).toBe("false");
 
+    // スマホでキーボードを閉じるだけの操作。ここで畳むと入力欄が目の前から消える。
     act(() => amount.blur());
 
-    await waitFor(() =>
-      expect(locationToggle.getAttribute("aria-expanded")).toBe("true"),
-    );
-    // 済んだ料金ステップは、保留していた展開のときに畳む。
-    expect(pricingToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(pricingToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(locationToggle.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("料金ステップの見出しへフォーカスしたら、開催場所を開かずに料金ステップだけを畳む", async () => {

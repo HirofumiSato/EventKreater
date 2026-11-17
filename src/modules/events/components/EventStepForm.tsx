@@ -20,10 +20,7 @@ import {
   type EventStepKey,
 } from "@/modules/events/lib/steps";
 import { guideOpenKeys, type EventGuideOpenMode } from "@/modules/events/lib/tour/steps";
-import {
-  EVENT_SUMMARY_MAX_LENGTH,
-  summaryTextLength,
-} from "@/modules/events/lib/summary";
+import { eventFieldErrors, stepOfField } from "@/modules/events/lib/field-errors";
 import {
   BasicSection,
   CapacitySection,
@@ -34,7 +31,6 @@ import {
 } from "@/modules/events/components/EventFormSections";
 import { EventPreviewModal } from "@/modules/events/components/EventPreviewModal";
 import { EventGuideTour } from "@/modules/events/components/EventGuideTour";
-import { Alert } from "@/components/ui";
 import { isImeEnter } from "@/lib/ime";
 
 interface EventStepFormProps {
@@ -128,14 +124,6 @@ function isTextEntry(element: Element | null): boolean {
   return TEXT_ENTRY_TYPES.has((element as HTMLInputElement).type);
 }
 
-/** ステップの本文か見出しボタンの中にある要素なら、そのステップのキーを返す。 */
-function stepKeyOfElement(element: Element | null): EventStepKey | null {
-  const holder = element?.closest('[id^="event-step-"]');
-  if (!holder) return null;
-  const key = holder.id.replace(/^event-step-/, "").replace(/-toggle$/, "");
-  return EVENT_STEPS.some((step) => step.key === key) ? (key as EventStepKey) : null;
-}
-
 /**
  * 新規イベント作成のステップ入力。
  * 入力項目は減らさず、開いているステップの入力欄だけを出す。
@@ -165,7 +153,8 @@ export function EventStepForm({
     () => new Set<EventStepKey>(["basic"]),
   );
   const [customCapacity, setCustomCapacity] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** 保存・プレビューで足りない欄があったら true。以降は直すたびに欄の下の文言が変わる。 */
+  const [showFieldErrors, setShowFieldErrors] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   /** モーダルのプレビュー。スマホの最終操作と、テーマ選択の導線から開く。 */
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -173,20 +162,11 @@ export function EventStepForm({
     ? "custom"
     : capacitySelectionOf(value.capacity);
 
-  /**
-   * テキストの入力中に保留した自動展開。金額に 1 桁入っただけで料金ステップを
-   * 畳むと、打っている欄ごと DOM から消えてフォーカスを失う。フォーカスが
-   * ステップの外へ出るまで `{ from, to }` を控え、そのとき同じ計算で開く。
-   */
-  const deferredAdvance = useRef<{ from: EventStepKey; to: EventStepKey } | null>(null);
-
   // 復元した値が入ってから、続きのステップを開く。値が変わっても開き直さない。
   const seeded = useRef<string | null>(null);
   useEffect(() => {
     if (!ready || seeded.current === seedKey) return;
     seeded.current = seedKey;
-    // 値が入れ替わったので、前の値で保留した自動展開は捨てる。
-    deferredAdvance.current = null;
     setOpenKeys(new Set([resumeStepKey(value)]));
     setCustomCapacity(capacitySelectionOf(value.capacity) === "custom");
   }, [ready, seedKey, value]);
@@ -211,76 +191,42 @@ export function EventStepForm({
     if (before === null || before === frontier || !isForward(before, frontier)) return;
     const nextStep = EVENT_STEPS[(STEP_INDEX.get(before) ?? 0) + 1];
     if (!nextStep?.mandatory) return;
-    // 打っている途中なら、閉じずに控える。金額欄は 1 桁で「完了」になるため、
-    // ここで畳むとスマホの入力中に欄ごと消えてフォーカスを失う。
+    // そのステップのテキスト入力欄にフォーカスがあるあいだは開かない。
+    // 金額は 1 桁で「完了」になるため、ここで畳むと打っている欄ごと DOM から消える。
+    // 打ち終えて画面の余白を押した（キーボードを閉じた）ときも開かない。
+    // 続きは、そのステップの「次へ」で進む。
     const focused = document.activeElement;
     const typingInStep =
       isTextEntry(focused) &&
       Boolean(document.getElementById(`event-step-${before}`)?.contains(focused));
-    if (typingInStep) {
-      deferredAdvance.current = { from: before, to: nextStep.key };
-      return;
-    }
+    if (typingInStep) return;
     setOpenKeys((current) =>
       advanceOpenKeys(current, before, nextStep.key, pinnedStep.current),
     );
     setAnnouncement(`「${nextStep.title}」に進みました。`);
   }, [frontier]);
 
-  // フォーカスがステップの外へ出たら、保留した自動展開を実行する。
-  // 自分で見出しを押したときと、別のステップへ移ったときは開き直さない。
-  useEffect(() => {
-    /** 保留があれば、いまのフォーカス先を見て開くか捨てるかを決める。 */
-    const settleDeferredAdvance = (target: Element | null): void => {
-      const deferred = deferredAdvance.current;
-      if (!deferred) return;
-      const { from, to } = deferred;
-      // 同じステップの本文の中で入力している（欄を移っただけ）。
-      const body = document.getElementById(`event-step-${from}`);
-      if (target && body?.contains(target)) return;
-      deferredAdvance.current = null;
-      // 自分で畳もうとしている（そのステップの見出し）か、別のステップへ移った。
-      // どちらも、勝手に開き直さない。
-      if (target?.closest(`#event-step-${from}-toggle`)) return;
-      const targetStep = stepKeyOfElement(target);
-      if (targetStep !== null && targetStep !== from) return;
-      setOpenKeys((current) =>
-        advanceOpenKeys(current, from, to, pinnedStep.current),
-      );
-      setAnnouncement(`「${eventStep(to).title}」に進みました。`);
-    };
-
-    const onFocusIn = (event: FocusEvent) => {
-      settleDeferredAdvance(event.target as Element | null);
-    };
-    // body へ blur した（キーボードを閉じた）ときは focusin が来ない。
-    // イベントが一段落してから、実際のフォーカス先で決め直す。
-    const onFocusOut = () => {
-      if (!deferredAdvance.current) return;
-      queueMicrotask(() => settleDeferredAdvance(document.activeElement));
-    };
-
-    document.addEventListener("focusin", onFocusIn);
-    document.addEventListener("focusout", onFocusOut);
-    return () => {
-      document.removeEventListener("focusin", onFocusIn);
-      document.removeEventListener("focusout", onFocusOut);
-    };
-  }, []);
-
   // 開いたステップの見出しへフォーカスを移す。押した場所を見失わないようにする。
-  const pendingFocus = useRef<EventStepKey | null>(null);
+  // エラーで開くときは、見出しではなく足りない欄そのものへ移す。
+  const pendingFocus = useRef<{ key: EventStepKey; fieldId?: string } | null>(null);
   useEffect(() => {
-    if (!pendingFocus.current) return;
-    const target = document.getElementById(`event-step-${pendingFocus.current}-toggle`);
+    const pending = pendingFocus.current;
+    if (!pending) return;
     pendingFocus.current = null;
-    target?.focus();
+    if (pending.fieldId) {
+      const field = document.getElementById(pending.fieldId);
+      if (field) {
+        // jsdom には `scrollIntoView` が無い。試験でも同じ道を通れるようにしておく。
+        field.scrollIntoView?.({ block: "center" });
+        field.focus({ preventScroll: true });
+        return;
+      }
+    }
+    document.getElementById(`event-step-${pending.key}-toggle`)?.focus();
   });
 
-  const openStep = (key: EventStepKey) => {
-    // 開く場所を決め直すので、前の値で保留した自動展開は捨てる。
-    deferredAdvance.current = null;
-    pendingFocus.current = key;
+  const openStep = (key: EventStepKey, fieldId?: string) => {
+    pendingFocus.current = { key, fieldId };
     setOpenKeys((current) => {
       const next = new Set(current);
       next.delete(key);
@@ -328,8 +274,6 @@ export function EventStepForm({
   }, []);
 
   const toggleStep = (key: EventStepKey) => {
-    // 利用者が自分で開閉したら、保留していた自動展開は捨てる。
-    deferredAdvance.current = null;
     setOpenKeys((current) => {
       const next = new Set(current);
       if (next.has(key)) {
@@ -352,8 +296,6 @@ export function EventStepForm({
   const goNext = (key: EventStepKey) => {
     const next = EVENT_STEPS[(STEP_INDEX.get(key) ?? 0) + 1];
     if (!next) return;
-    // 開閉を決め直すので、保留していた自動展開は捨てる。
-    deferredAdvance.current = null;
     closeStep(key);
     openStep(next.key);
   };
@@ -361,8 +303,6 @@ export function EventStepForm({
   const goBack = (key: EventStepKey) => {
     const previous = EVENT_STEPS[(STEP_INDEX.get(key) ?? 0) - 1];
     if (!previous) return;
-    // 開閉を決め直すので、保留していた自動展開は捨てる。
-    deferredAdvance.current = null;
     closeStep(key);
     openStep(previous.key);
   };
@@ -370,26 +310,33 @@ export function EventStepForm({
   const isComplete = (key: EventStepKey) =>
     isStepComplete(key, value, { capacitySelection, flyerSkipped: false });
 
-  /** 必須のステップが埋まっているか確かめる。下書き保存とプレビューの両方で使う。 */
+  /** 欄の下に出すエラー。保存・プレビューを押したあとだけ、直すたびに計算し直す。 */
+  const fieldErrors = showFieldErrors
+    ? eventFieldErrors(value, { capacitySelection })
+    : {};
+
+  /**
+   * 必須の欄が埋まっているか確かめる。下書き保存・プレビュー・ログインの前に呼ぶ。
+   * 足りない欄はその場に文言を出し、最初の 1 つがあるステップを開いてその欄まで運ぶ。
+   * どの欄かは id で持つので、開いたあとのスクロールとフォーカスも同じ id で決まる。
+   */
   const validate = (): boolean => {
-    setError(null);
-    // 概要は任意だが、1000 字を超えたままでは保存できない。
-    // 直す場所が分かるよう、基本情報を開いてから止める。
-    if (summaryTextLength(value.summary) > EVENT_SUMMARY_MAX_LENGTH) {
-      setError(`イベント概要は${EVENT_SUMMARY_MAX_LENGTH}文字以内にしてください。`);
-      openStep("basic");
+    const errors = eventFieldErrors(value, { capacitySelection });
+    const firstField = Object.keys(errors)[0];
+    if (firstField) {
+      setShowFieldErrors(true);
+      const step = stepOfField(firstField);
+      openStep(step, firstField);
+      setAnnouncement(
+        `未入力の欄があります。「${eventStep(step).title}」を確かめてください。`,
+      );
       return false;
     }
+    // 欄ごとのエラーに出せない最後の受け皿（料金プランが 0 件など）。
     const blocked = EVENT_STEPS.find((step) => step.mandatory && !isComplete(step.key));
     if (blocked) {
-      setError(`「${blocked.title}」を入れてから保存してください。`);
+      setShowFieldErrors(true);
       openStep(blocked.key);
-      return false;
-    }
-    // 定員は任意だが、「51以上」を選んで空のまま保存すると無制限として保存されてしまう。
-    if (!isCapacityStepComplete(value.capacity, capacitySelection)) {
-      setError("人数を入れるか、制限なしを選んでください。");
-      openStep("capacity");
       return false;
     }
     return true;
@@ -489,7 +436,6 @@ export function EventStepForm({
       <p className="visually-hidden" aria-live="polite">
         {announcement}
       </p>
-      {error && <Alert tone="error">{error}</Alert>}
       <ol className="event-steps__list">
         {EVENT_STEPS.map((step, index) => {
           const open = openKeys.has(step.key);
@@ -541,23 +487,35 @@ export function EventStepForm({
                       value={value}
                       onChange={onChange}
                       disabled={locked}
+                      errorFields={fieldErrors}
                       showOrganizerName={showOrganizerName}
                     />
                   )}
                   {step.key === "pricing" && (
                     <>
-                      <PricePlansSection value={value} onChange={onChange} disabled={locked} />
+                      <PricePlansSection
+                        value={value}
+                        onChange={onChange}
+                        disabled={locked}
+                        errorFields={fieldErrors}
+                      />
                       <DiscountSection value={value} onChange={onChange} disabled={locked} />
                     </>
                   )}
                   {step.key === "location" && (
-                    <LocationSection value={value} onChange={onChange} disabled={locked} />
+                    <LocationSection
+                      value={value}
+                      onChange={onChange}
+                      disabled={locked}
+                      errorFields={fieldErrors}
+                    />
                   )}
                   {step.key === "capacity" && (
                     <CapacitySection
                       value={value}
                       onChange={onChange}
                       disabled={locked}
+                      errorFields={fieldErrors}
                       selection={capacitySelection}
                       onSelectionChange={(next) => setCustomCapacity(next === "custom")}
                     />
