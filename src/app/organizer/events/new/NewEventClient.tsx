@@ -74,6 +74,8 @@ function NewEventScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
   const [savingDraft, setSavingDraft] = useState(false);
   // 下書き、または登録前に退避した内容の読み込みが終わるまで、フォームの操作を止める。
   const [restoring, setRestoring] = useState(true);
+  // 登録前に退避した内容から復元したか。復元直後は初回ガイドを出さない。
+  const [restoredPending, setRestoredPending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("error");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -104,23 +106,24 @@ function NewEventScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
     !draftIdParam && !restoring && quotaState.quota?.canSaveDraft === false;
 
   /**
-   * 初回ガイドを出す条件。下書きの復元で来た人には出さない（続きを書く邪魔になる）。
-   * 入力の復元とチケットの読み込みが終わるまでは待つ。途中で出すと、読み込みで
-   * 画面が伸びたときに穴の位置がずれる。
+   * 初回ガイドを出す条件。下書きの復元と、登録前の入力の復元で来た人には出さない
+   * （続きを書く邪魔になる）。入力の復元とチケットの読み込みが終わるまでは待つ。
+   * 途中で出すと、読み込みで画面が伸びたときに穴の位置がずれる。
    */
   const tourEnabled =
     !draftIdParam &&
     !restoring &&
+    !restoredPending &&
     !quotaState.isLoading &&
     guideDismissed === false &&
     !tourClosed;
   /**
    * 音声ガイドを待たせるか。ツアーを出す経路では閉じるまで true、出さない経路
-   * （記憶済み・下書き復元）では最初から false にして、これまでどおり出す。
+   * （記憶済み・下書き復元・登録前の入力の復元）では最初から false にして、これまでどおり出す。
    * 記憶を読む前（`null`）も待たせる。読んだ結果ツアーを出さないと決まったら、
    * この値が false になって音声ガイドが出る。
    */
-  const guideDeferred = !draftIdParam && guideDismissed !== true && !tourClosed;
+  const guideDeferred = !draftIdParam && !restoredPending && guideDismissed !== true && !tourClosed;
 
   // 購入後に戻ってきたときは下書きを、登録・ログインから戻ってきたときは
   // 退避した入力をフォームへ戻す。どちらも 1 度だけ読む。
@@ -130,6 +133,7 @@ function NewEventScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
       if (pending) {
         setForm(pending.form);
         setFlyerPreview(pending.flyerPreview);
+        setRestoredPending(true);
         setToastTone("success");
         setToast("入力した内容を復元しました。下書き保存かプレビューを選んでください。");
       }
@@ -226,6 +230,8 @@ function NewEventScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
         if (res.status === 403) {
           const problem = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
           if (problem.error === "PHONE_REQUIRED") {
+            // 電話番号の確認へ行く前に退避する。戻ったら同じフォームの続きから書ける。
+            savePendingForm(form, flyerPreview);
             window.location.href = phoneVerifyUrl(nextPath);
             return;
           }
@@ -284,6 +290,7 @@ function NewEventScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
           quotaState.startOneTimeCheckout({ ...(draftId ? { draftId } : {}), returnTo: nextPath })
         }
         onGranted={() => void quotaState.refreshQuota()}
+        onBeforeAuth={() => savePendingForm(form, flyerPreview)}
         nextPath={nextPath}
       />
       {/*

@@ -63,6 +63,11 @@ interface FlyerCandidateModalProps {
   onClose: () => void;
   onGenerated: (asset: { id: string; imageUrl: string }, status: string) => void;
   onQuotaChange: (quota: FlyerQuota) => void;
+  /**
+   * 未ログイン・セッション切れで認証へ送るとき。呼び出し元が入力を退避してから遷移する。
+   * 渡されていなければ、従来どおり認証画面へのリンクを出す（編集画面など）。
+   */
+  onRequireAuth?: () => void;
 }
 
 interface CandidateResponse {
@@ -79,6 +84,7 @@ export function FlyerCandidateModal({
   onClose,
   onGenerated,
   onQuotaChange,
+  onRequireAuth,
 }: FlyerCandidateModalProps) {
   const [step, setStep] = useState<FlyerWizardStep>(1);
   const [candidates, setCandidates] =
@@ -579,13 +585,34 @@ export function FlyerCandidateModal({
           {sessionExpired && (
             <Alert tone="warning">
               ログインの有効期限が切れています。
-              <a href="/auth/login">ログインし直す</a>
+              {onRequireAuth ? (
+                // 生のリンクにしない。押した時点の入力を退避してから認証へ送る。
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => onRequireAuth()}
+                >
+                  ログインし直す
+                </button>
+              ) : (
+                <a href="/auth/login">ログインし直す</a>
+              )}
             </Alert>
           )}
           {registerRequired && (
             <Alert tone="warning">
               背景の作成は会員登録後です。
-              <a href="/auth/register?mode=register">会員登録して続ける</a>
+              {onRequireAuth ? (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => onRequireAuth()}
+                >
+                  会員登録して続ける
+                </button>
+              ) : (
+                <a href="/auth/register?mode=register">会員登録して続ける</a>
+              )}
             </Alert>
           )}
         </div>

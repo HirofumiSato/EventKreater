@@ -11,6 +11,7 @@
 //   4. 再送の成功は、送り直した事実だけを出す（案内の本文を重ねない）
 //   5. 登録とログインはタブで切り替え、題（`h1`）と地の色は変えない
 //   6. 入力欄はタブの下の面にまとめ、タブと面を 1 枚の紙としてつなげる
+//   7. `next` 付きの登録・再送は送信本文に `next` を入れ、無ければ入れない
 
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -290,6 +291,68 @@ describe("パスワードを忘れたとき", () => {
 
     expect(screen.getByRole("link", { name: "パスワードを忘れた" }).getAttribute("href")).toBe(
       passwordResetUrl("organizer"),
+    );
+  });
+});
+
+/** 送った本文。`next` を載せたかどうかだけを見る。 */
+function sentBody(index: number): Record<string, unknown> {
+  const [, init] = fetchMock.mock.calls[index] as unknown as [string, RequestInit];
+  return JSON.parse(String(init.body)) as Record<string, unknown>;
+}
+
+describe("登録前の戻り先の引き継ぎ", () => {
+  it("next 付きの登録は、送信本文に next を入れる", async () => {
+    navigation.search = new URLSearchParams(
+      "mode=register&next=%2Forganizer%2Fevents%2Fnew%3Fref%3Dabc",
+    );
+    fetchMock.mockResolvedValue(
+      jsonResponse({ verificationRequired: true, detail: VERIFICATION_NOTICE }),
+    );
+
+    render(<AuthEntryScreen audience="organizer" />);
+    await register("山田 太郎", "taro@example.com", "password123");
+    await screen.findByRole("heading", { name: "確認メールを送信しました" });
+
+    expect(sentBody(0).next).toBe("/organizer/events/new?ref=abc");
+    expect(sentBody(0).audience).toBe("organizer");
+  });
+
+  it("next が無ければ、送信本文に next を入れない（既定値を戻り先にしない）", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ verificationRequired: true, detail: VERIFICATION_NOTICE }),
+    );
+
+    render(<AuthEntryScreen audience="organizer" />);
+    await register("山田 太郎", "taro@example.com", "password123");
+    await screen.findByRole("heading", { name: "確認メールを送信しました" });
+
+    expect("next" in sentBody(0)).toBe(false);
+  });
+
+  it("確認メールの再送でも next を送る", async () => {
+    navigation.search = new URLSearchParams("mode=register&next=%2Forganizer%2Fevents");
+    fetchMock.mockResolvedValue(
+      jsonResponse({ verificationRequired: true, detail: VERIFICATION_NOTICE }),
+    );
+
+    render(<AuthEntryScreen audience="organizer" />);
+    await register("山田 太郎", "taro@example.com", "password123");
+    await screen.findByRole("heading", { name: "確認メールを送信しました" });
+
+    fireEvent.click(screen.getByRole("button", { name: "確認メールを再送する" }));
+    await screen.findByText("確認メールを送り直しました。");
+
+    expect(sentBody(1).next).toBe("/organizer/events");
+  });
+
+  it("電話番号の確認画面から戻るときも、next を保つ", () => {
+    navigation.search = new URLSearchParams("step=phone&next=%2Forganizer%2Fevents%2Fnew");
+
+    render(<AuthEntryScreen audience="organizer" />);
+
+    expect(screen.getByRole("link", { name: "ログイン画面へ戻る" }).getAttribute("href")).toBe(
+      "/auth/register?next=%2Forganizer%2Fevents%2Fnew",
     );
   });
 });

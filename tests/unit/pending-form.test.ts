@@ -8,7 +8,7 @@ import {
 } from "@/modules/events/lib/pending-form";
 import { EMPTY_EVENT_FORM, createPricePlanDraft } from "@/modules/events/types";
 
-/** ブラウザの `sessionStorage` の代わり。テストは Node で動くため自前で持つ。 */
+/** ブラウザの `localStorage` の代わり。テストは Node で動くため自前で持つ。 */
 function memoryStorage(initial: Record<string, string> = {}): PendingFormStorage & {
   entries: Map<string, string>;
 } {
@@ -121,5 +121,49 @@ describe("概要の復元", () => {
     savePendingForm({ ...filledForm(), summary }, null, storage);
 
     expect(readPendingForm(storage)?.form.summary).toBe(summary);
+  });
+});
+
+describe("退避の寿命", () => {
+  const TTL = 24 * 60 * 60 * 1000;
+
+  it("24時間を過ぎた退避は読まずに消す", () => {
+    const storage = memoryStorage();
+    savePendingForm(filledForm(), null, storage);
+    // 保存時刻だけを 24 時間より前に書き換える。
+    const raw = JSON.parse(storage.getItem("event:pending-form") ?? "{}") as { savedAt: string };
+    storage.setItem(
+      "event:pending-form",
+      JSON.stringify({ ...raw, savedAt: new Date(Date.now() - TTL - 1000).toISOString() }),
+    );
+
+    expect(readPendingForm(storage)).toBeNull();
+    // 次に開いたときに、また古い内容を読もうとしないよう消す。
+    expect(storage.getItem("event:pending-form")).toBeNull();
+  });
+
+  it("時刻として読めない savedAt は、書いた時刻が分からないので消して捨てる", () => {
+    const storage = memoryStorage({
+      "event:pending-form": JSON.stringify({
+        form: filledForm(),
+        flyerPreview: null,
+        savedAt: "いつか",
+      }),
+    });
+
+    expect(readPendingForm(storage)).toBeNull();
+    expect(storage.getItem("event:pending-form")).toBeNull();
+  });
+
+  it("未来の savedAt は端末の時計ずれとして読む", () => {
+    const storage = memoryStorage({
+      "event:pending-form": JSON.stringify({
+        form: filledForm(),
+        flyerPreview: null,
+        savedAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      }),
+    });
+
+    expect(readPendingForm(storage)?.form.title).toBe("秋のご飯会");
   });
 });

@@ -8,6 +8,7 @@
 //   2. プレビューがあるときの「作り直す」も、同じく認証へ送る
 //   3. 回数枠を使い切っていても押せる（未ログインは回数ではなく認証で判断する）
 //   4. 既定（編集画面など会員の画面）は今までどおり、検証してからウィザードを開く
+//   5. 回数切れの案内も生リンクではなく `onRequireAuth` を呼ぶ（渡されていなければリンクへ戻す）
 //
 // 回数を数える単位はサーバーが所有者から決める。`draftKey` を URL に載せないこと、
 // 使い切りの案内から下書きを作り直す導線が消えていることを確かめる。
@@ -136,6 +137,38 @@ describe("回数の数え方", () => {
     const url = fetchedUrl();
     expect(url.pathname).toBe("/api/v1/flyers/quota");
     expect(url.search).toBe("");
+  });
+});
+
+describe("回数切れの案内", () => {
+  it("未ログインの案内は、生リンクではなく認証の導線を呼ぶボタンにする", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue(
+      quotaResponse({ limit: 1, used: 1, remaining: 0, anonymous: true }),
+    );
+    const onRequireAuth = vi.fn();
+    renderPanel({ requireAuth: true, onRequireAuth });
+
+    await screen.findByText(/未ログインで作れる背景は 1 枚までです。/);
+    // 生の `<a>` は置かない。押したときに退避を通すため。
+    expect(screen.queryByRole("link", { name: "会員登録して続ける" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "会員登録して続ける" }));
+
+    expect(onRequireAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it("onRequireAuth が無いときは、従来どおり登録画面へのリンクにする", async () => {
+    fetchMock.mockResolvedValue(
+      quotaResponse({ limit: 1, used: 1, remaining: 0, anonymous: true }),
+    );
+    renderPanel({});
+
+    await screen.findByText(/未ログインで作れる背景は 1 枚までです。/);
+
+    expect(
+      screen.getByRole("link", { name: "会員登録して続ける" }).getAttribute("href"),
+    ).toBe("/auth/register?mode=register");
   });
 });
 

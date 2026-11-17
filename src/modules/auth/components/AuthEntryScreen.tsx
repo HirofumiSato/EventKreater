@@ -15,7 +15,7 @@ import {
 } from "@/modules/auth/lib/auth-landing";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { useExistingSession } from "@/modules/auth/hooks/useExistingSession";
-import { safeNextPath } from "@/modules/auth/lib/google-auth";
+import { safeNextPath } from "@/lib/next-path";
 import { savePasswordCredential } from "@/modules/auth/lib/password-credential";
 import { REFERRAL_CODE_LENGTH, REFERRAL_COOKIE, REFERRAL_MAX_AGE } from "@/modules/auth/lib/referral-cookie";
 import { REFERRAL_TICKET_GRANT } from "@/modules/billing/lib/tickets";
@@ -209,8 +209,22 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           submittedMode === "register"
-            ? { action: "register", name, email, password, audience }
-            : { action: "login", email, password, audience },
+            ? {
+                action: "register",
+                name,
+                email,
+                password,
+                audience,
+                // 明示された戻り先だけを載せる。確認メールの URL にも引き継がれる。
+                ...(hasExplicitNext ? { next: nextPath } : {}),
+              }
+            : {
+                action: "login",
+                email,
+                password,
+                audience,
+                ...(hasExplicitNext ? { next: nextPath } : {}),
+              },
         ),
       });
       const body = (await res.json().catch(() => ({}))) as ProblemBody & {
@@ -289,7 +303,7 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       const res = await fetch("/api/v1/auth/verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(hasExplicitNext ? { next: nextPath } : {}) }),
       });
       if (!res.ok) throw new Error(await readProblem(res));
       // 再送では、送り直した事実だけを出す。案内の本文はパネルかフォームが持つ。
@@ -359,6 +373,7 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
         audience={audience}
         basePath={basePath}
         nextPath={nextPath}
+        hasExplicitNext={hasExplicitNext}
         signedIn={existing.state === "authenticated"}
         phoneVerified={existing.state === "authenticated" && existing.user?.phoneVerified === true}
         onFinished={completePhone}
@@ -530,6 +545,7 @@ function PhoneScreen({
   audience,
   basePath,
   nextPath,
+  hasExplicitNext,
   signedIn,
   phoneVerified,
   onFinished,
@@ -537,6 +553,8 @@ function PhoneScreen({
   audience: AuthAudience;
   basePath: string;
   nextPath: string;
+  /** URL に戻り先が明示されているか。あるときだけ、戻る導線にも `next` を保つ。 */
+  hasExplicitNext: boolean;
   /** この端末に有効な会員セッションがある。 */
   signedIn: boolean;
   /** そのセッションの電話番号が確認済み。 */
@@ -680,7 +698,10 @@ function PhoneScreen({
           {/* 主操作（朱）は増やさない。続きはログインフォームの同じパスワードで再開する。 */}
           {subjectMissing && (
             <p className="help">
-              <Link href={`${basePath}?mode=login`} className="text-link">
+              <Link
+                href={`${basePath}?mode=login${hasExplicitNext ? `&next=${encodeURIComponent(nextPath)}` : ""}`}
+                className="text-link"
+              >
                 続きから再開
               </Link>
             </p>
@@ -708,7 +729,10 @@ function PhoneScreen({
               あとで確認する
             </Link>
           ) : (
-            <Link href={basePath} className="text-link">
+            <Link
+              href={`${basePath}${hasExplicitNext ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
+              className="text-link"
+            >
               ログイン画面へ戻る
             </Link>
           )}
