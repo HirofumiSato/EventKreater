@@ -1506,6 +1506,13 @@ fieldset.field {
     padding-bottom: calc(var(--final-bar-h) + env(safe-area-inset-bottom));
   }
 
+  /* 復元の知らせは画面下に固定される。帯がある画面では、知らせが帯のボタンを隠さないよう
+     帯の高さぶん上へ逃がす（知らせは自動で消えないので、隠すと押せなくなる）。
+     未ログインの帯は `--final-bar-h` が 8.5rem に変わるので、この 1 行で両方に効く。 */
+  body:has(.form-final) .toast {
+    bottom: calc(var(--final-bar-h) + 1.25rem + env(safe-area-inset-bottom));
+  }
+
   /* 右下の音声ボタンが帯に重ならないよう、帯の高さぶん上へ逃がす。
      パネルは欄の直下に置くので、位置ではなく下端の余白（max-height）で帯を避ける。 */
   .page--form:has(.form-final) .voice-fab {
