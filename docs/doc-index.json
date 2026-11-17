@@ -5926,7 +5926,7 @@
       "title": "フロントエンド画面・コンポーネント実装設計書（front_implementation_spec.md）",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」「バックエンドAPI実装仕様書」に基づき、Next.js 14（App Router）、React 18、TypeScript、Tailwind CSSによるフロントエンド画面・UIコンポーネント・カスタムフックの実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 2265,
+      "lineCount": 2267,
       "headings": [
         {
           "level": 1,
@@ -6573,6 +6573,10 @@
         },
         {
           "path": "src/modules/events/lib/referrer.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/reveal.ts",
           "exists": true
         },
         {
@@ -12345,7 +12349,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 918,
+      "lineCount": 922,
       "headings": [
         {
           "level": 1,
@@ -12724,6 +12728,10 @@
         },
         {
           "path": "tests/unit/event-preview.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/event-reveal.test.ts",
           "exists": true
         },
         {

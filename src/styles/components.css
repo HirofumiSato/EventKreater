@@ -1906,7 +1906,12 @@ fieldset.field {
 }
 
 .field-error {
-  color: var(--color-danger-text);
+  /* 直す理由を伝える文。補足（`.help`）と同じ薄い灰色にすると注記に見えるので、
+     赤・太字・1 段大きい字で、入力欄のすぐ下だと分かるようにする。 */
+  color: var(--color-danger-strong);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .check {

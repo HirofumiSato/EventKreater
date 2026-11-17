@@ -147,7 +147,7 @@
 
 .. count-start
 
-160 ファイル、``it`` は 2305 件です。内訳は ``tests/unit/`` が 110 ファイル 1912 件、``tests/integration/`` が 31 ファイル 228 件です。結合の 228 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+161 ファイル、``it`` は 2311 件です。内訳は ``tests/unit/`` が 111 ファイル 1918 件、``tests/integration/`` が 31 ファイル 228 件です。結合の 228 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -222,6 +222,10 @@
    * - ``tests/unit/event-field-errors.test.ts``
      - 9
      - 保存前に欄ごとへ分けたエラー。埋まったフォームでは空、名前と日時の 3 欄、金額の未入力と整数でない値、プラン名、住所を入れ始めたときの都道府県・市区町村・番地、会場名だけのとき、概要の上限超過、「51以上」の人数、欄の id から開くステップの判定
+     - SCR-ORG-02
+   * - ``tests/unit/event-reveal.test.ts``
+     - 6
+     - エラーのある欄を画面へ収める量。収まっていれば動かさない、テンキーで縮んだ範囲の下端へエラー文を入れる、画面下の帯を避ける、上へはみ出したら上へ送る、``visualViewport.offsetTop`` がずれていても同じ基準で測る、画面より高いまとまりはエラー文の下端を見せる
      - SCR-ORG-02
    * - ``tests/unit/event-capacity.test.ts``
      - 8
@@ -802,7 +806,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1912、``tests/integration/`` が 228 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1912 件を実行して 228 件を skip します。
+件数の内訳は ``tests/unit/`` が 1918、``tests/integration/`` が 228 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1918 件を実行して 228 件を skip します。
 
 .. breakdown-end
 

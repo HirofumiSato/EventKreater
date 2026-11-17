@@ -4,10 +4,13 @@
 // ステップを開いてスクロールするだけだと、どこが必須なのか分からない。
 // 足りない欄のすぐ下に理由を出し、その欄へフォーカスを移す。
 //
+// jsdom にはレイアウトもスクロールも無いので、`scrollBy` は空にする。
+// スクロールの量そのものは `tests/unit/event-reveal.test.ts` が見る。
+//
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventStepForm } from "@/modules/events/components/EventStepForm";
 import {
   EMPTY_EVENT_FORM,
@@ -57,7 +60,15 @@ function valueBeforePricing(): EventFormValues {
   };
 }
 
-afterEach(cleanup);
+beforeEach(() => {
+  // jsdom の `scrollBy` は「未実装」を stderr へ出すだけ。呼ばれても静かにする。
+  vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("保存できないときの欄ごとのエラー", () => {
   it("イベント名が空なら、その欄の下に理由を出してフォーカスを移す", async () => {
