@@ -21,6 +21,7 @@ import {
 } from "@/modules/events/lib/steps";
 import { guideOpenKeys, type EventGuideOpenMode } from "@/modules/events/lib/tour/steps";
 import { eventFieldErrors, stepOfField } from "@/modules/events/lib/field-errors";
+import { revealScrollDelta, type VisibleArea } from "@/modules/events/lib/reveal";
 import {
   BasicSection,
   CapacitySection,
@@ -125,6 +126,88 @@ function isTextEntry(element: Element | null): boolean {
 }
 
 /**
+ * いま見えている範囲。キーボードが出ているあいだは `visualViewport` が縮む。
+ * 対応していない環境では、画面の大きさをそのまま使う。
+ */
+function visibleArea(): VisibleArea {
+  const viewport = window.visualViewport;
+  if (!viewport) return { top: 0, height: window.innerHeight };
+  return { top: viewport.offsetTop, height: viewport.height };
+}
+
+/**
+ * 画面下に固定する帯（`.form-final`）が、見えている範囲の下端を覆っている高さ。
+ * 帯はキーボードの上へ逃げるので、位置を測って重なったぶんだけ避ける。
+ */
+function fixedBarOverlap(area: VisibleArea): number {
+  const bar = document.querySelector<HTMLElement>(".form-final");
+  if (!bar) return 0;
+  if (window.getComputedStyle(bar).position !== "fixed") return 0;
+  const rect = bar.getBoundingClientRect();
+  const visibleBottom = area.top + area.height;
+  return Math.max(0, Math.min(rect.height, visibleBottom - rect.top));
+}
+
+/**
+ * エラーのある欄を、キーボードと画面下の帯を除いた範囲へ収める。
+ *
+ * 欄にフォーカスするとキーボードが開き、見えている範囲が数百ミリ秒かけて縮む。
+ * 開く前に測った位置のままでは、欄の下に出すエラー文がキーボードの裏へ入る。
+ * そこで大きさが変わるたびに測り直し、落ち着いたころに追いかけを止める。
+ * 途中で自分から画面を触ったら、そこで止める（読もうとしている位置を動かさない）。
+ *
+ * 返す関数を呼ぶと、追いかけを止める（次の欄へ移ったとき・画面を離れたとき）。
+ */
+function revealFieldWithError(fieldId: string): () => void {
+  const field = document.getElementById(fieldId);
+  if (!field) return () => {};
+  const error = document.getElementById(`${fieldId}-error`);
+  const viewport = window.visualViewport;
+
+  const apply = (): void => {
+    const rect = field.getBoundingClientRect();
+    const errorRect = error?.getBoundingClientRect() ?? null;
+    const area = visibleArea();
+    const delta = revealScrollDelta(
+      {
+        // 欄とエラー文を 1 つのまとまりとして扱う。片方だけ見せても直せない。
+        top: errorRect ? Math.min(rect.top, errorRect.top) : rect.top,
+        bottom: errorRect ? Math.max(rect.bottom, errorRect.bottom) : rect.bottom,
+      },
+      area,
+      { reservedBottom: fixedBarOverlap(area) },
+    );
+    if (Math.abs(delta) <= 1) return;
+    try {
+      window.scrollBy({ top: delta, behavior: "auto" });
+    } catch {
+      // 動かせない環境では、その場で直してもらうだけ。
+    }
+  };
+
+  const onChange = () => apply();
+  const timer = window.setTimeout(stop, 900);
+  const onUserIntent = () => stop();
+
+  function stop(): void {
+    window.clearTimeout(timer);
+    viewport?.removeEventListener("resize", onChange);
+    window.removeEventListener("resize", onChange);
+    window.removeEventListener("touchstart", onUserIntent);
+    window.removeEventListener("wheel", onUserIntent);
+  }
+
+  viewport?.addEventListener("resize", onChange);
+  window.addEventListener("resize", onChange);
+  // 自分から画面を触ったら、そこで追いかけを止める。読もうとしている位置を動かさない。
+  window.addEventListener("touchstart", onUserIntent, { passive: true });
+  window.addEventListener("wheel", onUserIntent, { passive: true });
+  apply();
+
+  return stop;
+}
+
+/**
  * 新規イベント作成のステップ入力。
  * 入力項目は減らさず、開いているステップの入力欄だけを出す。
  * 必須のステップが埋まったら次を開き、済んだステップは要約 1 行に畳む。
@@ -209,21 +292,28 @@ export function EventStepForm({
   // 開いたステップの見出しへフォーカスを移す。押した場所を見失わないようにする。
   // エラーで開くときは、見出しではなく足りない欄そのものへ移す。
   const pendingFocus = useRef<{ key: EventStepKey; fieldId?: string } | null>(null);
+  /** キーボードの開きを追いかけて欄を収める処理。次の欄へ移る前に止める。 */
+  const stopReveal = useRef<(() => void) | null>(null);
   useEffect(() => {
     const pending = pendingFocus.current;
     if (!pending) return;
     pendingFocus.current = null;
+    stopReveal.current?.();
+    stopReveal.current = null;
     if (pending.fieldId) {
       const field = document.getElementById(pending.fieldId);
       if (field) {
-        // jsdom には `scrollIntoView` が無い。試験でも同じ道を通れるようにしておく。
-        field.scrollIntoView?.({ block: "center" });
+        // ブラウザに任せると欄だけが画面の中央へ来て、下に出すエラー文が
+        // キーボードの裏へ入る。自分で測って、欄とエラー文をまとめて収める。
         field.focus({ preventScroll: true });
+        stopReveal.current = revealFieldWithError(pending.fieldId);
         return;
       }
     }
     document.getElementById(`event-step-${pending.key}-toggle`)?.focus();
   });
+  // 画面を離れるときは、開きかけの追いかけを止める。
+  useEffect(() => () => stopReveal.current?.(), []);
 
   const openStep = (key: EventStepKey, fieldId?: string) => {
     pendingFocus.current = { key, fieldId };

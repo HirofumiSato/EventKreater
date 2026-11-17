@@ -138,6 +138,8 @@
   --color-danger-border: color-mix(in srgb, var(--st-danger) 44%, var(--st-surface-raised));
   --color-danger-line: var(--st-danger);
   --color-danger-text: color-mix(in srgb, var(--st-danger) 74%, var(--st-content-primary));
+  /* 入力欄の下に出すエラー文。文字の色へ寄せすぎると赤が濁るので、危険色を濃いめに残す。 */
+  --color-danger-strong: color-mix(in srgb, var(--st-danger) 90%, var(--st-content-primary));
   --color-danger-solid: var(--st-danger);
   --color-danger-solid-hover: color-mix(in srgb, var(--st-danger) 82%, #000000);
 

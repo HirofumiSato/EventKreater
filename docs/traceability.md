@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 556
+- 文書から参照されているコードパス: 558
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -314,6 +314,7 @@
 | `src/modules/events/lib/public-event.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/published-counts.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/events/lib/referrer.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
+| `src/modules/events/lib/reveal.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/events/lib/rsvp-status.ts` | [docs/issues/waitlist.md](issues/waitlist.md) / [docs/onboarding.md](onboarding.md) |
 | `src/modules/events/lib/steps.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) |
 | `src/modules/events/lib/summary-html.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) |
@@ -489,6 +490,7 @@
 | `tests/unit/event-guide-styles.test.mjs` | [docs/event-guide-tour.rst](event-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-payload-schema.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-preview.test.ts` | [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/event-reveal.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-steps.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/event-summary.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/first-month-free.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

@@ -49,6 +49,9 @@
   --color-danger-border: #e7a8b4;
   --color-danger-line: #9f2940;
   --color-danger-text: #8f1d32;
+  /* 直す理由を伝える文（入力欄の下のエラー）。落ち着いた臙脂では「注記」に見え、
+     必須が足りないことに気づけない。注意を引く赤を 1 つだけ持つ。 */
+  --color-danger-strong: #c1121f;
   --color-danger-solid: #6e1e2a;
   --color-danger-solid-hover: #541621;
   --color-slate-100: #eeece7;
