@@ -42,6 +42,7 @@ function memoryStorage(): Storage {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   // 例外を投げる getter を差した試験の後始末。定義そのものが残ると次の試験へ漏れる。
   delete (globalThis as { localStorage?: Storage }).localStorage;
@@ -151,6 +152,10 @@ describe("画面をまたぐ続き", () => {
   });
 
   it("ちょうど 10 分はまだ続きとして読む", () => {
+    // 実時計で値を作ると、読むまでの数ミリ秒で 10 分を超える（CI の遅い環境で落ちる）。
+    // 境界そのものを見るため、時計を止める。
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
     const storage = memoryStorage();
     vi.stubGlobal("sessionStorage", storage);
     storage.setItem(
