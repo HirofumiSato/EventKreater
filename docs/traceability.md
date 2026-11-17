@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 547
+- 文書から参照されているコードパス: 554
 - API ルート: 84（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -233,6 +233,7 @@
 | `src/lib/image-upload.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) |
 | `src/lib/ime.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `src/lib/mail.ts` | [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/staging.rst](staging.rst) |
+| `src/lib/next-path.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/lib/prisma.ts` | [docs/database.rst](database.rst) / [docs/overall_system_requirements_common.md](overall_system_requirements_common.md) / [docs/overall_system_requirements_common_review.md](overall_system_requirements_common_review.md) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) |
 | `src/lib/problem.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/abuse-and-crawler-hardening.md](issues/abuse-and-crawler-hardening.md) / [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/onboarding.md](onboarding.md) |
 | `src/lib/schemas.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/flyer/specs/context_contract.md](flyer/specs/context_contract.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/issues/organizer-profile.md](issues/organizer-profile.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/testing/first-cases.rst](testing/first-cases.rst) |
@@ -275,6 +276,7 @@
 | `src/modules/auth/lib/referral-cookie.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/auth/lib/resend.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/auth-session-skip-and-challenge-resend.md](issues/auth-session-skip-and-challenge-resend.md) |
 | `src/modules/auth/lib/signup-resume.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) |
+| `src/modules/auth/lib/verification-links.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/auth/lib/verification.ts` | [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) |
 | `src/modules/billing` | [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) |
 | `src/modules/billing/components/PricingModal.tsx` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) |
@@ -395,7 +397,7 @@
 | `src/modules/revenue/lib/revenue.ts` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/waitlist.md](issues/waitlist.md) |
 | `src/styles` | `AGENTS.md` / [docs/README.md](README.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) |
 | `src/styles/base.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
-| `src/styles/components.css` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `src/styles/components.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/deco/quiet.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) |
 | `src/styles/deco/surface.css` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-profile-header.md](issues/organizer-profile-header.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) |
 | `src/styles/deco/tokens.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
@@ -406,8 +408,10 @@
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-entry-screen.test.tsx` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/auth-verify-next.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-form-pricing-labels.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-meta-card-pricing.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/event-step-form-focus.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/event-summary-editor.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/flyer-generate-panel-auth.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/participant-list-table.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -461,6 +465,7 @@
 | `tests/unit/auth-links.test.ts` | [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-mode.test.ts` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/auth-rate-limits.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/auth-verification-links.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/button-rules.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/checkout-intent.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/event-draft-save-and-preview.md](issues/event-draft-save-and-preview.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/ci-scope.test.mjs` | [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -494,6 +499,7 @@
 | `tests/unit/flyer-scope.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/flyer-upload.test.ts` | [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/font-preload.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/form-final-toast.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/format.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/free-ticket.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/guest-draft.test.ts` | [docs/issues/draft-checkout-and-publish.md](issues/draft-checkout-and-publish.md) / [docs/issues/organizer-home-screen-flow.md](issues/organizer-home-screen-flow.md) / [docs/testing/scope.rst](testing/scope.rst) |
@@ -509,6 +515,7 @@
 | `tests/unit/mypage-guide-memory.test.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/mypage-guide-steps.test.ts` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/mypage-guide-styles.test.mjs` | [docs/mypage-guide-tour.rst](mypage-guide-tour.rst) / [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/next-path.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-calendar.test.ts` | [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-invite.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/organizer-names.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
