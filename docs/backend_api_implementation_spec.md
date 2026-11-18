@@ -134,7 +134,7 @@ flowchart TD
 | `/api/v1/geo/postal-codes/[code]` | GET | SCR-ORG-02 / SCR-ORG-05 | 不要（IP 単位の回数制限） | 郵便番号から都道府県・市区町村・町名を引く。外部サービスへ中継し、24 時間キャッシュする（5.22） |
 | `/api/v1/voice/transcriptions` | GET | SCR-ORG-02 | 不要 | 音声入力の設定。`{ "mock": boolean }` を返す（`VOICE_TRANSCRIBE_MOCK=1` かつ本番でないとき `true`）。画面は録音を省いてよいかを開いたときに 1 度だけ聞く |
 | `/api/v1/voice/transcriptions` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限） | 音声を文字にする。音声は保存せず OpenAI の `gpt-transcribe` へ中継し、`text/event-stream` で `delta` / `done` / `error` を返す。`VOICE_TRANSCRIBE_MODEL` で差し替え、モデルが使えないときは `VOICE_TRANSCRIBE_FALLBACK_MODEL` で 1 度だけ再試行する。未設定なら 503 `TRANSCRIBE_DISABLED` |
-| `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。文字起こしは 1 回だけで、決定的に節を割り当て、未割当の節だけ `VOICE_BATCH_MODEL`（既定 `gpt-4.1-mini`）で割当を推定する。`text/event-stream` で `delta` / `cell` / `done` / `error` を返し、`cell` は読めたマスだけ（値は `done` にまとめる）。`VOICE_BATCH_LLM=0` で LLM を使わない |
+| `/api/v1/voice/utterances` | POST | SCR-ORG-02 | 不要（IP 単位の回数制限。transcriptions と共有） | 1 回の発話から複数の欄を埋める。任意の `text`（区間の文字を組み立てた全文）があれば文字起こしをせず、無ければ 1 回だけ文字起こしする。LLM に原文から quote を抽出させ、残りの空欄を決定的に割り当て、値は `parse` に通す。`text/event-stream` で `delta` / `done` / `error` を返す（`text` 経路は `done` だけ）。`VOICE_BATCH_LLM=0` で LLM を使わない |
 | `/api/v1/billing/quota` | GET | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | チケット・残クレジット・サブスク状態に加え、現在の販売価格（`pricing`）、0円チケットの残数、適用中の割引、初月無料の無料期間（`trial`）と加入資格（`trialEligible`）、下書きの件数（`draftEventCount` / `draftEventLimit` / `remainingDrafts` / `canSaveDraft`）を返す |
 | `/api/v1/billing/checkout/one-time` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 単発チケットの購入。任意の `draftId` / `returnTo` を受け取り、Stripe の `metadata` と成功・キャンセルの URL に載せる。0円キャンペーン中は Stripe を通さず 1 枚を付与する |
 | `/api/v1/billing/checkout/subscription` | POST | SCR-MOD-01 / SCR-ORG-17 | 会員必須 | 定額プランの加入（`plan` = `MONTHLY_8` / `UNLIMITED`）。はじめての加入は `trial_end` を1か月後にして初月0円にする（クーポンは付けない）。初月無料を使えない再加入者は、割引中なら期間付き Stripe クーポンを付ける。`draftId` / `returnTo` の扱いは単発と同じ |
@@ -1401,7 +1401,9 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ### 5.15. POST `/api/v1/voice/transcriptions`（音声を文字にする）
 
-イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）、`row` / `title` / `venueName`（任意、文脈と当て字の手掛かり）を受け取る。検証を通ると `text/event-stream` を返す。音声は保存せず、OpenAI の音声認識へ中継し、自前のイベントで文字を返す。`Cache-Control: no-store`。
+イベント作成画面の音声入力。`multipart/form-data` で `audio`（必須、5MB まで）と `field`（任意、欄の名前）、`row` / `title` / `venueName`（任意、文脈と当て字の手掛かり）、`sessionId`（任意、64 文字まで、1 録音を表す識別子）を受け取る。検証を通ると `text/event-stream` を返す。音声は保存せず、OpenAI の音声認識へ中継し、自前のイベントで文字を返す。`Cache-Control: no-store`。
+
+画面は録音を 20ms ごとの RMS で息継ぎに区切り、区間ごとにこのルートへ送る。区間送信では `field` / `row` / `title` / `venueName` を渡さず、`sessionId` だけを添える（区間は 1 つの欄の話ではないため）。同じ `sessionId` の 2 回目以降は回数を数えない（1 録音 1 カウント）。記録はプロセスのメモリ上に置き、`VOICE_TRANSCRIBE_WINDOW_MINUTES` より古いものは掃除する。`sessionId` が無い・64 文字を超える値は今までどおり毎回数える。
 
 既定のモデルは `gpt-transcribe`（`VOICE_TRANSCRIBE_MODEL` で差し替え）。送るパラメータはモデルの系統で変える。
 
@@ -1427,7 +1429,7 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | 502 | `TRANSCRIBE_MISCONFIGURED` / `TRANSCRIBE_FAILED` | 鍵の設定不備、または上流に繋がらない |
 | 503 | `TRANSCRIBE_DISABLED` | `OPENAI_API_KEY` が未設定 |
 
-回数の上限は接続元（IP）ごとに、`VOICE_TRANSCRIBE_LIMIT`（既定 40）回 / `VOICE_TRANSCRIBE_WINDOW_MINUTES`（既定 60 分）で数える。プロセスのメモリ上に持つため、インスタンスを増やすと合計の上限も増える。認識を呼ぶ前に 1 回ぶん消費する（失敗しても課金されうるため）。まとめて話す `/api/v1/voice/utterances` と共有し、1 回で 1 カウント。
+回数の上限は接続元（IP）ごとに、`VOICE_TRANSCRIBE_LIMIT`（既定 40）回 / `VOICE_TRANSCRIBE_WINDOW_MINUTES`（既定 60 分）で数える。プロセスのメモリ上に持つため、インスタンスを増やすと合計の上限も増える。認識を呼ぶ前に 1 回ぶん消費する（失敗しても課金されうるため）。同じ `sessionId` の区間送信は 1 録音としてまとめ、2 回目以降は数えない。自由に話す `/api/v1/voice/utterances` と共有し、1 回で 1 カウント。
 
 `VOICE_TRANSCRIBE_MOCK=1` のときは、OpenAI を呼ばずに欄の入力例（`src/modules/events/lib/voice/fields.ts` の `example`）を `text` として返す。`model` は `"mock"` になる。外部を呼ばないため回数の上限は数えず、`OPENAI_API_KEY` が空でも 503 にしない。`NODE_ENV=production` では常に無効。開発では、このルートを初めて読み込んだ時点でモックの有効・無効と鍵の有無を 1 度だけ `console.warn` に出す（設定の付け忘れと切り忘れに気づくため）。
 
@@ -1435,11 +1437,12 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 ### 5.15.1. POST `/api/v1/voice/utterances`（1 回の発話から複数の欄を埋める）
 
-イベント作成画面の「まとめて話す」。`multipart/form-data` で次を受け取る。
+イベント作成画面の「自由に話す」。`multipart/form-data` で次を受け取る。
 
 | 項目 | 内容 |
 | :---- | :---- |
-| `audio` | 必須。音声。5MB まで |
+| `audio` | `text` があるときは任意、無いときは必須。音声。5MB まで |
+| `text` | 任意。区間の文字を組み立てた全文。2000 文字まで。あれば文字起こしを呼ばず、その文字で割当だけを行う。空文字は「区間が取れなかった」とみなし、`audio` があれば従来どおり文字起こしする。2000 文字を超えたら 400 |
 | `value` | 必須。いまのフォームの値（JSON）。`schedules` と `pricePlans` は 1 件以上 |
 | `scope` | 任意。巡回の指定（JSON）。`showOrganizerName` / `includeOptional` / `touched` |
 
@@ -1447,27 +1450,47 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 
 | イベント | 内容 |
 | :---- | :---- |
-| `delta` | `{ "text": string }`。聞き取れた文字の増分 |
-| `cell` | `{ "slotId": string }`。言い終わった節で読めたマス。**値は含めない** |
-| `done` | `{ "text": string, "assignments": [...], "unassigned": string[], "model": string }` |
+| `delta` | `{ "text": string }`。聞き取れた文字の増分。音声から文字起こししたときだけ流れる |
+| `done` | `{ "text": string, "assignments": [...], "unassigned": string[], "model": string, "estimated": boolean, "diagnostics": object }` |
 | `error` | `{ "error": string, "detail": string }`。ストリーム開始後の失敗（ステータスは 200 のまま） |
+
+`text` 経路では `delta` を流さず `done` だけを返す。`done.model` は `text` 経路なら `"text"`、モックなら `"mock"`、音声からなら実際に使った認識モデル。途中の割当は返さない（自然文では言いかけの割当が誤るため、値も割当も `done` にまとめる）。
 
 `assignments` の 1 件は `{ "slotId": string, "text": string, "value": string \| number \| null, "patch": object }`。`slotId` は `欄のキー:行`（`scheduleDate:0`、`planAmount:1`）。`value` は確認に出す読みやすい値（金額は数値、日付は `YYYY-MM-DD`）で、`patch` がフォームへ当てる差分。`Cache-Control: no-store`。
 
-`cell` は `utterance.ts` の `assignTerminated` で作る。最後の区切りより後ろは言いかけとして捨てるので、途中の値が確定値として出ることはない。同じマスは 1 回だけ送る。ストリーム開始前の失敗（形式・空・5MB・`value`・回数の上限・鍵の不在）は、従来どおり `application/problem+json` で返す。
+`estimated` は LLM の quote 抽出で 1 件以上埋まったか。`diagnostics` は割当の内訳で、次の 6 つを持つ。本文と quote は含めない（件数だけ）。古い画面は無視してよい。
 
-文字起こしは 1 回だけ（`transcribeDetailed`、`field` は渡さない）。割当は `src/modules/events/lib/voice/utterance.ts` の決定的な手順で行う。
+```json
+{
+  "reason": "ok",
+  "quotes": 6,
+  "accepted": 5,
+  "dropped": 1,
+  "deterministic": 2,
+  "chars": 48
+}
+```
 
-1. 読点・句点・カンマ・終止点・話し言葉の「で」「と」「や」・空白で節に分ける
-2. 形の閉じた欄（日付・時刻・金額・定員・郵便番号・都道府県・雨天・期限）を巡回順に当て、一致した節を消費する。同じ節を 2 つの欄に使わない
-3. 自由文の欄は、その欄の `keywords` が節に現れるときだけ受け取る
-4. `scheduleStart` が範囲を返したら、同じ行の `scheduleEnd` は割当済みにする
+`reason` は `ok`（1 件以上通った）、`empty`（呼べたが 1 件も通らなかった）、`no-input`（文が空、または対象の欄が無い）、`skipped`（`VOICE_BATCH_LLM=0`）、`mock`、`no-key`（鍵なし）、`no-candidates`（空欄が無い）、`network`（通信失敗・15 秒の打ち切り）、`http-error`（上流が 4xx / 5xx）、`no-content`（JSON を読めなかった）のいずれか。`quotes` はモデルが返した割当の数、`accepted` は検証を通って採用した数、`dropped` は `quotes - accepted`、`deterministic` は決定的な割当で埋まった欄の数、`chars` は話した文の文字数。`reason` が `no-key` / `skipped` / `mock` なら LLM は呼ばれていない。
 
-決定的に割り当てられなかった節だけを LLM（`VOICE_BATCH_MODEL`、既定 `gpt-4.1-mini`、`temperature: 0`）へ回す。LLM に返させるのは `{ "assignments": [{ "slotId": string, "clause": string }] }` だけで、値は作らせない。返ってきた節は必ずその欄の `parse` に通し、`null` なら捨てる。存在しない `slotId`、未割当でない節、重複した割当も捨てる。`json_schema` を返せないモデル（400）では `json_object` で 1 度だけ試す。LLM が失敗しても、決定的な割当だけは返る。
+サーバーは割当のたびに、この内訳を 1 行だけログへ出す（`[voice] batch llm=... quotes=... accepted=... dropped=... deterministic=... chars=...`）。本文と quote は出さない。テスト（`NODE_ENV=test`）では出さない。
 
-`VOICE_BATCH_LLM=0` のときは LLM を呼ばない。モック（`VOICE_TRANSCRIBE_MOCK=1`）は巡回する欄の `example` を「、」でつないだ 1 文を返し、`model` は `"mock"`。回数の上限は 5.15 と共有する。音声は保存しない。
+ストリーム開始前の失敗（形式・空・5MB・`text` の長さ・`value`・回数の上限・鍵の不在）は、従来どおり `application/problem+json` で返す。
 
-エラーは `application/problem+json`（RFC 7807）。`audio` が無ければ 400、5MB を超えたら 413、`value` が読めなければ 400、回数の上限は 429、`OPENAI_API_KEY` が無ければ 503 `TRANSCRIBE_DISABLED`。
+文字起こしは、`text` が無いときだけ 1 回行う（`transcribeDetailed`、`field` は渡さない）。割当は「LLM が原文から quote を抽出 → 決定的な割当で未割当ぶんを補完」の順で行う（`src/modules/events/lib/voice/batch.ts`）。
+
+1. LLM（`VOICE_BATCH_MODEL`、既定 `gpt-4.1-mini`、`temperature: 0`）に、原文から欄ごとの値（原文の部分文字列）を抜き出させる。返させるのは `{ "assignments": [{ "slotId": string, "quote": string }] }` だけで、値は作らせない。日付なら日付、時刻なら時刻だけを抜くよう指示する
+2. quote は前後の句読点・空白・助詞（`から` / `まで` / `には` などを長い順）を落としてから、原文に含まれるかを照合する
+3. 候補に無い `slotId`、原文に無い quote、同じ欄・同じ quote の重複、`parse` が `null` を返す quote を捨てる
+4. 残りの空欄を `src/modules/events/lib/voice/utterance.ts` の決定的な手順で補う。読点・句点・カンマ・終止点・話し言葉の「で」「と」「や」・空白で節に分け、形の閉じた欄（日付・時刻・金額・定員・郵便番号・都道府県・雨天・期限）を巡回順に当て、自由文の欄はその欄の `keywords` が節に現れるときだけ受け取る。LLM が使った quote は原文から除いてから渡す
+5. `scheduleStart` が範囲（「18時から20時」）を返したら、同じ行の `scheduleEnd` は二重に割り当てない
+6. 返す `assignments` は `batchTargets` の順に並べ、確認ダイアログの行順を安定させる
+
+自由文の欄（`CLOSED_FIELDS` 以外）は、12 文字を超える節、または `を` / `は` / `が` を含む節を受け取らない。`batch` 経路だけに効くガードで、1 欄ずつの聞き取りは今の挙動のまま。`json_schema` を返せないモデル（400）では `json_object` で 1 度だけ試す。
+
+`VOICE_BATCH_LLM=0`、鍵なし、モック、上流失敗のときは LLM を呼ばず、決定的な割当だけを返す。モック（`VOICE_TRANSCRIBE_MOCK=1`）の `mockBatchTranscript` は、巡回する欄の `example` を列挙せず、話し言葉として読める自然な文を返す（例:「忘年会。12月5日に開きます。18時から20時、渋谷ホールで行います。参加費は3000円…」）。`model` は `"mock"`。回数の上限は 5.15 と共有する。音声・区間の文字・全文は保存しない。
+
+エラーは `application/problem+json`（RFC 7807）。`audio` も `text` も無ければ 400、`text` が 2000 文字を超えたら 400、5MB を超えたら 413、`value` が読めなければ 400、回数の上限は 429、`OPENAI_API_KEY` が無ければ 503 `TRANSCRIBE_DISABLED`。
 
 ### 5.16. POST / DELETE `/api/v1/organizer/profile/avatar`（プロフィールのアイコン）
 
@@ -2365,7 +2388,7 @@ export interface ProblemDetails {
 
 本文の `next` は任意で、ログイン後の戻り先である。`src/lib/next-path.ts` の `safeNextPath` を通したパスだけを、確認メール（`/auth/verify?token=...&next=...`）と既登録メール（`/auth/register?mode=login&next=...`）の URL に載せる。許可していないパスや外部サイトは付けない。`/auth/verify` は URL の `next` を電話番号の確認まで引き回す。`POST /api/v1/auth/verification` も同じ `next` を受け、再送する確認メールの URL に載せる。
 
-この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
+この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_ACCOUNT"`、本文「このアカウントは、こちらからはログインできません。」を返す。管理コンソールの URL も、管理者であることも応答から読ませない（公開画面から管理コンソールへの導線を作らないため）。Google の認可完了で `ADMIN` と判明したときも `/console/login` へは送らず、`?error=google_account` を付けて元の入口へ戻す。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 
 成功したログインの会員セッションは、HTTPS では Cookie `__Host-auth_token`、HTTP では `auth_token` である。中身は HS256 JWT で、`userId`、`email`、`jti` を持つ。`jti` は `auth_sessions` の行である。JWT には `platformRole` を載せない。ログアウトはその行の `revoked_at` を記録する。
 

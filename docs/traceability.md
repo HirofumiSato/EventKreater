@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 561
+- 文書から参照されているコードパス: 562
 - API ルート: 85（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -326,7 +326,7 @@
 | `src/modules/events/lib/venue-suggestions.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) |
 | `src/modules/events/lib/voice/audio.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/batch-guide.ts` | [docs/voice-input.rst](voice-input.rst) |
-| `src/modules/events/lib/voice/batch.ts` | [docs/voice-input.rst](voice-input.rst) |
+| `src/modules/events/lib/voice/batch.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/fields.ts` | [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/guide.ts` | [docs/voice-input.rst](voice-input.rst) |
 | `src/modules/events/lib/voice/mock.ts` | [docs/voice-input.rst](voice-input.rst) |
@@ -425,7 +425,7 @@
 | `tests/components/quota-status-banner.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/rsvp-modal.test.tsx` | [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/voice-address-search.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
-| `tests/components/voice-batch.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/components/voice-batch.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/components/voice-mock-recording.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
 | `tests/integration/admin-plan-grant.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -570,6 +570,7 @@
 | `tests/unit/voice-parse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-pcm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-prompt.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
+| `tests/unit/voice-segments.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-spotlight.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-sse.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-transcribe.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |

@@ -5,6 +5,8 @@ import {
 } from "@/modules/events/lib/voice/audio";
 import { readSseStream, type SseEvent } from "@/modules/events/lib/voice/sse";
 import type {
+  VoiceBatchDiagnostics,
+  VoiceBatchLlmReason,
   VoiceFieldScope,
   VoicePatch,
   VoiceSlotId,
@@ -12,14 +14,14 @@ import type {
 import type { EventFormValues } from "@/modules/events/types";
 
 /**
- * 「まとめて話す」の通信。
+ * 「自由に話す」の通信。
  *
  * 1 回の録音をそのまま `POST /api/v1/voice/utterances` へ送り、欄ごとの割当を受ける。
  * 値の解釈はサーバー（`parse.ts`）に閉じてあるので、ここでは形を検めるだけで、
  * 値を作り直さない。編集された行の読み直しは、画面側で `field.parse` に通す。
  *
- * 応答は `text/event-stream`。聞き取れた節ごとに `cell` が届くので、話している間に
- * マスだけを先に埋められる。値は最後の `done` にまとめて入っている。
+ * 応答は `text/event-stream`。割当は最後の `done` にまとめて入っている。
+ * 音声から文字起こししたときだけ `delta` が届く（自由文の割当は `done` で行う）。
  */
 const UTTERANCE_ENDPOINT = "/api/v1/voice/utterances";
 
@@ -43,6 +45,10 @@ export interface VoiceUtteranceResult {
   /** どの欄にも当たらなかった節。 */
   unassigned: string[];
   model: string | null;
+  /** LLM の quote 抽出で 1 件以上埋まったか。古いサーバーは返さない。 */
+  estimated?: boolean;
+  /** LLM と決定的な割当の内訳。計測にだけ使う。古いサーバーは返さない。 */
+  diagnostics?: VoiceBatchDiagnostics;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,6 +78,41 @@ function readStrings(raw: unknown): string[] {
   return raw.filter((item): item is string => typeof item === "string");
 }
 
+/** サーバーが返しうる理由。知らない値は「内訳なし」として捨てる。 */
+const BATCH_LLM_REASONS: readonly VoiceBatchLlmReason[] = [
+  "ok",
+  "empty",
+  "no-input",
+  "skipped",
+  "mock",
+  "no-key",
+  "no-candidates",
+  "network",
+  "http-error",
+  "no-content",
+];
+
+/** 件数は 0 以上の整数だけを受ける。形が崩れていたら 0 として読む。 */
+function readCount(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return 0;
+  return Math.floor(raw);
+}
+
+/** 内訳を検める。理由が読めないときは undefined（計測に嘘を入れない）。 */
+function readDiagnostics(raw: unknown): VoiceBatchDiagnostics | undefined {
+  if (!isRecord(raw)) return undefined;
+  const reason = BATCH_LLM_REASONS.find((item) => item === raw.reason);
+  if (!reason) return undefined;
+  return {
+    reason,
+    quotes: readCount(raw.quotes),
+    accepted: readCount(raw.accepted),
+    dropped: readCount(raw.dropped),
+    deterministic: readCount(raw.deterministic),
+    chars: readCount(raw.chars),
+  };
+}
+
 /** `done` の本文を結果へ直す。形が崩れていたら null（読み取り側が失敗にする）。 */
 function readDone(raw: unknown): VoiceUtteranceResult | null {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
@@ -80,6 +121,8 @@ function readDone(raw: unknown): VoiceUtteranceResult | null {
     assignments: readAssignments(raw.assignments),
     unassigned: readStrings(raw.unassigned),
     model: typeof raw.model === "string" ? raw.model : null,
+    estimated: typeof raw.estimated === "boolean" ? raw.estimated : undefined,
+    diagnostics: readDiagnostics(raw.diagnostics),
   };
 }
 
@@ -87,7 +130,7 @@ function readDone(raw: unknown): VoiceUtteranceResult | null {
  * 1 イベントを読む。知らないイベント名と壊れた JSON は捨てる。
  * `error` だけは本文に理由があるので、投げて呼び出し側へ渡す。
  */
-function parseEvent(event: SseEvent): { type: "delta" | "cell" | "done"; payload: unknown } | null {
+function parseEvent(event: SseEvent): { type: "delta" | "done"; payload: unknown } | null {
   let payload: unknown;
   try {
     payload = JSON.parse(event.data);
@@ -99,11 +142,6 @@ function parseEvent(event: SseEvent): { type: "delta" | "cell" | "done"; payload
   if (event.event === "delta") {
     return typeof payload.text === "string"
       ? { type: "delta", payload: payload.text }
-      : null;
-  }
-  if (event.event === "cell") {
-    return typeof payload.slotId === "string"
-      ? { type: "cell", payload: payload.slotId }
       : null;
   }
   if (event.event === "done") {
@@ -119,12 +157,11 @@ function parseEvent(event: SseEvent): { type: "delta" | "cell" | "done"; payload
   return null;
 }
 
-/** `text/event-stream` を読み、`delta` / `cell` を順に渡して `done` の結果を返す。 */
+/** `text/event-stream` を読み、`delta` を順に渡して `done` の結果を返す。 */
 async function readStreamedResult(
   response: Response,
   options: {
     onDelta?: (text: string) => void;
-    onCell?: (slotId: VoiceSlotId) => void;
     signal?: AbortSignal;
   },
 ): Promise<VoiceUtteranceResult> {
@@ -147,10 +184,6 @@ async function readStreamedResult(
         options.onDelta?.(text);
         return;
       }
-      if (parsed.type === "cell") {
-        options.onCell?.(parsed.payload as VoiceSlotId);
-        return;
-      }
       received.done = readDone(parsed.payload);
     },
     { signal: options.signal },
@@ -165,34 +198,45 @@ async function readStreamedResult(
 }
 
 /**
- * 録音した音声を送り、1 回の発話を複数の欄へ割り当てる。
+ * 録音した音声、または区間の文字起こしをまとめた全文を送り、
+ * 1 回の発話を複数の欄へ割り当てる。
  *
  * `value` と `scope` は、サーバーが `parse` を当てるための文脈である。
+ * `text` があれば文字起こしを呼ばず、その文字だけで割当を行う（`blob` は不要）。
  * 音声は保存せず、認識のためだけに中継される。
  */
 export async function transcribeVoiceUtterance(input: {
-  blob: Blob;
+  /** 録音。`text` があるときは不要。 */
+  blob?: Blob;
+  /** 区間の文字起こしをまとめた全文。あればこちらを割当に使う。 */
+  text?: string;
   value: EventFormValues;
   scope: VoiceFieldScope;
-  /** 聞き取れた分が届くたびに呼ばれる。増分で、画面は使わない（マスだけを塗る）。 */
+  /** 聞き取れた分が届くたびに呼ばれる（音声から文字起こししたときだけ）。 */
   onDelta?: (text: string) => void;
-  /** 節が読めてマスが埋まるたびに呼ばれる。値はまだ確定していない。 */
-  onCell?: (slotId: VoiceSlotId) => void;
   signal?: AbortSignal;
 }): Promise<VoiceUtteranceResult> {
-  if (input.blob.size === 0) {
-    throw new Error("録音が空でした。もう一度話してください。");
-  }
-  if (input.blob.size > MAX_AUDIO_BYTES) {
-    throw new Error("録音が長すぎます。短く話してください。");
-  }
+  const text = input.text?.trim();
 
-  const mime = input.blob.type || "audio/webm";
   const form = new FormData();
-  form.append(
-    "audio",
-    new File([input.blob], `voice.${extensionForMimeType(mime)}`, { type: mime }),
-  );
+  if (text) {
+    form.append("text", text);
+  } else {
+    if (!input.blob) {
+      throw new Error("録音が空でした。もう一度話してください。");
+    }
+    if (input.blob.size === 0) {
+      throw new Error("録音が空でした。もう一度話してください。");
+    }
+    if (input.blob.size > MAX_AUDIO_BYTES) {
+      throw new Error("録音が長すぎます。短く話してください。");
+    }
+    const mime = input.blob.type || "audio/webm";
+    form.append(
+      "audio",
+      new File([input.blob], `voice.${extensionForMimeType(mime)}`, { type: mime }),
+    );
+  }
   form.append("value", JSON.stringify(input.value));
   form.append(
     "scope",
@@ -217,7 +261,6 @@ export async function transcribeVoiceUtterance(input: {
   if (contentType.includes("text/event-stream")) {
     return readStreamedResult(response, {
       onDelta: input.onDelta,
-      onCell: input.onCell,
       signal: input.signal,
     });
   }

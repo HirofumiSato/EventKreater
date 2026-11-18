@@ -7,9 +7,11 @@ import type { VoiceStepApi } from "@/modules/events/components/EventStepForm";
 import {
   audioContextConstructor,
   concatSamples,
+  createSegmenter,
   isPcmCaptureSupported,
   isRecordingSupported,
   MAX_RECORDING_MS,
+  mergeSegmentText,
   PCM_SAMPLE_RATE,
   pickRecorderMimeType,
   PRE_ROLL_MS,
@@ -27,11 +29,11 @@ import {
   startFieldFor,
   voiceSlotById,
 } from "@/modules/events/lib/voice/fields";
+import { mockBatchTranscript } from "@/modules/events/lib/voice/batch";
 import {
-  batchExampleSentence,
-  batchPlan,
   batchTargets,
   defaultVoiceMode,
+  freeformExampleSentence,
   type VoiceMode,
 } from "@/modules/events/lib/voice/batch-guide";
 import { trackEvent } from "@/lib/analytics";
@@ -48,7 +50,11 @@ import {
   type VoiceSpotlight,
 } from "@/modules/events/lib/voice/spotlight";
 import { firstIncompleteMandatoryStep } from "@/modules/events/lib/steps";
-import { fetchVoiceMockEnabled, transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import {
+  fetchVoiceMockEnabled,
+  transcribeVoiceClip,
+  transcribeVoiceSegment,
+} from "@/modules/events/lib/voice/transcribe";
 import { transcribeVoiceUtterance } from "@/modules/events/lib/voice/utterance-client";
 import { isLongVoiceField, shouldAutoConfirm } from "@/modules/events/lib/voice/confirm";
 import { assignUtterance } from "@/modules/events/lib/voice/utterance";
@@ -57,6 +63,7 @@ import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
 import { encodeWav, resampleLinear } from "@/modules/events/lib/voice/pcm";
 import { Dialog } from "@/components/ui/Dialog";
 import type {
+  VoiceBatchDiagnostics,
   VoiceFieldKey,
   VoiceFieldScope,
   VoicePatch,
@@ -81,6 +88,73 @@ type VoicePhase = "armed" | "listening" | "transcribing";
 const MOCK_RECORDING_MS = 1200;
 const MOCK_TRANSCRIBE_MS = 350;
 
+/**
+ * モックで区間の文字を 1 つずつ出す間隔と、最後に確認を開くまで。
+ * 実の区間送信（2.5〜6 秒）を待たせず、文字が順に増える様子だけを再現する。
+ */
+const MOCK_SEGMENT_STEP_MS = 240;
+const MOCK_SEGMENT_TOTAL_MS = 800;
+
+/**
+ * 区間の文字として捨てる既知の幻聴。
+ * 無音に近い区間や短い区間で、ASR が定型の礼を返すことがある。
+ */
+const HALLUCINATION_PHRASES = [
+  "ご視聴ありがとうございました",
+  "ご視聴ありがとうございます",
+  "ご覧いただきありがとうございます",
+  "ご覧いただきありがとうございました",
+  "チャンネル登録よろしくお願いします",
+] as const;
+
+/**
+ * 区間の文字を捨てるか。空か、既知の幻聴だけなら真。
+ * 「…ありがとうございました。忘年会は」のように本当の言葉が続く区間は捨てない。
+ */
+function isDiscardableSegment(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  let rest = trimmed;
+  for (const phrase of HALLUCINATION_PHRASES) rest = rest.split(phrase).join("");
+  // 句読点・記号・空白だけが残れば、中身は幻聴だけだったとみなす。
+  return rest.replace(/[\s。、．，!！?？・…「」『』（）()\[\]【】~〜ー-]/gu, "") === "";
+}
+
+/**
+ * モックの全文を、区間の見え方に近づけるため 3 つへ分ける。
+ *
+ * 句点の後ろで切り、文の途中では切らない（実の区間も言い終わりで切れる）。
+ * 表示はこの 3 つを順に足すだけで、確定には分ける前の全文を使う。
+ */
+function mockSegmentChunks(text: string): string[] {
+  const sentences = text.match(/[^。]+。?/gu)?.filter((part) => part.trim().length > 0) ?? [];
+  if (sentences.length <= 3) return sentences.length > 0 ? sentences : [text];
+  const size = Math.ceil(sentences.length / 3);
+  const chunks: string[] = [];
+  for (let index = 0; index < sentences.length; index += size) {
+    chunks.push(sentences.slice(index, index + size).join(""));
+  }
+  return chunks;
+}
+
+/** 1 録音ぶんの区間の識別子。同じ録音の区間を、サーバーで 1 回ぶんにまとめる。 */
+function newVoiceSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `voice-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** 区間の送信 1 件。届いた順（`seq`）に 1 本ずつ送り、`text` が入ったら表示へ足す。 */
+interface VoiceSegmentItem {
+  seq: number;
+  blob: Blob;
+  /** 返ってきた文字。失敗した区間は null のまま `done` になる。 */
+  text: string | null;
+  /** 送り終えたか（成功・失敗のどちらも真）。 */
+  done: boolean;
+}
+
 /** 文字起こしを確定する前に置く確認。`slotId` は確認しているあいだに値が変わっても引き直せる。 */
 interface VoicePending {
   slotId: VoiceSlotId;
@@ -90,7 +164,7 @@ interface VoicePending {
   draft: string;
 }
 
-/** 「まとめて話す」の確認 1 行。 */
+/** 「自由に話す」の確認 1 行。 */
 interface VoiceBatchRow {
   slotId: VoiceSlotId;
   label: string;
@@ -106,6 +180,8 @@ interface VoiceBatchState {
   unassigned: string[];
   /** 空欄だったのに、割当が付かなかった欄の名前。 */
   missed: string[];
+  /** LLM の quote 抽出の内訳。計測にだけ使う（古いサーバーでは undefined）。 */
+  diagnostics?: VoiceBatchDiagnostics;
 }
 
 /** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
@@ -244,14 +320,13 @@ export function VoiceInputDock({
   const [spotlight, setSpotlight] = useState<VoiceSpotlight | null>(null);
   // 文字起こしはすぐ確定せず、いったん確認に置く。読み取り違いを、話し直す前に見せる。
   const [pending, setPending] = useState<VoicePending | null>(null);
-  // 文字起こしの途中経過。質問は消さず、その下に 1 行だけ足す。
+  // 文字起こしの途中経過。質問は消さず、その下に 1 行だけ足す（1 欄ずつの経路）。
   const [interim, setInterim] = useState("");
-  // 話し方（まとめて／1つずつ）。null はまだ選ばれていない（既定に従う）。
+  // 録音中に聞き取れた全文。区間ごとに足し、表示は増えるだけ（消さない）。
+  const [transcript, setTranscript] = useState("");
+  // 話し方（自由に話す／1つずつ）。null はまだ選ばれていない（既定に従う）。
   const [modeChoice, setModeChoice] = useState<VoiceMode | null>(null);
   const [batch, setBatch] = useState<VoiceBatchState | null>(null);
-  // まとめて話すときに、聞き取れてマスが埋まった欄。値はまだ確定していない。
-  // 話している間に増えるのはこの集合だけで、文字と値は止めたあとの確認で出す。
-  const [readCells, setReadCells] = useState<ReadonlySet<VoiceSlotId>>(new Set());
   // 群から出る瞬間の分岐。答えるまでカーソルは最後の欄に残す。
   const [branch, setBranch] = useState<VoiceBranchQuestion | null>(null);
   // 初回ガイド。開いているかどうかだけを持つ。自動表示を止めたかは保存先が覚える。
@@ -286,6 +361,21 @@ export function VoiceInputDock({
   const autoMessageTimerRef = useRef<number | null>(null);
   // 途中経過の累積。`onDelta` は増分を返すので、呼ばれるたびに足す。
   const interimRef = useRef("");
+  // 表示済みの全文。状態と同じ値を、区間の送信が終わったあとに読むために控える。
+  const transcriptRef = useRef("");
+  // 区間の送信キュー。`seq` の順に 1 本ずつ送る（並行に投げない）。
+  const segmentsRef = useRef<VoiceSegmentItem[]>([]);
+  const segmentSeqRef = useRef(0);
+  // 送信中の区間。同時に 1 本だけにするため、走っている Promise を持つ。
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  // 区間の切り出し。録音の開始ごとに作り直す（前の録音の残りを引き継がない）。
+  const segmenterRef = useRef<ReturnType<typeof createSegmenter> | null>(null);
+  // 区間の送信を止める。録音全体の `abortRef` とは別に持つ（片方だけ止められるように）。
+  const segmentAbortRef = useRef<AbortController | null>(null);
+  // 1 録音 1 つの識別子。同じ録音の区間を 1 回ぶんとして数えてもらう。
+  const sessionIdRef = useRef<string | null>(null);
+  // 区間の世代。捨てた録音の結果が遅れて届いても、表示へ足さないための印。
+  const segmentGenRef = useRef(0);
   // いま走っている文字起こし。戻る・スキップ・終了・新しい録音で止める。
   const abortRef = useRef<AbortController | null>(null);
   const batchModeRef = useRef(false);
@@ -293,8 +383,8 @@ export function VoiceInputDock({
   const batchRef = useRef<VoiceBatchState | null>(null);
   // モックの疑似録音の待ち。実の録音の `timerRef` とは別に持つ（同時には片方しか使わない）。
   const mockTimerRef = useRef<number | null>(null);
-  // モックでマスを 1 つずつ塗るための待ち。疑似録音の待ちとは別に片付ける。
-  const mockCellTimersRef = useRef<number[]>([]);
+  // モックで区間の文字を 1 つずつ出すための待ち。疑似録音の待ちとは別に片付ける。
+  const mockSegmentTimersRef = useRef<number[]>([]);
   const mockRef = useRef(false);
   // モックかどうかのサーバーからの返事。届く前に押されても、録音の直前で待てるようにする。
   const mockAnswerRef = useRef<Promise<boolean> | null>(null);
@@ -324,16 +414,14 @@ export function VoiceInputDock({
   // （状態を依存に入れると、完了のたびに測り直しを張り直してしまう）。
   const completeRef = useRef(false);
 
-  // 巡回の指定と、まとめて話すときの対象・案内。描画ごとに作り直さない。
+  // 巡回の指定と、自由に話すときの対象・案内。描画ごとに作り直さない。
   const scope = useMemo<VoiceFieldScope>(
     () => ({ showOrganizerName, includeOptional, touched }),
     [showOrganizerName, includeOptional, touched],
   );
   const blankTargets = useMemo(() => batchTargets(value, scope), [value, scope]);
-  // 話す順と見本は 1 本の並び。札と例を別々に作ると数も位置も合わない。
-  const cells = useMemo(() => batchPlan(blankTargets), [blankTargets]);
-  // まとめて話す 1 文の例。マスの名前だけでは、値として何を言えばよいか分からない。
-  const exampleSentence = useMemo(() => batchExampleSentence(cells), [cells]);
+  // 自由文で話すときの見本。パネルの「話し方の例：」のあとに 1 文だけ置く。
+  const exampleSentence = freeformExampleSentence();
   // まだ選ばれていなければ、空欄の数で既定を決める。セッションの途中で選ばれたらそれを優先する。
   const defaultMode = defaultVoiceMode(blankTargets, value);
   const batchMode = (modeChoice ?? defaultMode) === "batch";
@@ -445,6 +533,132 @@ export function VoiceInputDock({
     controller.abort();
   }, []);
 
+  /**
+   * 区間の送信キューを 1 本ずつ流す。送信中の区間があれば、その完了を待つ Promise を返す。
+   *
+   * 並行に投げないのは、表示の順が入れ替わらないようにするため。失敗した区間は
+   * 黙って捨てる（表示が途切れるだけで、録音は止めない）。
+   */
+  const pumpSegments = useCallback((): Promise<void> => {
+    const running = inFlightRef.current;
+    if (running) return running;
+
+    const generation = segmentGenRef.current;
+    // 送信が終わったことを待てるようにする。先に控えへ置き、同期的に終わる場合でも
+    // 「終わったのに走っている印が残る」ことがないようにする。
+    let finish: () => void = () => {};
+    const done = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    inFlightRef.current = done;
+
+    void (async () => {
+      try {
+        for (;;) {
+          if (generation !== segmentGenRef.current) return;
+          const item = segmentsRef.current.find((segment) => !segment.done);
+          if (!item) return;
+
+          let text: string | null = null;
+          try {
+            const result = await transcribeVoiceSegment({
+              blob: item.blob,
+              sessionId: sessionIdRef.current ?? "",
+              signal: segmentAbortRef.current?.signal,
+            });
+            text = result.text;
+          } catch {
+            // 区間の失敗は黙って捨てる。録音を止めず、次の区間へ進む。
+            text = null;
+          }
+          item.text = text;
+          item.done = true;
+
+          // 捨てた録音（世代が変わった）の結果は表示へ足さない。
+          if (generation !== segmentGenRef.current) return;
+          const clean = text ? text.trim() : "";
+          if (!clean || isDiscardableSegment(clean)) continue;
+
+          // 区間は 200ms 重ねてある。同じ語が 2 回出ないよう、重なりだけを落としてつなぐ。
+          transcriptRef.current = mergeSegmentText(transcriptRef.current, clean);
+          if (mountedRef.current) setTranscript(transcriptRef.current);
+        }
+      } finally {
+        // 世代が変わっていたら、新しい録音の印は消さない。
+        if (generation === segmentGenRef.current) inFlightRef.current = null;
+        finish();
+      }
+    })();
+
+    return done;
+  }, []);
+
+  /** 送信中の区間を、キューが空になるまで待つ。停止したあとに全文を組み立てるときに使う。 */
+  const settleSegments = useCallback(async () => {
+    for (;;) {
+      await pumpSegments();
+      if (!segmentsRef.current.some((segment) => !segment.done)) return;
+    }
+  }, [pumpSegments]);
+
+  /**
+   * 区間の送信キューと表示を片付ける。録音の開始時と、捨てるとき・音声モードを抜けるときに呼ぶ。
+   *
+   * 世代を進めるので、止めたあとに届いた区間の文字は表示へ足さない。
+   */
+  const clearSegments = useCallback(() => {
+    segmentGenRef.current += 1;
+    segmentAbortRef.current?.abort();
+    segmentAbortRef.current = null;
+    segmentsRef.current = [];
+    segmentSeqRef.current = 0;
+    inFlightRef.current = null;
+    sessionIdRef.current = null;
+    segmenterRef.current = null;
+    transcriptRef.current = "";
+    setTranscript("");
+  }, []);
+
+  /** 録音 1 回ぶんの区間送信を用意する。識別子と切り出しは開始のたびに作り直す。 */
+  const beginSegments = useCallback(() => {
+    clearSegments();
+    sessionIdRef.current = newVoiceSessionId();
+    segmentAbortRef.current = new AbortController();
+    // 切り出しは端末のサンプリング周波数で行う（16kHz を返せない端末がある）。
+    // 送るときに `enqueueSegment` が 16kHz へ落とす。
+    const rate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+    segmenterRef.current = createSegmenter(rate);
+  }, [clearSegments]);
+
+  /**
+   * 切り出した区間を、16kHz の WAV にしてキューへ入れる。
+   *
+   * 送るのはこのあと 1 本ずつ。押した時点で待たせないよう、送信の開始だけを任せる。
+   */
+  const enqueueSegment = useCallback(
+    (samples: Float32Array) => {
+      const rate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+      const pcm =
+        rate === PCM_SAMPLE_RATE ? samples : resampleLinear(samples, rate, PCM_SAMPLE_RATE);
+      const wav = encodeWav(pcm, PCM_SAMPLE_RATE);
+      // TypeScript の `Uint8Array<ArrayBufferLike>` は BlobPart に直接渡せない。
+      // 符号化結果は専用の ArrayBuffer を持つので、その範囲だけを切り出して渡す。
+      const buffer = wav.buffer.slice(
+        wav.byteOffset,
+        wav.byteOffset + wav.byteLength,
+      ) as ArrayBuffer;
+      segmentsRef.current.push({
+        seq: segmentSeqRef.current,
+        blob: new Blob([buffer], { type: "audio/wav" }),
+        text: null,
+        done: false,
+      });
+      segmentSeqRef.current += 1;
+      void pumpSegments();
+    },
+    [pumpSegments],
+  );
+
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current);
@@ -491,23 +705,8 @@ export function VoiceInputDock({
       window.clearTimeout(mockTimerRef.current);
       mockTimerRef.current = null;
     }
-    for (const timer of mockCellTimersRef.current) window.clearTimeout(timer);
-    mockCellTimersRef.current = [];
-  }, []);
-
-  /**
-   * まとめて話すときに、読めたマスを 1 つ塗る。
-   *
-   * 値は入れない。文字化の間に見せるのは「どこまで聞き取れたか」だけで、
-   * 確定値は録音を止めたあとの確認で出す（途中の値を確定値として見せない）。
-   */
-  const markCellRead = useCallback((slotId: VoiceSlotId) => {
-    setReadCells((current) => {
-      if (current.has(slotId)) return current;
-      const next = new Set(current);
-      next.add(slotId);
-      return next;
-    });
+    for (const timer of mockSegmentTimersRef.current) window.clearTimeout(timer);
+    mockSegmentTimersRef.current = [];
   }, []);
 
   const markTouched = useCallback((key: VoiceFieldKey) => {
@@ -534,6 +733,8 @@ export function VoiceInputDock({
     setStatusStopping(false);
     // 途中の認識も捨てる。止めたあとに古い結果が届いても、値は入れない。
     abortTranscription();
+    // 区間の送信も止め、キューと表示を空にする。
+    clearSegments();
     recordingRef.current = false;
     pcmChunksRef.current = [];
     const recorder = recorderRef.current;
@@ -549,6 +750,7 @@ export function VoiceInputDock({
     abortTranscription,
     clearCompleteTimer,
     clearMockTimer,
+    clearSegments,
     clearStatusTimer,
     clearTimer,
   ]);
@@ -582,8 +784,6 @@ export function VoiceInputDock({
     setBatch(null);
     // 話し方はセッションごとに選び直す。次は空欄の数で既定を決める。
     setModeChoice(null);
-    // 塗ったマスも捨てる。次に開いたとき、前のセッションの塗りを残さない。
-    setReadCells(new Set());
     cursorRef.current = null;
     setCursor(null);
     // 位置も捨てる。次に開いたとき、古い位置で 1 フレーム見せないため。
@@ -784,11 +984,12 @@ export function VoiceInputDock({
     [commit, showAutoMessage],
   );
 
-  /** まとめて話すの割当を、確認の 1 枚に並べる。当たらなかった節も 1 行で残す。 */
+  /** 自由に話すの割当を、確認の 1 枚に並べる。当たらなかった欄も 1 行で残す。 */
   const presentBatch = useCallback(
     (result: {
-      assignments: readonly { slotId: VoiceSlotId; text: string }[];
+      assignments: readonly { slotId: VoiceSlotId; text: string; patch: VoicePatch }[];
       unassigned: readonly string[];
+      diagnostics?: VoiceBatchDiagnostics;
     }) => {
       const rows: VoiceBatchRow[] = [];
       for (const item of result.assignments) {
@@ -804,22 +1005,40 @@ export function VoiceInputDock({
       // 話した言葉（未割当の節）は並べない。同じ失敗を「言葉」と「欄の名前」の
       // 2 行で言うことになり、どちらが欄の名前か分からなくなるため。
       // 未割当の数は計測（`voice_batch_applied`）にだけ残す。
-      const assigned = new Set(result.assignments.map((item) => item.slotId));
+      //
+      // 数えるのは「割当が無い欄」ではなく「値が入らない欄」にする。開始時刻が
+      // 範囲（18時から20時）を返すと終了時刻にも値が入るので、割当の有無だけで
+      // 見ると、埋まった終了時刻を「入らなかった欄」と言ってしまう。
+      const preview = applyVoicePatches(
+        valueRef.current,
+        result.assignments.map((item) => item.patch),
+      );
       const missed = batchTargets(valueRef.current, scopeNow())
-        .filter((target) => !assigned.has(target.id))
+        .filter((target) => target.field.isEmpty(preview, target.row))
         .map((target) => target.label);
       setMessage(null);
-      setBatch({ rows, unassigned: [...result.unassigned], missed });
+      setBatch({
+        rows,
+        unassigned: [...result.unassigned],
+        missed,
+        diagnostics: result.diagnostics,
+      });
     },
     [scopeNow],
   );
 
-  /** 録音を送って文字にする。PCM の WAV と MediaRecorder の両方がここへ来る。 */
+  /**
+   * 録音を送って文字にする。PCM の WAV と MediaRecorder の両方がここへ来る。
+   *
+   * `text` は録音中に区間から集めた全文。あれば音声を送り直さず、その文字で確定する
+   * （同じ音声を二度文字起こししない）。無ければ今どおり音声を送る。
+   */
   const sendRecording = useCallback(
-    async (blob: Blob) => {
+    async (input: { blob: Blob; text?: string }) => {
       recorderRef.current = null;
       if (!mountedRef.current) return;
-      if (blob.size === 0) {
+      const text = input.text?.trim() ?? "";
+      if (!text && input.blob.size === 0) {
         setPhase("armed");
         setMessage("録音が空でした。マイクに向かって話してから、もう一度お試しください。");
         return;
@@ -841,18 +1060,21 @@ export function VoiceInputDock({
 
       try {
         if (batchModeRef.current) {
-          // まとめて話す: 1 回の録音をそのまま送り、欄ごとの割当を受ける。
-          // 録音を止めたあと、聞き取れた節ごとに `cell` が届くので、マスだけを先に塗る。
-          const result = await transcribeVoiceUtterance({
-            blob,
-            value: valueRef.current,
-            scope: scopeNow(),
-            onCell: (slotId) => {
-              if (!mountedRef.current) return;
-              markCellRead(slotId);
-            },
-            signal: controller.signal,
-          });
+          // 自由に話す: 1 回の録音をそのまま送り、欄ごとの割当を受ける。
+          // 区間で全文が取れていれば、その文字を割当に使う（音声は送らない）。
+          const result = text
+            ? await transcribeVoiceUtterance({
+                text,
+                value: valueRef.current,
+                scope: scopeNow(),
+                signal: controller.signal,
+              })
+            : await transcribeVoiceUtterance({
+                blob: input.blob,
+                value: valueRef.current,
+                scope: scopeNow(),
+                signal: controller.signal,
+              });
           if (!mountedRef.current || controller.signal.aborted) return;
           setPhase("armed");
           presentBatch(result);
@@ -863,10 +1085,16 @@ export function VoiceInputDock({
           finishSession();
           return;
         }
+        // 区間で全文が取れていれば、その文字をそのまま確定に使う。
+        if (text) {
+          setPhase("armed");
+          presentTranscript(slot, text);
+          return;
+        }
         // 行と入力済みの催し名・会場名を、当て字の手掛かりとして添える。
         // 欄そのものの現在値は送らない（そのまま復唱され、言い直しが効かなくなる）。
         const result = await transcribeVoiceClip({
-          blob,
+          blob: input.blob,
           field: slot.key,
           context: {
             row: slot.row,
@@ -900,31 +1128,54 @@ export function VoiceInputDock({
         if (mountedRef.current) setInterim("");
       }
     },
-    [finishSession, markCellRead, presentBatch, presentTranscript, scopeNow],
+    [finishSession, presentBatch, presentTranscript, scopeNow],
   );
 
-  /** MediaRecorder 経路（webm/opus）の録音を送る。`onstop` から呼ぶ。 */
+  /** MediaRecorder 経路（webm/opus）の録音を送る。`onstop` から呼ぶ。区間送信はしない。 */
   const finishRecording = useCallback(
     async (mimeType: string) => {
       const blob = new Blob(chunksRef.current, { type: mimeType });
       chunksRef.current = [];
-      await sendRecording(blob);
+      await sendRecording({ blob });
     },
     [sendRecording],
   );
 
-  /** PCM 経路の録音を、16kHz mono の WAV にして送る。 */
+  /**
+   * PCM 経路の録音を送る。区切りに残った端数を最後の区間として送り、
+   * 送信中の区間を待ってから全文を組み立てる。全文が無ければ音声をそのまま送る。
+   */
   const finishWavRecording = useCallback(async () => {
+    // すでに止めている（捨てた）なら何もしない。二重に送らないための印。
+    if (!recordingRef.current) return;
     recordingRef.current = false;
     setPhase("transcribing");
     flashStopping();
 
+    // 区間の世代。待っているあいだに捨てられたら、送らずに抜ける。
+    const generation = segmentGenRef.current;
+    const rest = segmenterRef.current?.flush() ?? null;
+    segmenterRef.current = null;
+    if (rest) enqueueSegment(rest);
+    // pre-roll は待つ前に控える。録音の印を戻したあとは、worklet が無音で上書きする。
+    const rate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+    const pre = tailSamples(preRollRef.current, Math.ceil((rate * PRE_ROLL_MS) / 1000));
+    // 送信中の区間を待つ。表示済みの文字を、そのまま確定に使うため。
+    await settleSegments();
+    if (!mountedRef.current || generation !== segmentGenRef.current) return;
+
     const chunks = pcmChunksRef.current;
     pcmChunksRef.current = [];
-    const rate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+    const transcript = transcriptRef.current.trim();
+
+    // 区間の文字が取れていれば、その全文をそのまま使う（音声を二度送らない）。
+    if (transcript) {
+      await sendRecording({ blob: new Blob([], { type: "audio/wav" }), text: transcript });
+      return;
+    }
+
     // pre-roll: 録音の印が出る直前に溜めた直近 400ms を先頭へ足す。
     // 押してから話し始めるまでの間隔を捨てず、話し始めの子音を落とさない。
-    const pre = tailSamples(preRollRef.current, Math.ceil((rate * PRE_ROLL_MS) / 1000));
     const samples = concatSamples([pre, ...chunks]);
     if (samples.length === 0) {
       setPhase("armed");
@@ -940,33 +1191,16 @@ export function VoiceInputDock({
       wav.byteOffset,
       wav.byteOffset + wav.byteLength,
     ) as ArrayBuffer;
-    await sendRecording(new Blob([wavBuffer], { type: "audio/wav" }));
-  }, [flashStopping, sendRecording]);
-
-  /**
-   * モックの「まとめて話す」の 1 文。巡回する欄の入力例を `、` でつなぐ。
-   *
-   * サーバーの `mockBatchTranscript` と同じ作りにしてある。画面から外部へは送らず、
-   * 端末の中だけで割り当てる（マイクも外部も使わない方針）。
-   */
-  const mockBatchText = useCallback((): string => {
-    const seen = new Set<string>();
-    const examples: string[] = [];
-    for (const target of batchTargets(valueRef.current, scopeNow())) {
-      const example = target.field.example;
-      if (seen.has(example)) continue;
-      seen.add(example);
-      examples.push(example);
-    }
-    return examples.join("、");
-  }, [scopeNow]);
+    await sendRecording({ blob: new Blob([wavBuffer], { type: "audio/wav" }) });
+  }, [enqueueSegment, flashStopping, sendRecording, settleSegments]);
 
   /**
    * モックの疑似録音を止め、入力例を実の経路と同じ振り分けへ渡す（ローカル専用）。
    *
-   * マイクを使わないので、デバイスの無い PC でも「録音中 → 確認 → 次の欄」を
-   * 最後まで追える。入れる文は認識結果と同じ扱い（`slot.field.example`）にして、
-   * 自動確定する欄・確認を挟む欄の分かれ方も実の経路と変えない。
+   * マイクを使わないので、デバイスの無い PC でも「録音中 → 文字が順に出る →
+   * 確認 → 次の欄」を最後まで追える。自由文では区間送信の見え方も再現し、
+   * 2〜3 回に分けて文字を足してから、同じ全文で確認を開く。
+   * 画面から外部へは送らず、端末の中だけで割り当てる（マイクも外部も使わない方針）。
    */
   const applyMockRecording = useCallback(() => {
     clearTimer();
@@ -978,52 +1212,62 @@ export function VoiceInputDock({
     }
     setPhase("transcribing");
     flashStopping();
-    // 疑似でもマスを 1 つずつ塗る。実の経路（`cell`）と同じ順に見せるため、
-    // 文字化の待ちをマスの数で割って、見えている順に塗る。
-    const cellsToRead: VoiceSlotId[] = batchModeRef.current
-      ? batchPlan(batchTargets(valueRef.current, scopeNow())).map((cell) => cell.id)
-      : [];
-    cellsToRead.forEach((slotId, index) => {
-      const timer = window.setTimeout(
-        () => markCellRead(slotId),
-        Math.round((MOCK_TRANSCRIBE_MS * (index + 1)) / (cellsToRead.length + 1)),
-      );
-      mockCellTimersRef.current.push(timer);
-    });
-    mockTimerRef.current = window.setTimeout(() => {
-      mockTimerRef.current = null;
-      const slot = voiceSlotById(key, valueRef.current, scopeNow());
-      if (!slot && !batchModeRef.current) {
+
+    if (batchModeRef.current) {
+      clearSegments();
+      // 表示も割当も、いまの空欄から組み立てた同じ全文を使う。
+      // 区間の見え方だけを 3 つに分け、確定には分ける前の全文を渡す。
+      const full = mockBatchTranscript(valueRef.current, scopeNow());
+      mockSegmentChunks(full).forEach((text, index) => {
+        const timer = window.setTimeout(
+          () => {
+            if (!mountedRef.current) return;
+            transcriptRef.current = mergeSegmentText(transcriptRef.current, text);
+            setTranscript(transcriptRef.current);
+          },
+          MOCK_SEGMENT_STEP_MS * (index + 1),
+        );
+        mockSegmentTimersRef.current.push(timer);
+      });
+      mockTimerRef.current = window.setTimeout(() => {
+        mockTimerRef.current = null;
         setPhase("armed");
-        finishSession();
-        return;
-      }
-      // 実の経路と同じく、値を入れる前に録音の印を戻す。
-      setPhase("armed");
-      if (batchModeRef.current) {
+        // 最後は、表示したのと同じ全文で割り当てる（実の経路と同じ扱い）。
+        const text = full.trim();
+        if (!text) {
+          setMessage("読み取れた欄がありませんでした。もう一度話すか、手で入力してください。");
+          return;
+        }
         const result = assignUtterance({
-          text: mockBatchText(),
+          text,
           value: valueRef.current,
           now: new Date(),
           scope: scopeNow(),
           targets: batchTargets(valueRef.current, scopeNow()),
         });
         presentBatch(result);
-        return;
-      }
+      }, MOCK_SEGMENT_TOTAL_MS);
+      return;
+    }
+
+    mockTimerRef.current = window.setTimeout(() => {
+      mockTimerRef.current = null;
+      const slot = voiceSlotById(key, valueRef.current, scopeNow());
       if (!slot) {
+        setPhase("armed");
         finishSession();
         return;
       }
+      // 実の経路と同じく、値を入れる前に録音の印を戻す。
+      setPhase("armed");
       presentTranscript(slot, slot.field.example);
     }, MOCK_TRANSCRIBE_MS);
   }, [
     clearMockTimer,
+    clearSegments,
     clearTimer,
     finishSession,
     flashStopping,
-    markCellRead,
-    mockBatchText,
     presentBatch,
     presentTranscript,
     scopeNow,
@@ -1076,6 +1320,9 @@ export function VoiceInputDock({
         if (!(data instanceof Float32Array)) return;
         if (recordingRef.current) {
           pcmChunksRef.current.push(data);
+          // 息継ぎで区切れた区間は、録音を続けたまま 1 本ずつ送る。
+          const segments = segmenterRef.current?.push(data);
+          if (segments) for (const segment of segments) enqueueSegment(segment);
           return;
         }
         preRollRef.current.push(data);
@@ -1106,7 +1353,7 @@ export function VoiceInputDock({
       wavRef.current = false;
       return "media";
     }
-  }, []);
+  }, [enqueueSegment]);
 
   const stopRecording = useCallback(() => {
     clearTimer();
@@ -1156,6 +1403,8 @@ export function VoiceInputDock({
         if (!options?.keepMessage) setMessage(null);
         clearStatusTimer();
         setStatusStopping(false);
+        // 前の録音の表示を引き継がない。
+        clearSegments();
         setPhase("listening");
         clearMockTimer();
         mockTimerRef.current = window.setTimeout(applyMockRecording, MOCK_RECORDING_MS);
@@ -1178,12 +1427,24 @@ export function VoiceInputDock({
         }
         if (mode === "wav") {
           pcmChunksRef.current = [];
+          // 区間の切り出しと識別子を録音ごとに作り直す。
+          beginSegments();
+          // 録音の印より前の 400ms（pre-roll）も最初の区間へ足す。
+          // 捨てると話し始めの 1 語が落ち、確定に使う全文からも落ちる。
+          const captureRate = audioContextRef.current?.sampleRate ?? PCM_SAMPLE_RATE;
+          const seed = tailSamples(
+            preRollRef.current,
+            Math.ceil((captureRate * PRE_ROLL_MS) / 1000),
+          );
+          if (seed.length > 0) enqueueSegment(seed);
           recordingRef.current = true;
           setPhase("listening");
           timerRef.current = window.setTimeout(() => stopRecording(), MAX_RECORDING_MS);
           return;
         }
 
+        // MediaRecorder 経路は区間を切らない。停止後にまとめて送るので表示は空のまま。
+        clearSegments();
         const stream = streamRef.current;
         if (!stream) throw new Error("no microphone");
         const mimeType = pickRecorderMimeType() ?? "";
@@ -1219,8 +1480,11 @@ export function VoiceInputDock({
   }, [
     abortTranscription,
     applyMockRecording,
+    beginSegments,
     clearMockTimer,
+    clearSegments,
     clearStatusTimer,
+    enqueueSegment,
     ensureAudioPipeline,
     finishRecording,
     finishSession,
@@ -1258,6 +1522,11 @@ export function VoiceInputDock({
     abortRef.current = null;
     controller?.abort();
     interimRef.current = "";
+    // 区間の送信も止める（画面が消えたら、表示も確定もしない）。
+    segmentGenRef.current += 1;
+    segmentAbortRef.current?.abort();
+    segmentAbortRef.current = null;
+    segmentsRef.current = [];
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
@@ -1275,7 +1544,7 @@ export function VoiceInputDock({
 
   const startSession = useCallback((mode?: VoiceMode) => {
     if (disabled) return;
-    // まとめて話すときは、任意の欄を既定で外す。話す量が増えるほど、途中で
+    // 自由に話すときは、任意の欄を既定で外す。話す量が増えるほど、途中で
     // 言い直す手間も増えるため。どの欄を話すかは、その値で決まる。
     const requiredScope: VoiceFieldScope = {
       showOrganizerName,
@@ -1318,7 +1587,7 @@ export function VoiceInputDock({
     // 前のセッションの確認・途中経過・知らせも残さない。
     batchRef.current = null;
     setBatch(null);
-    setReadCells(new Set());
+    clearSegments();
     setInterim("");
     interimRef.current = "";
     clearAutoMessageTimer();
@@ -1337,7 +1606,7 @@ export function VoiceInputDock({
         // まとめては読む量がいちばん多い。開いた瞬間に録音を始めると、何を話すかを
         // 読む前に話し始めることになる（話し直しが増える）。押してから録る。
         api.announce(
-          "音声入力を始めます。録音ボタンを押してから、順番に話してください。",
+          "音声入力を始めます。話したいことをそのまま話してください。",
         );
       } else {
         api.announce(`音声入力を始めます。${first.prompt}`);
@@ -1353,6 +1622,7 @@ export function VoiceInputDock({
     api,
     clearAutoMessageTimer,
     clearCompleteTimer,
+    clearSegments,
     clearStatusTimer,
     disabled,
     showOrganizerName,
@@ -1363,7 +1633,7 @@ export function VoiceInputDock({
   // 画面全体の中央へ寄せる `scrollIntoView` は使わない。パネルは欄のすぐ下に置くため、
   // 中央に寄せると下にパネルと固定の帯の居場所が残らない。
   useEffect(() => {
-    // まとめて話すときは 1 つの欄を強調しない。話す順はパネルに出す。
+    // 自由に話すときは 1 つの欄を強調しない。話す中身はパネルの案内と例で示す。
     if (!active || batchMode) return;
     const slot = cursor ? voiceSlotById(cursor, valueRef.current, scopeNow()) : null;
     if (!slot) return;
@@ -1417,7 +1687,7 @@ export function VoiceInputDock({
       setPanelBox(null);
       return;
     }
-    // まとめて話すときは 1 つの欄をくり抜かない。覆いは穴を空けずに全体を暗くする
+    // 自由に話すときは 1 つの欄をくり抜かない。覆いは穴を空けずに全体を暗くする
     // （どの欄を聞いている話ではないので、強調する 1 か所が決まらないため）。
     if (batchMode) {
       setSpotlight(null);
@@ -1587,8 +1857,8 @@ export function VoiceInputDock({
   const pendingLong = pendingTarget ? isLongVoiceField(pendingTarget.field.key) : false;
   const listening = phase === "listening";
   const transcribing = phase === "transcribing";
-  // まとめて話すときは、質問（「イベント名は？」）を進めない。1 つの欄の話ではないので、
-  // 話す中身は例の 1 文で見せ、進み具合はマスの塗りだけで示す。
+  // 自由に話すときは、質問（「イベント名は？」）を進めない。1 つの欄の話ではないので、
+  // 話す中身は例の 1 文と、聞き取れた文字（`.voice-panel__transcript`）で見せる。
   // ここに残すのは、待ちの理由（住所・文字化）を伝える 1 行だけである。
   const completion = completionCopy(firstIncompleteMandatoryStep(value) === null);
   const promptText = complete
@@ -1617,7 +1887,7 @@ export function VoiceInputDock({
   const showTalk = !transcribing && !searching;
 
   // パネルの位置は測った値で決める。隠すのは「まだ一度も測れていない」1 フレームだけ
-  // （音声モードに入った直後）。まとめて話すときは画面下寄りに固定するので使わない。
+  // （音声モードに入った直後）。自由に話すときは画面下寄りに固定するので使わない。
   const panelStyle =
     panelBox && !batchMode
       ? ({
@@ -1661,6 +1931,8 @@ export function VoiceInputDock({
     if (listening) discardRecording();
     // 走っている認識も止める（戻った先の欄に、前の欄の結果が入らないようにする）。
     abortTranscription();
+    // 送信中の区間も捨てる。止めた録音の全文を、戻った先の欄へ入れない。
+    clearSegments();
     clearAutoMessageTimer();
     cursorRef.current = previous.id;
     setCursor(previous.id);
@@ -1679,6 +1951,8 @@ export function VoiceInputDock({
     if (!cursor) return;
     if (listening) discardRecording();
     abortTranscription();
+    // 送信中の区間も捨てる。飛ばした欄の全文を、次の欄へ入れない。
+    clearSegments();
     clearAutoMessageTimer();
     const current = voiceSlotById(cursor, valueRef.current, scopeNow());
     if (!current) {
@@ -1839,9 +2113,20 @@ export function VoiceInputDock({
     onChange(nextValue);
     for (const key of keys) markTouched(key);
     // 取り込んだ行数と、読み取れなかった節の数だけを送る。値と発話内容は送らない。
+    // LLM の内訳も添える（件数だけ）。モデルのせいか配線のせいかを後から切り分ける。
     trackEvent("voice_batch_applied", {
       rows: patches.length,
       unassigned: state.unassigned.length,
+      ...(state.diagnostics
+        ? {
+            llm: state.diagnostics.reason,
+            quotes: state.diagnostics.quotes,
+            accepted: state.diagnostics.accepted,
+            dropped: state.diagnostics.dropped,
+            deterministic: state.diagnostics.deterministic,
+            chars: state.diagnostics.chars,
+          }
+        : {}),
     });
 
     const nextScope = scopeNow();
@@ -1885,10 +2170,10 @@ export function VoiceInputDock({
     }
     setBatch(null);
     setMessage(null);
-    // 録り直すので、塗ったマスも一度消す（読めた数が増える様子を見せる）。
-    setReadCells(new Set());
+    // 録り直すので、表示済みの文字も一度消す。
+    clearSegments();
     void startRecording();
-  }, [batch, startRecording]);
+  }, [batch, clearSegments, startRecording]);
 
   /** 追加した行の欄へカーソルを移し、その場で録音を始める。 */
   const moveTo = useCallback(
@@ -1960,8 +2245,7 @@ export function VoiceInputDock({
       includeOptionalRef.current = wantOptional;
       setIncludeOptional(wantOptional);
       setMessage(null);
-      // マスの並びが変わるので、塗りは捨てる（別の話し方の塗りを引き継がない）。
-      setReadCells(new Set());
+      // 話し方を変えても録音は続くので、表示済みの文字（区間の結果）はそのまま残す。
       // どちらが選ばれたかだけを送る。発話内容と値は送らない。
       trackEvent("voice_mode_selected", { mode, default: mode === defaultMode });
     },
@@ -2068,7 +2352,7 @@ export function VoiceInputDock({
   return (
     <>
       {/* 音声モードの覆い。1 欄ずつのときはいま聞いている欄だけをくり抜き、
-          まとめて話すときは全体を暗くする。どちらも後ろの操作は止める。
+          自由に話すときは全体を暗くする。どちらも後ろの操作は止める。
           まとめては穴を空けないので、くり抜きの指定（clipPath）を渡さない。 */}
       {active && (batchMode || spotlight) && (
         <div
@@ -2108,8 +2392,8 @@ export function VoiceInputDock({
                 className="btn btn--sm btn--block"
                 onClick={() => chooseGuideMode("batch")}
               >
-                <span className="voice-guide__name">まとめて話す</span>
-                <span className="voice-guide__label">シンプルなイベント向け</span>
+                <span className="voice-guide__name">自由に話す</span>
+                <span className="voice-guide__label">自然な言葉で入力</span>
               </button>
               <button
                 type="button"
@@ -2158,7 +2442,7 @@ export function VoiceInputDock({
             batchMode ? "voice-panel--batch" : "",
             listening ? "is-listening" : "",
             transcribing ? "is-transcribing" : "",
-            // まとめて話すときは測った位置を使わない（画面下寄りに固定する）。
+            // 自由に話すときは測った位置を使わない（画面下寄りに固定する）。
             batchMode || panelBox ? "" : "is-placing",
           ]
             .filter(Boolean)
@@ -2193,7 +2477,7 @@ export function VoiceInputDock({
                 )}
               </div>
             )}
-            {/* まとめては 1 つの欄の話ではないので、質問は進めない。ここに出すのは
+            {/* 自由に話すときは 1 つの欄の話ではないので、質問は進めない。ここに出すのは
                 待ちの理由（住所・文字化）と、入力完了の 1 行だけ。
                 何を話すかは下の 1 文の例で見せる。 */}
             {batchMode && (complete || searching || transcribing) && (
@@ -2201,11 +2485,19 @@ export function VoiceInputDock({
                 {promptText}
               </p>
             )}
-            {/* 認識の途中経過は質問の下に 1 行だけ出す。質問は消さない
-                （何を話すかを目で追いながら、聞き取れた分を確かめられる）。 */}
-            {!complete && interim && (
+            {/* 認識の途中経過は質問の下に 1 行だけ出す（1 欄ずつの経路）。
+                自由に話すときは、聞き取れた全文を下の `.voice-panel__transcript` に出す。 */}
+            {!complete && !batchMode && interim && (
               <p className="voice-panel__interim" aria-live="polite">
                 {interim}
+              </p>
+            )}
+            {/* 録音中に聞き取れた全文。区間が確定するたびに足すだけで、消さない。
+                1 文字ずつではなく区間ごとに読み上げる（`aria-live` は増えた分だけを読む）。
+                中身は 1 つの塊にする（CSS が column-reverse で 1 段落を前提にしている）。 */}
+            {!complete && transcript && (
+              <p className="voice-panel__transcript" role="log" aria-live="polite">
+                {transcript}
               </p>
             )}
             {!complete && !batchMode && field && currentValue && !searching && (
@@ -2231,61 +2523,19 @@ export function VoiceInputDock({
             </p>
           )}
 
-          {/* 話した順に欄が埋まることを、マスの名前で示す。聞き取れたマスから
-              縁と地の色が変わる（値は止めたあとの確認まで出さない）。
-              並びは「指示 → 欄の名前 → 読み上げ例 → 主ボタン」。押す直前に何を言うかを
-              目に入れるため、例はマスの下に置く。 */}
-          {!complete && batchMode && cells.length > 0 && (
-            <div className="voice-panel__plan">
-              {/* 指示は 2 つに割る。片方を 1 行に詰めると、狭い端末で
-                  文の途中から折り返して読みにくい。 */}
-              <p className="voice-panel__lead">
-                録音ボタンを押して順に話してください。
-                <span className="voice-panel__lead-stop">
-                  全部読み上げ終えたら停止
-                </span>
-              </p>
-              <ol className="voice-cells" aria-label="話す順">
-                {cells.map((cell, index) => {
-                  const isRead = readCells.has(cell.id);
-                  return (
-                    <li
-                      className={`voice-step${isRead ? " is-read" : ""}`}
-                      key={cell.id}
-                    >
-                      {/* 順番は矢印でも示す。読み上げでは順序を数える意味が無いので、
-                          印は読み上げから外し、名前だけを並べる。 */}
-                      <span className="voice-step__sep" aria-hidden="true">
-                        →
-                      </span>
-                      <span className="voice-cell">
-                        {/* 番号は「1.」の形で置く。丸で囲むと名前の幅を削り、
-                            スマホで 1 段に 3 枚入らなくなるためである。 */}
-                        <span className="voice-cell__number" aria-hidden="true">
-                          {index + 1}.
-                        </span>
-                        <span className="voice-cell__label">{cell.label}</span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          )}
-
-          {/* まとめて話すときは、何を話すかを 1 文の例で見せる。マスの名前だけでは、
-              値として何を言えばよいか分からない。1 つの欄の話ではないので質問は進めず、
-              例はいちばん下に置いて、押す直前に読めるようにする。
-              指示ではないので、指示より弱い字（12px・補助色）にし、「読み上げ例：」で
-              何の例かを言う。 */}
-          {!complete && batchMode && exampleSentence && (
+          {/* 自由に話すときは、話す順もマスも出さない。話す中身は自然な文 1 つで足り、
+              値の割当は止めたあとの確認で示す。案内は 1 行、その下に見本を 1 文だけ置き、
+              押す直前に読めるよう主ボタンの上へ置く。 */}
+          {!complete && batchMode && (
             <div className="voice-panel__say">
-              <span className="voice-panel__say-label">読み上げ例：</span>
+              <span>話したいことをそのまま話してください。</span>
+              <br />
+              <span className="voice-panel__say-label">話し方の例：</span>
               <span className="voice-panel__say-text">{exampleSentence}</span>
             </div>
           )}
 
-          {/* 押しても動かない的は置かない。まとめて話すときは戻る・スキップを使わないので、
+          {/* 押しても動かない的は置かない。自由に話すときは戻る・スキップを使わないので、
               止めて置くのではなく、そもそも出さない（主操作も 1 つに絞られる）。
               文字化・住所検索の待ちのあいだは主ボタンを出さない。 */}
           {!complete && (showTalk || !batchMode) && (
@@ -2361,7 +2611,7 @@ export function VoiceInputDock({
 
           {!complete && (
             <div className="voice-panel__options">
-              {/* 話し方は入口の 2 択。まとめて話すときも、録音の途中で切り替えられる
+              {/* 話し方は入口の 2 択。自由に話すときも、録音の途中で切り替えられる
                   （録った音声は同じで、停止したあとの送り先だけが変わる）。 */}
               <div className="voice-panel__mode" role="radiogroup" aria-label="話し方">
                 <label className="voice-mode">
@@ -2372,7 +2622,7 @@ export function VoiceInputDock({
                     checked={batchMode}
                     onChange={() => chooseMode("batch")}
                   />
-                  まとめて
+                  自由に話す
                 </label>
                 <label className="voice-mode">
                   <input
@@ -2394,7 +2644,7 @@ export function VoiceInputDock({
                   />
                   任意の項目も聞く
                 </label>
-                {/* まとめて話すときは 1 欄ずつ進まないので、切り替え自体を出さない。 */}
+                {/* 自由に話すときは 1 欄ずつ進まないので、切り替え自体を出さない。 */}
                 {!batchMode && (
                   <label className="check voice-panel__optional">
                     <input
@@ -2476,7 +2726,7 @@ export function VoiceInputDock({
           「すべて入力」で 1 回の更新にまとめて反映する。 */}
       {batch && (
         <Dialog
-          title="まとめて入力します"
+          title="話した内容を確認"
           titleId="voice-batch-title"
           onClose={closeBatch}
           actions={

@@ -26,6 +26,20 @@ function isVoiceFieldKey(value: string): value is VoiceFieldKey {
 /** 当て字の手掛かりとして受け取る長さの上限。 */
 const MAX_CLUE_LENGTH = 60;
 
+/** 1 録音を表す `sessionId` の長さの上限。 */
+const MAX_SESSION_ID_LENGTH = 64;
+
+/**
+ * 1 録音を表す `sessionId`。区間送信の続きを同じ録音として数えるために使う。
+ * 読めない値は null（今までどおり毎回数える）。
+ */
+function parseSessionId(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+  const sessionId = raw.trim();
+  if (sessionId.length === 0 || sessionId.length > MAX_SESSION_ID_LENGTH) return null;
+  return sessionId;
+}
+
 /**
  * 行の番号。範囲内の整数だけを受け、それ以外は null（文脈なし）にする。
  * 文脈は補助なので、検証に落ちても認識は続ける。
@@ -156,8 +170,9 @@ export async function POST(req: NextRequest) {
 
     // 課金を守るため、認識を呼ぶ前に 1 回ぶん消費する。
     // モックは外部を呼ばないので数えない（開発中に 429 で止まらないようにする）。
+    // 同じ `sessionId` の区間送信は 1 録音としてまとめ、2 回目以降は数えない。
     if (!isVoiceMockEnabled()) {
-      consumeVoiceRateLimit(clientIp(req) ?? "local");
+      consumeVoiceRateLimit(clientIp(req) ?? "local", parseSessionId(form.get("sessionId")));
     }
 
     // 鍵もモックも無ければ、本文を流し始める前に 503 で止める。

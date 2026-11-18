@@ -1,6 +1,10 @@
+import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { POST as postTranscription } from "@/app/api/v1/voice/transcriptions/route";
 import { transcribeDetailed } from "@/modules/events/lib/voice/openai";
 import { transcribeVoiceClip } from "@/modules/events/lib/voice/transcribe";
+import { transcribeVoiceUtterance } from "@/modules/events/lib/voice/utterance-client";
+import { EMPTY_EVENT_FORM } from "@/modules/events/types";
 
 /** 録音 1 件ぶん。中身は認識の入口では使わない。 */
 function clip(): Blob {
@@ -337,5 +341,129 @@ describe("画面から送る文字起こし（transcribe.ts）", () => {
     await expect(
       transcribeVoiceClip({ blob: clip(), field: "title" }),
     ).rejects.toThrow("音声を文字にできませんでした");
+  });
+});
+
+/** 区間送信 1 本ぶん。`sessionId` は任意。 */
+function segmentRequest(ip: string, sessionId?: string): NextRequest {
+  const form = new FormData();
+  form.append("audio", new File([new Uint8Array([1, 2, 3])], "voice.webm", {
+    type: "audio/webm",
+  }));
+  if (sessionId) form.append("sessionId", sessionId);
+  return new NextRequest("http://localhost:3012/api/v1/voice/transcriptions", {
+    method: "POST",
+    body: form,
+    headers: { "cf-connecting-ip": ip },
+  });
+}
+
+describe("回数上限（sessionId）", () => {
+  function stubUpstream(): void {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubEnv("VOICE_TRANSCRIBE_LIMIT", "1");
+    vi.stubEnv("VOICE_TRANSCRIBE_WINDOW_MINUTES", "60");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ text: "渋谷ホール" })),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  }
+
+  it("同じ sessionId の 2 回目以降は回数を数えない", async () => {
+    stubUpstream();
+
+    const first = await postTranscription(
+      segmentRequest("198.51.100.201", "session-same"),
+    );
+    const second = await postTranscription(
+      segmentRequest("198.51.100.201", "session-same"),
+    );
+    // 同じ録音の続きは 429 にしない。
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+
+    // 別の録音は 1 回ぶんとして数え、上限に当たる。
+    const other = await postTranscription(
+      segmentRequest("198.51.100.201", "session-other"),
+    );
+    expect(other.status).toBe(429);
+  });
+
+  it("sessionId が無ければ今までどおり毎回数える", async () => {
+    stubUpstream();
+
+    const first = await postTranscription(segmentRequest("198.51.100.202"));
+    const second = await postTranscription(segmentRequest("198.51.100.202"));
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(429);
+  });
+});
+
+describe("自由文の送信（transcribeVoiceUtterance）", () => {
+  const done =
+    'event: done\ndata: {"text":"忘年会。12月5日です。","assignments":' +
+    '[{"slotId":"title:0","text":"忘年会","patch":{"title":"忘年会"},"value":"忘年会"}],' +
+    '"unassigned":[],"model":"text"}\n\n';
+
+  it("text があるときは音声を付けず、その文字だけで割当を受ける", async () => {
+    const fetchMock = vi.fn(async () => sseResponse(done));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await transcribeVoiceUtterance({
+      text: "忘年会。12月5日です。",
+      value: EMPTY_EVENT_FORM,
+      scope: { showOrganizerName: false, includeOptional: false, touched: new Set() },
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(String(url)).toContain("/api/v1/voice/utterances");
+    const form = init.body as FormData;
+    expect(form.get("text")).toBe("忘年会。12月5日です。");
+    // 同じ音声を二度文字起こししない。区間で全文が取れていれば音声は送らない。
+    expect(form.get("audio")).toBeNull();
+    expect(result.assignments[0].slotId).toBe("title:0");
+    expect(result.model).toBe("text");
+  });
+
+  it("done の内訳を読み、知らない理由は捨てる", async () => {
+    const withDiagnostics =
+      'event: done\ndata: {"text":"忘年会。","assignments":[],"unassigned":[],' +
+      '"model":"text","estimated":false,"diagnostics":' +
+      '{"reason":"no-key","quotes":0,"accepted":0,"dropped":0,"deterministic":1,"chars":4}}\n\n';
+    vi.stubGlobal("fetch", vi.fn(async () => sseResponse(withDiagnostics)));
+
+    const result = await transcribeVoiceUtterance({
+      text: "忘年会。",
+      value: EMPTY_EVENT_FORM,
+      scope: { showOrganizerName: false, includeOptional: false, touched: new Set() },
+    });
+
+    expect(result.estimated).toBe(false);
+    expect(result.diagnostics).toEqual({
+      reason: "no-key",
+      quotes: 0,
+      accepted: 0,
+      dropped: 0,
+      deterministic: 1,
+      chars: 4,
+    });
+
+    // 理由が知らない値なら、計測に嘘を入れずに内訳ごと落とす。
+    const unknown =
+      'event: done\ndata: {"text":"忘年会。","assignments":[],"unassigned":[],' +
+      '"model":"text","diagnostics":{"reason":"mystery","quotes":1}}\n\n';
+    vi.stubGlobal("fetch", vi.fn(async () => sseResponse(unknown)));
+
+    const second = await transcribeVoiceUtterance({
+      text: "忘年会。",
+      value: EMPTY_EVENT_FORM,
+      scope: { showOrganizerName: false, includeOptional: false, touched: new Set() },
+    });
+
+    expect(second.diagnostics).toBeUndefined();
   });
 });

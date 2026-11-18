@@ -157,3 +157,169 @@ export async function transcribeVoiceClip(input: {
   }
   return { text: body.text };
 }
+
+/* ------------------------------------------------------------------------- *
+ * 録音中の区間
+ *
+ * 録音を止めるまで待つと、最初の文字が出るまで話し終えてから数秒かかる。
+ * 無音で切った区間（2.5 秒〜6 秒）を録音中に送り、返った文字から順に画面へ出す。
+ * 停止したあとは、ここで集めた全文をそのまま確定に使う（同じ音声を二度送らない）。
+ * ------------------------------------------------------------------------- */
+
+/** 区間の文字起こしの結果。`model` は使った認識モデル（分からなければ null）。 */
+export interface VoiceSegmentResult {
+  text: string;
+  model: string | null;
+}
+
+/**
+ * モック（`VOICE_TRANSCRIBE_MOCK=1`）で区間ごとに返す文。
+ * 3 つつなぐと `freeformExampleSentence()` の見本と同じ 1 文になる。
+ * 画面も同じ並びを使って、疑似的に文字が増える様子を見せる。
+ */
+export const MOCK_VOICE_SEGMENT_TEXTS = [
+  "忘年会を12月5日の",
+  "18時から20時に渋谷ホールで",
+  "開きます。参加費は3000円、定員は30人です。",
+] as const;
+
+/**
+ * モックかどうかの返事。区間は 2.5 秒ごとに来るので、区間ごとに聞き直さない。
+ * 本番は常に false なので、最初の 1 回で足りる。
+ */
+let mockEnabledPromise: Promise<boolean> | null = null;
+
+function voiceMockEnabledOnce(): Promise<boolean> {
+  mockEnabledPromise ??= fetchVoiceMockEnabled();
+  return mockEnabledPromise;
+}
+
+/** モックで返す区間の文の位置。`sessionId` が変わったら先頭へ戻す（1 録音で 1 巡）。 */
+let mockSegmentSessionId: string | null = null;
+let mockSegmentIndex = 0;
+
+function mockVoiceSegmentText(sessionId: string): string {
+  if (mockSegmentSessionId !== sessionId) {
+    mockSegmentSessionId = sessionId;
+    mockSegmentIndex = 0;
+  }
+  const text = MOCK_VOICE_SEGMENT_TEXTS[mockSegmentIndex] ?? "";
+  mockSegmentIndex += 1;
+  return text;
+}
+
+/**
+ * 区間の応答を読む。`done` の本文と、使ったモデル名だけを受ける。
+ *
+ * `delta` は読むだけで表示には使わない。区間は 6 秒までなので `done` までに
+ * 1 秒もかからず、増分を並べると同じ文が二重に出るだけになる。
+ * `model` は `parseVoiceStreamEvent` が落とすため、ここでは `data` を直接読む。
+ */
+async function readSegmentResult(
+  response: Response,
+  options: { signal?: AbortSignal },
+): Promise<VoiceSegmentResult> {
+  if (!response.body) throw new Error(EMPTY_RESULT_MESSAGE);
+
+  const received: { done: string | null; model: string | null; streamed: string } = {
+    done: null,
+    model: null,
+    streamed: "",
+  };
+
+  await readSseStream(
+    response.body,
+    (event) => {
+      let payload: unknown;
+      try {
+        payload = JSON.parse(event.data);
+      } catch {
+        // 途中で切れた JSON は次のイベントで直る。ここでは捨てるだけ。
+        return;
+      }
+      if (typeof payload !== "object" || payload === null) return;
+      const record = payload as Record<string, unknown>;
+
+      if (event.event === "delta") {
+        if (typeof record.text === "string") received.streamed += record.text;
+        return;
+      }
+      if (event.event === "done") {
+        if (typeof record.text === "string") received.done = record.text;
+        if (typeof record.model === "string") received.model = record.model;
+        return;
+      }
+      if (event.event === "error") {
+        throw new Error(
+          typeof record.detail === "string" && record.detail
+            ? record.detail
+            : EMPTY_RESULT_MESSAGE,
+        );
+      }
+    },
+    { signal: options.signal },
+  );
+
+  // 画面が切れたときは、本文が揃っていなくても成功にしない。
+  if (options.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+  const text = received.done ?? (received.streamed || null);
+  if (text === null) throw new Error(EMPTY_RESULT_MESSAGE);
+  return { text, model: received.model };
+}
+
+/**
+ * 録音中に切った区間を送り、その区間の文字を受け取る。
+ *
+ * `transcribeVoiceClip` とは別の入口にしてある。区間には欄が決まっていないので
+ * `field` / `row` / `title` / `venueName` を送らず、汎用の文脈で認識させる。
+ * `sessionId` は 1 録音で 1 つ。サーバーは同じ録音の区間を 1 回ぶんとして数える。
+ * `onDelta` は渡さない（区間が短いので、`done` の全文だけで足りる）。
+ */
+export async function transcribeVoiceSegment(input: {
+  blob: Blob;
+  /** 1 録音ぶんの識別子。録音の開始ごとに画面が作る。 */
+  sessionId: string;
+  signal?: AbortSignal;
+}): Promise<VoiceSegmentResult> {
+  if (input.blob.size === 0) {
+    throw new Error("録音が空でした。もう一度話してください。");
+  }
+  if (input.blob.size > MAX_AUDIO_BYTES) {
+    throw new Error("録音が長すぎます。短く話してください。");
+  }
+
+  // モックは外部へ出さない。区間ごとに見本の文を 1 つずつ返す。
+  if (await voiceMockEnabledOnce()) {
+    return { text: mockVoiceSegmentText(input.sessionId), model: null };
+  }
+
+  const mime = input.blob.type || "audio/wav";
+  const form = new FormData();
+  form.append(
+    "audio",
+    new File([input.blob], `voice.${extensionForMimeType(mime)}`, { type: mime }),
+  );
+  form.append("sessionId", input.sessionId);
+
+  const response = await fetch(VOICE_ENDPOINT, {
+    method: "POST",
+    body: form,
+    signal: input.signal,
+  });
+  if (!response.ok) {
+    throw new Error(await readProblem(response));
+  }
+
+  // 古いサーバーや、応答をためるプロキシは JSON で返す。中身の種類で読み分ける。
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  if (contentType.includes("text/event-stream")) {
+    return readSegmentResult(response, { signal: input.signal });
+  }
+
+  const body = (await response.json()) as { text?: unknown; model?: unknown };
+  if (typeof body.text !== "string") {
+    throw new Error(EMPTY_RESULT_MESSAGE);
+  }
+  return { text: body.text, model: typeof body.model === "string" ? body.model : null };
+}

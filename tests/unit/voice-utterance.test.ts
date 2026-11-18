@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assignTerminated,
   assignUtterance,
+  isFreeTextClause,
   splitUtterance,
   terminatedPrefix,
 } from "@/modules/events/lib/voice/utterance";
@@ -154,6 +155,46 @@ describe("まとめて話した発話の割当", () => {
     expect(result.bySlot.get("title:0")?.patch).toEqual({ title: "忘年会" });
     expect(result.bySlot.get("venueName:0")?.text).toBe("渋谷ホール");
     expect(result.unassigned).toEqual([]);
+  });
+});
+
+describe("自由文のガード", () => {
+  it("文全体や助詞を含む節は、自由文の欄に受け取らせない", () => {
+    // ガード無し（既定）は今までどおり、語彙が合う節を受け取る。
+    const unguarded = assign("忘年会をやります");
+    expect(unguarded.bySlot.get("title:0")?.text).toBe("忘年会を");
+
+    const guarded = assignUtterance({
+      text: "忘年会をやります",
+      value: EMPTY_EVENT_FORM,
+      now: NOW,
+      scope: scope({ includeOptional: true }),
+      freeTextGuard: true,
+    });
+    expect(guarded.assignments.map((item) => item.slotId)).not.toContain("title:0");
+  });
+
+  it("自然な文では、形の閉じた欄だけを埋め、自由文の欄には文全体を入れない", () => {
+    const result = assignUtterance({
+      text: "忘年会を12月5日に渋谷ホールで開きます",
+      value: EMPTY_EVENT_FORM,
+      now: NOW,
+      scope: scope({ includeOptional: true }),
+      freeTextGuard: true,
+    });
+    const slots = new Map(result.assignments.map((item) => [item.slotId, item]));
+
+    expect(slots.get("scheduleDate:0")?.patch.schedules?.[0].eventDate).toBe("2026-12-05");
+    expect(slots.has("title:0")).toBe(false);
+    expect(slots.has("venueName:0")).toBe(false);
+  });
+
+  it("短い名詞句だけを通す", () => {
+    expect(isFreeTextClause("忘年会")).toBe(true);
+    expect(isFreeTextClause("渋谷ホール")).toBe(true);
+    expect(isFreeTextClause("忘年会を")).toBe(false);
+    expect(isFreeTextClause("会場は渋谷ホール")).toBe(false);
+    expect(isFreeTextClause("忘年会を12月5日に渋谷ホールで開きます")).toBe(false);
   });
 });
 

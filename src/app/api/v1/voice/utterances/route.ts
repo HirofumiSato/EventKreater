@@ -8,7 +8,6 @@ import {
   assignBatch,
   mockBatchTranscript,
 } from "@/modules/events/lib/voice/batch";
-import { batchTargets } from "@/modules/events/lib/voice/batch-guide";
 import { VOICE_FIELD_KEYS } from "@/modules/events/lib/voice/fields";
 import {
   isVoiceMockEnabled,
@@ -16,14 +15,9 @@ import {
 } from "@/modules/events/lib/voice/mock";
 import { transcribeDetailed } from "@/modules/events/lib/voice/openai";
 import { consumeVoiceRateLimit } from "@/modules/events/lib/voice/rate-limit";
-import {
-  assignTerminated,
-  terminatedPrefix,
-} from "@/modules/events/lib/voice/utterance";
 import type {
   VoiceFieldKey,
   VoiceFieldScope,
-  VoiceSlotId,
 } from "@/modules/events/lib/voice/types";
 import {
   EMPTY_EVENT_FORM,
@@ -35,6 +29,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INSTANCE = "/api/v1/voice/utterances";
+
+/** `text` で受け取れる長さ。区間の文字起こしをまとめた全文を想定する。 */
+const MAX_TEXT_LENGTH = 2000;
 
 // 既存の音声ルートと同じく、設定を 1 度だけ知らせる。テストでは出さない。
 if (process.env.NODE_ENV !== "test") warnVoiceConfigurationOnce();
@@ -170,14 +167,34 @@ function parseScope(raw: FormDataEntryValue | null): VoiceFieldScope {
 }
 
 /**
+ * 任意の `text`（区間の文字起こしをまとめた全文）を取り出す。
+ * `text` が無い・空文字なら null（音声から文字起こしする従来の経路へ落とす）。
+ */
+function parseProvidedText(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+  if (raw.length > MAX_TEXT_LENGTH) {
+    throw new ProblemDetailException({
+      status: 400,
+      title: "Validation Error",
+      detail: `話した内容が長すぎます。${MAX_TEXT_LENGTH} 文字までにしてください。`,
+    });
+  }
+  const text = raw.trim();
+  return text.length > 0 ? text : null;
+}
+
+/**
  * 1 回の発話から、複数の欄をまとめて埋める。
  *
- * 文字起こしは 1 回だけ。決定的に割り当てられなかった節だけを LLM へ回し、
- * 返ってきた節は必ず `parse` に通してから返す。録音は保存しない。
+ * 文字起こしは 1 回だけ。まず LLM に原文から欄ごとの quote を抜き出させ、
+ * 残りの欄を決定的に補う。返ってきた quote は必ず `parse` に通してから返す。
+ * 録音は保存しない。
  *
- * 応答は `text/event-stream`。文字起こしの増分が届くたびに、言い終わった節だけを
- * 決定的に割り当て、読めたマスを `cell` で先に返す。値は返さない（`done` でまとめて返す）。
- * 話している間はマスだけが埋まり、止めたあとに確認のダイアログで値を出す。
+ * 任意の `text` を受け取ったときは文字起こしを呼ばず、その文字だけで割当を行う
+ * （区間送信で全文が手元にある場合）。`audio` は `text` があるとき任意になる。
+ *
+ * 応答は `text/event-stream`。`delta`（音声から文字起こししたときだけ）と
+ * `done` を返す。途中の `cell` は返さない（自然文では途中の割当が誤るため）。
  */
 export async function POST(req: NextRequest) {
   try {
@@ -201,15 +218,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 区間の文字起こしをまとめた全文。あればこちらを割当に使い、音声は読まない。
+    const providedText = parseProvidedText(form.get("text"));
+
     const audio = form.get("audio");
-    if (!(audio instanceof Blob) || audio.size === 0) {
+    const audioBlob = audio instanceof Blob && audio.size > 0 ? audio : null;
+    if (!audioBlob && providedText === null) {
       throw new ProblemDetailException({
         status: 400,
         title: "Validation Error",
         detail: "音声が空です。マイクに向かって話してから、もう一度お試しください。",
       });
     }
-    if (audio.size > MAX_AUDIO_BYTES) {
+    if (audioBlob && audioBlob.size > MAX_AUDIO_BYTES) {
       throw new ProblemDetailException({
         status: 413,
         title: "Payload Too Large",
@@ -217,8 +238,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const audioType = audio.type || "audio/webm";
-    if (!audioType.startsWith("audio/") && audioType !== "application/octet-stream") {
+    const audioType = audioBlob?.type || "audio/webm";
+    if (
+      audioBlob &&
+      !audioType.startsWith("audio/") &&
+      audioType !== "application/octet-stream"
+    ) {
       throw new ProblemDetailException({
         status: 415,
         title: "Unsupported Media Type",
@@ -263,62 +288,32 @@ export async function POST(req: NextRequest) {
           }
         };
 
-        // 読めたマス。同じマスを二度送らない。
-        const read = new Set<VoiceSlotId>();
-        // 直前にマスを確かめた位置。区切りが増えていなければ引き直さない。
-        let checkedLength = 0;
-
-        const emitCells = (prefix: string): void => {
-          if (prefix.length <= checkedLength) return;
-          checkedLength = prefix.length;
-          // 途中は決定的な割当だけを見る。LLM は止めたあとに 1 度だけ呼ぶ。
-          const partial = assignTerminated({
-            text: prefix,
-            value,
-            now: new Date(),
-            scope,
-            targets: batchTargets(value, scope),
-          });
-          for (const item of partial.assignments) {
-            if (read.has(item.slotId)) continue;
-            read.add(item.slotId);
-            // 値は送らない。どのマスが読めたかだけを返す。
-            send("cell", { slotId: item.slotId });
-          }
-        };
-
         try {
           let text: string;
           let model: string;
-          if (mock) {
+          if (providedText !== null) {
+            // 全文が手元にある。文字起こしを呼ばず、done だけを返す。
+            text = providedText;
+            model = mock ? "mock" : "text";
+          } else if (mock) {
             text = mockBatchTranscript(value, scope);
             model = "mock";
-            // 疑似でも節ごとにマスを塗る。区切りごとに 1 つずつ増える様子を再現する。
-            let accumulated = "";
-            let first = true;
-            for (const clause of text.split("、")) {
-              const delta = first ? clause : `、${clause}`;
-              first = false;
-              accumulated += delta;
-              send("delta", { text: delta });
-              emitCells(`${accumulated}、`);
+            // 疑似でも話している途中のように、文ごとに区切って流す。
+            for (const chunk of text.match(/[^。！？]+[。！？]?/gu) ?? [text]) {
+              send("delta", { text: chunk });
             }
           } else {
-            const bytes = new Uint8Array(await audio.arrayBuffer());
-            let accumulated = "";
+            if (!audioBlob) throw new Error("音声がありません");
+            const bytes = new Uint8Array(await audioBlob.arrayBuffer());
             const transcription = await transcribeDetailed({
               bytes,
               contentType: audioType,
               filename: filenameFor(audioType),
-              // まとめて話すときは欄を決めない。入力済みの名前だけを当て字の手掛かりにする。
+              // 自由に話すときは欄を決めない。入力済みの名前だけを当て字の手掛かりにする。
               field: null,
               title: value.title || null,
               venueName: value.venueName || null,
-              onDelta: (delta) => {
-                accumulated += delta;
-                send("delta", { text: delta });
-                emitCells(terminatedPrefix(accumulated));
-              },
+              onDelta: (delta) => send("delta", { text: delta }),
               signal: abort.signal,
             });
             text = transcription.text;
@@ -327,17 +322,14 @@ export async function POST(req: NextRequest) {
           }
 
           const result = await assignBatch(text, { now: new Date(), value, scope });
-          // 止めたあとの割当で、まだ塗っていないマスを塗る（LLM の推定で決まった分）。
-          for (const item of result.assignments) {
-            if (read.has(item.slotId)) continue;
-            read.add(item.slotId);
-            send("cell", { slotId: item.slotId });
-          }
           send("done", {
             text,
             assignments: result.assignments,
             unassigned: result.unassigned,
             model,
+            // LLM の quote 抽出がどう働いたかの内訳。古い画面は無視してよい。
+            estimated: result.estimated,
+            diagnostics: result.diagnostics,
           });
         } catch (error) {
           // 本文は流れ始めているため、ステータスは変えず error イベントで知らせる。

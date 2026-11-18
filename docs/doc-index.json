@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3099,
+      "lineCount": 3122,
       "headings": [
         {
           "level": 1,
@@ -2563,6 +2563,10 @@
         },
         {
           "path": "src/modules/events/lib/venue-suggestions.ts",
+          "exists": true
+        },
+        {
+          "path": "src/modules/events/lib/voice/batch.ts",
           "exists": true
         },
         {
@@ -12369,7 +12373,7 @@
       "title": "テスト範囲のフロー",
       "summary": "読む順の 8 番です。前は vitest/practice、次は first-cases です。",
       "preImplementation": false,
-      "lineCount": 930,
+      "lineCount": 934,
       "headings": [
         {
           "level": 1,
@@ -13064,6 +13068,10 @@
         },
         {
           "path": "tests/unit/voice-prompt.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-segments.test.ts",
           "exists": true
         },
         {
@@ -14113,7 +14121,7 @@
       "title": "イベント作成の音声入力",
       "summary": "イベント作成画面（ /organizer/events/new ）の右下にマイクボタンを固定し、押すと音声モードに入ります。 音声モードに入るとそのまま録音が始まり、1 欄ずつ話して埋めていきます。 直前に選んでいた入力欄があればその欄から、無ければ上から順に空欄へ「見た目だけのフォーカス」を当てます。",
       "preImplementation": false,
-      "lineCount": 694,
+      "lineCount": 737,
       "headings": [
         {
           "level": 1,
@@ -14157,7 +14165,7 @@
         },
         {
           "level": 3,
-          "text": "まとめて話す（サーバー側）"
+          "text": "自由に話す（サーバー側）"
         },
         {
           "level": 2,
@@ -14307,6 +14315,10 @@
           "exists": true
         },
         {
+          "path": "tests/components/voice-batch.test.tsx",
+          "exists": true
+        },
+        {
           "path": "tests/components/voice-mock-recording.test.tsx",
           "exists": true
         },
@@ -14344,6 +14356,10 @@
         },
         {
           "path": "tests/unit/voice-prompt.test.ts",
+          "exists": true
+        },
+        {
+          "path": "tests/unit/voice-segments.test.ts",
           "exists": true
         },
         {

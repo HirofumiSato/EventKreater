@@ -103,9 +103,34 @@ export interface AssignUtteranceInput {
   scope: VoiceFieldScope;
   /**
    * 割当の対象にするマス。省略したら巡回順のすべてを使う。
-   * まとめて話すときは空欄だけ（`batchTargets`）を渡し、入力済みの欄を上書きしない。
+   * 自由に話すときは空欄だけ（`batchTargets`）を渡し、入力済みの欄を上書きしない。
    */
   targets?: readonly VoiceSlot[];
+  /**
+   * 自由文の欄に、文全体を受け取らせないようにする。
+   *
+   * 既定は無効（1 欄ずつの聞き取りと、列挙のフォールバックは今の挙動のまま）。
+   * 「自由に話す」ように自然な文を丸ごと渡すときだけ有効にし、
+   * 「忘年会を12月5日に渋谷ホールで開きます」のような文全体が
+   * イベント名や会場名になってしまうのを防ぐ。
+   */
+  freeTextGuard?: boolean;
+}
+
+/**
+ * 自由文の欄が受け取ってよい節か。
+ *
+ * 自由文の欄は `parse` がどんな文字列も通すため、長い文や助詞を含む節を受け取ると、
+ * 文全体がイベント名・会場名として入ってしまう。短い名詞句だけを受け取る。
+ * 日付・時刻・金額のような形の閉じた欄には使わない（`CLOSED_FIELDS`）。
+ */
+const FREE_TEXT_MAX_LENGTH = 12;
+const FREE_TEXT_PARTICLES = /[をはが]/u;
+
+export function isFreeTextClause(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length === 0 || trimmed.length > FREE_TEXT_MAX_LENGTH) return false;
+  return !FREE_TEXT_PARTICLES.test(trimmed);
 }
 
 /** 自由文の欄が節を受け取るか。欄の語彙（`keywords`）が節に現れるときだけ受け取る。 */
@@ -167,6 +192,8 @@ export function assignUtterance(input: AssignUtteranceInput): {
       // 自由文は語彙が合う節だけを受ける。数字だけの節を先に固い欄へ取らせるため、
       // 自由文はこの関数の 2 周目（閉じた形のあと）にだけ呼ぶ。
       if (requireClue && !hasClue(slot.field, clause.text)) continue;
+      // 文全体を 1 つの名前にしない。自然な文をまとめて渡すときだけ有効にする。
+      if (requireClue && input.freeTextGuard && !isFreeTextClause(clause.text)) continue;
 
       const patch = slot.field.parse(clause.text, context);
       if (patch === null) continue;
