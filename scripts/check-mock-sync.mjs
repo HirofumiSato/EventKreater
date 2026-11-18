@@ -81,7 +81,8 @@ export function missingInteractions(names, contents) {
  *
  * `mock-interactions.js` は手で保守するので、製品の音声入力を直したときに写しだけが
  * 古いまま残りうる。撮り直しても戻らないため、要る印が消えていたら `npm run check` で止める。
- * 見るのは 3 つ。覆い（穴あきの黒）、話し方で既定が変わる「任意の項目も聞く」、郵便番号の住所補完。
+ * 見るのは 4 つ。覆い（穴あきの黒）、話す順のマス（空欄の欄名）、話し方で既定が変わる
+ * 「任意の項目も聞く」、郵便番号の住所補完。
  */
 export function missingVoiceSimulation(source) {
   if (typeof source !== "string" || source.length === 0) {
@@ -94,6 +95,11 @@ export function missingVoiceSimulation(source) {
   if (!source.includes("voice-scrim")) {
     problems.push(
       "style-guide/mock-interactions.js に音声モードの覆い（voice-scrim）がありません。製品に合わせて直してください。",
+    );
+  }
+  if (!source.includes("voice-cells")) {
+    problems.push(
+      "style-guide/mock-interactions.js に自由に話すときの「入力する項目」（voice-cells）がありません。製品に合わせて直してください。",
     );
   }
   if (!source.includes("data-voice-optional")) {

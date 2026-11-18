@@ -6,10 +6,15 @@ import {
   estimateBatchAssignments,
   mockBatchTranscript,
 } from "@/modules/events/lib/voice/batch";
-import { batchTargets, defaultVoiceMode } from "@/modules/events/lib/voice/batch-guide";
+import {
+  batchPlan,
+  batchTargets,
+  defaultVoiceMode,
+  orderByBatchPlan,
+} from "@/modules/events/lib/voice/batch-guide";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { voiceFieldOrder } from "@/modules/events/lib/voice/fields";
-import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
+import type { VoiceFieldScope, VoiceSlotId } from "@/modules/events/lib/voice/types";
 import {
   createPricePlanDraft,
   createScheduleDraft,
@@ -449,6 +454,186 @@ describe("自由文で埋める対象", () => {
     };
 
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
+  });
+});
+
+/**
+ * 必須の欄をすべて埋めた値。任意の欄（補足・雨天時・定員・期限）は空のまま残す。
+ * 一覧の並びを見るために、対象を任意の欄だけへ絞る。
+ */
+function filledRequiredForm(overrides: Partial<EventFormValues> = {}): EventFormValues {
+  return {
+    ...EMPTY_EVENT_FORM,
+    title: "忘年会",
+    schedules: [
+      {
+        ...createScheduleDraft({ key: "schedule-1" }),
+        eventDate: "2026-12-05",
+        startTime: "18:00",
+        endTime: "20:00",
+      },
+    ],
+    pricePlans: [
+      {
+        ...createPricePlanDraft({ key: "plan-1" }),
+        name: "一般",
+        amount: "3000",
+      },
+    ],
+    venueName: "渋谷ホール",
+    postalCode: "1500001",
+    prefecture: "東京都",
+    city: "渋谷区",
+    town: "神宮前",
+    addressLine: "1-2-3",
+    building: "○○ビル3階",
+    ...overrides,
+  };
+}
+
+describe("話す順の一覧（batchPlan）", () => {
+  it("必須の欄を先に、任意の欄を後ろへ並べる", () => {
+    // 巡回順では料金の補足（任意）が会場名より前にある。一覧は必須の会場名を先に出す。
+    const value = filledRequiredForm({ venueName: "" });
+
+    const labels = batchPlan(batchTargets(value, scope())).map((cell) => cell.label);
+
+    expect(labels).toEqual(["場所", "料金の補足", "雨天時の方針", "定員", "申し込み期限"]);
+  });
+
+  it("一覧は 8 枚までに切り詰める", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+
+    expect(cells).toHaveLength(8);
+    // 9 枚目以降（都道府県・市区町村など）は、確認のダイアログで扱う。
+    expect(cells.map((cell) => cell.id)).toEqual([
+      "title:0",
+      "scheduleDate:0",
+      "scheduleStart:0",
+      "scheduleEnd:0",
+      "planName:0",
+      "planAmount:0",
+      "venueName:0",
+      "postalCode:0",
+    ]);
+  });
+
+  it("開始と終了は別のマスにし、口に出しやすい名前にする", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+    const labels = new Map(cells.map((cell) => [cell.id, cell.label]));
+
+    // 1 つの発話で両方埋まることはあるが、一覧では別のマスとして並べる。
+    expect(labels.get("scheduleStart:0")).toBe("開始時間");
+    expect(labels.get("scheduleEnd:0")).toBe("終了時間");
+  });
+
+  it("料金プラン名・金額・会場名は一覧の言い方にそろえる", () => {
+    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
+    const labels = new Map(cells.map((cell) => [cell.id, cell.label]));
+
+    expect(labels.get("planName:0")).toBe("料金プラン名");
+    expect(labels.get("planAmount:0")).toBe("料金（円）");
+    expect(labels.get("venueName:0")).toBe("場所");
+  });
+
+  it("2件目以降の行は fields.ts の名前をそのまま使う", () => {
+    const value: EventFormValues = {
+      ...EMPTY_EVENT_FORM,
+      schedules: [
+        createScheduleDraft({ key: "schedule-1" }),
+        createScheduleDraft({ key: "schedule-2" }),
+      ],
+    };
+
+    const labels = batchPlan(batchTargets(value, scope())).map((cell) => cell.label);
+
+    // 1 件目は一覧の言い方、2 件目以降はどの行か分かるよう行付きの名前のまま。
+    expect(labels.slice(0, 7)).toEqual([
+      "イベント名",
+      "開催日",
+      "開始時間",
+      "終了時間",
+      "2件目の開催日",
+      "2件目の開始時刻",
+      "2件目の終了時刻",
+    ]);
+  });
+});
+
+describe("確認のダイアログの並び（orderByBatchPlan）", () => {
+  // 割当は話した順に返る（日付 → 金額 → 郵便番号 → 都道府県…）。
+  const spoken: { slotId: VoiceSlotId; label: string }[] = [
+    { slotId: "scheduleDate:0", label: "開催日" },
+    { slotId: "scheduleStart:0", label: "開始時刻" },
+    { slotId: "planAmount:0", label: "金額" },
+    { slotId: "postalCode:0", label: "郵便番号" },
+    { slotId: "prefecture:0", label: "都道府県" },
+    { slotId: "title:0", label: "イベント名" },
+    { slotId: "venueName:0", label: "会場名" },
+    { slotId: "building:0", label: "建物名" },
+  ];
+
+  const labelsOf = (rows: readonly { label: string }[]) => rows.map((row) => row.label);
+
+  it("パネルの一覧と同じ順（必須が先・任意が後ろ）に並べ替える", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+    const rows = orderByBatchPlan(spoken, targets);
+
+    // 話した順（日付 → 開始 → 金額 → 郵便番号 → 都道府県 → 名前 → 会場 → 建物）を、
+    // 巡回順（イベント名 → 開催日 → 開始 → 終了 → 料金プラン → 金額 → 場所 → …）へ直す。
+    // 名前は確認のダイアログ側の言い方（fields.ts の label）のままでよい。
+    expect(labelsOf(rows)).toEqual([
+      "イベント名",
+      "開催日",
+      "開始時刻",
+      "金額",
+      "会場名",
+      "郵便番号",
+      "都道府県",
+      "建物名",
+    ]);
+
+    // 一覧に出ている欄は、一覧の並びのまま（言い換えだけが一覧側の違い）。
+    const planIds = batchPlan(targets).map((cell) => cell.id);
+    const seen = rows.map((row) => row.slotId).filter((id) => planIds.includes(id));
+    expect(seen).toEqual(planIds.filter((id) => seen.includes(id)));
+  });
+
+  it("一覧の 8 枚目より後ろの欄は、8 枚の後ろへ回す", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+    const rows = orderByBatchPlan(
+      [
+        { slotId: "building:0", label: "建物名" },
+        { slotId: "town:0", label: "町域" },
+        { slotId: "postalCode:0", label: "郵便番号" },
+        { slotId: "title:0", label: "イベント名" },
+      ],
+      targets,
+    );
+
+    // 一覧は郵便番号（8 枚目）で切れる。町域・建物名はその次に置く。
+    expect(labelsOf(rows)).toEqual(["イベント名", "郵便番号", "町域", "建物名"]);
+  });
+
+  it("対象に無い欄は落とさず、末尾へ回す", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+    const rows = orderByBatchPlan(
+      [
+        { slotId: "unknown:9" as VoiceSlotId, label: "知らない欄" },
+        { slotId: "title:0", label: "イベント名" },
+      ],
+      targets,
+    );
+
+    expect(labelsOf(rows)).toEqual(["イベント名", "知らない欄"]);
+  });
+
+  it("元の配列は書き換えない", () => {
+    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
+    const input = [...spoken];
+    orderByBatchPlan(input, targets);
+
+    expect(labelsOf(input)).toEqual(labelsOf(spoken));
   });
 });
 

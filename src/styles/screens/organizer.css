@@ -621,15 +621,42 @@
 
 /* 自由に話すときは、欄のすぐ下ではなく画面下寄りに固定する。
    話す順と例で背が高くなるため、欄に合わせると下の帯や FAB と重なる。
-   右下のマイクボタン（下端 5rem・高さ 3.25rem）の上へ 1rem 空けて置く。 */
+   右下のマイクボタン（下端 5rem・高さ 3.25rem）の上へ 1rem 空けて置く。
+   保存の帯がある画面では、components.css が FAB の逃げた位置に合わせて下端を上げ直す。
+   一覧・案内・例・操作を 1 枚に収めるため、間隔と余白だけ 1 段詰める（1つずつのパネルは詰めない）。
+   収まりきらない高さの端末では、パネルの中で送る（文字の枠は固定のまま）。 */
 .voice-panel--batch {
   top: auto;
   left: 0.5rem;
   right: 0.5rem;
   bottom: calc(9.25rem + env(safe-area-inset-bottom, 0px));
   width: auto;
-  max-height: min(58vh, 26rem);
-  max-height: min(58dvh, 26rem, calc(100dvh - 10rem - env(safe-area-inset-bottom, 0px)));
+  gap: 0.375rem;
+  padding: 0.8rem;
+  /* 下端から上へ伸ばすので、上端に 0.5rem を残した高さまでにする。
+     58dvh のような画面比の上限は置かない。一覧を戻したぶん背が高くなり、
+     上限で切るとパネルの中にスクロールが出て、下の操作まで送らないと押せなくなる。 */
+  max-height: min(
+    34rem,
+    calc(100vh - 9.25rem - 0.5rem - env(safe-area-inset-bottom, 0px))
+  );
+  max-height: min(
+    34rem,
+    calc(100dvh - 9.25rem - 0.5rem - env(safe-area-inset-bottom, 0px))
+  );
+}
+
+/* 一覧は 1 段 3 枚のまま、行の間と札の上下だけ詰める。高さを 1 枚ぶん近く削れる。 */
+.voice-panel--batch .voice-panel__plan {
+  gap: 0.25rem;
+}
+
+.voice-panel--batch .voice-cells {
+  gap: 0.1875rem 1rem;
+}
+
+.voice-panel--batch .voice-cell {
+  padding-block: 0.125rem;
 }
 
 @media (min-width: 640px) {
@@ -777,6 +804,101 @@
   color: var(--color-text-subtle);
 }
 
+/* 入力する項目の一覧。自由に話すとき、いま空欄の欄を巡回順（必須が先）で並べる。
+   参考表示なので、この順どおりに話さなくてよい。押せる的ではないので 40px は要らない
+   （触るのは下の主ボタンだけ）。幅で折り返すと、同じ 8 枚が端末ごとに違う段数になり、
+   全体を見渡せない。スマホでも 1 段に 3 枚入るよう、3 列の格子に固定する。 */
+.voice-panel__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+/* 一覧の小さな見出し。「話す順」ではなく「入力する項目」と書き、
+   並びが目安であることを見出しで強く言わない。 */
+.voice-panel__plan-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.voice-cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 1 歩。矢印は升の幅から借りず、列の間へ置く（名前の幅を削らないため）。 */
+.voice-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* 前のマスとの間に置く右向き矢印。列の間（16px）へ重ねるので、升の幅を削らない。
+   3 枚で 1 段なので、段の先頭になる 4 枚目・7 枚目の前は置かない。 */
+.voice-step__sep {
+  position: absolute;
+  top: 50%;
+  left: -0.75rem;
+  margin: 0;
+  color: var(--color-border-strong);
+  font-size: 0.6875rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+/* 段の先頭（1・4・7 枚目）の前には置かない。段が変わったことを矢印で示さないため。 */
+.voice-step:nth-child(3n + 1) .voice-step__sep {
+  display: none;
+}
+
+/* マス。升の幅に収めるため、名前に合わせて広げない。
+   高さは 1 行に固定し、名前が入りきらないときだけ末尾を省略する
+   （2 行に折れると、同じ段のマスと高さがそろわない）。
+   番号と名前は 1 組として中央に寄せる（左右の余白を同じにしないと、中央に寄らない）。 */
+.voice-cell {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 番号と名前の間は半角スペース相当（12px の 0.25em）。 */
+  gap: 0.25em;
+  min-width: 0;
+  padding: 0.1875rem 0.3125rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+/* 話す順は「1.」の形で示す。丸で囲むと名前の幅を削るので、字だけで置く。 */
+.voice-cell__number {
+  flex: none;
+  color: var(--color-text-faint);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 名前は 1 行に固定する。折ると同じ段で高さが変わるためである。 */
+.voice-cell__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 自由文の見本。欄ごとの名前だけでは、どんな文で話せばよいか分からないので、
    日付・時刻・場所・料金・定員を 1 回で言う 1〜2 文を 1 か所だけ置く。
    指示ではないので、指示より弱い字（12px・補助色）に落とし、
@@ -829,18 +951,41 @@
   overflow-wrap: anywhere;
 }
 
+/* 「トークスクリプト」と、聞き取れた文字の枠。見出しは枠の左上へ 1 行だけ添える。
+   枠の線に重ねず、1 行上へ置く（枠の中の 1 行目と混ざらないようにするため）。
+   録音を始めた瞬間に枠ごと出すので、話し始める前に「どこに文字が出るか」が分かる。 */
+.voice-panel__script {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.voice-panel__script-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 /* 録音中に聞き取れた文字。話している途中から少しずつ増えるので、
-   本文と同じ字で読みやすく置き、増えた分だけ下へ伸ばす。
-   パネル自体は伸ばさず、5 行（行間 1.5 で 7.5em）を超えたら内側で送る。
+   本文と同じ字で読みやすく置く。
+   `max-height` ではなく `height` で 4 行ぶん（行間 1.5 で 5.4rem）に固定する。
+   上限だけにすると、文字が短いあいだは枠が縮んでパネルの高さが話すたびに変わり、
+   一覧や主ボタンの位置が動いて押しにくい。固定の枠にしておけば、
+   文字が増えてもパネルは伸びず、増えた分だけ枠の中で送る。
    上下の余白と罫は box-sizing で高さに含まれるため、その分を足して
-   5 行ぶんの本文が必ず見えるようにする。
+   4 行ぶんの本文が必ず見えるようにする。
+   縦はパネル（flex）の中でも縮ませない（`flex: none`）。
    新しい文字は末尾に足す。`column-reverse` で底を起点に置くと、
    底が `scrollTop: 0` になり、JS で送らなくても最新の行が見えたままになる。
    中身は 1 つの塊（1 段落）として置くこと。複数の子を並べると順が逆になる。 */
 .voice-panel__transcript {
   display: flex;
   flex-direction: column-reverse;
-  max-height: calc(7.5em + 0.75rem + 2px);
+  flex: none;
+  height: calc(5.4rem + 0.75rem + 2px);
   margin: 0;
   padding: 0.375rem 0.5rem;
   overflow-y: auto;

@@ -546,6 +546,12 @@
       "</div>" +
       // 自由に話すときは、ここに質問を進めない。待ちの理由だけを出す（製品と同じ）。
       '<p class="voice-panel__interim" aria-live="polite" hidden></p>' +
+      // 聞き取れた文字の枠は、録音を始めた瞬間から出す。見出しは枠の左上へ添える
+      // （製品の `.voice-panel__script` / `.voice-panel__script-label`）。
+      '<div class="voice-panel__script" data-voice-script hidden>' +
+      '<p class="voice-panel__script-label">トークスクリプト</p>' +
+      '<p class="voice-panel__transcript" role="log" aria-live="polite"></p>' +
+      "</div>" +
       '<button type="button" class="voice-panel__close" aria-label="音声入力を終了" title="音声入力を終了">' +
       icon("close") +
       "</button></div>" +
@@ -553,10 +559,13 @@
       // 入力完了のときだけ、次にすることを 1 行出す（製品の `.voice-panel__finish`）。
       '<p class="voice-panel__finish" hidden></p>' +
       '<p class="voice-panel__message" role="status" hidden></p>' +
-      // 自由に話すときは、話す順のマスを出さない。何を話すかは 1 行の案内と例で示し、
       // 話した文字は 1 段落の末尾へ足していく（製品の `.voice-panel__transcript` と同じ）。
-      '<p class="voice-panel__say" data-voice-guide hidden>話したいことをそのまま話してください。</p>' +
-      '<p class="voice-panel__transcript" role="log" aria-live="polite" hidden></p>' +
+      // 案内と例の間に、空欄の欄名を話す順のマス（番号＋右矢印）で並べる（製品の `.voice-panel__plan`）。
+      // 1つずつでは質問が 1 欄を指すので出さない。中身は renderVoiceCells が空欄から作る。
+      '<div class="voice-panel__plan" data-voice-plan hidden>' +
+      '<p class="voice-panel__plan-label">入力する項目</p>' +
+      '<ol class="voice-cells" aria-label="話す順"></ol>' +
+      "</div>" +
       // 自由文の例。指示より弱い字にし、「話し方の例：」で何の例かを言う。
       '<div class="voice-panel__say" data-voice-say hidden>' +
       '<span class="voice-panel__say-label">話し方の例：</span>' +
@@ -734,8 +743,74 @@
     );
   }
 
+  /** 話す順のマスに並べる上限。製品の `batchPlan`（`MAX_CELLS`）と同じ 8 枚。 */
+  const MAX_CELLS = 8;
+
+  /**
+   * マスの名前。製品の `batchPlan` は欄の名前を `CELL_TEXT` で言い換えるので、
+   * モックも画面の札（「開始」「プラン1」）ではなく製品の名前へそろえる。
+   * 札ではなく id の頭で見分けるのは、料金プランの札が並び順で「プラン1」と変わるため。
+   */
+  const CELL_LABELS = [
+    ["schedule-start-", "開始時間"],
+    ["schedule-end-", "終了時間"],
+    ["plan-name-", "料金プラン名"],
+    ["plan-amount-", "料金（円）"],
+    ["event-venue-name", "場所"],
+  ];
+
+  function cellLabelOf(entry) {
+    const id = (entry.field && entry.field.id) || "";
+    const hit = CELL_LABELS.find(([prefix]) => id.startsWith(prefix));
+    return hit ? hit[1] : entry.label;
+  }
+
+  /**
+   * 話す順のマスを、いま空欄の欄から作り直す（製品の `batchPlan` の写し）。
+   * 自由に話すときだけ出し、1つずつ・完了のときは見出しごと隠す。
+   */
+  function renderVoiceCells() {
+    if (!voice.panel) return;
+    const plan = voice.panel.querySelector("[data-voice-plan]");
+    const list = plan ? plan.querySelector(".voice-cells") : null;
+    if (!plan || !list) return;
+    // 完了の 1 行（`.voice-panel__finish`）が出ていたら、製品と同じく一覧も引っ込める。
+    const finish = voice.panel.querySelector(".voice-panel__finish");
+    const complete = finish ? !finish.hidden : false;
+    const entries =
+      voice.batchMode && !complete ? batchGuideEntries().slice(0, MAX_CELLS) : [];
+    plan.hidden = entries.length === 0;
+    list.textContent = "";
+    entries.forEach((entry, index) => {
+      const item = document.createElement("li");
+      item.className = "voice-step";
+      // 右矢印は列の間に重ねる飾りなので、読み上げには含めない（製品と同じ）。
+      const sep = document.createElement("span");
+      sep.className = "voice-step__sep";
+      sep.setAttribute("aria-hidden", "true");
+      sep.textContent = "→";
+      const cell = document.createElement("span");
+      cell.className = "voice-cell";
+      const number = document.createElement("span");
+      number.className = "voice-cell__number";
+      number.setAttribute("aria-hidden", "true");
+      number.textContent = index + 1 + ".";
+      const label = document.createElement("span");
+      label.className = "voice-cell__label";
+      label.textContent = cellLabelOf(entry);
+      cell.append(number, label);
+      item.append(sep, cell);
+      list.append(item);
+    });
+  }
+
   function transcriptBox() {
     return voice.panel ? voice.panel.querySelector(".voice-panel__transcript") : null;
+  }
+
+  /** 枠と見出し（「トークスクリプト」）の入れ物。 */
+  function scriptBox() {
+    return voice.panel ? voice.panel.querySelector("[data-voice-script]") : null;
   }
 
   /** 聞き取れた区間を末尾へ足す。中身は 1 段落のまま、区間の間だけ改行する。 */
@@ -746,7 +821,6 @@
     box.textContent = soFar ? soFar + "\n" + text : text;
     // `column-reverse` の底が `scrollTop: 0`。新しい文字が見えたままになる。
     box.scrollTop = 0;
-    box.hidden = false;
   }
 
   /** 録音を始めるときと閉じるときに、話した文字を空へ戻す。 */
@@ -754,7 +828,6 @@
     const box = transcriptBox();
     if (!box) return;
     box.textContent = "";
-    box.hidden = true;
     box.scrollTop = 0;
   }
 
@@ -769,33 +842,32 @@
     });
   }
 
-  /** パネルの質問と例を差し替える。自由に話すときは、質問ではなく自由文の案内と例を出す。 */
+  /** パネルの質問と例を差し替える。自由に話すときは、質問ではなく自由文の例を出す。 */
   function renderPrompt(entry) {
     if (!voice.panel) return;
     const prompt = voice.panel.querySelector(".voice-panel__prompt");
     const hint = voice.panel.querySelector(".voice-panel__hint");
     const say = voice.panel.querySelector("[data-voice-say]");
-    const guide = voice.panel.querySelector("[data-voice-guide]");
     const exampleText = voice.panel.querySelector("[data-voice-example]");
     if (voice.batchMode) {
-      // 1 つの欄の話ではないので、質問は進めない（製品と同じ）。案内だけを出す。
+      // 1 つの欄の話ではないので、質問は進めない（製品と同じ）。例だけを出す。
       prompt.textContent = "";
       prompt.hidden = true;
       hint.textContent = "";
       hint.hidden = true;
-      // 自由文の案内と例は、話す 1 か所にまとめる。空欄が無ければ出す必要も無い。
+      // 自由文の例は、話す 1 か所にまとめる。空欄が無ければ出す必要も無い。
       const hasTargets = batchGuideEntries().length > 0;
       if (exampleText) exampleText.textContent = BATCH_EXAMPLE;
       if (say) say.hidden = !hasTargets;
-      if (guide) guide.hidden = false;
     } else {
       prompt.hidden = false;
       prompt.textContent = entry.prompt || entry.label + "は？";
       hint.textContent = "例: " + (entry.hint || entry.value);
       hint.hidden = false;
       if (say) say.hidden = true;
-      if (guide) guide.hidden = true;
     }
+    // 一覧は自由に話すときだけ。切り替えても質問と同じタイミングで入れ替える。
+    renderVoiceCells();
   }
 
   /** 聞き取りの途中経過。空文字を渡すと行ごと隠す。 */
@@ -832,6 +904,15 @@
     }
     // 自由に話すでは「いまの値」を出さない（1 つの欄の話ではない）。
     if (batch) panel.querySelector(".voice-panel__current").hidden = true;
+    // 話す順のマスも、自由に話すのときだけ出す（欄が埋まれば renderVoiceCells が詰める）。
+    renderVoiceCells();
+    // 文字の枠は自由に話すのときだけ。録音を始めるまでは出さない（製品と同じ）。
+    const script = panel.querySelector("[data-voice-script]");
+    if (script && !batch) {
+      script.hidden = true;
+      const box = panel.querySelector(".voice-panel__transcript");
+      if (box) box.textContent = "";
+    }
     syncTalkCaption();
   }
 
@@ -1061,6 +1142,8 @@
     const list = modal.querySelector(".voice-batch");
 
     // 先頭に、入る欄の数と、一覧に載らなかった空欄を出す（製品と同じ位置）。
+    // 行の順は `batchEntries()` が画面の順に返すので、上に出る話す順のマスとそろう
+    // （製品は割当を `orderByBatchPlan` で一覧の順へ並べ替える）。
     const summary = document.createElement("p");
     summary.className = "voice-batch__summary";
     summary.textContent = rows.length + "つの欄に入れます。";
@@ -1239,6 +1322,12 @@
     showInterim("");
     // 前の録音の文字は残さない。自由に話すときは、ここから区間が届くたびに足す。
     resetTranscript();
+    // 枠は押した瞬間から出す（製品と同じ）。最初の区間が届くまでの 2〜3 秒、
+    // 押した手応えが無いままにならない。
+    if (voice.batchMode) {
+      const script = scriptBox();
+      if (script) script.hidden = false;
+    }
     voice.listening = true;
     syncTalkCaption();
     setTalkIcon("stop");
@@ -1352,8 +1441,10 @@
     voice.panel.querySelector("[data-voice-optional]").closest(".check").hidden = true;
     voice.panel.querySelector("[data-voice-auto]").closest(".check").hidden = true;
     voice.panel.querySelector(".voice-panel__mode").hidden = true;
-    voice.panel.querySelector("[data-voice-guide]").hidden = true;
+    voice.panel.querySelector("[data-voice-script]").hidden = true;
     voice.panel.querySelector("[data-voice-say]").hidden = true;
+    // 完了では話す順のマスも引っ込める（製品は操作の段ごと出さない）。
+    voice.panel.querySelector("[data-voice-plan]").hidden = true;
     // 完了では押しても動かない的を残さない（製品は操作の段ごと出さない）。
     voice.panel.querySelector(".voice-panel__actions").hidden = true;
     voice.panel.querySelector(".voice-panel__options").hidden = true;
