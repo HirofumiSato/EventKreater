@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AdminAccessDenied } from "@/modules/admin/components/AdminAccessDenied";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { EmptyState } from "@/components/ui";
 
@@ -46,7 +47,7 @@ export default function ConsoleHomePage() {
   }, [router]);
 
   if (blocked) {
-    return <EmptyState>このページは利用できません。</EmptyState>;
+    return <AdminAccessDenied />;
   }
 
   if (!ready) {

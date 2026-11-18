@@ -60,11 +60,11 @@ export async function GET(req: NextRequest) {
       clearOAuthCookies(response, req);
       return response;
     }
-    // 管理者は管理コンソール専用の入口から入る。主催者向けの画面ではチャレンジを発行しない。
+    // 管理者は管理コンソール専用の入口から入る。ここでは管理コンソールの URL を出さず、
+    // 公開の入口から管理コンソールへの導線を作らない（同じ画面へ一般的な理由で戻す）。
     if (audience === "organizer" && resolved.user.platformRole === "ADMIN") {
-      const response = NextResponse.redirect(new URL("/console/login", req.nextUrl.origin));
+      const response = fail("google_account");
       clearCookie(response, req, SIGNUP_INTENT_COOKIE);
-      clearOAuthCookies(response, req);
       return response;
     }
     const challenge = await startLoginChallenge({

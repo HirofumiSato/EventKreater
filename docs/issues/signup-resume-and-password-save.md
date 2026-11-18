@@ -93,7 +93,7 @@ export async function resumeSignupIntent(input: {
 - `signupPending` なら `body.audience` に合わせて `/auth/register?step=phone` か `/participant/login?step=phone` へ `router.push` する。入口が変わるときは `next` を付けない。
 - `unverifiedEmail` なら `setUnverified(true)` で再送ボタンを出す。あわせて「確認メールを送信しました…」の案内を出し、パスワード欄を空にする。ログインのフォームのまま留まる（FE-AUTH-17）。
 - それ以外の `verificationRequired`（新規登録と既登録メール）は `setSent(true)` で確認メールの案内を出し、パスワード欄を空にする。登録のフォームからログインのフォームへは切り替えない（FE-AUTH-01）。「確認メールを再送する」と「メールアドレスを直す」を出し、後者で `setSent(false)` にして登録のフォームへ戻す。
-- mode を切り替えたときは、`sent`・`notice`・`error`・`unverified`・`adminConsoleRequired` を消す。前の応答の案内を持ち越さない。
+- mode を切り替えたときは、`sent`・`notice`・`error`・`unverified` を消す。前の応答の案内を持ち越さない。
 
 ### 5. 電話番号の確認画面
 

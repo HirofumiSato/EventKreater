@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { AdminAccessDenied } from "@/modules/admin/components/AdminAccessDenied";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/modules/billing/lib/plans";
 import { roundChargedPrice } from "@/modules/billing/lib/pricing";
 import { yenMark } from "@/lib/format";
-import { Alert, EmptyState, Field } from "@/components/ui";
+import { Alert, Field } from "@/components/ui";
 
 interface CampaignRow {
   id: string;
@@ -241,7 +242,7 @@ export default function AdminPricingPage() {
   };
 
   if (blocked) {
-    return <EmptyState>このページは利用できません。</EmptyState>;
+    return <AdminAccessDenied />;
   }
 
   return (

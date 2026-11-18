@@ -37,6 +37,8 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_token: "Googleログインに失敗しました。",
   google_email: "確認済みのメールアドレスがあるGoogleアカウントが必要です。",
   google_conflict: "このメールアドレスは別のGoogleアカウントに紐づいています。",
+  // 管理者を管理コンソールへ送らない。ここでも管理コンソールの在り処は明かさない。
+  google_account: "このGoogleアカウントでは、こちらからはログインできません。",
 };
 
 async function hydrateSession(): Promise<void> {
@@ -136,7 +138,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
   const [unverified, setUnverified] = useState(false);
   // 登録の送信が終わり、確認メールの案内を出す状態。ログインのフォームへは切り替えない。
   const [sent, setSent] = useState(false);
-  const [adminConsoleRequired, setAdminConsoleRequired] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // 電話番号の確認画面も、確認済みかどうかをここで受け取る（画面側の二重取得をやめる）。
   const existing = useExistingSession(!switching);
@@ -172,7 +173,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       hasExplicitNext,
       nextPath,
       phoneVerified: existing.user.phoneVerified,
-      platformRole: existing.user.platformRole,
     });
     // 履歴に入口を残さない。戻っても同じ判定をやり直すだけになる。
     router.replace(destination);
@@ -180,15 +180,14 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
   }, [audience, basePath, existing.state, existing.user, hasExplicitNext, nextPath, pendingLoginCode, phoneStep, router]);
 
   const finish = useCallback(
-    async (phoneVerified: boolean, platformRole?: "MEMBER" | "ADMIN") => {
+    async (phoneVerified: boolean) => {
       await hydrateSession();
       if (!phoneVerified) {
         router.push(phoneStepHref(basePath, hasExplicitNext, nextPath));
         router.refresh();
         return;
       }
-      // 管理者を管理コンソールへ送るのは、主催者入口で戻り先を指定されていないときだけ。
-      router.push(resolveAuthLanding({ audience, hasExplicitNext, nextPath, platformRole }));
+      router.push(resolveAuthLanding({ audience, hasExplicitNext, nextPath }));
       router.refresh();
     },
     [audience, basePath, hasExplicitNext, nextPath, router],
@@ -202,7 +201,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
     setError(null);
     setNotice(null);
     setUnverified(false);
-    setAdminConsoleRequired(false);
     try {
       const res = await fetch("/api/v1/auth/local", {
         method: "POST",
@@ -237,7 +235,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       };
       if (!res.ok) {
         if (body.error === "EMAIL_UNVERIFIED") setUnverified(true);
-        if (body.error === "ADMIN_CONSOLE_REQUIRED") setAdminConsoleRequired(true);
         throw new Error(problemMessage(body, "認証に失敗しました"));
       }
       // パスワードマネージャへの保存を頼む。`fetch` 送信では保存の合図が出ないため、
@@ -293,7 +290,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
     setNotice(null);
     setError(null);
     setUnverified(false);
-    setAdminConsoleRequired(false);
   };
 
   const resend = async () => {
@@ -352,10 +348,10 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
       <div className={authPageClass(audience)}>
         <LoginChallengeForm
           screenName={copy.challenge}
-          onConfirmed={({ phoneVerified, platformRole }) => {
+          onConfirmed={({ phoneVerified }) => {
             // 確認番号でログインできた回数。
             trackEvent("login", { audience });
-            void finish(phoneVerified, platformRole);
+            void finish(phoneVerified);
           }}
           onRestart={() =>
             router.push(
@@ -502,11 +498,6 @@ function AuthEntry({ audience, inviteName }: { audience: AuthAudience; inviteNam
                 )}
                 {notice && <Alert tone="success">{notice}</Alert>}
                 {error && <Alert tone="error">{error}</Alert>}
-                {adminConsoleRequired && (
-                  <a className="btn btn--outline btn--block" href="/console/login">
-                    管理者ログインへ
-                  </a>
-                )}
                 {unverified && (
                   <button type="button" className="btn btn--outline btn--block" disabled={submitting || !email} onClick={() => void resend()}>
                     確認メールを再送する

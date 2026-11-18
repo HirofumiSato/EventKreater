@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { LandingRole } from "@/modules/auth/lib/auth-landing";
 
 export interface ExistingSessionUser {
   id: string;
   name: string;
   phoneVerified: boolean;
-  platformRole: LandingRole;
 }
 
 /**
@@ -60,7 +58,6 @@ export function useExistingSession(enabled: boolean): ExistingSession {
             id: user.id,
             name: typeof user.name === "string" ? user.name : "",
             phoneVerified: user.phoneVerified === true,
-            platformRole: user.platformRole === "ADMIN" ? "ADMIN" : "MEMBER",
           },
           pendingChallenge: body.pendingChallenge === true,
         });
