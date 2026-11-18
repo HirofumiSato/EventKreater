@@ -63,6 +63,7 @@ import { lookupPostalCode } from "@/modules/events/lib/postal-code-search";
 import { encodeWav, resampleLinear } from "@/modules/events/lib/voice/pcm";
 import { Dialog } from "@/components/ui/Dialog";
 import type {
+  VoiceBatchDiagnostics,
   VoiceFieldKey,
   VoiceFieldScope,
   VoicePatch,
@@ -179,6 +180,8 @@ interface VoiceBatchState {
   unassigned: string[];
   /** 空欄だったのに、割当が付かなかった欄の名前。 */
   missed: string[];
+  /** LLM の quote 抽出の内訳。計測にだけ使う（古いサーバーでは undefined）。 */
+  diagnostics?: VoiceBatchDiagnostics;
 }
 
 /** 自動確定の知らせを出しておく長さ。次の欄の録音が始まっても読み終えられる長さにする。 */
@@ -986,6 +989,7 @@ export function VoiceInputDock({
     (result: {
       assignments: readonly { slotId: VoiceSlotId; text: string; patch: VoicePatch }[];
       unassigned: readonly string[];
+      diagnostics?: VoiceBatchDiagnostics;
     }) => {
       const rows: VoiceBatchRow[] = [];
       for (const item of result.assignments) {
@@ -1013,7 +1017,12 @@ export function VoiceInputDock({
         .filter((target) => target.field.isEmpty(preview, target.row))
         .map((target) => target.label);
       setMessage(null);
-      setBatch({ rows, unassigned: [...result.unassigned], missed });
+      setBatch({
+        rows,
+        unassigned: [...result.unassigned],
+        missed,
+        diagnostics: result.diagnostics,
+      });
     },
     [scopeNow],
   );
@@ -2104,9 +2113,20 @@ export function VoiceInputDock({
     onChange(nextValue);
     for (const key of keys) markTouched(key);
     // 取り込んだ行数と、読み取れなかった節の数だけを送る。値と発話内容は送らない。
+    // LLM の内訳も添える（件数だけ）。モデルのせいか配線のせいかを後から切り分ける。
     trackEvent("voice_batch_applied", {
       rows: patches.length,
       unassigned: state.unassigned.length,
+      ...(state.diagnostics
+        ? {
+            llm: state.diagnostics.reason,
+            quotes: state.diagnostics.quotes,
+            accepted: state.diagnostics.accepted,
+            dropped: state.diagnostics.dropped,
+            deterministic: state.diagnostics.deterministic,
+            chars: state.diagnostics.chars,
+          }
+        : {}),
     });
 
     const nextScope = scopeNow();

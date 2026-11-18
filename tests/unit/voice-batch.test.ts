@@ -232,7 +232,7 @@ describe("LLM で原文から quote を抜き出す", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const assignments = await estimateBatchAssignments(
+    const result = await estimateBatchAssignments(
       voiceFieldOrder(EMPTY_EVENT_FORM, scope()),
       "   ",
       EMPTY_EVENT_FORM,
@@ -240,8 +240,121 @@ describe("LLM で原文から quote を抜き出す", () => {
       scope(),
     );
 
-    expect(assignments).toEqual([]);
+    expect(result.assignments).toEqual([]);
+    expect(result.diagnostics.reason).toBe("no-input");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("割当の内訳（diagnostics）", () => {
+  it("全件通ったら ok で、quotes と accepted が同じになる", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        llmResponse([
+          { slotId: "title:0", quote: "忘年会" },
+          { slotId: "venueName:0", quote: "渋谷ホール" },
+        ]),
+      ),
+    );
+
+    const result = await assign();
+
+    expect(result.diagnostics).toMatchObject({
+      reason: "ok",
+      quotes: 2,
+      accepted: 2,
+      dropped: 0,
+    });
+    expect(result.estimated).toBe(true);
+    expect(result.diagnostics.chars).toBe(NATURAL.trim().length);
+  });
+
+  it("検証で落ちた件数を dropped に数える", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        llmResponse([
+          { slotId: "title:0", quote: "忘年会" },
+          { slotId: "title:0", quote: "忘年会" },
+          { slotId: "unknown:0", quote: "渋谷ホール" },
+        ]),
+      ),
+    );
+
+    const result = await assign();
+
+    expect(result.diagnostics).toMatchObject({
+      reason: "ok",
+      quotes: 3,
+      accepted: 1,
+      dropped: 2,
+    });
+  });
+
+  it("1 件も通らなければ empty とし、決定的な割当の件数を残す", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => llmResponse([{ slotId: "title:0", quote: "新年会" }])),
+    );
+
+    const result = await assign("よろしく、渋谷ホール");
+
+    expect(result.diagnostics).toMatchObject({
+      reason: "empty",
+      quotes: 1,
+      accepted: 0,
+      dropped: 1,
+    });
+    expect(result.diagnostics.deterministic).toBeGreaterThan(0);
+    expect(result.estimated).toBe(false);
+  });
+
+  it("モックは mock、鍵が無ければ no-key を残す", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    vi.stubEnv("OPENAI_API_KEY", "");
+    expect((await assign()).diagnostics.reason).toBe("mock");
+
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    expect((await assign()).diagnostics.reason).toBe("no-key");
+  });
+
+  it("VOICE_BATCH_LLM=0 は skipped、上流が 500 なら http-error", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubEnv("VOICE_BATCH_LLM", "0");
+    expect((await assign()).diagnostics.reason).toBe("skipped");
+
+    vi.stubEnv("VOICE_BATCH_LLM", "");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ error: { code: "server_error" } }, { status: 500 }),
+      ),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect((await assign()).diagnostics.reason).toBe("http-error");
+  });
+
+  it("本文と quote はログに出さず、件数だけを 1 行で出す", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => llmResponse([{ slotId: "title:0", quote: "忘年会" }])),
+    );
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    await assign();
+
+    expect(info).toHaveBeenCalledTimes(1);
+    const line = String(info.mock.calls[0][0]);
+    expect(line).toContain("llm=ok");
+    expect(line).toContain("quotes=1");
+    expect(line).toContain("accepted=1");
+    expect(line).not.toContain("忘年会");
   });
 });
 
@@ -445,9 +558,16 @@ describe("POST /api/v1/voice/utterances", () => {
     const body = events.find((item) => item.event === "done")?.data as {
       text: string;
       assignments: { slotId: string }[];
+      estimated: boolean;
+      diagnostics: { reason: string; deterministic: number; chars: number };
     };
     expect(body.text).toBe("12月5日に渋谷ホールで開きます。");
     expect(body.assignments.map((item) => item.slotId)).toContain("scheduleDate:0");
+    // 古い画面が無視できる形で、内訳を done に添える。
+    expect(body.estimated).toBe(false);
+    expect(body.diagnostics.reason).toBe("skipped");
+    expect(body.diagnostics.deterministic).toBeGreaterThan(0);
+    expect(body.diagnostics.chars).toBe("12月5日に渋谷ホールで開きます。".length);
   });
 
   it("text が 2000 文字を超えたら 400", async () => {

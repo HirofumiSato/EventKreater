@@ -1451,12 +1451,29 @@ DELETE `/api/v1/venues/[id]` は自分の候補だけを物理削除する。`id
 | イベント | 内容 |
 | :---- | :---- |
 | `delta` | `{ "text": string }`。聞き取れた文字の増分。音声から文字起こししたときだけ流れる |
-| `done` | `{ "text": string, "assignments": [...], "unassigned": string[], "model": string }` |
+| `done` | `{ "text": string, "assignments": [...], "unassigned": string[], "model": string, "estimated": boolean, "diagnostics": object }` |
 | `error` | `{ "error": string, "detail": string }`。ストリーム開始後の失敗（ステータスは 200 のまま） |
 
 `text` 経路では `delta` を流さず `done` だけを返す。`done.model` は `text` 経路なら `"text"`、モックなら `"mock"`、音声からなら実際に使った認識モデル。途中の割当は返さない（自然文では言いかけの割当が誤るため、値も割当も `done` にまとめる）。
 
 `assignments` の 1 件は `{ "slotId": string, "text": string, "value": string \| number \| null, "patch": object }`。`slotId` は `欄のキー:行`（`scheduleDate:0`、`planAmount:1`）。`value` は確認に出す読みやすい値（金額は数値、日付は `YYYY-MM-DD`）で、`patch` がフォームへ当てる差分。`Cache-Control: no-store`。
+
+`estimated` は LLM の quote 抽出で 1 件以上埋まったか。`diagnostics` は割当の内訳で、次の 6 つを持つ。本文と quote は含めない（件数だけ）。古い画面は無視してよい。
+
+```json
+{
+  "reason": "ok",
+  "quotes": 6,
+  "accepted": 5,
+  "dropped": 1,
+  "deterministic": 2,
+  "chars": 48
+}
+```
+
+`reason` は `ok`（1 件以上通った）、`empty`（呼べたが 1 件も通らなかった）、`no-input`（文が空、または対象の欄が無い）、`skipped`（`VOICE_BATCH_LLM=0`）、`mock`、`no-key`（鍵なし）、`no-candidates`（空欄が無い）、`network`（通信失敗・15 秒の打ち切り）、`http-error`（上流が 4xx / 5xx）、`no-content`（JSON を読めなかった）のいずれか。`quotes` はモデルが返した割当の数、`accepted` は検証を通って採用した数、`dropped` は `quotes - accepted`、`deterministic` は決定的な割当で埋まった欄の数、`chars` は話した文の文字数。`reason` が `no-key` / `skipped` / `mock` なら LLM は呼ばれていない。
+
+サーバーは割当のたびに、この内訳を 1 行だけログへ出す（`[voice] batch llm=... quotes=... accepted=... dropped=... deterministic=... chars=...`）。本文と quote は出さない。テスト（`NODE_ENV=test`）では出さない。
 
 ストリーム開始前の失敗（形式・空・5MB・`text` の長さ・`value`・回数の上限・鍵の不在）は、従来どおり `application/problem+json` で返す。
 
@@ -2371,7 +2388,7 @@ export interface ProblemDetails {
 
 本文の `next` は任意で、ログイン後の戻り先である。`src/lib/next-path.ts` の `safeNextPath` を通したパスだけを、確認メール（`/auth/verify?token=...&next=...`）と既登録メール（`/auth/register?mode=login&next=...`）の URL に載せる。許可していないパスや外部サイトは付けない。`/auth/verify` は URL の `next` を電話番号の確認まで引き回す。`POST /api/v1/auth/verification` も同じ `next` を受け、再送する確認メールの URL に載せる。
 
-この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_CONSOLE_REQUIRED"`、本文「管理者アカウントは /console/login からのみログインできます。」を返す。Google の認可完了で `ADMIN` と判明したときも同じで、`/console/login` へリダイレクトする。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
+この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_ACCOUNT"`、本文「このアカウントは、こちらからはログインできません。」を返す。管理コンソールの URL も、管理者であることも応答から読ませない（公開画面から管理コンソールへの導線を作らないため）。Google の認可完了で `ADMIN` と判明したときも `/console/login` へは送らず、`?error=google_account` を付けて元の入口へ戻す。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
 
 成功したログインの会員セッションは、HTTPS では Cookie `__Host-auth_token`、HTTP では `auth_token` である。中身は HS256 JWT で、`userId`、`email`、`jti` を持つ。`jti` は `auth_sessions` の行である。JWT には `platformRole` を載せない。ログアウトはその行の `revoked_at` を記録する。
 

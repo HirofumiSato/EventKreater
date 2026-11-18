@@ -428,4 +428,42 @@ describe("自由文の送信（transcribeVoiceUtterance）", () => {
     expect(result.assignments[0].slotId).toBe("title:0");
     expect(result.model).toBe("text");
   });
+
+  it("done の内訳を読み、知らない理由は捨てる", async () => {
+    const withDiagnostics =
+      'event: done\ndata: {"text":"忘年会。","assignments":[],"unassigned":[],' +
+      '"model":"text","estimated":false,"diagnostics":' +
+      '{"reason":"no-key","quotes":0,"accepted":0,"dropped":0,"deterministic":1,"chars":4}}\n\n';
+    vi.stubGlobal("fetch", vi.fn(async () => sseResponse(withDiagnostics)));
+
+    const result = await transcribeVoiceUtterance({
+      text: "忘年会。",
+      value: EMPTY_EVENT_FORM,
+      scope: { showOrganizerName: false, includeOptional: false, touched: new Set() },
+    });
+
+    expect(result.estimated).toBe(false);
+    expect(result.diagnostics).toEqual({
+      reason: "no-key",
+      quotes: 0,
+      accepted: 0,
+      dropped: 0,
+      deterministic: 1,
+      chars: 4,
+    });
+
+    // 理由が知らない値なら、計測に嘘を入れずに内訳ごと落とす。
+    const unknown =
+      'event: done\ndata: {"text":"忘年会。","assignments":[],"unassigned":[],' +
+      '"model":"text","diagnostics":{"reason":"mystery","quotes":1}}\n\n';
+    vi.stubGlobal("fetch", vi.fn(async () => sseResponse(unknown)));
+
+    const second = await transcribeVoiceUtterance({
+      text: "忘年会。",
+      value: EMPTY_EVENT_FORM,
+      scope: { showOrganizerName: false, includeOptional: false, touched: new Set() },
+    });
+
+    expect(second.diagnostics).toBeUndefined();
+  });
 });

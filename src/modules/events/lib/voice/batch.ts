@@ -10,6 +10,8 @@ import {
   type UtteranceAssignment,
 } from "@/modules/events/lib/voice/utterance";
 import type {
+  VoiceBatchDiagnostics,
+  VoiceBatchLlmReason,
   VoiceFieldKey,
   VoiceFieldScope,
   VoicePatch,
@@ -91,6 +93,14 @@ export interface BatchResult {
   unassigned: string[];
   /** LLM の quote 抽出で 1 件以上埋まったか。 */
   estimated: boolean;
+  /** LLM と決定的な割当の内訳。不具合の切り分けにだけ使う。 */
+  diagnostics: VoiceBatchDiagnostics;
+}
+
+/** LLM の quote 抽出だけを取り出した結果。内訳を捨てずに呼び出し側へ渡す。 */
+export interface BatchEstimate {
+  assignments: UtteranceAssignment[];
+  diagnostics: VoiceBatchDiagnostics;
 }
 
 export function voiceBatchModel(): string {
@@ -213,22 +223,29 @@ export async function estimateBatchAssignments(
   value: EventFormValues,
   now: Date,
   scope: VoiceFieldScope,
-): Promise<UtteranceAssignment[]> {
+): Promise<BatchEstimate> {
   const article = text.trim();
-  if (slots.length === 0 || article.length === 0) return [];
-  if (!isVoiceBatchLlmEnabled()) return [];
+  const chars = article.length;
+  // 呼ばなかった理由も残す。無言で `[]` を返すと、モデルのせいか配線のせいか分からない。
+  const blank = (reason: VoiceBatchLlmReason): BatchEstimate => ({
+    assignments: [],
+    diagnostics: diagnosticsOf(reason, chars),
+  });
+
+  if (slots.length === 0 || chars === 0) return blank("no-input");
+  if (!isVoiceBatchLlmEnabled()) return blank("skipped");
   // モックは外部を呼ばない。API キーの有無より先に見る。
-  if (isVoiceMockEnabled()) return [];
+  if (isVoiceMockEnabled()) return blank("mock");
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) return [];
+  if (!apiKey) return blank("no-key");
 
   // 渡された候補のうち、いま埋めるべきマス（空欄）だけを使う。
   // 呼び出し側が巡回順のすべてを渡しても、入力済みの欄へは当てない。
   const ordered = batchTargets(value, scope);
   const allowed = new Set(slots.map((slot) => slot.id));
   const candidates = ordered.filter((slot) => allowed.has(slot.id));
-  if (candidates.length === 0) return [];
+  if (candidates.length === 0) return blank("no-candidates");
 
   const payload = {
     article,
@@ -241,7 +258,7 @@ export async function estimateBatchAssignments(
     response = await postBatch(apiKey, model, payload, "json_schema");
   } catch {
     console.warn("[voice] batch assignment failed: status=network code=fetch_failed");
-    return [];
+    return blank("network");
   }
 
   if (response.status === 400) {
@@ -253,7 +270,7 @@ export async function estimateBatchAssignments(
       response = await postBatch(apiKey, model, payload, "json_object");
     } catch {
       console.warn("[voice] batch assignment failed: status=network code=fetch_failed");
-      return [];
+      return blank("network");
     }
   }
 
@@ -261,13 +278,63 @@ export async function estimateBatchAssignments(
     console.warn(
       `[voice] batch assignment failed: status=${response.status} code=${await readErrorCode(response)}`,
     );
-    return [];
+    return blank("http-error");
   }
 
   const content = await readContent(response);
-  if (content === null) return [];
+  if (content === null) return blank("no-content");
 
-  return readAssignments(content, candidates, article, value, now);
+  const assignments = readAssignments(content, candidates, article, value, now);
+  const quotes = countQuotes(content);
+  return {
+    assignments,
+    diagnostics: diagnosticsOf(assignments.length > 0 ? "ok" : "empty", chars, {
+      quotes,
+      accepted: assignments.length,
+    }),
+  };
+}
+
+/**
+ * 内訳の雛形。`dropped` はここで引き算にして、数え漏れを作らない。
+ * `deterministic` は決定的な割当のあとで `assignBatch` が入れる。
+ */
+function diagnosticsOf(
+  reason: VoiceBatchLlmReason,
+  chars: number,
+  counts: { quotes?: number; accepted?: number; deterministic?: number } = {},
+): VoiceBatchDiagnostics {
+  const quotes = counts.quotes ?? 0;
+  const accepted = counts.accepted ?? 0;
+  return {
+    reason,
+    quotes,
+    accepted,
+    dropped: Math.max(0, quotes - accepted),
+    deterministic: counts.deterministic ?? 0,
+    chars,
+  };
+}
+
+/** モデルが返した割当の数。形の崩れた行も 1 件として数える（捨てた数に出る）。 */
+function countQuotes(payload: unknown): number {
+  if (!isRecord(payload) || !Array.isArray(payload.assignments)) return 0;
+  return payload.assignments.length;
+}
+
+/**
+ * 内訳を 1 行だけ出す。本文と quote は出さない。
+ *
+ * 「モデルが返さなかった」のか「返したが検証で落ちた」のかを、録音 1 回ごとに
+ * サーバーのログだけで切り分けられるようにする。テストの出力は汚さない。
+ */
+function logDiagnostics(diagnostics: VoiceBatchDiagnostics): void {
+  if (process.env.NODE_ENV === "test") return;
+  console.info(
+    `[voice] batch llm=${diagnostics.reason} quotes=${diagnostics.quotes}` +
+      ` accepted=${diagnostics.accepted} dropped=${diagnostics.dropped}` +
+      ` deterministic=${diagnostics.deterministic} chars=${diagnostics.chars}`,
+  );
 }
 
 /**
@@ -283,13 +350,14 @@ export async function assignBatch(
 ): Promise<BatchResult> {
   // 空欄だけを対象にする。LLM の推定も決定的な割当も同じ並びから作る。
   const targets = batchTargets(context.value, context.scope);
-  const estimated = await estimateBatchAssignments(
+  const estimate = await estimateBatchAssignments(
     targets,
     text,
     context.value,
     context.now,
     context.scope,
   );
+  const estimated = estimate.assignments;
 
   const usedSlots = new Set(estimated.map((item) => item.slotId));
   const available = targets.filter((slot) => !usedSlots.has(slot.id));
@@ -325,10 +393,18 @@ export async function assignBatch(
       };
     });
 
+  const diagnostics = diagnosticsOf(estimate.diagnostics.reason, estimate.diagnostics.chars, {
+    quotes: estimate.diagnostics.quotes,
+    accepted: estimate.diagnostics.accepted,
+    deterministic: deterministic.assignments.length,
+  });
+  logDiagnostics(diagnostics);
+
   return {
     assignments,
     unassigned: deterministic.unassigned,
     estimated: estimated.length > 0,
+    diagnostics,
   };
 }
 

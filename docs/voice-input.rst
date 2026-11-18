@@ -355,13 +355,20 @@ API
    data: {"text":"12月5日、"}
 
    event: done
-   data: {"text":"忘年会を12月5日の18時から20時に渋谷ホールで開きます。","assignments":[…],"unassigned":[…],"model":"text"}
+   data: {"text":"忘年会を12月5日の18時から20時に渋谷ホールで開きます。","assignments":[…],"unassigned":[…],"model":"text","estimated":true,"diagnostics":{"reason":"ok","quotes":6,"accepted":5,"dropped":1,"deterministic":2,"chars":48}}
 
 ``delta`` は音声から文字起こししたときの増分、 ``done`` は全文・割当・未割当・モデルです。
 ``text`` 経路の ``done.model`` は ``"text"`` （モック時は ``"mock"`` ）、音声からのときは実際に使った認識モデルです。
 途中で失敗したら ``error`` に ``error`` と ``detail`` を入れます（本文は流れ始めているため、ステータスは 200 のまま）。
 
-``assignments`` の 1 件は ``{ "slotId": string, "text": string, "value": string / number / null, "patch": object }``。``slotId`` は ``欄のキー:行`` です（ ``scheduleDate:0`` 、 ``planAmount:1`` ）。``value`` は確認に出す読みやすい値（金額は数値、日付は ``YYYY-MM-DD`` ）で、 ``patch`` がフォームへ当てる差分です。``unassigned`` はどの欄にも当たらなかった節です。
+``assignments`` の 1 件は ``{ "slotId": string, "text": string, "value": string / number / null, "patch": object }``。``slotId`` は ``欄のキー:行`` です（ ``scheduleDate:0`` 、 ``planAmount:1`` ）。``value`` は確認に出す読みやすい値（金額は数値、日付は ``YYYY-MM-DD`` ）で、 ``patch`` がフォームへ当てる差分です。``unassigned`` はどの欄にも当たらなかった節です。``estimated`` は LLM の quote 抽出で 1 件以上埋まったか、 ``diagnostics`` はその内訳です。
+
+``diagnostics`` は ``reason`` （ ``ok`` ・ ``empty`` ・ ``no-input`` ・ ``skipped`` ・ ``mock`` ・ ``no-key`` ・ ``no-candidates`` ・ ``network`` ・ ``http-error`` ・ ``no-content`` ）、 ``quotes`` （モデルが返した割当の数）、 ``accepted`` （検証を通って採用した数）、 ``dropped`` （ ``quotes - accepted`` ）、 ``deterministic`` （決定的な割当で埋まった欄の数）、 ``chars`` （話した文の文字数）を持ちます。本文と quote は含めません。 ``reason`` が ``no-key`` ・ ``skipped`` ・ ``mock`` なら LLM は呼ばれていません。 ``dropped`` が大きいときは、モデルは返したが検証で落ちたということです。
+
+サーバーは割当のたびに、この内訳を 1 行だけログへ出します。
+``[voice] batch llm=ok quotes=6 accepted=5 dropped=1 deterministic=2 chars=48`` の形で、
+本文と quote は出しません（テストでは出しません）。「モデルが返さなかった」のか
+「返したが検証で落ちた」のかは、この 1 行で切り分けます。
 
 割当の手順は「LLM が原文から quote を抽出 → 決定的な割当で未割当ぶんを補完」です
 （ ``src/modules/events/lib/voice/batch.ts`` ）。
@@ -709,7 +716,7 @@ API ルートと画面はそのまま動きます。
    * - ``tests/unit/voice-utterance.test.ts``
      - 節の分割、日付・時刻・会場・金額・定員を 1 回で割り当てること、範囲の開始が終了を消費すること、形の閉じた欄を先に当てること、同じマスを 2 回使わないこと、自由文は語彙が合う節だけを受けること、文全体や助詞を含む節を自由文の欄に受け取らせないこと、未割当の返し方、区切りより後ろの言いかけを捨てること（ ``terminatedPrefix`` ・ ``assignTerminated`` ）、話が進んでも読めたマスが減らないこと
    * - ``tests/unit/voice-batch.test.ts``
-     - LLM の quote 抽出を検証すること（自然文 1 文から日付・開始・終了・会場・金額・定員が埋まる、quote の前後の助詞・句読点を落としてから原文と照合する、原文に無い quote・ ``parse`` が ``null`` の quote・存在しない ``slotId`` ・同じ欄や同じ quote の重複を捨てる）、 ``VOICE_BATCH_LLM=0`` で呼ばないこと、 ``json_schema`` が 400 のとき ``json_object`` で 1 度だけ試すこと、上流が失敗しても決定的な割当は返ること、モックが列挙ではなく自然な 1 文を返し入力済みの例を含まないこと、話し方の既定（空欄が 3 つ以上で自由に話す、複数行で 1 つずつ）、 ``text`` があれば文字起こしを呼ばず ``done`` だけを返すこと、応答が ``delta`` と ``done`` だけで途中の割当を返さないこと、 ``text`` が 2000 文字を超えたら 400、空の ``text`` は文字起こしへ落とすこと、 ``POST /api/v1/voice/utterances`` の 400 と 413、モックの応答と回数の上限（28 件）
+     - LLM の quote 抽出を検証すること（自然文 1 文から日付・開始・終了・会場・金額・定員が埋まる、quote の前後の助詞・句読点を落としてから原文と照合する、原文に無い quote・ ``parse`` が ``null`` の quote・存在しない ``slotId`` ・同じ欄や同じ quote の重複を捨てる）、割当の内訳（ ``ok`` ・ ``empty`` ・ ``mock`` ・ ``no-key`` ・ ``skipped`` ・ ``http-error`` の理由、 ``quotes`` ・ ``accepted`` ・ ``dropped`` の数、件数だけを 1 行でログへ出すこと）、 ``VOICE_BATCH_LLM=0`` で呼ばないこと、 ``json_schema`` が 400 のとき ``json_object`` で 1 度だけ試すこと、上流が失敗しても決定的な割当は返ること、モックが列挙ではなく自然な 1 文を返し入力済みの例を含まないこと、話し方の既定（空欄が 3 つ以上で自由に話す、複数行で 1 つずつ）、 ``text`` があれば文字起こしを呼ばず ``done`` だけを返すこと、応答が ``delta`` と ``done`` だけで途中の割当を返さないこと、 ``text`` が 2000 文字を超えたら 400、空の ``text`` は文字起こしへ落とすこと、 ``POST /api/v1/voice/utterances`` の 400 と 413、モックの応答と回数の上限（34 件）
    * - ``tests/unit/voice-guide.test.ts``
      - 初回の案内の記録の読み書きと、未設定なら出す判定
 

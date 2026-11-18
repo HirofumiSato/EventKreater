@@ -147,7 +147,7 @@
 
 .. count-start
 
-164 ファイル、``it`` は 2350 件です。内訳は ``tests/unit/`` が 113 ファイル 1948 件、``tests/integration/`` が 32 ファイル 236 件です。結合の 236 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+164 ファイル、``it`` は 2357 件です。内訳は ``tests/unit/`` が 113 ファイル 1955 件、``tests/integration/`` が 32 ファイル 236 件です。結合の 236 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -512,7 +512,7 @@
      - 自由に話した発話の扱い。読点・句点・話し言葉の助詞での節分割、日付・時刻・会場・金額・定員を 1 回で埋める割当、数字の節を閉じた欄へ先に配ること、同じマスに 2 回割り当てないこと、開始が範囲（18時から20時）なら終了を二重に割り当てないこと、当たらない節を未割当として返すこと、自由文は欄の語彙を含む短い節だけを受けること（12 文字超・「を・は・が」を含む節は渡さない）
      - SCR-ORG-02
    * - ``tests/unit/voice-batch.test.ts``
-     - 28
+     - 34
      - 自由に話した文の割当と ``POST /api/v1/voice/utterances``。LLM には ``slotId`` と原文の ``quote`` だけを返させ、原文に無い quote・候補外の欄・重複・``parse`` が通らない quote を捨てること、決定的な割当で未割当ぶんを補うこと、``VOICE_BATCH_LLM=0``・鍵なし・モック・上流失敗では LLM を呼ばず決定的な割当だけを返すこと、``json_schema`` 非対応なら 1 回だけやり直すこと、モックの 200 と回数非計上、控えのモデル名の返却、``text`` 入力（2000 文字まで）と 400・413。自由に話す案内は、入力済みの欄を対象にしないこと、任意欄を外したスコープ、空欄 3 つ以上で「自由に話す」を既定にすること、モックの文が列挙ではなく自然な文で、入力済みの例を含まないこと
      - SCR-ORG-02
    * - ``tests/unit/voice-segments.test.ts``
@@ -524,7 +524,7 @@
      - 文字起こしの中継に使う SSE。チャンクの境目で切れたイベントの組み立て、複数行の data、``\r\n`` とコメント行の扱い、終端での flush、``delta`` / ``done`` / ``error`` の解釈と壊れた JSON の切り捨て、UTF-8 の 1 文字が切れても文字化けしないこと
      - SCR-ORG-02
    * - ``tests/unit/voice-transcribe.test.ts``
-     - 18
+     - 19
      - 文字起こしの通信。``onDelta`` があるときだけ ``stream=true`` を送ること、増分の受信と ``done`` の全文、上流が stream を知らなければ 1 回やり直すこと、控えのモデル名の返却、最初の delta が 10 秒・間が 15 秒空いたときの打ち切り、画面側の SSE 読み取りと problem+json・中断の扱い、区間送信が ``field`` を送らず ``sessionId`` を付けること、区間の ``done`` からモデル名を拾うこと、``text`` があるときは音声を付けずに割当だけを受けること
      - SCR-ORG-02
    * - ``tests/unit/voice-pcm.test.ts``
@@ -818,7 +818,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1948、``tests/integration/`` が 236 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1948 件を実行して 236 件を skip します。
+件数の内訳は ``tests/unit/`` が 1955、``tests/integration/`` が 236 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1955 件を実行して 236 件を skip します。
 
 .. breakdown-end
 

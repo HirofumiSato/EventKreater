@@ -5,6 +5,8 @@ import {
 } from "@/modules/events/lib/voice/audio";
 import { readSseStream, type SseEvent } from "@/modules/events/lib/voice/sse";
 import type {
+  VoiceBatchDiagnostics,
+  VoiceBatchLlmReason,
   VoiceFieldScope,
   VoicePatch,
   VoiceSlotId,
@@ -43,6 +45,10 @@ export interface VoiceUtteranceResult {
   /** どの欄にも当たらなかった節。 */
   unassigned: string[];
   model: string | null;
+  /** LLM の quote 抽出で 1 件以上埋まったか。古いサーバーは返さない。 */
+  estimated?: boolean;
+  /** LLM と決定的な割当の内訳。計測にだけ使う。古いサーバーは返さない。 */
+  diagnostics?: VoiceBatchDiagnostics;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,6 +78,41 @@ function readStrings(raw: unknown): string[] {
   return raw.filter((item): item is string => typeof item === "string");
 }
 
+/** サーバーが返しうる理由。知らない値は「内訳なし」として捨てる。 */
+const BATCH_LLM_REASONS: readonly VoiceBatchLlmReason[] = [
+  "ok",
+  "empty",
+  "no-input",
+  "skipped",
+  "mock",
+  "no-key",
+  "no-candidates",
+  "network",
+  "http-error",
+  "no-content",
+];
+
+/** 件数は 0 以上の整数だけを受ける。形が崩れていたら 0 として読む。 */
+function readCount(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return 0;
+  return Math.floor(raw);
+}
+
+/** 内訳を検める。理由が読めないときは undefined（計測に嘘を入れない）。 */
+function readDiagnostics(raw: unknown): VoiceBatchDiagnostics | undefined {
+  if (!isRecord(raw)) return undefined;
+  const reason = BATCH_LLM_REASONS.find((item) => item === raw.reason);
+  if (!reason) return undefined;
+  return {
+    reason,
+    quotes: readCount(raw.quotes),
+    accepted: readCount(raw.accepted),
+    dropped: readCount(raw.dropped),
+    deterministic: readCount(raw.deterministic),
+    chars: readCount(raw.chars),
+  };
+}
+
 /** `done` の本文を結果へ直す。形が崩れていたら null（読み取り側が失敗にする）。 */
 function readDone(raw: unknown): VoiceUtteranceResult | null {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
@@ -80,6 +121,8 @@ function readDone(raw: unknown): VoiceUtteranceResult | null {
     assignments: readAssignments(raw.assignments),
     unassigned: readStrings(raw.unassigned),
     model: typeof raw.model === "string" ? raw.model : null,
+    estimated: typeof raw.estimated === "boolean" ? raw.estimated : undefined,
+    diagnostics: readDiagnostics(raw.diagnostics),
   };
 }
 

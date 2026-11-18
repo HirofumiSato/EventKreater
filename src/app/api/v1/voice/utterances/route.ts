@@ -327,6 +327,9 @@ export async function POST(req: NextRequest) {
             assignments: result.assignments,
             unassigned: result.unassigned,
             model,
+            // LLM の quote 抽出がどう働いたかの内訳。古い画面は無視してよい。
+            estimated: result.estimated,
+            diagnostics: result.diagnostics,
           });
         } catch (error) {
           // 本文は流れ始めているため、ステータスは変えず error イベントで知らせる。

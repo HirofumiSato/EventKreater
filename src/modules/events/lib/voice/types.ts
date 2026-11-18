@@ -114,6 +114,48 @@ export interface VoiceFieldScope extends VoiceFieldOptions {
 }
 
 /**
+ * 自由に話す割当で、LLM の quote 抽出がどう働いたか。
+ *
+ * 本文と quote は持たせない。件数だけを残し、本番のログと計測で
+ * 「モデルが返さなかった」のか「返したが検証で落ちた」のかを切り分ける。
+ */
+export type VoiceBatchLlmReason =
+  /** 呼べて、1 件以上通った。 */
+  | "ok"
+  /** 呼べて、1 件も通らなかった（quote 0 件、または検証で全滅）。 */
+  | "empty"
+  /** 話した文が空、または対象の欄が無い。 */
+  | "no-input"
+  /** `VOICE_BATCH_LLM=0`。 */
+  | "skipped"
+  /** モック。外部を呼ばない。 */
+  | "mock"
+  /** `OPENAI_API_KEY` が空。 */
+  | "no-key"
+  /** いま埋めるべき欄が無い（すべて入力済み）。 */
+  | "no-candidates"
+  /** 通信の失敗、または 15 秒の打ち切り。 */
+  | "network"
+  /** 上流が 4xx / 5xx を返した。 */
+  | "http-error"
+  /** 応答は来たが、JSON を読めなかった。 */
+  | "no-content";
+
+export interface VoiceBatchDiagnostics {
+  reason: VoiceBatchLlmReason;
+  /** モデルが返した割当の数（検証前）。 */
+  quotes: number;
+  /** 検証を通って採用した数。 */
+  accepted: number;
+  /** 捨てた数（`quotes - accepted`）。 */
+  dropped: number;
+  /** 決定的な割当で埋まった欄の数。 */
+  deterministic: number;
+  /** 話した文の文字数（本文は持たない）。 */
+  chars: number;
+}
+
+/**
  * 巡回する 1 マス。欄の定義と行の番号を組にしたもの。
  * 画面はこの単位でカーソルを持ち、行ごとの欄を 1 つずつ埋めていく。
  */
