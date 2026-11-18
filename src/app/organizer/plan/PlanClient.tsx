@@ -60,11 +60,14 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
 
   const status = quota?.subscriptionStatus ?? "NONE";
   const subscribed = status === "ACTIVE" || status === "PAST_DUE";
-  // 運営付与の公開し放題。Stripe の契約ではないので、申込・支払い・解約の導線は出さない。
+  // 付与（運営付与・デモ）の公開し放題。Stripe の契約ではないので、申込・支払い・解約の導線は出さない。
   const granted = quota?.grantedUnlimited === true;
 
+  // 付与は種別で括弧だけを変える（運営付与とデモで中身は同じ）。
   const currentPlanLabel = granted
-    ? "公開し放題プラン（運営付与）"
+    ? quota?.grantedKind === "DEMO"
+      ? "公開し放題プラン（デモ）"
+      : "公開し放題プラン（運営付与）"
     : status !== "ACTIVE"
       ? "月額プランなし"
       : quota?.subscriptionPlan === "UNLIMITED"
@@ -93,7 +96,7 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
     plans.find((plan) => plan.id === "single") ??
     SERVICE_PLANS.find((plan) => plan.id === "single");
 
-  // 支払いに問題があるあいだは、単発チケットを勧めない。公開し放題プランと運営付与は足す必要がない。
+  // 支払いに問題があるあいだは、単発チケットを勧めない。公開し放題プランと付与は足す必要がない。
   const ticketHidden = status === "PAST_DUE" || granted || (status === "ACTIVE" && quota?.subscriptionPlan === "UNLIMITED");
   const grantUsed =
     quota?.pricing?.oneTime.chargedPrice === 0 && (quota?.freeGrantRemaining ?? 0) === 0;
@@ -202,7 +205,7 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
                   aside={<span className="rows__value">{quota.discount.percent}%割引</span>}
                 />
               )}
-              {/* 運営付与は Stripe の契約ではないので、次回更新は無い。 */}
+              {/* 付与は Stripe の契約ではないので、次回更新は無い。 */}
               {!granted && quota.currentPeriodEnd && (
                 <Row
                   title="次回更新"
@@ -228,7 +231,7 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
             </Panel>
           )}
 
-          {/* 運営付与は買う対象が無いので、月額プランと単発チケットの節を出さない。 */}
+          {/* 付与は買う対象が無いので、月額プランと単発チケットの節を出さない。 */}
           {!granted && (
             <Panel>
               <PanelHead title="月額プラン" note="公開中のイベント数を増やせます。" />

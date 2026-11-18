@@ -61,12 +61,16 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
 }
 
 /**
- * 運営付与の公開し放題。有料の月額プランではないので、価格・自動更新・解約の話は
+ * 付与された公開し放題。有料の月額プランではないので、価格・自動更新・解約の話は
  * 書かない（買う対象も、カードも無い）。件数だけを伝える。
+ *
+ * 種別は「運営付与」と「営業デモ」の 2 つ。どちらも中身は同じで、括弧の中だけが変わる。
+ * 種別が無い行は運営付与として読む。
  */
 function grantedMessage(quota: UserQuota): string {
   const count = quota.publishedEventCount ?? 0;
-  return `公開し放題（運営付与）。公開中のイベント ${count} 件（上限はありません）。`;
+  const label = quota.grantedKind === "DEMO" ? "デモ" : "運営付与";
+  return `公開し放題（${label}）。公開中のイベント ${count} 件（上限はありません）。`;
 }
 
 export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, onGranted, onBeforeAuth, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {

@@ -95,6 +95,11 @@ export interface UserQuota {
   /** 運営が付与した日時。付与されていなければ null。 */
   grantedAt?: string | null;
   /**
+   * 付与の種別。`OPERATOR` は運営付与、`DEMO` は営業デモ。
+   * 未定義（種別を足す前の付与）は `OPERATOR` として扱う。公開可否は `grantedUnlimited` で見る。
+   */
+  grantedKind?: "OPERATOR" | "DEMO";
+  /**
    * いま公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のものだけ。
    * 8件まで公開プランでは件数の上限の判定と同じく定額から公開したものだけを数え、
    * それ以外（公開し放題プラン・未加入）は単発や無料チケットから公開したものも数える。

@@ -10,7 +10,7 @@ import {
   isSubscriptionActive,
 } from "@/modules/billing/lib/quota";
 import { draftEventLimitOf, type DraftPlanId } from "@/modules/billing/lib/plans";
-import { hasUnlimitedGrant } from "@/modules/billing/lib/grant";
+import { grantKindOf, hasUnlimitedGrant } from "@/modules/billing/lib/grant";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
 import { quoteAll } from "@/modules/billing/lib/pricing";
 import { readTicketSummary } from "@/modules/billing/lib/referral";
@@ -164,6 +164,8 @@ export async function loadQuotaView(userId: string, now = new Date()): Promise<U
     subscriptionStatus: quota.subscriptionStatus,
     subscriptionPlan: quota.subscriptionPlan,
     grantedUnlimited: granted,
+    // 付与の種別。行ごと読んでいるので、列を足すだけで追加クエリは増えない。
+    grantedKind: grantKindOf(quota),
     grantedAt: quota.grantedPlanAt ? quota.grantedPlanAt.toISOString() : null,
     publishedEventCount: publishedCount,
     publishedEventLimit: SUBSCRIPTION_PUBLISHED_EVENT_LIMIT,

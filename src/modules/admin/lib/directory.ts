@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEventDate } from "@/lib/serializers";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { maskPhone } from "@/modules/auth/lib/login-challenge";
-import { hasUnlimitedGrant } from "@/modules/billing/lib/grant";
+import { grantKindOf, hasUnlimitedGrant } from "@/modules/billing/lib/grant";
 import { organizerLabel } from "@/modules/organizers/lib/names";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
@@ -43,10 +43,11 @@ export async function searchAdminUsers(q: string, offset: number) {
         phoneVerifiedAt: true,
         deletedAt: true,
         createdAt: true,
-        // 運営付与の公開し放題。一覧の「プラン」列に、付与した人と日時を出す。
+        // 運営付与の公開し放題。一覧の「プラン」列に、種別・付与した人・日時を出す。
         quota: {
           select: {
             grantedPlan: true,
+            grantedKind: true,
             grantedPlanAt: true,
             grantedBy: { select: { name: true } },
           },
@@ -75,6 +76,8 @@ export async function searchAdminUsers(q: string, offset: number) {
       organizerCount: row._count.organizers,
       participantCount: row._count.participants,
       grantedUnlimited: hasUnlimitedGrant(row.quota),
+      // 種別が無い行（この列より前の付与）は運営付与として扱う。
+      grantedKind: grantKindOf(row.quota),
       grantedAt: row.quota?.grantedPlanAt ? row.quota.grantedPlanAt.toISOString() : null,
       grantedByName: row.quota?.grantedBy?.name ?? null,
     })),
@@ -126,6 +129,7 @@ export async function setUserPlanGrant(
   actorId: string,
   userId: string,
   grantedPlan: "UNLIMITED" | "NONE",
+  grantedKind: "OPERATOR" | "DEMO" = "OPERATOR",
 ) {
   const existing = await prisma.user.findUnique({
     where: { id: userId },
@@ -145,17 +149,23 @@ export async function setUserPlanGrant(
       detail: "退会済みの会員のプランは変更できません。",
     });
   }
-  // 付与した人と日時を残す。解除は 3 列を NULL に戻すだけで、公開済みのイベントは消さない。
+  // 付与した人と日時、種別を残す。解除は 4 列を NULL に戻すだけで、公開済みのイベントは消さない。
   const grant =
     grantedPlan === "UNLIMITED"
-      ? { grantedPlan: "UNLIMITED" as const, grantedPlanBy: actorId, grantedPlanAt: new Date() }
-      : { grantedPlan: null, grantedPlanBy: null, grantedPlanAt: null };
+      ? {
+          grantedPlan: "UNLIMITED" as const,
+          grantedKind,
+          grantedPlanBy: actorId,
+          grantedPlanAt: new Date(),
+        }
+      : { grantedPlan: null, grantedKind: null, grantedPlanBy: null, grantedPlanAt: null };
   const quota = await prisma.userUsageQuota.upsert({
     where: { userId },
     create: { userId, ...grant },
     update: grant,
     select: {
       grantedPlan: true,
+      grantedKind: true,
       grantedPlanAt: true,
       grantedBy: { select: { name: true } },
     },
@@ -163,6 +173,7 @@ export async function setUserPlanGrant(
   return {
     id: userId,
     grantedUnlimited: hasUnlimitedGrant(quota),
+    grantedKind: grantKindOf(quota),
     grantedAt: quota.grantedPlanAt ? quota.grantedPlanAt.toISOString() : null,
     grantedByName: quota.grantedBy?.name ?? null,
   };

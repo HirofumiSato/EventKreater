@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UserQuota } from "@/modules/events/types";
-import { hasUnlimitedGrant } from "@/modules/billing/lib/grant";
+import { grantKindOf, hasUnlimitedGrant, isDemoGrant } from "@/modules/billing/lib/grant";
 import { publishConfirmation } from "@/modules/billing/lib/publish-confirm";
 
 const NOW = new Date("2026-11-02T00:00:00.000Z");
@@ -38,10 +38,39 @@ describe("運営付与の判定", () => {
     expect(hasUnlimitedGrant({ grantedPlan: null })).toBe(false);
   });
 
+  it("デモ付与も granted_plan が UNLIMITED なので、同じく公開し放題とみなす", () => {
+    // 種別で変わるのは表示と管理画面の操作だけ。公開可否の判定は 1 本のまま。
+    const demo = { grantedPlan: "UNLIMITED" as const, grantedKind: "DEMO" as const };
+    expect(hasUnlimitedGrant(demo)).toBe(true);
+  });
+
   it("grantedPlan を持たない行・クォータが無いときは付与なし", () => {
     expect(hasUnlimitedGrant({})).toBe(false);
     expect(hasUnlimitedGrant(null)).toBe(false);
     expect(hasUnlimitedGrant(undefined)).toBe(false);
+  });
+});
+
+describe("付与の種別", () => {
+  it("grantedKind が DEMO のときだけデモ付与として扱う", () => {
+    expect(grantKindOf({ grantedKind: "DEMO" })).toBe("DEMO");
+    expect(grantKindOf({ grantedKind: "OPERATOR" })).toBe("OPERATOR");
+  });
+
+  it("種別が無い行（NULL・未定義・行なし）は運営付与として扱う", () => {
+    // 種別の列を足す前の付与は NULL なので、OPERATOR に寄せる。
+    expect(grantKindOf({ grantedKind: null })).toBe("OPERATOR");
+    expect(grantKindOf({})).toBe("OPERATOR");
+    expect(grantKindOf(null)).toBe("OPERATOR");
+    expect(grantKindOf(undefined)).toBe("OPERATOR");
+  });
+
+  it("isDemoGrant は DEMO のときだけ真になる", () => {
+    expect(isDemoGrant({ grantedKind: "DEMO" })).toBe(true);
+    expect(isDemoGrant({ grantedKind: "OPERATOR" })).toBe(false);
+    expect(isDemoGrant({ grantedKind: null })).toBe(false);
+    expect(isDemoGrant({})).toBe(false);
+    expect(isDemoGrant(null)).toBe(false);
   });
 });
 

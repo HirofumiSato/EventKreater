@@ -42,12 +42,14 @@ flowchart LR
 
 #### 2.1. クォータ判定・消費の優先順位
 
-0. **第0優先：運営付与（公開し放題）**
+0. **第0優先：運営付与・デモ付与（公開し放題）**
    - 判定条件: `user_usage_quotas.granted_plan = 'UNLIMITED'`。管理コンソール `/console/users`（SCR-ADM-01）から付与する、Stripe の契約とは独立した列である。`subscription_status` や `subscription_plan` は見ない。
+   - 種別: `granted_kind` が `OPERATOR`（運営付与）か `DEMO`（営業デモ）かを持つ。種別が無い行（列を足す前の付与）は `OPERATOR` として扱う。公開可否の判定は種別で変えず、どちらもこの 1 本で同じに扱う。種別で変わるのは表示（主催者の帯・プラン画面・管理一覧のバッジ）と用途だけである。
    - 処理: 公開を即時認可する（`quota_source = 'SUBSCRIPTION'`）。公開中のイベント数は数えず、単発クレジットも無料チケットも消費しない。`PAST_DUE` でもこの判定が先に立つので、支払い状況に左右されない。
    - 下書きの上限は §2.3 の公開し放題と同じ 30 件。期限は設けず、解除するまで有効。
    - 解除は即時。付与中に公開した既存の催しは残し、以後の新規公開だけを通常の優先順位（第1優先以降）へ戻す。
-   - 監査のため `granted_plan_by`（付与した管理者）と `granted_plan_at`（付与日時）を残す。解除は 3 列を NULL に戻す。
+   - 監査のため `granted_plan_by`（付与した管理者）、`granted_plan_at`（付与日時）、`granted_kind`（種別）を残す。解除は 4 列（`granted_plan` / `granted_kind` / `granted_plan_by` / `granted_plan_at`）を NULL に戻す。
+   - 課金の集計には現れない。付与は `billing_transactions` を作らず、Stripe の請求にも出ない（`subscription_status` が `NONE` のままなので、そもそも請求対象にならない）。
 1. **第1優先：定額プラン（8件まで公開プラン 980円 / 公開し放題プラン 2,980円）**
    - 判定条件: `subscription_status == 'ACTIVE'` かつ `current_period_end > NOW()`。初月無料の `trialing` も `ACTIVE` に写すので、無料期間中も同じように公開できる。
    - 処理: プランを見て分岐する。
@@ -87,6 +89,7 @@ flowchart LR
 | 8件まで公開プラン（980円/月） | 10 件 |
 | 公開し放題プラン（2,980円/月） | 30 件 |
 | 運営付与の公開し放題（`granted_plan = 'UNLIMITED'`） | 30 件 |
+| デモ付与の公開し放題（`granted_kind = 'DEMO'`） | 30 件 |
 | 未加入で単発クレジットを 1 枚以上持つ | 10 件 |
 
 - **数える対象:** `status = 'DRAFT'`、`is_deleted = false`、`EventOrganizer.role = 'OWNER'` が本人のイベント。開催日（`EventSchedule.event_date`）は問わず、過去日の下書きも数える。`CO_HOST` の下書きは数えない（共同主催・幹事の下書きは本人が削除できず、自分では空けられない枠になるため）。
