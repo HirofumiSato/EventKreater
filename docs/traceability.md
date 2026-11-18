@@ -6,8 +6,8 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 558
-- API ルート: 84（どの文書にも URL が無いもの 0）
+- 文書から参照されているコードパス: 561
+- API ルート: 85（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
 ## コード → 文書
@@ -29,6 +29,7 @@
 | `prisma/migrations/20261105120000_password_reset_tokens/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/migrations/20261108200000_participant_soft_delete/migration.sql` | [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) |
 | `prisma/migrations/20261116120000_perf_indexes/migration.sql` | [docs/DBschema.md](DBschema.md) |
+| `prisma/migrations/20261118090000_quota_granted_plan/migration.sql` | [docs/DBschema.md](DBschema.md) |
 | `prisma/schema.prisma` | `AGENTS.md` / [docs/README.md](README.md) / [docs/archive/index.rst](archive/index.rst) / [docs/backend_api_implementation_spec.md](backend_api_implementation_spec.md) / [docs/database.rst](database.rst) / [docs/deploy.rst](deploy.rst) / [docs/issues/cohost-revenue-allocation.md](issues/cohost-revenue-allocation.md) / [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) / [docs/issues/flyer-generation-quota.md](issues/flyer-generation-quota.md) / [docs/issues/free-ticket-and-referral.md](issues/free-ticket-and-referral.md) / [docs/issues/manual-participant-adding.md](issues/manual-participant-adding.md) / [docs/issues/organizer-event-calendar.md](issues/organizer-event-calendar.md) / [docs/issues/organizer-revenue-dashboard.md](issues/organizer-revenue-dashboard.md) / [docs/issues/participant-calendar.md](issues/participant-calendar.md) / [docs/issues/rsvp-notifications.md](issues/rsvp-notifications.md) / [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/issues/waitlist.md](issues/waitlist.md) / [docs/pricing_campaign_requirements.md](pricing_campaign_requirements.md) / [docs/testing/ci.rst](testing/ci.rst) / `llms.txt` |
 | `public/favicon.ico` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `public/icons` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
@@ -427,6 +428,7 @@
 | `tests/components/voice-batch.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/voice-mock-recording.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/integration` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/ci.rst](testing/ci.rst) / [docs/testing/design.rst](testing/design.rst) / [docs/testing/first-cases.rst](testing/first-cases.rst) / [docs/testing/index.rst](testing/index.rst) / [docs/testing/local-run.rst](testing/local-run.rst) / [docs/testing/scope.rst](testing/scope.rst) / [docs/testing/vitest/basics.rst](testing/vitest/basics.rst) / [docs/testing/vitest/index.rst](testing/vitest/index.rst) / [docs/testing/vitest/run-cycle.rst](testing/vitest/run-cycle.rst) |
+| `tests/integration/admin-plan-grant.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/auth-attempts.test.ts` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) / [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/collection.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/integration/draft-limit.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
@@ -556,6 +558,7 @@
 | `tests/unit/sms-webhook.test.mjs` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/style-breakpoints.test.mjs` | `AGENTS.md` / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/subscription-plans.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
+| `tests/unit/unlimited-grant.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/venue-suggestions.test.ts` | [docs/issues/venue-suggestions.md](issues/venue-suggestions.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/unit/voice-batch.test.ts` | [docs/testing/scope.rst](testing/scope.rst) / [docs/voice-input.rst](voice-input.rst) |
 | `tests/unit/voice-confirm.test.ts` | [docs/testing/scope.rst](testing/scope.rst) |

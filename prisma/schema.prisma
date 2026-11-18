@@ -206,7 +206,9 @@ model User {
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  quota                   UserUsageQuota?
+  quota                   UserUsageQuota?          @relation("QuotaOwner")
+  /// この人が管理者として付与した公開し放題。解除しても行は残さず、付与先の列を NULL に戻す。
+  grantedQuotas           UserUsageQuota[]         @relation("QuotaGrantedBy")
   transactions            BillingTransaction[]
   organizers              EventOrganizer[]
   participants            Participant[]
@@ -337,10 +339,17 @@ model UserUsageQuota {
   trialEndsAt          DateTime?          @map("trial_ends_at") @db.Timestamptz
   /// 初月無料を使った日時。再加入で繰り返さないための印。
   trialUsedAt          DateTime?          @map("trial_used_at") @db.Timestamptz
+  /// 運営が付与した公開し放題。Stripe の契約とは別の列で持ち、Webhook の更新では消さない。
+  grantedPlan          SubscriptionPlan?  @map("granted_plan")
+  /// 付与した管理者の会員ID。解除したら NULL に戻す。
+  grantedPlanBy        String?            @map("granted_plan_by") @db.Uuid
+  /// 付与した日時。解除したら NULL に戻す。
+  grantedPlanAt        DateTime?          @map("granted_plan_at") @db.Timestamptz
   createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz
 
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation("QuotaOwner", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy       User?            @relation("QuotaGrantedBy", fields: [grantedPlanBy], references: [id], onDelete: SetNull)
   pricingCampaign PricingCampaign? @relation("QuotaPricingCampaign", fields: [pricingCampaignId], references: [id], onDelete: SetNull)
 
   @@index([stripeCustomerId])

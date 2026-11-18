@@ -55,7 +55,8 @@ function confirmationOf(
 /**
  * 「公開する」を押したときに、消費するチケットの確認を出すかどうかを決める。
  *
- * 分岐の順は `consumeEventQuota` と同じ。定額が有効な間は消費しないので null だが、
+ * 分岐の順は `consumeEventQuota` と同じ。運営の付与中と、定額が有効な間は消費しないので null。
+ * 付与は支払い状況より先に見る（`PAST_DUE` でも公開できるため）。
  * 8件まで公開プランが上限に達したときだけは、サーバーがチケット・単発へ
  * 落とすので同じように落とす。チケット → 単発チケット → 無料チケットの順で、
  * どれも残っていなければ null（確認を出さず、そのまま公開か 402 の料金案内へ進む）。
@@ -66,6 +67,9 @@ export function publishConfirmation(
   now = new Date(),
 ): PublishConfirmation | null {
   if (!quota) return null;
+
+  // 運営の付与中は公開しても何も消費しない。支払い状況に左右されないので、先に返す。
+  if (quota.grantedUnlimited) return null;
 
   // 支払いに問題があるあいだはサーバーが 402 で止める。確認を出して料金案内へ飛ばすのは矛盾する。
   if (quota.subscriptionStatus === "PAST_DUE") return null;

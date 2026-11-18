@@ -88,6 +88,13 @@ export interface UserQuota {
   subscriptionStatus: SubscriptionStatus;
   subscriptionPlan?: UserSubscriptionPlan;
   /**
+   * 運営が付与した公開し放題か。Stripe の契約とは別に持ち、付与中は
+   * `PAST_DUE` でも公開でき、公開件数を数えず、チケットも消費しない。
+   */
+  grantedUnlimited?: boolean;
+  /** 運営が付与した日時。付与されていなければ null。 */
+  grantedAt?: string | null;
+  /**
    * いま公開中のイベント数。開催日が今日以降で、自分が筆頭幹事のものだけ。
    * 8件まで公開プランでは件数の上限の判定と同じく定額から公開したものだけを数え、
    * それ以外（公開し放題プラン・未加入）は単発や無料チケットから公開したものも数える。

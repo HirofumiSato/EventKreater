@@ -108,6 +108,7 @@ flowchart TD
 | `/api/v1/admin/session` | DELETE | SCR-ADM-04 | 不要 | 管理者セッション Cookie の削除 |
 | `/api/v1/admin/users` | GET | SCR-ADM-01 | 管理者必須 | 登録会員の検索一覧 |
 | `/api/v1/admin/users/[id]` | PATCH | SCR-ADM-01 | 管理者必須 | 他会員の `platformRole` 変更 |
+| `/api/v1/admin/users/[id]/plan` | PATCH | SCR-ADM-01 | 管理者必須 | 運営付与の公開し放題プランを付与・解除する |
 | `/api/v1/admin/events` | GET | SCR-ADM-02 | 管理者必須 | 登録イベントの検索一覧（全状態） |
 | `/api/v1/admin/payments` | GET | SCR-ADM-03 | 管理者必須 | チケットの決済履歴。返金操作はしない |
 | `/api/v1/admin/pricing-campaigns` | GET | SCR-ADM-05 | 管理者必須 | 価格キャンペーンの一覧と成立件数・売上・割引総額 |
@@ -2871,7 +2872,30 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 
 対象画面は SCR-ADM-01。`id` が UUID でない、または会員がいないときは 404。ボディは `{ "platformRole": "ADMIN" }` または `{ "platformRole": "MEMBER" }` である。操作者と `id` が同じときは 403 で「自分の権限は変更できません。」を返す。成功時は 200 と `{ "user": { "id", "email", "name", "platformRole" } }` である。
 
-### 10.6. GET `/api/v1/admin/events`（イベント検索）
+### 10.6. PATCH `/api/v1/admin/users/[id]/plan`（運営付与）
+
+対象画面は SCR-ADM-01。Stripe 契約とは別の「運営付与の公開し放題」を付ける・解除する。`id` が UUID でない、または会員がいないときは 404。ボディは次のいずれかである。
+
+```json
+{
+  "grantedPlan": "UNLIMITED"
+}
+```
+
+```json
+{
+  "grantedPlan": "NONE"
+}
+```
+
+* `UNLIMITED` は `user_usage_quotas.granted_plan` を `UNLIMITED` にし、`granted_plan_by` に操作者、`granted_plan_at` に現在時刻を入れる。`user_usage_quotas` の行が無い会員は、その場で作る。
+* `NONE` は `granted_plan` / `granted_plan_by` / `granted_plan_at` の 3 列を NULL に戻す（解除）。解除は即時で、公開済みのイベントは残る。
+* 退会済みの会員は 400 で「退会済みの会員のプランは変更できません。」を返す。退会済みでも会員がいれば 404 にはしない。
+* 管理者でないときは §10 冒頭の認可により 403（「このページは利用できません。」）、未ログインは 401 になる。
+* 自分の行も変更できる（10.5 の権限変更とは扱いが違う）。付与は監査のため、誰がいつ付けたかを残す。
+* 成功時は 200 と `{ "user": { "id", "grantedUnlimited", "grantedAt", "grantedByName" } }` である。`grantedAt` と `grantedByName` は解除後は `null` になる。
+
+### 10.7. GET `/api/v1/admin/events`（イベント検索）
 
 クエリ `q` は催し名、場所、または幹事会員の名前・メールアドレスの部分一致である。空なら全イベントである。下書き、公開中、受付停止、論理削除を除外しない。`page` は会員検索と同じ 30 件である。並びは作成日時の降順。
 

@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signLocalToken } from "@/modules/auth/lib/auth";
 import { loadQuotaView } from "@/modules/billing/lib/quota-view";
+import { SUBSCRIPTION_PUBLISHED_EVENT_LIMIT } from "@/modules/billing/lib/quota";
+import { DRAFT_EVENT_LIMIT_UNLIMITED } from "@/modules/billing/lib/plans";
 import { GET as getQuota } from "@/app/api/v1/billing/quota/route";
 import { cleanup, seedEvent, uniqueEmail } from "./helpers";
 
@@ -92,5 +94,47 @@ describeDb("クォータの初期値（結合）", () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe("QUOTA_NOT_FOUND");
+  });
+
+  it("運営の付与中は、公開の枠・プラン・下書き 30 件・付与の印がそろう", async () => {
+    const grantedAt = new Date("2026-11-01T00:00:00.000Z");
+    const user = await prisma.user.create({
+      data: {
+        email: uniqueEmail("quota-view-grant"),
+        name: "付与された会員",
+        phoneVerifiedAt: new Date(),
+        quota: {
+          create: {
+            // 公開の枠は使い切っているが、付与中は件数を数えず、支払い状況も見ない。
+            freeEventCount: 2,
+            subscriptionStatus: "NONE",
+            currentPeriodEnd: null,
+            grantedPlan: "UNLIMITED",
+            grantedPlanAt: grantedAt,
+          },
+        },
+      },
+    });
+    userIds.push(user.id);
+    // 8 件を超えて公開済みでも、付与中は公開中の件数を上限に寄せない。
+    for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT + 1; index += 1) {
+      const published = await seedEvent({
+        userId: user.id,
+        status: "PUBLISHED",
+        quotaSource: "SUBSCRIPTION",
+        scheduleDates: [new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)],
+      });
+      eventIds.push(published.id);
+    }
+
+    const view = await loadQuotaView(user.id);
+
+    expect(view.canCreate).toBe(true);
+    expect(view.planType).toBe("SUBSCRIPTION_UNLIMITED");
+    expect(view.draftEventLimit).toBe(DRAFT_EVENT_LIMIT_UNLIMITED);
+    expect(view.grantedUnlimited).toBe(true);
+    expect(view.grantedAt).toBe(grantedAt.toISOString());
+    // 8 件プランの残りは付与中には出さない（件数を数えない）。
+    expect(view.remainingPublished).toBeNull();
   });
 });

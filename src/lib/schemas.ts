@@ -473,6 +473,11 @@ export const AdminRoleSchema = z.object({
   platformRole: z.enum(["MEMBER", "ADMIN"]),
 });
 
+/** 運営付与の公開し放題。`NONE` は解除で、付与の 3 列を NULL に戻す。 */
+export const AdminPlanGrantSchema = z.object({
+  grantedPlan: z.enum(["UNLIMITED", "NONE"]),
+});
+
 export const AuthAudienceSchema = z.enum(["organizer", "participant"]);
 
 /**
