@@ -147,7 +147,7 @@
 
 .. count-start
 
-165 ファイル、``it`` は 2360 件です。内訳は ``tests/unit/`` が 113 ファイル 1955 件、``tests/integration/`` が 32 ファイル 237 件です。結合の 237 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+165 ファイル、``it`` は 2368 件です。内訳は ``tests/unit/`` が 113 ファイル 1959 件、``tests/integration/`` が 32 ファイル 239 件です。結合の 239 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -192,7 +192,7 @@
      - 8件まで公開プラン 980 円・公開し放題プラン 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方とチケットの記録先（単発・無料チケットは件数の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題プランとして引き継ぐ）
      - SCR-MOD-01 / SCR-PUB-06 / SCR-ADM-05
    * - ``tests/unit/unlimited-grant.test.ts``
-     - 5
+     - 9
      - 運営付与の判定は ``granted_plan = 'UNLIMITED'`` のときだけ真（``MONTHLY_8``・``NONE``・NULL・行なしは偽）。付与中の公開前の確認は、チケットや単発を持っていても、``PAST_DUE`` でも出さない。解除後はチケットの確認へ戻る
      - SCR-MOD-01 / SCR-ORG-17
    * - ``tests/unit/first-month-free.test.ts``
@@ -264,11 +264,11 @@
      - 筆頭幹事の付け替え、二度呼んでもチケットが増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
    * - ``tests/integration/admin-plan-grant.test.ts``
-     - 5
+     - 6
      - 運営付与の公開し放題を付けると ``granted_plan`` と付与者・日時が入り、管理一覧も同じ印を返すこと。解除は 3 列を NULL に戻し、公開済みの催しは残すこと。退会済みは 400、利用枠の行が無い会員は upsert で付与できること。存在しない会員は 404
      - SCR-ADM-01
    * - ``tests/integration/subscription-quota.test.ts``
-     - 10
+     - 11
      - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題プランは件数を数えない。運営の付与があれば、定額の契約が無くても 8 件を超えて公開でき、``quota_source`` は ``SUBSCRIPTION`` でチケットは減らない。``PAST_DUE`` でも付与があれば公開できる。公開の再開はチケットを再消費する。複製は下書きの時点では消費せず、開催日と候補日と申込締切を1か月後にずらす
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
    * - ``tests/integration/subscription-trial.test.ts``
@@ -704,7 +704,7 @@
      - 管理者権限を外された会員の受け皿（``AdminAccessDenied``）。主催者マイページ（``/mypage``）と参加者ホーム（``/participant``）への道を持つこと、共通ヘッダーが覚えている役割を取り直させること
      - SCR-ADM-04
    * - ``tests/components/quota-status-banner.test.tsx``
-     - 9
+     - 11
      - 帯（``QuotaStatusBanner``）の導線。未加入は「月額プランを見る」を ``/organizer/plan`` へのリンクとして出し、「単発チケットを買う」で単発チケットの層を開く。公開し放題プランに加入中は 2 つとも出さない。支払いに問題がある間は単発のボタンだけを止め、月額のリンクは残す。0円キャンペーンで受け取れるときは「0円チケットを受け取る」にする
      - SCR-ORG-01
    * - ``tests/components/publish-confirm-modal.test.tsx``
@@ -822,7 +822,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1955、``tests/integration/`` が 237 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1955 件を実行して 237 件を skip します。
+件数の内訳は ``tests/unit/`` が 1959、``tests/integration/`` が 239 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1959 件を実行して 239 件を skip します。
 
 .. breakdown-end
 

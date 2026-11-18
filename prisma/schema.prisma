@@ -27,6 +27,13 @@ enum SubscriptionPlan {
   UNLIMITED
 }
 
+/// 付与の種別。`granted_plan` が「何を付与したか」を持つのに対し、こちらは「なぜ付与したか」を持つ。
+/// OPERATOR は運営付与、DEMO は営業デモ。判定はどちらも `granted_plan` の 1 本で、種別は表示と用途だけに使う。
+enum QuotaGrantKind {
+  OPERATOR
+  DEMO
+}
+
 /// イベントがどの利用枠から公開されたか。
 /// 公開中の件数を数えるのは SUBSCRIPTION だけ。単発と無料枠は枠の外に置く。
 enum QuotaSource {
@@ -341,6 +348,9 @@ model UserUsageQuota {
   trialUsedAt          DateTime?          @map("trial_used_at") @db.Timestamptz
   /// 運営が付与した公開し放題。Stripe の契約とは別の列で持ち、Webhook の更新では消さない。
   grantedPlan          SubscriptionPlan?  @map("granted_plan")
+  /// 付与の種別。OPERATOR は運営付与、DEMO は営業デモ。`granted_plan` が何を付与したかを、
+  /// ここがなぜ付与したかを持つ。NULL の行は OPERATOR として扱う。
+  grantedKind          QuotaGrantKind?    @map("granted_kind")
   /// 付与した管理者の会員ID。解除したら NULL に戻す。
   grantedPlanBy        String?            @map("granted_plan_by") @db.Uuid
   /// 付与した日時。解除したら NULL に戻す。

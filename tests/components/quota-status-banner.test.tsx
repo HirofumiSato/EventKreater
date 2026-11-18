@@ -90,6 +90,36 @@ describe("月額プランの導線", () => {
   });
 });
 
+describe("付与された公開し放題", () => {
+  it("デモ付与は「公開し放題（デモ）」を出し、プランとチケットの導線を出さない", () => {
+    renderBanner(
+      quota({
+        grantedUnlimited: true,
+        grantedKind: "DEMO",
+        publishedEventCount: 3,
+      }),
+    );
+
+    expect(screen.getByText(/公開し放題（デモ）/)).toBeTruthy();
+    // 買う対象もカードも無いので、どちらの導線も出さない。
+    expect(screen.queryByRole("link", { name: "月額プランを見る" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "単発チケットを買う" })).toBeNull();
+  });
+
+  it("運営付与の文言は変えず、種別が無い行も運営付与として読む", () => {
+    renderBanner(
+      quota({
+        grantedUnlimited: true,
+        publishedEventCount: 2,
+      }),
+    );
+
+    expect(screen.getByText(/公開し放題（運営付与）/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "月額プランを見る" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "単発チケットを買う" })).toBeNull();
+  });
+});
+
 describe("単発チケットの導線", () => {
   it("未加入の帯は、単発チケットを買うを押すと単発チケットの層を開く", async () => {
     const user = userEvent.setup();

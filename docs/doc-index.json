@@ -2032,7 +2032,7 @@
       "title": "バックエンドAPI実装仕様書",
       "summary": "本ドキュメントは、「機能別企画要件定義書」「システム要件定義書」「統合データベース物理設計書（DBschema.md）」に基づき、Next.js 14 App Router（Route Handlers）、Prisma ORM（PostgreSQL 16）、および Stripe によるバックエンドAPIの完全な実装仕様を定義する。",
       "preImplementation": false,
-      "lineCount": 3122,
+      "lineCount": 3124,
       "headings": [
         {
           "level": 1,
@@ -2717,7 +2717,7 @@
       "title": "Stripe 決済設定",
       "summary": "STRIPE_PUBLISHABLE_KEY=\"pk_test_...\" STRIPE_WEBHOOK_SECRET=\"whsec_...\" STRIPE_PRICE_ID_MONTHLY_8=\"price_...\" STRIPE_PRICE_ID_UNLIMITED=\"price_...\"",
       "preImplementation": false,
-      "lineCount": 696,
+      "lineCount": 699,
       "headings": [
         {
           "level": 2,
@@ -2963,7 +2963,7 @@
       "title": "イベント紹介ページ生成・出欠管理 ＆ チケット・課金決済基盤 統合データベース仕様書",
       "summary": "本ドキュメントは、「イベント紹介ページ生成＆出欠管理基盤」「チケット管理＆課金決済基盤（Stripe連携）」「ユーザー登録（ローカルパスワードと Google サインイン）」「チラシ生成結果の保存」を一つのデータベース物理設計書にまとめたものである。概念データモデル（CDM）、論理データモデル（LDM）、物理データモデル（PDM）、Prismaスキーマ、および各エンティティのCRUD操作トランザクション仕様を網羅する。チラシ生成の途中状態（プロンプト、背景画像、フォールバック判定）は本データベースには持たない。生成サービスが返した JPEG をファイルとして保存し、その所在だけを flyer_assets に記録する。",
       "preImplementation": false,
-      "lineCount": 2159,
+      "lineCount": 2185,
       "headings": [
         {
           "level": 2,
@@ -3122,6 +3122,10 @@
           "text": "列の意味"
         },
         {
+          "level": 4,
+          "text": "付与の種別（追加マイグレーション）"
+        },
+        {
           "level": 2,
           "text": "5. CRUD操作詳細仕様（トランザクション＆アトミック処理）"
         },
@@ -3182,6 +3186,10 @@
         },
         {
           "path": "prisma/migrations/20261118090000_quota_granted_plan/migration.sql",
+          "exists": true
+        },
+        {
+          "path": "prisma/migrations/20261118091500_quota_grant_kind/migration.sql",
           "exists": true
         },
         {

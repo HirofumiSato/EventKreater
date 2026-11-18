@@ -1842,6 +1842,32 @@ ALTER TABLE user_usage_quotas
 - 付与から公開したイベントの `events.quota_source` は既存の `UNLIMITED` と同じ `SUBSCRIPTION` のまま（`QuotaSource` の enum は増やさない）。
 - `granted_plan` に入れる値は `UNLIMITED` だけで、解除は `NONE` ではなく NULL にする（「付与されていない」と「NONE が付与された」を区別しないため）。
 
+#### 付与の種別（追加マイグレーション）
+
+`prisma/migrations/20261118091500_quota_grant_kind/migration.sql` で追加する。
+
+```sql
+-- 付与の種別。granted_plan が「何を付与したか」（UNLIMITED）を持つに対し、
+-- granted_kind は「なぜ付与したか」（運営付与 / 営業デモ）を持つ。
+CREATE TYPE "QuotaGrantKind" AS ENUM ('OPERATOR', 'DEMO');
+
+ALTER TABLE user_usage_quotas
+  ADD COLUMN granted_kind "QuotaGrantKind";
+
+-- 種別を足す前の付与は、すべて運営付与として埋める。
+UPDATE user_usage_quotas
+SET granted_kind = 'OPERATOR'
+WHERE granted_plan IS NOT NULL AND granted_kind IS NULL;
+```
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `user_usage_quotas` | `granted_kind` | "QuotaGrantKind" NULL | 付与の種別。`OPERATOR` は運営付与、`DEMO` は営業デモ。解除で NULL に戻す |
+
+- `granted_kind` が NULL の行は `OPERATOR`（運営付与）として扱う。種別を足す前の付与がこれに当たる（`grantKindOf` も同じ扱い）。
+- 種別は表示と管理画面の操作だけに使う。公開可否は `granted_plan = 'UNLIMITED'` の 1 本で見るので、デモ付与も運営付与と同じく無制限・課金なし・チケット非消費になる。
+- `SubscriptionPlan` に `DEMO` は足さない。Stripe の契約と Webhook の分岐を汚さないため、種別は別の enum で持つ。
+
 ---
 
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）

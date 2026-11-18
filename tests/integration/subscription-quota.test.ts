@@ -24,8 +24,10 @@ async function createUser(input: {
   plan: "NONE" | "MONTHLY_8" | "UNLIMITED";
   /** 既定は ACTIVE（7日後まで有効）。付与の検証では NONE / PAST_DUE を使う。 */
   subscriptionStatus?: "NONE" | "ACTIVE" | "PAST_DUE";
-  /** 運営付与の公開し放題。Stripe の契約とは別の列。 */
+  /** 運営付与（OPERATOR）・デモ付与（DEMO）の公開し放題。Stripe の契約とは別の列。 */
   grantedPlan?: "UNLIMITED";
+  /** 付与の種別。付与しないときは指定しない。既定は OPERATOR 扱い（NULL）。 */
+  grantedKind?: "OPERATOR" | "DEMO";
   paidCredits?: number;
   freeEventCount?: number;
 }) {
@@ -45,7 +47,11 @@ async function createUser(input: {
             subscriptionStatus === "ACTIVE" ? new Date(Date.now() + 7 * DAY_MS) : null,
           // 付与した人（grantedPlanBy）はテストの会員とは別の管理者なので、ここでは日時だけ残す。
           ...(input.grantedPlan
-            ? { grantedPlan: input.grantedPlan, grantedPlanAt: new Date() }
+            ? {
+                grantedPlan: input.grantedPlan,
+                grantedKind: input.grantedKind,
+                grantedPlanAt: new Date(),
+              }
             : {}),
         },
       },
@@ -211,6 +217,7 @@ describeDb("公開中のイベント数（結合）", () => {
       plan: "NONE",
       subscriptionStatus: "NONE",
       grantedPlan: "UNLIMITED",
+      grantedKind: "OPERATOR",
     });
     userIds.push(user.id);
     for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT + 2; index += 1) {
@@ -229,12 +236,38 @@ describeDb("公開中のイベント数（結合）", () => {
     expect(quota.freeEventCount).toBe(0);
   });
 
+  it("デモ付与でも、定額の契約が無くても8件を超えて公開でき、クレジットは減らない", async () => {
+    // 営業デモは種別が DEMO なだけで、判定は運営付与と同じ 1 本。
+    const user = await createUser({
+      plan: "NONE",
+      subscriptionStatus: "NONE",
+      grantedPlan: "UNLIMITED",
+      grantedKind: "DEMO",
+    });
+    userIds.push(user.id);
+    for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT + 2; index += 1) {
+      await seedPublished(user.id, {}, eventIds);
+    }
+    const draft = await seedDraft(user.id, eventIds);
+
+    const published = await publishDraftEvent(user.id, draft.id);
+
+    expect(published.status).toBe("PUBLISHED");
+    // 新しい enum は増やさず、有料の公開し放題と同じ SUBSCRIPTION として記録する。
+    expect(published.quotaSource).toBe("SUBSCRIPTION");
+    const quota = await quotaOf(user.id);
+    expect(quota.grantedKind).toBe("DEMO");
+    expect(quota.paidCredits).toBe(0);
+    expect(quota.freeEventCount).toBe(0);
+  });
+
   it("支払いに問題があっても、運営の付与があれば公開できる", async () => {
     // 有料の定額が PAST_DUE でも、付与は支払い状況に左右されない。
     const user = await createUser({
       plan: "UNLIMITED",
       subscriptionStatus: "PAST_DUE",
       grantedPlan: "UNLIMITED",
+      grantedKind: "OPERATOR",
     });
     userIds.push(user.id);
     for (let index = 0; index < SUBSCRIPTION_PUBLISHED_EVENT_LIMIT + 1; index += 1) {

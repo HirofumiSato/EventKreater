@@ -2901,7 +2901,8 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 
 ```json
 {
-  "grantedPlan": "UNLIMITED"
+  "grantedPlan": "UNLIMITED",
+  "grantedKind": "DEMO"
 }
 ```
 
@@ -2911,12 +2912,13 @@ QR を焼き込むのはダウンロード時である。下書きの時点で�
 }
 ```
 
-* `UNLIMITED` は `user_usage_quotas.granted_plan` を `UNLIMITED` にし、`granted_plan_by` に操作者、`granted_plan_at` に現在時刻を入れる。`user_usage_quotas` の行が無い会員は、その場で作る。
-* `NONE` は `granted_plan` / `granted_plan_by` / `granted_plan_at` の 3 列を NULL に戻す（解除）。解除は即時で、公開済みのイベントは残る。
+* `grantedKind` は付与の種別で、`OPERATOR`（運営付与）か `DEMO`（デモ付与）である。省略すると `OPERATOR` になる。`NONE` のときは送らない。
+* `UNLIMITED` は `user_usage_quotas.granted_plan` を `UNLIMITED` にし、`granted_kind` に種別、`granted_plan_by` に操作者、`granted_plan_at` に現在時刻を入れる。`user_usage_quotas` の行が無い会員は、その場で作る。
+* `NONE` は `granted_plan` / `granted_kind` / `granted_plan_by` / `granted_plan_at` の 4 列を NULL に戻す（解除）。解除は即時で、公開済みのイベントは残る。
 * 退会済みの会員は 400 で「退会済みの会員のプランは変更できません。」を返す。退会済みでも会員がいれば 404 にはしない。
 * 管理者でないときは §10 冒頭の認可により 403（「このページは利用できません。」）、未ログインは 401 になる。
 * 自分の行も変更できる（10.5 の権限変更とは扱いが違う）。付与は監査のため、誰がいつ付けたかを残す。
-* 成功時は 200 と `{ "user": { "id", "grantedUnlimited", "grantedAt", "grantedByName" } }` である。`grantedAt` と `grantedByName` は解除後は `null` になる。
+* 成功時は 200 と `{ "user": { "id", "grantedUnlimited", "grantedKind", "grantedAt", "grantedByName" } }` である。`grantedAt` と `grantedByName` は解除後は `null` になり、`grantedKind` は `OPERATOR` になる。
 
 ### 10.7. GET `/api/v1/admin/events`（イベント検索）
 

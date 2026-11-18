@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
     const input = AdminPlanGrantSchema.parse(await req.json());
-    const user = await setUserPlanGrant(admin.id, params.id, input.grantedPlan);
+    const user = await setUserPlanGrant(admin.id, params.id, input.grantedPlan, input.grantedKind);
     return NextResponse.json({ user });
   } catch (error) {
     return toErrorResponse(error, `/api/v1/admin/users/${params.id}/plan`);

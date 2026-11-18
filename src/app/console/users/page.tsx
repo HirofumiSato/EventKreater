@@ -21,6 +21,7 @@ interface AdminUserRow {
   organizerCount: number;
   participantCount: number;
   grantedUnlimited: boolean;
+  grantedKind: "OPERATOR" | "DEMO";
   grantedAt: string | null;
   grantedByName: string | null;
 }
@@ -115,10 +116,16 @@ export default function AdminUsersPage() {
     }
   };
 
-  const changePlan = async (user: AdminUserRow, grantedPlan: "UNLIMITED" | "NONE") => {
+  const changePlan = async (
+    user: AdminUserRow,
+    grantedPlan: "UNLIMITED" | "NONE",
+    grantedKind?: "OPERATOR" | "DEMO",
+  ) => {
     const message =
       grantedPlan === "UNLIMITED"
-        ? `「${user.name}」に公開し放題を付与します。`
+        ? grantedKind === "DEMO"
+          ? `「${user.name}」にデモとして公開し放題を付与します。`
+          : `「${user.name}」に公開し放題を付与します。`
         : `「${user.name}」の公開し放題を解除します。`;
     if (!window.confirm(message)) return;
     setBusyId(user.id);
@@ -127,13 +134,19 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/v1/admin/users/${user.id}/plan`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grantedPlan }),
+        // 解除は種別を持たない。付与だけ `grantedKind` を送る。
+        body: JSON.stringify(
+          grantedPlan === "UNLIMITED"
+            ? { grantedPlan, grantedKind: grantedKind ?? "OPERATOR" }
+            : { grantedPlan },
+        ),
       });
       if (!res.ok) throw new Error(await readProblem(res));
       const data = (await res.json()) as {
         user: {
           id: string;
           grantedUnlimited: boolean;
+          grantedKind: "OPERATOR" | "DEMO";
           grantedAt: string | null;
           grantedByName: string | null;
         };
@@ -144,6 +157,7 @@ export default function AdminUsersPage() {
             ? {
                 ...row,
                 grantedUnlimited: data.user.grantedUnlimited,
+                grantedKind: data.user.grantedKind,
                 grantedAt: data.user.grantedAt,
                 grantedByName: data.user.grantedByName,
               }
@@ -284,9 +298,15 @@ export default function AdminUsersPage() {
                       <td>
                         {user.grantedUnlimited ? (
                           <>
-                            <Badge tone="success" small>
-                              公開し放題（運営付与）
-                            </Badge>
+                            {user.grantedKind === "DEMO" ? (
+                              <Badge tone="neutral" small>
+                                公開し放題（デモ）
+                              </Badge>
+                            ) : (
+                              <Badge tone="success" small>
+                                公開し放題（運営付与）
+                              </Badge>
+                            )}
                             <div className="data__muted">
                               {user.grantedByName ? `${user.grantedByName} が付与` : "運営が付与"}
                               {user.grantedAt ? ` ${formatWhen(user.grantedAt)}` : ""}
@@ -310,9 +330,17 @@ export default function AdminUsersPage() {
                                 type="button"
                                 className="btn btn--outline btn--sm"
                                 disabled={user.withdrawn || busyId === user.id}
-                                onClick={() => void changePlan(user, "UNLIMITED")}
+                                onClick={() => void changePlan(user, "UNLIMITED", "OPERATOR")}
                               >
                                 付与
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                disabled={user.withdrawn || busyId === user.id}
+                                onClick={() => void changePlan(user, "UNLIMITED", "DEMO")}
+                              >
+                                デモ付与
                               </button>
                             </div>
                           </>
