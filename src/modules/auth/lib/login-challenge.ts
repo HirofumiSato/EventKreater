@@ -188,19 +188,24 @@ function adminPhoneRequired(): ProblemDetailException {
   });
 }
 
-/** 管理者は管理コンソール専用の入口から入る。主催者向けのログインでは発行しない。 */
-function adminConsoleRequired(): ProblemDetailException {
+/**
+ * 管理者は管理コンソール専用の入口から入る。
+ *
+ * ここでは管理コンソールの URL も、管理者であることも明かさない。
+ * 公開の入口から管理コンソールへの導線を作らないため、文言は一般の失敗と同じ体裁にする。
+ */
+function adminAccountBlocked(): ProblemDetailException {
   return new ProblemDetailException({
     status: 403,
     title: "Forbidden",
-    detail: "管理者アカウントは /console/login からのみログインできます。",
-    error: "ADMIN_CONSOLE_REQUIRED",
+    detail: "このアカウントは、こちらからはログインできません。",
+    error: "ADMIN_ACCOUNT",
   });
 }
 
 function assertMemberPurposeAllowed(user: ChallengeUser, purpose: LoginChallengePurpose): void {
   // 主催者の入口（MEMBER）だけ管理者を締め出す。参加者の入口は誰でも通す。
-  if (purpose === "MEMBER" && user.platformRole === "ADMIN") throw adminConsoleRequired();
+  if (purpose === "MEMBER" && user.platformRole === "ADMIN") throw adminAccountBlocked();
 }
 
 /**

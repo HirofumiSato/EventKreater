@@ -6,7 +6,7 @@
 冒頭で実装前の設計と断っている文書は、現在の構成と一致しないため対象外です。
 
 - 対象文書: 114（実装前の設計 15 件は除外）
-- 文書から参照されているコードパス: 562
+- 文書から参照されているコードパス: 564
 - API ルート: 85（どの文書にも URL が無いもの 0）
 - 文書が指すが実在しないパス: 0（既知 0 / 新規 0）
 
@@ -253,6 +253,7 @@
 | `src/modules/account/components/PhoneChangePanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/account/components/WithdrawPanel.tsx` | [docs/issues/auth-attempt-limits.md](issues/auth-attempt-limits.md) |
 | `src/modules/account/lib/account.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
+| `src/modules/admin/components/AdminAccessDenied.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/admin/components/AdminChrome.tsx` | [docs/front_implementation_spec.md](front_implementation_spec.md) |
 | `src/modules/admin/lib/directory.ts` | [docs/issues/event-owner-and-cohosts.md](issues/event-owner-and-cohosts.md) |
 | `src/modules/attendance/components/DynamicRsvpBox.tsx` | [docs/issues/waitlist.md](issues/waitlist.md) |
@@ -408,6 +409,7 @@
 | `src/styles/screens/public.css` | [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
 | `src/styles/themes.css` | [docs/flyer/specs/implementation_spec.md](flyer/specs/implementation_spec.md) / [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/issues/organizer-profile-appearance.md](issues/organizer-profile-appearance.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) / [docs/ui-review/mock-sync.md](ui-review/mock-sync.md) / [docs/ui-review/theme-review.md](ui-review/theme-review.md) |
 | `src/styles/tokens.css` | [docs/front_implementation_spec.md](front_implementation_spec.md) / [docs/ui-review/home-audit.md](ui-review/home-audit.md) |
+| `tests/components/admin-access-denied.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/app-error.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-entry-screen.test.tsx` | [docs/issues/signup-resume-and-password-save.md](issues/signup-resume-and-password-save.md) / [docs/testing/scope.rst](testing/scope.rst) |
 | `tests/components/auth-verify-next.test.tsx` | [docs/testing/scope.rst](testing/scope.rst) |

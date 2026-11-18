@@ -7,48 +7,49 @@ import {
 } from "@/modules/auth/lib/auth-landing";
 
 describe("ログイン済みセッションの着地", () => {
-  it("戻り先の指定があれば、役割に関係なくそのパスへ返す", () => {
+  it("戻り先の指定があれば、そのパスへ返す", () => {
     expect(
       resolveAuthLanding({
         audience: "organizer",
         hasExplicitNext: true,
         nextPath: "/organizer/events",
-        platformRole: "ADMIN",
       }),
     ).toBe("/organizer/events");
   });
 
-  it("管理者が主催者の入口を戻り先なしで開いたら管理コンソールへ送る", () => {
+  // 管理者を管理コンソールへ送ると、公開の入口を押しただけで管理コンソールの
+  // 在り処が分かってしまう。役割では分岐しない（FE-ADM-01 / FE-AUTH-06）。
+  it("主催者の入口は、管理者でもマイページへ返す", () => {
     expect(
       resolveAuthLanding({
         audience: "organizer",
         hasExplicitNext: false,
         nextPath: "/mypage",
-        platformRole: "ADMIN",
       }),
-    ).toBe("/console");
+    ).toBe("/mypage");
   });
 
-  it("参加者の入口では、管理者も参加者ホームへ送る", () => {
+  it("参加者の入口は、いつでも参加者ホームへ返す", () => {
     expect(
       resolveAuthLanding({
         audience: "participant",
         hasExplicitNext: false,
         nextPath: "/participant",
-        platformRole: "ADMIN",
       }),
     ).toBe("/participant");
   });
 
-  it("会員は主催者の入口からマイページへ送る", () => {
-    expect(
-      resolveAuthLanding({
-        audience: "organizer",
-        hasExplicitNext: false,
-        nextPath: "/mypage",
-        platformRole: "MEMBER",
-      }),
-    ).toBe("/mypage");
+  it("着地が管理コンソールを指すことはない", () => {
+    for (const audience of ["organizer", "participant"] as const) {
+      for (const hasExplicitNext of [true, false]) {
+        const destination = resolveAuthLanding({
+          audience,
+          hasExplicitNext,
+          nextPath: hasExplicitNext ? "/organizer/events" : `/${audience === "organizer" ? "mypage" : "participant"}`,
+        });
+        expect(destination.startsWith("/console")).toBe(false);
+      }
+    }
   });
 
   it("電話番号が未確認なら、ログインは済んでいるので確認画面だけを出す", () => {
@@ -59,7 +60,6 @@ describe("ログイン済みセッションの着地", () => {
         hasExplicitNext: true,
         nextPath: "/organizer/events",
         phoneVerified: false,
-        platformRole: "MEMBER",
       }),
     ).toBe("/auth/register?step=phone&next=%2Forganizer%2Fevents");
   });
@@ -72,7 +72,6 @@ describe("ログイン済みセッションの着地", () => {
         hasExplicitNext: false,
         nextPath: "/participant",
         phoneVerified: true,
-        platformRole: "MEMBER",
       }),
     ).toBe("/participant");
   });

@@ -2,20 +2,20 @@
  * ログイン済みのセッションで入口を開いたときの着地先。
  *
  * 画面（`AuthEntryScreen`）から純関数として切り離しておき、
- * 「戻り先の指定・役割・電話番号の確認状況」の組み合わせだけをテストする。
+ * 「戻り先の指定・電話番号の確認状況」の組み合わせだけをテストする。
+ *
+ * 会員の役割（`platformRole`）は見ない。管理者を管理コンソールへ送ると、
+ * 公開の入口を押しただけで管理コンソールの在り処が分かってしまう。
+ * 管理者は自分で `/console/login` を開く（公開画面からは辿れない）。
  */
 
 export type AuthAudience = "organizer" | "participant";
-
-/** 着地先の判定に要る会員の属性。`platformRole` は管理者の振り分けだけに使う。 */
-export type LandingRole = "MEMBER" | "ADMIN";
 
 export interface LandingInput {
   audience: AuthAudience;
   hasExplicitNext: boolean;
   /** `safeNextPath` を通した戻り先。 */
   nextPath: string;
-  platformRole?: LandingRole;
 }
 
 export interface SessionDestinationInput extends LandingInput {
@@ -31,13 +31,11 @@ export function phoneStepHref(basePath: string, hasExplicitNext: boolean, nextPa
 /**
  * 電話番号の確認が済んだ会員の着地先。
  *
- * 管理者を管理コンソールへ送るのは、主催者の入口で戻り先を指定されていないときだけ。
- * 参加者の入口や `next` 付きの遷移では、指定された画面へそのまま返す。
+ * いつでも戻り先（既定は入口ごとの `/mypage` / `/participant`）へ返す。
+ * 役割で分けないのは、公開の入口から管理コンソールへの道を作らないためである。
  */
 export function resolveAuthLanding(input: LandingInput): string {
-  const toConsole =
-    input.audience === "organizer" && !input.hasExplicitNext && input.platformRole === "ADMIN";
-  return toConsole ? "/console" : input.nextPath;
+  return input.nextPath;
 }
 
 /**

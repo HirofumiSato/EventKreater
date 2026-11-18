@@ -30,7 +30,7 @@
 | 判定の API | `GET /api/v1/auth/session` を新設。`authenticated`、`pendingChallenge`、`user`（`phoneVerified` / `platformRole`）を返す |
 | 電話未確認の会員 | ログインは省くが `?step=phone` へは進める。無料チケットの要件は変えない |
 | 適用する画面 | `/auth/register`、`/participant/login`。`?step=phone` は画面自身の判定に任せる |
-| 着地 | 明示された `next` → 主催者の入口で `next` の無い管理者は `/console` → 入口ごとの既定 |
+| 着地 | 明示された `next` → 入口ごとの既定（`/mypage` / `/participant`）。役割では分けない |
 | 別の会員で入り直す | `?switch=1` のときだけフォームを出す。確認番号の入力待ち（`pendingChallenge`）も飛ばさない |
 | 再送 | `?step=login-code` に「確認番号を再送する」を追加。`POST /api/v1/auth/login-challenge` に同じチャネルを渡す |
 | クールダウン | 60 秒。画面だけが持ち、サーバの回数上限とは別に扱う |

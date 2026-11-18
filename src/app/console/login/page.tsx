@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { readProblem } from "@/lib/problem";
+import { SITE } from "@/lib/site";
 import { LoginChallengeForm } from "@/modules/auth/components/LoginChallengeForm";
 import { Alert, Field } from "@/components/ui";
 
@@ -98,6 +100,19 @@ export default function AdminLoginPage() {
           {submitting ? "確認しています" : "ログイン"}
         </button>
       </form>
+      {/* 管理者権限を外された会員は、ここから一般の画面へ戻れるようにする。
+          ログイン済みなら、この 2 本はそのまま主催者・参加者のホームへ送る。 */}
+      <p className="help">
+        主催者・参加者は{" "}
+        <Link href={SITE.nav.organizerLogin.href} className="text-link">
+          {SITE.nav.organizerLogin.label}
+        </Link>
+        {" または "}
+        <Link href={SITE.nav.participantLogin.href} className="text-link">
+          {SITE.nav.participantLogin.label}
+        </Link>
+        から入れます。
+      </p>
     </div>
   );
 }

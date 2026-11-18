@@ -46,7 +46,7 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     buckets.length = 0;
   });
 
-  async function seedUser(prefix: string): Promise<ChallengeUser> {
+  async function seedUser(prefix: string, platformRole: "MEMBER" | "ADMIN" = "MEMBER"): Promise<ChallengeUser> {
     const phone = `+8190${String(Date.now()).slice(-8)}`;
     const user = await prisma.user.create({
       data: {
@@ -54,6 +54,7 @@ describeDb("ログイン確認番号の再送（結合）", () => {
         name: "確認番号",
         phoneE164: phone,
         phoneVerifiedAt: new Date(),
+        platformRole,
       },
       select: { id: true, email: true, name: true, phoneE164: true, phoneVerifiedAt: true, platformRole: true },
     });
@@ -141,6 +142,24 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     expect(switched.view.destinationMask).toContain("@");
     expect(switched.view.canUseSms).toBe(true);
     expect(switched.view.canUseEmail).toBe(true);
+  });
+
+  it("管理者は主催者の入口で拒否され、応答に管理コンソールの URL を出さない", async () => {
+    const user = await seedUser("admin-member", "ADMIN");
+    const ip = key("admin-member-ip");
+
+    const error = await startLoginChallenge({ user, purpose: "MEMBER", ip }).catch(
+      (cause: unknown) => cause,
+    );
+
+    expect(error).toBeInstanceOf(ProblemDetailException);
+    const problem = error as ProblemDetailException;
+    expect(problem.status).toBe(403);
+    expect(problem.extras.error).toBe("ADMIN_ACCOUNT");
+    // 公開の入口から管理コンソールの在り処が分からないようにする。
+    expect(problem.detail).not.toContain("/console");
+    // チャレンジは発行しない。
+    expect(await prisma.loginChallenge.count({ where: { userId: user.id } })).toBe(0);
   });
 
   it("一般会員が主催者の入口から入ると、既定はメールで SMS の試行を数えない", async () => {

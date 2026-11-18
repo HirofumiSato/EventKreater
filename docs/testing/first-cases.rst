@@ -95,7 +95,7 @@
    * - 確認番号を 1 回だけ間違える
      - 400 で ``remainingAttempts`` が 9。文面にロックの予告は入らない
    * - 管理者が ``/api/v1/auth/local`` でログインする
-     - 403 ``probs/forbidden``、``error`` は ``ADMIN_CONSOLE_REQUIRED``。チャレンジは発行しない
+     - 403 ``probs/forbidden``、``error`` は ``ADMIN_ACCOUNT``。文面に管理コンソールの URL を出さず、チャレンジも発行しない
    * - 管理者が ``/console/login`` からログインする
      - 200 で ``challengeRequired``。確認後に ``/console`` へ入る
    * - 確認番号を 10 回間違える

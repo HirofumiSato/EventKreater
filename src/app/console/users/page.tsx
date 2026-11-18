@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { AdminAccessDenied } from "@/modules/admin/components/AdminAccessDenied";
 import { AdminChrome } from "@/modules/admin/components/AdminChrome";
 import { readProblem } from "@/lib/problem";
-import { Alert, Badge, EmptyState, Field } from "@/components/ui";
+import { Alert, Badge, Field } from "@/components/ui";
 
 interface AdminUserRow {
   id: string;
@@ -157,7 +158,7 @@ export default function AdminUsersPage() {
   };
 
   if (blocked) {
-    return <EmptyState>このページは利用できません。</EmptyState>;
+    return <AdminAccessDenied />;
   }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
