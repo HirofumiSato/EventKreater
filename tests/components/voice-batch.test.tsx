@@ -2,13 +2,14 @@
 //
 // 「自由に話す」の入口・録音中の文字起こし・確認画面の再発防止。
 //
-// 見るのは 6 つ。
-//   1. 空欄が 3 つ以上なら「自由に話す」を既定にし、案内と 1 文の例を出す
+// 見るのは 7 つ。
+//   1. 空欄が 3 つ以上なら「自由に話す」を既定にし、1 文の例と、押した瞬間に出る文字の枠を出す
 //   2. 録音中に聞き取れた文字が、区間ごとに順へ増える（消えない）
 //   3. モックでは外部へ送らず、欄ごとの行を確認に並べる
 //   4. 値は編集でき、チェックを外した行は取り込まない
 //   5. 「すべて入力」は 1 回の onChange にまとめる（行ごとに呼ばない）
 //   6. 残りの必須が 1 つ以下なら、1 欄ずつへ切り替える
+//   7. 自由に話すでは、いま空欄の欄を「話す順」のマスに並べる（1 つずつでは出さない）
 //
 // 入力欄はこの部品の外にあるので、値の受け渡しは `onChange` で見る。
 // 待ちは疑似録音のものだけを進める（`userEvent` はタイマーを掴んで止まるため使わない）。
@@ -162,16 +163,20 @@ describe("自由に話す", () => {
       false,
     );
     // 自由に話すのは 1 つの欄の話ではないので、質問は進めない。何を話すかは、
-    // 自然な 1 文の例で見せる。
-    expect(screen.getByText("話したいことをそのまま話してください。")).toBeTruthy();
+    // 自然な 1 文の例で見せる。聞き取れた文字の枠（「トークスクリプト」）は
+    // 録音を始めた瞬間から出すので、押す前は見出しも無い。
+    expect(screen.queryByText("トークスクリプト")).toBeNull();
     expect(
       screen.getByText("話し方の例：", { selector: ".voice-panel__say-label" }),
     ).toBeTruthy();
     expect(
       screen.getByText(freeformExampleSentence(), { selector: ".voice-panel__say-text" }),
     ).toBeTruthy();
-    // 話す順のマスは出さない。順番を決めずに話してよい。
-    expect(screen.queryByRole("list", { name: "話す順" })).toBeNull();
+    // 話す順のマスは、いま空欄の欄を参考として並べる（順番を決めずに話してよい）。
+    expect(
+      screen.getByText("入力する項目", { selector: ".voice-panel__plan-label" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("list", { name: "話す順" })).toBeTruthy();
     // 1 欄ずつの「いまの値」と戻る・スキップは、自由に話すときは出さない。
     expect(screen.queryByText(/いまの値:/)).toBeNull();
     expect(screen.queryByRole("button", { name: "戻る" })).toBeNull();
@@ -189,6 +194,63 @@ describe("自由に話す", () => {
     await press("録音を始める");
     expect(screen.getByRole("button", { name: "録音を停止" })).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("話す順のマスに、番号と欄の名前を並べる", async () => {
+    stubFetch();
+
+    await mount(vi.fn());
+    await startVoice("自由に話す");
+
+    const list = screen.getByRole("list", { name: "話す順" });
+    // 必須の空欄を先に、8 枚まで。1 件目の日時は口に出しやすい名前にする。
+    const labels = [...list.querySelectorAll(".voice-cell__label")].map(
+      (node) => node.textContent,
+    );
+    expect(labels).toEqual([
+      "イベント名",
+      "開催日",
+      "開始時間",
+      "終了時間",
+      "料金プラン名",
+      "料金（円）",
+      "場所",
+      "郵便番号",
+    ]);
+    // 番号は「1.」の形。読み上げでは数えず、欄の名前だけを読む。
+    const numbers = [...list.querySelectorAll(".voice-cell__number")];
+    expect(numbers.map((node) => node.textContent)).toEqual([
+      "1.",
+      "2.",
+      "3.",
+      "4.",
+      "5.",
+      "6.",
+      "7.",
+      "8.",
+    ]);
+    expect(numbers.every((node) => node.getAttribute("aria-hidden") === "true")).toBe(true);
+    // 矢印は並びの目安。読み上げからは外す。
+    const seps = [...list.querySelectorAll(".voice-step__sep")];
+    expect(seps).toHaveLength(8);
+    expect(seps.every((node) => node.textContent === "→")).toBe(true);
+    expect(seps.every((node) => node.getAttribute("aria-hidden") === "true")).toBe(true);
+  });
+
+  it("1つずつへ切り替えると、話す順の一覧は消える", async () => {
+    stubFetch();
+
+    await mount(vi.fn());
+    await startVoice("自由に話す");
+    expect(screen.getByRole("list", { name: "話す順" })).toBeTruthy();
+
+    await chooseMode("1つずつ");
+
+    // 1 欄ずつ聞くときは、話す順の目安は要らない。
+    expect(screen.queryByRole("list", { name: "話す順" })).toBeNull();
+    expect(
+      screen.queryByText("入力する項目", { selector: ".voice-panel__plan-label" }),
+    ).toBeNull();
   });
 
   it("自由に話すときは、後ろを黒透過の覆いで暗くする", async () => {
@@ -212,8 +274,8 @@ describe("自由に話す", () => {
     await chooseMode("1つずつ");
 
     expect(screen.getByText("イベント名は？")).toBeTruthy();
-    // 自由に話すときの案内と例は消え、1 欄ずつの例だけが残る。
-    expect(screen.queryByText("話したいことをそのまま話してください。")).toBeNull();
+    // 自由に話すときの例と「トークスクリプト」は消え、1 欄ずつの例だけが残る。
+    expect(screen.queryByText("トークスクリプト")).toBeNull();
     expect(screen.getByText("例: 忘年会")).toBeTruthy();
     // 1 つずつなら、空欄でよい欄まで聞く（自由に話すと既定が違う）。
     expect(
@@ -232,16 +294,30 @@ describe("自由に話す", () => {
     await mount(onChange);
     await startVoice("自由に話す");
 
-    // 押す前と押した直後は、まだ何も出ていない。
+    // 押す前は枠ごと無い。押すと同時に、空の枠とその見出しが出る
+    // （最初の区間の文字が届くのは 2〜3 秒あと）。
     expect(transcriptText()).toBeNull();
+    expect(screen.queryByText("トークスクリプト")).toBeNull();
     await press("録音を始める");
-    expect(transcriptText()).toBeNull();
+    expect(transcriptText()).toBe("");
+    expect(
+      screen.getByText("トークスクリプト", { selector: ".voice-panel__script-label" }),
+    ).toBeTruthy();
+    // 枠は話す順の一覧より上（左上の見出しと枠が、一覧の前に来る）。
+    const script = document.querySelector(".voice-panel__script");
+    const plan = document.querySelector(".voice-panel__plan");
+    expect(script).toBeTruthy();
+    expect(plan).toBeTruthy();
+    expect(
+      (script as Element).compareDocumentPosition(plan as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     // 疑似録音が終わると、区間ごとに文字が届き始める。
     await act(async () => {
       vi.advanceTimersByTime(PAST_RECORDING_MS);
     });
-    expect(transcriptText()).toBeNull();
+    expect(transcriptText()).toBe("");
     await act(async () => {
       vi.advanceTimersByTime(PAST_SEGMENT_MS);
     });
@@ -289,6 +365,20 @@ describe("自由に話す", () => {
     );
     expect(dialog.textContent).not.toContain("読み取れなかった部分");
     expect(dialog.textContent).not.toContain("行います");
+
+    // 行の順は、パネルの一覧（話す順のマス）と同じ。割当は原文の順に返るので、
+    // そのまま並べると「1. イベント名」と言った欄が確認では下のほうに出る。
+    const dialogLabels = [...dialog.querySelectorAll(".voice-batch__label")].map(
+      (node) => node.textContent,
+    );
+    const planIds = [...document.querySelectorAll(".voice-cell__label")].map(
+      (node) => node.textContent,
+    );
+    expect(planIds.slice(0, 3)).toEqual(["イベント名", "開催日", "開始時間"]);
+    expect(dialogLabels.slice(0, 3)).toEqual(["イベント名", "開催日", "開始時刻"]);
+    // 一覧に出ている欄どうしの前後関係は、一覧と一致する。
+    const seen = dialogLabels.filter((label) => planIds.includes(label) || label === "開始時刻");
+    expect(seen.slice(0, 3)).toEqual(["イベント名", "開催日", "開始時刻"]);
 
     // マイクも外部も使わない。POST は 1 度も出ない。
     expect(fetchMock.mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);

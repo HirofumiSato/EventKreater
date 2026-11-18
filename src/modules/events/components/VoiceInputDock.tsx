@@ -31,9 +31,11 @@ import {
 } from "@/modules/events/lib/voice/fields";
 import { mockBatchTranscript } from "@/modules/events/lib/voice/batch";
 import {
+  batchPlan,
   batchTargets,
   defaultVoiceMode,
   freeformExampleSentence,
+  orderByBatchPlan,
   type VoiceMode,
 } from "@/modules/events/lib/voice/batch-guide";
 import { trackEvent } from "@/lib/analytics";
@@ -420,6 +422,8 @@ export function VoiceInputDock({
     [showOrganizerName, includeOptional, touched],
   );
   const blankTargets = useMemo(() => batchTargets(value, scope), [value, scope]);
+  // 話す順の目安。参考表示なので、この並びどおりに話さなくてよい。
+  const cells = useMemo(() => batchPlan(blankTargets), [blankTargets]);
   // 自由文で話すときの見本。パネルの「話し方の例：」のあとに 1 文だけ置く。
   const exampleSentence = freeformExampleSentence();
   // まだ選ばれていなければ、空欄の数で既定を決める。セッションの途中で選ばれたらそれを優先する。
@@ -1009,16 +1013,21 @@ export function VoiceInputDock({
       // 数えるのは「割当が無い欄」ではなく「値が入らない欄」にする。開始時刻が
       // 範囲（18時から20時）を返すと終了時刻にも値が入るので、割当の有無だけで
       // 見ると、埋まった終了時刻を「入らなかった欄」と言ってしまう。
+      //
+      // 並びはパネルの一覧（`batchPlan`）と同じにする。割当は話した順に返るので
+      // （日付・金額・郵便番号…）、そのまま並べると一覧と順が食い違い、
+      // 「1. イベント名」と言った欄が確認では下のほうに出る。
+      const targets = batchTargets(valueRef.current, scopeNow());
       const preview = applyVoicePatches(
         valueRef.current,
         result.assignments.map((item) => item.patch),
       );
-      const missed = batchTargets(valueRef.current, scopeNow())
+      const missed = targets
         .filter((target) => target.field.isEmpty(preview, target.row))
         .map((target) => target.label);
       setMessage(null);
       setBatch({
-        rows,
+        rows: orderByBatchPlan(rows, targets),
         unassigned: [...result.unassigned],
         missed,
         diagnostics: result.diagnostics,
@@ -1885,6 +1894,11 @@ export function VoiceInputDock({
         : "話す";
   // 待ちのあいだは主ボタンを置かない（押しても始められない的を残さない）。
   const showTalk = !transcribing && !searching;
+  // 聞き取れた文字の枠は、録音を始めた瞬間から出す。最初の区間の文字が届くまで
+  // 2〜3 秒かかるので、枠が無いと押した手応えが無く、文字が届いた瞬間に
+  // パネルの上端が伸びて見える。枠だけ先に置き、文字は届いた分から足す。
+  const showTranscript =
+    !complete && (transcript !== "" || (batchMode && (listening || transcribing)));
 
   // パネルの位置は測った値で決める。隠すのは「まだ一度も測れていない」1 フレームだけ
   // （音声モードに入った直後）。自由に話すときは画面下寄りに固定するので使わない。
@@ -2494,11 +2508,16 @@ export function VoiceInputDock({
             )}
             {/* 録音中に聞き取れた全文。区間が確定するたびに足すだけで、消さない。
                 1 文字ずつではなく区間ごとに読み上げる（`aria-live` は増えた分だけを読む）。
-                中身は 1 つの塊にする（CSS が column-reverse で 1 段落を前提にしている）。 */}
-            {!complete && transcript && (
-              <p className="voice-panel__transcript" role="log" aria-live="polite">
-                {transcript}
-              </p>
+                中身は 1 つの塊にする（CSS が column-reverse で 1 段落を前提にしている）。
+                「トークスクリプト」は枠の左上へ添える見出しで、枠の中身ではない
+                （読み上げの対象は、枠の中の文字だけにする）。 */}
+            {showTranscript && (
+              <div className="voice-panel__script">
+                <p className="voice-panel__script-label">トークスクリプト</p>
+                <p className="voice-panel__transcript" role="log" aria-live="polite">
+                  {transcript}
+                </p>
+              </div>
             )}
             {!complete && !batchMode && field && currentValue && !searching && (
               <p className="voice-panel__current">いまの値: {currentValue}</p>
@@ -2523,13 +2542,38 @@ export function VoiceInputDock({
             </p>
           )}
 
-          {/* 自由に話すときは、話す順もマスも出さない。話す中身は自然な文 1 つで足り、
-              値の割当は止めたあとの確認で示す。案内は 1 行、その下に見本を 1 文だけ置き、
-              押す直前に読めるよう主ボタンの上へ置く。 */}
+          {/* 自由に話すときは、聞き取れた値の割当を止めたあとの確認で示す。
+              その下に「いま空欄の欄」を並べた参考の一覧、最後に自然な文の見本を 1 文だけ置き、
+              押す直前に読めるよう主ボタンの上へ置く。
+              一覧の並びは目安で、実際の割当は原文から行う（順どおりに話さなくてよい）。
+              何を話すかの案内は、聞き取れた文字の枠の見出し（「トークスクリプト」）が兼ねる。 */}
+          {!complete && batchMode && cells.length > 0 && (
+            <div className="voice-panel__plan">
+              <p className="voice-panel__plan-label">入力する項目</p>
+              <ol className="voice-cells" aria-label="話す順">
+                {cells.map((cell, index) => (
+                  <li className="voice-step" key={cell.id}>
+                    {/* 順番は矢印でも示す。読み上げでは順序を数える意味が無いので、
+                        印は読み上げから外し、名前だけを並べる。 */}
+                    <span className="voice-step__sep" aria-hidden="true">
+                      →
+                    </span>
+                    <span className="voice-cell">
+                      {/* 番号は「1.」の形で置く。丸で囲むと名前の幅を削り、
+                          スマホで 1 段に 3 枚入らなくなるためである。 */}
+                      <span className="voice-cell__number" aria-hidden="true">
+                        {index + 1}.
+                      </span>
+                      <span className="voice-cell__label">{cell.label}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
           {!complete && batchMode && (
             <div className="voice-panel__say">
-              <span>話したいことをそのまま話してください。</span>
-              <br />
               <span className="voice-panel__say-label">話し方の例：</span>
               <span className="voice-panel__say-text">{exampleSentence}</span>
             </div>

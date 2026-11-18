@@ -1538,6 +1538,25 @@ fieldset.field {
       )
     );
   }
+
+  /* 自由に話すパネルは下端を固定している（9.25rem）。帯がある画面では FAB が帯の上へ
+     逃げるので、パネルの下端もその上（帯 + FAB 3.25rem + 1rem）へ上げ直す。上がった分は
+     max-height から引き、パネルの上端が画面の外へ出ないようにする（4.75rem は下端の
+     4.25rem に上端の余白 0.5rem を足した値）。
+     画面比（58dvh など）の上限は置かない。一覧と文字の枠を戻したぶん背が高くなり、
+     上限で切るとパネルの中にスクロールが出てしまう。 */
+  .page--form:has(.form-final) .voice-panel--batch {
+    bottom: calc(var(--final-bar-h) + 3.25rem + 1rem + env(safe-area-inset-bottom, 0px));
+    /* `dvh` を知らない環境では先の `vh` の行がそのまま効く。 */
+    max-height: min(
+      34rem,
+      calc(100vh - var(--final-bar-h) - 4.75rem - env(safe-area-inset-bottom, 0px))
+    );
+    max-height: min(
+      34rem,
+      calc(100dvh - var(--final-bar-h) - 4.75rem - env(safe-area-inset-bottom, 0px))
+    );
+  }
 }
 
 .repeat-block {

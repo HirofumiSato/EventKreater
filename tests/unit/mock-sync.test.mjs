@@ -698,14 +698,15 @@ describe("モック専用の操作の script", () => {
 });
 
 describe("音声入力の写し", () => {
-  // 製品の音声入力（覆い・話し方で既定が変わる任意の項目・郵便番号の住所補完）を写した印。
+  // 製品の音声入力（覆い・話す順のマス・話し方で既定が変わる任意の項目・郵便番号の住所補完）を写した印。
   const complete =
     'const scrim = "voice-scrim";' +
+    '<ol class="voice-cells" aria-label="話す順"></ol>' +
     '<input type="checkbox" data-voice-optional>' +
     "optional.checked = !batch;" +
     "event-postal-code event-prefecture event-city event-town";
 
-  it("覆い・任意の項目・郵便番号の補完がそろっていれば通す", () => {
+  it("覆い・話す順のマス・任意の項目・郵便番号の補完がそろっていれば通す", () => {
     expect(missingVoiceSimulation(complete)).toEqual([]);
   });
 
@@ -713,6 +714,12 @@ describe("音声入力の写し", () => {
     const problems = missingVoiceSimulation(complete.replace("voice-scrim", "scrim"));
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("voice-scrim");
+  });
+
+  it("話す順のマスが無ければ止める", () => {
+    const problems = missingVoiceSimulation(complete.replace("voice-cells", "voice-steps"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("voice-cells");
   });
 
   it("「任意の項目も聞く」が無ければ止める", () => {
@@ -739,7 +746,7 @@ describe("音声入力の写し", () => {
     expect(missingVoiceSimulation("")).toHaveLength(1);
   });
 
-  it("実際の mock-interactions.js は 3 つとも持っている", () => {
+  it("実際の mock-interactions.js は 4 つとも持っている", () => {
     const source = readFileSync(path.join(ROOT, "style-guide", "mock-interactions.js"), "utf8");
     expect(missingVoiceSimulation(source)).toEqual([]);
   });
