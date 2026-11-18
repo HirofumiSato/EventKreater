@@ -985,6 +985,8 @@ live でもう一度作ります。手順の正は :doc:`stripe` の「本番（
      - ``fly logs`` を見て、前のイメージタグへ ``--image`` で戻す
    * - DB の変更が入って戻せない
      - マイグレーションは前方のみです。戻すときは打ち消しのマイグレーションを足します
+   * - ``Deploy`` が 20 分で打ち切られた
+     - ジョブの上限（``timeout-minutes: 20``）に達したものです。Fly 側の API が一時的に返らず、イメージを push したあとの machine 更新へ進めないことがあります。``fly releases`` と ``fly status`` で、旧版の machine が ``passing`` のまま動いているのを確かめてから、GitHub の **Actions** でその ``Deploy`` の **Re-run all jobs** を押します。staging の途中で打ち切られると ``web`` と ``production`` は skip されたままなので、本番まで緑になったことを実行の画面で見ます
 
 8. いまの制約
 -------------
