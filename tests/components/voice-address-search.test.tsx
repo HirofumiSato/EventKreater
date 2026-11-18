@@ -204,7 +204,9 @@ describe("郵便番号の住所検索", () => {
     expect(stub.urls[0]).toContain("/api/v1/geo/postal-codes/1500001");
 
     // 押しても始められない的は置かない（主ボタンごと出さない）。
-    expect(screen.queryByRole("button", { name: /^(話す|言い直す|まとめて話す)$/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /^(話す|言い直す|自由に話す)$/ }),
+    ).toBeNull();
     // 戻る・スキップは押せる。押せば待ちを捨てて、その欄へ移る。
     const buttons = panelButtons();
     expect(buttons.back.disabled).toBe(false);

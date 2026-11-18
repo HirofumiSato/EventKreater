@@ -265,11 +265,11 @@ describe("モックでないとき", () => {
     vi.stubGlobal("MediaRecorder", undefined);
 
     await mount(() => {});
-    // メッセージは話し方に依らない。まとめてのまま開き、マイクを押して案内を見る
-    // （まとめては開いただけでは録らない）。
+    // メッセージは話し方に依らない。自由に話すのまま開き、マイクを押して案内を見る
+    // （自由に話すときは開いただけでは録らない）。
     await press("音声入力を開始");
     await act(async () => {
-      screen.getByRole("button", { name: /^まとめて話す/ }).click();
+      screen.getByRole("button", { name: /^自由に話す/ }).click();
     });
     await press("録音を始める");
 

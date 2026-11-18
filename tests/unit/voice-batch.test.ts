@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/v1/voice/utterances/route";
-import { assignBatch, estimateBatchAssignments, mockBatchTranscript } from "@/modules/events/lib/voice/batch";
 import {
-  batchExampleSentence,
-  batchPlan,
-  batchTargets,
-  defaultVoiceMode,
-} from "@/modules/events/lib/voice/batch-guide";
+  assignBatch,
+  estimateBatchAssignments,
+  mockBatchTranscript,
+} from "@/modules/events/lib/voice/batch";
+import { batchTargets, defaultVoiceMode } from "@/modules/events/lib/voice/batch-guide";
 import { MAX_AUDIO_BYTES } from "@/modules/events/lib/voice/audio";
 import { voiceFieldOrder } from "@/modules/events/lib/voice/fields";
 import type { VoiceFieldScope } from "@/modules/events/lib/voice/types";
@@ -22,6 +21,10 @@ import {
 /** 2026 年 10 月 24 日（日本時間）を基準にする。相対日付のテストを固定するため。 */
 const NOW = new Date("2026-10-24T09:00:00+09:00");
 
+/** 自由文の見本。日付・時刻・会場・金額・定員が 1 文に混ざっている。 */
+const NATURAL =
+  "忘年会を12月5日の18時から20時に渋谷ホールで開きます。参加費は3000円、定員は30人です。";
+
 function scope(overrides: Partial<VoiceFieldScope> = {}): VoiceFieldScope {
   return {
     showOrganizerName: false,
@@ -31,17 +34,15 @@ function scope(overrides: Partial<VoiceFieldScope> = {}): VoiceFieldScope {
   };
 }
 
-/** 決定的には会場だけが埋まり、「よろしく」が未割当に残る文。 */
-const TEXT = "よろしく、渋谷ホール";
-
-function assign(
-  text = TEXT,
-  value: EventFormValues = EMPTY_EVENT_FORM,
-) {
+function assign(text = NATURAL, value: EventFormValues = EMPTY_EVENT_FORM) {
   return assignBatch(text, { now: NOW, value, scope: scope() });
 }
 
-function llmResponse(assignments: { slotId: string; clause: string }[]): Response {
+function bySlot(result: Awaited<ReturnType<typeof assignBatch>>) {
+  return new Map(result.assignments.map((item) => [item.slotId, item]));
+}
+
+function llmResponse(assignments: { slotId: string; quote: string }[]): Response {
   return Response.json({
     choices: [{ message: { content: JSON.stringify({ assignments }) } }],
   });
@@ -53,83 +54,126 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("LLM で節の割当を補う", () => {
-  it("返ってきた slotId と節を採用し、patch は parse の戻り値と一致する", async () => {
+describe("LLM で原文から quote を抜き出す", () => {
+  it("自然文 1 文から日付・開始・終了・会場・金額・定員が埋まる", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     const fetchMock = vi.fn(async () =>
-      llmResponse([{ slotId: "title:0", clause: "よろしく" }]),
+      llmResponse([
+        { slotId: "title:0", quote: "忘年会" },
+        { slotId: "scheduleDate:0", quote: "12月5日" },
+        { slotId: "scheduleStart:0", quote: "18時から20時" },
+        { slotId: "venueName:0", quote: "渋谷ホール" },
+        { slotId: "planAmount:0", quote: "3000円" },
+        { slotId: "capacity:0", quote: "30人" },
+      ]),
     );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await assign();
+    const slots = bySlot(result);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const title = result.assignments.find((item) => item.slotId === "title:0");
-    expect(title?.text).toBe("よろしく");
-    expect(title?.value).toBe("よろしく");
+    // batchTargets の順（イベント名 → 開催日 → 開始 → 金額 → 会場 → 定員）に並ぶ。
+    expect(result.assignments.map((item) => item.slotId)).toEqual([
+      "title:0",
+      "scheduleDate:0",
+      "scheduleStart:0",
+      "planAmount:0",
+      "venueName:0",
+      "capacity:0",
+    ]);
 
-    const slot = voiceFieldOrder(EMPTY_EVENT_FORM, scope()).find(
-      (item) => item.id === "title:0",
+    expect(slots.get("title:0")?.value).toBe("忘年会");
+    expect(slots.get("scheduleDate:0")?.patch.schedules?.[0].eventDate).toBe("2026-12-05");
+    expect(slots.get("scheduleStart:0")?.patch.schedules?.[0]).toMatchObject({
+      startTime: "18:00",
+      endTime: "20:00",
+    });
+    // 開始が範囲で終了も読めたので、終了の行は二重に作らない。
+    expect(slots.has("scheduleEnd:0")).toBe(false);
+    expect(slots.get("planAmount:0")?.patch.pricePlans?.[0].amount).toBe("3000");
+    expect(slots.get("venueName:0")?.patch).toEqual({ venueName: "渋谷ホール" });
+    expect(slots.get("capacity:0")?.patch).toEqual({ capacity: 30 });
+  });
+
+  it("quote は前後の助詞・句読点を落としてから原文と照合する", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        llmResponse([{ slotId: "scheduleDate:0", quote: "「12月5日に」" }]),
+      ),
     );
-    expect(title?.patch).toEqual(
-      slot?.field.parse("よろしく", { now: NOW, value: EMPTY_EVENT_FORM, row: 0 }),
+
+    const result = await assign();
+
+    const date = bySlot(result).get("scheduleDate:0");
+    expect(date?.text).toBe("12月5日");
+    expect(date?.patch.schedules?.[0].eventDate).toBe("2026-12-05");
+  });
+
+  it("原文に無い quote は捨てる", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => llmResponse([{ slotId: "title:0", quote: "新年会" }])),
     );
-    expect(result.unassigned).toEqual([]);
+
+    const result = await assign("よろしく、渋谷ホール");
+
+    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
+    expect(result.unassigned).toContain("よろしく");
+  });
+
+  it("parse が null を返す quote は捨てる", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => llmResponse([{ slotId: "capacity:0", quote: "よろしく" }])),
+    );
+
+    const result = await assign("よろしく、渋谷ホール");
+
+    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
   });
 
   it("存在しない slotId は捨てる", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => llmResponse([{ slotId: "unknown:0", clause: "よろしく" }])),
+      vi.fn(async () => llmResponse([{ slotId: "unknown:0", quote: "よろしく" }])),
     );
 
-    const result = await assign();
+    const result = await assign("よろしく、渋谷ホール");
 
     expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
-    expect(result.unassigned).toEqual(["よろしく"]);
   });
 
-  it("未割当でない節は捨てる", async () => {
+  it("同じ欄・同じ quote の重複は捨てる", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => llmResponse([{ slotId: "title:0", clause: "渋谷ホール" }])),
+      vi.fn(async () =>
+        llmResponse([
+          { slotId: "title:0", quote: "忘年会" },
+          { slotId: "title:0", quote: "忘年会" },
+          { slotId: "venueName:0", quote: "忘年会" },
+        ]),
+      ),
     );
 
     const result = await assign();
 
-    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
-    expect(result.unassigned).toEqual(["よろしく"]);
-  });
-
-  it("parse が null を返す節は捨てる", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "sk-test");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => llmResponse([{ slotId: "capacity:0", clause: "よろしく" }])),
+    // 同じ欄は 1 回だけ。同じ quote を別の欄にも使わない。
+    const titles = result.assignments.filter((item) => item.slotId === "title:0");
+    expect(titles).toHaveLength(1);
+    expect(titles[0].text).toBe("忘年会");
+    expect(new Set(result.assignments.map((item) => item.text)).size).toBe(
+      result.assignments.length,
     );
-
-    const result = await assign();
-
-    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
-    expect(result.unassigned).toEqual(["よろしく"]);
   });
 
-  it("VOICE_BATCH_LLM=0 なら fetch を呼ばない", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "sk-test");
-    vi.stubEnv("VOICE_BATCH_LLM", "0");
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await assign();
-
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
-    expect(result.unassigned).toEqual(["よろしく"]);
-  });
-
-  it("上流が 500 でも決定的な割当は返る", async () => {
+  it("LLM が失敗したら決定的な割当だけを返す", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     vi.stubGlobal(
       "fetch",
@@ -139,14 +183,27 @@ describe("LLM で節の割当を補う", () => {
     );
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const result = await assign();
+    const result = await assign("よろしく、渋谷ホール");
 
     expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
-    expect(result.unassigned).toEqual(["よろしく"]);
+    expect(result.unassigned).toContain("よろしく");
     // 上流の本文は出さず、status と code だけを残す。
     expect(warn).toHaveBeenCalledWith(
       "[voice] batch assignment failed: status=500 code=server_error",
     );
+  });
+
+  it("VOICE_BATCH_LLM=0 なら fetch を呼ばない", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubEnv("VOICE_BATCH_LLM", "0");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await assign("よろしく、渋谷ホール");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.assignments.map((item) => item.slotId)).toEqual(["venueName:0"]);
+    expect(result.unassigned).toContain("よろしく");
   });
 
   it("json_schema で 400 を返したら json_object で 1 回だけ再試行する", async () => {
@@ -156,11 +213,11 @@ describe("LLM で節の割当を補う", () => {
       .mockResolvedValueOnce(
         Response.json({ error: { code: "unsupported_value" } }, { status: 400 }),
       )
-      .mockResolvedValueOnce(llmResponse([{ slotId: "title:0", clause: "よろしく" }]));
+      .mockResolvedValueOnce(llmResponse([{ slotId: "title:0", quote: "よろしく" }]));
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const result = await assign();
+    const result = await assign("よろしく、渋谷ホール");
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const second = JSON.parse(String(fetchMock.mock.calls[1][1]?.body)) as {
@@ -170,14 +227,14 @@ describe("LLM で節の割当を補う", () => {
     expect(result.assignments.some((item) => item.slotId === "title:0")).toBe(true);
   });
 
-  it("未割当の節が無ければ LLM を呼ばない", async () => {
+  it("全文が空なら LLM を呼ばない", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const assignments = await estimateBatchAssignments(
       voiceFieldOrder(EMPTY_EVENT_FORM, scope()),
-      [],
+      "   ",
       EMPTY_EVENT_FORM,
       NOW,
       scope(),
@@ -188,7 +245,32 @@ describe("LLM で節の割当を補う", () => {
   });
 });
 
-describe("まとめて話す案内", () => {
+describe("自由文のモック", () => {
+  it("「、」区切りの列挙ではなく、自然な 1 文を返す", () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    const text = mockBatchTranscript(EMPTY_EVENT_FORM, scope());
+
+    expect(text).toBe(
+      "忘年会。12月5日に開きます。18時から20時、渋谷ホールで行います。" +
+        "参加費は3000円、1ドリンク付です。" +
+        "郵便番号は1500001、住所は東京都渋谷区神宮前1-2-3、○○ビル3階です。" +
+        "定員は30人、申し込み期限は12月1日23時59分、雨天決行です。",
+    );
+  });
+
+  it("入力済みの欄の例を含まない", () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    const text = mockBatchTranscript(
+      { ...EMPTY_EVENT_FORM, title: "秋の音楽会" },
+      scope(),
+    );
+
+    expect(text).not.toContain("忘年会");
+    expect(text).toContain("12月5日");
+  });
+});
+
+describe("自由文で埋める対象", () => {
   it("入力済みの欄は対象にしない", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
@@ -215,100 +297,14 @@ describe("まとめて話す案内", () => {
     expect(ids).not.toContain("rsvpDeadline:0");
   });
 
-  it("話す順は欄の名前で並べ、郵便番号まで出す", () => {
-    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
-    const cells = batchPlan(targets);
-
-    // 見本の値ではなく、話す欄の名前を並べる。1 マスは 1 つの欄なので、
-    // 開始と終了も別のマスにする（名前を 1 行に収めるため）。
-    expect(cells.map((cell) => cell.label)).toEqual([
-      "イベント名",
-      "開催日",
-      "開始時間",
-      "終了時間",
-      "料金プラン名",
-      "料金（円）",
-      "場所",
-      "郵便番号",
-    ]);
-    expect(cells.map((cell) => cell.prompt)).toEqual([
-      "イベント名は？",
-      "開催日は？",
-      "開始時間は？",
-      "終了時間は？",
-      "料金プラン名は？",
-      "料金は？",
-      "場所は？",
-      "郵便番号は？",
-    ]);
-    // 名前と質問は同じマスから作るので、位置がずれない。
-    expect(cells.map((cell) => cell.id)).toEqual([
-      "title:0",
-      "scheduleDate:0",
-      "scheduleStart:0",
-      "scheduleEnd:0",
-      "planName:0",
-      "planAmount:0",
-      "venueName:0",
-      "postalCode:0",
-    ]);
-  });
-
-  it("開始と終了は別のマスにし、話す 1 文の例だけ 1 つの言い方にまとめる", () => {
-    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
-    const start = cells.find((cell) => cell.id === "scheduleStart:0");
-    const end = cells.find((cell) => cell.id === "scheduleEnd:0");
-
-    expect(start?.label).toBe("開始時間");
-    expect(end?.label).toBe("終了時間");
-    // 開始のマスは「18時から20時」で終了まで読む（マスの id は開始のまま）。
-    expect(start?.slotIds).toEqual(["scheduleStart:0", "scheduleEnd:0"]);
-    expect(start?.example).toBe("18時から20時");
-    // 例の 1 文では 1 回だけ言うので、終了のマスには見本を持たせない。
-    expect(end?.example).toBe("");
-  });
-
-  it("話す 1 文の例は、話す順に値を並べた 1 文になる", () => {
-    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
-
-    // マスの名前だけでは、値として何を言えばよいか分からない。
-    expect(batchExampleSentence(cells)).toBe(
-      "忘年会、12月5日、18時から20時、一般、3000円、渋谷ホール、1500001",
-    );
-  });
-
-  it("入力済みの欄はマスにも出さない", () => {
-    const cells = batchPlan(
-      batchTargets({ ...EMPTY_EVENT_FORM, title: "秋の音楽会" }, scope()),
-    );
-
-    expect(cells.map((cell) => cell.label)).not.toContain("イベント名");
-    // 空欄の終了時刻は、別のマスとして残る（開始と畳まない）。
-    expect(cells.map((cell) => cell.label)).toContain("終了時間");
-  });
-
-  it("同じマスを二度並べない", () => {
-    const cells = batchPlan(batchTargets(EMPTY_EVENT_FORM, scope()));
-    const ids = cells.map((cell) => cell.id);
-
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it("空欄が 3 つ以上ならまとめてを既定にする", () => {
+  it("空欄が 3 つ以上なら自由文を既定にする", () => {
     const targets = batchTargets(EMPTY_EVENT_FORM, scope());
 
     expect(defaultVoiceMode(targets.slice(0, 2), EMPTY_EVENT_FORM)).toBe("single");
     expect(defaultVoiceMode(targets.slice(0, 3), EMPTY_EVENT_FORM)).toBe("batch");
   });
 
-  it("行が 1 つで空欄が 3 つ以上なら、まとめてを既定にする", () => {
-    const targets = batchTargets(EMPTY_EVENT_FORM, scope());
-
-    expect(targets.length).toBeGreaterThanOrEqual(3);
-    expect(defaultVoiceMode(targets, EMPTY_EVENT_FORM)).toBe("batch");
-  });
-
-  it("日程が 2 件あると、まとめてではなく 1 つずつを既定にする", () => {
+  it("日程が 2 件あると、1 つずつを既定にする", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       schedules: [
@@ -320,7 +316,7 @@ describe("まとめて話す案内", () => {
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
 
-  it("男女別の料金があると、まとめてではなく 1 つずつを既定にする", () => {
+  it("男女別の料金があると、1 つずつを既定にする", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       pricePlans: withGenderPricing(EMPTY_EVENT_FORM.pricePlans),
@@ -330,7 +326,7 @@ describe("まとめて話す案内", () => {
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
 
-  it("料金プランが 2 組あると、まとめてではなく 1 つずつを既定にする", () => {
+  it("料金プランが 2 組あると、1 つずつを既定にする", () => {
     const value: EventFormValues = {
       ...EMPTY_EVENT_FORM,
       pricePlans: [
@@ -341,31 +337,24 @@ describe("まとめて話す案内", () => {
 
     expect(defaultVoiceMode(batchTargets(value, scope()), value)).toBe("single");
   });
-
-  it("モックの文字起こしは、入力済みの欄の例を含まない", () => {
-    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
-    const text = mockBatchTranscript(
-      { ...EMPTY_EVENT_FORM, title: "秋の音楽会" },
-      scope(),
-    );
-
-    expect(text).not.toContain("忘年会");
-    expect(text).toContain("12月5日");
-  });
 });
 
-/** 1 件ぶんのまとめて話すリクエスト。音声の中身はモックでは使わない。 */
-function request(options: {
-  audioBytes?: number;
-  withAudio?: boolean;
-  value?: unknown;
-  ip?: string;
-} = {}): NextRequest {
+/** 1 件ぶんのリクエスト。`text` があるときは音声を省ける。 */
+function request(
+  options: {
+    audioBytes?: number;
+    withAudio?: boolean;
+    text?: string;
+    value?: unknown;
+    ip?: string;
+  } = {},
+): NextRequest {
   const form = new FormData();
   if (options.withAudio !== false) {
     const bytes = new Uint8Array(options.audioBytes ?? 3).fill(1);
     form.append("audio", new File([bytes], "voice.webm", { type: "audio/webm" }));
   }
+  if (options.text !== undefined) form.append("text", options.text);
   const value = options.value === undefined ? EMPTY_EVENT_FORM : options.value;
   form.append("value", JSON.stringify(value));
   return new NextRequest("http://localhost:3012/api/v1/voice/utterances", {
@@ -390,7 +379,7 @@ async function readEvents(response: Response): Promise<{ event: string; data: an
 }
 
 describe("POST /api/v1/voice/utterances", () => {
-  it("モック有効なら 200 で割当を返す", async () => {
+  it("モック有効なら 200 で自然文と割当を返す", async () => {
     vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
     vi.stubEnv("OPENAI_API_KEY", "");
 
@@ -407,31 +396,81 @@ describe("POST /api/v1/voice/utterances", () => {
       model: string;
     };
     expect(body.model).toBe("mock");
-    expect(body.text).toContain("、");
+    expect(body.text).toContain("忘年会。12月5日に開きます。");
     expect(body.assignments.length).toBeGreaterThan(0);
     expect(body.assignments[0]).toHaveProperty("patch");
-    expect(body.assignments.map((item) => item.slotId)).toContain("scheduleDate:0");
+    // モック（LLM 無し）でも、決定的な割当で自然文から主要な欄が埋まる。
+    expect(body.assignments.map((item) => item.slotId)).toEqual(
+      expect.arrayContaining([
+        "title:0",
+        "scheduleDate:0",
+        "scheduleStart:0",
+        "venueName:0",
+        "planAmount:0",
+        "capacity:0",
+      ]),
+    );
     expect(Array.isArray(body.unassigned)).toBe(true);
   });
 
-  it("話している間に、読めたマスを cell で先に返す", async () => {
+  it("cell を返さず、delta と done だけを返す", async () => {
     vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
     vi.stubEnv("OPENAI_API_KEY", "");
 
     const events = await readEvents(await POST(request()));
-    const cells = events.filter((item) => item.event === "cell");
 
-    // 値は返さず、どのマスが読めたかだけを返す。
-    expect(cells.length).toBeGreaterThan(0);
-    expect(Object.keys(cells[0].data)).toEqual(["slotId"]);
-    expect(cells.map((item) => item.data.slotId)).toContain("scheduleDate:0");
-    // 同じマスを二度塗らない。
-    const slots = cells.map((item) => item.data.slotId);
-    expect(new Set(slots).size).toBe(slots.length);
-    // `cell` は `done` より前に届く（話している間に塗れる）。
-    expect(events.findIndex((item) => item.event === "cell")).toBeLessThan(
+    expect(events.every((item) => item.event === "delta" || item.event === "done")).toBe(
+      true,
+    );
+    expect(events.findIndex((item) => item.event === "delta")).toBeLessThan(
       events.findIndex((item) => item.event === "done"),
     );
+  });
+
+  it("text があれば文字起こしを呼ばず、done だけを返す", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "");
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    vi.stubEnv("VOICE_BATCH_LLM", "0");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({ withAudio: false, text: "12月5日に渋谷ホールで開きます。" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const events = await readEvents(response);
+    expect(events.some((item) => item.event === "delta")).toBe(false);
+    const body = events.find((item) => item.event === "done")?.data as {
+      text: string;
+      assignments: { slotId: string }[];
+    };
+    expect(body.text).toBe("12月5日に渋谷ホールで開きます。");
+    expect(body.assignments.map((item) => item.slotId)).toContain("scheduleDate:0");
+  });
+
+  it("text が 2000 文字を超えたら 400", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+
+    const response = await POST(
+      request({ withAudio: false, text: "あ".repeat(2001) }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { detail: string };
+    expect(body.detail).toContain("2000");
+  });
+
+  it("空の text は文字起こしへ落とす（audio があれば 400 にしない）", async () => {
+    vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
+    vi.stubEnv("OPENAI_API_KEY", "");
+
+    const response = await POST(request({ text: "   " }));
+
+    expect(response.status).toBe(200);
+    const events = await readEvents(response);
+    expect(events.some((item) => item.event === "done")).toBe(true);
   });
 
   it("モックは回数の上限を数えない", async () => {
@@ -450,6 +489,7 @@ describe("POST /api/v1/voice/utterances", () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     vi.stubEnv("VOICE_TRANSCRIBE_MODEL", "gpt-transcribe");
     vi.stubEnv("VOICE_TRANSCRIBE_FALLBACK_MODEL", "gpt-4o-mini-transcribe");
+    vi.stubEnv("VOICE_BATCH_LLM", "0");
 
     const fetchMock = vi
       .fn()
@@ -476,7 +516,7 @@ describe("POST /api/v1/voice/utterances", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("audio が無ければ 400", async () => {
+  it("audio も text も無ければ 400", async () => {
     vi.stubEnv("VOICE_TRANSCRIBE_MOCK", "1");
 
     const response = await POST(request({ withAudio: false }));

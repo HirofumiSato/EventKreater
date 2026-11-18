@@ -17,6 +17,12 @@ const MAX_TRACKED_IPS = 2000;
 
 const attempts = new Map<string, number[]>();
 
+/**
+ * 数えた録音の `sessionId`。同じ録音の区間は何回送っても 1 回として扱う。
+ * 値は最初に数えた時刻。窓より古くなったら捨てる。
+ */
+const countedSessions = new Map<string, number>();
+
 export interface VoiceRateLimitRule {
   limit: number;
   windowMs: number;
@@ -40,14 +46,29 @@ function prune(map: Map<string, number[]>, now: number, windowMs: number): void 
   }
 }
 
+/** 窓より古くなった録音の記録を捨てる。 */
+function pruneSessions(now: number, windowMs: number): void {
+  for (const [sessionId, at] of countedSessions) {
+    if (now - at >= windowMs) countedSessions.delete(sessionId);
+  }
+}
+
 /**
  * 1 回ぶん消費する。上限に達していれば 429 を投げる。
  * 消費は認識を呼ぶ前に行う。失敗した呼び出しでも課金されうるため。
+ *
+ * `sessionId` は 1 録音を表す。同じ `sessionId` の 2 回目以降（区間送信の続き）は
+ * 数えない。数えるのは最初の 1 回だけである。`sessionId` 無しは今までどおり毎回数える。
  */
-export function consumeVoiceRateLimit(clientKey: string): void {
+export function consumeVoiceRateLimit(clientKey: string, sessionId?: string | null): void {
   const rule = voiceRateLimitRule();
   const now = Date.now();
   const key = clientKey || "unknown";
+
+  // 窓より古い録音の記録は、毎回掃除する（古い sessionId を「数えた」と誤らない）。
+  pruneSessions(now, rule.windowMs);
+  // 数えたことのある録音は、窓の中なら何回送っても数えない（1 録音 1 カウント）。
+  if (sessionId && countedSessions.has(sessionId)) return;
 
   if (attempts.size >= MAX_TRACKED_IPS) prune(attempts, now, rule.windowMs);
 
@@ -75,5 +96,10 @@ export function consumeVoiceRateLimit(clientKey: string): void {
 
   recent.push(now);
   attempts.set(key, recent);
+  // 上限を通った最初の 1 回だけ、録音を数えたものとして覚える。
+  // 記録が上限まで増えたら、それ以上は覚えない（数える回数が増えるだけで、上限は守られる）。
+  if (sessionId && countedSessions.size < MAX_TRACKED_IPS) {
+    countedSessions.set(sessionId, now);
+  }
   if (attempts.size > MAX_TRACKED_IPS) prune(attempts, now, rule.windowMs);
 }

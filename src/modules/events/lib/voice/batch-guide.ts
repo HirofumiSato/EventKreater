@@ -1,38 +1,38 @@
 import { isSlotNeeded, voiceFieldOrder } from "@/modules/events/lib/voice/fields";
 import type {
-  VoiceField,
   VoiceFieldScope,
   VoiceSlot,
-  VoiceSlotId,
 } from "@/modules/events/lib/voice/types";
 import { groupPricePlanPairs, type EventFormValues } from "@/modules/events/types";
 
 /**
- * 「まとめて話す」の案内。話す順を、いまのフォームの空欄から作る。
+ * 音声入力の案内。自由文を 1 回で話すか、1 欄ずつ話すかの既定と、
+ * 自由文で埋める対象（いまの空欄）を決める。
  *
- * 固定の例を画面に置くと、欄が埋まったあとも埋まっていない欄の例を読み上げてしまい、
- * 話す順と実際に割り当てられる欄がずれる。案内と割当の対象を同じ `batchTargets` から
- * 作ることで、見えている順に話せばそのとおりに入る。
- *
- * 札（話す順の名前）と例（読み上げの見本）は、かつて別々の配列から作っていた。
- * 片方は重複を除いた種類、もう片方は 6 項までの文字列だったため、5 枚と 6 項のように
- * 数も位置も合わなかった。いまは `batchPlan` の 1 本の並びが、マスの名前と質問を持つ。
+ * 以前は「話す順」のマス（`batchPlan`）を持ち、読点で切った 1 節＝1 欄で割り当てていた。
+ * 自然な文では話す順が決まらない（「12月5日の18時から20時に渋谷ホールで忘年会」の
+ * ように、1 文へ日付・時刻・場所・名前が混ざる）ため、マスと途中の割当はやめた。
+ * いまは話し終えた原文から欄ごとの値の範囲を抜き出して割り当てるので、
+ * 話す前に見せる順も、喋りながら塗るマスも持たない。
  *
  * DOM と Next に依存しない純ロジック。`fields.ts` の定義だけを読む。
  */
 
-/** 話し方。まとめて 1 回で話すか、1 欄ずつ話すか。 */
+/** 話し方。自由文を 1 回で話すか、1 欄ずつ話すか（内部の名前は `batch` のまま）。 */
 export type VoiceMode = "batch" | "single";
 
-/** 既定で「まとめて」を選ぶ、空欄の数。1〜2 欄なら 1 つずつ聞いた方が速い。 */
+/** 既定で「自由に話す」を選ぶ、空欄の数。1〜2 欄なら 1 つずつ聞いた方が速い。 */
 export const BATCH_DEFAULT_MIN_TARGETS = 3;
 
 /**
- * まとめて話すときに埋める対象。巡回順のうち、いま埋めるべきマスだけを返す。
+ * 自由文で埋める対象。巡回順のうち、いま埋めるべき欄だけを返す。
  *
  * `isSlotNeeded` は必須の空欄と、まだ触っていない任意欄を返す。任意欄を外した
  * スコープでは必須の空欄だけになる。入力済みの欄はここに残らないので、
  * 案内にも割当にも出てこない（静かに上書きしない）。
+ *
+ * 自由文でも「どの欄を対象にするか」は変わらない。話し終えたあとの割当も、
+ * 確認ダイアログの行も、この並びから作る。
  */
 export function batchTargets(
   value: EventFormValues,
@@ -44,7 +44,7 @@ export function batchTargets(
 /**
  * 行を分けて話す必要があるか。日程・男女別・料金プランの組のいずれかが複数なら真。
  *
- * 「まとめて」は 1 行ぶんの並びを前提にしているので、行が複数あると 2 行目以降が
+ * 自由文の割当は 1 行ぶんの値を前提にしているので、行が複数あると 2 行目以降が
  * 行き止まりになる。入口の既定を決める前に、ここで行の複雑さを見る。
  */
 export function hasMultipleRows(value: EventFormValues): boolean {
@@ -57,7 +57,7 @@ export function hasMultipleRows(value: EventFormValues): boolean {
  * 話し方の既定を決める。
  *
  * 行が複数あるときは「1つずつ」。1 行だけなら、空欄が 3 つ以上のときに
- * 「まとめて」を選ぶ（1〜2 欄なら 1 つずつ聞いた方が速い）。
+ * 「自由に話す」を選ぶ（1〜2 欄なら 1 つずつ聞いた方が速い）。
  */
 export function defaultVoiceMode(
   targets: readonly VoiceSlot[],
@@ -67,105 +67,14 @@ export function defaultVoiceMode(
   return targets.length >= BATCH_DEFAULT_MIN_TARGETS ? "batch" : "single";
 }
 
-/** マスに並べる上限。390px で 3 段に収まる長さに抑える（郵便番号まで）。 */
-const MAX_CELLS = 8;
-
 /**
- * マスに出す名前と、1 行に出す質問。
+ * 自由文の見本。パネルの「話し方の例：」のあとに置く。
  *
- * 既定は欄そのものの名前と質問（`fields.ts` の `label` / `prompt`）を使う。ここで
- * 差し替えるのは、マスに並べると長いもの（料金プランの名前）、単位を添えないと
- * 何を話すか決まらないもの（金額）、話す順では「場所」で通じるもの（会場名）、
- * 口に出しやすい言い方に寄せるもの（開始時刻・終了時刻）だけである。
+ * 話す順を並べた見本（「忘年会、12月5日、…」）は、実際に話してよい形と違う。
+ * 値の並びではなく 1〜2 文の自然な文を 1 つだけ見せ、日付・時刻・場所・料金・
+ * 定員を 1 回で言ってよいことを伝える。欄ごとの見本は、1 つずつ話すモードの
+ * 質問の横（`fields.ts` の `example`）に任せる。
  */
-const CELL_TEXT: Partial<Record<VoiceField["key"], { label: string; prompt: string }>> = {
-  scheduleStart: { label: "開始時間", prompt: "開始時間は？" },
-  scheduleEnd: { label: "終了時間", prompt: "終了時間は？" },
-  planName: { label: "料金プラン名", prompt: "料金プラン名は？" },
-  planAmount: { label: "料金（円）", prompt: "料金は？" },
-  venueName: { label: "場所", prompt: "場所は？" },
-};
-
-/**
- * まとめて話すときの 1 マス。
- *
- * 画面はこの並びを、話す 1 文の例の下へ縦に置く。名前はマスに出す。まとめては 1 つの欄の
- * 話ではないので、質問は進めず、何を話すかは例の 1 文だけで示す。
- */
-export interface BatchCell {
-  /** マスの識別子。読めたかどうかはこの id で持つ。 */
-  id: VoiceSlotId;
-  /** 1 文で埋まる組。開始のマスは「18時から20時」で終了まで読むので、終了も含む。 */
-  slotIds: VoiceSlotId[];
-  /** マスに出す欄の名前（「イベント名」）。 */
-  label: string;
-  /** このマスで聞いていること（「イベント名は？」）。読み上げと確認に使う。 */
-  prompt: string;
-  /** 話し方の見本（「忘年会」）。マスには出さず、話す 1 文の例にだけ使う。 */
-  example: string;
-}
-
-/**
- * 話す順を 1 本の並びにする。
- *
- * - 必須の欄を先に、任意の欄を後ろに置く（まず話すことを前へ出す）
- * - 1 マスは 1 つの欄。開始と終了も別のマスにし、名前を 1 行に収める
- * - 8 枚まで。9 枚目以降は確認のダイアログで扱う
- */
-export function batchPlan(targets: readonly VoiceSlot[]): BatchCell[] {
-  const byId = new Map<VoiceSlotId, VoiceSlot>(targets.map((slot) => [slot.id, slot]));
-  const ordered = [
-    ...targets.filter((slot) => !slot.field.optional),
-    ...targets.filter((slot) => slot.field.optional),
-  ];
-
-  const cells: BatchCell[] = [];
-  for (const target of ordered) {
-    if (cells.length >= MAX_CELLS) break;
-
-    const slotIds: VoiceSlotId[] = [target.id];
-    let example = target.field.example;
-    if (target.key === "scheduleStart") {
-      // 話す 1 文の例だけは「18時から20時」とまとめる。欄は 2 枚に分かれていても、
-      // 口に出すときは 1 つの言い方になるためである（終了のマスの見本は空にする）。
-      const end = byId.get(`scheduleEnd:${target.row}` as VoiceSlotId);
-      if (end) {
-        slotIds.push(end.id);
-        example = `${example}から${end.field.example}`;
-      }
-    } else if (
-      target.key === "scheduleEnd" &&
-      byId.has(`scheduleStart:${target.row}` as VoiceSlotId)
-    ) {
-      example = "";
-    }
-
-    cells.push({ id: target.id, slotIds, example, ...cellText(target) });
-  }
-  return cells;
-}
-
-/**
- * まとめて話す 1 文の例（「忘年会、12月5日、18時から20時、…」）。
- *
- * まとめては 1 つの欄の話ではないので質問は進めない。代わりに、話す中身を値の並びで
- * 1 文だけ置き、押す直前に読めるようにする。
- * マスの名前だけでは、値として何を言えばよいか分からないためである。
- */
-export function batchExampleSentence(cells: readonly BatchCell[]): string {
-  return cells
-    .map((cell) => cell.example)
-    .filter((example) => example !== "")
-    .join("、");
-}
-
-/**
- * マスの名前と質問を決める。
- *
- * 行や男女別で名前が変わる欄（「2件目の開催日」「女性の金額」）は、`fields.ts` が
- * 作った名前をそのまま使う。差し替えると、どの行の話か分からなくなる。
- */
-function cellText(slot: VoiceSlot): { label: string; prompt: string } {
-  const own = slot.label === slot.field.label ? CELL_TEXT[slot.key] : undefined;
-  return own ?? { label: slot.label, prompt: slot.prompt };
+export function freeformExampleSentence(): string {
+  return "忘年会を12月5日の18時から20時に渋谷ホールで開きます。参加費は3000円、定員は30人です。";
 }

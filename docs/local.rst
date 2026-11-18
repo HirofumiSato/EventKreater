@@ -71,13 +71,13 @@
    * - ``VOICE_TRANSCRIBE_FALLBACK_MODEL``
      - 任意。モデルが使えない（400/404）ときに 1 度だけ試す控え。空なら ``gpt-4o-mini-transcribe``
    * - ``VOICE_BATCH_MODEL``
-     - 任意。まとめて話すときの割当に使う LLM。空なら ``gpt-4.1-mini``
+     - 任意。自由に話すときの quote 抽出に使う LLM。空なら ``gpt-4.1-mini``
    * - ``VOICE_BATCH_LLM``
-     - 任意。``0`` ならまとめて話すときの LLM を使わず、決定的な割当だけにする
+     - 任意。``0`` なら自由に話すときの LLM を使わず、決定的な割当だけにする
    * - ``VOICE_TRANSCRIBE_LIMIT`` / ``VOICE_TRANSCRIBE_WINDOW_MINUTES``
-     - 任意。接続元ごとの音声認識の回数と、数える窓（分）。既定は 1 時間 40 回。まとめて話すときも 1 回で 1 と数える
+     - 任意。接続元ごとの音声認識の回数と、数える窓（分）。既定は 1 時間 40 回。自由に話すときは 1 回で 1、区間送信は ``sessionId`` で 1 録音 1 と数える
    * - ``VOICE_TRANSCRIBE_MOCK``
-     - 任意。``1`` なら録音と OpenAI の呼び出しを省き、欄の入力例をその場で入れる（開発用）。マイクの無い PC でも自動遷移を確かめられる。``NODE_ENV=production`` では無効
+     - 任意。``1`` なら録音と OpenAI の呼び出しを省き、欄の入力例から作った文字をその場で入れる（開発用）。マイクの無い PC でも自動遷移を確かめられる。``NODE_ENV=production`` では無効
 
 ``.env.example`` ではアプリ URL を ``http://localhost:3012`` にしています。
 ``next dev`` の既定ポートは 3000 なので、どちらかに揃えます。
