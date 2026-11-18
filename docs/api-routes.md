@@ -5,9 +5,9 @@
 `src/app/api/**/route.ts` を走査した結果です。ディレクトリ構造がそのまま URL になり、ルートグループ `(...)` は URL に含めません。
 仕様の列は `docs/backend_api_implementation_spec.md` の表と本文に、同じメソッドとパスがあるかで判定しています。
 
-- ルートファイル: 84
-- エンドポイント（メソッド × パス）: 103
-- 仕様書に記載: 103
+- ルートファイル: 85
+- エンドポイント（メソッド × パス）: 104
+- 仕様書に記載: 104
 - 実装のみ（仕様書に記載なし）: 0
 - 仕様書のみ（実装なし）: 0
 
@@ -27,6 +27,7 @@
 | DELETE | `/api/v1/admin/session` | 必須（requireAdmin） | あり | `src/app/api/v1/admin/session/route.ts` |
 | GET | `/api/v1/admin/users` | 必須（requireAdmin） | あり | `src/app/api/v1/admin/users/route.ts` |
 | PATCH | `/api/v1/admin/users/[id]` | 必須（requireAdmin） | あり | `src/app/api/v1/admin/users/[id]/route.ts` |
+| PATCH | `/api/v1/admin/users/[id]/plan` | 必須（requireAdmin） | あり | `src/app/api/v1/admin/users/[id]/plan/route.ts` |
 | GET | `/api/v1/auth/google` | なし | あり | `src/app/api/v1/auth/google/route.ts` |
 | GET | `/api/v1/auth/google/callback` | なし | あり | `src/app/api/v1/auth/google/callback/route.ts` |
 | POST | `/api/v1/auth/local` | なし | あり | `src/app/api/v1/auth/local/route.ts` |

@@ -60,6 +60,15 @@ function subscribedMessage(quota: UserQuota, periodLabel: string | null): string
   return `公開し放題プランに加入中です。公開中のイベント ${count} 件（上限はありません）。${detail}`;
 }
 
+/**
+ * 運営付与の公開し放題。有料の月額プランではないので、価格・自動更新・解約の話は
+ * 書かない（買う対象も、カードも無い）。件数だけを伝える。
+ */
+function grantedMessage(quota: UserQuota): string {
+  const count = quota.publishedEventCount ?? 0;
+  return `公開し放題（運営付与）。公開中のイベント ${count} 件（上限はありません）。`;
+}
+
 export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, onGranted, onBeforeAuth, nextPath = "/organizer/events" }: QuotaStatusBannerProps) {
   const [ticketOpen, setTicketOpen] = useState(false);
   // まだ残数が分からない間は、未加入のいちばん多い形（本文 1 行 + 枠線ボタン 2 つ）で
@@ -78,6 +87,8 @@ export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, on
     );
   }
   if (!quota) return null;
+  // 運営付与は Stripe の契約ではない。有料の月額と同じ枝に混ぜると、価格や解約の話が出てしまう。
+  const granted = quota.grantedUnlimited === true;
   const needsPhone = quota.planType === "FREE_TRIAL" && quota.phoneVerified === false;
   const isSubscribed = quota.subscriptionStatus === "ACTIVE";
   const discount = quota.discount;
@@ -90,29 +101,33 @@ export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, on
   const periodLabel = trialLabel ?? discountLabel;
   const freeTicketAvailable = (quota.freeGrantRemaining ?? 0) > 0 && quota.pricing?.oneTime.chargedPrice === 0;
 
-  const tone =
-    quota.subscriptionStatus === "PAST_DUE" || !quota.canCreate || needsPhone
+  const tone = granted
+    ? "alert--info"
+    : quota.subscriptionStatus === "PAST_DUE" || !quota.canCreate || needsPhone
       ? "alert--warning"
       : isSubscribed
         ? "alert--info"
         : "alert--success";
 
-  const message = needsPhone
-    ? "無料チケットを使うには電話番号の確認が必要です。"
-    : quota.subscriptionStatus === "PAST_DUE"
-      ? "お支払いに問題があります。カードを更新してください。"
-      : isSubscribed
-        ? subscribedMessage(quota, periodLabel)
-        : `${
-            quota.publishedEventCount
-              ? `公開中のイベント ${quota.publishedEventCount} 件。`
-              : ""
-          }無料チケット 残り ${quota.remainingFree}枚${quota.paidCredits > 0 ? `（単発 ${quota.paidCredits}枚）` : ""}${
-            freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
-          }`;
+  const message = granted
+    ? grantedMessage(quota)
+    : needsPhone
+      ? "無料チケットを使うには電話番号の確認が必要です。"
+      : quota.subscriptionStatus === "PAST_DUE"
+        ? "お支払いに問題があります。カードを更新してください。"
+        : isSubscribed
+          ? subscribedMessage(quota, periodLabel)
+          : `${
+              quota.publishedEventCount
+                ? `公開中のイベント ${quota.publishedEventCount} 件。`
+                : ""
+            }無料チケット 残り ${quota.remainingFree}枚${quota.paidCredits > 0 ? `（単発 ${quota.paidCredits}枚）` : ""}${
+              freeTicketAvailable ? ` ・ 0円チケット あと${quota.freeGrantRemaining}枚` : ""
+            }`;
 
   // 公開し放題プランは 402 が起きないので、どちらの導線も出さない。
-  const unlimited = isSubscribed && quota.subscriptionPlan === "UNLIMITED";
+  // 運営付与も同じで、買う対象が無いのでプラン案内とチケット購入を隠す。
+  const unlimited = granted || (isSubscribed && quota.subscriptionPlan === "UNLIMITED");
   const showPlanLink = !unlimited;
   // 支払いに問題がある間は、買う導線だけを止める（カードの更新へは月額の画面から進める）。
   const showTicketButton = quota.subscriptionStatus !== "PAST_DUE" && !unlimited;
@@ -130,7 +145,7 @@ export function QuotaStatusBanner({ quota, loading = false, onPurchaseTicket, on
             電話番号を確認する
           </Link>
         )}
-        {isSubscribed && periodLabel && (
+        {!granted && isSubscribed && periodLabel && (
           <Link href="/terms" className="text-link">
             解約と自動更新の条件
           </Link>

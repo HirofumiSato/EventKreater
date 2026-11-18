@@ -12,6 +12,7 @@ import {
   type DraftPlanId,
 } from "@/modules/billing/lib/plans";
 import { loadActiveCampaigns } from "@/modules/billing/lib/campaigns";
+import { hasUnlimitedGrant } from "@/modules/billing/lib/grant";
 import { quoteAll } from "@/modules/billing/lib/pricing";
 
 export {
@@ -244,16 +245,20 @@ export async function assertCanSaveDraft(
       subscriptionPlan: true,
       currentPeriodEnd: true,
       paidCredits: true,
+      grantedPlan: true,
     },
   });
   const subscriptionActive = quota
     ? isSubscriptionActive(quota.subscriptionStatus, quota.currentPeriodEnd, now)
     : false;
-  const plan: DraftPlanId = subscriptionActive
-    ? quota?.subscriptionPlan === "MONTHLY_8"
-      ? "monthly-8"
-      : "unlimited"
-    : "free";
+  // 運営の付与は Stripe の契約より先に見る。付与中は下書きも公開し放題と同じ 30 件。
+  const plan: DraftPlanId = hasUnlimitedGrant(quota)
+    ? "unlimited"
+    : subscriptionActive
+      ? quota?.subscriptionPlan === "MONTHLY_8"
+        ? "monthly-8"
+        : "unlimited"
+      : "free";
   const limit = draftEventLimitOf(plan, (quota?.paidCredits ?? 0) > 0);
   const count = await countDraftEvents(db, userId);
   if (count < limit) return;
@@ -370,7 +375,8 @@ async function claimFreeTicket(
 /**
  * チケットを1枚消費する。公開の直前に、イベントと同じトランザクションで呼ぶ。
  *
- * 消費順は「定額 → チケット（期限が近い順） → 単発クレジット → 無料チケット」。
+ * 消費順は「運営の付与 → 定額 → チケット（期限が近い順） → 単発クレジット → 無料チケット」。
+ * 運営の付与は支払い状況に左右されず、`PAST_DUE` でも件数を数えずに通す（何も消費しない）。
  * 8件まで公開プランは、公開中のイベントが上限未満なら通す。
  * 上限に達していても単発クレジットかチケットがあれば、そちらを1枚使って通す。
  * 公開し放題プランは件数を数えない。
@@ -386,6 +392,11 @@ export async function consumeEventQuota(
   await lockQuotaRow(tx, userId);
   const quota = await tx.userUsageQuota.findUniqueOrThrow({ where: { userId } });
   const now = new Date();
+
+  // 運営の付与は PAST_DUE より先に見る。付与中は公開中の件数を数えず、チケットも使わない。
+  if (hasUnlimitedGrant(quota)) {
+    return { type: "SUBSCRIPTION_UNLIMITED", ticketId: null };
+  }
 
   const pricing = await loadPricingOptions(now);
 
@@ -450,7 +461,9 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
   }
 
   const now = new Date();
-  if (quota.subscriptionStatus === "PAST_DUE") {
+  // 運営の付与は支払い状況に左右されない。PAST_DUE の 402 も、公開中の件数も見ない。
+  const granted = hasUnlimitedGrant(quota);
+  if (!granted && quota.subscriptionStatus === "PAST_DUE") {
     throw quotaExceeded(
       "月額プランのお支払いに問題があるため、イベントを作成できません。お支払い方法を更新してください。",
       await loadPricingOptions(now),
@@ -462,13 +475,14 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     quota.currentPeriodEnd,
     now,
   );
-  // 公開中の件数を見るのは8件プランだけ。公開し放題プランは数えない。
+  // 公開中の件数を見るのは8件プランだけ。付与中と公開し放題プランは数えない。
   const capped =
+    !granted &&
     subscriptionActive &&
     quota.subscriptionPlan === "MONTHLY_8" &&
     (await countPublishedSubscriptionEvents(prisma, userId, now)) >=
       SUBSCRIPTION_PUBLISHED_EVENT_LIMIT;
-  const subscriptionOk = subscriptionActive && !capped;
+  const subscriptionOk = granted || (subscriptionActive && !capped);
   const creditOk = quota.paidCredits >= 1;
   // 期限内のチケットも1枚として数える。数えないと、券を持っているのに
   // 「作成できない」と表示され、402 の画面へ誘導されてしまう。
@@ -495,13 +509,15 @@ export async function assertCanCreateEvent(userId: string): Promise<QuotaDecisio
     throw capped ? publishedEventsFull(pricing) : quotaExceeded(undefined, pricing);
   }
 
-  const preview: QuotaPlanType = subscriptionOk
-    ? quota.subscriptionPlan === "MONTHLY_8"
-      ? "SUBSCRIPTION_MONTHLY_8"
-      : "SUBSCRIPTION_UNLIMITED"
-    : creditOk || ticketOk
-      ? "PAID_CREDIT"
-      : "FREE_TRIAL";
+  const preview: QuotaPlanType = granted
+    ? "SUBSCRIPTION_UNLIMITED"
+    : subscriptionOk
+      ? quota.subscriptionPlan === "MONTHLY_8"
+        ? "SUBSCRIPTION_MONTHLY_8"
+        : "SUBSCRIPTION_UNLIMITED"
+      : creditOk || ticketOk
+        ? "PAID_CREDIT"
+        : "FREE_TRIAL";
 
   return {
     type: preview,

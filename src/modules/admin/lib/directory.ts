@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEventDate } from "@/lib/serializers";
 import { ProblemDetailException } from "@/lib/exceptions";
 import { maskPhone } from "@/modules/auth/lib/login-challenge";
+import { hasUnlimitedGrant } from "@/modules/billing/lib/grant";
 import { organizerLabel } from "@/modules/organizers/lib/names";
 import { ACTIVE_PARTICIPANT_WHERE } from "@/modules/participants/lib/where";
 
@@ -42,6 +43,14 @@ export async function searchAdminUsers(q: string, offset: number) {
         phoneVerifiedAt: true,
         deletedAt: true,
         createdAt: true,
+        // 運営付与の公開し放題。一覧の「プラン」列に、付与した人と日時を出す。
+        quota: {
+          select: {
+            grantedPlan: true,
+            grantedPlanAt: true,
+            grantedBy: { select: { name: true } },
+          },
+        },
         // 名簿から外した行は参加の件数に数えない。
         _count: {
           select: { organizers: true, participants: { where: { ...ACTIVE_PARTICIPANT_WHERE } } },
@@ -65,6 +74,9 @@ export async function searchAdminUsers(q: string, offset: number) {
       createdAt: row.createdAt.toISOString(),
       organizerCount: row._count.organizers,
       participantCount: row._count.participants,
+      grantedUnlimited: hasUnlimitedGrant(row.quota),
+      grantedAt: row.quota?.grantedPlanAt ? row.quota.grantedPlanAt.toISOString() : null,
+      grantedByName: row.quota?.grantedBy?.name ?? null,
     })),
   };
 }
@@ -101,6 +113,59 @@ export async function updatePlatformRole(actorId: string, userId: string, platfo
     select: { id: true, email: true, name: true, platformRole: true },
   });
   return updated;
+}
+
+/**
+ * 運営付与の公開し放題を付ける・解除する。
+ *
+ * 権限変更と違い、自分の行も操作できる（管理者が自分のアカウントで無制限に試すため）。
+ * 利用枠の行が無い会員でも付与できるよう、`user_usage_quotas` は upsert する。
+ * Stripe の契約（`subscriptionPlan` など）には触らない。
+ */
+export async function setUserPlanGrant(
+  actorId: string,
+  userId: string,
+  grantedPlan: "UNLIMITED" | "NONE",
+) {
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, deletedAt: true },
+  });
+  if (!existing) {
+    throw new ProblemDetailException({
+      status: 404,
+      title: "Not Found",
+      detail: "会員が見つかりません。",
+    });
+  }
+  if (existing.deletedAt) {
+    throw new ProblemDetailException({
+      status: 400,
+      title: "Validation Error",
+      detail: "退会済みの会員のプランは変更できません。",
+    });
+  }
+  // 付与した人と日時を残す。解除は 3 列を NULL に戻すだけで、公開済みのイベントは消さない。
+  const grant =
+    grantedPlan === "UNLIMITED"
+      ? { grantedPlan: "UNLIMITED" as const, grantedPlanBy: actorId, grantedPlanAt: new Date() }
+      : { grantedPlan: null, grantedPlanBy: null, grantedPlanAt: null };
+  const quota = await prisma.userUsageQuota.upsert({
+    where: { userId },
+    create: { userId, ...grant },
+    update: grant,
+    select: {
+      grantedPlan: true,
+      grantedPlanAt: true,
+      grantedBy: { select: { name: true } },
+    },
+  });
+  return {
+    id: userId,
+    grantedUnlimited: hasUnlimitedGrant(quota),
+    grantedAt: quota.grantedPlanAt ? quota.grantedPlanAt.toISOString() : null,
+    grantedByName: quota.grantedBy?.name ?? null,
+  };
 }
 
 export async function searchAdminEvents(q: string, offset: number) {

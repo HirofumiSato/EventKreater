@@ -60,9 +60,12 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
 
   const status = quota?.subscriptionStatus ?? "NONE";
   const subscribed = status === "ACTIVE" || status === "PAST_DUE";
+  // 運営付与の公開し放題。Stripe の契約ではないので、申込・支払い・解約の導線は出さない。
+  const granted = quota?.grantedUnlimited === true;
 
-  const currentPlanLabel =
-    status !== "ACTIVE"
+  const currentPlanLabel = granted
+    ? "公開し放題プラン（運営付与）"
+    : status !== "ACTIVE"
       ? "月額プランなし"
       : quota?.subscriptionPlan === "UNLIMITED"
         ? "公開し放題プラン"
@@ -72,7 +75,7 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
   const publishedLimit = quota?.publishedEventLimit ?? null;
   // API は未加入にも上限（8）を返すので、公開し放題プランを先に見る。
   const publishedValue =
-    subscribed && quota?.subscriptionPlan === "UNLIMITED"
+    granted || (subscribed && quota?.subscriptionPlan === "UNLIMITED")
       ? `${publishedCount} 件（上限なし）`
       : publishedLimit
         ? `${publishedCount} / ${publishedLimit} 件`
@@ -90,9 +93,8 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
     plans.find((plan) => plan.id === "single") ??
     SERVICE_PLANS.find((plan) => plan.id === "single");
 
-  // 支払いに問題があるあいだは、単発チケットを勧めない。公開し放題プランは足す必要がない。
-  const ticketHidden =
-    status === "PAST_DUE" || (status === "ACTIVE" && quota?.subscriptionPlan === "UNLIMITED");
+  // 支払いに問題があるあいだは、単発チケットを勧めない。公開し放題プランと運営付与は足す必要がない。
+  const ticketHidden = status === "PAST_DUE" || granted || (status === "ACTIVE" && quota?.subscriptionPlan === "UNLIMITED");
   const grantUsed =
     quota?.pricing?.oneTime.chargedPrice === 0 && (quota?.freeGrantRemaining ?? 0) === 0;
 
@@ -146,7 +148,11 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
             <Rows>
               <Row
                 title="プラン"
-                aside={<Badge tone={status === "ACTIVE" ? "success" : "neutral"}>{currentPlanLabel}</Badge>}
+                aside={
+                  <Badge tone={status === "ACTIVE" || granted ? "success" : "neutral"}>
+                    {currentPlanLabel}
+                  </Badge>
+                }
               />
               <Row
                 title="公開中のイベント"
@@ -196,7 +202,8 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
                   aside={<span className="rows__value">{quota.discount.percent}%割引</span>}
                 />
               )}
-              {quota.currentPeriodEnd && (
+              {/* 運営付与は Stripe の契約ではないので、次回更新は無い。 */}
+              {!granted && quota.currentPeriodEnd && (
                 <Row
                   title="次回更新"
                   aside={
@@ -209,7 +216,7 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
             </Rows>
           </Panel>
 
-          {status !== "NONE" && (
+          {!granted && status !== "NONE" && (
             <Panel>
               <PanelHead title="お支払いと解約" />
               <StripePortalButton
@@ -221,48 +228,51 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
             </Panel>
           )}
 
-          <Panel>
-            <PanelHead title="月額プラン" note="公開中のイベント数を増やせます。" />
-            {checkoutError && <Alert tone="error">{checkoutError}</Alert>}
-            <ul className="plan-list plan-list--pair">
-              {monthlyPlans.map((plan) => {
-                const choice: SubscriptionChoice =
-                  plan.id === "subscription-unlimited" ? "UNLIMITED" : "MONTHLY_8";
-                const quote =
-                  choice === "UNLIMITED"
-                    ? quota.pricing?.subscriptionUnlimited
-                    : quota.pricing?.subscription8;
-                const label =
-                  quota.trialEligible === true
-                    ? "初月0円で始める"
-                    : quote?.chargedPrice === 0
-                      ? "0円で定期購入を始める"
-                      : "このプランを始める";
-                return (
-                  <PlanCard key={plan.id} plan={plan}>
-                    {subscribed ? (
-                      <p className="help">
-                        加入中のプランを変えるときは「カードを変更・解約」から手続きしてください。
-                      </p>
-                    ) : (
-                      <button
-                        type="button"
-                        className={
-                          plan.recommended
-                            ? "btn btn--primary btn--block"
-                            : "btn btn--outline btn--block"
-                        }
-                        onClick={() => void beginSubscription(choice)}
-                        disabled={pendingPlan !== null}
-                      >
-                        {pendingPlan === choice ? "接続しています…" : label}
-                      </button>
-                    )}
-                  </PlanCard>
-                );
-              })}
-            </ul>
-          </Panel>
+          {/* 運営付与は買う対象が無いので、月額プランと単発チケットの節を出さない。 */}
+          {!granted && (
+            <Panel>
+              <PanelHead title="月額プラン" note="公開中のイベント数を増やせます。" />
+              {checkoutError && <Alert tone="error">{checkoutError}</Alert>}
+              <ul className="plan-list plan-list--pair">
+                {monthlyPlans.map((plan) => {
+                  const choice: SubscriptionChoice =
+                    plan.id === "subscription-unlimited" ? "UNLIMITED" : "MONTHLY_8";
+                  const quote =
+                    choice === "UNLIMITED"
+                      ? quota.pricing?.subscriptionUnlimited
+                      : quota.pricing?.subscription8;
+                  const label =
+                    quota.trialEligible === true
+                      ? "初月0円で始める"
+                      : quote?.chargedPrice === 0
+                        ? "0円で定期購入を始める"
+                        : "このプランを始める";
+                  return (
+                    <PlanCard key={plan.id} plan={plan}>
+                      {subscribed ? (
+                        <p className="help">
+                          加入中のプランを変えるときは「カードを変更・解約」から手続きしてください。
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          className={
+                            plan.recommended
+                              ? "btn btn--primary btn--block"
+                              : "btn btn--outline btn--block"
+                          }
+                          onClick={() => void beginSubscription(choice)}
+                          disabled={pendingPlan !== null}
+                        >
+                          {pendingPlan === choice ? "接続しています…" : label}
+                        </button>
+                      )}
+                    </PlanCard>
+                  );
+                })}
+              </ul>
+            </Panel>
+          )}
 
           {!ticketHidden && singlePlan && (
             <Panel>
@@ -282,13 +292,15 @@ function OrganizerPlanScreen({ initialQuota }: { initialQuota: QuotaSeed }) {
             </Panel>
           )}
 
-          <p className="help">
-            初月無料の終了後は、登録したカードへ自動で請求します。3日前と1日前にメールでお知らせします。詳しくは
-            <Link href={SITE.nav.terms.href} className="text-link">
-              {SITE.nav.terms.label}
-            </Link>
-            をご確認ください。
-          </p>
+          {!granted && (
+            <p className="help">
+              初月無料の終了後は、登録したカードへ自動で請求します。3日前と1日前にメールでお知らせします。詳しくは
+              <Link href={SITE.nav.terms.href} className="text-link">
+                {SITE.nav.terms.label}
+              </Link>
+              をご確認ください。
+            </p>
+          )}
         </>
       )}
 

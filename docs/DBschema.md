@@ -1809,6 +1809,41 @@ CREATE INDEX IF NOT EXISTS "auth_attempts_created_at_idx"
 
 ---
 
+### 4.9. 運営付与の公開し放題（追加マイグレーション）
+
+`prisma/migrations/20261118090000_quota_granted_plan/migration.sql` で追加する。仕様は [課金・利用枠要件定義書 §2.1](billing_and_quota_system_requirements.md) を正とする。
+
+#### 追加カラム
+
+```sql
+-- 運営が付与する公開し放題（無制限）。Stripe の契約とは別の列で持ち、
+-- Webhook の更新（解約・支払い失敗）では消さない。解除するまで有効で、期限は持たない。
+ALTER TABLE user_usage_quotas
+  ADD COLUMN granted_plan "SubscriptionPlan",
+  ADD COLUMN granted_plan_by UUID,
+  ADD COLUMN granted_plan_at TIMESTAMPTZ;
+
+-- 誰が付与したかを辿る。管理者が退会しても付与の事実は残し、参照だけ外す。
+ALTER TABLE user_usage_quotas
+  ADD CONSTRAINT user_usage_quotas_granted_plan_by_fkey
+  FOREIGN KEY (granted_plan_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+```
+
+#### 列の意味
+
+| テーブル | 列 | 型 | 意味 |
+| :---- | :---- | :---- | :---- |
+| `user_usage_quotas` | `granted_plan` | "SubscriptionPlan" NULL | 運営が付与したプラン。`UNLIMITED` のときだけ公開し放題。NULL は付与なし。解除で NULL に戻す |
+| `user_usage_quotas` | `granted_plan_by` | UUID NULL | 付与した管理者の会員ID。一覧に付与者を出すためだけに持ち、解除で NULL に戻す |
+| `user_usage_quotas` | `granted_plan_at` | TIMESTAMPTZ NULL | 付与した日時。解除で NULL に戻す |
+
+- 付与は Stripe の `subscription_status` / `subscription_plan` とは独立している。Webhook はこの 3 列を触らないので、解約や支払い失敗で付与が消えることはない。
+- 付与中は `PAST_DUE` より優先し、公開中の件数を数えず、チケットも消費しない。下書きの上限は既存の公開し放題と同じ 30 件。
+- 付与から公開したイベントの `events.quota_source` は既存の `UNLIMITED` と同じ `SUBSCRIPTION` のまま（`QuotaSource` の enum は増やさない）。
+- `granted_plan` に入れる値は `UNLIMITED` だけで、解除は `NONE` ではなく NULL にする（「付与されていない」と「NONE が付与された」を区別しないため）。
+
+---
+
 ## 5. CRUD操作詳細仕様（トランザクション＆アトミック処理）
 
 ### 5.1. イベント新規作成（課金認可ゲート判定＆チケット消費）

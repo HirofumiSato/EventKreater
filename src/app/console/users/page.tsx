@@ -19,6 +19,9 @@ interface AdminUserRow {
   createdAt: string;
   organizerCount: number;
   participantCount: number;
+  grantedUnlimited: boolean;
+  grantedAt: string | null;
+  grantedByName: string | null;
 }
 
 const PAGE_SIZE = 30;
@@ -111,6 +114,48 @@ export default function AdminUsersPage() {
     }
   };
 
+  const changePlan = async (user: AdminUserRow, grantedPlan: "UNLIMITED" | "NONE") => {
+    const message =
+      grantedPlan === "UNLIMITED"
+        ? `「${user.name}」に公開し放題を付与します。`
+        : `「${user.name}」の公開し放題を解除します。`;
+    if (!window.confirm(message)) return;
+    setBusyId(user.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/admin/users/${user.id}/plan`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grantedPlan }),
+      });
+      if (!res.ok) throw new Error(await readProblem(res));
+      const data = (await res.json()) as {
+        user: {
+          id: string;
+          grantedUnlimited: boolean;
+          grantedAt: string | null;
+          grantedByName: string | null;
+        };
+      };
+      setUsers((current) =>
+        current.map((row) =>
+          row.id === user.id
+            ? {
+                ...row,
+                grantedUnlimited: data.user.grantedUnlimited,
+                grantedAt: data.user.grantedAt,
+                grantedByName: data.user.grantedByName,
+              }
+            : row,
+        ),
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "プランを変更できませんでした");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   if (blocked) {
     return <EmptyState>このページは利用できません。</EmptyState>;
   }
@@ -121,7 +166,7 @@ export default function AdminUsersPage() {
     <AdminChrome>
       <div>
         <h1 className="page-title">会員検索・権限変更</h1>
-        <p className="page-lead">名前またはメールアドレスで検索し、他の会員の管理者権限を変更できます。</p>
+        <p className="page-lead">名前またはメールアドレスで検索し、管理者権限と運営付与のプランを変更できます。</p>
       </div>
       <form className="form" onSubmit={search}>
         <Field label="検索" htmlFor="admin-user-q">
@@ -163,6 +208,7 @@ export default function AdminUsersPage() {
                 <th>名前</th>
                 <th>連絡先</th>
                 <th>権限</th>
+                <th>プラン</th>
                 <th>登録日</th>
                 <th>幹事</th>
                 <th>出欠</th>
@@ -171,13 +217,13 @@ export default function AdminUsersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td className="data__empty" colSpan={6}>
+                  <td className="data__empty" colSpan={7}>
                     読み込んでいます
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td className="data__empty" colSpan={6}>
+                  <td className="data__empty" colSpan={7}>
                     条件に合う会員はいません。
                   </td>
                 </tr>
@@ -233,6 +279,43 @@ export default function AdminUsersPage() {
                             保存
                           </button>
                         </div>
+                      </td>
+                      <td>
+                        {user.grantedUnlimited ? (
+                          <>
+                            <Badge tone="success" small>
+                              公開し放題（運営付与）
+                            </Badge>
+                            <div className="data__muted">
+                              {user.grantedByName ? `${user.grantedByName} が付与` : "運営が付与"}
+                              {user.grantedAt ? ` ${formatWhen(user.grantedAt)}` : ""}
+                            </div>
+                            <div className="btn-row">
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                disabled={user.withdrawn || busyId === user.id}
+                                onClick={() => void changePlan(user, "NONE")}
+                              >
+                                解除
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span className="data__muted">なし</span>
+                            <div className="btn-row">
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                disabled={user.withdrawn || busyId === user.id}
+                                onClick={() => void changePlan(user, "UNLIMITED")}
+                              >
+                                付与
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="data__muted">{formatWhen(user.createdAt)}</td>
                       <td>{user.organizerCount}</td>

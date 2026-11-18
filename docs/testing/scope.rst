@@ -147,7 +147,7 @@
 
 .. count-start
 
-161 ファイル、``it`` は 2311 件です。内訳は ``tests/unit/`` が 111 ファイル 1918 件、``tests/integration/`` が 31 ファイル 228 件です。結合の 228 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
+163 ファイル、``it`` は 2324 件です。内訳は ``tests/unit/`` が 112 ファイル 1923 件、``tests/integration/`` が 32 ファイル 236 件です。結合の 236 件は ``TEST_DATABASE_URL`` があるときだけ走ります。すべて Stripe も OpenAI も呼びません。表はすべてのファイルを並べたものです。
 
 .. count-end
 
@@ -191,6 +191,10 @@
      - 15
      - 8件まで公開プラン 980 円・公開し放題プラン 2,980 円・単発 299 円の定価、料金ページの 4 枚と勧める札、契約から販売商品への対応、キャンペーン対象の 3 価格（旧 ``SUBSCRIPTION`` は定額の両方）、今日（JST）の求め方とチケットの記録先（単発・無料チケットは件数の外）、8 件の上限、Price ID から加入プランへの対応（旧 980 円は公開し放題プランとして引き継ぐ）
      - SCR-MOD-01 / SCR-PUB-06 / SCR-ADM-05
+   * - ``tests/unit/unlimited-grant.test.ts``
+     - 5
+     - 運営付与の判定は ``granted_plan = 'UNLIMITED'`` のときだけ真（``MONTHLY_8``・``NONE``・NULL・行なしは偽）。付与中の公開前の確認は、チケットや単発を持っていても、``PAST_DUE`` でも出さない。解除後はチケットの確認へ戻る
+     - SCR-MOD-01 / SCR-ORG-17
    * - ``tests/unit/first-month-free.test.ts``
      - 10
      - 初月無料の対象判定（未使用・契約なし・支払済みなしの 3 条件）、再加入とプラン変更では再適用しないこと、加入から 1 か月後の終了日時（月末・うるう年・年またぎ）、元の日時を書き換えないこと
@@ -259,9 +263,13 @@
      - 5
      - 筆頭幹事の付け替え、二度呼んでもチケットが増えない、上限を超えない
      - SCR-PUB-02 → SCR-PUB-03
+   * - ``tests/integration/admin-plan-grant.test.ts``
+     - 5
+     - 運営付与の公開し放題を付けると ``granted_plan`` と付与者・日時が入り、管理一覧も同じ印を返すこと。解除は 3 列を NULL に戻し、公開済みの催しは残すこと。退会済みは 400、利用枠の行が無い会員は upsert で付与できること。存在しない会員は 404
+     - SCR-ADM-01
    * - ``tests/integration/subscription-quota.test.ts``
-     - 8
-     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題プランは件数を数えない。公開の再開はチケットを再消費する。複製は下書きの時点では消費せず、開催日と候補日と申込締切を1か月後にずらす
+     - 10
+     - 公開中のイベントが 8 件に達したら 402 ``PUBLISHED_EVENTS_FULL``。開催日が過ぎたもの・公開を一時停止したもの・削除したものは数えない。8 件が埋まっていても単発クレジットがあれば 1 件追加できる。公開し放題プランは件数を数えない。運営の付与があれば、定額の契約が無くても 8 件を超えて公開でき、``quota_source`` は ``SUBSCRIPTION`` でチケットは減らない。``PAST_DUE`` でも付与があれば公開できる。公開の再開はチケットを再消費する。複製は下書きの時点では消費せず、開催日と候補日と申込締切を1か月後にずらす
      - SCR-ORG-02 / SCR-ORG-04 / SCR-MOD-01
    * - ``tests/integration/subscription-trial.test.ts``
      - 6
@@ -796,8 +804,8 @@
      - クォータの初期値（``QuotaSeed``）の扱い。``ready`` は渡した値で始まり ``fetch`` を呼ばず、``signed-out`` も呼ばずに帯を出さない（読み込み中の場所取りもしない）。初期値なしと ``unknown`` だけマウント後に ``GET /api/v1/billing/quota`` を読む
      - SCR-ORG-01 / SCR-ORG-02 / SCR-ORG-05 / SCR-ORG-15 / SCR-ORG-16 / SCR-ORG-17 / SCR-PUB-03
    * - ``tests/integration/quota-view.test.ts``
-     - 2
-     - ``loadQuotaView(userId)`` の戻りが ``GET /api/v1/billing/quota`` の応答と形も値も一致し、``Cache-Control: private, max-age=30`` を保つこと。クォータ行の無い会員は API と同じく 404 ``QUOTA_NOT_FOUND`` で止まること
+     - 3
+     - ``loadQuotaView(userId)`` の戻りが ``GET /api/v1/billing/quota`` の応答と形も値も一致し、``Cache-Control: private, max-age=30`` を保つこと。クォータ行の無い会員は API と同じく 404 ``QUOTA_NOT_FOUND`` で止まること。運営の付与中は ``canCreate`` が真、``planType`` が ``SUBSCRIPTION_UNLIMITED``、下書きの上限が 30 件、``grantedUnlimited`` が真で ``grantedAt`` が入り、8 件を超えて公開しても件数の上限に寄せないこと
      - SCR-ORG-01 / SCR-ORG-02 / SCR-ORG-17
    * - ``tests/integration/roster-page.test.ts``
      - 5
@@ -806,7 +814,7 @@
 
 .. breakdown-start
 
-件数の内訳は ``tests/unit/`` が 1918、``tests/integration/`` が 228 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1918 件を実行して 228 件を skip します。
+件数の内訳は ``tests/unit/`` が 1923、``tests/integration/`` が 236 です。``TEST_DATABASE_URL`` の無い環境では、``npm test`` が 1923 件を実行して 236 件を skip します。
 
 .. breakdown-end
 
