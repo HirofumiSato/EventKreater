@@ -2388,7 +2388,7 @@ export interface ProblemDetails {
 
 本文の `next` は任意で、ログイン後の戻り先である。`src/lib/next-path.ts` の `safeNextPath` を通したパスだけを、確認メール（`/auth/verify?token=...&next=...`）と既登録メール（`/auth/register?mode=login&next=...`）の URL に載せる。許可していないパスや外部サイトは付けない。`/auth/verify` は URL の `next` を電話番号の確認まで引き回す。`POST /api/v1/auth/verification` も同じ `next` を受け、再送する確認メールの URL に載せる。
 
-この入口は主催者・参加者向けであり、`platformRole` が `ADMIN` の会員はパスワードが一致しても確認番号チャレンジを発行しない。HTTP 403、`error: "ADMIN_ACCOUNT"`、本文「このアカウントは、こちらからはログインできません。」を返す。管理コンソールの URL も、管理者であることも応答から読ませない（公開画面から管理コンソールへの導線を作らないため）。Google の認可完了で `ADMIN` と判明したときも `/console/login` へは送らず、`?error=google_account` を付けて元の入口へ戻す。`purpose` が `MEMBER` のチャレンジは、発行時と照合時の両方でこの規則を確かめる。
+この入口は主催者・参加者向けだが、`platformRole` が `ADMIN` の会員も通す。管理者も自分でイベントを持つため、入口で締め出すと自分の催しを画面から管理できなくなる。管理者への確認番号は一般会員と同じ規則で送る（`purpose` が `MEMBER` なら既定はメール、管理者専用の入口 `ADMIN` だけが SMS）。Google の認可完了で `ADMIN` と判明したときも `/console/login` へは送らず、会員と同じ着地にする。管理コンソールの URL とリンクは応答にも画面にも出さない（公開画面から管理コンソールへの導線を作らないため）。
 
 成功したログインの会員セッションは、HTTPS では Cookie `__Host-auth_token`、HTTP では `auth_token` である。中身は HS256 JWT で、`userId`、`email`、`jti` を持つ。`jti` は `auth_sessions` の行である。JWT には `platformRole` を載せない。ログアウトはその行の `revoked_at` を記録する。
 

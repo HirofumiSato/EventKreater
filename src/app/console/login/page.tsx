@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
     <div className="page--form stack">
       <div>
         <h1 className="page-title">管理者ログイン</h1>
-        <p className="page-lead">管理者権限と確認済みの電話番号が必要です。パスワードのあと、登録済みの電話へSMSで確認番号を送ります。主催者向けのログイン画面からは管理者として入れません。</p>
+        <p className="page-lead">管理者権限と確認済みの電話番号が必要です。パスワードのあと、登録済みの電話へSMSで確認番号を送ります。</p>
       </div>
       <form onSubmit={submit} className="form">
         <Field label="メールアドレス" htmlFor="admin-email">

@@ -144,22 +144,22 @@ describeDb("ログイン確認番号の再送（結合）", () => {
     expect(switched.view.canUseEmail).toBe(true);
   });
 
-  it("管理者は主催者の入口で拒否され、応答に管理コンソールの URL を出さない", async () => {
+  it("管理者も主催者の入口から入れ、確認番号はメールで送る", async () => {
+    // 管理者も自分でイベントを持つ。入口を塞ぐと自分の催しを画面から管理できない。
     const user = await seedUser("admin-member", "ADMIN");
     const ip = key("admin-member-ip");
-
-    const error = await startLoginChallenge({ user, purpose: "MEMBER", ip }).catch(
-      (cause: unknown) => cause,
+    buckets.push(
+      bucketOf(rules.loginEmailChallengeUser, user.id),
+      bucketOf(rules.loginEmailChallengeIp, ip),
     );
 
-    expect(error).toBeInstanceOf(ProblemDetailException);
-    const problem = error as ProblemDetailException;
-    expect(problem.status).toBe(403);
-    expect(problem.extras.error).toBe("ADMIN_ACCOUNT");
-    // 公開の入口から管理コンソールの在り処が分からないようにする。
-    expect(problem.detail).not.toContain("/console");
-    // チャレンジは発行しない。
-    expect(await prisma.loginChallenge.count({ where: { userId: user.id } })).toBe(0);
+    const started = await startLoginChallenge({ user, purpose: "MEMBER", ip });
+
+    expect(started.view.purpose).toBe("MEMBER");
+    // 主催者の入口は一般会員と同じくメールが既定（管理者専用の入口だけが SMS）。
+    expect(started.view.channel).toBe("EMAIL");
+    expect(started.view.destinationMask).toContain("@");
+    expect(await prisma.loginChallenge.count({ where: { userId: user.id } })).toBe(1);
   });
 
   it("一般会員が主催者の入口から入ると、既定はメールで SMS の試行を数えない", async () => {

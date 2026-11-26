@@ -84,7 +84,8 @@ describe("共通ヘッダーの並び（ログイン状態別）", () => {
     }
   });
 
-  it("管理者は管理コンソールだけを出し、主催者・参加者の機能を並べない", () => {
+  it("管理者のバーのナビは管理コンソールの 1 本だけ", () => {
+    // 主催者・参加者の行き先は頭文字のメニューが持つ。バーには重ねない。
     for (const pathname of ["/service", "/participant", "/organizer/events", "/account"]) {
       const config = siteNavConfig(pathname, admin);
 
@@ -169,10 +170,38 @@ describe("頭文字のメニューの並び", () => {
     expect(userMenuConfig("/mypage", participant)).not.toContainEqual(SITE.nav.notifications);
   });
 
-  it("管理者は会員向けの行き先を持たない", () => {
+  it("管理者は会員と同じ行き先に、管理コンソールを足して持つ", () => {
+    // 管理者も自分でイベントを持つ。入口を塞ぐと自分の催しへ画面から行けなくなる。
+    const expected = [
+      SITE.nav.participantSwitch,
+      SITE.nav.mypage,
+      SITE.nav.notifications,
+      SITE.nav.organizerDrafts,
+      SITE.nav.plan,
+      SITE.nav.account,
+      SITE.nav.console,
+    ];
     for (const pathname of ["/service", "/participant", "/organizer/events", "/mypage"]) {
-      expect(userMenuConfig(pathname, admin)).toEqual([]);
+      expect(userMenuConfig(pathname, admin)).toEqual(expected);
     }
+  });
+
+  it("催し 0 件の管理者も、主催者エリアでは主催者の並びに管理コンソールを足す", () => {
+    const adminWithoutEvents: Viewer = { name: "管理者", isOrganizer: false, platformRole: "ADMIN" };
+
+    expect(userMenuConfig("/participant", adminWithoutEvents)).toEqual([
+      SITE.nav.organizerSwitch,
+      SITE.nav.account,
+      SITE.nav.console,
+    ]);
+    expect(userMenuConfig("/organizer/events", adminWithoutEvents)).toEqual([
+      SITE.nav.participantSwitch,
+      SITE.nav.mypage,
+      SITE.nav.organizerDrafts,
+      SITE.nav.plan,
+      SITE.nav.account,
+      SITE.nav.console,
+    ]);
   });
 });
 

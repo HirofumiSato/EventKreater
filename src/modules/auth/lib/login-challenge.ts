@@ -189,26 +189,6 @@ function adminPhoneRequired(): ProblemDetailException {
 }
 
 /**
- * 管理者は管理コンソール専用の入口から入る。
- *
- * ここでは管理コンソールの URL も、管理者であることも明かさない。
- * 公開の入口から管理コンソールへの導線を作らないため、文言は一般の失敗と同じ体裁にする。
- */
-function adminAccountBlocked(): ProblemDetailException {
-  return new ProblemDetailException({
-    status: 403,
-    title: "Forbidden",
-    detail: "このアカウントは、こちらからはログインできません。",
-    error: "ADMIN_ACCOUNT",
-  });
-}
-
-function assertMemberPurposeAllowed(user: ChallengeUser, purpose: LoginChallengePurpose): void {
-  // 主催者の入口（MEMBER）だけ管理者を締め出す。参加者の入口は誰でも通す。
-  if (purpose === "MEMBER" && user.platformRole === "ADMIN") throw adminAccountBlocked();
-}
-
-/**
  * 確認番号を送る既定のチャネル。
  *
  * 管理者の入口は電話確認が必須なので、確認済みの番号があれば SMS にする。
@@ -292,6 +272,12 @@ export function challengeResponse(req: NextRequest, challengeId: string, view: L
   return response;
 }
 
+/**
+ * ログインの確認番号を発行する。管理者も主催者・参加者の入口から入れる。
+ *
+ * 管理者は自分でイベントを持つことがあるため、会員の入口で締め出すと自分の催しを
+ * 画面から管理できなくなる。管理コンソールは別の入口（`/console/login`）が受け持つ。
+ */
 export async function startLoginChallenge(input: {
   user: ChallengeUser;
   purpose: LoginChallengePurpose;
@@ -309,7 +295,7 @@ export async function startLoginChallenge(input: {
 
 /**
  * マイページの再認証（メール変更・電話番号変更・パスワード変更・退会）用の確認番号。
- * ログインの purpose では管理者が締め出されるため PARTICIPANT を使い、成功時もセッションは作らない。
+ * ログインとは別の用途なので PARTICIPANT を使い、成功時もセッションは作らない。
  */
 export async function startAccountChallenge(input: {
   user: ChallengeUser;
@@ -335,7 +321,6 @@ async function issueChallenge(input: {
   ip: string;
 }): Promise<{ id: string; view: LoginChallengePublic }> {
   await assertNotLocked(input.user.id);
-  assertMemberPurposeAllowed(input.user, input.purpose);
   if (input.channel === "SMS") {
     await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginSmsUser, input.user.id);
     await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginSmsIp, input.ip);
@@ -467,7 +452,6 @@ async function verifyChallenge(input: {
   await assertWithinAttemptLimit(AUTH_RATE_LIMITS.rules.loginConfirmIp, input.ip);
   const { challenge, user } = await readActiveChallenge(input.req);
   await assertNotLocked(user.id);
-  assertMemberPurposeAllowed(user, challenge.purpose);
   const row = await prisma.loginChallenge.findUnique({ where: { id: challenge.id } });
   if (!row || row.usedAt || row.expiresAt <= new Date()) throw missingChallenge();
 
