@@ -60,13 +60,8 @@ export async function GET(req: NextRequest) {
       clearOAuthCookies(response, req);
       return response;
     }
-    // 管理者は管理コンソール専用の入口から入る。ここでは管理コンソールの URL を出さず、
-    // 公開の入口から管理コンソールへの導線を作らない（同じ画面へ一般的な理由で戻す）。
-    if (audience === "organizer" && resolved.user.platformRole === "ADMIN") {
-      const response = fail("google_account");
-      clearCookie(response, req, SIGNUP_INTENT_COOKIE);
-      return response;
-    }
+    // 管理者も主催者・参加者の入口から入れる（自分でイベントを持つことがあるため）。
+    // 公開画面から管理コンソールへの導線は作らないので、着地は会員と同じ扱いにする。
     const challenge = await startLoginChallenge({
       user: resolved.user,
       purpose: purposeForAudience(audience),

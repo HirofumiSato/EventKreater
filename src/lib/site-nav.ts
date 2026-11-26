@@ -23,9 +23,9 @@
  * ブランド名の下に出す 1 語（`viewerRoleCaption`）の 2 つで示す。並びが
  * 変わっただけでは、参加者画面と主催者画面の違いに気づきにくいため。
  *
- * 管理者（`platformRole === "ADMIN"`）は別の役割として、主催者・参加者の機能を
- * 並べずに管理コンソールだけを出す。主催者と参加者は同じ会員が画面で切り替える
- * ものなので、そこは今までどおり 1 本の切り替えリンクに留める。
+ * 管理者（`platformRole === "ADMIN"`）は札と地の色だけを別にし、行き先は会員と同じに
+ * する。管理者も自分でイベントを持つため、入口を塞ぐと自分の催しを画面から管理できない。
+ * 管理コンソールへの 1 本は、会員の行き先の後ろに足す（公開画面からは辿れない）。
  */
 import { SITE } from "@/lib/site";
 import { siteChrome } from "@/lib/site-chrome";
@@ -33,7 +33,7 @@ import { siteChrome } from "@/lib/site-chrome";
 export interface Viewer {
   name: string;
   isOrganizer: boolean;
-  /** 会員の属性。管理者は公開画面でも管理コンソールへの導線だけを持つ。 */
+  /** 会員の属性。管理者は会員と同じ行き先に加えて管理コンソールを持つ。 */
   platformRole: "MEMBER" | "ADMIN";
 }
 
@@ -123,6 +123,9 @@ export function viewerArea(pathname: string): ViewerArea {
  * 主催者として扱う（登録直後は isOrganizer が false になるため）。
  * 参加者画面を見ているあいだは、主催イベントを持つ会員も参加者として並べる。
  * 共有画面（`/account` 配下）だけは、本文の戻り先と同じ材料（isOrganizer）で決める。
+ *
+ * 管理者はどの画面でも「管理者」として示す。行き先は会員と同じだが、札と地の色は
+ * 別にしておく（管理者として入っていることが、画面を移っても読めるように）。
  */
 export function viewerRole(pathname: string, viewer: Viewer): ViewerRole {
   if (viewer.platformRole === "ADMIN") return "admin";
@@ -255,24 +258,27 @@ export function siteNavConfig(pathname: string, viewer: Viewer | null): NavConfi
  * 出さない（通知は主催者にしか作られない）。
  *
  * プランとカードの管理（SCR-ORG-17）は主催者だけの設定なので、主催者として扱う
- * あいだだけ置く（`/account` を主催者が開いたときも出る）。管理者には出さない。
+ * あいだだけ置く（`/account` を主催者が開いたときも出る）。
+ *
+ * 管理者も会員としての行き先を持つ。自分でイベントを開くことがあるため、入口を
+ * 塞ぐと自分の催し（下書き・名簿・売上）へ画面から行けなくなる。
+ * 管理コンソールへの 1 本だけを、会員の行き先の後ろに足す。
  */
 export function userMenuConfig(pathname: string, viewer: Viewer): NavLink[] {
-  // 管理者は管理コンソールしか持たない。会員向けの行き先を出さない。
-  if (viewer.platformRole === "ADMIN") return [];
   // 主催者エリアでは、まだ催しを持たない会員も主催者として扱う（viewerRole と同じ理由）。
   const organizerMode = viewer.isOrganizer || inOrganizerArea(pathname);
-  if (!organizerMode) {
-    // 主催イベントを持たない会員にも、主催者として使えることを 1 本だけ示す。
-    return [SITE.nav.organizerSwitch, SITE.nav.account];
-  }
-  return [
-    SITE.nav.participantSwitch,
-    SITE.nav.mypage,
-    // 通知は主催者にしか作られない。催し 0 件のあいだは端末にも出さない。
-    ...(viewer.isOrganizer ? [SITE.nav.notifications] : []),
-    SITE.nav.organizerDrafts,
-    SITE.nav.plan,
-    SITE.nav.account,
-  ];
+  const links = organizerMode
+    ? [
+        SITE.nav.participantSwitch,
+        SITE.nav.mypage,
+        // 通知は主催者にしか作られない。催し 0 件のあいだは端末にも出さない。
+        ...(viewer.isOrganizer ? [SITE.nav.notifications] : []),
+        SITE.nav.organizerDrafts,
+        SITE.nav.plan,
+        SITE.nav.account,
+      ]
+    : // 主催イベントを持たない会員にも、主催者として使えることを 1 本だけ示す。
+      [SITE.nav.organizerSwitch, SITE.nav.account];
+  // 管理者だけが管理コンソールへの 1 本を持つ。公開画面（未ログイン）には出ない。
+  return viewer.platformRole === "ADMIN" ? [...links, SITE.nav.console] : links;
 }

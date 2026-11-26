@@ -37,8 +37,6 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_token: "Googleログインに失敗しました。",
   google_email: "確認済みのメールアドレスがあるGoogleアカウントが必要です。",
   google_conflict: "このメールアドレスは別のGoogleアカウントに紐づいています。",
-  // 管理者を管理コンソールへ送らない。ここでも管理コンソールの在り処は明かさない。
-  google_account: "このGoogleアカウントでは、こちらからはログインできません。",
 };
 
 async function hydrateSession(): Promise<void> {

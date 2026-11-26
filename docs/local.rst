@@ -117,17 +117,17 @@ Stripe の鍵、テストカード、Webhook の注意は :doc:`stripe` です�
 
 同じとき、確認番号の画面にも「開発用の確認番号は …… です。」と出ます。 ``NODE_ENV=production`` では出さず、 ``AUTH_DEV_CODE=0`` でも消せます。画面に出るのは、配送が記録に留まった（Webhook が空だった）ときだけです。
 
-確認番号を通したあとの着地は ``next`` で決まります。会員登録・ログイン画面（ ``/auth/register`` ）を使えるのは会員だけです。
+確認番号を通したあとの着地は ``next`` で決まります。会員登録・ログイン画面（ ``/auth/register`` ）は管理者も使えます。
 
 * ``next`` を指定していない会員は ``/mypage`` （マイページ）へ移動します
 * ``next`` を指定した会員は、そのパスへ移動します
-* 管理者は ``/auth/register`` から入れません。着地は常に ``/console`` （管理者ホーム）で、入口は ``/console/login`` だけです
+* 管理者も同じ規則で着地します（``/console`` へは送りません）。管理コンソールは ``/console/login`` から入り、着地は ``/console`` （管理者ホーム）です
 
 ``next`` に使えるのは ``/mypage`` 、 ``/organizer`` 、 ``/invitations`` 、 ``/events`` 、 ``/participant`` 、 ``/organizers`` の配下だけです。電話番号が未確認のまま主催画面を使おうとしたときは ``next=/organizer/events`` または ``next=/organizer/events/new`` が付きます。
 
 別の会員を管理者にする場合は ``npm run admin:promote -- user@example.com`` です。管理者ログインには、確認済みの電話番号とパスワードを持つ会員であることが要ります。
 
-管理者は ``/console/login`` からだけ入れます。 ``/auth/register`` のログインや Google ログインで管理者の資格情報を入れても、確認番号は発行されず「このアカウントは、こちらからはログインできません。」と出ます。公開画面には ``/console`` も ``/console/login`` も出さないので、管理コンソールの URL は運用者が直接渡します。
+管理者は ``/console/login`` からも、 ``/auth/register`` ・ ``/participant/login`` ・ Google ログインからも入れます。管理者も自分でイベントを持つことがあるため、会員と同じ手順で確認番号を受け取り、着地は会員と同じ規則で決まります（ ``/console`` へは送りません）。公開画面には ``/console`` も ``/console/login`` も出さないので、管理コンソールの URL は運用者が直接渡します。ログイン済みの管理者のドロップダウンには「管理コンソール」が出ます。
 
 開発サーバー
 ------------
